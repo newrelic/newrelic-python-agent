@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from _target_schema_sync import books, libraries, magazines
 from graphql import (
     GraphQLArgument,
     GraphQLField,
@@ -23,76 +24,23 @@ from graphql import (
     GraphQLString,
     GraphQLUnionType,
 )
-
-authors = [
-    {
-        "first_name": "New",
-        "last_name": "Relic",
-    },
-    {
-        "first_name": "Bob",
-        "last_name": "Smith",
-    },
-    {
-        "first_name": "Leslie",
-        "last_name": "Jones",
-    },
-]
-
-books = [
-    {
-        "id": 1,
-        "name": "Python Agent: The Book",
-        "isbn": "a-fake-isbn",
-        "author": authors[0],
-        "branch": "riverside",
-    },
-    {
-        "id": 2,
-        "name": "Ollies for O11y: A Sk8er's Guide to Observability",
-        "isbn": "a-second-fake-isbn",
-        "author": authors[1],
-        "branch": "downtown",
-    },
-    {
-        "id": 3,
-        "name": "[Redacted]",
-        "isbn": "a-third-fake-isbn",
-        "author": authors[2],
-        "branch": "riverside",
-    },
-]
-
-magazines = [
-    {"id": 1, "name": "Reli Updates Weekly", "issue": 1, "branch": "riverside"},
-    {"id": 2, "name": "Reli Updates Weekly", "issue": 2, "branch": "downtown"},
-    {"id": 3, "name": "Node Weekly", "issue": 1, "branch": "riverside"},
-]
-
-
-libraries = ["riverside", "downtown"]
-libraries = [
-    {
-        "id": i + 1,
-        "branch": branch,
-        "magazine": [m for m in magazines if m["branch"] == branch],
-        "book": [b for b in books if b["branch"] == branch],
-    }
-    for i, branch in enumerate(libraries)
-]
+from promise import Promise, promisify
 
 storage = []
 
 
+@promisify
 def resolve_library(parent, info, index):
     return libraries[index]
 
 
+@promisify
 def resolve_storage_add(parent, info, string):
     storage.append(string)
     return string
 
 
+@promisify
 def resolve_storage(parent, info):
     return storage
 
@@ -146,14 +94,17 @@ Library = GraphQLObjectType(
 Storage = GraphQLList(GraphQLString)
 
 
+@promisify
 def resolve_hello(root, info):
     return "Hello!"
 
 
+@promisify
 def resolve_echo(root, info, echo):
     return echo
 
 
+@promisify
 def resolve_error(root, info):
     raise RuntimeError("Runtime Error!")
 
@@ -179,7 +130,7 @@ try:
         resolver=resolve_storage,
     )
     storage_add_field = GraphQLField(
-        Storage,
+        GraphQLString,
         resolver=resolve_storage_add,
         args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))},
     )

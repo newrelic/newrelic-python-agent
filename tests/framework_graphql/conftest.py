@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import pytest
-import six
 from testing_support.fixtures import (
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
+
+from newrelic.packages import six
 
 _coverage_source = [
     "newrelic.hooks.framework_graphql",
@@ -39,14 +40,14 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
 )
 
+apps = ["sync-sync", "async-sync", "async-async", "async-promise"]
 
-@pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async"])
+
+@pytest.fixture(scope="session", params=apps)
 def target_application(request):
     from _target_application import target_application
 
-    is_async_schema = request.param.split("-")[1] == "async"
-
-    return "GraphQL", None, target_application[request.param], True, is_async_schema
+    return "GraphQL", None, target_application[request.param], True, request.param.split("-")[1]
 
 
 if six.PY2:

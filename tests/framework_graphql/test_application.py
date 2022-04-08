@@ -12,21 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from inspect import isawaitable
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
     validate_transaction_errors,
     validate_transaction_metrics,
 )
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
+from newrelic.packages import six
 
 
 def conditional_decorator(decorator, condition):
@@ -34,6 +36,7 @@ def conditional_decorator(decorator, condition):
         if not condition:
             return func
         return decorator(func)
+
     return _conditional_decorator
 
 
@@ -74,19 +77,19 @@ def error_middleware(next, root, info, **args):
     raise RuntimeError("Runtime Error!")
 
 
-async def example_middleware_async(next, root, info, **args):
-    return_value = next(root, info, **args)
-    if isawaitable(return_value):
-        return await return_value
-    return return_value
+example_middleware = [example_middleware]
+error_middleware = [error_middleware]
 
+if six.PY3:
+    from test_application_async import error_middleware_async, example_middleware_async
 
-async def error_middleware_async(next, root, info, **args):
-    raise RuntimeError("Runtime Error!")
+    example_middleware.append(example_middleware_async)
+    error_middleware.append(error_middleware_async)
 
 
 _runtime_error_name = callable_name(RuntimeError)
 _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
+
 
 def _graphql_base_rollup_metrics(framework, version, background_task=True):
     from graphql import __version__ as graphql_version
@@ -97,15 +100,19 @@ def _graphql_base_rollup_metrics(framework, version, background_task=True):
         ("GraphQL/%s/all" % framework, 1),
     ]
     if background_task:
-        metrics.extend([
-            ("GraphQL/allOther", 1),
-            ("GraphQL/%s/allOther" % framework, 1),
-        ])
+        metrics.extend(
+            [
+                ("GraphQL/allOther", 1),
+                ("GraphQL/%s/allOther" % framework, 1),
+            ]
+        )
     else:
-        metrics.extend([
-            ("GraphQL/allWeb", 1),
-            ("GraphQL/%s/allWeb" % framework, 1),
-        ])
+        metrics.extend(
+            [
+                ("GraphQL/allWeb", 1),
+                ("GraphQL/%s/allWeb" % framework, 1),
+            ]
+        )
 
     if framework != "GraphQL":
         metrics.append(("Python/Framework/%s/%s" % (framework, version), 1))
@@ -114,7 +121,7 @@ def _graphql_base_rollup_metrics(framework, version, background_task=True):
 
 
 def test_basic(target_application):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
 
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
@@ -124,15 +131,15 @@ def test_basic(target_application):
     )
     @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = target_application('{ hello }')
+        response = target_application("{ hello }")
         assert response["hello"] == "Hello!"
-    
+
     _test()
 
 
 @dt_enabled
 def test_query_and_mutation(target_application, is_graphql_2):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
 
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/%s/storage_add" % framework, 1),
@@ -151,7 +158,7 @@ def test_query_and_mutation(target_application, is_graphql_2):
         "graphql.field.name": "storage_add",
         "graphql.field.parentType": "Mutation",
         "graphql.field.path": "storage_add",
-        "graphql.field.returnType": "[String]" if is_graphql_2 else "String",
+        "graphql.field.returnType": "String",
     }
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
@@ -164,8 +171,7 @@ def test_query_and_mutation(target_application, is_graphql_2):
         "graphql.field.returnType": "[String]",
     }
 
-    @validate_code_level_metrics("_target_application", "resolve_storage")
-    @validate_code_level_metrics("_target_application", "resolve_storage_add")
+    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_storage_add")
     @validate_transaction_metrics(
         "mutation/<anonymous>/storage_add",
         "GraphQL",
@@ -178,9 +184,9 @@ def test_query_and_mutation(target_application, is_graphql_2):
     @conditional_decorator(background_task(), is_bg)
     def _mutation():
         response = target_application('mutation { storage_add(string: "abc") }')
-        assert "abc" in str(response)
+        assert response["storage_add"] == "abc"
 
-
+    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_storage")
     @validate_transaction_metrics(
         "query/<anonymous>/storage",
         "GraphQL",
@@ -193,29 +199,30 @@ def test_query_and_mutation(target_application, is_graphql_2):
     @conditional_decorator(background_task(), is_bg)
     def _query():
         response = target_application("query { storage }")
-        assert "abc" in str(response)
+        assert response["storage"] == ["abc"]
 
     _mutation()
     _query()
 
 
-@pytest.mark.parametrize("middleware", (example_middleware, example_middleware_async))
+@pytest.mark.parametrize("middleware", example_middleware)
 @dt_enabled
 def test_middleware(target_application, middleware):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
 
-    name = middleware.__name__
-    if not is_async and "async" in name:
-        pytest.skip("Async middleware not supported in sync applications.")
+    name = "%s:%s" % (middleware.__module__, middleware.__name__)
+    if "async" in name:
+        if schema_type != "async":
+            pytest.skip("Async middleware not supported in sync applications.")
 
     _test_middleware_metrics = [
         ("GraphQL/operation/GraphQL/query/<anonymous>/hello", 1),
         ("GraphQL/resolve/GraphQL/hello", 1),
-        ("Function/test_application:%s" % name, 1),
+        ("Function/%s" % name, 1),
     ]
 
-    @validate_code_level_metrics("test_application", "example_middleware")
-    @validate_code_level_metrics("_target_application", "resolve_hello")
+    @validate_code_level_metrics(*name.split(":"))
+    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_hello")
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
         "GraphQL",
@@ -233,25 +240,28 @@ def test_middleware(target_application, middleware):
     _test()
 
 
-@pytest.mark.parametrize("middleware", (error_middleware, error_middleware_async))
+@pytest.mark.parametrize("middleware", error_middleware)
 @dt_enabled
 def test_exception_in_middleware(target_application, middleware):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
     query = "query MyQuery { error_middleware }"
     field = "error_middleware"
-    name = middleware.__name__
-    if not is_async and "async" in name:
-        pytest.skip("Async middleware not supported in sync applications.")
+
+    name = "%s:%s" % (middleware.__module__, middleware.__name__)
+    if "async" in name:
+        if schema_type != "async":
+            pytest.skip("Async middleware not supported in sync applications.")
 
     # Metrics
     _test_exception_scoped_metrics = [
         ("GraphQL/operation/%s/query/MyQuery/%s" % (framework, field), 1),
         ("GraphQL/resolve/%s/%s" % (framework, field), 1),
+        ("Function/%s" % name, 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
         ("Errors/all%s" % ("Other" if is_bg else "Web"), 1),
-        ("Errors/%sTransaction/GraphQL/test_application:%s" % ("Other" if is_bg else "Web", name), 1),
+        ("Errors/%sTransaction/GraphQL/%s" % ("Other" if is_bg else "Web", name), 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -268,7 +278,7 @@ def test_exception_in_middleware(target_application, middleware):
     }
 
     @validate_transaction_metrics(
-        "test_application:%s" % name,
+        name,
         "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
         rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
@@ -287,10 +297,10 @@ def test_exception_in_middleware(target_application, middleware):
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 @dt_enabled
 def test_exception_in_resolver(target_application, field):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
     query = "query MyQuery { %s }" % field
 
-    txn_name = "_target_schema%s:resolve_error" % ("_async" if is_async else "")
+    txn_name = "_target_schema_%s:resolve_error" % schema_type
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -342,7 +352,7 @@ def test_exception_in_resolver(target_application, field):
     ],
 )
 def test_exception_in_validation(target_application, is_graphql_2, query, exc_class):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
     if "syntax" in query:
         txn_name = "graphql.language.parser:parse"
     else:
@@ -358,7 +368,7 @@ def test_exception_in_validation(target_application, is_graphql_2, query, exc_cl
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-        ('GraphQL/operation/%s/<unknown>/<anonymous>/<unknown>' % framework, 1),
+        ("GraphQL/operation/%s/<unknown>/<anonymous>/<unknown>" % framework, 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -391,7 +401,7 @@ def test_exception_in_validation(target_application, is_graphql_2, query, exc_cl
 
 @dt_enabled
 def test_operation_metrics_and_attrs(target_application):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
     operation_metrics = [("GraphQL/operation/%s/query/MyQuery/library" % framework, 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
@@ -419,7 +429,7 @@ def test_operation_metrics_and_attrs(target_application):
 
 @dt_enabled
 def test_field_resolver_metrics_and_attrs(target_application):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
     field_resolver_metrics = [("GraphQL/resolve/%s/hello" % framework, 1)]
 
     graphql_attrs = {
@@ -466,7 +476,7 @@ _test_queries = [
 @dt_enabled
 @pytest.mark.parametrize("query,obfuscated", _test_queries)
 def test_query_obfuscation(target_application, query, obfuscated):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
     graphql_attrs = {"graphql.operation.query": obfuscated}
 
     if callable(query):
@@ -523,9 +533,9 @@ _test_queries = [
 @dt_enabled
 @pytest.mark.parametrize("query,expected_path", _test_queries)
 def test_deepest_unique_path(target_application, query, expected_path):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
     if expected_path == "/error":
-        txn_name = "_target_schema%s:resolve_error" % ("_async" if is_async else "")
+        txn_name = "_target_schema_%s:resolve_error" % schema_type
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 
@@ -542,7 +552,7 @@ def test_deepest_unique_path(target_application, query, expected_path):
 
 
 def test_ignored_introspection_transactions(target_application):
-    framework, version, target_application, is_bg, is_async = target_application
+    framework, version, target_application, is_bg, schema_type = target_application
 
     @validate_transaction_count(0)
     @background_task()

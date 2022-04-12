@@ -14,7 +14,6 @@
 
 import random
 import pytest
-import six
 import tempfile
 import time
 
@@ -33,7 +32,7 @@ from newrelic.core.custom_event import create_custom_event
 from newrelic.core.error_node import ErrorNode
 from newrelic.core.function_node import FunctionNode
 
-from newrelic.network.exceptions import RetryDataForRequest, ForceAgentDisconnect
+from newrelic.network.exceptions import RetryDataForRequest
 
 settings = global_settings()
 

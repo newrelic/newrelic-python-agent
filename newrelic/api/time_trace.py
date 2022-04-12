@@ -22,11 +22,11 @@ import warnings
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
-from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.code_level_metrics import (
     extract_code_from_callable,
     extract_code_from_traceback,
 )
+from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
 
 _logger = logging.getLogger(__name__)
@@ -118,7 +118,9 @@ class TimeTrace(object):
         self.activated = True
 
         # Extract source code context
-        settings = self.settings or self.transaction.settings  # Some derived classes do not have self.settings immediately
+        settings = (
+            self.settings or self.transaction.settings
+        )  # Some derived classes do not have self.settings immediately
         if self._source is not None:
             self.add_code_level_metrics(self._source)
 
@@ -211,7 +213,10 @@ class TimeTrace(object):
                 node = extract_code_from_callable(source)
                 node.add_attrs(self._add_agent_attribute)
             except:
-                _logger.error("Failed to extract source code context from callable %s. Report this issue to newrelic support." % source)
+                _logger.error(
+                    "Failed to extract source code context from callable %s. Report this issue to newrelic support."
+                    % source
+                )
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
         # Bail out if the transaction is not active or
@@ -382,7 +387,6 @@ class TimeTrace(object):
                         exc_info=True,
                     )
                     custom_params = {}
-
 
             if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
                 source = extract_code_from_traceback(tb)

@@ -13,19 +13,17 @@
 # limitations under the License.
 
 import re
-
 from collections import namedtuple
 
-_NormalizationRule = namedtuple('_NormalizationRule',
-        ['match_expression', 'replacement', 'ignore', 'eval_order',
-        'terminate_chain', 'each_segment', 'replace_all'])
+_NormalizationRule = namedtuple(
+    "_NormalizationRule",
+    ["match_expression", "replacement", "ignore", "eval_order", "terminate_chain", "each_segment", "replace_all"],
+)
 
 
 class NormalizationRule(_NormalizationRule):
-
     def __init__(self, *args, **kwargs):
-        self.match_expression_re = re.compile(
-            self.match_expression, re.IGNORECASE)
+        self.match_expression_re = re.compile(self.match_expression, re.IGNORECASE)
 
     def apply(self, string):
         count = 1
@@ -36,7 +34,6 @@ class NormalizationRule(_NormalizationRule):
 
 
 class RulesEngine(object):
-
     def __init__(self, rules):
         self.__rules = []
 
@@ -64,7 +61,7 @@ class RulesEngine(object):
         # to avoid problems with illegal characters.
 
         if isinstance(string, bytes):
-            string = string.decode('Latin-1')
+            string = string.decode("Latin-1")
 
         final_string = string
         ignore = False
@@ -72,7 +69,7 @@ class RulesEngine(object):
             if rule.each_segment:
                 matched = False
 
-                segments = final_string.split('/')
+                segments = final_string.split("/")
 
                 # FIXME This fiddle is to skip leading segment
                 # when splitting on '/' where it is empty.
@@ -82,7 +79,7 @@ class RulesEngine(object):
                 # this as special.
 
                 if segments and not segments[0]:
-                    rule_segments = ['']
+                    rule_segments = [""]
                     segments = segments[1:]
                 else:
                     rule_segments = []
@@ -93,7 +90,7 @@ class RulesEngine(object):
                     rule_segments.append(rule_segment)
 
                 if matched:
-                    final_string = '/'.join(rule_segments)
+                    final_string = "/".join(rule_segments)
             else:
                 rule_string, match_count = rule.apply(final_string)
                 matched = match_count > 0
@@ -117,7 +114,7 @@ class SegmentCollapseEngine(object):
 
     """
 
-    COLLAPSE_STAR_RE = re.compile(r'((?:^|/)\*)(?:/\*)*')
+    COLLAPSE_STAR_RE = re.compile(r"((?:^|/)\*)(?:/\*)*")
 
     def __init__(self, rules):
         self.rules = {}
@@ -134,11 +131,11 @@ class SegmentCollapseEngine(object):
             # collected from pattern, will deal with prefixes of
             # different length and will choose the longest match.
 
-            prefix_segments = rule['prefix'].rstrip('/').split('/')
+            prefix_segments = rule["prefix"].rstrip("/").split("/")
 
             if len(prefix_segments) == 2:
-                prefix = '/'.join(prefix_segments)
-                self.rules[prefix] = rule['terms']
+                prefix = "/".join(prefix_segments)
+                self.rules[prefix] = rule["terms"]
                 prefixes.append(prefix)
 
         # Construct a regular expression which can efficiently pre match
@@ -155,8 +152,8 @@ class SegmentCollapseEngine(object):
         # Use Unicode here when constructing pattern as the data collector
         # should always return prefixes and term strings as Unicode.
 
-        choices = u'|'.join([re.escape(x) for x in prefixes])
-        pattern = u'^(%s)/(.+)$' % choices
+        choices = "|".join([re.escape(x) for x in prefixes])
+        pattern = "^(%s)/(.+)$" % choices
 
         self.prefixes = re.compile(pattern)
 
@@ -202,12 +199,12 @@ class SegmentCollapseEngine(object):
         # to a Unicode string as no coercion will occur.
 
         remainder = match.group(2)
-        segments = remainder.split('/')
+        segments = remainder.split("/")
 
         # Replace non-allowlist terms with '*' and then collapse any
         # adjacent '*' segments to a single '*'.
 
-        result = [x if x in allowlist_terms else '*' for x in segments]
-        result = self.COLLAPSE_STAR_RE.sub('\\1', '/'.join(result))
+        result = [x if x in allowlist_terms else "*" for x in segments]
+        result = self.COLLAPSE_STAR_RE.sub("\\1", "/".join(result))
 
-        return '/'.join((prefix, result)), False
+        return "/".join((prefix, result)), False

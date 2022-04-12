@@ -37,11 +37,11 @@ from newrelic.common.object_names import parse_exc_info
 from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.attribute import create_user_attributes, process_user_attribute
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
+from newrelic.core.code_level_metrics import extract_code_from_traceback
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.database_utils import explain_plan
 from newrelic.core.error_collector import TracedError
 from newrelic.core.metric import TimeMetric
-from newrelic.core.code_level_metrics import extract_code_from_traceback
 from newrelic.core.stack_trace import exception_stack
 
 _logger = logging.getLogger(__name__)
@@ -717,7 +717,6 @@ class StatsEngine(object):
         attributes["agentAttributes"] = {}
         if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
             extract_code_from_traceback(tb).add_attrs(attributes["agentAttributes"].__setitem__)
-
 
         error_details = TracedError(
             start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes

@@ -177,7 +177,7 @@ class Application(object):
             print("URL Normalization Rules: %r" % (self._rules_engine["url"].rules), file=file)
             print("Metric Normalization Rules: %r" % (self._rules_engine["metric"].rules), file=file)
             print("Transaction Normalization Rules: %r" % (self._rules_engine["transaction"].rules), file=file)
-            print("Transaction Segment Whitelist Rules: %r" % (self._rules_engine["segment"].rules), file=file)
+            print("Transaction Segment Allowlist Rules: %r" % (self._rules_engine["segment"].rules), file=file)
             print("Harvest Period Start: %s" % (time.asctime(time.localtime(self._period_start))), file=file)
             print("Transaction Count: %d" % (self._transaction_count), file=file)
             print("Last Transaction: %s" % (time.asctime(time.localtime(self._last_transaction))), file=file)

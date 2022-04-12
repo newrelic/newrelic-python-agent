@@ -599,7 +599,7 @@ class StatsEngine(object):
 
         # Check to see if we need to strip the message before recording it.
 
-        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.whitelist:
+        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
             message = STRIP_EXCEPTION_MESSAGE
 
         # Where expected or ignore are a callable they should return a
@@ -1458,28 +1458,28 @@ class StatsEngine(object):
         # represented in either the snapshot or in the current stats object.
         #
         #   If we're in flexible harvest, the goal is to have everything in the
-        #   whitelist appear in the snapshot. This means, we must remove the
-        #   whitelist data types from the current stats object.
+        #   allowlist appear in the snapshot. This means, we must remove the
+        #   allowlist data types from the current stats object.
         #
         #   If we're not in flexible harvest, everything excluded from the
-        #   whitelist appears in the snapshot and is removed from the current
+        #   allowlist appears in the snapshot and is removed from the current
         #   stats object.
         if flexible:
-            whitelist_stats, other_stats = self, snapshot
+            allowlist_stats, other_stats = self, snapshot
             snapshot.reset_non_event_types()
         else:
-            whitelist_stats, other_stats = snapshot, self
+            allowlist_stats, other_stats = snapshot, self
             self.reset_non_event_types()
 
-        event_harvest_whitelist = self.__settings.event_harvest_config.whitelist
+        event_harvest_allowlist = self.__settings.event_harvest_config.allowlist
 
         # Iterate through harvest types. If they are in the list of types to
         # harvest reset them on stats_engine otherwise remove them from the
         # snapshot.
         for nr_method, stats_methods in EVENT_HARVEST_METHODS.items():
             for stats_method in stats_methods:
-                if nr_method in event_harvest_whitelist:
-                    reset = getattr(whitelist_stats, stats_method)
+                if nr_method in event_harvest_allowlist:
+                    reset = getattr(allowlist_stats, stats_method)
                 else:
                     reset = getattr(other_stats, stats_method)
 

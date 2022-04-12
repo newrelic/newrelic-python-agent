@@ -172,7 +172,7 @@ def test_application_exception_multiple():
         notice_error(application=application_instance)
 
 
-# =============== Test exception message stripping/whitelisting ===============
+# =============== Test exception message stripping/allowlisting ===============
 
 _test_notice_error_strip_message_disabled = [(_runtime_error_name, "one")]
 
@@ -260,21 +260,21 @@ def test_notice_error_strip_message_enabled_outside_transaction():
     assert my_error.message == STRIP_EXCEPTION_MESSAGE
 
 
-_test_notice_error_strip_message_in_whitelist = [(_runtime_error_name, "original error message")]
+_test_notice_error_strip_message_in_allowlist = [(_runtime_error_name, "original error message")]
 
-_strip_message_in_whitelist_settings = {
+_strip_message_in_allowlist_settings = {
     "strip_exception_messages.enabled": True,
-    "strip_exception_messages.whitelist": [_runtime_error_name],
+    "strip_exception_messages.allowlist": [_runtime_error_name],
 }
 
 
-@validate_transaction_errors(errors=_test_notice_error_strip_message_in_whitelist)
-@override_application_settings(_strip_message_in_whitelist_settings)
+@validate_transaction_errors(errors=_test_notice_error_strip_message_in_allowlist)
+@override_application_settings(_strip_message_in_allowlist_settings)
 @background_task()
-def test_notice_error_strip_message_in_whitelist():
+def test_notice_error_strip_message_in_allowlist():
     settings = application_settings()
     assert settings.strip_exception_messages.enabled
-    assert _runtime_error_name in settings.strip_exception_messages.whitelist
+    assert _runtime_error_name in settings.strip_exception_messages.allowlist
 
     try:
         raise RuntimeError("original error message")
@@ -288,17 +288,17 @@ class ErrorThree(Exception):
 
 _error_three_name = callable_name(ErrorThree)
 
-_strip_message_in_whitelist_settings_outside_transaction = {
+_strip_message_in_allowlist_settings_outside_transaction = {
     "strip_exception_messages.enabled": True,
-    "strip_exception_messages.whitelist": [_error_three_name],
+    "strip_exception_messages.allowlist": [_error_three_name],
 }
 
 
-@override_application_settings(_strip_message_in_whitelist_settings_outside_transaction)
-def test_notice_error_strip_message_in_whitelist_outside_transaction():
+@override_application_settings(_strip_message_in_allowlist_settings_outside_transaction)
+def test_notice_error_strip_message_in_allowlist_outside_transaction():
     settings = application_settings()
     assert settings.strip_exception_messages.enabled
-    assert _error_three_name in settings.strip_exception_messages.whitelist
+    assert _error_three_name in settings.strip_exception_messages.allowlist
 
     try:
         assert not error_is_saved(ErrorThree)
@@ -311,21 +311,21 @@ def test_notice_error_strip_message_in_whitelist_outside_transaction():
     assert my_error.message == ErrorThree.message
 
 
-_test_notice_error_strip_message_not_in_whitelist = [(_runtime_error_name, STRIP_EXCEPTION_MESSAGE)]
+_test_notice_error_strip_message_not_in_allowlist = [(_runtime_error_name, STRIP_EXCEPTION_MESSAGE)]
 
-_strip_message_not_in_whitelist_settings = {
+_strip_message_not_in_allowlist_settings = {
     "strip_exception_messages.enabled": True,
-    "strip_exception_messages.whitelist": ["FooError", "BarError"],
+    "strip_exception_messages.allowlist": ["FooError", "BarError"],
 }
 
 
-@validate_transaction_errors(errors=_test_notice_error_strip_message_not_in_whitelist)
-@override_application_settings(_strip_message_not_in_whitelist_settings)
+@validate_transaction_errors(errors=_test_notice_error_strip_message_not_in_allowlist)
+@override_application_settings(_strip_message_not_in_allowlist_settings)
 @background_task()
-def test_notice_error_strip_message_not_in_whitelist():
+def test_notice_error_strip_message_not_in_allowlist():
     settings = application_settings()
     assert settings.strip_exception_messages.enabled
-    assert _runtime_error_name not in settings.strip_exception_messages.whitelist
+    assert _runtime_error_name not in settings.strip_exception_messages.allowlist
 
     try:
         raise RuntimeError("message not displayed")
@@ -339,17 +339,17 @@ class ErrorFour(Exception):
 
 _error_four_name = callable_name(ErrorFour)
 
-_strip_message_not_in_whitelist_settings_outside_transaction = {
+_strip_message_not_in_allowlist_settings_outside_transaction = {
     "strip_exception_messages.enabled": True,
-    "strip_exception_messages.whitelist": ["ValueError", "BarError"],
+    "strip_exception_messages.allowlist": ["ValueError", "BarError"],
 }
 
 
-@override_application_settings(_strip_message_not_in_whitelist_settings_outside_transaction)
-def test_notice_error_strip_message_not_in_whitelist_outside_transaction():
+@override_application_settings(_strip_message_not_in_allowlist_settings_outside_transaction)
+def test_notice_error_strip_message_not_in_allowlist_outside_transaction():
     settings = application_settings()
     assert settings.strip_exception_messages.enabled
-    assert _error_four_name not in settings.strip_exception_messages.whitelist
+    assert _error_four_name not in settings.strip_exception_messages.allowlist
 
     try:
         assert not error_is_saved(ErrorFour)

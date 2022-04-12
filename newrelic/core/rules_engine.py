@@ -111,9 +111,9 @@ class RulesEngine(object):
 class SegmentCollapseEngine(object):
     """Segment names in transaction name are collapsed using the rules
     from the data collector. The collector sends a prefix and list of
-    whitelist terms associated with that prefix. If a transaction name
+    allowlist terms associated with that prefix. If a transaction name
     matches the prefix then we replace all segments of the name with a
-    '*' except for the segments in the whitelist terms.
+    '*' except for the segments in the allowlist terms.
 
     """
 
@@ -162,7 +162,7 @@ class SegmentCollapseEngine(object):
 
     def normalize(self, txn_name):
         """Takes a transaction name and collapses the segments into a
-        '*' except for the segments in the whitelist_terms.
+        '*' except for the segments in the allowlist_terms.
 
         Returns a modified copy of the transaction name and a flag
         indicating whether the transaction should be ignored. For
@@ -188,9 +188,9 @@ class SegmentCollapseEngine(object):
 
         prefix = match.group(1)
 
-        whitelist_terms = self.rules.get(prefix)
+        allowlist_terms = self.rules.get(prefix)
 
-        if whitelist_terms is None:
+        if allowlist_terms is None:
             return txn_name, False
 
         # Now split the name into segments. The name could be either a
@@ -204,10 +204,10 @@ class SegmentCollapseEngine(object):
         remainder = match.group(2)
         segments = remainder.split('/')
 
-        # Replace non-whitelist terms with '*' and then collapse any
+        # Replace non-allowlist terms with '*' and then collapse any
         # adjacent '*' segments to a single '*'.
 
-        result = [x if x in whitelist_terms else '*' for x in segments]
+        result = [x if x in allowlist_terms else '*' for x in segments]
         result = self.COLLAPSE_STAR_RE.sub('\\1', '/'.join(result))
 
         return '/'.join((prefix, result)), False

@@ -528,7 +528,7 @@ def test_reservoir_size_zeros(harvest_name, event_name):
     app.connect_to_data_collector(None)
 
     setattr(settings.event_harvest_config.harvest_limits, harvest_name, 0)
-    settings.event_harvest_config.whitelist = frozenset(())
+    settings.event_harvest_config.allowlist = frozenset(())
     app._stats_engine.reset_stats(settings)
 
     app._stats_engine.transaction_events.add('transaction event')
@@ -742,17 +742,17 @@ def test_reset_synthetics_events():
     assert app._stats_engine.transaction_events.num_seen == 1
 
 
-@pytest.mark.parametrize('whitelist_event', ('analytic_event_data',
+@pytest.mark.parametrize('allowlist_event', ('analytic_event_data',
     'custom_event_data', 'error_event_data', 'span_event_data'))
 @override_generic_settings(settings, {
         'developer_mode': True,
         'license_key': '**NOT A LICENSE KEY**',
 })
-def test_flexible_events_harvested(whitelist_event):
+def test_flexible_events_harvested(allowlist_event):
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector(None)
 
-    settings.event_harvest_config.whitelist = frozenset((whitelist_event,))
+    settings.event_harvest_config.allowlist = frozenset((allowlist_event,))
     app._stats_engine.reset_stats(settings)
 
     app._stats_engine.transaction_events.add('transaction event')
@@ -769,33 +769,33 @@ def test_flexible_events_harvested(whitelist_event):
 
     app.harvest(flexible=True)
 
-    num_seen = 0 if (whitelist_event == 'analytic_event_data') else 1
+    num_seen = 0 if (allowlist_event == 'analytic_event_data') else 1
     assert app._stats_engine.transaction_events.num_seen == num_seen
 
-    num_seen = 0 if (whitelist_event == 'error_event_data') else 1
+    num_seen = 0 if (allowlist_event == 'error_event_data') else 1
     assert app._stats_engine.error_events.num_seen == num_seen
 
-    num_seen = 0 if (whitelist_event == 'custom_event_data') else 1
+    num_seen = 0 if (allowlist_event == 'custom_event_data') else 1
     assert app._stats_engine.custom_events.num_seen == num_seen
 
-    num_seen = 0 if (whitelist_event == 'span_event_data') else 1
+    num_seen = 0 if (allowlist_event == 'span_event_data') else 1
     assert app._stats_engine.span_events.num_seen == num_seen
 
     assert ('CustomMetric/Int', '') in app._stats_engine.stats_table
     assert app._stats_engine.metrics_count() > 1
 
 
-@pytest.mark.parametrize('whitelist_event', ('analytic_event_data',
+@pytest.mark.parametrize('allowlist_event', ('analytic_event_data',
     'custom_event_data', 'error_event_data', 'span_event_data'))
 @override_generic_settings(settings, {
         'developer_mode': True,
         'license_key': '**NOT A LICENSE KEY**',
 })
-def test_default_events_harvested(whitelist_event):
+def test_default_events_harvested(allowlist_event):
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector(None)
 
-    settings.event_harvest_config.whitelist = frozenset((whitelist_event,))
+    settings.event_harvest_config.allowlist = frozenset((allowlist_event,))
     app._stats_engine.reset_stats(settings)
 
     app._stats_engine.transaction_events.add('transaction event')
@@ -811,16 +811,16 @@ def test_default_events_harvested(whitelist_event):
 
     app.harvest(flexible=False)
 
-    num_seen = 0 if (whitelist_event != 'analytic_event_data') else 1
+    num_seen = 0 if (allowlist_event != 'analytic_event_data') else 1
     assert app._stats_engine.transaction_events.num_seen == num_seen
 
-    num_seen = 0 if (whitelist_event != 'error_event_data') else 1
+    num_seen = 0 if (allowlist_event != 'error_event_data') else 1
     assert app._stats_engine.error_events.num_seen == num_seen
 
-    num_seen = 0 if (whitelist_event != 'custom_event_data') else 1
+    num_seen = 0 if (allowlist_event != 'custom_event_data') else 1
     assert app._stats_engine.custom_events.num_seen == num_seen
 
-    num_seen = 0 if (whitelist_event != 'span_event_data') else 1
+    num_seen = 0 if (allowlist_event != 'span_event_data') else 1
     assert app._stats_engine.span_events.num_seen == num_seen
 
     assert app._stats_engine.metrics_count() == 1
@@ -853,7 +853,7 @@ def test_flexible_harvest_rollback():
     app = Application('Python Agent Test (Harvest Loop)')
     app.connect_to_data_collector(None)
 
-    settings.event_harvest_config.whitelist = frozenset(
+    settings.event_harvest_config.allowlist = frozenset(
             ('analytic_event_data',))
     app._stats_engine.reset_stats(settings)
 

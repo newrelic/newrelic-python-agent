@@ -256,7 +256,7 @@ class TimeTrace(object):
 
         # Check to see if we need to strip the message before recording it.
 
-        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.whitelist:
+        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
             message = STRIP_EXCEPTION_MESSAGE
 
         # Where expected or ignore are a callable they should return a

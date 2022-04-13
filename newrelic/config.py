@@ -711,6 +711,10 @@ def translate_deprecated_settings(settings, cached_settings):
             "error_collector.ignore_errors",
             "error_collector.ignore_classes",
         ),
+        (
+            "strip_exception_messages.whitelist",
+            "strip_exception_messages.allowlist",
+        ),
     ]
 
     for (old_key, new_key) in deprecated_settings_map:

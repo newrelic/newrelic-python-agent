@@ -384,6 +384,14 @@ TSetting = collections.namedtuple('TSetting', ['name', 'value', 'default'])
 
 translate_settings_tests = [
     (
+        TSetting('strip_exception_messages.whitelist', True, True),
+        TSetting('strip_exception_messages.allowlist', False, True)
+    ),
+    (
+        TSetting('strip_exception_messages.whitelist', False, True),
+        TSetting('strip_exception_messages.allowlist', True, True)
+    ),
+    (
         TSetting('transaction_tracer.capture_attributes', True, True),
         TSetting('transaction_tracer.attributes.enabled', False, True)
     ),

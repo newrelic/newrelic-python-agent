@@ -359,10 +359,10 @@ TSetting = collections.namedtuple("TSetting", ["name", "value", "default"])
 translate_settings_tests = [
     (
         TSetting("strip_exception_messages.whitelist", [], []),
-        TSetting("strip_exception_messages.allowlist", "non-default-value", []),
+        TSetting("strip_exception_messages.allowlist", ["non-default-value"], []),
     ),
     (
-        TSetting("strip_exception_messages.whitelist", "non-default-value", []),
+        TSetting("strip_exception_messages.whitelist", ["non-default-value"], []),
         TSetting("strip_exception_messages.allowlist", [], []),
     ),
     (

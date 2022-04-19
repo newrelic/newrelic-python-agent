@@ -38,7 +38,7 @@ async def resolve_storage_add(parent, info, string):
 
 
 async def resolve_storage(parent, info):
-    return storage
+    return [storage.pop()]
 
 
 async def resolve_search(parent, info, contains):

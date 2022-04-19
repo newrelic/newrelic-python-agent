@@ -89,13 +89,12 @@ def resolve_library(parent, info, index):
 
 
 def resolve_storage_add(parent, info, string):
-    del storage[:]
     storage.append(string)
     return string
 
 
 def resolve_storage(parent, info):
-    return storage
+    return [storage.pop()]
 
 
 def resolve_search(parent, info, contains):

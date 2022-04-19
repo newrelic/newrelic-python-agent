@@ -42,7 +42,7 @@ def resolve_storage_add(parent, info, string):
 
 @promisify
 def resolve_storage(parent, info):
-    return storage
+    return [storage.pop()]
 
 
 def resolve_search(parent, info, contains):

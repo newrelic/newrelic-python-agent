@@ -14,6 +14,7 @@
 
 import functools
 import logging
+import sys
 import time
 from collections import deque
 
@@ -44,9 +45,6 @@ try:
 
     def as_promise(f):
         return Promise.resolve(None).then(f)
-
-    def wrap_promise(promise, trace):
-        Promise.resolve(None).then(trace.__enter__).then(promise).then(trace.__exit__)
 
 except ImportError:
     # If promises is not installed, prevent crashes by bypassing logic
@@ -114,6 +112,11 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
                     return True
 
     return None  # Follow original exception matching rules
+
+
+def catch_promise_error(e):
+    notice_error(error=(e.__class__, e, e.__traceback__), ignore=ignore_graphql_duplicate_exception)
+    return None
 
 
 def wrap_executor_context_init(wrapped, instance, args, kwargs):
@@ -394,6 +397,9 @@ def wrap_resolver(wrapped, instance, args, kwargs):
         else:
             with FunctionTrace(name, source=wrapped) as trace:
                 trace.start_time = sync_start_time
+                if is_promise(result) and result.is_rejected:
+                    result.catch(catch_promise_error).get()
+                    transaction.set_transaction_name(name, "GraphQL", priority=15)
                 return result
 
 
@@ -535,17 +541,42 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
 
-    with GraphQLOperationTrace() as trace:
-        trace.statement = graphql_statement(query)
+    trace = GraphQLOperationTrace()
 
-        # Handle Schemas created from frameworks
-        if hasattr(schema, "_nr_framework"):
-            framework = schema._nr_framework
-            trace.product = framework[0]
-            transaction.add_framework_info(name=framework[0], version=framework[1])
+    trace.statement = graphql_statement(query)
 
-        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-            result = wrapped(*args, **kwargs)
+    # Handle Schemas created from frameworks
+    if hasattr(schema, "_nr_framework"):
+        framework = schema._nr_framework
+        trace.product = framework[0]
+        transaction.add_framework_info(name=framework[0], version=framework[1])
+    
+    # Trace must be manually started and stopped to ensure it exists prior to and during the entire duration of the query.
+    # Otherwise subsequent instrumentation will not be able to find an operation trace and will have issues.
+    trace.__enter__()
+    try:
+        result = wrapped(*args, **kwargs)
+    except Exception as e:
+        # Execution finished synchronously, exit immediately.
+        notice_error(ignore=ignore_graphql_duplicate_exception)
+        trace.__exit__(*sys.exc_info())
+        raise
+    else:
+        if is_promise(result) and result.is_pending:
+            # Execution promise, append callbacks to exit trace.
+            def on_resolve(v):
+                trace.__exit__(None, None, None)
+                return v
+
+            def on_reject(e):
+                catch_promise_error(e)
+                trace.__exit__(e.__class__, e, e.__traceback__)
+                return e
+
+            return result.then(on_resolve, on_reject)
+        else:
+            # Execution finished synchronously, exit immediately.
+            trace.__exit__(None, None, None)
             return result
 
 

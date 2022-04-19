@@ -20,12 +20,6 @@ from newrelic.hooks.framework_graphql import is_promise
 
 from _target_schema_sync import target_schema as target_schema_sync
 
-try:
-    import promise
-    from promise.schedulers.asyncio import AsyncioScheduler
-    promise.set_default_scheduler(AsyncioScheduler())
-except ImportError:
-    pass
 
 is_graphql_2 = int(version.split(".")[0]) == 2
 
@@ -54,8 +48,7 @@ def run_async(schema):
         if is_graphql_2:
             from graphql.execution.executors.asyncio import AsyncioExecutor
             def graphql_run(*args, **kwargs):
-                return graphql(*args, executor=AsyncioExecutor(), **kwargs)
-                # return graphql(*args, return_promise=True, executor=AsyncioExecutor(), **kwargs)
+                return graphql(*args, return_promise=True, executor=AsyncioExecutor(), **kwargs)
         else:
             graphql_run = graphql
 
@@ -83,8 +76,12 @@ def run_async(schema):
     return _run_async
 
 
-def run_promise(schema):
+def run_promise(schema, scheduler):
+    from promise import set_default_scheduler
+
     def _run_promise(query, middleware=None):
+        set_default_scheduler(scheduler)
+
         from graphql import graphql
         if is_graphql_2:
             def graphql_run(*args, **kwargs):
@@ -96,10 +93,10 @@ def run_promise(schema):
         response = coro.get()
 
         if isinstance(query, str) and "error" not in query or isinstance(query, Source) and "error" not in query.body:
-            assert not response.errors, response.errors
-            assert response.data
+            assert not response.errors, response
+            assert response.data, response
         else:
-            assert response.errors
+            assert response.errors, response
 
         return response.data
 
@@ -113,7 +110,11 @@ target_application = {
 
 if is_graphql_2:
     from _target_schema_promise import target_schema as target_schema_promise
-    target_application["async-promise"] = run_promise(target_schema_promise)
+    from promise.schedulers.asyncio import AsyncioScheduler
+    from promise.schedulers.immediate import ImmediateScheduler
+
+    target_application["sync-promise"] = run_promise(target_schema_promise, ImmediateScheduler())
+    target_application["async-promise"] = run_promise(target_schema_promise, AsyncioScheduler())
 
 if six.PY3:
     from _target_schema_async import target_schema as target_schema_async

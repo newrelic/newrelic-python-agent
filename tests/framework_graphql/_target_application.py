@@ -20,6 +20,13 @@ from newrelic.hooks.framework_graphql import is_promise
 
 from _target_schema_sync import target_schema as target_schema_sync
 
+try:
+    import promise
+    from promise.schedulers.asyncio import AsyncioScheduler
+    promise.set_default_scheduler(AsyncioScheduler())
+except ImportError:
+    pass
+
 is_graphql_2 = int(version.split(".")[0]) == 2
 
 def run_sync(schema):
@@ -45,25 +52,29 @@ def run_async(schema):
     def _run_async(query, middleware=None):
         from graphql import graphql
         if is_graphql_2:
+            from graphql.execution.executors.asyncio import AsyncioExecutor
             def graphql_run(*args, **kwargs):
-                return graphql(*args, return_promise=True, **kwargs)
+                return graphql(*args, executor=AsyncioExecutor(), **kwargs)
+                # return graphql(*args, return_promise=True, executor=AsyncioExecutor(), **kwargs)
         else:
             graphql_run = graphql
 
         coro = graphql_run(schema, query, middleware=middleware)
+        response = coro
 
-        if six.PY3:
+        if is_promise(coro):
+            response = coro.get()
+        elif six.PY3:
             import asyncio
 
             loop = asyncio.get_event_loop()
             response = loop.run_until_complete(coro)
-        elif is_promise(coro):
-            response = coro.get()
         else:
             raise NotImplementedError()
 
         if isinstance(query, str) and "error" not in query or isinstance(query, Source) and "error" not in query.body:
             assert not response.errors, response.errors
+            assert response.data
         else:
             assert response.errors
 
@@ -72,17 +83,38 @@ def run_async(schema):
     return _run_async
 
 
+def run_promise(schema):
+    def _run_promise(query, middleware=None):
+        from graphql import graphql
+        if is_graphql_2:
+            def graphql_run(*args, **kwargs):
+                return graphql(*args, return_promise=True, **kwargs)
+        else:
+            graphql_run = graphql
+
+        coro = graphql_run(schema, query, middleware=middleware)
+        response = coro.get()
+
+        if isinstance(query, str) and "error" not in query or isinstance(query, Source) and "error" not in query.body:
+            assert not response.errors, response.errors
+            assert response.data
+        else:
+            assert response.errors
+
+        return response.data
+
+    return _run_promise
+
+
 target_application = {
     "sync-sync": run_sync(target_schema_sync),
     "async-sync": run_async(target_schema_sync),
-    "async-promise": run_async(target_schema_promise),
 }
 
 if is_graphql_2:
     from _target_schema_promise import target_schema as target_schema_promise
-    target_application["async-promise"] = run_async(target_schema_promise)
+    target_application["async-promise"] = run_promise(target_schema_promise)
 
 if six.PY3:
     from _target_schema_async import target_schema as target_schema_async
-
     target_application["async-async"] = run_async(target_schema_async)

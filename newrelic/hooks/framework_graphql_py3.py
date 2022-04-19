@@ -41,12 +41,11 @@ def nr_coro_resolver_error_wrapper(wrapped, name, ignore, result, transaction):
     return _nr_coro_resolver_error_wrapper()
 
 
-def nr_coro_resolver_wrapper(wrapped, trace, ignore, result, start_time):
+def nr_coro_resolver_wrapper(wrapped, trace, ignore, result):
     @functools.wraps(wrapped)
     async def _nr_coro_resolver_wrapper():
         with trace:
             with ErrorTrace(ignore=ignore):
-                trace.start_time = start_time
                 return await result
 
     return _nr_coro_resolver_wrapper()

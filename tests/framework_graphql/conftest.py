@@ -41,7 +41,8 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 apps = ["sync-sync", "async-sync", "async-async", "async-promise"]
-
+apps = ["async-async"]
+apps = ["async-promise"]
 
 @pytest.fixture(scope="session", params=apps)
 def target_application(request):

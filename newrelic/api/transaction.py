@@ -979,7 +979,7 @@ class Transaction(object):
 
             self.ignore_transaction = self.ignore_transaction or ignore
 
-            # Apply segment whitelist rule to the segments on the full
+            # Apply segment allowlist rule to the segments on the full
             # transaction name. The path is frozen at this point and cannot be
             # further changed.
 

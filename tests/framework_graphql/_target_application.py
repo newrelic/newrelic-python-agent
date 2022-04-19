@@ -87,11 +87,15 @@ target_application = {
 
 if is_graphql_2:
     from _target_schema_promise import target_schema as target_schema_promise
-    from promise.schedulers.asyncio import AsyncioScheduler
     from promise.schedulers.immediate import ImmediateScheduler
 
+    if six.PY3:
+        from promise.schedulers.asyncio import AsyncioScheduler as AsyncScheduler
+    else:
+        from promise.schedulers.thread import ThreadScheduler as AsyncScheduler
+
     target_application["sync-promise"] = run_promise(target_schema_promise, ImmediateScheduler())
-    target_application["async-promise"] = run_promise(target_schema_promise, AsyncioScheduler())
+    target_application["async-promise"] = run_promise(target_schema_promise, AsyncScheduler())
 elif six.PY3:
     from _target_schema_async import target_schema as target_schema_async
     target_application["async-sync"] = run_async(target_schema_sync)

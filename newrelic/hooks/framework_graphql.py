@@ -115,7 +115,16 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
 
 
 def catch_promise_error(e):
-    notice_error(error=(e.__class__, e, e.__traceback__), ignore=ignore_graphql_duplicate_exception)
+    if hasattr(e, "__traceback__"):
+        notice_error(error=(e.__class__, e, e.__traceback__), ignore=ignore_graphql_duplicate_exception)
+    else:
+        # Python 2 does not retain a reference to the traceback and is irretrievable from a promise.
+        # As a workaround, raise the error and report it despite having an incorrect traceback.
+        try:
+            raise e
+        except Exception:
+            notice_error(ignore=ignore_graphql_duplicate_exception)
+
     return None
 
 

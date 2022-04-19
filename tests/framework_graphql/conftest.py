@@ -42,11 +42,17 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 apps = ["sync-sync", "async-sync", "async-async", "sync-promise", "async-promise"]
 
+
 @pytest.fixture(scope="session", params=apps)
 def target_application(request):
     from _target_application import target_application
 
-    return "GraphQL", None, target_application[request.param], True, request.param.split("-")[1]
+    app = target_application.get(request.param, None)
+    if app is None:
+        pytest.skip("Unsupported combination.")
+        return
+
+    return "GraphQL", None, app, True, request.param.split("-")[1]
 
 
 if six.PY2:

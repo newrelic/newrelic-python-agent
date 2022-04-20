@@ -305,10 +305,7 @@ def test_exception_in_resolver(target_application, field):
     framework, version, target_application, is_bg, schema_type = target_application
     query = "query MyQuery { %s }" % field
 
-    if framework == "Strawberry" and schema_type == "async":
-        txn_name = "strawberry.schema.schema_converter:GraphQLCoreConverter.from_resolver.<locals>._async_resolver"
-    else:
-        txn_name = "_target_schema_%s:resolve_error" % schema_type
+    txn_name = "_target_schema_%s:resolve_error" % schema_type
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -544,10 +541,7 @@ _test_queries = [
 def test_deepest_unique_path(target_application, query, expected_path):
     framework, version, target_application, is_bg, schema_type = target_application
     if expected_path == "/error":
-        if framework == "Strawberry" and schema_type == "async":
-            txn_name = "strawberry.schema.schema_converter:GraphQLCoreConverter.from_resolver.<locals>._async_resolver"
-        else:
-            txn_name = "_target_schema_%s:resolve_error" % schema_type
+        txn_name = "_target_schema_%s:resolve_error" % schema_type
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 

@@ -113,8 +113,9 @@ def wrap_from_resolver(wrapped, instance, args, kwargs):
     else:
         if hasattr(field, "base_resolver"):
             if hasattr(field.base_resolver, "wrapped_func"):
-                resolver_name = callable_name(field.base_resolver.wrapped_func)
-                result = TransactionNameWrapper(result, resolver_name, "GraphQL", priority=13)
+                # resolver_name = callable_name(field.base_resolver.wrapped_func)
+                # result = TransactionNameWrapper(result, resolver_name, "GraphQL", priority=13)
+                result._nr_base_resolver = field.base_resolver.wrapped_func
 
     return result
 

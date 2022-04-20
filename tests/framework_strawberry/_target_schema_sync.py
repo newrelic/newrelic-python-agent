@@ -131,8 +131,8 @@ def resolve_library(index: int):
 
 
 def resolve_storage_add(string: str):
-    storage.add(string)
-    return storage
+    storage.append(string)
+    return string
 
 
 def resolve_storage():
@@ -162,10 +162,7 @@ class Query:
 
 @strawberry.type
 class Mutation:
-    @strawberry.mutation
-    def storage_add(self, string: str) -> str:
-        storage.append(string)
-        return str(string)
+    storage_add: str = strawberry.mutation(resolver=resolve_storage_add)
 
 
 target_schema = Schema(query=Query, mutation=Mutation, config=StrawberryConfig(auto_camel_case=False))

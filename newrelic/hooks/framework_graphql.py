@@ -380,8 +380,13 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    name = callable_name(wrapped)
+    base_resolver = getattr(wrapped, "_nr_base_resolver", wrapped)
+
+    name = callable_name(base_resolver)
     transaction.set_transaction_name(name, "GraphQL", priority=13)
+    trace = FunctionTrace(name, source=base_resolver)
+
+    # breakpoint()
 
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
         sync_start_time = time.time()
@@ -390,7 +395,7 @@ def wrap_resolver(wrapped, instance, args, kwargs):
         if is_promise(result) and result.is_pending and graphql_version() < (3, 0):
             @functools.wraps(wrapped)
             def nr_promise_resolver_error_wrapper(v):
-                with FunctionTrace(name, source=wrapped):
+                with trace:
                     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
                         try:
                             return result.get()
@@ -401,10 +406,10 @@ def wrap_resolver(wrapped, instance, args, kwargs):
         elif isawaitable(result) and not is_promise(result):
             # Grab any async resolvers and wrap with traces
             return nr_coro_resolver_error_wrapper(
-                wrapped, name, ignore_graphql_duplicate_exception, result, transaction
+                wrapped, name, trace, ignore_graphql_duplicate_exception, result, transaction
             )
         else:
-            with FunctionTrace(name, source=wrapped) as trace:
+            with trace:
                 trace.start_time = sync_start_time
                 if is_promise(result) and result.is_rejected:
                     result.catch(catch_promise_error).get()

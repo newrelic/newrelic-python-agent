@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from framework_graphql._target_schema_sync import books, libraries, magazines
 from graphql import (
     GraphQLArgument,
     GraphQLField,
@@ -25,6 +24,11 @@ from graphql import (
     GraphQLUnionType,
 )
 from promise import Promise, promisify
+
+try:
+    from _target_schema_sync import books, libraries, magazines
+except ImportError:    
+    from framework_graphql._target_schema_sync import books, libraries, magazines
 
 storage = []
 

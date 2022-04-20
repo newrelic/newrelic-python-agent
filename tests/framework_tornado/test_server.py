@@ -21,12 +21,13 @@ from testing_support.fixtures import (validate_transaction_metrics,
         override_application_settings)
 from testing_support.validators.validate_transaction_count import (
         validate_transaction_count)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 
 @pytest.mark.parametrize('uri,name,metrics, method_metric', (
-    ('/native-simple', '_target_application:NativeSimpleHandler.get', None,
-            True),
-    ('/simple', '_target_application:SimpleHandler.get', None, True),
+    # ('/native-simple', '_target_application:NativeSimpleHandler.get', None,
+    #         True),
+    # ('/simple', '_target_application:SimpleHandler.get', None, True),
     ('/call-simple', '_target_application:CallSimpleHandler.get', None, True),
     ('/super-simple', '_target_application:SuperSimpleHandler.get', None,
             True),
@@ -47,6 +48,8 @@ def test_server(app, uri, name, metrics, method_metric):
     metrics.append((METHOD_METRIC, 1 if method_metric else None))
 
     host = '127.0.0.1:' + str(app.get_http_port())
+    namespace, func_name = name.split(".")
+    namespace = namespace.replace(":", ".")
 
     @validate_transaction_metrics(
         name,
@@ -69,6 +72,9 @@ def test_server(app, uri, name, metrics, method_metric):
     def _test():
         response = app.fetch(uri, headers=(('Content-Type', '1234'),))
         assert response.code == 200
+
+    if method_metric:
+        _test = validate_code_level_metrics(namespace, func_name)(_test)
 
     _test()
 
@@ -99,6 +105,9 @@ def test_concurrent_inbound_requests(app, uri, name, metrics, method_metric):
     metrics = metrics or []
     metrics.append((FRAMEWORK_METRIC, 1))
     metrics.append((METHOD_METRIC, 1 if method_metric else None))
+    
+    namespace, func_name = name.split(".")
+    namespace = namespace.replace(":", ".")
 
     @validate_transaction_count(2)
     @validate_transaction_metrics(
@@ -113,9 +122,12 @@ def test_concurrent_inbound_requests(app, uri, name, metrics, method_metric):
         for response in responses:
             assert response.code == 200
 
+    if method_metric:
+        _test = validate_code_level_metrics(namespace, func_name)(_test)
+
     _test()
 
-
+@validate_code_level_metrics("_target_application.CrashHandler", "get")
 @validate_transaction_metrics('_target_application:CrashHandler.get')
 @validate_transaction_errors(['builtins:ValueError'])
 def test_exceptions_are_recorded(app):
@@ -185,10 +197,13 @@ def test_web_socket(uri, name, app):
     import asyncio
     from tornado.websocket import websocket_connect
 
+    namespace, func_name = name.split(":")
+
     @validate_transaction_metrics(
         name,
         rollup_metrics=[('Function/%s' % name, None)],
     )
+    @validate_code_level_metrics(namespace, func_name)
     def _test():
         url = app.get_url(uri).replace('http', 'ws')
 

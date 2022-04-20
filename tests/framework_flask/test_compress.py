@@ -15,6 +15,7 @@
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings)
 
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 def target_application():
     # We need to delay Flask application creation because of ordering
@@ -39,6 +40,7 @@ _test_application_index_scoped_metrics = [
         ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
 
+@validate_code_level_metrics("_test_compress", "index_page")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_compress:index_page',
         scoped_metrics=_test_application_index_scoped_metrics)

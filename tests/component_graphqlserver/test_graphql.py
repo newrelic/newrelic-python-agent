@@ -68,6 +68,40 @@ def test_basic(target_application):
     from graphql import __version__ as graphql_version
     from graphql_server import __version__ as graphql_server_version
 
+    framework = request.param
+    version = importlib.import_module(framework.lower()).__version__
+
+    return framework, version, _test_graphql.target_application[framework]
+
+
+def example_middleware(next, root, info, **args):  # pylint: disable=W0622
+    return_value = next(root, info, **args)
+    return return_value
+
+
+def error_middleware(next, root, info, **args):  # pylint: disable=W0622
+    raise RuntimeError("Runtime Error!")
+
+
+_runtime_error_name = callable_name(RuntimeError)
+_test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
+_graphql_base_rollup_metrics = [
+    ("GraphQL/all", 1),
+    ("GraphQL/allWeb", 1),
+    ("GraphQL/GraphQLServer/all", 1),
+    ("GraphQL/GraphQLServer/allWeb", 1),
+]
+_view_metrics = {
+    "Sanic": "Function/graphql_server.sanic.graphqlview:GraphQLView.post",
+    "Flask": "Function/graphql_server.flask.graphqlview:graphql",
+}
+
+
+def test_basic(target_application):
+    framework, version, target_application = target_application
+    from graphql import __version__ as graphql_version
+    from graphql_server import __version__ as graphql_server_version
+
     FRAMEWORK_METRICS = [
         ("Python/Framework/GraphQL/%s" % graphql_version, 1),
         ("Python/Framework/GraphQLServer/%s" % graphql_server_version, 1),
@@ -123,7 +157,7 @@ def test_query_and_mutation(target_application):
     _expected_mutation_operation_attributes = {
         "graphql.operation.type": "mutation",
         "graphql.operation.name": "<anonymous>",
-        "graphql.operation.query": 'mutation { storage_add(string: ?) }',
+        "graphql.operation.query": "mutation { storage_add(string: ?) }",
     }
     _expected_mutation_resolver_attributes = {
         "graphql.field.name": "storage_add",
@@ -172,6 +206,77 @@ def test_query_and_mutation(target_application):
         # These are separate assertions because pypy stores 'abc' as a unicode string while other Python versions do not
         assert "storage" in str(response.body.decode("utf-8"))
         assert "abc" in str(response.body.decode("utf-8"))
+
+    _test()
+
+
+@dt_enabled
+def test_middleware(target_application):
+    framework, version, target_application = target_application
+    _test_middleware_metrics = [
+        ("GraphQL/operation/GraphQLServer/query/<anonymous>/hello", 1),
+        ("GraphQL/resolve/GraphQLServer/hello", 1),
+        ("Function/test_graphql:example_middleware", 1),
+    ]
+
+    # Base span count 6: Transaction, View, Operation, Middleware, and 1 Resolver and Resolver function
+    # For Flask, add 9 more for WSGI and framework related spans
+    span_count = {"Flask": 15, "Sanic": 6}
+
+    @validate_transaction_metrics(
+        "query/<anonymous>/hello",
+        "GraphQL",
+        scoped_metrics=_test_middleware_metrics,
+        rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
+    )
+    @validate_span_events(count=span_count[framework])
+    def _test():
+        response = target_application("{ hello }", middleware=[example_middleware])
+
+    _test()
+
+
+@dt_enabled
+def test_exception_in_middleware(target_application):
+    framework, version, target_application = target_application
+    query = "query MyQuery { error_middleware }"
+    field = "error_middleware"
+
+    # Metrics
+    _test_exception_scoped_metrics = [
+        ("GraphQL/operation/GraphQLServer/query/MyQuery/%s" % field, 1),
+        ("GraphQL/resolve/GraphQLServer/%s" % field, 1),
+    ]
+    _test_exception_rollup_metrics = [
+        ("Errors/all", 1),
+        ("Errors/allWeb", 1),
+        ("Errors/WebTransaction/GraphQL/test_graphql:error_middleware", 1),
+    ] + _test_exception_scoped_metrics
+
+    # Attributes
+    _expected_exception_resolver_attributes = {
+        "graphql.field.name": field,
+        "graphql.field.parentType": "Query",
+        "graphql.field.path": field,
+        "graphql.field.returnType": "String",
+    }
+    _expected_exception_operation_attributes = {
+        "graphql.operation.type": "query",
+        "graphql.operation.name": "MyQuery",
+        "graphql.operation.query": query,
+    }
+
+    @validate_transaction_metrics(
+        "test_graphql:error_middleware",
+        "GraphQL",
+        scoped_metrics=_test_exception_scoped_metrics,
+        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
+    )
+    @validate_span_events(exact_agents=_expected_exception_operation_attributes)
+    @validate_span_events(exact_agents=_expected_exception_resolver_attributes)
+    @validate_transaction_errors(errors=_test_runtime_error)
+    def _test():
+        response = target_application(query, middleware=[error_middleware])
 
     _test()
 
@@ -248,7 +353,7 @@ def test_exception_in_validation(target_application, is_graphql_2, query, exc_cl
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-            ('GraphQL/operation/GraphQLServer/<unknown>/<anonymous>/<unknown>', 1),
+        ("GraphQL/operation/GraphQLServer/<unknown>/<anonymous>/<unknown>", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -286,11 +391,11 @@ def test_operation_metrics_and_attrs(target_application):
         "graphql.operation.name": "MyQuery",
     }
 
-    # Base span count 10: Transaction, View, Operation, and 7 Resolvers
+    # Base span count 17: Transaction, View, Operation, and 7 Resolvers and Resolver functions
     # library, library.name, library.book
     # library.book.name and library.book.id for each book resolved (in this case 2)
     # For Flask, add 9 more for WSGI and framework related spans
-    span_count = {"Flask": 19, "Sanic": 10}
+    span_count = {"Flask": 26, "Sanic": 17}
 
     @validate_transaction_metrics(
         "query/MyQuery/library",
@@ -317,9 +422,9 @@ def test_field_resolver_metrics_and_attrs(target_application):
         "graphql.field.returnType": "String",
     }
 
-    # Base span count 4: Transaction, View, Operation, and 1 Resolver
+    # Base span count 5: Transaction, View, Operation, and 1 Resolver and Resolver function
     # For Flask, add 9 more for WSGI and framework related spans
-    span_count = {"Flask": 13, "Sanic": 4}
+    span_count = {"Flask": 14, "Sanic": 5}
 
     @validate_transaction_metrics(
         "query/<anonymous>/hello",

@@ -18,7 +18,7 @@ import types
 
 from newrelic.api.application import application_instance
 from newrelic.api.message_transaction import MessageTransaction
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTraceWrapper
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
@@ -124,7 +124,8 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
             operation='Produce',
             destination_type='Exchange',
             destination_name=exchange or 'Default',
-            params=params):
+            params=params,
+            source=wrapped):
         cat_headers = MessageTrace.generate_request_headers(transaction)
         properties.headers.update(cat_headers)
         return wrapped(*args, **kwargs)
@@ -154,8 +155,7 @@ def _wrap_Channel_get_callback(module, obj, wrap_get):
                 transaction._transaction_metrics[KWARGS_ERROR] = m + 1
 
             name = callable_name(callback)
-            with FunctionTrace(name=name):
-                return callback(*_args, **_kwargs)
+            return FunctionTraceWrapper(callback, name=name)(*_args, **_kwargs)
 
         callback_wrapper._nr_start_time = time.time()
         queue, args, kwargs = wrap_get(callback_wrapper, *args, **kwargs)
@@ -269,7 +269,8 @@ def _ConsumeGeneratorWrapper(wrapped):
                         routing_key=routing_key,
                         headers=headers,
                         reply_to=reply_to,
-                        correlation_id=correlation_id)
+                        correlation_id=correlation_id,
+                        source=wrapped)
                 bt.__enter__()
 
                 return bt
@@ -340,8 +341,7 @@ def _wrap_Channel_consume_callback(module, obj, wrap_consume):
                     transaction.stopped):
                 return wrapped(*args, **kwargs)
             elif transaction:
-                with FunctionTrace(name=name):
-                    return wrapped(*args, **kwargs)
+                return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
             else:
                 if hasattr(channel, '_nr_disable_txn_tracing'):
                     return wrapped(*args, **kwargs)
@@ -375,7 +375,8 @@ def _wrap_Channel_consume_callback(module, obj, wrap_consume):
                         headers=headers,
                         queue_name=queue,
                         reply_to=reply_to,
-                        correlation_id=correlation_id) as mt:
+                        correlation_id=correlation_id,
+                        source=wrapped) as mt:
 
                     # Improve transaction naming
                     _new_txn_name = 'RabbitMQ/Exchange/%s/%s' % (exchange,

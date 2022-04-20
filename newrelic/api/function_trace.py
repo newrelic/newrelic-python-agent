@@ -23,12 +23,12 @@ from newrelic.core.function_node import FunctionNode
 
 class FunctionTrace(TimeTrace):
     def __init__(self, name, group=None, label=None, params=None, terminal=False, rollup=None, **kwargs):
-        parent = None
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs["parent"]
-        super(FunctionTrace, self).__init__(parent)
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(FunctionTrace, self).__init__(parent=parent, source=source)
 
         # Handle incorrect groupings and leading slashes. This will
         # cause an empty segment which we want to avoid. In that case
@@ -138,7 +138,7 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None, params=None
         else:
             _params = params
 
-        trace = FunctionTrace(_name, _group, _label, _params, terminal, rollup, parent=parent)
+        trace = FunctionTrace(_name, _group, _label, _params, terminal, rollup, parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -157,7 +157,7 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None, params=None
 
         _name = name or callable_name(wrapped)
 
-        trace = FunctionTrace(_name, group, label, params, terminal, rollup, parent=parent)
+        trace = FunctionTrace(_name, group, label, params, terminal, rollup, parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)

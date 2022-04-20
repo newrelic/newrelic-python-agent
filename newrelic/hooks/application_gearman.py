@@ -152,7 +152,7 @@ def wrapper_callback_function(wrapped, instance, args, kwargs):
     # dispatch code and do not actually propagate up to the level of the
     # background task wrapper.
 
-    with FunctionTrace(callable_name(wrapped)) as trace:
+    with FunctionTrace(callable_name(wrapped), source=wrapped) as trace:
         try:
             return wrapped(*args, **kwargs)
         except:  # Catch all

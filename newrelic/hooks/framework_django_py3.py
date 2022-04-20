@@ -15,7 +15,7 @@
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTraceWrapper
 
 
 def _bind_get_response(request, *args, **kwargs):
@@ -49,7 +49,6 @@ def _nr_wrap_converted_middleware_async_(middleware, name):
 
         transaction.set_transaction_name(name, priority=2)
 
-        with FunctionTrace(name=name):
-            return await wrapped(*args, **kwargs)
+        return await FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
     return _wrapper(middleware)

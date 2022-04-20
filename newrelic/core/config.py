@@ -119,6 +119,10 @@ class GCRuntimeMetricsSettings(Settings):
     enabled = False
 
 
+class CodeLevelMetricsSettings(Settings):
+    pass
+
+
 class ThreadProfilerSettings(Settings):
     pass
 
@@ -335,6 +339,7 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 _settings = TopLevelSettings()
 _settings.attributes = AttributesSettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
+_settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
 _settings.transaction_tracer = TransactionTracerSettings()
 _settings.transaction_tracer.attributes = TransactionTracerAttributesSettings()
@@ -763,7 +768,7 @@ _settings.utilization.total_ram_mib = _environ_as_int("NEW_RELIC_UTILIZATION_TOT
 _settings.utilization.billing_hostname = os.environ.get("NEW_RELIC_UTILIZATION_BILLING_HOSTNAME")
 
 _settings.strip_exception_messages.enabled = False
-_settings.strip_exception_messages.whitelist = []
+_settings.strip_exception_messages.allowlist = []
 
 _settings.datastore_tracer.instance_reporting.enabled = True
 _settings.datastore_tracer.database_name_reporting.enabled = True
@@ -778,6 +783,7 @@ _settings.aws_lambda_metadata = {}
 
 _settings.event_loop_visibility.enabled = True
 _settings.event_loop_visibility.blocking_threshold = 0.1
+_settings.code_level_metrics.enabled = True
 
 
 def global_settings():
@@ -1031,7 +1037,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
 
     event_harvest_config = server_side_config.get("event_harvest_config", {})
     harvest_limits = event_harvest_config.get("harvest_limits", ())
-    apply_config_setting(settings_snapshot, "event_harvest_config.whitelist", frozenset(harvest_limits))
+    apply_config_setting(settings_snapshot, "event_harvest_config.allowlist", frozenset(harvest_limits))
 
     # Override span event harvest config
     span_event_harvest_config = server_side_config.get("span_event_harvest_config", {})
@@ -1157,7 +1163,7 @@ def error_matches_rules(
 
             if not settings:
                 # Unable to find rules to match with
-                _logger.error(
+                _logger.debug(
                     "Failed to retrieve exception rules: No settings supplied, or found on transaction or trace."
                 )
                 return None

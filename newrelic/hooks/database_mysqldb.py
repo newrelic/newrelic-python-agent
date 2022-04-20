@@ -29,8 +29,8 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
     def __enter__(self):
         transaction = current_transaction()
         name = callable_name(self.__wrapped__.__enter__)
-        with FunctionTrace(name):
-            cursor = self.__wrapped__.__enter__()
+        with FunctionTrace(name, source=self.__wrapped__.__enter__):
+           cursor = self.__wrapped__.__enter__()
 
         # The __enter__() method of original connection object returns
         # a new cursor instance for use with 'as' assignment. We need
@@ -38,19 +38,17 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         # any queries done via it.
 
         return self.__cursor_wrapper__(cursor, self._nr_dbapi2_module,
-                self._nr_connect_params, None)
+               self._nr_connect_params, None)
 
     def __exit__(self, exc, value, tb):
         transaction = current_transaction()
         name = callable_name(self.__wrapped__.__exit__)
-        with FunctionTrace(name):
+        with FunctionTrace(name, source=self.__wrapped__.__exit__):
             if exc is None:
-                with DatabaseTrace('COMMIT',
-                        self._nr_dbapi2_module, self._nr_connect_params):
+                with DatabaseTrace('COMMIT', self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.__exit__):
                     return self.__wrapped__.__exit__(exc, value, tb)
             else:
-                with DatabaseTrace('ROLLBACK',
-                        self._nr_dbapi2_module, self._nr_connect_params):
+                with DatabaseTrace('ROLLBACK', self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.__exit__):
                     return self.__wrapped__.__exit__(exc, value, tb)
 
 class ConnectionFactory(DBAPI2ConnectionFactory):

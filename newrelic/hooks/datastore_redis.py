@@ -211,7 +211,7 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        dt = DatastoreTrace(product="Redis", target=None, operation=operation)
+        dt = DatastoreTrace(product="Redis", target=None, operation=operation, source=wrapped)
 
         transaction._nr_datastore_instance_info = (None, None, None)
 
@@ -288,9 +288,7 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
 
     operation = _redis_operation_re.sub("_", operation)
 
-    with DatastoreTrace(
-        product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db
-    ):
+    with DatastoreTrace(product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db, source=wrapped):
         return wrapped(*args, **kwargs)
 
 

@@ -192,8 +192,8 @@ def test_middleware(app, graphql_run, is_graphql_2):
         rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
-    # Span count 4: Transaction, Operation, Middleware, and 1 Resolver
-    @validate_span_events(count=4)
+    # Span count 5: Transaction, Operation, Middleware, and 1 Resolver and 1 Resolver Function
+    @validate_span_events(count=5)
     @background_task()
     def _test():
         response = graphql_run(app, "{ hello }", middleware=[example_middleware])
@@ -373,10 +373,10 @@ def test_operation_metrics_and_attrs(app, graphql_run):
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
-    # Span count 7: Transaction, Operation, and 7 Resolvers
+    # Span count 16: Transaction, Operation, and 7 Resolvers and Resolver functions
     # library, library.name, library.book
     # library.book.name and library.book.id for each book resolved (in this case 2)
-    @validate_span_events(count=9)
+    @validate_span_events(count=16)
     @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
@@ -403,8 +403,8 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
         rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
-    # Span count 3: Transaction, Operation, and 1 Resolver
-    @validate_span_events(count=3)
+    # Span count 4: Transaction, Operation, and 1 Resolver and Resolver function
+    @validate_span_events(count=4)
     @validate_span_events(exact_agents=graphql_attrs)
     @background_task()
     def _test():

@@ -287,7 +287,7 @@ def test_exception_in_resolver(target_application, field):
     framework, version, target_application = target_application
     query = "query MyQuery { %s }" % field
 
-    txn_name = "framework_graphql._target_application:resolve_error"
+    txn_name = "framework_graphql._target_schema_sync:resolve_error"
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -518,7 +518,7 @@ _test_queries = [
 def test_deepest_unique_path(target_application, query, expected_path):
     framework, version, target_application = target_application
     if expected_path == "/error":
-        txn_name = "framework_graphql._target_application:resolve_error"
+        txn_name = "framework_graphql._target_schema_sync:resolve_error"
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 

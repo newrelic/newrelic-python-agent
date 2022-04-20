@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import pytest
-import six
 from testing_support.fixtures import (
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
+
+from newrelic.packages import six
 
 _coverage_source = [
     "newrelic.hooks.framework_graphql",
@@ -39,12 +40,19 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
 )
 
+apps = ["sync-sync", "async-sync", "async-async", "sync-promise", "async-promise"]
 
-@pytest.fixture(scope="session")
-def app():
-    from _target_application import _target_application
 
-    return _target_application
+@pytest.fixture(scope="session", params=apps)
+def target_application(request):
+    from _target_application import target_application
+
+    app = target_application.get(request.param, None)
+    if app is None:
+        pytest.skip("Unsupported combination.")
+        return
+
+    return "GraphQL", None, app, True, request.param.split("-")[1]
 
 
 if six.PY2:

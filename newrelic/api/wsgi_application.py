@@ -526,9 +526,14 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
             framework = framework()
             _framework[0] = framework
 
+        if framework is not None and not isinstance(framework, tuple):
+            framework = (framework, None)
+            _framework[0] = framework
+
         return framework
 
     def _nr_wsgi_application_wrapper_(wrapped, instance, args, kwargs):
+        # Check to see if any transaction is present, even an inactive
         # one which has been marked to be ignored or which has been
         # stopped already.
 

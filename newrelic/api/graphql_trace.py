@@ -134,7 +134,7 @@ def wrap_graphql_operation_trace(module, object_path):
 
 
 class GraphQLResolverTrace(TimeTrace):
-    def __init__(self, field_name=None, **kwargs):
+    def __init__(self, field_name=None, field_parent_type=None, field_return_type=None, field_path=None, **kwargs):
         parent = kwargs.pop("parent", None)
         source = kwargs.pop("source", None)
         if kwargs:

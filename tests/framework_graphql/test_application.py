@@ -18,14 +18,26 @@ from testing_support.fixtures import (
     validate_transaction_errors,
     validate_transaction_metrics,
 )
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
+from newrelic.packages import six
+
+
+def conditional_decorator(decorator, condition):
+    def _conditional_decorator(func):
+        if not condition:
+            return func
+        return decorator(func)
+
+    return _conditional_decorator
 
 
 @pytest.fixture(scope="session")
@@ -34,16 +46,6 @@ def is_graphql_2():
 
     major_version = int(version.split(".")[0])
     return major_version == 2
-
-
-@pytest.fixture(scope="session")
-def graphql_run():
-    try:
-        from graphql import graphql_sync as graphql
-    except ImportError:
-        from graphql import graphql
-
-    return graphql
 
 
 def to_graphql_source(query):
@@ -75,58 +77,78 @@ def error_middleware(next, root, info, **args):
     raise RuntimeError("Runtime Error!")
 
 
+example_middleware = [example_middleware]
+error_middleware = [error_middleware]
+
+if six.PY3:
+    from test_application_async import error_middleware_async, example_middleware_async
+
+    example_middleware.append(example_middleware_async)
+    error_middleware.append(error_middleware_async)
+
+
 _runtime_error_name = callable_name(RuntimeError)
 _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
-_graphql_base_rollup_metrics = [
-    ("OtherTransaction/all", 1),
-    ("GraphQL/all", 1),
-    ("GraphQL/allOther", 1),
-    ("GraphQL/GraphQL/all", 1),
-    ("GraphQL/GraphQL/allOther", 1),
-]
 
 
-def test_basic(app, graphql_run):
-    from graphql import __version__ as version
+def _graphql_base_rollup_metrics(framework, version, background_task=True):
+    from graphql import __version__ as graphql_version
 
-    FRAMEWORK_METRICS = [
-        ("Python/Framework/GraphQL/%s" % version, 1),
+    metrics = [
+        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
+        ("GraphQL/all", 1),
+        ("GraphQL/%s/all" % framework, 1),
     ]
+    if background_task:
+        metrics.extend(
+            [
+                ("GraphQL/allOther", 1),
+                ("GraphQL/%s/allOther" % framework, 1),
+            ]
+        )
+    else:
+        metrics.extend(
+            [
+                ("GraphQL/allWeb", 1),
+                ("GraphQL/%s/allWeb" % framework, 1),
+            ]
+        )
+
+    if framework != "GraphQL":
+        metrics.append(("Python/Framework/%s/%s" % (framework, version), 1))
+
+    return metrics
+
+
+def test_basic(target_application):
+    framework, version, target_application, is_bg, schema_type = target_application
 
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
         "GraphQL",
-        rollup_metrics=_graphql_base_rollup_metrics + FRAMEWORK_METRICS,
-        background_task=True,
+        rollup_metrics=_graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
     )
-    @background_task()
+    @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = graphql_run(app, '{ hello }')
-        assert not response.errors
-    
+        response = target_application("{ hello }")
+        assert response["hello"] == "Hello!"
+
     _test()
 
 
 @dt_enabled
-def test_query_and_mutation(app, graphql_run, is_graphql_2):
-    from graphql import __version__ as version
+def test_query_and_mutation(target_application, is_graphql_2):
+    framework, version, target_application, is_bg, schema_type = target_application
 
-    FRAMEWORK_METRICS = [
-        ("Python/Framework/GraphQL/%s" % version, 1),
-    ]
     _test_mutation_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage", 1),
-        ("GraphQL/resolve/GraphQL/storage_add", 1),
-        ("GraphQL/operation/GraphQL/query/<anonymous>/storage", 1),
-        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add", 1),
+        ("GraphQL/resolve/%s/storage_add" % framework, 1),
+        ("GraphQL/operation/%s/mutation/<anonymous>/storage_add" % framework, 1),
     ]
-    _test_mutation_unscoped_metrics = [
-        ("OtherTransaction/all", 1),
-        ("GraphQL/all", 2),
-        ("GraphQL/GraphQL/all", 2),
-        ("GraphQL/allOther", 2),
-        ("GraphQL/GraphQL/allOther", 2),
-    ] + _test_mutation_scoped_metrics
+    _test_query_scoped_metrics = [
+        ("GraphQL/resolve/%s/storage" % framework, 1),
+        ("GraphQL/operation/%s/query/<anonymous>/storage" % framework, 1),
+    ]
 
     _expected_mutation_operation_attributes = {
         "graphql.operation.type": "mutation",
@@ -136,7 +158,7 @@ def test_query_and_mutation(app, graphql_run, is_graphql_2):
         "graphql.field.name": "storage_add",
         "graphql.field.parentType": "Mutation",
         "graphql.field.path": "storage_add",
-        "graphql.field.returnType": "[String]" if is_graphql_2 else "String",
+        "graphql.field.returnType": "String",
     }
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
@@ -149,75 +171,97 @@ def test_query_and_mutation(app, graphql_run, is_graphql_2):
         "graphql.field.returnType": "[String]",
     }
 
-    @validate_code_level_metrics("_target_application", "resolve_storage")
-    @validate_code_level_metrics("_target_application", "resolve_storage_add")
+    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_storage_add")
     @validate_transaction_metrics(
-        "query/<anonymous>/storage",
+        "mutation/<anonymous>/storage_add",
         "GraphQL",
         scoped_metrics=_test_mutation_scoped_metrics,
-        rollup_metrics=_test_mutation_unscoped_metrics + FRAMEWORK_METRICS,
-        background_task=True,
+        rollup_metrics=_test_mutation_scoped_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
     )
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
+    @conditional_decorator(background_task(), is_bg)
+    def _mutation():
+        response = target_application('mutation { storage_add(string: "abc") }')
+        assert response["storage_add"] == "abc"
+
+    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_storage")
+    @validate_transaction_metrics(
+        "query/<anonymous>/storage",
+        "GraphQL",
+        scoped_metrics=_test_query_scoped_metrics,
+        rollup_metrics=_test_query_scoped_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
+    )
     @validate_span_events(exact_agents=_expected_query_operation_attributes)
     @validate_span_events(exact_agents=_expected_query_resolver_attributes)
-    @background_task()
-    def _test():
-        response = graphql_run(app, 'mutation { storage_add(string: "abc") }')
-        assert not response.errors
-        response = graphql_run(app, "query { storage }")
-        assert not response.errors
+    @conditional_decorator(background_task(), is_bg)
+    def _query():
+        response = target_application("query { storage }")
+        assert response["storage"] == ["abc"]
 
-        # These are separate assertions because pypy stores 'abc' as a unicode string while other Python versions do not
-        assert "storage" in str(response.data)
-        assert "abc" in str(response.data)
-
-    _test()
+    _mutation()
+    _query()
 
 
+@pytest.mark.parametrize("middleware", example_middleware)
 @dt_enabled
-def test_middleware(app, graphql_run, is_graphql_2):
+def test_middleware(target_application, middleware):
+    framework, version, target_application, is_bg, schema_type = target_application
+
+    name = "%s:%s" % (middleware.__module__, middleware.__name__)
+    if "async" in name:
+        if schema_type != "async":
+            pytest.skip("Async middleware not supported in sync applications.")
+
     _test_middleware_metrics = [
         ("GraphQL/operation/GraphQL/query/<anonymous>/hello", 1),
         ("GraphQL/resolve/GraphQL/hello", 1),
-        ("Function/test_application:example_middleware", 1),
+        ("Function/%s" % name, 1),
     ]
 
-    @validate_code_level_metrics("test_application", "example_middleware")
-    @validate_code_level_metrics("_target_application", "resolve_hello")
+    @validate_code_level_metrics(*name.split(":"))
+    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_hello")
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
         "GraphQL",
         scoped_metrics=_test_middleware_metrics,
-        rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
-        background_task=True,
+        rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
     )
     # Span count 5: Transaction, Operation, Middleware, and 1 Resolver and Resolver Function
     @validate_span_events(count=5)
-    @background_task()
+    @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = graphql_run(app, "{ hello }", middleware=[example_middleware])
-        assert not response.errors
-        assert "Hello!" in str(response.data)
+        response = target_application("{ hello }", middleware=[middleware])
+        assert response["hello"] == "Hello!"
 
     _test()
 
 
+@pytest.mark.parametrize("middleware", error_middleware)
 @dt_enabled
-def test_exception_in_middleware(app, graphql_run):
-    query = "query MyQuery { hello }"
-    field = "hello"
+def test_exception_in_middleware(target_application, middleware):
+    framework, version, target_application, is_bg, schema_type = target_application
+    query = "query MyQuery { error_middleware }"
+    field = "error_middleware"
+
+    name = "%s:%s" % (middleware.__module__, middleware.__name__)
+    if "async" in name:
+        if schema_type != "async":
+            pytest.skip("Async middleware not supported in sync applications.")
 
     # Metrics
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/GraphQL/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/GraphQL/%s" % field, 1),
+        ("GraphQL/operation/%s/query/MyQuery/%s" % (framework, field), 1),
+        ("GraphQL/resolve/%s/%s" % (framework, field), 1),
+        ("Function/%s" % name, 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
-        ("Errors/allOther", 1),
-        ("Errors/OtherTransaction/GraphQL/test_application:error_middleware", 1),
+        ("Errors/all%s" % ("Other" if is_bg else "Web"), 1),
+        ("Errors/%sTransaction/GraphQL/%s" % ("Other" if is_bg else "Web", name), 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -234,39 +278,39 @@ def test_exception_in_middleware(app, graphql_run):
     }
 
     @validate_transaction_metrics(
-        "test_application:error_middleware",
+        name,
         "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
-        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
-        background_task=True,
+        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
     )
     @validate_span_events(exact_agents=_expected_exception_operation_attributes)
     @validate_span_events(exact_agents=_expected_exception_resolver_attributes)
     @validate_transaction_errors(errors=_test_runtime_error)
-    @background_task()
+    @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = graphql_run(app, query, middleware=[error_middleware])
-        assert response.errors
+        response = target_application(query, middleware=[middleware])
 
     _test()
 
 
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 @dt_enabled
-def test_exception_in_resolver(app, graphql_run, field):
+def test_exception_in_resolver(target_application, field):
+    framework, version, target_application, is_bg, schema_type = target_application
     query = "query MyQuery { %s }" % field
 
-    txn_name = "_target_application:resolve_error"
+    txn_name = "_target_schema_%s:resolve_error" % schema_type
 
     # Metrics
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/GraphQL/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/GraphQL/%s" % field, 1),
+        ("GraphQL/operation/%s/query/MyQuery/%s" % (framework, field), 1),
+        ("GraphQL/resolve/%s/%s" % (framework, field), 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
-        ("Errors/allOther", 1),
-        ("Errors/OtherTransaction/GraphQL/%s" % txn_name, 1),
+        ("Errors/all%s" % ("Other" if is_bg else "Web"), 1),
+        ("Errors/%sTransaction/GraphQL/%s" % ("Other" if is_bg else "Web", txn_name), 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -286,16 +330,15 @@ def test_exception_in_resolver(app, graphql_run, field):
         txn_name,
         "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
-        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
-        background_task=True,
+        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
     )
     @validate_span_events(exact_agents=_expected_exception_operation_attributes)
     @validate_span_events(exact_agents=_expected_exception_resolver_attributes)
     @validate_transaction_errors(errors=_test_runtime_error)
-    @background_task()
+    @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = graphql_run(app, query)
-        assert response.errors
+        response = target_application(query)
 
     _test()
 
@@ -304,11 +347,12 @@ def test_exception_in_resolver(app, graphql_run, field):
 @pytest.mark.parametrize(
     "query,exc_class",
     [
-        ("query MyQuery { missing_field }", "GraphQLError"),
+        ("query MyQuery { error_missing_field }", "GraphQLError"),
         ("{ syntax_error ", "graphql.error.syntax_error:GraphQLSyntaxError"),
     ],
 )
-def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_class):
+def test_exception_in_validation(target_application, is_graphql_2, query, exc_class):
+    framework, version, target_application, is_bg, schema_type = target_application
     if "syntax" in query:
         txn_name = "graphql.language.parser:parse"
     else:
@@ -324,12 +368,12 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-        #    ('GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>', 1),
+        ("GraphQL/operation/%s/<unknown>/<anonymous>/<unknown>" % framework, 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
-        ("Errors/allOther", 1),
-        ("Errors/OtherTransaction/GraphQL/%s" % txn_name, 1),
+        ("Errors/all%s" % ("Other" if is_bg else "Web"), 1),
+        ("Errors/%sTransaction/GraphQL/%s" % ("Other" if is_bg else "Web", txn_name), 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -343,22 +387,22 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
         txn_name,
         "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
-        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
-        background_task=True,
+        rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
     )
     @validate_span_events(exact_agents=_expected_exception_operation_attributes)
     @validate_transaction_errors(errors=[exc_class])
-    @background_task()
+    @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = graphql_run(app, query)
-        assert response.errors
+        response = target_application(query)
 
     _test()
 
 
 @dt_enabled
-def test_operation_metrics_and_attrs(app, graphql_run):
-    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library", 1)]
+def test_operation_metrics_and_attrs(target_application):
+    framework, version, target_application, is_bg, schema_type = target_application
+    operation_metrics = [("GraphQL/operation/%s/query/MyQuery/library" % framework, 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
@@ -368,27 +412,26 @@ def test_operation_metrics_and_attrs(app, graphql_run):
         "query/MyQuery/library",
         "GraphQL",
         scoped_metrics=operation_metrics,
-        rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
-        background_task=True,
+        rollup_metrics=operation_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
     )
     # Span count 16: Transaction, Operation, and 7 Resolvers and Resolver functions
     # library, library.name, library.book
     # library.book.name and library.book.id for each book resolved (in this case 2)
     @validate_span_events(count=16)
     @validate_span_events(exact_agents=operation_attrs)
-    @background_task()
+    @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = graphql_run(
-            app, "query MyQuery { library(index: 0) { branch, book { id, name } } }"
-        )
-        assert not response.errors
+        response = target_application("query MyQuery { library(index: 0) { branch, book { id, name } } }")
 
     _test()
 
 
 @dt_enabled
-def test_field_resolver_metrics_and_attrs(app, graphql_run):
-    field_resolver_metrics = [("GraphQL/resolve/GraphQL/hello", 1)]
+def test_field_resolver_metrics_and_attrs(target_application):
+    framework, version, target_application, is_bg, schema_type = target_application
+    field_resolver_metrics = [("GraphQL/resolve/%s/hello" % framework, 1)]
+
     graphql_attrs = {
         "graphql.field.name": "hello",
         "graphql.field.parentType": "Query",
@@ -400,17 +443,16 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
         "query/<anonymous>/hello",
         "GraphQL",
         scoped_metrics=field_resolver_metrics,
-        rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics,
-        background_task=True,
+        rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
     )
     # Span count 4: Transaction, Operation, and 1 Resolver and Resolver function
     @validate_span_events(count=4)
     @validate_span_events(exact_agents=graphql_attrs)
-    @background_task()
+    @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = graphql_run(app, "{ hello }")
-        assert not response.errors
-        assert "Hello!" in str(response.data)
+        response = target_application("{ hello }")
+        assert response["hello"] == "Hello!"
 
     _test()
 
@@ -433,18 +475,19 @@ _test_queries = [
 
 @dt_enabled
 @pytest.mark.parametrize("query,obfuscated", _test_queries)
-def test_query_obfuscation(app, graphql_run, query, obfuscated):
+def test_query_obfuscation(target_application, query, obfuscated):
+    framework, version, target_application, is_bg, schema_type = target_application
     graphql_attrs = {"graphql.operation.query": obfuscated}
 
     if callable(query):
+        if framework != "GraphQL":
+            pytest.skip("Source query objects not tested outside of graphql-core")
         query = query()
 
     @validate_span_events(exact_agents=graphql_attrs)
-    @background_task()
+    @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = graphql_run(app, query)
-        if not isinstance(query, str) or "error" not in query:
-            assert not response.errors
+        response = target_application(query)
 
     _test()
 
@@ -489,28 +532,31 @@ _test_queries = [
 
 @dt_enabled
 @pytest.mark.parametrize("query,expected_path", _test_queries)
-def test_deepest_unique_path(app, graphql_run, query, expected_path):
+def test_deepest_unique_path(target_application, query, expected_path):
+    framework, version, target_application, is_bg, schema_type = target_application
     if expected_path == "/error":
-        txn_name = "_target_application:resolve_error"
+        txn_name = "_target_schema_%s:resolve_error" % schema_type
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 
     @validate_transaction_metrics(
         txn_name,
         "GraphQL",
-        background_task=True,
+        background_task=is_bg,
     )
-    @background_task()
+    @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = graphql_run(app, query)
-        if "error" not in query:
-            assert not response.errors
+        response = target_application(query)
 
     _test()
 
 
-@validate_transaction_count(0)
-@background_task()
-def test_ignored_introspection_transactions(app, graphql_run):
-    response = graphql_run(app, "{ __schema { types { name } } }")
-    assert not response.errors
+def test_ignored_introspection_transactions(target_application):
+    framework, version, target_application, is_bg, schema_type = target_application
+
+    @validate_transaction_count(0)
+    @background_task()
+    def _test():
+        response = target_application("{ __schema { types { name } } }")
+
+    _test()

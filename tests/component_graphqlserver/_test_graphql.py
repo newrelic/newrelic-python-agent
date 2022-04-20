@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
-import webtest
 from flask import Flask
-from framework_graphql._target_application import _target_application as schema
-from graphql_server.flask import GraphQLView as FlaskView
-from graphql_server.sanic import GraphQLView as SanicView
 from sanic import Sanic
+import json
+import webtest
+
 from testing_support.asgi_testing import AsgiTest
-from framework_graphql._target_application import _target_application as schema
+from framework_graphql._target_schema_sync import target_schema as schema
 from graphql_server.flask import GraphQLView as FlaskView
 from graphql_server.sanic import GraphQLView as SanicView
 

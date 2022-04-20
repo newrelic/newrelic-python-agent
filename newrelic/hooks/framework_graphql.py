@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
-from inspect import isawaitable
+import functools
 import logging
+import sys
+import time
 from collections import deque
 
 from newrelic.api.error_trace import ErrorTrace
@@ -25,6 +26,40 @@ from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.graphql_utils import graphql_statement
+from newrelic.packages import six
+
+try:
+    from inspect import isawaitable
+except ImportError:
+
+    def isawaitable(f):
+        return False
+
+
+try:
+    # from promise import is_thenable as is_promise
+    from promise import Promise
+
+    def is_promise(obj):
+        return isinstance(obj, Promise)
+
+    def as_promise(f):
+        return Promise.resolve(None).then(f)
+
+except ImportError:
+    # If promises is not installed, prevent crashes by bypassing logic
+    def is_promise(obj):
+        return False
+
+    def as_promise(f):
+        return f
+
+if six.PY3:
+    from newrelic.hooks.framework_graphql_py3 import (
+        nr_coro_execute_name_wrapper,
+        nr_coro_resolver_error_wrapper,
+        nr_coro_resolver_wrapper,
+    )
 
 _logger = logging.getLogger(__name__)
 
@@ -77,6 +112,20 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
                     return True
 
     return None  # Follow original exception matching rules
+
+
+def catch_promise_error(e):
+    if hasattr(e, "__traceback__"):
+        notice_error(error=(e.__class__, e, e.__traceback__), ignore=ignore_graphql_duplicate_exception)
+    else:
+        # Python 2 does not retain a reference to the traceback and is irretrievable from a promise.
+        # As a workaround, raise the error and report it despite having an incorrect traceback.
+        try:
+            raise e
+        except Exception:
+            notice_error(ignore=ignore_graphql_duplicate_exception)
+
+    return None
 
 
 def wrap_executor_context_init(wrapped, instance, args, kwargs):
@@ -146,12 +195,20 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
     result = wrapped(*args, **kwargs)
-    if not execution_context.errors:
-        if hasattr(trace, "set_transaction_name"):
+
+    def set_name(value=None):
+        if not execution_context.errors and hasattr(trace, "set_transaction_name"):
             # Operation trace sets transaction name
             trace.set_transaction_name(priority=14)
-
-    return result
+        return value
+    
+    if is_promise(result) and result.is_pending and graphql_version() < (3, 0):
+        return result.then(set_name)
+    elif isawaitable(result) and not is_promise(result):
+        return nr_coro_execute_name_wrapper(wrapped, result, set_name)
+    else:
+        set_name()
+        return result
 
 
 def get_node_value(field, attr, subattr="value"):
@@ -274,7 +331,8 @@ def wrap_middleware(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(name, "GraphQL", priority=12)
     with FunctionTrace(name, source=wrapped):
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-            return wrapped(*args, **kwargs)
+            result = wrapped(*args, **kwargs)
+            return result
 
 
 def bind_get_field_resolver(field_resolver):
@@ -326,16 +384,32 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(name, "GraphQL", priority=13)
 
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+        sync_start_time = time.time()
         result = wrapped(*args, **kwargs)
-
-        if isawaitable(result):
-            # Grab any async resolvers and wrap with error traces
-            async def _nr_coro_resolver_error_wrapper():
-                with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-                    return await result
-            return _nr_coro_resolver_error_wrapper()
-
-        return result
+        
+        if is_promise(result) and result.is_pending and graphql_version() < (3, 0):
+            @functools.wraps(wrapped)
+            def nr_promise_resolver_error_wrapper(v):
+                with FunctionTrace(name, source=wrapped):
+                    with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+                        try:
+                            return result.get()
+                        except Exception:
+                            transaction.set_transaction_name(name, "GraphQL", priority=15)
+                            raise
+            return as_promise(nr_promise_resolver_error_wrapper)
+        elif isawaitable(result) and not is_promise(result):
+            # Grab any async resolvers and wrap with traces
+            return nr_coro_resolver_error_wrapper(
+                wrapped, name, ignore_graphql_duplicate_exception, result, transaction
+            )
+        else:
+            with FunctionTrace(name, source=wrapped) as trace:
+                trace.start_time = sync_start_time
+                if is_promise(result) and result.is_rejected:
+                    result.catch(catch_promise_error).get()
+                    transaction.set_transaction_name(name, "GraphQL", priority=15)
+                return result
 
 
 def wrap_error_handler(wrapped, instance, args, kwargs):
@@ -404,33 +478,36 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     else:
         field_path = field_path.key
 
+    trace = GraphQLResolverTrace(
+        field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path
+    )
     start_time = time.time()
 
     try:
         result = wrapped(*args, **kwargs)
     except Exception:
         # Synchonous resolver with exception raised
-        with GraphQLResolverTrace(field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path) as trace:
-            trace._start_time = start_time
+        with trace:
+            trace.start_time = start_time
             notice_error(ignore=ignore_graphql_duplicate_exception)
             raise
 
-    if isawaitable(result):
-        # Asynchronous resolvers (returned coroutines from non-coroutine functions)
-        async def _nr_coro_resolver_wrapper():
-            with GraphQLResolverTrace(field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path) as trace:
+    if is_promise(result) and result.is_pending and graphql_version() < (3, 0):
+        @functools.wraps(wrapped)
+        def nr_promise_resolver_wrapper(v):
+            with trace:
                 with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-                    trace._start_time = start_time
-                    return await result
-
+                    return result.get()
+        return as_promise(nr_promise_resolver_wrapper)
+    elif isawaitable(result) and not is_promise(result):
+        # Asynchronous resolvers (returned coroutines from non-coroutine functions)
         # Return a coroutine that handles wrapping in a resolver trace
-        return _nr_coro_resolver_wrapper()
+        return nr_coro_resolver_wrapper(wrapped, trace, ignore_graphql_duplicate_exception, result)
     else:
         # Synchonous resolver with no exception raised
-        with GraphQLResolverTrace(field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path) as trace:
-            with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-                trace._start_time = start_time
-                return result
+        with trace:
+            trace.start_time = start_time
+            return result
 
 
 def bind_graphql_impl_query(schema, source, *args, **kwargs):
@@ -473,17 +550,42 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=10)
 
-    with GraphQLOperationTrace() as trace:
-        trace.statement = graphql_statement(query)
+    trace = GraphQLOperationTrace()
 
-        # Handle Schemas created from frameworks
-        if hasattr(schema, "_nr_framework"):
-            framework = schema._nr_framework
-            trace.product = framework[0]
-            transaction.add_framework_info(name=framework[0], version=framework[1])
+    trace.statement = graphql_statement(query)
 
-        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-            result = wrapped(*args, **kwargs)
+    # Handle Schemas created from frameworks
+    if hasattr(schema, "_nr_framework"):
+        framework = schema._nr_framework
+        trace.product = framework[0]
+        transaction.add_framework_info(name=framework[0], version=framework[1])
+    
+    # Trace must be manually started and stopped to ensure it exists prior to and during the entire duration of the query.
+    # Otherwise subsequent instrumentation will not be able to find an operation trace and will have issues.
+    trace.__enter__()
+    try:
+        result = wrapped(*args, **kwargs)
+    except Exception as e:
+        # Execution finished synchronously, exit immediately.
+        notice_error(ignore=ignore_graphql_duplicate_exception)
+        trace.__exit__(*sys.exc_info())
+        raise
+    else:
+        if is_promise(result) and result.is_pending:
+            # Execution promise, append callbacks to exit trace.
+            def on_resolve(v):
+                trace.__exit__(None, None, None)
+                return v
+
+            def on_reject(e):
+                catch_promise_error(e)
+                trace.__exit__(e.__class__, e, e.__traceback__)
+                return e
+
+            return result.then(on_resolve, on_reject)
+        else:
+            # Execution finished synchronously, exit immediately.
+            trace.__exit__(None, None, None)
             return result
 
 

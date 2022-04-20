@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from _target_schema_sync import books, libraries, magazines
+from framework_graphql._target_schema_sync import books, libraries, magazines
 from graphql import (
     GraphQLArgument,
     GraphQLField,

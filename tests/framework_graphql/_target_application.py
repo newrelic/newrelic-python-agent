@@ -18,7 +18,7 @@ from graphql.language.source import Source
 from newrelic.packages import six
 from newrelic.hooks.framework_graphql import is_promise
 
-from _target_schema_sync import target_schema as target_schema_sync
+from framework_graphql._target_schema_sync import target_schema as target_schema_sync
 
 
 is_graphql_2 = int(version.split(".")[0]) == 2

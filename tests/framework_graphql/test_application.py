@@ -81,7 +81,10 @@ example_middleware = [example_middleware]
 error_middleware = [error_middleware]
 
 if six.PY3:
-    from test_application_async import error_middleware_async, example_middleware_async
+    try:
+        from test_application_async import error_middleware_async, example_middleware_async
+    except ImportError:
+        from framework_graphql.test_application_async import error_middleware_async, example_middleware_async
 
     example_middleware.append(example_middleware_async)
     error_middleware.append(error_middleware_async)
@@ -121,7 +124,7 @@ def _graphql_base_rollup_metrics(framework, version, background_task=True):
 
 
 def test_basic(target_application):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
@@ -139,7 +142,7 @@ def test_basic(target_application):
 
 @dt_enabled
 def test_query_and_mutation(target_application, is_graphql_2):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/%s/storage_add" % framework, 1),
@@ -208,7 +211,7 @@ def test_query_and_mutation(target_application, is_graphql_2):
 @pytest.mark.parametrize("middleware", example_middleware)
 @dt_enabled
 def test_middleware(target_application, middleware):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
     name = "%s:%s" % (middleware.__module__, middleware.__name__)
     if "async" in name:
@@ -243,7 +246,7 @@ def test_middleware(target_application, middleware):
 @pytest.mark.parametrize("middleware", error_middleware)
 @dt_enabled
 def test_exception_in_middleware(target_application, middleware):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     query = "query MyQuery { error_middleware }"
     field = "error_middleware"
 
@@ -297,7 +300,7 @@ def test_exception_in_middleware(target_application, middleware):
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 @dt_enabled
 def test_exception_in_resolver(target_application, field):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     query = "query MyQuery { %s }" % field
 
     txn_name = "_target_schema_%s:resolve_error" % schema_type
@@ -352,7 +355,7 @@ def test_exception_in_resolver(target_application, field):
     ],
 )
 def test_exception_in_validation(target_application, is_graphql_2, query, exc_class):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     if "syntax" in query:
         txn_name = "graphql.language.parser:parse"
     else:
@@ -401,12 +404,17 @@ def test_exception_in_validation(target_application, is_graphql_2, query, exc_cl
 
 @dt_enabled
 def test_operation_metrics_and_attrs(target_application):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     operation_metrics = [("GraphQL/operation/%s/query/MyQuery/library" % framework, 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
     }
+
+    # Span count 16: Transaction, Operation, and 7 Resolvers and Resolver functions
+    # library, library.name, library.book
+    # library.book.name and library.book.id for each book resolved (in this case 2)
+    span_count = 16 + extra_spans  # WSGI may add 4 spans, other frameworks may add other amounts
 
     @validate_transaction_metrics(
         "query/MyQuery/library",
@@ -415,10 +423,7 @@ def test_operation_metrics_and_attrs(target_application):
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
         background_task=is_bg,
     )
-    # Span count 16: Transaction, Operation, and 7 Resolvers and Resolver functions
-    # library, library.name, library.book
-    # library.book.name and library.book.id for each book resolved (in this case 2)
-    @validate_span_events(count=16)
+    @validate_span_events(count=span_count)
     @validate_span_events(exact_agents=operation_attrs)
     @conditional_decorator(background_task(), is_bg)
     def _test():
@@ -429,7 +434,7 @@ def test_operation_metrics_and_attrs(target_application):
 
 @dt_enabled
 def test_field_resolver_metrics_and_attrs(target_application):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     field_resolver_metrics = [("GraphQL/resolve/%s/hello" % framework, 1)]
 
     graphql_attrs = {
@@ -439,6 +444,9 @@ def test_field_resolver_metrics_and_attrs(target_application):
         "graphql.field.returnType": "String",
     }
 
+    # Span count 4: Transaction, Operation, and 1 Resolver and Resolver function
+    span_count = 4 + extra_spans  # WSGI may add 4 spans, other frameworks may add other amounts
+
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
         "GraphQL",
@@ -446,8 +454,7 @@ def test_field_resolver_metrics_and_attrs(target_application):
         rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
         background_task=is_bg,
     )
-    # Span count 4: Transaction, Operation, and 1 Resolver and Resolver function
-    @validate_span_events(count=4)
+    @validate_span_events(count=span_count)
     @validate_span_events(exact_agents=graphql_attrs)
     @conditional_decorator(background_task(), is_bg)
     def _test():
@@ -476,7 +483,7 @@ _test_queries = [
 @dt_enabled
 @pytest.mark.parametrize("query,obfuscated", _test_queries)
 def test_query_obfuscation(target_application, query, obfuscated):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     graphql_attrs = {"graphql.operation.query": obfuscated}
 
     if callable(query):
@@ -533,7 +540,7 @@ _test_queries = [
 @dt_enabled
 @pytest.mark.parametrize("query,expected_path", _test_queries)
 def test_deepest_unique_path(target_application, query, expected_path):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     if expected_path == "/error":
         txn_name = "_target_schema_%s:resolve_error" % schema_type
     else:
@@ -552,7 +559,7 @@ def test_deepest_unique_path(target_application, query, expected_path):
 
 
 def test_ignored_introspection_transactions(target_application):
-    framework, version, target_application, is_bg, schema_type = target_application
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
     @validate_transaction_count(0)
     @background_task()

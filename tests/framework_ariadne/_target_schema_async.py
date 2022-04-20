@@ -24,7 +24,7 @@ from ariadne import (
 )
 from ariadne.asgi import GraphQL as GraphQLASGI
 from ariadne.wsgi import GraphQL as GraphQLWSGI
-from framework_graphql._target_schema import books, magazines, libraries
+from framework_graphql._target_schema_sync import books, magazines, libraries
 
 from testing_support.asgi_testing import AsgiTest
 
@@ -37,7 +37,7 @@ mutation = MutationType()
 
 
 @mutation.field("storage_add")
-async def mutate(self, info, string):
+async def resolve_storage_add(self, info, string):
     storage.append(string)
     return string
 

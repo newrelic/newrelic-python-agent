@@ -29,9 +29,17 @@ from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
 
 
 def framework_details():
-    import ariadne
+    try:
+        import ariadne
+        version = ariadne.__version__
+    except Exception:
+        try:
+            import pkg_resources
+            version = pkg_resources.get_distribution("ariadne").version
+        except Exception:
+            version = None
 
-    return ("Ariadne", getattr(ariadne, "__version__", None))
+    return ("Ariadne", version)
 
 
 def bind_graphql(schema, data, *args, **kwargs):

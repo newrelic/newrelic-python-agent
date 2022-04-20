@@ -17,7 +17,7 @@ import asyncio
 import json
 import pytest
 
-from _target_schema import target_schema, target_asgi_application, target_wsgi_application
+from _target_schema_sync import target_schema as target_schema_sync, target_asgi_application as target_asgi_application_sync, target_wsgi_application as target_wsgi_application_sync
 from _target_schema_async import target_schema as target_schema_async, target_asgi_application as target_asgi_application_async, target_wsgi_application as target_wsgi_application_async
 
 
@@ -101,10 +101,10 @@ def run_asgi(app):
 
 
 target_application = {
-    "sync-sync": run_sync(target_schema),
-    "async-sync": run_async(target_schema),
-    "wsgi-sync": run_wsgi(target_wsgi_application),
-    "asgi-sync": run_asgi(target_asgi_application),
+    "sync-sync": run_sync(target_schema_sync),
+    "async-sync": run_async(target_schema_sync),
+    "wsgi-sync": run_wsgi(target_wsgi_application_sync),
+    "asgi-sync": run_asgi(target_asgi_application_sync),
     "async-async": run_async(target_schema_async),
     "asgi-async": run_asgi(target_asgi_application_async),
     "wsgi-async": run_wsgi(target_wsgi_application_async),

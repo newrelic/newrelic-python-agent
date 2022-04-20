@@ -21,7 +21,10 @@ from strawberry.schema.config import StrawberryConfig
 from strawberry.types.types import Optional
 from testing_support.asgi_testing import AsgiTest
 
-from _target_schema import Library, Item, Storage, books, magazines, libraries
+try:
+    from _target_schema_sync import Library, Item, Storage, books, magazines, libraries
+except ImportError:
+    from framework_strawberry._target_schema_sync import Library, Item, Storage, books, magazines, libraries
 
 
 storage = []
@@ -45,7 +48,7 @@ async def resolve_storage_add(string: str):
 
 
 async def resolve_storage():
-    return storage
+    return [storage.pop()]
 
 
 async def resolve_error():

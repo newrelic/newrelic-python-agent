@@ -122,10 +122,6 @@ def resolve_hello():
     return "Hello!"
 
 
-async def resolve_hello_async():
-    return "Hello!"
-
-
 def resolve_echo(echo: str):
     return echo
 
@@ -140,7 +136,7 @@ def resolve_storage_add(string: str):
 
 
 def resolve_storage():
-    return storage
+    return [storage.pop()]
 
 
 def resolve_error():

@@ -28,7 +28,8 @@ def target_application(request):
         version = pkg_resources.get_distribution("strawberry-graphql").version
 
     is_asgi = "asgi" in request.param
-    is_async = request.param.split("-")[1] == "async"
+    schema_type = request.param.split("-")[1]
 
     assert version is not None
-    return "Strawberry", version, target_application, not is_asgi, is_async
+    return "Strawberry", version, target_application, not is_asgi, schema_type
+

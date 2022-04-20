@@ -81,7 +81,10 @@ example_middleware = [example_middleware]
 error_middleware = [error_middleware]
 
 if six.PY3:
-    from test_application_async import error_middleware_async, example_middleware_async
+    try:
+        from test_application_async import error_middleware_async, example_middleware_async
+    except ImportError:
+        from framework_graphql.test_application_async import error_middleware_async, example_middleware_async
 
     example_middleware.append(example_middleware_async)
     error_middleware.append(error_middleware_async)

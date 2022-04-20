@@ -12,140 +12,100 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 
-from ariadne import (
-    MutationType,
-    QueryType,
-    UnionType,
-    load_schema_from_path,
-    make_executable_schema,
-)
-from ariadne.asgi import GraphQL as GraphQLASGI
-from ariadne.wsgi import GraphQL as GraphQLWSGI
+import asyncio
+import json
+import pytest
 
-schema_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "schema.graphql")
-type_defs = load_schema_from_path(schema_file)
+from _target_schema import target_schema, target_asgi_application, target_wsgi_application
+from _target_schema_async import target_schema as target_schema_async, target_asgi_application as target_asgi_application_async, target_wsgi_application as target_wsgi_application_async
 
 
-authors = [
-    {
-        "first_name": "New",
-        "last_name": "Relic",
-    },
-    {
-        "first_name": "Bob",
-        "last_name": "Smith",
-    },
-    {
-        "first_name": "Leslie",
-        "last_name": "Jones",
-    },
-]
+def run_sync(schema):
+    def _run_sync(query, middleware=None):
+        from ariadne import graphql_sync
 
-books = [
-    {
-        "id": 1,
-        "name": "Python Agent: The Book",
-        "isbn": "a-fake-isbn",
-        "author": authors[0],
-        "branch": "riverside",
-    },
-    {
-        "id": 2,
-        "name": "Ollies for O11y: A Sk8er's Guide to Observability",
-        "isbn": "a-second-fake-isbn",
-        "author": authors[1],
-        "branch": "downtown",
-    },
-    {
-        "id": 3,
-        "name": "[Redacted]",
-        "isbn": "a-third-fake-isbn",
-        "author": authors[2],
-        "branch": "riverside",
-    },
-]
+        success, response = graphql_sync(schema, {"query": query}, middleware=middleware)
 
-magazines = [
-    {"id": 1, "name": "Reli Updates Weekly", "issue": 1, "branch": "riverside"},
-    {"id": 2, "name": "Reli Updates Weekly", "issue": 2, "branch": "downtown"},
-    {"id": 3, "name": "Node Weekly", "issue": 1, "branch": "riverside"},
-]
+        if isinstance(query, str) and "error" not in query:
+            assert success and not "errors" in response
+        else:
+            assert not success or "errors" in response
+
+        return response.get("data", {})
+    return _run_sync
 
 
-libraries = ["riverside", "downtown"]
-libraries = [
-    {
-        "id": i + 1,
-        "branch": branch,
-        "magazine": [m for m in magazines if m["branch"] == branch],
-        "book": [b for b in books if b["branch"] == branch],
-    }
-    for i, branch in enumerate(libraries)
-]
+def run_async(schema):
+    def _run_async(query, middleware=None):
+        from ariadne import graphql
 
-storage = []
+        loop = asyncio.get_event_loop()
+        success, response = loop.run_until_complete(graphql(schema, {"query": query}, middleware=middleware))
 
+        if isinstance(query, str) and "error" not in query:
+            assert success and not "errors" in response
+        else:
+            assert not success or "errors" in response
 
-mutation = MutationType()
-
-
-@mutation.field("storage_add")
-def mutate(self, info, string):
-    storage.append(string)
-    return {"string": string}
+        return response.get("data", {})
+    return _run_async
 
 
-item = UnionType("Item")
+def run_wsgi(app):
+    def _run_asgi(query, middleware=None):
+        if middleware is not None:
+            pytest.skip("Middleware not supported in Strawberry.")
+
+        if not isinstance(query, str) or "error" in query:
+            expect_errors = True
+        else:
+            expect_errors = False
+
+        response = app.post(
+            "/", json.dumps({"query": query}), headers={"Content-Type": "application/json"}, expect_errors=expect_errors
+        )
+
+        body = json.loads(response.body.decode("utf-8"))
+        if expect_errors:
+            assert body["errors"]
+        else:
+            assert "errors" not in body or not body["errors"]
+
+        return body.get("data", {})
+
+    return _run_asgi
 
 
-@item.type_resolver
-def resolve_type(obj, *args):
-    if "isbn" in obj:
-        return "Book"
-    elif "issue" in obj:  # pylint: disable=R1705
-        return "Magazine"
+def run_asgi(app):
+    def _run_asgi(query, middleware=None):
+        if middleware is not None:
+            pytest.skip("Middleware not supported in Strawberry.")
 
-    return None
+        response = app.make_request(
+            "POST", "/", body=json.dumps({"query": query}), headers={"Content-Type": "application/json"}
+        )
+        body = json.loads(response.body.decode("utf-8"))
 
+        if not isinstance(query, str) or "error" in query:
+            try:
+                assert response.status != 200
+            except AssertionError:
+                assert body["errors"]
+        else:
+            assert response.status == 200
+            assert "errors" not in body or not body["errors"]
 
-query = QueryType()
-
-
-@query.field("library")
-def resolve_library(self, info, index):
-    return libraries[index]
-
-
-@query.field("storage")
-def resolve_storage(self, info):
-    return storage
-
-
-@query.field("search")
-def resolve_search(self, info, contains):
-    search_books = [b for b in books if contains in b["name"]]
-    search_magazines = [m for m in magazines if contains in m["name"]]
-    return search_books + search_magazines
+        return body.get("data", {})
+    return _run_asgi
 
 
-@query.field("hello")
-def resolve_hello(self, info):
-    return "Hello!"
-
-
-@query.field("echo")
-def resolve_echo(self, info, echo):
-    return echo
-
-
-@query.field("error_non_null")
-@query.field("error")
-def resolve_error(self, info):
-    raise RuntimeError("Runtime Error!")
-
-
-_target_application = make_executable_schema(type_defs, query, mutation, item)
-_target_asgi_application = GraphQLASGI(_target_application)
-_target_wsgi_application = GraphQLWSGI(_target_application)
+target_application = {
+    "sync-sync": run_sync(target_schema),
+    "async-sync": run_async(target_schema),
+    "wsgi-sync": run_wsgi(target_wsgi_application),
+    "asgi-sync": run_asgi(target_asgi_application),
+    "async-async": run_async(target_schema_async),
+    "asgi-async": run_asgi(target_asgi_application_async),
+    "wsgi-async": run_wsgi(target_wsgi_application_async),
+}

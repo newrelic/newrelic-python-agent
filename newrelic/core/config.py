@@ -768,7 +768,7 @@ _settings.utilization.total_ram_mib = _environ_as_int("NEW_RELIC_UTILIZATION_TOT
 _settings.utilization.billing_hostname = os.environ.get("NEW_RELIC_UTILIZATION_BILLING_HOSTNAME")
 
 _settings.strip_exception_messages.enabled = False
-_settings.strip_exception_messages.whitelist = []
+_settings.strip_exception_messages.allowlist = []
 
 _settings.datastore_tracer.instance_reporting.enabled = True
 _settings.datastore_tracer.database_name_reporting.enabled = True
@@ -1037,7 +1037,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
 
     event_harvest_config = server_side_config.get("event_harvest_config", {})
     harvest_limits = event_harvest_config.get("harvest_limits", ())
-    apply_config_setting(settings_snapshot, "event_harvest_config.whitelist", frozenset(harvest_limits))
+    apply_config_setting(settings_snapshot, "event_harvest_config.allowlist", frozenset(harvest_limits))
 
     # Override span event harvest config
     span_event_harvest_config = server_side_config.get("span_event_harvest_config", {})

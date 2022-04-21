@@ -219,13 +219,17 @@ def test_middleware(target_application, middleware):
             pytest.skip("Async middleware not supported in sync applications.")
 
     _test_middleware_metrics = [
-        ("GraphQL/operation/GraphQL/query/<anonymous>/hello", 1),
-        ("GraphQL/resolve/GraphQL/hello", 1),
+        ("GraphQL/operation/%s/query/<anonymous>/hello" % framework, 1),
+        ("GraphQL/resolve/%s/hello" % framework, 1),
         ("Function/%s" % name, 1),
     ]
 
+    # Span count 5: Transaction, Operation, Middleware, and 1 Resolver and Resolver Function
+    span_count = 5 + extra_spans
+
     @validate_code_level_metrics(*name.split(":"))
     @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_hello")
+    @validate_span_events(count=span_count)
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
         "GraphQL",
@@ -233,8 +237,6 @@ def test_middleware(target_application, middleware):
         rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
         background_task=is_bg,
     )
-    # Span count 5: Transaction, Operation, Middleware, and 1 Resolver and Resolver Function
-    @validate_span_events(count=5)
     @conditional_decorator(background_task(), is_bg)
     def _test():
         response = target_application("{ hello }", middleware=[middleware])

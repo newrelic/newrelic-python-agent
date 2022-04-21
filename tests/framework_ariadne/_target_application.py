@@ -18,19 +18,31 @@ import json
 import pytest
 
 from _target_schema_sync import target_schema as target_schema_sync, target_asgi_application as target_asgi_application_sync, target_wsgi_application as target_wsgi_application_sync
-from _target_schema_async import target_schema as target_schema_async, target_asgi_application as target_asgi_application_async, target_wsgi_application as target_wsgi_application_async
+from _target_schema_async import target_schema as target_schema_async, target_asgi_application as target_asgi_application_async
+
+from graphql import MiddlewareManager
+
+
+
+def check_response(query, success, response):
+    if isinstance(query, str) and "error" not in query:
+        assert success and not "errors" in response, response["errors"]
+        assert response["data"]
+    else:
+        assert "errors" in response, response
 
 
 def run_sync(schema):
     def _run_sync(query, middleware=None):
         from ariadne import graphql_sync
 
-        success, response = graphql_sync(schema, {"query": query}, middleware=middleware)
-
-        if isinstance(query, str) and "error" not in query:
-            assert success and not "errors" in response
+        if middleware:
+            middleware = MiddlewareManager(*middleware)
         else:
-            assert not success or "errors" in response
+            middleware = None
+
+        success, response = graphql_sync(schema, {"query": query}, middleware=middleware)
+        check_response(query, success, response)
 
         return response.get("data", {})
     return _run_sync
@@ -40,13 +52,14 @@ def run_async(schema):
     def _run_async(query, middleware=None):
         from ariadne import graphql
 
+        if middleware:
+            middleware = MiddlewareManager(*middleware)
+        else:
+            middleware = None
+
         loop = asyncio.get_event_loop()
         success, response = loop.run_until_complete(graphql(schema, {"query": query}, middleware=middleware))
-
-        if isinstance(query, str) and "error" not in query:
-            assert success and not "errors" in response
-        else:
-            assert not success or "errors" in response
+        check_response(query, success, response)
 
         return response.get("data", {})
     return _run_async
@@ -54,13 +67,12 @@ def run_async(schema):
 
 def run_wsgi(app):
     def _run_asgi(query, middleware=None):
-        if middleware is not None:
-            pytest.skip("Middleware not supported in Strawberry.")
-
         if not isinstance(query, str) or "error" in query:
             expect_errors = True
         else:
             expect_errors = False
+
+        app.app.middleware = middleware
 
         response = app.post(
             "/", json.dumps({"query": query}), headers={"Content-Type": "application/json"}, expect_errors=expect_errors
@@ -79,8 +91,7 @@ def run_wsgi(app):
 
 def run_asgi(app):
     def _run_asgi(query, middleware=None):
-        if middleware is not None:
-            pytest.skip("Middleware not supported in Strawberry.")
+        app.asgi_application.middleware = middleware
 
         response = app.make_request(
             "POST", "/", body=json.dumps({"query": query}), headers={"Content-Type": "application/json"}
@@ -103,9 +114,8 @@ def run_asgi(app):
 target_application = {
     "sync-sync": run_sync(target_schema_sync),
     "async-sync": run_async(target_schema_sync),
+    "async-async": run_async(target_schema_async),
     "wsgi-sync": run_wsgi(target_wsgi_application_sync),
     "asgi-sync": run_asgi(target_asgi_application_sync),
-    "async-async": run_async(target_schema_async),
     "asgi-async": run_asgi(target_asgi_application_async),
-    "wsgi-async": run_wsgi(target_wsgi_application_async),
 }

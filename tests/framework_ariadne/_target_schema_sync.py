@@ -65,7 +65,7 @@ def resolve_library(self, info, index):
 
 @query.field("storage")
 def resolve_storage(self, info):
-    return storage
+    return [storage.pop()]
 
 
 @query.field("search")

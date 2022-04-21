@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import webtest
 
 from ariadne import (
     MutationType,
@@ -23,7 +22,6 @@ from ariadne import (
     make_executable_schema,
 )
 from ariadne.asgi import GraphQL as GraphQLASGI
-from ariadne.wsgi import GraphQL as GraphQLWSGI
 from framework_graphql._target_schema_sync import books, magazines, libraries
 
 from testing_support.asgi_testing import AsgiTest
@@ -65,7 +63,7 @@ async def resolve_library(self, info, index):
 
 @query.field("storage")
 async def resolve_storage(self, info):
-    return storage
+    return [storage.pop()]
 
 
 @query.field("search")
@@ -94,4 +92,3 @@ async def resolve_error(self, info):
 
 target_schema = make_executable_schema(type_defs, query, mutation, item)
 target_asgi_application = AsgiTest(GraphQLASGI(target_schema))
-target_wsgi_application = webtest.TestApp(GraphQLWSGI(target_schema))

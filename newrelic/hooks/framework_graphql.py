@@ -386,8 +386,6 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(name, "GraphQL", priority=13)
     trace = FunctionTrace(name, source=base_resolver)
 
-    # breakpoint()
-
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
         sync_start_time = time.time()
         result = wrapped(*args, **kwargs)

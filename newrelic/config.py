@@ -2292,6 +2292,13 @@ def _process_module_builtin_defaults():
         "instrument_cherrypy__cptree",
     )
 
+    # _process_module_definition(
+    #     # "cpython.Lib.logging.__init__",
+    #     "logging",
+    #     "newrelic.hooks.internal_logging",
+    #     "instrument_cpython_Lib_logging_init",
+    # )
+
     _process_module_definition(
         "paste.httpserver",
         "newrelic.hooks.adapter_paste",
@@ -2903,6 +2910,12 @@ def _process_module_entry_points():
         _process_module_definition(target, module, function)
 
 
+def _process_logging_configuration():
+    import newrelic.hooks.internal_logging as hook
+    import logging
+
+    hook.instrument_cpython_Lib_logging_init(logging)
+
 _instrumentation_done = False
 
 
@@ -2919,6 +2932,7 @@ def _setup_instrumentation():
     _process_module_entry_points()
     _process_trace_cache_import_hooks()
     _process_module_builtin_defaults()
+    _process_logging_configuration()
 
     _process_wsgi_application_configuration()
     _process_background_task_configuration()

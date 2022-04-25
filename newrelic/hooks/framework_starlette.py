@@ -69,6 +69,7 @@ def wrap_route(wrapped, instance, args, kwargs):
     try:
         if not hasattr(endpoint, "__name__"):
             from starlette.routing import get_name
+
             endpoint.__name__ = get_name(endpoint.__wrapped__)
     except Exception:
         pass

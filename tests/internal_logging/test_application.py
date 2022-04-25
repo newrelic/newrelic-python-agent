@@ -12,19 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import sys
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import _log_records
 
+@background_task()
 def test_no_harm(caplog):
-#     from newrelic.api.import_hook import _uninstrumented_modules
-    # import importlib
-    import logging
-    # importlib.invalidate_caches()
-    # importlib.reload(logging)
-
     _logger = logging.getLogger("my_app")
     _logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-
-    # assert not _uninstrumented_modules
 
     with caplog.at_level(logging.INFO):
         _logger.info("hi")
@@ -33,26 +29,25 @@ def test_no_harm(caplog):
     assert caplog.messages == ["hi"]
     caplog.clear()
 
-    breakpoint()
+    record, message = _log_records.pop()
+    assert message == "hi"
 
-    return
 
+# import logging
+# import sys
 
-import logging
-import sys
+# #Creating and Configuring Logger
 
-#Creating and Configuring Logger
+# Log_Format = "%(levelname)s %(asctime)s - %(message)s"
 
-Log_Format = "%(levelname)s %(asctime)s - %(message)s"
+# logging.basicConfig(filename = "logfile.log",
+#                     stream = sys.stdout, 
+#                     filemode = "w",
+#                     format = Log_Format, 
+#                     level = logging.ERROR)
 
-logging.basicConfig(filename = "logfile.log",
-                    stream = sys.stdout, 
-                    filemode = "w",
-                    format = Log_Format, 
-                    level = logging.ERROR)
+# logger = logging.getLogger()
 
-logger = logging.getLogger()
+# #Testing our Logger
 
-#Testing our Logger
-
-logger.error("Our First Error Message")
+# logger.error("Our First Error Message")

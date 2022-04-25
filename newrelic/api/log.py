@@ -85,6 +85,30 @@ class NewRelicContextFormatter(Formatter):
         return json.dumps(self.log_record_to_dict(record), default=safe_str, separators=(",", ":"))
 
 
+class NewRelicLogForwardingHandler(logging.Handler):
+    def __init__(self, *args, **kwargs):
+        super(NewRelicLogForwardingHandler, self).__init__(*args, **kwargs)
+        self.setFormatter(NewRelicContextFormatter())
+
+    @property
+    def settings(self):
+        transaction = current_transaction()
+        if transaction:
+            return transaction.settings
+        return global_settings()
+
+    def emit(self, record):
+        try:
+            message = self.format(record)
+            txn = current_transaction()
+            if txn:
+                txn.record_log_record(record, message)
+            else:
+                pass
+        except Exception:
+            self.handleError(record)
+
+
 class NewRelicLogHandler(logging.Handler):
     """This is an experimental log handler provided by the community. Use with caution."""
 

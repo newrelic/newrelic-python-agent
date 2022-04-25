@@ -82,6 +82,11 @@ PARENT_TYPE = {
 }
 
 
+
+# FIXME REMOVE THIS
+_log_records = []
+
+
 class Sentinel(TimeTrace):
     def __init__(self, transaction):
         super(Sentinel, self).__init__(None)
@@ -1464,6 +1469,13 @@ class Transaction(object):
 
         self._group = group
         self._name = name
+
+    def record_log_record(self, record, message):
+        global _log_records
+        breakpoint()
+
+        _log_records.append((record, message))
+        pass
 
     def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning

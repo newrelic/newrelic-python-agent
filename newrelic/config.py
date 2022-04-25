@@ -2912,9 +2912,13 @@ def _process_module_entry_points():
 
 def _process_logging_configuration():
     import newrelic.hooks.internal_logging as hook
+    from newrelic.api.log import NewRelicLogForwardingHandler
     import logging
 
     hook.instrument_cpython_Lib_logging_init(logging)
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(NewRelicLogForwardingHandler())
 
 _instrumentation_done = False
 

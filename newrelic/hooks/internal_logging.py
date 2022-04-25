@@ -37,7 +37,11 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
 def wrap_handlers(logger):
     handlers = logger.handlers
     for handler in handlers:
-        breakpoint()
+        # Check to see if handler has _nr_wrapper attr and if not, add it
+#        value = getattr(handler, "_nr_wrapper", None)
+#        if not value:
+#            handler._nr_wrapper = handler.__wrapped__._nr_wrapper
+        # breakpoint()
         pass
 
     # Recurse up parent tree

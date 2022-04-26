@@ -44,6 +44,8 @@ from newrelic.core.error_collector import TracedError
 from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
 
+from newrelic.core.log_node import LogNode
+
 _logger = logging.getLogger(__name__)
 
 EVENT_HARVEST_METHODS = {
@@ -54,6 +56,7 @@ EVENT_HARVEST_METHODS = {
     "span_event_data": ("reset_span_events",),
     "custom_event_data": ("reset_custom_events",),
     "error_event_data": ("reset_error_events",),
+    "log_event_data": ("reset_log_events",),
 }
 
 
@@ -424,6 +427,7 @@ class StatsEngine(object):
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
         self._span_events = SampledDataSet()
+        self._log_events = SampledDataSet()
         self._span_stream = None
         self.__sql_stats_table = {}
         self.__slow_transaction = None
@@ -453,6 +457,10 @@ class StatsEngine(object):
     @property
     def span_events(self):
         return self._span_events
+
+    @property
+    def log_events(self):
+        return self._log_events
 
     @property
     def span_stream(self):
@@ -995,6 +1003,20 @@ class StatsEngine(object):
                 for event in transaction.span_events(self.__settings):
                     self._span_events.add(event, priority=transaction.priority)
 
+
+    def record_log_event(self, record, message=None):
+        if message is None:
+            message = record.getMessage()
+
+        event = LogNode(
+            timestamp=int(record.created * 1000),
+            log_level=record.levelname,
+            message=message,
+        )
+
+        self._log_events.add(event)
+
+
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
         sending to the core application pertaining to the reporting
@@ -1347,6 +1369,7 @@ class StatsEngine(object):
         self.reset_error_events()
         self.reset_custom_events()
         self.reset_span_events()
+        self.reset_log_events()
         self.reset_synthetics_events()
         # streams are never reset after instantiation
         if reset_stream:
@@ -1390,6 +1413,12 @@ class StatsEngine(object):
             self._span_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.span_event_data)
         else:
             self._span_events = SampledDataSet()
+
+    def reset_log_events(self):
+        if self.__settings is not None:
+            self._log_events = SampledDataSet(self.__settings.application_logging.forwarding.max_samples_stored)
+        else:
+            self._log_events = SampledDataSet()
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1513,6 +1542,7 @@ class StatsEngine(object):
         self._merge_error_traces(snapshot)
         self._merge_custom_events(snapshot)
         self._merge_span_events(snapshot)
+        self._merge_log_events(snapshot)
         self._merge_sql(snapshot)
         self._merge_traces(snapshot)
 
@@ -1537,6 +1567,7 @@ class StatsEngine(object):
         self._merge_error_events(snapshot)
         self._merge_custom_events(snapshot, rollback=True)
         self._merge_span_events(snapshot, rollback=True)
+        self._merge_log_events(snapshot, rollback=True)
 
     def merge_metric_stats(self, snapshot):
         """Merges metric data from a snapshot. This is used both when merging
@@ -1613,6 +1644,12 @@ class StatsEngine(object):
             return
         self._span_events.merge(events)
 
+    def _merge_log_events(self, snapshot, rollback=False):
+        events = snapshot.log_events
+        if not events:
+            return
+        self._log_events.merge(events)
+
     def _merge_error_traces(self, snapshot):
 
         # Append snapshot error details at end to maintain time
@@ -1688,6 +1725,9 @@ class StatsEngineSnapshot(StatsEngine):
 
     def reset_span_events(self):
         self._span_events = None
+
+    def reset_log_events(self):
+        self._log_events = None
 
     def reset_synthetics_events(self):
         self._synthetics_events = None

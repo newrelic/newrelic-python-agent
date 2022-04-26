@@ -102,8 +102,9 @@ class NewRelicLogForwardingHandler(logging.Handler):
             message = self.format(record)
             txn = current_transaction()
             if txn:
-                txn.record_log_record(record, message)
+                txn.record_log_event(record, message)
             else:
+                # TODO Send directly to application somehow
                 pass
         except Exception:
             self.handleError(record)

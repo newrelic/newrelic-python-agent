@@ -54,6 +54,7 @@ except ImportError:
 DEFAULT_RESERVOIR_SIZE = 1200
 ERROR_EVENT_RESERVOIR_SIZE = 100
 SPAN_EVENT_RESERVOIR_SIZE = 2000
+LOG_EVENT_RESERVOIR_SIZE = 10000
 
 # settings that should be completely ignored if set server side
 IGNORED_SERVER_SIDE_SETTINGS = [
@@ -259,6 +260,14 @@ class EventLoopVisibilitySettings(Settings):
     pass
 
 
+class ApplicationLoggingSettings(Settings):
+    pass
+
+
+class ApplicationLoggingForwardingSettings(Settings):
+    pass
+
+
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
 
@@ -338,6 +347,8 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 
 _settings = TopLevelSettings()
 _settings.attributes = AttributesSettings()
+_settings.application_logging = ApplicationLoggingSettings()
+_settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
 _settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -726,6 +737,10 @@ _settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
 
 _settings.event_harvest_config.harvest_limits.error_event_data = _environ_as_int(
     "NEW_RELIC_ERROR_COLLECTOR_MAX_EVENT_SAMPLES_STORED", ERROR_EVENT_RESERVOIR_SIZE
+)
+
+_settings.application_logging.forwarding.max_samples_stored = _environ_as_int(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED`", LOG_EVENT_RESERVOIR_SIZE
 )
 
 _settings.console.listener_socket = None

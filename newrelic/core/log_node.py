@@ -14,38 +14,14 @@
 
 from collections import namedtuple
 
-import newrelic.core.attribute as attribute
-
 from newrelic.core.metric import TimeMetric
 
 
 _LogNode = namedtuple('_LogNode',
-        ['timestamp', 'log_level', 'message','logger_name'])
+        ['timestamp', 'log_level', 'message'])
 
 
 class LogNode(_LogNode):
-
-    # def __new__(cls, *args, **kwargs):
-    #     node = _LogNode.__new__(cls, *args, **kwargs)
-    #     return node
-
-    # @property
-    # def timestamp(self):
-    #     return self._timestamp
-
-    # @property
-    # def log_level(self):
-    #     return self._log_level
-
-    # @property
-    # def message(self):
-    #     return self._message
-
-    # @property
-    # def logger_name(self):
-    #     return self._logger_name
-
-
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this log node"""
 
@@ -58,4 +34,3 @@ class LogNode(_LogNode):
 
         yield TimeMetric(name=severity_log_lines_metric_name, scope="",
                          duration=0.0, exclusive=None)
-

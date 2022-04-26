@@ -150,6 +150,10 @@ class Application(object):
         if self.active:
             self._agent.record_transaction(self._name, data)
 
+    def record_log_event(self, record, message=None):
+        if self.active:
+            self._agent.record_log_event(self._name, record, message)
+
     def normalize_name(self, name, rule_type="url"):
         if self.active:
             return self._agent.normalize_name(self._name, name, rule_type)

@@ -128,6 +128,12 @@ class Session(object):
         payload = (self.agent_run_id, start_time, end_time, metric_data)
         return self._protocol.send("metric_data", payload)
 
+    def send_log_events(self, sampling_info, log_event_data):
+        """Called to submit sample set for log events."""
+
+        payload = (self.agent_run_id, sampling_info, log_event_data)
+        return self._protocol.send("log_event_data", payload)
+
     def get_agent_commands(self):
         """Receive agent commands from the data collector.
 

@@ -27,6 +27,7 @@ from collections import OrderedDict
 
 import newrelic.core.database_node
 import newrelic.core.error_node
+from newrelic.core.log_node import LogNode
 import newrelic.core.root_node
 import newrelic.core.transaction_node
 import newrelic.packages.six as six
@@ -1470,12 +1471,10 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    def record_log_record(self, record, message):
-        global _log_records
-        breakpoint()
 
-        _log_records.append((record, message))
-        pass
+    def record_log_event(self, record, message=None):
+        self._application.record_log_event(record, message)
+
 
     def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning

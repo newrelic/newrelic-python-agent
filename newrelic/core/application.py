@@ -836,6 +836,22 @@ class Application(object):
                 self._global_events_account += 1
                 self._stats_engine.record_custom_event(event)
 
+    def record_log_event(self, record, message=None):
+        if not self._active_session:
+            return
+
+        settings = self._stats_engine.settings
+
+        if settings is None:
+            # TODO add proper setting here
+            # if settings is None or not settings.application_logging.enabled:
+            return
+
+        if record:
+            with self._stats_custom_lock:
+                self._global_events_account += 1
+                self._stats_engine.record_log_event(record, message)
+
     def record_transaction(self, data):
         """Record a single transaction against this application."""
 

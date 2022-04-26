@@ -14,40 +14,32 @@
 
 import logging
 import sys
+import pytest
+
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import _log_records
+from testing_support.validators.validate_log_events import validate_log_events
 
-@background_task()
-def test_no_harm(caplog):
+@pytest.fixture()
+def logger():
     _logger = logging.getLogger("my_app")
     _logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+    return _logger
 
+@background_task()
+def test_no_harm(caplog, logger):
     with caplog.at_level(logging.INFO):
-        _logger.info("hi")
+        logger.info("hi")
 
     assert len(caplog.records) == 1
     assert caplog.messages == ["hi"]
     caplog.clear()
 
     record, message = _log_records.pop()
-    assert message == "hi"
+    assert "hi" in message
 
 
-# import logging
-# import sys
-
-# #Creating and Configuring Logger
-
-# Log_Format = "%(levelname)s %(asctime)s - %(message)s"
-
-# logging.basicConfig(filename = "logfile.log",
-#                     stream = sys.stdout, 
-#                     filemode = "w",
-#                     format = Log_Format, 
-#                     level = logging.ERROR)
-
-# logger = logging.getLogger()
-
-# #Testing our Logger
-
-# logger.error("Our First Error Message")
+@validate_log_events(1)
+@background_task()
+def test_send_to_collector(logger):
+    logger.critical("Bonjour")

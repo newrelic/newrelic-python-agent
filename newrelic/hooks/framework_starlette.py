@@ -61,7 +61,20 @@ def bind_add_exception_handler(exc_class_or_status_code, handler, *args, **kwarg
 
 def wrap_route(wrapped, instance, args, kwargs):
     path, endpoint, args, kwargs = bind_endpoint(*args, **kwargs)
-    endpoint = route_naming_wrapper(FunctionTraceWrapper(endpoint))
+    endpoint = FunctionTraceWrapper(endpoint)
+
+    # Starlette name detection gets a bit confused with our wrappers
+    # so the get_name function should be called and the result should
+    # be cached on the wrapper.
+    try:
+        if not hasattr(endpoint, "__name__"):
+            from starlette.routing import get_name
+
+            endpoint.__name__ = get_name(endpoint.__wrapped__)
+    except Exception:
+        pass
+
+    endpoint = route_naming_wrapper(endpoint)
     return wrapped(path, endpoint, *args, **kwargs)
 
 

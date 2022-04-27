@@ -275,6 +275,7 @@ class ApplicationLoggingMetricsSettings(Settings):
 class ApplicationLoggingLocalDecoratingSettings(Settings):
     pass
 
+
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
 
@@ -809,9 +810,15 @@ _settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_
 _settings.application_logging.forwarding.max_samples_stored = _environ_as_int(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED`", LOG_EVENT_RESERVOIR_SIZE
 )
-_settings.application_logging.forwarding.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=False)
-_settings.application_logging.metrics.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED", default=True)
-_settings.application_logging.local_decorating.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False)
+_settings.application_logging.forwarding.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=False
+)
+_settings.application_logging.metrics.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED", default=True
+)
+_settings.application_logging.local_decorating.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
+)
 
 
 def global_settings():

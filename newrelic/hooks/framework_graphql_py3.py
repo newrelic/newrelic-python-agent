@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import functools
+import sys
 
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.function_trace import FunctionTrace
@@ -49,3 +50,19 @@ def nr_coro_resolver_wrapper(wrapped, trace, ignore, result):
                 return await result
 
     return _nr_coro_resolver_wrapper()
+
+def nr_coro_graphql_impl_wrapper(wrapped, trace, ignore, result):
+    @functools.wraps(wrapped)
+    async def _nr_coro_graphql_impl_wrapper():
+        try:
+            with ErrorTrace(ignore=ignore):
+                result_ = await result
+        except:
+            trace.__exit__(*sys.exc_info())
+            raise
+        else:
+            trace.__exit__(None, None, None)
+            return result_
+
+
+    return _nr_coro_graphql_impl_wrapper()

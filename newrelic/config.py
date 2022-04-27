@@ -532,6 +532,12 @@ def _process_configuration(section):
     _process_setting(section, "infinite_tracing.span_queue_size", "getint", None)
     _process_setting(section, "code_level_metrics.enabled", "getboolean", None)
 
+    _process_setting(section, "application_logging.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
+    _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.metrics.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.local_decorating.enabled", "getboolean", None)
+
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

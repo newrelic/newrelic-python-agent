@@ -59,6 +59,7 @@ if six.PY3:
         nr_coro_execute_name_wrapper,
         nr_coro_resolver_error_wrapper,
         nr_coro_resolver_wrapper,
+        nr_coro_graphql_impl_wrapper,
     )
 
 _logger = logging.getLogger(__name__)
@@ -567,10 +568,10 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     # Otherwise subsequent instrumentation will not be able to find an operation trace and will have issues.
     trace.__enter__()
     try:
-        result = wrapped(*args, **kwargs)
+        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+            result = wrapped(*args, **kwargs)
     except Exception as e:
         # Execution finished synchronously, exit immediately.
-        notice_error(ignore=ignore_graphql_duplicate_exception)
         trace.__exit__(*sys.exc_info())
         raise
     else:
@@ -586,6 +587,10 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
                 return e
 
             return result.then(on_resolve, on_reject)
+        elif isawaitable(result) and not is_promise(result):
+            # Asynchronous implementations
+            # Return a coroutine that handles closing the operation trace
+            return nr_coro_graphql_impl_wrapper(wrapped, trace, ignore_graphql_duplicate_exception, result)
         else:
             # Execution finished synchronously, exit immediately.
             trace.__exit__(None, None, None)

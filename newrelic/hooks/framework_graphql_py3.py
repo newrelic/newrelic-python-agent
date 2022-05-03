@@ -28,10 +28,10 @@ def nr_coro_execute_name_wrapper(wrapped, result, set_name):
     return _nr_coro_execute_name_wrapper()
 
 
-def nr_coro_resolver_error_wrapper(wrapped, name, ignore, result, transaction):
+def nr_coro_resolver_error_wrapper(wrapped, name, trace, ignore, result, transaction):
     @functools.wraps(wrapped)
     async def _nr_coro_resolver_error_wrapper():
-        with FunctionTrace(name, source=wrapped):
+        with trace:
             with ErrorTrace(ignore=ignore):
                 try:
                     return await result

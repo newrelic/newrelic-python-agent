@@ -31,5 +31,5 @@ def target_application(request):
     schema_type = request.param.split("-")[1]
 
     assert version is not None
-    return "Strawberry", version, target_application, not is_asgi, schema_type
+    return "Strawberry", version, target_application, not is_asgi, schema_type, 0
 

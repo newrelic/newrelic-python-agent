@@ -52,7 +52,7 @@ def target_application(request):
         pytest.skip("Unsupported combination.")
         return
 
-    return "GraphQL", None, app, True, request.param.split("-")[1]
+    return "GraphQL", None, app, True, request.param.split("-")[1], 0
 
 
 if six.PY2:

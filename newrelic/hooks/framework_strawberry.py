@@ -29,7 +29,16 @@ from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
 def framework_details():
     import strawberry
 
-    return ("Strawberry", getattr(strawberry, "__version__", None))
+    try:
+        version = strawberry.__version__
+    except Exception:
+        try:
+            import pkg_resources
+            version = pkg_resources.get_distribution("strawberry-graphql").version
+        except Exception:
+            version = None
+
+    return ("Strawberry", version)
 
 
 def bind_execute(query, *args, **kwargs):
@@ -104,8 +113,7 @@ def wrap_from_resolver(wrapped, instance, args, kwargs):
     else:
         if hasattr(field, "base_resolver"):
             if hasattr(field.base_resolver, "wrapped_func"):
-                resolver_name = callable_name(field.base_resolver.wrapped_func)
-                result = TransactionNameWrapper(result, resolver_name, "GraphQL", priority=13)
+                result._nr_base_resolver = field.base_resolver.wrapped_func
 
     return result
 

@@ -54,6 +54,7 @@ except ImportError:
 DEFAULT_RESERVOIR_SIZE = 1200
 ERROR_EVENT_RESERVOIR_SIZE = 100
 SPAN_EVENT_RESERVOIR_SIZE = 2000
+LOG_EVENT_RESERVOIR_SIZE = 10000
 
 # settings that should be completely ignored if set server side
 IGNORED_SERVER_SIDE_SETTINGS = [
@@ -259,6 +260,22 @@ class EventLoopVisibilitySettings(Settings):
     pass
 
 
+class ApplicationLoggingSettings(Settings):
+    pass
+
+
+class ApplicationLoggingForwardingSettings(Settings):
+    pass
+
+
+class ApplicationLoggingMetricsSettings(Settings):
+    pass
+
+
+class ApplicationLoggingLocalDecoratingSettings(Settings):
+    pass
+
+
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
 
@@ -337,6 +354,10 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 
 
 _settings = TopLevelSettings()
+_settings.application_logging = ApplicationLoggingSettings()
+_settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
+_settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
+_settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.attributes = AttributesSettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
 _settings.code_level_metrics = CodeLevelMetricsSettings()
@@ -784,6 +805,20 @@ _settings.aws_lambda_metadata = {}
 _settings.event_loop_visibility.enabled = True
 _settings.event_loop_visibility.blocking_threshold = 0.1
 _settings.code_level_metrics.enabled = True
+
+_settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_LOGGING_ENABLED", default=True)
+_settings.application_logging.forwarding.max_samples_stored = _environ_as_int(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED`", LOG_EVENT_RESERVOIR_SIZE
+)
+_settings.application_logging.forwarding.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=False
+)
+_settings.application_logging.metrics.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED", default=True
+)
+_settings.application_logging.local_decorating.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
+)
 
 
 def global_settings():

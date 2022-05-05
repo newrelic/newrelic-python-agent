@@ -11,14 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import asyncio
+from graphql import __version__ as version
+from newrelic.packages import six
 
-try:
-    from _target_schema_sync import target_schema as target_schema_sync
-    from _target_schema_async import target_schema as target_schema_async
-except ImportError:
-    from framework_graphene._target_schema_sync import target_schema as target_schema_sync
-    from framework_graphene._target_schema_async import target_schema as target_schema_async
+from _target_schema_sync import target_schema as target_schema_sync
+
+
+is_graphql_2 = int(version.split(".")[0]) == 2
 
 
 def check_response(query, response):
@@ -39,6 +38,7 @@ def run_sync(schema):
 
 
 def run_async(schema):
+    import asyncio
     def _run_async(query, middleware=None):
         loop = asyncio.get_event_loop()
         response = loop.run_until_complete(schema.execute_async(query, middleware=middleware))
@@ -47,9 +47,48 @@ def run_async(schema):
         return response.data
     return _run_async
 
+def run_promise(schema):
+    def _run_promise(query, middleware=None):
+        response = schema.execute(query, middleware=middleware, return_promise=True).get()
+        check_response(query, response)
+
+        return response.data
+    return _run_promise
+
+
+def run_promise(schema, scheduler):
+    from graphql import graphql
+    from promise import set_default_scheduler
+
+    def _run_promise(query, middleware=None):
+        set_default_scheduler(scheduler)
+
+        promise = graphql(schema, query, middleware=middleware, return_promise=True)
+        response = promise.get()
+
+        check_response(query,  response)
+
+        return response.data
+
+    return _run_promise
+
 
 target_application = {
     "sync-sync": run_sync(target_schema_sync),
-    "async-sync": run_async(target_schema_sync),
-    "async-async": run_async(target_schema_async),
 }
+
+if is_graphql_2:
+    from _target_schema_promise import target_schema as target_schema_promise
+    from promise.schedulers.immediate import ImmediateScheduler
+
+    if six.PY3:
+        from promise.schedulers.asyncio import AsyncioScheduler as AsyncScheduler
+    else:
+        from promise.schedulers.thread import ThreadScheduler as AsyncScheduler
+
+    target_application["sync-promise"] = run_promise(target_schema_promise, ImmediateScheduler())
+    target_application["async-promise"] = run_promise(target_schema_promise, AsyncScheduler())
+elif six.PY3:
+    from _target_schema_async import target_schema as target_schema_async
+    target_application["async-sync"] = run_async(target_schema_sync)
+    target_application["async-async"] = run_async(target_schema_async)

@@ -23,7 +23,7 @@ from graphql import (
     GraphQLString,
     GraphQLUnionType,
 )
-from promise import Promise, promisify
+from promise import promisify
 
 try:
     from _target_schema_sync import books, libraries, magazines
@@ -49,6 +49,7 @@ def resolve_storage(parent, info):
     return [storage.pop()]
 
 
+@promisify
 def resolve_search(parent, info, contains):
     search_books = [b for b in books if contains in b["name"]]
     search_magazines = [m for m in magazines if contains in m["name"]]

@@ -40,10 +40,7 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
 )
 
-apps = ["sync-sync", "async-sync", "async-async", "sync-promise", "async-promise"]
-
-
-@pytest.fixture(scope="session", params=apps)
+@pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async", "sync-promise", "async-promise"])
 def target_application(request):
     from _target_application import target_application
 

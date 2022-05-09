@@ -25,7 +25,7 @@ from graphql import (
 )
 
 try:
-    from _target_schema_sync import books, libraries, magazines
+    from ._target_schema_sync import books, libraries, magazines
 except ImportError:    
     from framework_graphql._target_schema_sync import books, libraries, magazines
 

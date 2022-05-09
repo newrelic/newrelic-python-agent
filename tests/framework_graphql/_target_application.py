@@ -18,7 +18,7 @@ from graphql.language.source import Source
 from newrelic.packages import six
 from newrelic.hooks.framework_graphql import is_promise
 
-from _target_schema_sync import target_schema as target_schema_sync
+from ._target_schema_sync import target_schema as target_schema_sync
 
 
 is_graphql_2 = int(version.split(".")[0]) == 2
@@ -97,6 +97,6 @@ if is_graphql_2:
     target_application["sync-promise"] = run_promise(target_schema_promise, ImmediateScheduler())
     target_application["async-promise"] = run_promise(target_schema_promise, AsyncScheduler())
 elif six.PY3:
-    from _target_schema_async import target_schema as target_schema_async
+    from ._target_schema_async import target_schema as target_schema_async
     target_application["async-sync"] = run_async(target_schema_sync)
     target_application["async-async"] = run_async(target_schema_async)

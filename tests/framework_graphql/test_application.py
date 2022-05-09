@@ -178,7 +178,7 @@ def test_query_and_mutation(target_application, is_graphql_2):
         "graphql.field.returnType": "[String%s]%s" % (type_annotation, type_annotation),
     }
 
-    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_storage_add")
+    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add")
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
     @validate_transaction_metrics(
@@ -197,7 +197,7 @@ def test_query_and_mutation(target_application, is_graphql_2):
         response = target_application(query)
         assert response["storage_add"] == "abc" or response["storage_add"]["string"] == "abc"
 
-    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_storage")
+    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage")
     @validate_span_events(exact_agents=_expected_query_operation_attributes)
     @validate_span_events(exact_agents=_expected_query_resolver_attributes)
     @validate_transaction_metrics(
@@ -236,7 +236,7 @@ def test_middleware(target_application, middleware):
     span_count = 5 + extra_spans
 
     @validate_code_level_metrics(*name.split(":"))
-    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_hello")
+    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_hello")
     @validate_span_events(count=span_count)
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
@@ -313,7 +313,7 @@ def test_exception_in_resolver(target_application, field):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     query = "query MyQuery { %s }" % field
 
-    txn_name = "_target_schema_%s:resolve_error" % schema_type
+    txn_name = "framework_%s._target_schema_%s:resolve_error" % (framework.lower(), schema_type)
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -553,7 +553,7 @@ _test_queries = [
 def test_deepest_unique_path(target_application, query, expected_path):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     if expected_path == "/error":
-        txn_name = "_target_schema_%s:resolve_error" % schema_type
+        txn_name = "framework_%s._target_schema_%s:resolve_error" % (framework.lower(), schema_type)
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 

@@ -17,8 +17,8 @@ import asyncio
 import json
 import pytest
 
-from _target_schema_sync import target_schema as target_schema_sync, target_asgi_application as target_asgi_application_sync
-from _target_schema_async import target_schema as target_schema_async, target_asgi_application as target_asgi_application_async
+from ._target_schema_sync import target_schema as target_schema_sync, target_asgi_application as target_asgi_application_sync
+from ._target_schema_async import target_schema as target_schema_async, target_asgi_application as target_asgi_application_async
 
 
 def run_sync(schema):

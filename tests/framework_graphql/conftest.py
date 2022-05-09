@@ -42,7 +42,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async", "sync-promise", "async-promise"])
 def target_application(request):
-    from _target_application import target_application
+    from ._target_application import target_application
 
     app = target_application.get(request.param, None)
     if app is None:

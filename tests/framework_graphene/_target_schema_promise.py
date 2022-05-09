@@ -16,10 +16,7 @@ from graphene import Mutation as GrapheneMutation
 from graphene import NonNull, ObjectType, Schema, String, Union
 from promise import promisify
 
-try:
-    from _target_schema_sync import Author, Book, Magazine, Item, Library, Storage, authors, books, magazines, libraries
-except ImportError:
-    from framework_graphene._target_schema_sync import Author, Book, Magazine, Item, Library, Storage, authors, books, magazines, libraries
+from ._target_schema_sync import Author, Book, Magazine, Item, Library, Storage, authors, books, magazines, libraries
 
 
 storage = []

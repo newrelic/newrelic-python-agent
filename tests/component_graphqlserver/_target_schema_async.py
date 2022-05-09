@@ -23,31 +23,26 @@ from graphql import (
     GraphQLString,
     GraphQLUnionType,
 )
-from promise import promisify
 
 from ._target_schema_sync import books, libraries, magazines
 
 storage = []
 
 
-@promisify
-def resolve_library(parent, info, index):
+async def resolve_library(parent, info, index):
     return libraries[index]
 
 
-@promisify
-def resolve_storage_add(parent, info, string):
+async def resolve_storage_add(parent, info, string):
     storage.append(string)
     return string
 
 
-@promisify
-def resolve_storage(parent, info):
+async def resolve_storage(parent, info):
     return [storage.pop()]
 
 
-@promisify
-def resolve_search(parent, info, contains):
+async def resolve_search(parent, info, contains):
     search_books = [b for b in books if contains in b["name"]]
     search_magazines = [m for m in magazines if contains in m["name"]]
     return search_books + search_magazines
@@ -96,18 +91,15 @@ Library = GraphQLObjectType(
 Storage = GraphQLList(GraphQLString)
 
 
-@promisify
-def resolve_hello(root, info):
+async def resolve_hello(root, info):
     return "Hello!"
 
 
-@promisify
-def resolve_echo(root, info, echo):
+async def resolve_echo(root, info, echo):
     return echo
 
 
-@promisify
-def resolve_error(root, info):
+async def resolve_error(root, info):
     raise RuntimeError("Runtime Error!")
 
 

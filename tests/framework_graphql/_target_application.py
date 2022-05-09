@@ -86,7 +86,7 @@ target_application = {
 }
 
 if is_graphql_2:
-    from _target_schema_promise import target_schema as target_schema_promise
+    from ._target_schema_promise import target_schema as target_schema_promise
     from promise.schedulers.immediate import ImmediateScheduler
 
     if six.PY3:

@@ -145,7 +145,6 @@ def test_query_and_mutation(target_application, is_graphql_2):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
     mutation_path = "storage_add" if framework != "Graphene" else "storage_add.string"
-
     type_annotation = "!" if framework == "Strawberry" else ""
 
     _test_mutation_scoped_metrics = [

@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.packages import six
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.fixtures import dt_enabled
 from newrelic.common.object_wrapper import function_wrapper
 
-def validate_code_level_metrics(namespace, function, builtin=False, count=1, index=-1):
+def validate_code_level_metrics(namespace, function, py2_namespace=None, builtin=False, count=1, index=-1):
     """Verify that code level metrics are generated for a callable."""
+
+    if six.PY2 and py2_namespace is not None:
+        namespace = py2_namespace
 
     if builtin:
         validator = validate_span_events(

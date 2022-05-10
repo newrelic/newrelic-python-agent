@@ -17,7 +17,7 @@ from framework_graphql.test_application import *
 
 @pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async", "asgi-sync", "asgi-async"])
 def target_application(request):
-    from _target_application import target_application
+    from ._target_application import target_application
     target_application = target_application[request.param]
 
     try:

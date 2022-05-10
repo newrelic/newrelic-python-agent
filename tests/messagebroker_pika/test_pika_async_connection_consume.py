@@ -76,7 +76,7 @@ else:
 
 @parametrized_connection
 @pytest.mark.parametrize('callback_as_partial', [True, False])
-@validate_code_level_metrics("test_pika_async_connection_consume" + (".test_async_connection_basic_get_inside_txn.<locals>" if six.PY3 else ""), "on_message")
+@validate_code_level_metrics("test_pika_async_connection_consume.test_async_connection_basic_get_inside_txn.<locals>", "on_message", py2_namespace="test_pika_async_connection_consume")
 @validate_transaction_metrics(
         ('test_pika_async_connection_consume:'
                 'test_async_connection_basic_get_inside_txn'),
@@ -269,7 +269,7 @@ else:
         scoped_metrics=_test_select_conn_basic_consume_in_txn_metrics,
         rollup_metrics=_test_select_conn_basic_consume_in_txn_metrics,
         background_task=True)
-@validate_code_level_metrics("test_pika_async_connection_consume" + (".test_async_connection_basic_consume_inside_txn.<locals>" if six.PY3 else ""), "on_message")
+@validate_code_level_metrics("test_pika_async_connection_consume.test_async_connection_basic_consume_inside_txn.<locals>", "on_message", py2_namespace="test_pika_async_connection_consume")
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_async_connection_basic_consume_inside_txn(producer, ConnectionClass):
@@ -329,8 +329,8 @@ else:
         scoped_metrics=_test_select_conn_basic_consume_two_exchanges,
         rollup_metrics=_test_select_conn_basic_consume_two_exchanges,
         background_task=True)
-@validate_code_level_metrics("test_pika_async_connection_consume" + (".test_async_connection_basic_consume_two_exchanges.<locals>" if six.PY3 else ""), "on_message_1")
-@validate_code_level_metrics("test_pika_async_connection_consume" + (".test_async_connection_basic_consume_two_exchanges.<locals>" if six.PY3 else ""), "on_message_2")
+@validate_code_level_metrics("test_pika_async_connection_consume.test_async_connection_basic_consume_two_exchanges.<locals>", "on_message_1", py2_namespace="test_pika_async_connection_consume")
+@validate_code_level_metrics("test_pika_async_connection_consume.test_async_connection_basic_consume_two_exchanges.<locals>", "on_message_2", py2_namespace="test_pika_async_connection_consume")
 @background_task()
 def test_async_connection_basic_consume_two_exchanges(producer, producer_2,
         ConnectionClass):
@@ -435,7 +435,7 @@ else:
         rollup_metrics=_test_select_connection_consume_outside_txn_metrics,
         background_task=True,
         group='Message/RabbitMQ/Exchange/%s' % EXCHANGE)
-@validate_code_level_metrics("test_pika_async_connection_consume" + (".test_select_connection_basic_consume_outside_transaction.<locals>" if six.PY3 else ""), "on_message")
+@validate_code_level_metrics("test_pika_async_connection_consume.test_select_connection_basic_consume_outside_transaction.<locals>", "on_message", py2_namespace="test_pika_async_connection_consume")
 def test_select_connection_basic_consume_outside_transaction(producer):
     def on_message(channel, method_frame, header_frame, body):
         assert hasattr(method_frame, '_nr_start_time')

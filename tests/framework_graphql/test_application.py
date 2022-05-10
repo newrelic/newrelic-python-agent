@@ -144,11 +144,12 @@ def test_basic(target_application):
 def test_query_and_mutation(target_application, is_graphql_2):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
+    mutation_path = "storage_add" if framework != "Graphene" else "storage_add.string"
     type_annotation = "!" if framework == "Strawberry" else ""
 
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/%s/storage_add" % framework, 1),
-        ("GraphQL/operation/%s/mutation/<anonymous>/storage_add" % framework, 1),
+        ("GraphQL/operation/%s/mutation/<anonymous>/%s" % (framework, mutation_path), 1),
     ]
     _test_query_scoped_metrics = [
         ("GraphQL/resolve/%s/storage" % framework, 1),
@@ -163,7 +164,7 @@ def test_query_and_mutation(target_application, is_graphql_2):
         "graphql.field.name": "storage_add",
         "graphql.field.parentType": "Mutation",
         "graphql.field.path": "storage_add",
-        "graphql.field.returnType": "String" + type_annotation,
+        "graphql.field.returnType": ("String" if framework != "Graphene" else "StorageAdd") + type_annotation,
     }
     _expected_query_operation_attributes = {
         "graphql.operation.type": "query",
@@ -176,22 +177,28 @@ def test_query_and_mutation(target_application, is_graphql_2):
         "graphql.field.returnType": "[String%s]%s" % (type_annotation, type_annotation),
     }
 
-    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_storage_add")
+    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add")
+    @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
+    @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
     @validate_transaction_metrics(
-        "mutation/<anonymous>/storage_add",
+        "mutation/<anonymous>/%s" % mutation_path,
         "GraphQL",
         scoped_metrics=_test_mutation_scoped_metrics,
         rollup_metrics=_test_mutation_scoped_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
         background_task=is_bg,
     )
-    @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
-    @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
     @conditional_decorator(background_task(), is_bg)
     def _mutation():
-        response = target_application('mutation { storage_add(string: "abc") }')
-        assert response["storage_add"] == "abc"
+        if framework == "Graphene":
+            query = 'mutation { storage_add(string: "abc") { string } }'
+        else:
+            query = 'mutation { storage_add(string: "abc") }'
+        response = target_application(query)
+        assert response["storage_add"] == "abc" or response["storage_add"]["string"] == "abc"
 
-    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_storage")
+    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage")
+    @validate_span_events(exact_agents=_expected_query_operation_attributes)
+    @validate_span_events(exact_agents=_expected_query_resolver_attributes)
     @validate_transaction_metrics(
         "query/<anonymous>/storage",
         "GraphQL",
@@ -199,8 +206,6 @@ def test_query_and_mutation(target_application, is_graphql_2):
         rollup_metrics=_test_query_scoped_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
         background_task=is_bg,
     )
-    @validate_span_events(exact_agents=_expected_query_operation_attributes)
-    @validate_span_events(exact_agents=_expected_query_resolver_attributes)
     @conditional_decorator(background_task(), is_bg)
     def _query():
         response = target_application("query { storage }")
@@ -230,7 +235,7 @@ def test_middleware(target_application, middleware):
     span_count = 5 + extra_spans
 
     @validate_code_level_metrics(*name.split(":"))
-    @validate_code_level_metrics("_target_schema_%s" % schema_type, "resolve_hello")
+    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_hello")
     @validate_span_events(count=span_count)
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
@@ -307,7 +312,7 @@ def test_exception_in_resolver(target_application, field):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     query = "query MyQuery { %s }" % field
 
-    txn_name = "_target_schema_%s:resolve_error" % schema_type
+    txn_name = "framework_%s._target_schema_%s:resolve_error" % (framework.lower(), schema_type)
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -547,7 +552,7 @@ _test_queries = [
 def test_deepest_unique_path(target_application, query, expected_path):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     if expected_path == "/error":
-        txn_name = "_target_schema_%s:resolve_error" % schema_type
+        txn_name = "framework_%s._target_schema_%s:resolve_error" % (framework.lower(), schema_type)
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 

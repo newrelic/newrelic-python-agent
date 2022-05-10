@@ -53,7 +53,7 @@ _test_application_index_scoped_metrics = [
 ]
 
 
-@validate_code_level_metrics("_test_application.create_app.<locals>" if six.PY3 else "_test_application", "IndexResource")
+@validate_code_level_metrics("_test_application.create_app.<locals>", "IndexResource", py2_namespace="_test_application")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:index',
         scoped_metrics=_test_application_index_scoped_metrics)
@@ -80,7 +80,7 @@ _test_application_raises_scoped_metrics = [
 def test_application_raises(exception, status_code, ignore_status_code,
         propagate_exceptions, application):
 
-    @validate_code_level_metrics("_test_application.create_app.<locals>" if six.PY3 else "_test_application", "ExceptionResource")
+    @validate_code_level_metrics("_test_application.create_app.<locals>", "ExceptionResource", py2_namespace="_test_application")
     @validate_transaction_metrics('_test_application:exception',
             scoped_metrics=_test_application_raises_scoped_metrics)
     def _test():

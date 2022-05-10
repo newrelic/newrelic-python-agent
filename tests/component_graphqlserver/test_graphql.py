@@ -36,38 +36,7 @@ def is_graphql_2():
 
 @pytest.fixture(scope="session", params=("Sanic", "Flask"))
 def target_application(request):
-    import _test_graphql
-    framework = request.param
-    version = importlib.import_module(framework.lower()).__version__
-
-    return framework, version, _test_graphql.target_application[framework]
-
-
-def example_middleware(next, root, info, **args):  #pylint: disable=W0622
-    return_value = next(root, info, **args)
-    return return_value
-
-
-def error_middleware(next, root, info, **args):  #pylint: disable=W0622
-    raise RuntimeError("Runtime Error!")
-
-
-_runtime_error_name = callable_name(RuntimeError)
-_test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
-_graphql_base_rollup_metrics = [
-    ("GraphQL/all", 1),
-    ("GraphQL/allWeb", 1),
-    ("GraphQL/GraphQLServer/all", 1),
-    ("GraphQL/GraphQLServer/allWeb", 1),
-]
-_view_metrics = {"Sanic": "Function/graphql_server.sanic.graphqlview:GraphQLView.post", "Flask": "Function/graphql_server.flask.graphqlview:graphql"}
-
-
-def test_basic(target_application):
-    framework, version, target_application = target_application
-    from graphql import __version__ as graphql_version
-    from graphql_server import __version__ as graphql_server_version
-
+    from . import _test_graphql
     framework = request.param
     version = importlib.import_module(framework.lower()).__version__
 
@@ -216,7 +185,7 @@ def test_middleware(target_application):
     _test_middleware_metrics = [
         ("GraphQL/operation/GraphQLServer/query/<anonymous>/hello", 1),
         ("GraphQL/resolve/GraphQLServer/hello", 1),
-        ("Function/test_graphql:example_middleware", 1),
+        ("Function/component_graphqlserver.test_graphql:example_middleware", 1),
     ]
 
     # Base span count 6: Transaction, View, Operation, Middleware, and 1 Resolver and Resolver function
@@ -250,7 +219,7 @@ def test_exception_in_middleware(target_application):
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
         ("Errors/allWeb", 1),
-        ("Errors/WebTransaction/GraphQL/test_graphql:error_middleware", 1),
+        ("Errors/WebTransaction/GraphQL/component_graphqlserver.test_graphql:error_middleware", 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -267,7 +236,7 @@ def test_exception_in_middleware(target_application):
     }
 
     @validate_transaction_metrics(
-        "test_graphql:error_middleware",
+        "component_graphqlserver.test_graphql:error_middleware",
         "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
         rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,

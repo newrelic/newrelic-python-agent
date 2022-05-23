@@ -2540,6 +2540,9 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("uvicorn.config", "newrelic.hooks.adapter_uvicorn", "instrument_uvicorn_config")
 
+    _process_module_definition("hypercorn.asyncio.run", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_asyncio_run")
+    _process_module_definition("hypercorn.trio.run", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_trio_run")
+
     _process_module_definition("sanic.app", "newrelic.hooks.framework_sanic", "instrument_sanic_app")
     _process_module_definition("sanic.response", "newrelic.hooks.framework_sanic", "instrument_sanic_response")
 

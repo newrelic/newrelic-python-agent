@@ -169,6 +169,19 @@ def environment_settings():
         if hasattr(uvicorn, "__version__"):
             dispatcher.append(("Dispatcher Version", uvicorn.__version__))
 
+    if not dispatcher and "hypercorn" in sys.modules:
+        dispatcher.append(("Dispatcher", "hypercorn"))
+        hypercorn = sys.modules["hypercorn"]
+
+        if hasattr(hypercorn, "__version__"):
+            dispatcher.append(("Dispatcher Version", hypercorn.__version__))
+        else:
+            try:
+                from importlib.metadata import version
+                dispatcher.append(("Dispatcher Version", version("hypercorn")))
+            except Exception:
+                pass
+
     if not dispatcher and "tornado" in sys.modules:
         dispatcher.append(("Dispatcher", "tornado"))
         tornado = sys.modules["tornado"]

@@ -19,7 +19,7 @@ import threading
 from urllib.request import HTTPError, urlopen
 
 import pytest
-import uvicorn
+import daphne
 from testing_support.fixtures import (
     override_application_settings,
     raise_background_exceptions,
@@ -32,12 +32,12 @@ from testing_support.sample_asgi_applications import (
     AppWithCallRaw,
     simple_app_v2_raw,
 )
-from uvicorn.config import Config
-from uvicorn.main import Server
+from daphne.server import Server
 
 from newrelic.common.object_names import callable_name
 
-UVICORN_VERSION = tuple(int(v) for v in uvicorn.__version__.split(".")[:2])
+DAPHNE_VERSION = tuple(int(v) for v in daphne.__version__.split(".")[:2])
+skip_asgi_3_unsupported = pytest.mark.skipif(DAPHNE_VERSION < (0, 6), reason="ASGI3 unsupported")
 
 
 def get_open_port():
@@ -50,17 +50,18 @@ def get_open_port():
 
 @pytest.fixture(
     params=(
-        simple_app_v2_raw,
+        # simple_app_v2_raw,
         pytest.param(
             AppWithCallRaw(),
-            marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"),
+            marks=skip_asgi_3_unsupported,
         ),
-        pytest.param(
-            AppWithCall(),
-            marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"),
-        ),
+        # pytest.param(
+        #     AppWithCall(),
+        #     marks=skip_asgi_3_unsupported,
+        # ),
     ),
-    ids=("raw", "class_with_call", "class_with_call_double_wrapped"),
+    ids=("class_with_call",),
+    # ids=("raw", "class_with_call", "class_with_call_double_wrapped"),
 )
 def app(request):
     return request.param
@@ -74,25 +75,18 @@ def port(app):
     ready = threading.Event()
 
     def server_run():
-        def on_tick_sync():
+        def on_ready():
             if not ready.is_set():
                 loops.append(asyncio.get_event_loop())
                 ready.set()
 
-        async def on_tick():
-            on_tick_sync()
-
-        config = Config(app, host="127.0.0.1", port=port, loop="asyncio")
-        config.callback_notify = on_tick
-        config.log_config = {"version": 1}
-        config.disable_lifespan = True
-        config.logger = logging.getLogger("uvicorn")
-        server = Server(config=config)
-        server.install_signal_handlers = lambda *args, **kwargs: None
-        try:
-            server.started.set = on_tick_sync
-        except Exception:
-            pass
+        server = Server(
+            app,
+            endpoints=["tcp:%d:interface=127.0.0.1" % port],
+            ready_callable=on_ready,
+            signal_handlers=False,
+            verbosity=9,
+        )
         server.run()
 
     thread = threading.Thread(target=server_run, daemon=True)
@@ -107,7 +101,7 @@ def port(app):
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
-def test_uvicorn_200(port, app):
+def test_daphne_200(port, app):
     @validate_transaction_metrics(callable_name(app))
     @raise_background_exceptions()
     @wait_for_background_threads()
@@ -119,7 +113,7 @@ def test_uvicorn_200(port, app):
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 @validate_transaction_errors(["builtins:ValueError"])
-def test_uvicorn_500(port, app):
+def test_daphne_500(port, app):
     @validate_transaction_metrics(callable_name(app))
     @raise_background_exceptions()
     @wait_for_background_threads()

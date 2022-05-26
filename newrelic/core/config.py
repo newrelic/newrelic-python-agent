@@ -749,6 +749,10 @@ _settings.event_harvest_config.harvest_limits.error_event_data = _environ_as_int
     "NEW_RELIC_ERROR_COLLECTOR_MAX_EVENT_SAMPLES_STORED", ERROR_EVENT_RESERVOIR_SIZE
 )
 
+_settings.event_harvest_config.harvest_limits.log_event_data = _environ_as_int(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED", LOG_EVENT_RESERVOIR_SIZE
+)
+
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False
 
@@ -807,9 +811,6 @@ _settings.event_loop_visibility.blocking_threshold = 0.1
 _settings.code_level_metrics.enabled = True
 
 _settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_LOGGING_ENABLED", default=True)
-_settings.application_logging.forwarding.max_samples_stored = _environ_as_int(
-    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED`", LOG_EVENT_RESERVOIR_SIZE
-)
 _settings.application_logging.forwarding.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=False
 )

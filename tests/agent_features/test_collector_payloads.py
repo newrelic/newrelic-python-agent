@@ -22,6 +22,8 @@ from testing_support.fixtures import (validate_error_trace_collector_json,
 from testing_support.sample_applications import (simple_app,
         simple_exceptional_app, simple_custom_event_app)
 
+from testing_support.validators.validate_log_event_collector_json import validate_log_event_collector_json
+
 
 exceptional_application = webtest.TestApp(simple_exceptional_app)
 normal_application = webtest.TestApp(simple_app)
@@ -63,3 +65,8 @@ def test_transaction_event_json():
 @validate_custom_event_collector_json()
 def test_custom_event_json():
     custom_event_application.get('/')
+
+@validate_log_event_collector_json
+def test_custom_event_json():
+    normal_application.get('/')
+    raise NotImplementedError("Fix my validator")

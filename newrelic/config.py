@@ -2299,6 +2299,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "logging",
+        "newrelic.hooks.logger_logging",
+        "instrument_logging",
+    )
+
+    _process_module_definition(
         "paste.httpserver",
         "newrelic.hooks.adapter_paste",
         "instrument_paste_httpserver",

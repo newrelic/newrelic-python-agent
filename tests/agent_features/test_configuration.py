@@ -50,7 +50,7 @@ _test_dictionary_local_config = [
     {
         "request_headers_map": {"NR-SESSION": "BLANK"},
         "event_harvest_config": {
-            "harvest_limits": {"analytic_event_data": 100, "custom_event_data": 100, "error_event_data": 8},
+            "harvest_limits": {"analytic_event_data": 100, "custom_event_data": 100, "error_event_data": 8, "log_event_data": 100},
             "report_period_ms": 5000,
         },
     }
@@ -270,6 +270,7 @@ def test_dict_parse(settings):
     assert "analytic_event_data" in limits
     assert "custom_event_data" in limits
     assert "error_event_data" in limits
+    assert "log_event_data" in limits
 
 
 @parameterize_local_config(_test_strip_proxy_details_local_configs)
@@ -440,8 +441,20 @@ translate_settings_tests = [
         TSetting("event_harvest_config.harvest_limits.custom_event_data", 1200, 1200),
     ),
     (
-        TSetting("error_collector.ignore_errors", callable_name(ValueError), []),
+        TSetting("application_logging.forwarding.max_samples_stored", 10000, 10000),
+        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
+    ),
+    (
+        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
+        TSetting("event_harvest_config.harvest_limits.log_event_data", 10000, 10000),
+    ),
+    (
+        TSetting("error_collector.ignore_errors", [], []),
         TSetting("error_collector.ignore_classes", callable_name(ValueError), []),
+    ),
+(
+        TSetting("error_collector.ignore_errors", callable_name(ValueError), []),
+        TSetting("error_collector.ignore_classes", [], []),
     ),
 ]
 

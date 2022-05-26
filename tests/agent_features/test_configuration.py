@@ -50,7 +50,12 @@ _test_dictionary_local_config = [
     {
         "request_headers_map": {"NR-SESSION": "BLANK"},
         "event_harvest_config": {
-            "harvest_limits": {"analytic_event_data": 100, "custom_event_data": 100, "error_event_data": 8, "log_event_data": 100},
+            "harvest_limits": {
+                "analytic_event_data": 100,
+                "custom_event_data": 100,
+                "error_event_data": 8,
+                "log_event_data": 100,
+            },
             "report_period_ms": 5000,
         },
     }
@@ -452,7 +457,7 @@ translate_settings_tests = [
         TSetting("error_collector.ignore_errors", [], []),
         TSetting("error_collector.ignore_classes", callable_name(ValueError), []),
     ),
-(
+    (
         TSetting("error_collector.ignore_errors", callable_name(ValueError), []),
         TSetting("error_collector.ignore_classes", [], []),
     ),

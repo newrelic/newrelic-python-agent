@@ -57,7 +57,7 @@ from newrelic.core.attribute_filter import (
     DST_NONE,
     DST_TRANSACTION_TRACER,
 )
-from newrelic.core.config import DEFAULT_RESERVOIR_SIZE
+from newrelic.core.config import DEFAULT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.stack_trace import exception_stack
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
@@ -204,7 +204,6 @@ class Transaction(object):
 
         self._errors = []
         self._slow_sql = []
-        self._custom_events = SampledDataSet(capacity=DEFAULT_RESERVOIR_SIZE)
 
         self._stack_trace_count = 0
         self._explain_plan_count = 0
@@ -319,6 +318,13 @@ class Transaction(object):
 
                 if self._settings:
                     self.enabled = True
+
+        if self._settings:
+            self._custom_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data)
+            self._log_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.log_event_data)
+        else:
+            self._custom_events = SampledDataSet(capacity=DEFAULT_RESERVOIR_SIZE)
+            self._log_events = SampledDataSet(capacity=LOG_EVENT_RESERVOIR_SIZE)
 
     def __del__(self):
         self._dead = True
@@ -562,6 +568,7 @@ class Transaction(object):
             errors=tuple(self._errors),
             slow_sql=tuple(self._slow_sql),
             custom_events=self._custom_events,
+            log_events=self._log_events,
             apdex_t=self.apdex,
             suppress_apdex=self.suppress_apdex,
             custom_metrics=self._custom_metrics,

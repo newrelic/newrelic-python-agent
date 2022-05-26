@@ -54,6 +54,7 @@ EVENT_HARVEST_METHODS = {
     "span_event_data": ("reset_span_events",),
     "custom_event_data": ("reset_custom_events",),
     "error_event_data": ("reset_error_events",),
+    "log_event_data": ("reset_log_events",),
 }
 
 
@@ -331,9 +332,12 @@ class SampledDataSet(object):
                 return
             heapreplace(self.pq, entry)
 
-    def merge(self, other_data_set):
-        for priority, seen_at, sample in other_data_set.pq:
-            self.add(sample, priority)
+    def merge(self, other_data_set, priority=None):
+        if priority is None:
+            priority = -1
+
+        for original_priority, seen_at, sample in other_data_set.pq:
+            self.add(sample, max(priority, original_priority))
 
         # Merge the num_seen from the other_data_set, but take care not to
         # double-count the actual samples of other_data_set since the .add
@@ -424,6 +428,7 @@ class StatsEngine(object):
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
         self._span_events = SampledDataSet()
+        self._log_events = SampledDataSet()
         self._span_stream = None
         self.__sql_stats_table = {}
         self.__slow_transaction = None
@@ -453,6 +458,10 @@ class StatsEngine(object):
     @property
     def span_events(self):
         return self._span_events
+
+    @property
+    def log_events(self):
+        return self._log_events
 
     @property
     def span_stream(self):
@@ -995,6 +1004,12 @@ class StatsEngine(object):
                 for event in transaction.span_events(self.__settings):
                     self._span_events.add(event, priority=transaction.priority)
 
+        # Merge in log events
+
+        if settings and settings.application_logging.enabled and settings.application_logging.forwarding.enabled:
+            self._log_events.merge(transaction.log_events, priority=transaction.priority)
+
+
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
         sending to the core application pertaining to the reporting
@@ -1347,6 +1362,7 @@ class StatsEngine(object):
         self.reset_error_events()
         self.reset_custom_events()
         self.reset_span_events()
+        self.reset_log_events()
         self.reset_synthetics_events()
         # streams are never reset after instantiation
         if reset_stream:
@@ -1390,6 +1406,12 @@ class StatsEngine(object):
             self._span_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.span_event_data)
         else:
             self._span_events = SampledDataSet()
+
+    def reset_log_events(self):
+        if self.__settings is not None:
+            self._log_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.log_event_data)
+        else:
+            self._log_events = SampledDataSet()
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1513,6 +1535,7 @@ class StatsEngine(object):
         self._merge_error_traces(snapshot)
         self._merge_custom_events(snapshot)
         self._merge_span_events(snapshot)
+        self._merge_log_events(snapshot)
         self._merge_sql(snapshot)
         self._merge_traces(snapshot)
 
@@ -1537,6 +1560,7 @@ class StatsEngine(object):
         self._merge_error_events(snapshot)
         self._merge_custom_events(snapshot, rollback=True)
         self._merge_span_events(snapshot, rollback=True)
+        self._merge_log_events(snapshot, rollback=True)
 
     def merge_metric_stats(self, snapshot):
         """Merges metric data from a snapshot. This is used both when merging
@@ -1613,6 +1637,12 @@ class StatsEngine(object):
             return
         self._span_events.merge(events)
 
+    def _merge_log_events(self, snapshot, rollback=False):
+        events = snapshot.log_events
+        if not events:
+            return
+        self._log_events.merge(events)
+
     def _merge_error_traces(self, snapshot):
 
         # Append snapshot error details at end to maintain time
@@ -1688,6 +1718,9 @@ class StatsEngineSnapshot(StatsEngine):
 
     def reset_span_events(self):
         self._span_events = None
+
+    def reset_log_events(self):
+        self._log_events = None
 
     def reset_synthetics_events(self):
         self._synthetics_events = None

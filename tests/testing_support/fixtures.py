@@ -2450,10 +2450,19 @@ def code_coverage_fixture(source=['newrelic']):
 
 
 def reset_core_stats_engine():
+    """Reset the StatsEngine and custom StatsEngine of the core application."""
     @function_wrapper
     def _reset_core_stats_engine(wrapped, instance, args, kwargs):
-        stats = core_application_stats_engine()
+        api_application = application_instance()
+        api_name = api_application.name
+        core_application = api_application._agent.application(api_name)
+        
+        stats = core_application._stats_engine
         stats.reset_stats(stats.settings)
+        
+        custom_stats = core_application._stats_custom_engine
+        custom_stats.reset_stats(custom_stats.settings)
+        
         return wrapped(*args, **kwargs)
 
     return _reset_core_stats_engine

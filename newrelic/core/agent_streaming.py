@@ -19,8 +19,8 @@ try:
     import grpc
 
     from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span
-except ImportError:
-    grpc = None
+except Exception:
+    grpc, RecordStatus, Span = None, None, None
 
 _logger = logging.getLogger(__name__)
 

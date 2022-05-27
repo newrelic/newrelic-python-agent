@@ -44,7 +44,7 @@ try:
     from newrelic.core.infinite_tracing_pb2 import (  # pylint: disable=W0611,C0412  # noqa: F401
         Span,
     )
-except ImportError:
+except Exception:
     grpc = None
 
 

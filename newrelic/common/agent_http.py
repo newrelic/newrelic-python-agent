@@ -609,6 +609,7 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
         "error_event_data": None,
         "span_event_data": None,
         "custom_event_data": None,
+        "log_event_data": None,
         "shutdown": [],
     }
 

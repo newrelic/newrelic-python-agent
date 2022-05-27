@@ -38,6 +38,15 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+try:
+    import grpc
+
+    from newrelic.core.infinite_tracing_pb2 import (  # pylint: disable=W0611,C0412  # noqa: F401
+        Span,
+    )
+except Exception:
+    grpc = None
+
 
 # By default, Transaction Events and Custom Events have the same size
 # reservoir. Error Events have a different default size.

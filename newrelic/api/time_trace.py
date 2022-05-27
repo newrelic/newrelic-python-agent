@@ -118,9 +118,6 @@ class TimeTrace(object):
         self.activated = True
 
         # Extract source code context
-        settings = (
-            self.settings or self.transaction.settings
-        )  # Some derived classes do not have self.settings immediately
         if self._source is not None:
             self.add_code_level_metrics(self._source)
 
@@ -208,14 +205,16 @@ class TimeTrace(object):
 
     def add_code_level_metrics(self, source):
         """Extract source code context from a callable and add appropriate attributes."""
-        if source and self.settings and self.settings.code_level_metrics and self.settings.code_level_metrics.enabled:
+        # Some derived classes do not have self.settings immediately
+        settings = self.settings or self.transaction.settings
+        if source and settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
             try:
                 node = extract_code_from_callable(source)
                 node.add_attrs(self._add_agent_attribute)
-            except:
-                _logger.error(
-                    "Failed to extract source code context from callable %s. Report this issue to newrelic support."
-                    % source
+            except Exception as exc:
+                _logger.debug(
+                    "Failed to extract source code context from callable %s. Report this issue to newrelic support. Exception: %s"
+                    % (source, exc)
                 )
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):

@@ -576,7 +576,12 @@ class TimeTrace(object):
             self.has_async_children = False
 
     def _get_service_linking_metadata(self, application=None):
-        return get_service_linking_metadata(application)
+        if application is not None:
+            return get_service_linking_metadata(application)
+        elif self.transaction is not None:
+            return get_service_linking_metadata(settings=self.transaction.settings)
+        else:
+            return get_service_linking_metadata()
 
     def _get_trace_linking_metadata(self):
         metadata = {}
@@ -611,14 +616,13 @@ def get_trace_linking_metadata():
         return {}
 
 
-def get_service_linking_metadata(application=None):
+def get_service_linking_metadata(application=None, settings=None):
     metadata = {
         "entity.type": "SERVICE",
     }
 
     trace = current_trace()
-    settings = None
-    if trace:
+    if settings is None and trace:
         txn = trace.transaction
         if txn:
             settings = txn.settings
@@ -626,8 +630,9 @@ def get_service_linking_metadata(application=None):
     if not settings:
         if application is None:
             from newrelic.api.application import application_instance
-            settings = application_instance(activate=False).settings
-        else:
+            application = application_instance(activate=False)
+        
+        if application is not None:
             settings = application.settings
 
     if settings:

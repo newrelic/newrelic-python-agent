@@ -30,6 +30,7 @@ from newrelic.core.config import finalize_application_settings, global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.error_node import ErrorNode
 from newrelic.core.function_node import FunctionNode
+from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.root_node import RootNode
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.transaction_node import TransactionNode
@@ -47,6 +48,11 @@ def transaction_node(request):
     for _ in range(num_events):
         event = create_custom_event("Custom", {})
         custom_events.add(event)
+
+    log_events = SampledDataSet(capacity=num_events)
+    for _ in range(num_events):
+        event = LogEventNode(1653609717, "WARNING", "A", {})
+        log_events.add(event)
 
     error = ErrorNode(
         timestamp=0,
@@ -117,6 +123,7 @@ def transaction_node(request):
         errors=errors,
         slow_sql=(),
         custom_events=custom_events,
+        log_events=log_events,
         apdex_t=0.5,
         suppress_apdex=False,
         custom_metrics=CustomMetrics(),
@@ -438,6 +445,7 @@ def test_failed_spans_harvest(span_events_enabled):
         "license_key": "**NOT A LICENSE KEY**",
         "feature_flag": set(),
         "collect_custom_events": False,
+        "application_logging.forwarding.enabled": False,
     },
 )
 def test_transaction_count(transaction_node):
@@ -509,9 +517,11 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
         "license_key": "**NOT A LICENSE KEY**",
         "feature_flag": set(),
         "distributed_tracing.enabled": True,
+        "application_logging.forwarding.enabled": True,
         "event_harvest_config.harvest_limits.error_event_data": 1000,
         "event_harvest_config.harvest_limits.span_event_data": 1000,
         "event_harvest_config.harvest_limits.custom_event_data": 1000,
+        "event_harvest_config.harvest_limits.log_event_data": 1000,
     },
 )
 def test_reservoir_sizes(transaction_node):
@@ -524,6 +534,7 @@ def test_reservoir_sizes(transaction_node):
     # Test that the samples have been recorded
     assert app._stats_engine.custom_events.num_samples == 101
     assert app._stats_engine.error_events.num_samples == 101
+    assert app._stats_engine.log_events.num_samples == 101
 
     # Add 1 for the root span
     assert app._stats_engine.span_events.num_samples == 102
@@ -535,6 +546,7 @@ def test_reservoir_sizes(transaction_node):
         ("analytic_event_data", "transaction_events"),
         ("error_event_data", "error_events"),
         ("custom_event_data", "custom_events"),
+        ("log_event_data", "log_events"),
         ("span_event_data", "span_events"),
     ],
 )
@@ -558,14 +570,16 @@ def test_reservoir_size_zeros(harvest_name, event_name):
     app._stats_engine.transaction_events.add("transaction event")
     app._stats_engine.error_events.add("error event")
     app._stats_engine.custom_events.add("custom event")
+    app._stats_engine.log_events.add(LogEventNode(1653609717, "WARNING", "A", {}))
     app._stats_engine.span_events.add("span event")
 
     assert app._stats_engine.transaction_events.num_seen == 1
     assert app._stats_engine.error_events.num_seen == 1
     assert app._stats_engine.custom_events.num_seen == 1
+    assert app._stats_engine.log_events.num_seen == 1
     assert app._stats_engine.span_events.num_seen == 1
 
-    stat_events = set(("transaction_events", "error_events", "custom_events", "span_events"))
+    stat_events = set(("transaction_events", "error_events", "custom_events", "log_events", "span_events"))
 
     for stat_event in stat_events:
         event = getattr(app._stats_engine, stat_event)
@@ -580,6 +594,7 @@ def test_reservoir_size_zeros(harvest_name, event_name):
     assert app._stats_engine.transaction_events.num_seen == 0
     assert app._stats_engine.error_events.num_seen == 0
     assert app._stats_engine.custom_events.num_seen == 0
+    assert app._stats_engine.log_events.num_seen == 0
     assert app._stats_engine.span_events.num_seen == 0
 
 
@@ -783,7 +798,7 @@ def test_reset_synthetics_events():
 
 
 @pytest.mark.parametrize(
-    "allowlist_event", ("analytic_event_data", "custom_event_data", "error_event_data", "span_event_data")
+    "allowlist_event", ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data")
 )
 @override_generic_settings(
     settings,
@@ -802,12 +817,14 @@ def test_flexible_events_harvested(allowlist_event):
     app._stats_engine.transaction_events.add("transaction event")
     app._stats_engine.error_events.add("error event")
     app._stats_engine.custom_events.add("custom event")
+    app._stats_engine.log_events.add(LogEventNode(1653609717, "WARNING", "A", {}))
     app._stats_engine.span_events.add("span event")
     app._stats_engine.record_custom_metric("CustomMetric/Int", 1)
 
     assert app._stats_engine.transaction_events.num_seen == 1
     assert app._stats_engine.error_events.num_seen == 1
     assert app._stats_engine.custom_events.num_seen == 1
+    assert app._stats_engine.log_events.num_seen == 1
     assert app._stats_engine.span_events.num_seen == 1
     assert app._stats_engine.record_custom_metric("CustomMetric/Int", 1)
 
@@ -822,6 +839,9 @@ def test_flexible_events_harvested(allowlist_event):
     num_seen = 0 if (allowlist_event == "custom_event_data") else 1
     assert app._stats_engine.custom_events.num_seen == num_seen
 
+    num_seen = 0 if (allowlist_event == "log_event_data") else 1
+    assert app._stats_engine.log_events.num_seen == num_seen
+
     num_seen = 0 if (allowlist_event == "span_event_data") else 1
     assert app._stats_engine.span_events.num_seen == num_seen
 
@@ -830,7 +850,7 @@ def test_flexible_events_harvested(allowlist_event):
 
 
 @pytest.mark.parametrize(
-    "allowlist_event", ("analytic_event_data", "custom_event_data", "error_event_data", "span_event_data")
+    "allowlist_event", ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data")
 )
 @override_generic_settings(
     settings,
@@ -849,11 +869,13 @@ def test_default_events_harvested(allowlist_event):
     app._stats_engine.transaction_events.add("transaction event")
     app._stats_engine.error_events.add("error event")
     app._stats_engine.custom_events.add("custom event")
+    app._stats_engine.log_events.add(LogEventNode(1653609717, "WARNING", "A", {}))
     app._stats_engine.span_events.add("span event")
 
     assert app._stats_engine.transaction_events.num_seen == 1
     assert app._stats_engine.error_events.num_seen == 1
     assert app._stats_engine.custom_events.num_seen == 1
+    assert app._stats_engine.log_events.num_seen == 1
     assert app._stats_engine.span_events.num_seen == 1
     assert app._stats_engine.metrics_count() == 0
 
@@ -867,6 +889,9 @@ def test_default_events_harvested(allowlist_event):
 
     num_seen = 0 if (allowlist_event != "custom_event_data") else 1
     assert app._stats_engine.custom_events.num_seen == num_seen
+
+    num_seen = 0 if (allowlist_event != "log_event_data") else 1
+    assert app._stats_engine.log_events.num_seen == num_seen
 
     num_seen = 0 if (allowlist_event != "span_event_data") else 1
     assert app._stats_engine.span_events.num_seen == num_seen

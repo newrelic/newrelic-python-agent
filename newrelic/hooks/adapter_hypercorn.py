@@ -22,7 +22,26 @@ def bind_worker_serve(app, *args, **kwargs):
 async def wrap_worker_serve(wrapped, instance, args, kwargs):
     app, args, kwargs = bind_worker_serve(*args, **kwargs)
     app = ASGIApplicationWrapper(app)
+    app._nr_wrapped = True
     return await wrapped(app, *args, **kwargs)
+
+
+def bind_is_asgi_2(app):
+    return app
+
+
+def wrap__is_asgi_2(wrapped, instance, args, kwargs):
+    app = bind_is_asgi_2(*args, **kwargs)
+
+    # Unwrap apps wrapped by our instrumentation.
+    # ASGI 2/3 detection for hypercorn is unable to process
+    # our wrappers and will return incorrect results. This
+    # should be sufficient to allow hypercorn to run detection
+    # on an application that was not wrapped by this instrumentation.
+    while getattr(app, "_nr_wrapped", False):
+        app = app.__wrapped__
+
+    return wrapped(app)
 
 
 def instrument_hypercorn_asyncio_run(module):
@@ -31,3 +50,7 @@ def instrument_hypercorn_asyncio_run(module):
 
 def instrument_hypercorn_trio_run(module):
     wrap_function_wrapper(module, "worker_serve", wrap_worker_serve)
+
+
+def instrument_hypercorn_utils(module):
+    wrap_function_wrapper(module, "_is_asgi_2", wrap__is_asgi_2)

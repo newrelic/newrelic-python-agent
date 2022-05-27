@@ -1291,7 +1291,7 @@ class Application(object):
 
                     # Send log events
 
-                    if configuration and configuration.application_logging.enabled and configuration.application_logging.forwarding.enabled:
+                    if configuration and configuration.application_logging and configuration.application_logging.enabled and configuration.application_logging.forwarding and configuration.application_logging.forwarding.enabled:
 
                         logs = stats.log_events
 

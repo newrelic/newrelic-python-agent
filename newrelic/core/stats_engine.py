@@ -1006,7 +1006,7 @@ class StatsEngine(object):
 
         # Merge in log events
 
-        if settings and settings.application_logging.enabled and settings.application_logging.forwarding.enabled:
+        if settings and settings.application_logging and settings.application_logging.enabled and settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             self._log_events.merge(transaction.log_events, priority=transaction.priority)
 
 

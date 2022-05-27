@@ -517,6 +517,7 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
         "license_key": "**NOT A LICENSE KEY**",
         "feature_flag": set(),
         "distributed_tracing.enabled": True,
+        "application_logging.forwarding.enabled": True,
         "event_harvest_config.harvest_limits.error_event_data": 1000,
         "event_harvest_config.harvest_limits.span_event_data": 1000,
         "event_harvest_config.harvest_limits.custom_event_data": 1000,

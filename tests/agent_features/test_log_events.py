@@ -40,8 +40,10 @@ enable_log_forwarding = override_application_settings({"application_logging.forw
 disable_log_forwarding = override_application_settings({"application_logging.forwarding.enabled": False})
 
 _common_attributes_service_linking = {"timestamp": None, "hostname": None, "entity.name": "Python Agent Test (agent_features)", "entity.guid": None}
-_common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh12345678", **_common_attributes_service_linking}
-_test_record_log_event_inside_transaction_events = [{"message": "A", "level": "ERROR", **_common_attributes_trace_linking}]
+_common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh12345678"}
+_common_attributes_trace_linking.update(_common_attributes_service_linking)
+_test_record_log_event_inside_transaction_events = [{"message": "A", "level": "ERROR"}]
+_test_record_log_event_inside_transaction_events[0].update(_common_attributes_trace_linking)
 
 @enable_log_forwarding
 def test_record_log_event_inside_transaction():
@@ -54,7 +56,8 @@ def test_record_log_event_inside_transaction():
     test()
 
 
-_test_record_log_event_outside_transaction_events = [{"message": "A", "level": "ERROR", **_common_attributes_service_linking}]
+_test_record_log_event_outside_transaction_events = [{"message": "A", "level": "ERROR"}]
+_test_record_log_event_outside_transaction_events[0].update(_common_attributes_service_linking)
 
 @enable_log_forwarding
 @reset_core_stats_engine()
@@ -67,7 +70,8 @@ def test_record_log_event_outside_transaction():
     test()
 
 
-_test_record_log_event_unknown_level_inside_transaction_events = [{"message": "A", "level": "UNKNOWN", **_common_attributes_trace_linking}]
+_test_record_log_event_unknown_level_inside_transaction_events = [{"message": "A", "level": "UNKNOWN"}]
+_test_record_log_event_unknown_level_inside_transaction_events[0].update(_common_attributes_trace_linking)
 
 @enable_log_forwarding
 def test_record_log_event_unknown_level_inside_transaction():
@@ -81,7 +85,8 @@ def test_record_log_event_unknown_level_inside_transaction():
     test()
 
 
-_test_record_log_event_unknown_level_outside_transaction_events = [{"message": "A", "level": "UNKNOWN", **_common_attributes_service_linking}]
+_test_record_log_event_unknown_level_outside_transaction_events = [{"message": "A", "level": "UNKNOWN"}]
+_test_record_log_event_unknown_level_outside_transaction_events[0].update(_common_attributes_service_linking)
 
 @enable_log_forwarding
 @reset_core_stats_engine()
@@ -146,7 +151,8 @@ def test_ignored_transaction_logs_not_forwarded():
     test()
 
 
-_test_log_event_truncation_events = [{"message": "A" * 32768, "level": "ERROR", **_common_attributes_trace_linking}]
+_test_log_event_truncation_events = [{"message": "A" * 32768, "level": "ERROR"}]
+_test_log_event_truncation_events[0].update(_common_attributes_trace_linking)
 
 @enable_log_forwarding
 def test_log_event_truncation():

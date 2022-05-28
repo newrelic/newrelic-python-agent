@@ -640,7 +640,7 @@ def get_service_linking_metadata(application=None, settings=None):
         entity_guid = settings.entity_guid
         if entity_guid:
             metadata["entity.guid"] = entity_guid
-        metadata["hostname"] = platform.uname().node
+        metadata["hostname"] = platform.uname()[1]
 
     return metadata
 

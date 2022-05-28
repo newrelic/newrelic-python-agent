@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+
 from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 from testing_support.fixtures import catch_background_exceptions
@@ -40,7 +42,7 @@ def validate_log_event_count(count=1):
         val = _new_wrapper(*args, **kwargs)
         if count:
             assert record_called
-        logs = recorded_logs.copy()
+        logs = copy.copy(recorded_logs)
         
         record_called[:] = []
         recorded_logs[:] = []

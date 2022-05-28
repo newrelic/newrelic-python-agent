@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+
 from newrelic.packages import six
 
 from newrelic.common.object_wrapper import (transient_function_wrapper,
@@ -43,7 +45,7 @@ def validate_log_events(events):
         _new_wrapper = _validate_log_events(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_called
-        logs = recorded_logs.copy()
+        logs = copy.copy(recorded_logs)
         
         record_called[:] = []
         recorded_logs[:] = []

@@ -25,12 +25,14 @@ import warnings
 import weakref
 from collections import OrderedDict
 
+from newrelic.api.application import application_instance
 import newrelic.core.database_node
 import newrelic.core.error_node
+from newrelic.core.log_event_node import LogEventNode
 import newrelic.core.root_node
 import newrelic.core.transaction_node
 import newrelic.packages.six as six
-from newrelic.api.time_trace import TimeTrace
+from newrelic.api.time_trace import TimeTrace, get_linking_metadata
 from newrelic.common.encoding_utils import (
     DistributedTracePayload,
     NrTraceState,
@@ -46,11 +48,13 @@ from newrelic.common.encoding_utils import (
     obfuscate,
 )
 from newrelic.core.attribute import (
+    MAX_LOG_MESSAGE_LENGTH,
     MAX_NUM_USER_ATTRIBUTES,
     create_agent_attributes,
     create_attributes,
     create_user_attributes,
     process_user_attribute,
+    truncate,
 )
 from newrelic.core.attribute_filter import (
     DST_ERROR_COLLECTOR,
@@ -1472,6 +1476,31 @@ class Transaction(object):
         self._group = group
         self._name = name
 
+
+    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+        settings = self.settings
+        if not (settings and settings.application_logging and settings.application_logging.enabled and settings.application_logging.forwarding and settings.application_logging.forwarding.enabled):
+            return
+        
+        timestamp = timestamp if timestamp is not None else time.time()
+        level = str(level) if level is not None else "UNKNOWN"
+        
+        if not message or message.isspace():
+            _logger.debug("record_log_event called where message was missing. No log event will be sent.")
+            return
+        
+        message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+
+        event = LogEventNode(
+            timestamp=timestamp,
+            level=level,
+            message=message,
+            attributes=get_linking_metadata(), 
+        )
+
+        self._log_events.add(event, priority=priority)
+
+
     def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
         warnings.warn(
@@ -1819,6 +1848,34 @@ def record_custom_event(event_type, params, application=None):
             )
     elif application.enabled:
         application.record_custom_event(event_type, params)
+
+
+def record_log_event(message, level=None, timestamp=None, application=None, priority=None):
+    """Record a log event.
+
+    Args:
+        record (logging.Record):
+        application (newrelic.api.Application): Application instance.
+    """
+
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_log_event(message, level, timestamp)
+        else:
+            application = application_instance(activate=False)
+
+            if application and application.enabled:
+                application.record_log_event(message, level, timestamp, priority=priority)
+            else:
+                _logger.debug(
+                    "record_log_event has been called but no transaction or application was running. As a result, "
+                    "the following event has not been recorded. message: %r level: %r timestamp %r. To correct "
+                    "this problem, supply an application object as a parameter to this record_log_event call.",
+                    message, level, timestamp,
+                )
+    elif application.enabled:
+        application.record_log_event(message, level, timestamp, priority=priority)
 
 
 def accept_distributed_trace_payload(payload, transport_type="HTTP"):

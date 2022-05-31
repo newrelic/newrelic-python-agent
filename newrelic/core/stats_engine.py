@@ -32,10 +32,11 @@ from heapq import heapify, heapreplace
 
 import newrelic.packages.six as six
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
+from newrelic.api.time_trace import get_linking_metadata
 from newrelic.common.encoding_utils import json_encode
 from newrelic.common.object_names import parse_exc_info
 from newrelic.common.streaming_utils import StreamBuffer
-from newrelic.core.attribute import create_user_attributes, process_user_attribute
+from newrelic.core.attribute import create_user_attributes, process_user_attribute, truncate, MAX_LOG_MESSAGE_LENGTH
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
 from newrelic.core.code_level_metrics import extract_code_from_traceback
 from newrelic.core.config import is_expected_error, should_ignore_error
@@ -43,6 +44,7 @@ from newrelic.core.database_utils import explain_plan
 from newrelic.core.error_collector import TracedError
 from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
+from newrelic.core.log_event_node import LogEventNode
 
 _logger = logging.getLogger(__name__)
 
@@ -1008,6 +1010,36 @@ class StatsEngine(object):
 
         if settings and settings.application_logging and settings.application_logging.enabled and settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             self._log_events.merge(transaction.log_events, priority=transaction.priority)
+
+
+    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+        settings = self.__settings
+        if not (settings and settings.application_logging and settings.application_logging.enabled and settings.application_logging.forwarding and settings.application_logging.forwarding.enabled):
+            return
+        
+        timestamp = timestamp if timestamp is not None else time.time()
+        level = str(level) if level is not None else "UNKNOWN"
+
+        if not message or message.isspace():
+            _logger.debug("record_log_event called where message was missing. No log event will be sent.")
+            return
+        
+        message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+
+        event = LogEventNode(
+            timestamp=timestamp,
+            level=level,
+            message=message,
+            attributes=get_linking_metadata(), 
+        )
+
+        if priority is None:
+            # Base priority for log events outside transactions is below those inside transactions
+            priority = random.random() - 1
+
+        self._log_events.add(event, priority=priority)
+
+        return event
 
 
     def metric_data(self, normalizer=None):

@@ -86,20 +86,19 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "pypy2"
+          python-version: "pypy-3.6"
           architecture: x64
 
       - uses: actions/setup-python@v3
         with:
-          python-version: "2.7"
+          python-version: "pypy-3.7"
           architecture: x64
 
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-2.7"
+          architecture: x64
+    
       - uses: actions/setup-python@v3
         with:
           python-version: "3.6"
@@ -115,16 +114,20 @@ jobs:
           python-version: "3.8"
           architecture: x64
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: "3.9"
           architecture: x64
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: "3.10"
           architecture: x64
-
+          
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "2.7"
+          architecture: x64
 
       - name: Install Dependencies
         run: |
@@ -163,20 +166,19 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-3.7"
           architecture: x64
 
-      # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
-          python-version: "pypy2"
+          python-version: "pypy-2.7"
           architecture: x64
     
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "2.7"
-          architecture: x64
-
       - uses: actions/setup-python@v3
         with:
           python-version: "3.6"
@@ -192,14 +194,19 @@ jobs:
           python-version: "3.8"
           architecture: x64
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: "3.9"
           architecture: x64
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v3
         with:
           python-version: "3.10"
+          architecture: x64
+          
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "2.7"
           architecture: x64
 
       - name: Install Dependencies
@@ -237,6 +244,11 @@ jobs:
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.6"
+          architecture: x64
+
       - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.7"
@@ -332,15 +344,15 @@ jobs:
       - uses: actions/checkout@v2
 
       # Set up all versions of python
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-      - uses: actions/setup-python@v2
+      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
+      - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.7"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -433,6 +445,11 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-3.7"
           architecture: x64
 
@@ -519,6 +536,11 @@ jobs:
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.6"
+          architecture: x64
+
       - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.7"
@@ -608,15 +630,15 @@ jobs:
       - uses: actions/checkout@v2
 
       # Set up all versions of python
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-      - uses: actions/setup-python@v2
+      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
+      - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.7"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -702,6 +724,11 @@ jobs:
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.6"
+          architecture: x64
+
       - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.7"
@@ -790,15 +817,15 @@ jobs:
       - uses: actions/checkout@v2
 
       # Set up all versions of python
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-      - uses: actions/setup-python@v2
+      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
+      - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.7"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -884,6 +911,11 @@ jobs:
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.6"
+          architecture: x64
+
       - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.7"
@@ -976,6 +1008,11 @@ jobs:
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-3.7"
           architecture: x64
 
@@ -1063,15 +1100,15 @@ jobs:
       - uses: actions/checkout@v2
 
       # Set up all versions of python
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-      - uses: actions/setup-python@v2
+      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
+      - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.7"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -1156,6 +1193,11 @@ jobs:
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.6"
+          architecture: x64
+
       - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.7"

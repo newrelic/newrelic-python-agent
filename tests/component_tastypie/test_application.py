@@ -23,6 +23,7 @@ from newrelic.api.transaction import end_of_transaction
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_ignore_status_codes)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 from wsgi import application
 
@@ -41,6 +42,7 @@ _test_application_index_scoped_metrics.append(
         ('Function/views:index', 1))
 
 
+@validate_code_level_metrics("views", "index")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:index',
         scoped_metrics=_test_application_index_scoped_metrics)

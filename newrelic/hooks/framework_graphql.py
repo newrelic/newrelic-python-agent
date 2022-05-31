@@ -270,7 +270,7 @@ def wrap_middleware(wrapped, instance, args, kwargs):
 
     name = callable_name(wrapped)
     transaction.set_transaction_name(name, "GraphQL", priority=12)
-    with FunctionTrace(name):
+    with FunctionTrace(name, source=wrapped):
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
 
@@ -308,7 +308,7 @@ def wrap_executor_execute(wrapped, instance, args, kwargs):
     # args[0] is the resolver function, or the top of the middleware chain
     args = list(args)
     if callable(args[0]):
-        if not hasattr(args[0], "_nr_wrapped"):
+        if not hasattr(args[0], "_nr_wrapped") and not hasattr(getattr(args[0], "func", None), "_nr_wrapped"):
             args[0] = wrap_resolver(args[0])
             args[0]._nr_wrapped = True
     return wrapped(*args, **kwargs)
@@ -320,10 +320,12 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=13)
+    name = callable_name(wrapped)
+    transaction.set_transaction_name(name, "GraphQL", priority=13)
 
-    with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-        return wrapped(*args, **kwargs)
+    with FunctionTrace(name, source=wrapped):
+        with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
+            return wrapped(*args, **kwargs)
 
 
 def wrap_error_handler(wrapped, instance, args, kwargs):

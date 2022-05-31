@@ -37,6 +37,7 @@ from newrelic.common.object_names import parse_exc_info
 from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.attribute import create_user_attributes, process_user_attribute
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
+from newrelic.core.code_level_metrics import extract_code_from_traceback
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.database_utils import explain_plan
 from newrelic.core.error_collector import TracedError
@@ -152,7 +153,7 @@ class TimeStats(list):
         self[2] += exclusive
         self[3] = self[0] and min(self[3], duration) or duration
         self[4] = max(self[4], duration)
-        self[5] += duration ** 2
+        self[5] += duration**2
 
         # Must update the call count last as update of the
         # minimum call time is dependent on initial value.
@@ -199,7 +200,7 @@ class CustomMetrics(object):
             else:
                 new_stats = TimeStats(*c2t(**value))
         else:
-            new_stats = TimeStats(1, value, value, value, value, value ** 2)
+            new_stats = TimeStats(1, value, value, value, value, value**2)
 
         stats = self.__stats_table.get(name)
         if stats is None:
@@ -535,7 +536,7 @@ class StatsEngine(object):
                 total_exclusive_call_time=metric.exclusive,
                 min_call_time=metric.duration,
                 max_call_time=metric.duration,
-                sum_of_squares=metric.duration ** 2,
+                sum_of_squares=metric.duration**2,
             )
             self.__stats_table[key] = stats
         else:
@@ -590,12 +591,15 @@ class StatsEngine(object):
 
         exc, value, tb = error
 
+        if getattr(value, "_nr_ignored", None):
+            return
+
         module, name, fullnames, message = parse_exc_info(error)
         fullname = fullnames[0]
 
         # Check to see if we need to strip the message before recording it.
 
-        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.whitelist:
+        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
             message = STRIP_EXCEPTION_MESSAGE
 
         # Where expected or ignore are a callable they should return a
@@ -619,12 +623,14 @@ class StatsEngine(object):
         if isinstance(ignore, bool):
             should_ignore = ignore
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # Callable parameter
         if should_ignore is None and callable(ignore):
             should_ignore = ignore(exc, value, tb)
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # List of class names
@@ -633,12 +639,14 @@ class StatsEngine(object):
             # This should cascade into default settings rule matching
             for name in fullnames:
                 if name in ignore:
+                    value._nr_ignored = True
                     return
 
         # Default rule matching
         if should_ignore is None:
             should_ignore = should_ignore_error(error, status_code=status_code, settings=settings)
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # Check against expected rules
@@ -705,6 +713,11 @@ class StatsEngine(object):
             "error.expected": is_expected,
         }
 
+        # set source code attributes
+        attributes["agentAttributes"] = {}
+        if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
+            extract_code_from_traceback(tb).add_attrs(attributes["agentAttributes"].__setitem__)
+
         error_details = TracedError(
             start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
         )
@@ -770,7 +783,7 @@ class StatsEngine(object):
             else:
                 new_stats = TimeStats(*c2t(**value))
         else:
-            new_stats = TimeStats(1, value, value, value, value, value ** 2)
+            new_stats = TimeStats(1, value, value, value, value, value**2)
 
         stats = self.__stats_table.get(key)
         if stats is None:
@@ -1444,28 +1457,28 @@ class StatsEngine(object):
         # represented in either the snapshot or in the current stats object.
         #
         #   If we're in flexible harvest, the goal is to have everything in the
-        #   whitelist appear in the snapshot. This means, we must remove the
-        #   whitelist data types from the current stats object.
+        #   allowlist appear in the snapshot. This means, we must remove the
+        #   allowlist data types from the current stats object.
         #
         #   If we're not in flexible harvest, everything excluded from the
-        #   whitelist appears in the snapshot and is removed from the current
+        #   allowlist appears in the snapshot and is removed from the current
         #   stats object.
         if flexible:
-            whitelist_stats, other_stats = self, snapshot
+            allowlist_stats, other_stats = self, snapshot
             snapshot.reset_non_event_types()
         else:
-            whitelist_stats, other_stats = snapshot, self
+            allowlist_stats, other_stats = snapshot, self
             self.reset_non_event_types()
 
-        event_harvest_whitelist = self.__settings.event_harvest_config.whitelist
+        event_harvest_allowlist = self.__settings.event_harvest_config.allowlist
 
         # Iterate through harvest types. If they are in the list of types to
         # harvest reset them on stats_engine otherwise remove them from the
         # snapshot.
         for nr_method, stats_methods in EVENT_HARVEST_METHODS.items():
             for stats_method in stats_methods:
-                if nr_method in event_harvest_whitelist:
-                    reset = getattr(whitelist_stats, stats_method)
+                if nr_method in event_harvest_allowlist:
+                    reset = getattr(allowlist_stats, stats_method)
                 else:
                     reset = getattr(other_stats, stats_method)
 

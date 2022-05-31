@@ -162,7 +162,7 @@ class Retry(object):
 
         .. warning::
 
-            Previously this parameter was named ``method_whitelist``, that
+            Previously this parameter was named ``method_allowlist``, that
             usage is deprecated in v1.26.0 and will be removed in v2.0.
 
     :param iterable status_forcelist:
@@ -239,23 +239,23 @@ class Retry(object):
         respect_retry_after_header=True,
         remove_headers_on_redirect=_Default,
         # TODO: Deprecated, remove in v2.0
-        method_whitelist=_Default,
+        method_allowlist=_Default,
     ):
 
-        if method_whitelist is not _Default:
+        if method_allowlist is not _Default:
             if allowed_methods is not _Default:
                 raise ValueError(
                     "Using both 'allowed_methods' and "
-                    "'method_whitelist' together is not allowed. "
+                    "'method_allowlist' together is not allowed. "
                     "Instead only use 'allowed_methods'"
                 )
             warnings.warn(
-                "Using 'method_whitelist' with Retry is deprecated and "
+                "Using 'method_allowlist' with Retry is deprecated and "
                 "will be removed in v2.0. Use 'allowed_methods' instead",
                 DeprecationWarning,
                 stacklevel=2,
             )
-            allowed_methods = method_whitelist
+            allowed_methods = method_allowlist
         if allowed_methods is _Default:
             allowed_methods = self.DEFAULT_ALLOWED_METHODS
         if remove_headers_on_redirect is _Default:
@@ -302,17 +302,17 @@ class Retry(object):
 
         # TODO: If already given in **kw we use what's given to us
         # If not given we need to figure out what to pass. We decide
-        # based on whether our class has the 'method_whitelist' property
-        # and if so we pass the deprecated 'method_whitelist' otherwise
+        # based on whether our class has the 'method_allowlist' property
+        # and if so we pass the deprecated 'method_allowlist' otherwise
         # we use 'allowed_methods'. Remove in v2.0
-        if "method_whitelist" not in kw and "allowed_methods" not in kw:
-            if "method_whitelist" in self.__dict__:
+        if "method_allowlist" not in kw and "allowed_methods" not in kw:
+            if "method_allowlist" in self.__dict__:
                 warnings.warn(
-                    "Using 'method_whitelist' with Retry is deprecated and "
+                    "Using 'method_allowlist' with Retry is deprecated and "
                     "will be removed in v2.0. Use 'allowed_methods' instead",
                     DeprecationWarning,
                 )
-                params["method_whitelist"] = self.allowed_methods
+                params["method_allowlist"] = self.allowed_methods
             else:
                 params["allowed_methods"] = self.allowed_methods
 
@@ -431,15 +431,15 @@ class Retry(object):
         """Checks if a given HTTP method should be retried upon, depending if
         it is included in the allowed_methods
         """
-        # TODO: For now favor if the Retry implementation sets its own method_whitelist
+        # TODO: For now favor if the Retry implementation sets its own method_allowlist
         # property outside of our constructor to avoid breaking custom implementations.
-        if "method_whitelist" in self.__dict__:
+        if "method_allowlist" in self.__dict__:
             warnings.warn(
-                "Using 'method_whitelist' with Retry is deprecated and "
+                "Using 'method_allowlist' with Retry is deprecated and "
                 "will be removed in v2.0. Use 'allowed_methods' instead",
                 DeprecationWarning,
             )
-            allowed_methods = self.method_whitelist
+            allowed_methods = self.method_allowlist
         else:
             allowed_methods = self.allowed_methods
 
@@ -584,10 +584,10 @@ class Retry(object):
         ).format(cls=type(self), self=self)
 
     def __getattr__(self, item):
-        if item == "method_whitelist":
+        if item == "method_allowlist":
             # TODO: Remove this deprecated alias in v2.0
             warnings.warn(
-                "Using 'method_whitelist' with Retry is deprecated and "
+                "Using 'method_allowlist' with Retry is deprecated and "
                 "will be removed in v2.0. Use 'allowed_methods' instead",
                 DeprecationWarning,
             )

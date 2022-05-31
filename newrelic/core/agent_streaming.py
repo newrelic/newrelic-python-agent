@@ -19,8 +19,8 @@ try:
     import grpc
 
     from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span
-except ImportError:
-    grpc = None
+except Exception:
+    grpc, RecordStatus, Span = None, None, None
 
 _logger = logging.getLogger(__name__)
 
@@ -48,7 +48,8 @@ class StreamingRpc(object):
         self._endpoint = endpoint
         self._ssl = ssl
         self.metadata = metadata
-        self.request_iterator = stream_buffer
+        self.stream_buffer = stream_buffer
+        self.request_iterator = iter(stream_buffer)
         self.response_processing_thread = threading.Thread(
             target=self.process_responses, name="NR-StreamingRpc-process-responses"
         )
@@ -67,6 +68,12 @@ class StreamingRpc(object):
             self.channel = grpc.insecure_channel(self._endpoint, options=self.OPTIONS)
 
         self.rpc = self.channel.stream_stream(self.PATH, Span.SerializeToString, RecordStatus.FromString)
+
+    def create_response_iterator(self):
+        with self.stream_buffer._notify:
+            self.request_iterator = iter(self.stream_buffer)
+            self.request_iterator._stream = reponse_iterator = self.rpc(self.request_iterator, metadata=self.metadata)
+            return reponse_iterator
 
     @staticmethod
     def condition(*args, **kwargs):
@@ -114,6 +121,12 @@ class StreamingRpc(object):
                             "response code. The agent will attempt "
                             "to reestablish the stream immediately."
                         )
+
+                        # Reconnect channel for load balancing
+                        self.request_iterator.shutdown()
+                        self.channel.close()
+                        self.create_channel()
+
                     else:
                         self.record_metric(
                             "Supportability/InfiniteTracing/Span/Response/Error",
@@ -153,6 +166,7 @@ class StreamingRpc(object):
                             )
 
                         # Reconnect channel with backoff
+                        self.request_iterator.shutdown()
                         self.channel.close()
                         self.notify.wait(retry_time)
                         if self.closed:
@@ -164,7 +178,8 @@ class StreamingRpc(object):
                 if self.closed:
                     break
 
-                response_iterator = self.rpc(self.request_iterator, metadata=self.metadata)
+                response_iterator = self.create_response_iterator()
+
                 _logger.info("Streaming RPC connect completed.")
 
             try:

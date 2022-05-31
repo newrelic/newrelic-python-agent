@@ -19,12 +19,12 @@ import newrelic.core.solr_node
 
 class SolrTrace(newrelic.api.time_trace.TimeTrace):
     def __init__(self, library, command, **kwargs):
-        parent = None
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs["parent"]
-        super(SolrTrace, self).__init__(parent)
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(SolrTrace, self).__init__(parent=parent, source=source)
 
         self.library = library
         self.command = command
@@ -99,7 +99,7 @@ class SolrTraceWrapper(object):
         else:
             command = self._nr_command
 
-        with SolrTrace(library, command, parent=parent):
+        with SolrTrace(library, command, parent=parent, source=self._nr_next_object):
             return self._nr_next_object(*args, **kwargs)
 
 

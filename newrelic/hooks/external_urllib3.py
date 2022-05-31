@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
-
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.transaction import current_transaction
+from newrelic.api.external_trace import ExternalTraceWrapper
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.external_httplib2 import (
     _nr_wrapper_httplib2_endheaders_wrapper)
@@ -28,8 +25,7 @@ def _nr_wrapper_make_request_(wrapped, instance, args, kwargs):
 
     url_for_apm_ui = _bind_params(*args, **kwargs)
 
-    with ExternalTrace('urllib3', url_for_apm_ui):
-        return wrapped(*args, **kwargs)
+    return ExternalTraceWrapper(wrapped, 'urllib3', url_for_apm_ui)(*args, **kwargs)
 
 
 def instrument_urllib3_connectionpool(module):

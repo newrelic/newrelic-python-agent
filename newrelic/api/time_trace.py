@@ -22,6 +22,10 @@ import warnings
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
+from newrelic.core.code_level_metrics import (
+    extract_code_from_callable,
+    extract_code_from_traceback,
+)
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
 
@@ -29,7 +33,7 @@ _logger = logging.getLogger(__name__)
 
 
 class TimeTrace(object):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, source=None):
         self.parent = parent
         self.root = None
         self.child_count = 0
@@ -50,6 +54,8 @@ class TimeTrace(object):
         self.guid = "%016x" % random.getrandbits(64)
         self.agent_attributes = {}
         self.user_attributes = {}
+
+        self._source = source
 
     @property
     def transaction(self):
@@ -111,6 +117,10 @@ class TimeTrace(object):
 
         self.activated = True
 
+        # Extract source code context
+        if self._source is not None:
+            self.add_code_level_metrics(self._source)
+
         return self
 
     def __exit__(self, exc, value, tb):
@@ -161,8 +171,8 @@ class TimeTrace(object):
 
         self.exclusive += self.duration
 
-        if self.exclusive < 0:
-            self.exclusive = 0
+        # Set negative values to 0
+        self.exclusive = max(self.exclusive, 0)
 
         self.exited = True
 
@@ -192,6 +202,20 @@ class TimeTrace(object):
             return
 
         self.user_attributes[key] = value
+
+    def add_code_level_metrics(self, source):
+        """Extract source code context from a callable and add appropriate attributes."""
+        # Some derived classes do not have self.settings immediately
+        settings = self.settings or self.transaction.settings
+        if source and settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
+            try:
+                node = extract_code_from_callable(source)
+                node.add_attrs(self._add_agent_attribute)
+            except Exception as exc:
+                _logger.debug(
+                    "Failed to extract source code context from callable %s. Report this issue to newrelic support. Exception: %s"
+                    % (source, exc)
+                )
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
         # Bail out if the transaction is not active or
@@ -227,12 +251,15 @@ class TimeTrace(object):
 
         exc, value, tb = exc_info
 
+        if getattr(value, "_nr_ignored", None):
+            return
+
         module, name, fullnames, message = parse_exc_info((exc, value, tb))
         fullname = fullnames[0]
 
         # Check to see if we need to strip the message before recording it.
 
-        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.whitelist:
+        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
             message = STRIP_EXCEPTION_MESSAGE
 
         # Where expected or ignore are a callable they should return a
@@ -257,18 +284,21 @@ class TimeTrace(object):
         if isinstance(ignore, bool):
             should_ignore = ignore
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # Callable parameter
         if should_ignore is None and callable(ignore):
             should_ignore = ignore(exc, value, tb)
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # Callable on transaction
         if should_ignore is None and hasattr(transaction, "_ignore_errors"):
             should_ignore = transaction._ignore_errors(exc, value, tb)
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # List of class names
@@ -277,12 +307,14 @@ class TimeTrace(object):
             # This should cascade into default settings rule matching
             for name in fullnames:
                 if name in ignore:
+                    value._nr_ignored = True
                     return
 
         # Default rule matching
         if should_ignore is None:
             should_ignore = should_ignore_error(exc_info, status_code=status_code, settings=settings)
             if should_ignore:
+                value._nr_ignored = True
                 return
 
         # Check against expected rules
@@ -355,7 +387,21 @@ class TimeTrace(object):
                     )
                     custom_params = {}
 
-            transaction._create_error_node(settings, fullname, message, is_expected, custom_params, self.guid, tb)
+            if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
+                source = extract_code_from_traceback(tb)
+            else:
+                source = None
+
+            transaction._create_error_node(
+                settings,
+                fullname,
+                message,
+                is_expected,
+                custom_params,
+                self.guid,
+                tb,
+                source=source,
+            )
 
     def record_exception(self, exc_info=None, params=None, ignore_errors=None):
         # Deprecation Warning

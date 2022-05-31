@@ -19,7 +19,7 @@ except ImportError:
 
 import newrelic.packages.six as six
 
-from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.external_trace import ExternalTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
@@ -42,8 +42,7 @@ def _nr_wrapper_opener_director_open_(wrapped, instance, args, kwargs):
     if details.hostname is None:
         return wrapped(*args, **kwargs)
 
-    with ExternalTrace('urllib2', url):
-        return wrapped(*args, **kwargs)
+    return ExternalTraceWrapper(wrapped, 'urllib2', url)(*args, **kwargs)
 
 def instrument(module):
 

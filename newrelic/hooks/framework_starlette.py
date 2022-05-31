@@ -24,7 +24,6 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_function_wrapper,
 )
-from newrelic.core.config import should_ignore_error
 from newrelic.core.context import ContextOf, context_wrapper
 
 
@@ -62,7 +61,20 @@ def bind_add_exception_handler(exc_class_or_status_code, handler, *args, **kwarg
 
 def wrap_route(wrapped, instance, args, kwargs):
     path, endpoint, args, kwargs = bind_endpoint(*args, **kwargs)
-    endpoint = route_naming_wrapper(FunctionTraceWrapper(endpoint))
+    endpoint = FunctionTraceWrapper(endpoint)
+
+    # Starlette name detection gets a bit confused with our wrappers
+    # so the get_name function should be called and the result should
+    # be cached on the wrapper.
+    try:
+        if not hasattr(endpoint, "__name__"):
+            from starlette.routing import get_name
+
+            endpoint.__name__ = get_name(endpoint.__wrapped__)
+    except Exception:
+        pass
+
+    endpoint = route_naming_wrapper(endpoint)
     return wrapped(path, endpoint, *args, **kwargs)
 
 
@@ -130,14 +142,20 @@ def wrap_starlette(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def status_code(response):
+    code = getattr(response, "status_code", None)
+
+    def _status_code(exc, value, tb):
+        return code
+
+    return _status_code
+
+
 def record_response_error(response, value):
-    status_code = getattr(response, "status_code", None)
     exc = getattr(value, "__class__", None)
     tb = getattr(value, "__traceback__", None)
-    if should_ignore_error((exc, value, tb), status_code):
-        value._nr_ignored = True
-    else:
-        notice_error((exc, value, tb))
+
+    notice_error((exc, value, tb), status_code=status_code(response))
 
 
 async def wrap_exception_handler_async(coro, exc):

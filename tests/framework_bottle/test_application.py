@@ -20,6 +20,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
     override_application_settings)
 
 from newrelic.packages import six
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 import webtest
 
@@ -53,6 +54,7 @@ else:
 _test_application_index_custom_metrics = [
         ('Python/Framework/Bottle/%s.%s.%s' % version, 1)]
 
+@validate_code_level_metrics("_target_application", "index_page")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_target_application:index_page',
         scoped_metrics=_test_application_index_scoped_metrics,
@@ -82,6 +84,7 @@ if six.PY3:
 else:
     _test_application_error_errors = ['exceptions:RuntimeError']
 
+@validate_code_level_metrics("_target_application", "error_page")
 @validate_transaction_errors(errors=_test_application_error_errors)
 @validate_transaction_metrics('_target_application:error_page',
         scoped_metrics=_test_application_error_scoped_metrics,
@@ -105,6 +108,7 @@ else:
 _test_application_not_found_custom_metrics = [
         ('Python/Framework/Bottle/%s.%s.%s' % version, 1)]
 
+@validate_code_level_metrics("_target_application", "error404_page")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_target_application:error404_page',
         scoped_metrics=_test_application_not_found_scoped_metrics,
@@ -130,6 +134,7 @@ _test_application_auth_basic_fail_custom_metrics = [
         ('Python/Framework/Bottle/%s.%s.%s' % version, 1)]
 
 @requires_auth_basic
+@validate_code_level_metrics("_target_application", "auth_basic_page")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_target_application:auth_basic_page',
         scoped_metrics=_test_application_auth_basic_fail_scoped_metrics,
@@ -154,6 +159,7 @@ _test_application_auth_basic_okay_custom_metrics = [
         ('Python/Framework/Bottle/%s.%s.%s' % version, 1)]
 
 @requires_auth_basic
+@validate_code_level_metrics("_target_application", "auth_basic_page")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_target_application:auth_basic_page',
         scoped_metrics=_test_application_auth_basic_okay_scoped_metrics,
@@ -183,6 +189,7 @@ _test_application_plugin_error_custom_metrics = [
         ('Python/Framework/Bottle/%s.%s.%s' % version, 1)]
 
 @requires_plugins
+@validate_code_level_metrics("_target_application", "plugin_error_page")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_target_application:plugin_error_page',
         scoped_metrics=_test_application_plugin_error_scoped_metrics,
@@ -193,6 +200,7 @@ def test_application_plugin_error_ignore(target_application):
             expect_errors=True)
 
 @requires_plugins
+@validate_code_level_metrics("_target_application", "plugin_error_page")
 @validate_transaction_errors(errors=['bottle:HTTPError'])
 @validate_transaction_metrics('_target_application:plugin_error_page',
         scoped_metrics=_test_application_plugin_error_scoped_metrics,

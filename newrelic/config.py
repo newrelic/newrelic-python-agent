@@ -196,7 +196,7 @@ def _map_browser_monitoring_content_type(s):
     return s.split()
 
 
-def _map_strip_exception_messages_whitelist(s):
+def _map_strip_exception_messages_allowlist(s):
     return [expand_builtin_exception_name(item) for item in s.split()]
 
 
@@ -506,9 +506,9 @@ def _process_configuration(section):
     _process_setting(section, "strip_exception_messages.enabled", "getboolean", None)
     _process_setting(
         section,
-        "strip_exception_messages.whitelist",
+        "strip_exception_messages.allowlist",
         "get",
-        _map_strip_exception_messages_whitelist,
+        _map_strip_exception_messages_allowlist,
     )
     _process_setting(section, "datastore_tracer.instance_reporting.enabled", "getboolean", None)
     _process_setting(section, "datastore_tracer.database_name_reporting.enabled", "getboolean", None)
@@ -530,6 +530,7 @@ def _process_configuration(section):
     _process_setting(section, "infinite_tracing.trace_observer_host", "get", None)
     _process_setting(section, "infinite_tracing.trace_observer_port", "getint", None)
     _process_setting(section, "infinite_tracing.span_queue_size", "getint", None)
+    _process_setting(section, "code_level_metrics.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -709,6 +710,10 @@ def translate_deprecated_settings(settings, cached_settings):
         (
             "error_collector.ignore_errors",
             "error_collector.ignore_classes",
+        ),
+        (
+            "strip_exception_messages.whitelist",
+            "strip_exception_messages.allowlist",
         ),
     ]
 
@@ -2153,6 +2158,12 @@ def _process_module_builtin_defaults():
         "instrument_flask_rest",
     )
 
+    _process_module_definition(
+        "graphql_server",
+        "newrelic.hooks.component_graphqlserver",
+        "instrument_graphqlserver",
+    )
+
     # _process_module_definition('web.application',
     #        'newrelic.hooks.framework_webpy')
     # _process_module_definition('web.template',
@@ -2546,6 +2557,14 @@ def _process_module_builtin_defaults():
     _process_module_definition("pysolr", "newrelic.hooks.datastore_pysolr", "instrument_pysolr")
 
     _process_module_definition("solr", "newrelic.hooks.datastore_solrpy", "instrument_solrpy")
+
+    _process_module_definition("aredis.client", "newrelic.hooks.datastore_aredis", "instrument_aredis_client")
+
+    _process_module_definition(
+        "aredis.connection",
+        "newrelic.hooks.datastore_aredis",
+        "instrument_aredis_connection",
+    )
 
     _process_module_definition(
         "elasticsearch.client",

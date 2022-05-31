@@ -21,6 +21,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
         validate_transaction_errors, validate_transaction_event_attributes,
         count_transactions, override_generic_settings,
         override_application_settings, override_ignore_status_codes)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 
 
@@ -107,6 +109,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled,
                 'intrinsic': {},
             },
         )
+        @validate_code_level_metrics(*metric_name.split(":"))
         @override_ignore_status_codes([404])
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
@@ -169,6 +172,9 @@ def test_simultaneous_requests(method, uri, metric_name,
     if nr_enabled:
         transactions = []
 
+        func_name = metric_name.replace(":", ".").split(".")
+        namespace, func_name = ".".join(func_name[:-1]), func_name[-1]
+
         @override_application_settings({'attributes.include': ['request.*']})
         @validate_transaction_metrics(metric_name,
             scoped_metrics=[
@@ -191,6 +197,7 @@ def test_simultaneous_requests(method, uri, metric_name,
                 'intrinsic': [],
             },
         )
+        @validate_code_level_metrics(namespace, func_name)
         @count_transactions(transactions)
         def _test():
             aiohttp_app.loop.run_until_complete(multi_fetch(aiohttp_app.loop))

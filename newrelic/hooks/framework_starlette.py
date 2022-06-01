@@ -29,6 +29,7 @@ from newrelic.core.context import ContextOf, context_wrapper
 
 def framework_details():
     import starlette
+    #from starlette import __version__
 
     return ("Starlette", getattr(starlette, "__version__", None))
 
@@ -241,12 +242,35 @@ def instrument_starlette_middleware_errors(module):
     wrap_function_wrapper(module, "ServerErrorMiddleware.debug_response", wrap_exception_handler)
 
 
-def instrument_starlette_exceptions(module):
+def instrument_starlette_middleware_exceptions(module):
     wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
 
     wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
 
     wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)
+
+
+def instrument_starlette_exceptions(module):
+    # has_middleware_exceptions = False
+    # try:
+    #     import starlette.middleware
+    #     breakpoint()
+    #     if hasattr(starlette.middleware, "exceptions"):
+    #         has_middleware_exceptions = True
+    # except ImportError:
+    #     pass
+
+    breakpoint()
+    # if not hasattr(module, "ExceptionMiddleware"):
+    # if hasattr(module, "__deprecated__"):
+    # if getattr(module, "__version__") == "0.20.1":
+    # if hasattr(module, "__all__"):
+    if tuple(int(x) for x in framework_details()[1].split(".")) < (0,20,1):     # Gross but works
+        wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
+
+        wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
+
+        wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)
 
 
 def instrument_starlette_background_task(module):

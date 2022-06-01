@@ -2468,6 +2468,11 @@ def _process_module_builtin_defaults():
         "instrument_starlette_middleware_errors",
     )
     _process_module_definition(
+        "starlette.middleware.exceptions",
+        "newrelic.hooks.framework_starlette",
+        "instrument_starlette_middleware_exceptions",
+    )
+    _process_module_definition(
         "starlette.exceptions",
         "newrelic.hooks.framework_starlette",
         "instrument_starlette_exceptions",

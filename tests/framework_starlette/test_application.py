@@ -26,7 +26,6 @@ from newrelic.common.object_names import callable_name
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 starlette_version = tuple(int(x) for x in starlette.__version__.split("."))
-#file_shift_compensator = (".middleware" if starlette_version >= (0, 20, 1) else "")
 
 @pytest.fixture(scope="session")
 def target_application():
@@ -36,10 +35,7 @@ def target_application():
 
 
 FRAMEWORK_METRIC = ("Python/Framework/Starlette/%s" % starlette.__version__, 1)
-# DEFAULT_MIDDLEWARE_METRICS = [
-#     ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
-#     ("Function/starlette%s.exceptions:ExceptionMiddleware.__call__" % file_shift_compensator, 1),
-# ]
+
 if starlette_version >= (0, 20, 1):
     DEFAULT_MIDDLEWARE_METRICS = [
         ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
@@ -95,22 +91,7 @@ else:
         ("Function/starlette.exceptions:ExceptionMiddleware.__call__", 1),
     ]
 
-# middleware_test_0201_or_later = (
-#     ("no_error_handler", "starlette.middleware.exceptions:ExceptionMiddleware.__call__"),
-#     (
-#         "non_async_error_handler_no_middleware",
-#         "starlette.middleware.exceptions:ExceptionMiddleware.__call__",
-#     ),
-# )
-# middleware_test_0191_or_earlier = (
-#     ("no_error_handler", "starlette.exceptions:ExceptionMiddleware.__call__"),
-#     (
-#         "non_async_error_handler_no_middleware",
-#         "starlette.exceptions:ExceptionMiddleware.__call__",
-#     ),
-# )
 
-# file_shift_compensator = (".middleware" if starlette_version >= (0, 20, 1) else "")
 if starlette_version >= (0, 20, 1):
     middleware_test = (
         ("no_error_handler", "starlette.middleware.exceptions:ExceptionMiddleware.__call__"),
@@ -127,13 +108,6 @@ else:
             "starlette.exceptions:ExceptionMiddleware.__call__",
         ),
     )
-# middleware_test = (
-#     ("no_error_handler", "starlette%s.exceptions:ExceptionMiddleware.__call__" % file_shift_compensator),
-#     (
-#         "non_async_error_handler_no_middleware",
-#         "starlette%s.exceptions:ExceptionMiddleware.__call__" % file_shift_compensator,
-#     ),
-# )
 
 @pytest.mark.parametrize(
     "app_name, transaction_name", middleware_test,

@@ -251,21 +251,10 @@ def instrument_starlette_middleware_exceptions(module):
 
 
 def instrument_starlette_exceptions(module):
-    # has_middleware_exceptions = False
-    # try:
-    #     import starlette.middleware
-    #     breakpoint()
-    #     if hasattr(starlette.middleware, "exceptions"):
-    #         has_middleware_exceptions = True
-    # except ImportError:
-    #     pass
+    # ExceptionMiddleware was moved to starlette.middleware.exceptions, need to check
+    # that it isn't being imported through a deprecation and double wrapped.
+    if not hasattr(module, "__deprecated__"):
 
-    breakpoint()
-    # if not hasattr(module, "ExceptionMiddleware"):
-    # if hasattr(module, "__deprecated__"):
-    # if getattr(module, "__version__") == "0.20.1":
-    # if hasattr(module, "__all__"):
-    if tuple(int(x) for x in framework_details()[1].split(".")) < (0,20,1):     # Gross but works
         wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
 
         wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)

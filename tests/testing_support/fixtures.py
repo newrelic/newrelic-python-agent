@@ -482,7 +482,6 @@ def validate_transaction_metrics(
             _validate(metrics, unscoped_metric, "", 1)
 
         for scoped_name, scoped_count in scoped_metrics:
-            # breakpoint()
             _validate(metrics, scoped_name, transaction_scope_name, scoped_count)
 
         for rollup_name, rollup_count in rollup_metrics:

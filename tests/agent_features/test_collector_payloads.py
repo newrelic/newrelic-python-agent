@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import webtest
 
 from testing_support.fixtures import (validate_error_trace_collector_json,
@@ -66,7 +67,9 @@ def test_transaction_event_json():
 def test_custom_event_json():
     custom_event_application.get('/')
 
+
+@pytest.mark.xfail(reason="Unwritten validator")
 @validate_log_event_collector_json
-def test_custom_event_json():
+def test_log_event_json():
     normal_application.get('/')
     raise NotImplementedError("Fix my validator")

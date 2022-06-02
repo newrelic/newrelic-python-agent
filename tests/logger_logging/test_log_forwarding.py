@@ -91,39 +91,3 @@ def test_logging_newrelic_logs_not_forwarded(logger):
         assert len(logger.caplog.records) == 1
 
     test()
-
-"""
-# basic_inside
-#     * validate log event
-#     * validate transaction metrics
-#     * validate all linking metadata
-# basic_inside_under_different_level
-# basic_outside
-#     * validate log event
-#     * validate custom metrics
-#     * validate service linking metadata
-
-# empty_message_inside
-# empty_message_outside
-# ignored_transaction
-#     * no logs recorded
-    * ========= Should metrics be recorded? ============
-log_decorating_inside
-    * URI encoding on entity.name
-log_decorating_outside
-    * URI encoding on entity.name
-supportability_metrics_inside
-supportability_metrics_outside
-hsm_disabled/enabled
-settings_matrix
-# test_message_truncation
-test_dropped
-test_transaction_prioritized_over_outside
-test_supportability_metrics_on_connect
-test_log_level_unknown
-test_harvest_limit_size (obey collector)
-    * somehow test split payloads
-test_exceeeded_payload_size
-test_instrumentation_disabled
-test_payload
-"""

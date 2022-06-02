@@ -23,7 +23,6 @@ def validate_log_event_collector_json(num_logs=1):
     send to the collector for harvest.
     """
 
-    raise NotImplementedError()
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_log_event_collector_json(wrapped, instance, args, kwargs):

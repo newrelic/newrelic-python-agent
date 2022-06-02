@@ -23,7 +23,7 @@ from starlette import __version__
 starlette_version = tuple(int(x) for x in __version__.split("."))
 
 try:
-    from starlette.middleware import Middleware
+    from starlette.middleware import Middleware     # Ignore Flake8 Error
 
     no_middleware = False
 except ImportError:
@@ -103,7 +103,7 @@ def test_basehttp_style_middleware(target_application, route):
                 "_test_bg_tasks:%s_bg_task" % route, background_task=True
             )(_test)
             _test = validate_transaction_count(2)(_test)
-        else:   # Python 3.7 requires this specific configuration with starlette 0.20.1
+        else:   # Python <= 3.7 requires this specific configuration with starlette 0.20.1
             _test = validate_transaction_metrics(
                 "_test_bg_tasks:run_%s_bg_task" % route, scoped_metrics=route_metrics
             )(_test)

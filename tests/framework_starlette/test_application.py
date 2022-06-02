@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pyexpat import version_info
 import sys
 
 import pytest
@@ -80,34 +81,23 @@ def test_application_non_async(target_application, app_name):
     response = app.get("/non_async")
     assert response.status == 200
 
-if starlette_version >= (0, 20, 1):
-    DEFAULT_MIDDLEWARE_METRICS = [
-        ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
-        ("Function/starlette.middleware.exceptions:ExceptionMiddleware.__call__", 1),
-    ]
-else:
-    DEFAULT_MIDDLEWARE_METRICS = [
-        ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
-        ("Function/starlette.exceptions:ExceptionMiddleware.__call__", 1),
-    ]
+# Starting in Starlette v0.20.1, the ExceptionMiddleware class
+# has been moved to the starlette.middleware.exceptions from
+# starlette.exceptions
+version_tweak_string = ".middleware" if starlette_version >= (0, 20, 1) else ""
 
+DEFAULT_MIDDLEWARE_METRICS = [
+    ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
+    ("Function/starlette%s.exceptions:ExceptionMiddleware.__call__" % version_tweak_string, 1),
+]
 
-if starlette_version >= (0, 20, 1):
-    middleware_test = (
-        ("no_error_handler", "starlette.middleware.exceptions:ExceptionMiddleware.__call__"),
-        (
-            "non_async_error_handler_no_middleware",
-            "starlette.middleware.exceptions:ExceptionMiddleware.__call__",
-        ),
-    )
-else:
-    middleware_test = (
-        ("no_error_handler", "starlette.exceptions:ExceptionMiddleware.__call__"),
-        (
-            "non_async_error_handler_no_middleware",
-            "starlette.exceptions:ExceptionMiddleware.__call__",
-        ),
-    )
+middleware_test = (
+    ("no_error_handler", "starlette%s.exceptions:ExceptionMiddleware.__call__" % version_tweak_string),
+    (
+        "non_async_error_handler_no_middleware",
+        "starlette%s.exceptions:ExceptionMiddleware.__call__" % version_tweak_string,
+    ),
+)
 
 @pytest.mark.parametrize(
     "app_name, transaction_name", middleware_test,
@@ -273,29 +263,17 @@ def test_application_ignored_error(target_application, app_name, transaction_nam
 
     _test()
 
-if starlette_version >= (0, 20, 1):
-    middleware_test_exception = (
-        (
-            "no_middleware",
-            [("Function/starlette.middleware.exceptions:ExceptionMiddleware.http_exception", 1)],
-        ),
-        (
-            "teapot_exception_handler_no_middleware",
-            [("Function/_test_application:teapot_handler", 1)],
-        ),
-    )
-else:
-    middleware_test_exception = (
-        (
-            "no_middleware",
-            [("Function/starlette.exceptions:ExceptionMiddleware.http_exception", 1)],
-        ),
-        (
-            "teapot_exception_handler_no_middleware",
-            [("Function/_test_application:teapot_handler", 1)],
-        ),
-    )
 
+middleware_test_exception = (
+    (
+        "no_middleware",
+        [("Function/starlette%s.exceptions:ExceptionMiddleware.http_exception" % version_tweak_string, 1)],
+    ),
+    (
+        "teapot_exception_handler_no_middleware",
+        [("Function/_test_application:teapot_handler", 1)],
+    ),
+)
 
 @pytest.mark.parametrize(
     "app_name,scoped_metrics", middleware_test_exception

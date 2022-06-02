@@ -95,7 +95,7 @@ def test_basehttp_style_middleware(target_application, route):
         assert response.status == 200
 
     if starlette_version >= (0, 20, 1):
-        if sys.version_info.minor > 7:
+        if sys.version_info[:2] > (3, 7):
             _test = validate_transaction_metrics(
                 "_test_bg_tasks:run_%s_bg_task" % route, index=-2, scoped_metrics=route_metrics
             )(_test)

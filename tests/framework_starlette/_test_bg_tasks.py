@@ -52,7 +52,7 @@ async def async_bg_task():
     pass
 
 
-async def sync_bg_task():
+def sync_bg_task():
     pass
 
 

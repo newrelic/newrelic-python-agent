@@ -34,11 +34,6 @@ class ContextOf(object):
 
         def log_propagation_failure(s):
             if strict:
-                _logger.error(
-                    "Runtime instrumentation error. Request context propagation failed. %s Report this issue to New Relic support.",
-                    s,
-                )
-            else:
                 _logger.debug(
                     "Request context propagation failed. %s This may be an issue if there's an active transaction. Consult with New Relic support if further issues arise.",
                     s,

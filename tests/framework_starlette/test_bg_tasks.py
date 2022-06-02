@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+import sys
 from testing_support.fixtures import validate_transaction_metrics
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
@@ -94,13 +95,19 @@ def test_basehttp_style_middleware(target_application, route):
         assert response.status == 200
 
     if starlette_version >= (0, 20, 1):
-        _test = validate_transaction_metrics(
-            "_test_bg_tasks:run_%s_bg_task" % route, index=-2, scoped_metrics=route_metrics
-        )(_test)
-        _test = validate_transaction_metrics(
-            "_test_bg_tasks:%s_bg_task" % route, background_task=True
-        )(_test)
-        _test = validate_transaction_count(2)(_test)
+        if sys.version_info.minor > 7:
+            _test = validate_transaction_metrics(
+                "_test_bg_tasks:run_%s_bg_task" % route, index=-2, scoped_metrics=route_metrics
+            )(_test)
+            _test = validate_transaction_metrics(
+                "_test_bg_tasks:%s_bg_task" % route, background_task=True
+            )(_test)
+            _test = validate_transaction_count(2)(_test)
+        else:   # Python 3.7 requires this specific configuration with starlette 0.20.1
+            _test = validate_transaction_metrics(
+                "_test_bg_tasks:run_%s_bg_task" % route, scoped_metrics=route_metrics
+            )(_test)
+            _test = validate_transaction_count(1)(_test)
     else:
         _test = validate_transaction_metrics(
             "_test_bg_tasks:run_%s_bg_task" % route, scoped_metrics=old_metrics

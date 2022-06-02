@@ -29,7 +29,6 @@ from newrelic.core.context import ContextOf, context_wrapper
 
 def framework_details():
     import starlette
-    #from starlette import __version__
 
     return ("Starlette", getattr(starlette, "__version__", None))
 

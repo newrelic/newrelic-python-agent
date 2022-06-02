@@ -604,6 +604,7 @@ def validate_internal_metrics(metrics=None):
     def _validate_wrapper(wrapped, instance, args, kwargs):
         # Apply no-op wrappers to prevent new internal trace contexts from being started, preventing capture
         wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__enter__")(no_op)(wrapped)
+        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__exit__")(no_op)(wrapped)
 
         captured_metrics = CustomMetrics()
         with InternalTraceContext(captured_metrics):

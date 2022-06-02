@@ -49,6 +49,9 @@ _logging_settings_matrix = [
 ]
 
 
+@override_generic_settings(SETTINGS, {
+    'developer_mode': True,
+})
 @pytest.mark.parametrize("feature_setting,subfeature_setting", _logging_settings_matrix)
 def test_logging_connect_supportability_metrics(feature_setting, subfeature_setting):
     metric_value = "enabled" if feature_setting and subfeature_setting else "disabled"

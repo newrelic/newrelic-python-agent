@@ -21,9 +21,6 @@ from newrelic.api.transaction import current_transaction
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import validate_log_event_count_outside_transaction
-from testing_support.fixtures import (
-    validate_transaction_metrics,
-)
 
 
 def set_trace_ids():
@@ -41,7 +38,7 @@ def exercise_logging(logger):
 
 
 def get_metadata_string(log_message, is_txn):
-    host = platform.uname().node
+    host = platform.uname()[1]
     assert host
     entity_guid = application_settings().entity_guid
     if is_txn:

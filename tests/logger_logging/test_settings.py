@@ -13,9 +13,8 @@
 # limitations under the License.
 
 import pytest
-import platform
 
-from newrelic.api.application import application_settings
+from newrelic.packages import six
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
@@ -23,18 +22,6 @@ from testing_support.fixtures import (
     override_application_settings,
     validate_transaction_metrics,
 )
-
-
-def get_metadata_string(log_message, is_txn):
-    host = platform.uname().node
-    assert host
-    entity_guid = application_settings().entity_guid
-    if is_txn:
-        metadata_string = "".join(('NR-LINKING|', entity_guid, '|', host, '|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28internal_logging%29|'))
-    else:
-        metadata_string = "".join(('NR-LINKING|', entity_guid, '|', host, '|||Python%20Agent%20Test%20%28internal_logging%29|'))
-    formatted_string = log_message + " " + metadata_string
-    return formatted_string
 
 
 def basic_logging(logger):
@@ -89,12 +76,14 @@ def test_local_decorating_settings(logger, feature_setting, subfeature_setting, 
 @reset_core_stats_engine()
 def test_log_metrics_settings(logger, feature_setting, subfeature_setting, expected):
     metric_count = 1 if expected else None
+    txn_name = "test_settings:test_log_metrics_settings.<locals>.test" if six.PY3 else "test_settings:test"
+
     @override_application_settings({
         "application_logging.enabled": feature_setting,
         "application_logging.metrics.enabled": subfeature_setting,
     })
     @validate_transaction_metrics(
-        "test_settings:test_log_metrics_settings.<locals>.test",
+        txn_name,
         custom_metrics=[
             ("Logging/lines", metric_count),
             ("Logging/lines/WARNING", metric_count),

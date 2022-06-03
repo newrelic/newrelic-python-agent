@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.packages import six
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_custom_metrics_outside_transaction import validate_custom_metrics_outside_transaction
@@ -39,8 +40,9 @@ _test_logging_unscoped_metrics = [
 
 @reset_core_stats_engine()
 def test_logging_metrics_inside_transaction(logger):
+    txn_name = "test_metrics:test_logging_metrics_inside_transaction.<locals>.test" if six.PY3 else "test_metrics:test"
     @validate_transaction_metrics(
-        "test_metrics:test_logging_metrics_inside_transaction.<locals>.test",
+        txn_name,
         custom_metrics=_test_logging_unscoped_metrics,
         background_task=True,
     )

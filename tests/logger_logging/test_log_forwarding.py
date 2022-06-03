@@ -43,15 +43,21 @@ def exercise_logging(logger):
     
     assert len(logger.caplog.records) == 3
 
+def update_all(events, attrs):
+    for event in events:
+        event.update(attrs)
+
 
 _common_attributes_service_linking = {"timestamp": None, "hostname": None, "entity.name": "Python Agent Test (logger_logging)", "entity.guid": None}
-_common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh12345678", **_common_attributes_service_linking}
+_common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh12345678"}
+_common_attributes_trace_linking.update(_common_attributes_service_linking)
 
 _test_logging_inside_transaction_events = [
-    {"message": "C", "level": "WARNING", **_common_attributes_trace_linking},
-    {"message": "D", "level": "ERROR", **_common_attributes_trace_linking},
-    {"message": "E", "level": "CRITICAL", **_common_attributes_trace_linking},   
+    {"message": "C", "level": "WARNING"},
+    {"message": "D", "level": "ERROR"},
+    {"message": "E", "level": "CRITICAL"},
 ]
+update_all(_test_logging_inside_transaction_events, _common_attributes_trace_linking)
 
 
 def test_logging_inside_transaction(logger):
@@ -65,10 +71,12 @@ def test_logging_inside_transaction(logger):
 
 
 _test_logging_outside_transaction_events = [
-    {"message": "C", "level": "WARNING", **_common_attributes_service_linking},
-    {"message": "D", "level": "ERROR", **_common_attributes_service_linking},
-    {"message": "E", "level": "CRITICAL", **_common_attributes_service_linking},   
+    {"message": "C", "level": "WARNING"},
+    {"message": "D", "level": "ERROR"},
+    {"message": "E", "level": "CRITICAL"},
 ]
+update_all(_test_logging_outside_transaction_events, _common_attributes_service_linking)
+
 
 @reset_core_stats_engine()
 def test_logging_outside_transaction(logger):

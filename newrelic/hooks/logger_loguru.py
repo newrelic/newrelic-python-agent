@@ -59,8 +59,10 @@ def _nr_log_forwarder(message_instance):
                 pass
 
 
+ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
+
 def bind_log(level_id, static_level_no, from_decorator, options, message, args, kwargs):
-    assert len(options) == 9  # Assert the options signature we expect
+    assert len(options) in ALLOWED_LOGURU_OPTIONS_LENGTHS  # Assert the options signature we expect
     return level_id, static_level_no, from_decorator, list(options), message, args, kwargs
 
 

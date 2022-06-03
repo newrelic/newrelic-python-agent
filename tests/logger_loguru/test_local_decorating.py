@@ -71,3 +71,18 @@ def test_local_log_decoration_outside_transaction(logger):
         assert logger.caplog.records[0] == get_metadata_string('C', False)
 
     test()
+
+
+@reset_core_stats_engine()
+def test_patcher_application_order(logger):
+    def patch(record):
+        record["message"] += "-PATCH"
+        return record
+
+    @validate_log_event_count_outside_transaction(1)
+    def test():
+        patch_logger = logger.patch(patch)
+        exercise_logging(patch_logger)
+        assert logger.caplog.records[0] == get_metadata_string('C-PATCH', False)
+
+    test()

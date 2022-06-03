@@ -2314,6 +2314,17 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "loguru",
+        "newrelic.hooks.logger_loguru",
+        "instrument_loguru",
+    )
+    _process_module_definition(
+        "loguru._logger",
+        "newrelic.hooks.logger_loguru",
+        "instrument_loguru_logger",
+    )
+
+    _process_module_definition(
         "paste.httpserver",
         "newrelic.hooks.adapter_paste",
         "instrument_paste_httpserver",

@@ -91,6 +91,11 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.7"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-2.7"
           architecture: x64
     
@@ -166,6 +171,11 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.7"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-2.7"
           architecture: x64
     
@@ -237,6 +247,11 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.7"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -337,6 +352,11 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.7"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-2.7"
           architecture: x64
     
@@ -430,6 +450,11 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.7"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-2.7"
           architecture: x64
     
@@ -514,6 +539,11 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.7"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -608,6 +638,11 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.7"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-2.7"
           architecture: x64
     
@@ -692,6 +727,11 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.7"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -785,6 +825,11 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.7"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-2.7"
           architecture: x64
     
@@ -869,6 +914,11 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.7"
           architecture: x64
 
       - uses: actions/setup-python@v3
@@ -963,6 +1013,11 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.7"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-2.7"
           architecture: x64
     
@@ -1053,6 +1108,11 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
+          python-version: "pypy-3.7"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
           python-version: "pypy-2.7"
           architecture: x64
     
@@ -1136,6 +1196,11 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: "pypy-3.6"
+          architecture: x64
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "pypy-3.7"
           architecture: x64
 
       - uses: actions/setup-python@v3

@@ -87,7 +87,8 @@ def test_newrelic_logger_no_error(log_buffer):
     assert filename.endswith("/test_logs_in_context.py")
     assert isinstance(line_number, int)
 
-    assert message == {
+    expected = {
+        u"entity.name": u"Python Agent Test (agent_features)",
         u"entity.type": u"SERVICE",
         u"message": u"Hello World",
         u"log.level": u"INFO",
@@ -107,6 +108,16 @@ def test_newrelic_logger_no_error(log_buffer):
             u"second": u"baz",
         },
     }
+    expected_extra_txn_keys = (
+        "entity.guid",
+        "hostname",
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
 
 
 class ExceptionForTest(ValueError):
@@ -151,6 +162,7 @@ def test_newrelic_logger_error_inside_transaction(log_buffer):
         "trace.id",
         "span.id",
         "entity.guid",
+        "hostname",
     )
 
     for k, v in expected.items():
@@ -180,7 +192,8 @@ def test_newrelic_logger_error_outside_transaction(log_buffer):
     assert filename.endswith("/test_logs_in_context.py")
     assert isinstance(line_number, int)
 
-    assert message == {
+    expected = {
+        u"entity.name": u"Python Agent Test (agent_features)",
         u"entity.type": u"SERVICE",
         u"message": u"oops",
         u"log.level": u"ERROR",
@@ -190,6 +203,16 @@ def test_newrelic_logger_error_outside_transaction(log_buffer):
         u"error.class": u"test_logs_in_context:ExceptionForTest",
         u"error.message": u"",
     }
+    expected_extra_txn_keys = (
+        "entity.guid",
+        "hostname",
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
 
 
 EXPECTED_KEYS_TXN = (
@@ -198,9 +221,15 @@ EXPECTED_KEYS_TXN = (
     "entity.name",
     "entity.type",
     "entity.guid",
+        "hostname",
 )
 
-EXPECTED_KEYS_NO_TXN = EXPECTED_KEYS_TRACE_ENDED = ("entity.type",)
+EXPECTED_KEYS_NO_TXN = EXPECTED_KEYS_TRACE_ENDED = (
+    "entity.name",
+    "entity.type",
+    "entity.guid",
+    "hostname",
+)
 
 
 def validate_metadata(metadata, expected):

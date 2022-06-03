@@ -1915,38 +1915,50 @@ def validate_transaction_event_sample_data(required_attrs, required_user_attrs=T
     validation with those tests.
     """
 
-    @transient_function_wrapper("newrelic.core.stats_engine", "SampledDataSet.add")
-    def _validate_transaction_event_sample_data(wrapped, instance, args, kwargs):
-        def _bind_params(sample, *args, **kwargs):
-            return sample
+    add_transaction_called = []
 
-        sample = _bind_params(*args, **kwargs)
+    @function_wrapper
+    def _validate_wrapper(wrapped, instance, args, kwargs):
+        @transient_function_wrapper("newrelic.core.stats_engine", "SampledDataSet.add")
+        def _validate_transaction_event_sample_data(wrapped, instance, args, kwargs):
+            def _bind_params(sample, *args, **kwargs):
+                return sample
 
-        assert isinstance(sample, list)
-        assert len(sample) == 3
+            sample = _bind_params(*args, **kwargs)
 
-        intrinsics, user_attributes, _ = sample
+            assert isinstance(sample, list)
+            assert len(sample) == 3
 
-        assert intrinsics["type"] == "Transaction"
-        assert intrinsics["name"] == required_attrs["name"]
+            intrinsics, user_attributes, _ = sample
 
-        # check that error event intrinsics haven't bled in
+            if intrinsics["type"] != "Transaction":
+                return wrapped(*args, **kwargs)  # Exit early
 
-        assert "error.class" not in intrinsics
-        assert "error.message" not in intrinsics
-        assert "error.expected" not in intrinsics
-        assert "transactionName" not in intrinsics
+            add_transaction_called.append(True)
 
-        _validate_event_attributes(
-            intrinsics,
-            user_attributes,
-            required_attrs,
-            required_user_attrs,
-        )
+            assert intrinsics["name"] == required_attrs["name"]
 
-        return wrapped(*args, **kwargs)
+            # check that error event intrinsics haven't bled in
 
-    return _validate_transaction_event_sample_data
+            assert "error.class" not in intrinsics
+            assert "error.message" not in intrinsics
+            assert "error.expected" not in intrinsics
+            assert "transactionName" not in intrinsics
+
+            _validate_event_attributes(
+                intrinsics,
+                user_attributes,
+                required_attrs,
+                required_user_attrs,
+            )
+
+            return wrapped(*args, **kwargs)
+
+        result = _validate_transaction_event_sample_data(wrapped)(*args, **kwargs)
+        assert add_transaction_called
+        return result
+
+    return _validate_wrapper
 
 
 def validate_transaction_error_event_count(num_errors=1):
@@ -2450,10 +2462,19 @@ def code_coverage_fixture(source=['newrelic']):
 
 
 def reset_core_stats_engine():
+    """Reset the StatsEngine and custom StatsEngine of the core application."""
     @function_wrapper
     def _reset_core_stats_engine(wrapped, instance, args, kwargs):
-        stats = core_application_stats_engine()
+        api_application = application_instance()
+        api_name = api_application.name
+        core_application = api_application._agent.application(api_name)
+        
+        stats = core_application._stats_engine
         stats.reset_stats(stats.settings)
+        
+        custom_stats = core_application._stats_custom_engine
+        custom_stats.reset_stats(custom_stats.settings)
+        
         return wrapped(*args, **kwargs)
 
     return _reset_core_stats_engine

@@ -29,7 +29,7 @@ class Application(object):
     _delayed_callables = {}
 
     @staticmethod
-    def _instance(name):
+    def _instance(name, activate=True):
         if name is None:
             name = newrelic.core.config.global_settings().app_name
 
@@ -44,7 +44,7 @@ class Application(object):
 
         instance = Application._instances.get(name, None)
 
-        if not instance:
+        if not instance and activate:
             with Application._lock:
                 # Now try again with lock so that only one gets
                 # to create and add it.
@@ -150,6 +150,10 @@ class Application(object):
         if self.active:
             self._agent.record_transaction(self._name, data)
 
+    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+        if self.active:
+            self._agent.record_log_event(self._name, message, level, timestamp, priority=priority)
+
     def normalize_name(self, name, rule_type="url"):
         if self.active:
             return self._agent.normalize_name(self._name, name, rule_type)
@@ -162,8 +166,8 @@ class Application(object):
         return self._agent.compute_sampled(self._name)
 
 
-def application_instance(name=None):
-    return Application._instance(name)
+def application_instance(name=None, activate=True):
+    return Application._instance(name, activate=activate)
 
 
 def register_application(name=None, timeout=None):

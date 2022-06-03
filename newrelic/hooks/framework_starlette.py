@@ -241,12 +241,24 @@ def instrument_starlette_middleware_errors(module):
     wrap_function_wrapper(module, "ServerErrorMiddleware.debug_response", wrap_exception_handler)
 
 
-def instrument_starlette_exceptions(module):
+def instrument_starlette_middleware_exceptions(module):
     wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
 
     wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
 
     wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)
+
+
+def instrument_starlette_exceptions(module):
+    # ExceptionMiddleware was moved to starlette.middleware.exceptions, need to check
+    # that it isn't being imported through a deprecation and double wrapped.
+    if not hasattr(module, "__deprecated__"):
+
+        wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
+
+        wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
+
+        wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)
 
 
 def instrument_starlette_background_task(module):

@@ -531,6 +531,13 @@ class Agent(object):
 
         application.record_custom_event(event_type, params)
 
+    def record_log_event(self, app_name, message, level=None, timestamp=None, priority=None):
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_log_event(message, level, timestamp, priority=priority)
+
     def record_transaction(self, app_name, data):
         """Processes the raw transaction data, generating and recording
         appropriate metrics against the named application. If there has

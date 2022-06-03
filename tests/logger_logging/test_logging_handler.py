@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from conftest import logger as conf_logger
-import inspect
 import logging
 import pytest
 
@@ -30,7 +29,8 @@ from testing_support.validators.validate_function_called import validate_functio
 @pytest.fixture(scope="function")
 def uninstrument_logging():
     instrumented = logging.Logger.callHandlers
-    logging.Logger.callHandlers = inspect.unwrap(instrumented)
+    while hasattr(logging.Logger.callHandlers, "__wrapped__"):
+        logging.Logger.callHandlers = logging.Logger.callHandlers.__wrapped__
     yield
     logging.Logger.callHandlers = instrumented
 

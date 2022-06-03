@@ -19,6 +19,7 @@ from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.config import global_settings
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
+from newrelic.packages import six
 
 _logger = logging.getLogger(__name__) 
 
@@ -109,16 +110,24 @@ def nr_log_patcher(original_patcher=None):
 
 
 def wrap_Logger_init(wrapped, instance, args, kwargs):
-    logger = wrapped(*args, **kwargs)
-    patch_loguru_logger(logger)
-    return logger
+    result = wrapped(*args, **kwargs)
+    patch_loguru_logger(instance)
+    return result
 
 
 def patch_loguru_logger(logger):
-    if hasattr(logger, "_core") and not hasattr(logger._core, "_nr_instrumented"):
-        core = logger._core
+    if hasattr(logger, "_core"):
+        if not hasattr(logger._core, "_nr_instrumented"):
+            logger.add(_nr_log_forwarder, format="{message}")
+            logger._core._nr_instrumented = True
+    elif not hasattr(logger, "_nr_instrumented"):
+        for _, handler in six.iteritems(logger._handlers):
+            if handler._writer is _nr_log_forwarder:
+                logger._nr_instrumented = True
+                return
+
         logger.add(_nr_log_forwarder, format="{message}")
-        logger._core._nr_instrumented = True
+        logger._nr_instrumented = True
 
 
 def instrument_loguru_logger(module):
@@ -130,5 +139,4 @@ def instrument_loguru_logger(module):
 
 def instrument_loguru(module):
     if hasattr(module, "logger"):
-        if hasattr(module.logger, "_core") and not hasattr(module.logger._core, "_nr_instrumented"):
-            patch_loguru_logger(module.logger)
+        patch_loguru_logger(module.logger)

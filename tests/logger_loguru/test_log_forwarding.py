@@ -35,8 +35,6 @@ def set_trace_ids():
 def exercise_logging(logger):
     set_trace_ids()
 
-    # logger.debug("A")
-    # logger.info("B")
     logger.warning("C")
     logger.error("D")
     logger.critical("E")

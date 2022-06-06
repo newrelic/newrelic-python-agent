@@ -21,8 +21,6 @@ from testing_support.fixtures import (
 
 
 def exercise_logging(logger):
-    # logger.debug("A")
-    # logger.info("B")
     logger.warning("C")
     logger.error("D")
     logger.critical("E")

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import pytest
 
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
@@ -105,8 +106,31 @@ def test_patcher_application_captured(logger):
     @validate_log_event_count(1)
     @background_task()
     def test():
+        set_trace_ids()
         patch_logger = logger.patch(patch)
         patch_logger.warning("C")
-        assert logger.caplog.records[0] == "C-PATCH"
 
+    test()
+
+_test_logger_catch_event = {"level": "ERROR"}  # Message varies wildly, can't be included in test
+_test_logger_catch_event.update(_common_attributes_trace_linking)
+
+@reset_core_stats_engine()
+def test_logger_catch(logger):
+    @validate_log_events([_test_logger_catch_event])
+    @validate_log_event_count(1)
+    @background_task()
+    def test():
+        set_trace_ids()
+
+        @logger.catch(reraise=True)
+        def throw():
+            raise ValueError("Test")
+
+        try:
+            with pytest.raises(ValueError):
+                throw()
+        except ValueError:
+            pass
+    
     test()

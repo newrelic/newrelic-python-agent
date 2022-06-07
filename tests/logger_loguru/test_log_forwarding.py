@@ -90,3 +90,23 @@ def test_logging_newrelic_logs_not_forwarded(logger):
         assert len(logger.caplog.records) == 1
 
     test()
+
+
+_test_patcher_application_captured_event = {"message": "C-PATCH", "level": "WARNING"}
+_test_patcher_application_captured_event.update(_common_attributes_trace_linking)
+
+@reset_core_stats_engine()
+def test_patcher_application_captured(logger):
+    def patch(record):
+        record["message"] += "-PATCH"
+        return record
+
+    @validate_log_events([_test_patcher_application_captured_event])
+    @validate_log_event_count(1)
+    @background_task()
+    def test():
+        patch_logger = logger.patch(patch)
+        patch_logger.warning("C")
+        assert logger.caplog.records[0] == "C-PATCH"
+
+    test()

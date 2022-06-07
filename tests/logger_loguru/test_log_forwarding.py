@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import pytest
 
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
@@ -35,8 +36,6 @@ def set_trace_ids():
 def exercise_logging(logger):
     set_trace_ids()
 
-    # logger.debug("A")
-    # logger.info("B")
     logger.warning("C")
     logger.error("D")
     logger.critical("E")
@@ -91,4 +90,47 @@ def test_logging_newrelic_logs_not_forwarded(logger):
         nr_logger.error("A")
         assert len(logger.caplog.records) == 1
 
+    test()
+
+
+_test_patcher_application_captured_event = {"message": "C-PATCH", "level": "WARNING"}
+_test_patcher_application_captured_event.update(_common_attributes_trace_linking)
+
+@reset_core_stats_engine()
+def test_patcher_application_captured(logger):
+    def patch(record):
+        record["message"] += "-PATCH"
+        return record
+
+    @validate_log_events([_test_patcher_application_captured_event])
+    @validate_log_event_count(1)
+    @background_task()
+    def test():
+        set_trace_ids()
+        patch_logger = logger.patch(patch)
+        patch_logger.warning("C")
+
+    test()
+
+_test_logger_catch_event = {"level": "ERROR"}  # Message varies wildly, can't be included in test
+_test_logger_catch_event.update(_common_attributes_trace_linking)
+
+@reset_core_stats_engine()
+def test_logger_catch(logger):
+    @validate_log_events([_test_logger_catch_event])
+    @validate_log_event_count(1)
+    @background_task()
+    def test():
+        set_trace_ids()
+
+        @logger.catch(reraise=True)
+        def throw():
+            raise ValueError("Test")
+
+        try:
+            with pytest.raises(ValueError):
+                throw()
+        except ValueError:
+            pass
+    
     test()

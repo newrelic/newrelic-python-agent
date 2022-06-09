@@ -527,10 +527,17 @@ def _process_configuration(section):
     _process_setting(section, "event_harvest_config.harvest_limits.custom_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.span_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.error_event_data", "getint", None)
+    _process_setting(section, "event_harvest_config.harvest_limits.log_event_data", "getint", None)
     _process_setting(section, "infinite_tracing.trace_observer_host", "get", None)
     _process_setting(section, "infinite_tracing.trace_observer_port", "getint", None)
     _process_setting(section, "infinite_tracing.span_queue_size", "getint", None)
     _process_setting(section, "code_level_metrics.enabled", "getboolean", None)
+
+    _process_setting(section, "application_logging.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
+    _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.metrics.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.local_decorating.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -708,6 +715,10 @@ def translate_deprecated_settings(settings, cached_settings):
             "event_harvest_config.harvest_limits.custom_event_data",
         ),
         (
+            "application_logging.forwarding.max_samples_stored",
+            "event_harvest_config.harvest_limits.log_event_data",
+        ),
+        (
             "error_collector.ignore_errors",
             "error_collector.ignore_classes",
         ),
@@ -859,6 +870,10 @@ def apply_local_high_security_mode_setting(settings):
     if settings.message_tracer.segment_parameters_enabled:
         settings.message_tracer.segment_parameters_enabled = False
         _logger.info(log_template, "message_tracer.segment_parameters_enabled", True, False)
+
+    if settings.application_logging.forwarding.enabled:
+        settings.application_logging.forwarding.enabled = False
+        _logger.info(log_template, "application_logging.forwarding.enabled", True, False)
 
     return settings
 
@@ -2290,6 +2305,23 @@ def _process_module_builtin_defaults():
         "cherrypy._cptree",
         "newrelic.hooks.framework_cherrypy",
         "instrument_cherrypy__cptree",
+    )
+
+    _process_module_definition(
+        "logging",
+        "newrelic.hooks.logger_logging",
+        "instrument_logging",
+    )
+
+    _process_module_definition(
+        "loguru",
+        "newrelic.hooks.logger_loguru",
+        "instrument_loguru",
+    )
+    _process_module_definition(
+        "loguru._logger",
+        "newrelic.hooks.logger_loguru",
+        "instrument_loguru_logger",
     )
 
     _process_module_definition(

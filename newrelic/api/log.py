@@ -15,10 +15,11 @@
 import json
 import logging
 import re
+import warnings
 from logging import Formatter, LogRecord
 
 from newrelic.api.time_trace import get_linking_metadata
-from newrelic.api.transaction import current_transaction
+from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common import agent_http
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import truncate
@@ -85,8 +86,25 @@ class NewRelicContextFormatter(Formatter):
         return json.dumps(self.log_record_to_dict(record), default=safe_str, separators=(",", ":"))
 
 
+class NewRelicLogForwardingHandler(logging.Handler):
+    def emit(self, record):
+        try:
+            # Avoid getting local log decorated message
+            if hasattr(record, "_nr_original_message"):
+                message = record._nr_original_message()
+            else:
+                message = record.getMessage()
+
+            record_log_event(message, record.levelname, int(record.created * 1000))
+        except Exception:
+            self.handleError(record)
+
+
 class NewRelicLogHandler(logging.Handler):
-    """This is an experimental log handler provided by the community. Use with caution."""
+    """
+    Deprecated: Please use NewRelicLogForwardingHandler instead.
+    This is an experimental log handler provided by the community. Use with caution.
+    """
 
     PATH = "/log/v1"
 
@@ -104,6 +122,13 @@ class NewRelicLogHandler(logging.Handler):
         ca_bundle_path=None,
         disable_certificate_validation=False,
     ):
+        warnings.warn(
+            "The contributed NewRelicLogHandler has been superseded by automatic instrumentation for "
+            "logging in the standard lib. If for some reason you need to manually configure a handler, "
+            "please use newrelic.api.log.NewRelicLogForwardingHandler to take advantage of all the "
+            "features included in application log forwarding such as proper batching.", 
+            DeprecationWarning
+        )
         super(NewRelicLogHandler, self).__init__(level=level)
         self.license_key = license_key or self.settings.license_key
         self.host = host or self.settings.host or self.default_host(self.license_key)

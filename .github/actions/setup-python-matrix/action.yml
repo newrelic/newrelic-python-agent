@@ -47,3 +47,9 @@ runs:
       with:
         python-version: "2.7"
         architecture: x64
+
+    - name: Install Dependencies
+      shell: bash
+      run: |
+        python3.10 -m pip install -U pip
+        python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24

@@ -83,11 +83,6 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
 
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
-
       - name: Get Environments
         id: get-envs
         run: |
@@ -116,10 +111,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -149,10 +140,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       # Special case packages
       - name: Install libcurl-dev
@@ -203,10 +190,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -254,10 +237,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -300,10 +279,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -348,10 +323,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -394,10 +365,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -441,10 +408,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -487,10 +450,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -535,10 +494,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -583,10 +538,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs
@@ -628,10 +579,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/setup-python-matrix
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
         id: get-envs

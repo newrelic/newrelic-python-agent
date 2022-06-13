@@ -81,7 +81,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Install Dependencies
         run: |
@@ -115,7 +115,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -148,7 +148,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -202,7 +202,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -253,7 +253,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -299,7 +299,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -347,7 +347,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -393,7 +393,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -440,7 +440,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -486,7 +486,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -534,7 +534,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -582,7 +582,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -627,7 +627,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python-matrix
+      - uses: ./.github/actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip

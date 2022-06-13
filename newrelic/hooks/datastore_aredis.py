@@ -16,7 +16,13 @@
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.hooks.datastore_redis import _conn_attrs_to_dict, _instance_info, _redis_client_methods, _redis_multipart_commands, _redis_operation_re
+from newrelic.hooks.datastore_redis import (
+    _conn_attrs_to_dict,
+    _instance_info,
+    _redis_client_methods,
+    _redis_multipart_commands,
+    _redis_operation_re,
+)
 
 
 def _wrap_Aredis_method_wrapper_(module, instance_class_name, operation):
@@ -53,7 +59,7 @@ async def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return await wrapped(*args, **kwargs)
-        
+
     host, port_path_or_id, db = (None, None, None)
 
     try:
@@ -89,7 +95,7 @@ async def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
         product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db
     ):
         return await wrapped(*args, **kwargs)
-    
+
 
 def instrument_aredis_connection(module):
     wrap_function_wrapper(module.Connection, "send_command", _nr_Connection_send_command_wrapper_)

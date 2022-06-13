@@ -15,7 +15,13 @@
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.hooks.datastore_redis import _conn_attrs_to_dict, _instance_info, _redis_client_methods, _redis_multipart_commands, _redis_operation_re
+from newrelic.hooks.datastore_redis import (
+    _conn_attrs_to_dict,
+    _instance_info,
+    _redis_client_methods,
+    _redis_multipart_commands,
+    _redis_operation_re,
+)
 
 
 def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
@@ -36,7 +42,7 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
             dt.port_path_or_id = port_path_or_id
             dt.database_name = db
             return result
-    
+
     name = "%s.%s" % (instance_class_name, operation)
     wrap_function_wrapper(module, name, _nr_wrapper_AioRedis_method_)
 
@@ -79,7 +85,9 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
 
     operation = _redis_operation_re.sub("_", operation)
 
-    with DatastoreTrace(product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db):
+    with DatastoreTrace(
+        product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db
+    ):
         return await wrapped(*args, **kwargs)
 
 

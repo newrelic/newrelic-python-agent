@@ -81,53 +81,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
+      - uses: actions/setup-python-matrix
 
       - name: Install Dependencies
         run: |
@@ -161,54 +115,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -241,54 +148,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -342,54 +202,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -440,54 +253,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -533,54 +299,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -628,54 +347,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -721,54 +393,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -815,54 +440,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -908,54 +486,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -1003,54 +534,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -1098,54 +582,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
@@ -1190,54 +627,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-    
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-          
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
+      - uses: actions/setup-python-matrix
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip

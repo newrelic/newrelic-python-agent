@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -25,8 +24,8 @@ from newrelic.hooks.datastore_redis import (
 )
 
 
-def _wrap_Aredis_method_wrapper_(module, instance_class_name, operation):
-    async def _nr_wrapper_Aredis_method_(wrapped, instance, args, kwargs):
+def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
+    async def _nr_wrapper_AioRedis_method_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
         if transaction is None:
             return await wrapped(*args, **kwargs)
@@ -45,17 +44,10 @@ def _wrap_Aredis_method_wrapper_(module, instance_class_name, operation):
             return result
 
     name = "%s.%s" % (instance_class_name, operation)
-    wrap_function_wrapper(module, name, _nr_wrapper_Aredis_method_)
+    wrap_function_wrapper(module, name, _nr_wrapper_AioRedis_method_)
 
 
-def instrument_aredis_client(module):
-    if hasattr(module, "StrictRedis"):
-        for name in _redis_client_methods:
-            if hasattr(module.StrictRedis, name):
-                _wrap_Aredis_method_wrapper_(module, "StrictRedis", name)
-
-
-async def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
+async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return await wrapped(*args, **kwargs)
@@ -70,6 +62,8 @@ async def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     except Exception:
         pass
 
+    # TODO FIX ME. Need to edit the datastore trace and NOT store on transaction.
+    # Also needs fixed on ARedis and documented or fixed on Redis.
     transaction._nr_datastore_instance_info = (host, port_path_or_id, db)
 
     # Older Redis clients would when sending multi part commands pass
@@ -97,5 +91,14 @@ async def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
 
-def instrument_aredis_connection(module):
-    wrap_function_wrapper(module.Connection, "send_command", _nr_Connection_send_command_wrapper_)
+def instrument_aioredis_client(module):
+    # StrictRedis is just an alias of Redis, no need to wrap it as well.
+    if hasattr(module, "Redis"):
+        for operation in _redis_client_methods:
+            class_ = getattr(module, "Redis")
+            if hasattr(class_, operation):
+                _wrap_AioRedis_method_wrapper(module, "Redis", operation)
+
+
+def instrument_aioredis_connection(module):
+    wrap_function_wrapper(module, "Connection.send_command", wrap_Connection_send_command)

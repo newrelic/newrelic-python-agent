@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
-from testing_support.fixtures import (code_coverage_fixture,
-        collector_agent_registration_fixture, collector_available_fixture)
+from testing_support.fixtures import (  # noqa: F401
+    code_coverage_fixture,
+    collector_agent_registration_fixture,
+    collector_available_fixture)
 
 _coverage_source = [
     'newrelic.hooks.datastore_aioredis',
@@ -35,4 +35,3 @@ collector_agent_registration = collector_agent_registration_fixture(
         app_name='Python Agent Test (datastore_aioredis)',
         default_settings=_default_settings,
         linked_applications=['Python Agent Test (datastore)'])
-

@@ -143,7 +143,6 @@ def test_multiple_datastores_disabled(loop):
 
 @pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2,
     reason='Test environment not configured with multiple databases.')
-@pytest.mark.xfail(reason="Demonstrates concurrency bug in async redis instrumentation.")
 @validate_transaction_metrics('test_multiple_dbs:test_concurrent_calls',
     scoped_metrics=_concurrent_scoped_metrics,
     rollup_metrics=_concurrent_rollup_metrics,

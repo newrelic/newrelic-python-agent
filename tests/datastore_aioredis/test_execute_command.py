@@ -14,7 +14,6 @@
 
 import pytest
 import aioredis
-
 from newrelic.api.background_task import background_task
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -38,10 +37,10 @@ _base_scoped_metrics = (
 )
 
 _base_rollup_metrics = (
-        ('Datastore/all', 2),
-        ('Datastore/allOther', 2),
-        ('Datastore/Redis/all', 2),
-        ('Datastore/Redis/allOther', 2),
+        ('Datastore/all', 1),
+        ('Datastore/allOther', 1),
+        ('Datastore/Redis/all', 1),
+        ('Datastore/Redis/allOther', 1),
         ('Datastore/operation/Redis/client_list', 1),
 )
 
@@ -57,12 +56,15 @@ _port = DB_SETTINGS['port']
 _instance_metric_name = 'Datastore/instance/Redis/%s/%s' % (_host, _port)
 
 _enable_rollup_metrics.append(
-        (_instance_metric_name, 2)
+        (_instance_metric_name, 1)
 )
 
 _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )
+
+async def exercise_redis_multi_args(client):
+    await client.execute_command('CLIENT', 'LIST', parse='LIST')
 
 async def exercise_redis_single_arg(client):
     await client.execute_command('CLIENT LIST')
@@ -78,4 +80,41 @@ async def exercise_redis_single_arg(client):
 def test_redis_execute_command_as_one_arg_enable(loop):
     client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
     loop.run_until_complete(exercise_redis_single_arg(client))
+
+@override_application_settings(_disable_instance_settings)
+@validate_transaction_metrics(
+  "test_execute_command:test_redis_execute_command_as_one_arg_disable",
+  scoped_metrics=_disable_scoped_metrics,
+  rollup_metrics=_disable_rollup_metrics, 
+  background_task=True
+)
+@background_task()
+def test_redis_execute_command_as_one_arg_disable(loop):
+    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+    loop.run_until_complete(exercise_redis_single_arg(client))
   
+
+@override_application_settings(_enable_instance_settings)
+@validate_transaction_metrics(
+  "test_execute_command:test_redis_execute_command_as_two_args_enable",
+  scoped_metrics=_enable_scoped_metrics,
+  rollup_metrics=_enable_rollup_metrics, 
+  background_task=True
+)
+@background_task()
+def test_redis_execute_command_as_two_args_enable(loop):
+    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+    loop.run_until_complete(exercise_redis_multi_args(client))
+
+
+@override_application_settings(_disable_instance_settings)
+@validate_transaction_metrics(
+  "test_execute_command:test_redis_execute_command_as_two_args_disable",
+  scoped_metrics=_disable_scoped_metrics,
+  rollup_metrics=_disable_rollup_metrics, 
+  background_task=True
+)
+@background_task()
+def test_redis_execute_command_as_two_args_disable(loop):
+    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+    loop.run_until_complete(exercise_redis_multi_args(client))

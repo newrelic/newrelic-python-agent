@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import aioredis
 
 from newrelic.api.background_task import background_task
 
-from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (validate_transaction_metrics,
     override_application_settings)
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.db_settings import redis_settings
 from testing_support.util import instance_hostname
 
 DB_SETTINGS = redis_settings()[0]
-
 
 _enable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': True,
@@ -33,10 +33,8 @@ _disable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': False,
 }
 
-
 _base_scoped_metrics = (
-        ('Datastore/operation/Redis/get', 1),
-        ('Datastore/operation/Redis/set', 1),
+        ('Datastore/operation/Redis/client_list', 1),
 )
 
 _base_rollup_metrics = (
@@ -44,8 +42,7 @@ _base_rollup_metrics = (
         ('Datastore/allOther', 2),
         ('Datastore/Redis/all', 2),
         ('Datastore/Redis/allOther', 2),
-        ('Datastore/operation/Redis/get', 1),
-        ('Datastore/operation/Redis/set', 1),
+        ('Datastore/operation/Redis/client_list', 1),
 )
 
 _disable_scoped_metrics = list(_base_scoped_metrics)
@@ -67,29 +64,18 @@ _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )
 
-async def exercise_redis(client):
-    await client.set('key', 'value')
-    await client.get('key')
+async def exercise_redis_single_arg(client):
+    await client.execute_command('CLIENT LIST')
 
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-    "test_get_and_set:test_redis_client_operation_enable_instance",
-    scoped_metrics=_enable_scoped_metrics,
-    rollup_metrics=_enable_rollup_metrics,
-    background_task=True)
+  "test_execute_command:test_redis_execute_command_as_one_arg_enable",
+  scoped_metrics=_enable_scoped_metrics,
+  rollup_metrics=_enable_rollup_metrics, 
+  background_task=True
+)
 @background_task()
-def test_redis_client_operation_enable_instance(loop):
+def test_redis_execute_command_as_one_arg_enable(loop):
     client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
-    loop.run_until_complete(exercise_redis(client))
-
-@override_application_settings(_disable_instance_settings)
-@validate_transaction_metrics(
-    "test_get_and_set:test_redis_client_operation_disable_instance", 
-    scoped_metrics=_disable_scoped_metrics,
-    rollup_metrics=_disable_rollup_metrics,
-    background_task=True)
-@background_task()
-
-def test_redis_client_operation_disable_instance(loop):
-    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
-    loop.run_until_complete(exercise_redis(client))
+    loop.run_until_complete(exercise_redis_single_arg(client))
+  

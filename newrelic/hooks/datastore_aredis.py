@@ -89,6 +89,7 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
     ):
         return await wrapped(*args, **kwargs)
 
+
 def instrument_aredis_client(module):
     if hasattr(module, "StrictRedis"):
         for name in _redis_client_methods:

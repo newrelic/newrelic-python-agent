@@ -139,4 +139,5 @@ class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
     def span_event(self, *args, **kwargs):
         if self.operation:
             self.agent_attributes["db.operation"] = self.operation
+            self.agent_attributes["db.collection"] = self.target
         return super(DatastoreNode, self).span_event(*args, **kwargs)

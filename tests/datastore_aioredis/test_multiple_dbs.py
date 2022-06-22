@@ -115,5 +115,5 @@ def test_multiple_datastores_disabled(loop):
 
     client_1 =  aioredis.Redis(host=db_settings_1['host'], port=db_settings_1['port'], db=0)
     client_2 =  aioredis.Redis(host=db_settings_2['host'], port=db_settings_2['port'], db=0)
-    
+
     loop.run_until_complete(exercise_redis(client_1, client_2))

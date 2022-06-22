@@ -84,7 +84,7 @@ async def exercise_redis(client):
     await client.get('key')
 
     await client.execute_command('CLIENT', 'LIST', parse='LIST')
-    
+
 
 @pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @override_application_settings(_enable_instance_settings)
@@ -105,4 +105,24 @@ def test_trace_node_datastore_params_enable_instance(client, loop):
 )
 @background_task()
 def test_trace_node_datastore_params_disable_instance(client, loop):
+    loop.run_until_complete(exercise_redis(client))
+
+
+@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
+@override_application_settings(_instance_only_settings)
+@validate_tt_collector_json(
+        datastore_params=_instance_only_required,
+        datastore_forgone_params=_instance_only_forgone)
+@background_task()
+def test_trace_node_datastore_params_instance_only(client, loop):
+    loop.run_until_complete(exercise_redis(client))
+
+
+@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
+@override_application_settings(_database_only_settings)
+@validate_tt_collector_json(
+        datastore_params=_database_only_required,
+        datastore_forgone_params=_database_only_forgone)
+@background_task()
+def test_trace_node_datastore_params_database_only(client, loop):
     loop.run_until_complete(exercise_redis(client))

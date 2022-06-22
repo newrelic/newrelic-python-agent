@@ -17,11 +17,18 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.datastore_redis import (
     _conn_attrs_to_dict,
-    _instance_info,
     _redis_client_methods,
     _redis_multipart_commands,
     _redis_operation_re,
 )
+
+
+def _instance_info(kwargs):
+    host = kwargs.get("host") or "localhost"
+    port_path_or_id = str(kwargs.get("port") or kwargs.get("path", 6379))
+    db = str(kwargs.get("db") or 0)
+
+    return (host, port_path_or_id, db)
 
 
 def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):

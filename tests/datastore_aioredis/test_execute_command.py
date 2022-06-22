@@ -81,7 +81,7 @@ strict_redis_client = aioredis.StrictRedis(host=DB_SETTINGS['host'], port=_port,
 @validate_transaction_metrics(
   "test_execute_command:test_redis_execute_command_as_one_arg_enable",
   scoped_metrics=_enable_scoped_metrics,
-  rollup_metrics=_enable_rollup_metrics, 
+  rollup_metrics=_enable_rollup_metrics,
   background_task=True
 )
 @background_task()

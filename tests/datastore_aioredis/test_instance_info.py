@@ -1,24 +1,37 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import pytest
 import aioredis
 
-from newrelic.hooks.datastore_redis import _conn_attrs_to_dict, _instance_info
+from newrelic.hooks.datastore_aioredis import _conn_attrs_to_dict, _instance_info
 from testing_support.fixture.event_loop import event_loop as loop
 
 REDIS_PY_VERSION = aioredis.VERSION
 
 _instance_info_tests = [
-    #((), {}, ("localhost", "6379", "0")),
+    ({}, ("localhost", "6379", "0")),
     ({"host": None}, ("localhost", "6379", "0")),
     ({"host": ""}, ("localhost", "6379", "0")),
     ({"db": None}, ("localhost", "6379", "0")),
     ({"db": ""}, ("localhost", "6379", "0")),
     ({"host": "127.0.0.1", "port": 1234, "db": 2}, ("127.0.0.1", "1234", "2")),
-    # (("127.0.0.1", 1234, 2), {}, ("127.0.0.1", "1234", "2")),
 ]
 
 class DisabledConnection(aioredis.Connection):
     @staticmethod
-    def connect(*args, **kwargs):
+    async def connect(*args, **kwargs):
         pass
 
 
@@ -37,7 +50,6 @@ def test_strict_redis_client_instance_info(kwargs, expected):
 def test_strict_redis_connection_instance_info(kwargs, expected, loop):
     r = aioredis.StrictRedis(**kwargs)
     r.connection_pool.connection_class = DisabledConnection
-
     connection = loop.run_until_complete(r.connection_pool.get_connection("SELECT"))
     try:
         conn_kwargs = _conn_attrs_to_dict(connection)
@@ -79,7 +91,7 @@ def test_strict_redis_client_from_url(args, kwargs, expected):
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
 def test_strict_redis_connection_from_url(args, kwargs, expected, loop):
     r = aioredis.StrictRedis.from_url(*args, **kwargs)
-    if r.connection_pool.connection_class is aioredis.Connection:
+    if r.connection_pool.connection_class in (aioredis.Connection, aioredis.connection.SSLConnection):
         r.connection_pool.connection_class = DisabledConnection
     elif r.connection_pool.connection_class is aioredis.UnixDomainSocketConnection:
         r.connection_pool.connection_class = DisabledUnixConnection

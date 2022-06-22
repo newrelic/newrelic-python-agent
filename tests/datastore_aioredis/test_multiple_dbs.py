@@ -24,7 +24,6 @@ from testing_support.util import instance_hostname
 
 DB_SETTINGS = redis_settings()
 
-
 _enable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': True,
 }

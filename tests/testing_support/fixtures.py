@@ -1069,7 +1069,6 @@ def validate_tt_collector_json(
             connections = SQLConnections()
             trace_data = instance.transaction_trace_data(connections)
             traces_recorded.append(trace_data)
-
             return result
 
         def _validate_trace(trace):

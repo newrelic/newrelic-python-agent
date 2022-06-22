@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+''' The purpose of these tests is to confirm that using a non-standard
+connection pool that does not have a `connection_kwargs` attribute
+will not result in an error.
+'''
+
 import pytest
 import aioredis
 
@@ -25,11 +30,25 @@ from testing_support.util import instance_hostname
 
 DB_SETTINGS = redis_settings()[0]
 
+class FakeConnectionPool(object):
+    """Connection Pool without connection_kwargs attribute."""
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    async def get_connection(self, name=None, *keys, **options):
+        return self.connection
+
+    async def release(self, connection):
+        self.connection.disconnect()
+
+
+
+# Settings
 
 _enable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': True,
 }
-
 _disable_instance_settings = {
     'datastore_tracer.instance_reporting.enabled': False,
 }
@@ -38,16 +57,19 @@ _disable_instance_settings = {
 _base_scoped_metrics = (
         ('Datastore/operation/Redis/get', 1),
         ('Datastore/operation/Redis/set', 1),
+        ('Datastore/operation/Redis/client_list', 1),
 )
 
 _base_rollup_metrics = (
-        ('Datastore/all', 2),
-        ('Datastore/allOther', 2),
-        ('Datastore/Redis/all', 2),
-        ('Datastore/Redis/allOther', 2),
+        ('Datastore/all', 3),
+        ('Datastore/allOther', 3),
+        ('Datastore/Redis/all', 3),
+        ('Datastore/Redis/allOther', 3),
         ('Datastore/operation/Redis/get', 1),
         ('Datastore/operation/Redis/set', 1),
+        ('Datastore/operation/Redis/client_list', 1),
 )
+
 
 _disable_scoped_metrics = list(_base_scoped_metrics)
 _disable_rollup_metrics = list(_base_rollup_metrics)
@@ -61,43 +83,63 @@ _port = DB_SETTINGS['port']
 _instance_metric_name = 'Datastore/instance/Redis/%s/%s' % (_host, _port)
 
 _enable_rollup_metrics.append(
-        (_instance_metric_name, 2)
+        (_instance_metric_name, 3)
 )
 
 _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )
 
-redis_client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
-strict_redis_client = aioredis.StrictRedis(host=DB_SETTINGS['host'], port=_port, db=0)
 
-
+# Operations
 async def exercise_redis(client):
     await client.set('key', 'value')
     await client.get('key')
+    await client.execute_command('CLIENT', 'LIST', parse='LIST')
+
+redis_client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+strict_redis_client = aioredis.StrictRedis(host=DB_SETTINGS['host'], port=_port, db=0)
 
 
 @pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-    "test_get_and_set:test_redis_client_operation_enable_instance",
-    scoped_metrics=_enable_scoped_metrics,
-    rollup_metrics=_enable_rollup_metrics,
-    background_task=True)
+        'test_custom_conn_pool:test_fake_conn_pool_enable_instance',
+        scoped_metrics=_enable_scoped_metrics,
+        rollup_metrics=_enable_rollup_metrics,
+        background_task=True)
 @background_task()
-def test_redis_client_operation_enable_instance(client, loop):
-    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+def test_fake_conn_pool_enable_instance(client, loop):
+    # Get a real connection
+    conn = loop.run_until_complete(client.connection_pool.get_connection("GET"))
+
+    # Replace the original connection pool with one that doesn't
+    # have the `connection_kwargs` attribute.
+
+    fake_pool = FakeConnectionPool(conn)
+    client.connection_pool = fake_pool
+    assert not hasattr(client.connection_pool, 'connection_kwargs')
+
     loop.run_until_complete(exercise_redis(client))
 
 
 @pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
-    "test_get_and_set:test_redis_client_operation_disable_instance", 
-    scoped_metrics=_disable_scoped_metrics,
-    rollup_metrics=_disable_rollup_metrics,
-    background_task=True)
+        'test_custom_conn_pool:test_fake_conn_pool_disable_instance',
+        scoped_metrics=_disable_scoped_metrics,
+        rollup_metrics=_disable_rollup_metrics,
+        background_task=True)
 @background_task()
-def test_redis_client_operation_disable_instance(client, loop):
-    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+def test_fake_conn_pool_disable_instance(client, loop):
+    # Get a real connection
+    conn = loop.run_until_complete(client.connection_pool.get_connection("GET"))
+
+    # Replace the original connection pool with one that doesn't
+    # have the `connection_kwargs` attribute.
+
+    fake_pool = FakeConnectionPool(conn)
+    client.connection_pool = fake_pool
+    assert not hasattr(client.connection_pool, 'connection_kwargs')
+
     loop.run_until_complete(exercise_redis(client))

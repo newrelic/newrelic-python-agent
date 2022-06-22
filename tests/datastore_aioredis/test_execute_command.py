@@ -63,12 +63,20 @@ _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )
 
+
 async def exercise_redis_multi_args(client):
     await client.execute_command('CLIENT', 'LIST', parse='LIST')
+
 
 async def exercise_redis_single_arg(client):
     await client.execute_command('CLIENT LIST')
 
+
+redis_client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+strict_redis_client = aioredis.StrictRedis(host=DB_SETTINGS['host'], port=_port, db=0)
+
+
+@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
   "test_execute_command:test_redis_execute_command_as_one_arg_enable",
@@ -77,10 +85,11 @@ async def exercise_redis_single_arg(client):
   background_task=True
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_enable(loop):
-    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+def test_redis_execute_command_as_one_arg_enable(client, loop):
     loop.run_until_complete(exercise_redis_single_arg(client))
 
+
+@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
   "test_execute_command:test_redis_execute_command_as_one_arg_disable",
@@ -89,11 +98,11 @@ def test_redis_execute_command_as_one_arg_enable(loop):
   background_task=True
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_disable(loop):
-    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+def test_redis_execute_command_as_one_arg_disable(client, loop):
     loop.run_until_complete(exercise_redis_single_arg(client))
-  
 
+
+@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
   "test_execute_command:test_redis_execute_command_as_two_args_enable",
@@ -102,11 +111,11 @@ def test_redis_execute_command_as_one_arg_disable(loop):
   background_task=True
 )
 @background_task()
-def test_redis_execute_command_as_two_args_enable(loop):
-    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+def test_redis_execute_command_as_two_args_enable(client, loop):
     loop.run_until_complete(exercise_redis_multi_args(client))
 
 
+@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
   "test_execute_command:test_redis_execute_command_as_two_args_disable",
@@ -115,6 +124,5 @@ def test_redis_execute_command_as_two_args_enable(loop):
   background_task=True
 )
 @background_task()
-def test_redis_execute_command_as_two_args_disable(loop):
-    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
+def test_redis_execute_command_as_two_args_disable(client, loop):
     loop.run_until_complete(exercise_redis_multi_args(client))

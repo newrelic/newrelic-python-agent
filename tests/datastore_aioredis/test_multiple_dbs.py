@@ -63,7 +63,7 @@ if len(DB_SETTINGS) > 1:
     _port_1 = redis_instance_1['port']
 
     _host_2 = instance_hostname(redis_instance_2['host'])
-    _host_2 = redis_instance_2['port']
+    _port_2 = redis_instance_2['port']
     
     
     instance_metric_name_1 = 'Datastore/instance/Redis/%s/%s' % (_host_1, _port_1)
@@ -97,8 +97,8 @@ def test_multiple_datastores_enabled(loop):
     db_settings_1 = DB_SETTINGS[0]
     db_settings_2 = DB_SETTINGS[1]
 
-    client_1 =  aioredis.Redis(host=db_settings_1['host'], port=db_settings_1['port'], db=0)
-    client_2 =  aioredis.Redis(host=db_settings_2['host'], port=db_settings_2['port'], db=0)
+    client_1 = aioredis.Redis(host=db_settings_1['host'], port=db_settings_1['port'], db=0)
+    client_2 = aioredis.Redis(host=db_settings_2['host'], port=db_settings_2['port'], db=0)
     
     loop.run_until_complete(exercise_redis(client_1, client_2))
 

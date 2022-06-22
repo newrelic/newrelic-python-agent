@@ -93,12 +93,12 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
 
 def instrument_aioredis_client(module):
     # StrictRedis is just an alias of Redis, no need to wrap it as well.
-   if hasattr(module, "Redis"):
-       for operation in _redis_client_methods:
-           class_ = getattr(module, "Redis")
-           if hasattr(class_, operation):
-               _wrap_AioRedis_method_wrapper(module, "Redis", operation)
+    if hasattr(module, "Redis"):
+        for operation in _redis_client_methods:
+            class_ = getattr(module, "Redis")
+            if hasattr(class_, operation):
+                _wrap_AioRedis_method_wrapper(module, "Redis", operation)
 
 
 def instrument_aioredis_connection(module):
-   wrap_function_wrapper(module, "Connection.send_command", wrap_Connection_send_command)
+    wrap_function_wrapper(module, "Connection.send_command", wrap_Connection_send_command)

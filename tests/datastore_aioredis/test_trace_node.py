@@ -94,7 +94,7 @@ async def exercise_redis(client):
  )
 @background_task()
 def test_trace_node_datastore_params_enable_instance(client, loop):
-    loop.run_until_complete(exercise_redis())
+    loop.run_until_complete(exercise_redis(client))
 
 
 @pytest.mark.parametrize("client", (redis_client, strict_redis_client))

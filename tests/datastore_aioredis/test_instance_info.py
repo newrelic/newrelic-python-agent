@@ -8,12 +8,12 @@ REDIS_PY_VERSION = aioredis.VERSION
 
 _instance_info_tests = [
     #((), {}, ("localhost", "6379", "0")),
-    ((), {"host": None}, ("localhost", "6379", "0")),
-    ((), {"host": ""}, ("localhost", "6379", "0")),
-    ((), {"db": None}, ("localhost", "6379", "0")),
-    ((), {"db": ""}, ("localhost", "6379", "0")),
-    ((), {"host": "127.0.0.1", "port": 1234, "db": 2}, ("127.0.0.1", "1234", "2")),
-    (("127.0.0.1", 1234, 2), {}, ("127.0.0.1", "1234", "2")),
+    ({"host": None}, ("localhost", "6379", "0")),
+    ({"host": ""}, ("localhost", "6379", "0")),
+    ({"db": None}, ("localhost", "6379", "0")),
+    ({"db": ""}, ("localhost", "6379", "0")),
+    ({"host": "127.0.0.1", "port": 1234, "db": 2}, ("127.0.0.1", "1234", "2")),
+    # (("127.0.0.1", 1234, 2), {}, ("127.0.0.1", "1234", "2")),
 ]
 
 class DisabledConnection(aioredis.Connection):
@@ -26,16 +26,16 @@ class DisabledUnixConnection(aioredis.UnixDomainSocketConnection, DisabledConnec
     pass
 
 
-@pytest.mark.parametrize("args,kwargs,expected", _instance_info_tests)
-def test_strict_redis_client_instance_info(args, kwargs, expected):
-    r = aioredis.StrictRedis(*args, **kwargs)
+@pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
+def test_strict_redis_client_instance_info(kwargs, expected):
+    r = aioredis.StrictRedis(**kwargs)
     conn_kwargs = r.connection_pool.connection_kwargs
     assert _instance_info(conn_kwargs) == expected
 
 
-@pytest.mark.parametrize("args,kwargs,expected", _instance_info_tests)
-def test_strict_redis_connection_instance_info(args, kwargs, expected, loop):
-    r = aioredis.StrictRedis(*args, **kwargs)
+@pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
+def test_strict_redis_connection_instance_info(kwargs, expected, loop):
+    r = aioredis.StrictRedis(**kwargs)
     r.connection_pool.connection_class = DisabledConnection
 
     connection = loop.run_until_complete(r.connection_pool.get_connection("SELECT"))
@@ -66,7 +66,7 @@ _instance_info_from_url_tests = [
     (("unix:///path/to/socket.sock",), {}, ("localhost", "/path/to/socket.sock", "0")),
     (("unix:///path/to/socket.sock?db=2",), {}, ("localhost", "/path/to/socket.sock", "2")),
     (("unix:///path/to/socket.sock",), {"db": 2}, ("localhost", "/path/to/socket.sock", "2")),
-])
+]
 
 
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)

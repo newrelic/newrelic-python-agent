@@ -100,7 +100,7 @@ async def exercise_redis(client_1, client_2):
         scoped_metrics=_enable_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
-def test_multiple_datastores_enabled(loop):
+def test_multiple_datastores_enabled(client_set, loop):
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
 

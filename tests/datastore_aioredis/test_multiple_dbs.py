@@ -64,8 +64,7 @@ if len(DB_SETTINGS) > 1:
 
     _host_2 = instance_hostname(redis_instance_2['host'])
     _port_2 = redis_instance_2['port']
-    
-    
+
     instance_metric_name_1 = 'Datastore/instance/Redis/%s/%s' % (_host_1, _port_1)
     instance_metric_name_2 = 'Datastore/instance/Redis/%s/%s' % (_host_2, _port_2)
 
@@ -79,6 +78,11 @@ if len(DB_SETTINGS) > 1:
             (instance_metric_name_2, None),
     ])
 
+redis_client_1 = aioredis.Redis(host=DB_SETTINGS[0]['host'], port=DB_SETTINGS[0]['port'], db=0)
+redis_client_2 = aioredis.Redis(host=DB_SETTINGS[1]['host'], port=DB_SETTINGS[1]['port'], db=0)
+
+strict_redis_client_1 = aioredis.StrictRedis(host=DB_SETTINGS[0]['host'], port=DB_SETTINGS[0]['port'], db=0)
+strict_redis_client_2 = aioredis.StrictRedis(host=DB_SETTINGS[1]['host'], port=DB_SETTINGS[1]['port'], db=0)
 
 async def exercise_redis(client_1, client_2):
     await client_1.set('key', 'value')
@@ -88,32 +92,28 @@ async def exercise_redis(client_1, client_2):
 
 
 @pytest.mark.skipif(len(DB_SETTINGS) < 2, reason="Env not configured with multiple databases")
+@pytest.mark.parametrize("client_set", (
+        (redis_client_1, redis_client_2)
+        (strict_redis_client_1, strict_redis_client_2))
+)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics('test_multiple_dbs:test_multiple_datastores_enabled',
         scoped_metrics=_enable_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 def test_multiple_datastores_enabled(loop):
-    db_settings_1 = DB_SETTINGS[0]
-    db_settings_2 = DB_SETTINGS[1]
-
-    client_1 = aioredis.Redis(host=db_settings_1['host'], port=db_settings_1['port'], db=0)
-    client_2 = aioredis.Redis(host=db_settings_2['host'], port=db_settings_2['port'], db=0)
-    
-    loop.run_until_complete(exercise_redis(client_1, client_2))
+    loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
 
 @pytest.mark.skipif(len(DB_SETTINGS) < 2, reason="Env not configured with multiple databases")
+@pytest.mark.parametrize("client_set", (
+        (redis_client_1, redis_client_2)
+        (strict_redis_client_1, strict_redis_client_2))
+)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics('test_multiple_dbs:test_multiple_datastores_disabled',
         scoped_metrics=_disable_scoped_metrics,
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)
-def test_multiple_datastores_disabled(loop):
-    db_settings_1 = DB_SETTINGS[0]
-    db_settings_2 = DB_SETTINGS[1]
-
-    client_1 =  aioredis.Redis(host=db_settings_1['host'], port=db_settings_1['port'], db=0)
-    client_2 =  aioredis.Redis(host=db_settings_2['host'], port=db_settings_2['port'], db=0)
-    
-    loop.run_until_complete(exercise_redis(client_1, client_2))
+def test_multiple_datastores_disabled(client_set, loop):
+    loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))

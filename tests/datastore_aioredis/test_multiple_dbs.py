@@ -106,7 +106,7 @@ def test_multiple_datastores_enabled(client_set, loop):
 
 @pytest.mark.skipif(len(DB_SETTINGS) < 2, reason="Env not configured with multiple databases")
 @pytest.mark.parametrize("client_set", ([
-        (redis_client_1, redis_client_2)
+        (redis_client_1, redis_client_2),
         (strict_redis_client_1, strict_redis_client_2)])
 )
 @override_application_settings(_disable_instance_settings)

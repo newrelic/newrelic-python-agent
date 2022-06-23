@@ -19,15 +19,13 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _redis_client_methods = (
-    "xpending_range",
-    "client_kill_filter",
-    "acl_log_reset",
     "acl_cat",
     "acl_deluser",
     "acl_genpass",
     "acl_getuser",
     "acl_list",
     "acl_load",
+    "acl_log_reset",
     "acl_log",
     "acl_save",
     "acl_setuser",
@@ -47,6 +45,7 @@ _redis_client_methods = (
     "bzpopmin",
     "client_getname",
     "client_id",
+    "client_kill_filter",
     "client_kill",
     "client_list",
     "client_pause",
@@ -220,6 +219,7 @@ _redis_client_methods = (
     "xinfo_groups",
     "xinfo_stream",
     "xlen",
+    "xpending_range",
     "xpending",
     "xrange",
     "xread",

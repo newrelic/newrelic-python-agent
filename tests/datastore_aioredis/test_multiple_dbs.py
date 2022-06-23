@@ -162,4 +162,4 @@ def test_concurrent_calls(client_set, loop):
         await asyncio.gather(*(client.set("key-%d" % i, i) for i, client in enumerate(client_set)))
         await asyncio.gather(*(client.get("key-%d" % i) for i, client in enumerate(client_set)))
 
-    loop.run_until_complete(exercise_concurrent(client_set[0], client_set[1]))
+    loop.run_until_complete(exercise_concurrent())

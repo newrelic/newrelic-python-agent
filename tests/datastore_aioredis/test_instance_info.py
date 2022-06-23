@@ -18,8 +18,6 @@ import aioredis
 from newrelic.hooks.datastore_aioredis import _conn_attrs_to_dict, _instance_info
 from testing_support.fixture.event_loop import event_loop as loop
 
-REDIS_PY_VERSION = aioredis.VERSION
-
 _instance_info_tests = [
     ({}, ("localhost", "6379", "0")),
     ({"host": None}, ("localhost", "6379", "0")),
@@ -28,6 +26,10 @@ _instance_info_tests = [
     ({"db": ""}, ("localhost", "6379", "0")),
     ({"host": "127.0.0.1", "port": 1234, "db": 2}, ("127.0.0.1", "1234", "2")),
 ]
+
+redis_client = aioredis.Redis
+strict_redis_client = aioredis.StrictRedis
+
 
 class DisabledConnection(aioredis.Connection):
     @staticmethod
@@ -39,16 +41,18 @@ class DisabledUnixConnection(aioredis.UnixDomainSocketConnection, DisabledConnec
     pass
 
 
+@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
-def test_strict_redis_client_instance_info(kwargs, expected):
-    r = aioredis.StrictRedis(**kwargs)
+def test_strict_redis_client_instance_info(client, kwargs, expected):
+    r = client(**kwargs)
     conn_kwargs = r.connection_pool.connection_kwargs
     assert _instance_info(conn_kwargs) == expected
 
 
+@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
-def test_strict_redis_connection_instance_info(kwargs, expected, loop):
-    r = aioredis.StrictRedis(**kwargs)
+def test_strict_redis_connection_instance_info(client, kwargs, expected, loop):
+    r = client(**kwargs)
     r.connection_pool.connection_class = DisabledConnection
     connection = loop.run_until_complete(r.connection_pool.get_connection("SELECT"))
     try:
@@ -81,16 +85,18 @@ _instance_info_from_url_tests = [
 ]
 
 
+@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
-def test_strict_redis_client_from_url(args, kwargs, expected):
-    r = aioredis.StrictRedis.from_url(*args, **kwargs)
+def test_strict_redis_client_from_url(client, args, kwargs, expected):
+    r = client.from_url(*args, **kwargs)
     conn_kwargs = r.connection_pool.connection_kwargs
     assert _instance_info(conn_kwargs) == expected
 
 
+@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
-def test_strict_redis_connection_from_url(args, kwargs, expected, loop):
-    r = aioredis.StrictRedis.from_url(*args, **kwargs)
+def test_strict_redis_connection_from_url(client, args, kwargs, expected, loop):
+    r = client.from_url(*args, **kwargs)
     if r.connection_pool.connection_class in (aioredis.Connection, aioredis.connection.SSLConnection):
         r.connection_pool.connection_class = DisabledConnection
     elif r.connection_pool.connection_class is aioredis.UnixDomainSocketConnection:

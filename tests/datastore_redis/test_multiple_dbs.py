@@ -47,7 +47,7 @@ _base_rollup_metrics = (
         ('Datastore/Redis/all', 3),
         ('Datastore/Redis/allOther', 3),
         ('Datastore/operation/Redis/get', 1),
-        ('Datastore/operation/Redis/get', 1),
+        ('Datastore/operation/Redis/set', 1),
         ('Datastore/operation/Redis/client_list', 1),
 )
 

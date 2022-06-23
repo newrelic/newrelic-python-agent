@@ -17,14 +17,15 @@ from newrelic.api.asgi_application import ASGIApplicationWrapper
 
 @property
 def application(self):
-    return self._nr_application
+    return getattr(self, "_nr_application", vars(self).get("application", None))
 
 
 @application.setter
 def application(self, value):
-    # Wrap only the first loaded app
-    if not getattr(self, "_nr_application", None) and value:
+    # Wrap app only once
+    if value and not getattr(value, "_nr_wrapped", False):
         value = ASGIApplicationWrapper(value)
+        value._nr_wrapped = True
     self._nr_application = value
 
 

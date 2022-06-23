@@ -132,6 +132,7 @@ _redis_client_methods = {
     "dict_add",
     "dict_del",
     "dict_dump",
+    "drop_index",
     "dropindex",
     "dump",
     "echo",

@@ -14,6 +14,7 @@
 
 import pytest
 
+from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 

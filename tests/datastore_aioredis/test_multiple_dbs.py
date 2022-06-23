@@ -76,12 +76,13 @@ if len(DB_SETTINGS) > 1:
             (instance_metric_name_1, None),
             (instance_metric_name_2, None),
     ])
+    redis_client_2 = aioredis.Redis(host=DB_SETTINGS[1]['host'], port=DB_SETTINGS[1]['port'], db=0)
+    strict_redis_client_2 = aioredis.StrictRedis(host=DB_SETTINGS[1]['host'], port=DB_SETTINGS[1]['port'], db=0)
+
 
 redis_client_1 = aioredis.Redis(host=DB_SETTINGS[0]['host'], port=DB_SETTINGS[0]['port'], db=0)
-redis_client_2 = aioredis.Redis(host=DB_SETTINGS[1]['host'], port=DB_SETTINGS[1]['port'], db=0)
-
 strict_redis_client_1 = aioredis.StrictRedis(host=DB_SETTINGS[0]['host'], port=DB_SETTINGS[0]['port'], db=0)
-strict_redis_client_2 = aioredis.StrictRedis(host=DB_SETTINGS[1]['host'], port=DB_SETTINGS[1]['port'], db=0)
+
 
 async def exercise_redis(client_1, client_2):
     await client_1.set('key', 'value')
@@ -100,6 +101,7 @@ async def exercise_redis(client_1, client_2):
         scoped_metrics=_enable_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
+@background_task()
 def test_multiple_datastores_enabled(client_set, loop):
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
@@ -114,5 +116,6 @@ def test_multiple_datastores_enabled(client_set, loop):
         scoped_metrics=_disable_scoped_metrics,
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)
+@background_task()
 def test_multiple_datastores_disabled(client_set, loop):
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))

@@ -77,7 +77,9 @@ async def exercise_redis(client):
     await client.get('key')
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
+@pytest.mark.parametrize("client", ([
+    (redis_client, redis_client),
+    (strict_redis_client, strict_redis_client)]))
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_get_and_set:test_redis_client_operation_enable_instance",
@@ -86,8 +88,7 @@ async def exercise_redis(client):
     background_task=True)
 @background_task()
 def test_redis_client_operation_enable_instance(client, loop):
-    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
-    loop.run_until_complete(exercise_redis(client))
+    loop.run_until_complete(exercise_redis(client[1]))
 
 
 @pytest.mark.parametrize("client", (redis_client, strict_redis_client))
@@ -99,5 +100,4 @@ def test_redis_client_operation_enable_instance(client, loop):
     background_task=True)
 @background_task()
 def test_redis_client_operation_disable_instance(client, loop):
-    client = aioredis.Redis(host=DB_SETTINGS['host'], port=_port, db=0)
     loop.run_until_complete(exercise_redis(client))

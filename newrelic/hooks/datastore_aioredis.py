@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.datastore_redis import (
@@ -37,18 +38,8 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
         if transaction is None:
             return await wrapped(*args, **kwargs)
 
-        dt = DatastoreTrace(product="Redis", target=None, operation=operation)
-
-        transaction._nr_datastore_instance_info = (None, None, None)
-
-        with dt:
-            result = await wrapped(*args, **kwargs)
-
-            host, port_path_or_id, db = transaction._nr_datastore_instance_info
-            dt.host = host
-            dt.port_path_or_id = port_path_or_id
-            dt.database_name = db
-            return result
+        with DatastoreTrace(product="Redis", target=None, operation=operation):
+            return await wrapped(*args, **kwargs)
 
     name = "%s.%s" % (instance_class_name, operation)
     wrap_function_wrapper(module, name, _nr_wrapper_AioRedis_method_)
@@ -69,10 +60,6 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
     except Exception:
         pass
 
-    # TODO FIX ME. Need to edit the datastore trace and NOT store on transaction.
-    # Also needs fixed on ARedis and documented or fixed on Redis.
-    transaction._nr_datastore_instance_info = (host, port_path_or_id, db)
-
     # Older Redis clients would when sending multi part commands pass
     # them in as separate arguments to send_command(). Need to therefore
     # detect those and grab the next argument from the set of arguments.
@@ -82,7 +69,18 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
     # If it's not a multi part command, there's no need to trace it, so
     # we can return early.
 
-    if operation.split()[0] not in _redis_multipart_commands:
+    if operation.split()[0] not in _redis_multipart_commands:        # Set the datastore info on the DatastoreTrace containing this function call.
+        trace = current_trace()
+
+        # Find DatastoreTrace no matter how many other traces are inbetween
+        while trace is not None and not isinstance(trace, DatastoreTrace):
+            trace = getattr(trace, "parent", None)
+
+        if trace is not None:
+            trace.host = host
+            trace.port_path_or_id = port_path_or_id
+            trace.database_name = db
+
         return await wrapped(*args, **kwargs)
 
     # Convert multi args to single arg string

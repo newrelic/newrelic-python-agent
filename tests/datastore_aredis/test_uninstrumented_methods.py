@@ -22,22 +22,21 @@ strict_redis_client = aredis.StrictRedis(host=DB_SETTINGS['host'], port=DB_SETTI
 
 
 IGNORED_METHODS = {
-    # "close",
-    # "connection_pool",
-    # "connection",
-    # "execute_command",
+    "cache",
+    "connection_pool",
+    "execute_command",
     "from_url",
-    # "initialize",
-    # "lock",
-    # "parse_response",
-    # "pipeline",
-    # "response_callbacks",
-    # "RESPONSE_CALLBACKS",
-    # "set_response_callback",
-    # "single_connection_client",
-    # "transaction",
-    # "hscan_iter",
-    # "register_script",
+    "hscan_iter",
+    "lock",
+    "NODES_FLAGS",
+    "parse_response",
+    "pipeline",
+    "register_script",
+    "response_callbacks",
+    "RESPONSE_CALLBACKS",
+    "RESULT_CALLBACKS",
+    "set_response_callback",
+    "transaction",
 }
 
 def test_uninstrumented_methods():

@@ -18,11 +18,13 @@ from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
-_redis_client_methods = (
+_redis_client_methods = {
     "acl_cat",
     "acl_deluser",
+    "acl_dryrun",
     "acl_genpass",
     "acl_getuser",
+    "acl_help",
     "acl_list",
     "acl_load",
     "acl_log_reset",
@@ -31,57 +33,149 @@ _redis_client_methods = (
     "acl_setuser",
     "acl_users",
     "acl_whoami",
+    "add_document_hash",
+    "add_document",
+    "add",
+    "addnx",
+    "aggregate",
+    "aliasadd",
+    "aliasdel",
+    "aliasupdate",
+    "alter_schema_add",
+    "alter",
     "append",
+    "arrappend",
+    "arrindex",
+    "arrinsert",
+    "arrlen",
+    "arrpop",
+    "arrtrim",
+    "auth",
     "bgrewriteaof",
     "bgsave",
     "bitcount",
     "bitfield",
     "bitop",
     "bitpos",
+    "blmove",
+    "blmpop",
     "blpop",
     "brpop",
     "brpoplpush",
+    "bzmpop",
     "bzpopmax",
     "bzpopmin",
+    "cdf",
+    "clear",
     "client_getname",
+    "client_getredir",
     "client_id",
+    "client_info",
     "client_kill_filter",
     "client_kill",
     "client_list",
+    "client_no_evict",
     "client_pause",
+    "client_reply",
     "client_setname",
+    "client_tracking",
+    "client_trackinginfo",
     "client_unblock",
+    "client_unpause",
     "client",
+    "cluster_addslots",
+    "cluster_count_failure_report",
+    "cluster_countkeysinslot",
+    "cluster_delslots",
+    "cluster_failover",
+    "cluster_forget",
+    "cluster_get_keys_in_slot",
+    "cluster_info",
+    "cluster_keyslot",
+    "cluster_meet",
+    "cluster_nodes",
+    "cluster_replicate",
+    "cluster_reset_all_nodes",
+    "cluster_reset",
+    "cluster_save_config",
+    "cluster_set_config_epoch",
+    "cluster_setslot",
+    "cluster_slaves",
+    "cluster_slots",
     "cluster",
+    "command_count",
+    "command_docs",
+    "command_getkeys",
+    "command_getkeysandflags",
+    "command_info",
+    "command_list",
+    "command",
+    "commit",
     "config_get",
     "config_resetstat",
     "config_rewrite",
     "config_set",
+    "config",
+    "copy",
+    "count",
+    "create_index",
+    "create",
+    "createrule",
     "dbsize",
     "debug_object",
+    "debug",
     "decr",
     "decrby",
+    "delete_document",
     "delete",
+    "deleterule",
+    "dict_add",
+    "dict_del",
+    "dict_dump",
+    "dropindex",
     "dump",
     "echo",
+    "eval_ro",
     "eval",
+    "evalsha_ro",
     "evalsha",
+    "execution_plan",
     "exists",
     "expire",
     "expireat",
+    "expiretime",
+    "explain_cli",
+    "explain",
+    "failover",
+    "fcall_ro",
+    "fcall",
     "flushall",
     "flushdb",
+    "forget",
+    "function_delete",
+    "function_dump",
+    "function_flush",
+    "function_kill",
+    "function_list",
+    "function_load",
+    "function_restore",
+    "function_stats",
     "geoadd",
     "geodist",
     "geohash",
     "geopos",
     "georadius",
     "georadiusbymember",
+    "geosearch",
+    "geosearchstore",
     "get",
     "getbit",
+    "getdel",
+    "getex",
     "getrange",
     "getset",
     "hdel",
+    "hello",
     "hexists",
     "hget",
     "hgetall",
@@ -91,6 +185,7 @@ _redis_client_methods = (
     "hlen",
     "hmget",
     "hmset",
+    "hrandfield",
     "hscan_inter",
     "hscan",
     "hset",
@@ -101,53 +196,91 @@ _redis_client_methods = (
     "incrby",
     "incrbyfloat",
     "info",
+    "initbydim",
+    "initbyprob",
+    "insert",
+    "insertnx",
     "keys",
     "lastsave",
+    "latency_histogram",
+    "lcs",
     "lindex",
     "linsert",
+    "list",
     "llen",
+    "lmove",
+    "lmpop",
+    "loadchunk",
+    "lolwut",
     "lpop",
     "lpos",
     "lpush",
     "lpushx",
     "lrange",
     "lrem",
-    "lrem",
     "lset",
     "ltrim",
+    "madd",
+    "max",
+    "memory_doctor",
+    "memory_help",
+    "memory_malloc_stats",
     "memory_purge",
     "memory_stats",
     "memory_usage",
+    "merge",
+    "mexists",
     "mget",
     "migrate",
+    "min",
     "module_list",
     "module_load",
+    "module_loadex",
     "module_unload",
     "monitor",
     "move",
+    "mrange",
+    "mrevrange",
     "mset",
     "msetnx",
+    "numincrby",
     "object",
+    "objkeys",
+    "objlen",
     "persist",
     "pexpire",
     "pexpireat",
+    "pexpiretime",
     "pfadd",
     "pfcount",
     "pfmerge",
     "ping",
+    "profile",
     "psetex",
+    "psync",
     "pttl",
     "publish",
     "pubsub_channels",
     "pubsub_numpat",
     "pubsub_numsub",
     "pubsub",
+    "quantile",
+    "query",
+    "queryindex",
+    "quit",
     "randomkey",
+    "range",
     "readonly",
     "readwrite",
     "rename",
     "renamenx",
+    "replicaof",
+    "reserve",
+    "reset",
+    "resp",
     "restore",
+    "revrange",
+    "role",
     "rpop",
     "rpoplpush",
     "rpush",
@@ -156,18 +289,26 @@ _redis_client_methods = (
     "save",
     "scan_iter",
     "scan",
+    "scandump",
     "scard",
+    "script_debug",
     "script_exists",
     "script_flush",
     "script_kill",
     "script_load",
     "sdiff",
     "sdiffstore",
+    "search",
+    "select",
+    "sentinel_ckquorum",
+    "sentinel_failover",
+    "sentinel_flushconfig",
     "sentinel_get_master_addr_by_name",
     "sentinel_master",
     "sentinel_masters",
     "sentinel_monitor",
     "sentinel_remove",
+    "sentinel_reset",
     "sentinel_sentinels",
     "sentinel_set",
     "sentinel_slaves",
@@ -175,31 +316,46 @@ _redis_client_methods = (
     "set",
     "setbit",
     "setex",
-    "setex",
     "setnx",
     "setrange",
     "shutdown",
     "sinter",
+    "sintercard",
     "sinterstore",
     "sismember",
     "slaveof",
     "slowlog_get",
     "slowlog_len",
     "slowlog_reset",
+    "slowlog",
     "smembers",
+    "smismember",
     "smove",
+    "sort_ro",
     "sort",
+    "spellcheck",
     "spop",
     "srandmember",
     "srem",
     "sscan_iter",
     "sscan",
+    "stralgo",
+    "strappend",
     "strlen",
     "substr",
+    "sugadd",
+    "sugdel",
+    "sugget",
+    "suglen",
     "sunion",
     "sunionstore",
     "swapdb",
+    "sync",
+    "syndump",
+    "synupdate",
+    "tagvals",
     "time",
+    "toggle",
     "touch",
     "ttl",
     "type",
@@ -209,11 +365,15 @@ _redis_client_methods = (
     "watch",
     "xack",
     "xadd",
+    "xautoclaim",
     "xclaim",
     "xdel",
     "xgroup_create",
+    "xgroup_createconsumer",
+    "xgroup_del_consumer",
     "xgroup_delconsumer",
     "xgroup_destroy",
+    "xgroup_set_id",
     "xgroup_setid",
     "xinfo_consumers",
     "xinfo_groups",
@@ -227,17 +387,25 @@ _redis_client_methods = (
     "xrevrange",
     "xtrim",
     "zadd",
-    "zadd",
+    "zaddoption",
     "zcard",
     "zcount",
+    "zdiff",
+    "zdiffstore",
     "zincrby",
+    "zinter",
+    "zintercard",
     "zinterstore",
     "zlexcount",
+    "zmpop",
+    "zmscore",
     "zpopmax",
     "zpopmin",
+    "zrandmember",
     "zrange",
     "zrangebylex",
     "zrangebyscore",
+    "zrangestore",
     "zrank",
     "zrem",
     "zremrangebylex",
@@ -250,8 +418,9 @@ _redis_client_methods = (
     "zscan_iter",
     "zscan",
     "zscore",
+    "zunion",
     "zunionstore",
-)
+}
 
 _redis_multipart_commands = set(["client", "cluster", "command", "config", "debug", "sentinel", "slowlog", "script"])
 
@@ -300,28 +469,6 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
     wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
 
 
-def instrument_redis_client(module):
-    if hasattr(module, "StrictRedis"):
-        for name in _redis_client_methods:
-            if name in vars(module.StrictRedis):
-                _wrap_Redis_method_wrapper_(module, "StrictRedis", name)
-
-    if hasattr(module, "Redis"):
-        for name in _redis_client_methods:
-            if name in vars(module.Redis):
-                _wrap_Redis_method_wrapper_(module, "Redis", name)
-
-
-def instrument_redis_commands_core(module):
-    for name in _redis_client_methods:
-        if hasattr(module, "CoreCommands"):
-            if hasattr(module.CoreCommands, name):
-                _wrap_Redis_method_wrapper_(module, "CoreCommands", name)
-        if hasattr(module, "DataAccessCommands"):
-            if hasattr(module.DataAccessCommands, name):
-                _wrap_Redis_method_wrapper_(module, "DataAccessCommands", name)
-
-
 def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
@@ -361,6 +508,58 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
 
     with DatastoreTrace(product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db, source=wrapped):
         return wrapped(*args, **kwargs)
+
+
+def instrument_redis_client(module):
+    if hasattr(module, "StrictRedis"):
+        for name in _redis_client_methods:
+            if name in vars(module.StrictRedis):
+                _wrap_Redis_method_wrapper_(module, "StrictRedis", name)
+
+    if hasattr(module, "Redis"):
+        for name in _redis_client_methods:
+            if name in vars(module.Redis):
+                _wrap_Redis_method_wrapper_(module, "Redis", name)
+
+
+def instrument_redis_commands_core(module):
+    _instrument_redis_commands_module(module, "CoreCommands")
+
+
+def instrument_redis_commands_sentinel(module):
+    _instrument_redis_commands_module(module, "SentinelCommands")
+
+
+def instrument_redis_commands_json_commands(module):
+    _instrument_redis_commands_module(module, "JSONCommands")
+
+
+def instrument_redis_commands_search_commands(module):
+    _instrument_redis_commands_module(module, "SearchCommands")
+
+
+def instrument_redis_commands_timeseries_commands(module):
+    _instrument_redis_commands_module(module, "TimeSeriesCommands")
+
+
+def instrument_redis_commands_graph_commands(module):
+    _instrument_redis_commands_module(module, "GraphCommands")
+
+
+def instrument_redis_commands_bf_commands(module):
+    _instrument_redis_commands_module(module, "BFCommands")
+    _instrument_redis_commands_module(module, "CFCommands")
+    _instrument_redis_commands_module(module, "CMSCommands")
+    _instrument_redis_commands_module(module, "TDigestCommands")
+    _instrument_redis_commands_module(module, "TOPKCommands")
+    
+
+def _instrument_redis_commands_module(module, class_name):
+    for name in _redis_client_methods:
+        if hasattr(module, class_name):
+            class_instance = getattr(module, class_name)
+            if hasattr(class_instance, name):
+                _wrap_Redis_method_wrapper_(module, class_name, name)
 
 
 def instrument_redis_connection(module):

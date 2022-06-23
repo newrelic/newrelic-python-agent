@@ -110,9 +110,10 @@ def test_uninstrumented_methods(client):
     uninstrumented = {m for m in methods - IGNORED_METHODS if not is_wrapped(m)}
 
     for module in REDIS_MODULES:
-        module_client = getattr(client, module)()
-        module_methods = {m for m in dir(module_client) if not m[0] == "_"}
-        is_wrapped = lambda m: hasattr(getattr(module_client, m), "__wrapped__")
-        uninstrumented |= {m for m in module_methods - IGNORED_METHODS if not is_wrapped(m)}
+        if hasattr(client, module):
+            module_client = getattr(client, module)()
+            module_methods = {m for m in dir(module_client) if not m[0] == "_"}
+            is_wrapped = lambda m: hasattr(getattr(module_client, m), "__wrapped__")
+            uninstrumented |= {m for m in module_methods - IGNORED_METHODS if not is_wrapped(m)}
 
     assert not uninstrumented, "Uninstrumented methods: %s" % sorted(uninstrumented)

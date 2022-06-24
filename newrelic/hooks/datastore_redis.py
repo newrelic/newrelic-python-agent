@@ -313,7 +313,6 @@ _redis_client_methods = {
     "sentinel_sentinels",
     "sentinel_set",
     "sentinel_slaves",
-    "sentinel",
     "set",
     "setbit",
     "setex",

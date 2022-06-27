@@ -123,27 +123,17 @@ if len(DB_SETTINGS) > 1:
             )
         ]
 else:
-    if AIOREDIS_VERSION >= (2, 0):
-        client_set = [
-            (aioredis.Redis(host=DB_SETTINGS[0]["host"], port=DB_SETTINGS[0]["port"], db=0),)(
-                aioredis.StrictRedis(host=DB_SETTINGS[0]["host"], port=DB_SETTINGS[0]["port"], db=0),
-            )
-        ]
-    else:
-        client_set = [
-            (
-                event_loop.run_until_complete(
-                    aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS[0]["host"], DB_SETTINGS[0]["port"]), db=0)
-                ),
-            )
-        ]
+    client_set = []
 
 
 async def exercise_redis(client_1, client_2):
     await client_1.set("key", "value")
     await client_1.get("key")
 
-    await client_2.execute_command("CLIENT", "LIST", parse="LIST")
+    if hasattr(client_2, "execute_command"):
+        await client_2.execute_command("CLIENT", "LIST", parse="LIST")
+    else:
+        await client_2.execute("CLIENT", "LIST")
 
 
 @pytest.mark.skipif(len(DB_SETTINGS) < 2, reason="Env not configured with multiple databases")

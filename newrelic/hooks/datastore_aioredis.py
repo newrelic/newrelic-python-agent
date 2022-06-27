@@ -17,11 +17,23 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.datastore_redis import (
-    _conn_attrs_to_dict,
     _redis_client_methods,
     _redis_multipart_commands,
     _redis_operation_re,
 )
+
+
+def _conn_attrs_to_dict(connection):
+    host = getattr(connection, "host", None)
+    port = getattr(connection, "port", None)
+    if not host and not port and hasattr(connection, "_address"):
+        host, port = connection._address
+    return {
+        "host": host,
+        "port": port,
+        "path": getattr(connection, "path", None),
+        "db": getattr(connection, "db", getattr(connection, "_db", None)),
+    }
 
 
 def _instance_info(kwargs):
@@ -99,11 +111,17 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
 def instrument_aioredis_client(module):
     # StrictRedis is just an alias of Redis, no need to wrap it as well.
     if hasattr(module, "Redis"):
+        class_ = getattr(module, "Redis")
         for operation in _redis_client_methods:
-            class_ = getattr(module, "Redis")
             if hasattr(class_, operation):
                 _wrap_AioRedis_method_wrapper(module, "Redis", operation)
 
 
 def instrument_aioredis_connection(module):
-    wrap_function_wrapper(module, "Connection.send_command", wrap_Connection_send_command)
+    if hasattr(module, "Connection"):
+        if hasattr(module.Connection, "send_command"):
+            wrap_function_wrapper(module, "Connection.send_command", wrap_Connection_send_command)
+
+    if hasattr(module, "RedisConnection"):
+        if hasattr(module.RedisConnection, "execute"):
+            wrap_function_wrapper(module, "RedisConnection.execute", wrap_Connection_send_command)

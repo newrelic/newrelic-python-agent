@@ -15,36 +15,75 @@
 import pytest
 import aioredis
 
+from conftest import event_loop, loop, AIOREDIS_VERSION
+
 from testing_support.db_settings import redis_settings
-from testing_support.util import instance_hostname
 
 DB_SETTINGS = redis_settings()[0]
 
-redis_client = aioredis.Redis(host=DB_SETTINGS['host'], port=DB_SETTINGS['port'], db=0)
-strict_redis_client = aioredis.StrictRedis(host=DB_SETTINGS['host'], port=DB_SETTINGS['port'], db=0)
+if AIOREDIS_VERSION >= (2, 0):
+    clients = [
+        aioredis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0),
+        aioredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0),
+    ]
+else:
+    clients = [
+        event_loop.run_until_complete(
+            aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], DB_SETTINGS["port"]), db=0)
+        ),
+    ]
 
 
 IGNORED_METHODS = {
+    "address",
+    "channels",
     "close",
+    "closed",
     "connection_pool",
     "connection",
+    "db",
+    "encoding",
     "execute_command",
+    "execute",
     "from_url",
+    "hscan_iter",
+    "ihscan",
+    "in_pubsub",
+    "in_transaction",
     "initialize",
+    "iscan",
+    "isscan",
+    "izscan",
     "lock",
+    "multi_exec",
     "parse_response",
+    "patterns",
     "pipeline",
+    "publish_json",
+    "register_script",
     "response_callbacks",
     "RESPONSE_CALLBACKS",
+    "SET_IF_EXIST",
+    "SET_IF_NOT_EXIST",
     "set_response_callback",
+    "SHUTDOWN_NOSAVE",
+    "SHUTDOWN_SAVE",
     "single_connection_client",
     "transaction",
-    "hscan_iter",
-    "register_script",
+    "wait_closed",
+    "xinfo",
+    "ZSET_AGGREGATE_MAX",
+    "ZSET_AGGREGATE_MIN",
+    "ZSET_AGGREGATE_SUM",
+    "ZSET_EXCLUDE_BOTH",
+    "ZSET_EXCLUDE_MAX",
+    "ZSET_EXCLUDE_MIN",
+    "ZSET_IF_EXIST",
+    "ZSET_IF_NOT_EXIST",
 }
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
+@pytest.mark.parametrize("client", clients)
 def test_uninstrumented_methods(client):
     methods = {m for m in dir(client) if not m[0] == "_"}
     is_wrapped = lambda m: hasattr(getattr(client, m), "__wrapped__")

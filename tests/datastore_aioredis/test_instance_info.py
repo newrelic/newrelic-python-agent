@@ -12,101 +12,109 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-import aioredis
+# from inspect import isawaitable
+# import pytest
+# import aioredis
 
-from newrelic.hooks.datastore_aioredis import _conn_attrs_to_dict, _instance_info
-from testing_support.fixture.event_loop import event_loop as loop
+# from newrelic.hooks.datastore_aioredis import _conn_attrs_to_dict, _instance_info
+# from conftest import event_loop, loop, AIOREDIS_VERSION
 
-_instance_info_tests = [
-    ({}, ("localhost", "6379", "0")),
-    ({"host": None}, ("localhost", "6379", "0")),
-    ({"host": ""}, ("localhost", "6379", "0")),
-    ({"db": None}, ("localhost", "6379", "0")),
-    ({"db": ""}, ("localhost", "6379", "0")),
-    ({"host": "127.0.0.1", "port": 1234, "db": 2}, ("127.0.0.1", "1234", "2")),
-]
+# _instance_info_tests = [
+#     ({}, ("localhost", "6379", "0")),
+#     ({"host": None}, ("localhost", "6379", "0")),
+#     ({"host": ""}, ("localhost", "6379", "0")),
+#     ({"db": None}, ("localhost", "6379", "0")),
+#     ({"db": ""}, ("localhost", "6379", "0")),
+#     ({"host": "127.0.0.1", "port": 1234, "db": 2}, ("127.0.0.1", "1234", "2")),
+# ]
 
-redis_client = aioredis.Redis
-strict_redis_client = aioredis.StrictRedis
-
-
-class DisabledConnection(aioredis.Connection):
-    @staticmethod
-    async def connect(*args, **kwargs):
-        pass
+# if AIOREDIS_VERSION >= (2, 0):
+#     clients = [aioredis.Redis.from_url, aioredis.StrictRedis.from_url]
+# else:
+#     clients = [aioredis.create_redis]
 
 
-class DisabledUnixConnection(aioredis.UnixDomainSocketConnection, DisabledConnection):
-    pass
+# conn_class = getattr(aioredis, "Connection", getattr(aioredis, "RedisConnection", None))
+# class DisabledConnection(conn_class):
+#     @staticmethod
+#     async def connect(*args, **kwargs):
+#         pass
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
-@pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
-def test_strict_redis_client_instance_info(client, kwargs, expected):
-    r = client(**kwargs)
-    conn_kwargs = r.connection_pool.connection_kwargs
-    assert _instance_info(conn_kwargs) == expected
+# class DisabledUnixConnection(aioredis.UnixDomainSocketConnection, DisabledConnection):
+#     pass
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
-@pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
-def test_strict_redis_connection_instance_info(client, kwargs, expected, loop):
-    r = client(**kwargs)
-    r.connection_pool.connection_class = DisabledConnection
-    connection = loop.run_until_complete(r.connection_pool.get_connection("SELECT"))
-    try:
-        conn_kwargs = _conn_attrs_to_dict(connection)
-        assert _instance_info(conn_kwargs) == expected
-    finally:
-        r.connection_pool.release(connection)
+# @pytest.mark.parametrize("client", clients)
+# @pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
+# def test_strict_redis_client_instance_info(client, kwargs, expected, loop):
+#     r = client(**kwargs)
+#     if isawaitable(r):
+#         r = loop.run_until_complete(r)
+#     conn_kwargs = r.connection_pool.connection_kwargs
+#     assert _instance_info(conn_kwargs) == expected
 
 
-_instance_info_from_url_tests = [
-    (("redis://localhost:1234/",), {}, ("localhost", "1234", "0")),
-    (("redis://localhost:1234",), {}, ("localhost", "1234", "0")),
-    (("redis://user:password@localhost:6379",), {}, ("localhost", "6379", "0")),
-    (("redis://localhost:6379/2",), {}, ("localhost", "6379", "2")),
-    (("redis://localhost:6379",), {"db": 2}, ("localhost", "6379", "2")),
-    (("redis://@127.0.0.1:6379",), {}, ("127.0.0.1", "6379", "0")),
-    (("redis://:1234/",), {}, ("localhost", "1234", "0")),
-    (("redis://@:1234/",), {}, ("localhost", "1234", "0")),
-    (("redis://localhost:1234/garbage",), {}, ("localhost", "1234", "0")),
-    (("redis://127.0.0.1",), {}, ("127.0.0.1", "6379", "0")),
-    (("rediss://localhost:6379/2/",), {}, ("localhost", "6379", "2")),          # rediss: Not a typo
-    (("redis://localhost:6379",), {"host": "someotherhost"}, ("localhost", "6379", "0")),
-    (("redis://localhost:6379/2",), {"db": 3}, ("localhost", "6379", "2")),
-    (("redis://localhost:6379/2/?db=111",), {}, ("localhost", "6379", "111")),
-    (("redis://localhost:6379?db=2",), {}, ("localhost", "6379", "2")),
-    (("redis://localhost:6379/2?db=111",), {}, ("localhost", "6379", "111")),
-    (("unix:///path/to/socket.sock",), {}, ("localhost", "/path/to/socket.sock", "0")),
-    (("unix:///path/to/socket.sock?db=2",), {}, ("localhost", "/path/to/socket.sock", "2")),
-    (("unix:///path/to/socket.sock",), {"db": 2}, ("localhost", "/path/to/socket.sock", "2")),
-]
+# @pytest.mark.parametrize("client", clients)
+# @pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
+# def test_strict_redis_connection_instance_info(client, kwargs, expected, loop):
+#     r = client(**kwargs)
+#     if isawaitable(r):
+#         r = loop.run_until_complete(r)
+#     r.connection_pool.connection_class = DisabledConnection
+#     connection = loop.run_until_complete(r.connection_pool.get_connection("SELECT"))
+#     try:
+#         conn_kwargs = _conn_attrs_to_dict(connection)
+#         assert _instance_info(conn_kwargs) == expected
+#     finally:
+#         r.connection_pool.release(connection)
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
-@pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
-def test_strict_redis_client_from_url(client, args, kwargs, expected):
-    r = client.from_url(*args, **kwargs)
-    conn_kwargs = r.connection_pool.connection_kwargs
-    assert _instance_info(conn_kwargs) == expected
+# _instance_info_from_url_tests = [
+#     (("redis://localhost:1234/",), {}, ("localhost", "1234", "0")),
+#     (("redis://localhost:1234",), {}, ("localhost", "1234", "0")),
+#     (("redis://user:password@localhost:6379",), {}, ("localhost", "6379", "0")),
+#     (("redis://localhost:6379/2",), {}, ("localhost", "6379", "2")),
+#     (("redis://localhost:6379",), {"db": 2}, ("localhost", "6379", "2")),
+#     (("redis://@127.0.0.1:6379",), {}, ("127.0.0.1", "6379", "0")),
+#     (("redis://:1234/",), {}, ("localhost", "1234", "0")),
+#     (("redis://@:1234/",), {}, ("localhost", "1234", "0")),
+#     (("redis://localhost:1234/garbage",), {}, ("localhost", "1234", "0")),
+#     (("redis://127.0.0.1",), {}, ("127.0.0.1", "6379", "0")),
+#     (("rediss://localhost:6379/2/",), {}, ("localhost", "6379", "2")),          # rediss: Not a typo
+#     (("redis://localhost:6379",), {"host": "someotherhost"}, ("localhost", "6379", "0")),
+#     (("redis://localhost:6379/2",), {"db": 3}, ("localhost", "6379", "2")),
+#     (("redis://localhost:6379/2/?db=111",), {}, ("localhost", "6379", "111")),
+#     (("redis://localhost:6379?db=2",), {}, ("localhost", "6379", "2")),
+#     (("redis://localhost:6379/2?db=111",), {}, ("localhost", "6379", "111")),
+#     (("unix:///path/to/socket.sock",), {}, ("localhost", "/path/to/socket.sock", "0")),
+#     (("unix:///path/to/socket.sock?db=2",), {}, ("localhost", "/path/to/socket.sock", "2")),
+#     (("unix:///path/to/socket.sock",), {"db": 2}, ("localhost", "/path/to/socket.sock", "2")),
+# ]
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
-@pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
-def test_strict_redis_connection_from_url(client, args, kwargs, expected, loop):
-    r = client.from_url(*args, **kwargs)
-    if r.connection_pool.connection_class in (aioredis.Connection, aioredis.connection.SSLConnection):
-        r.connection_pool.connection_class = DisabledConnection
-    elif r.connection_pool.connection_class is aioredis.UnixDomainSocketConnection:
-        r.connection_pool.connection_class = DisabledUnixConnection
-    else:
-        assert False, r.connection_pool.connection_class
+# @pytest.mark.parametrize("client", clients)
+# @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
+# def test_strict_redis_client_from_url(client, args, kwargs, expected):
+#     r = client.from_url(*args, **kwargs)
+#     conn_kwargs = r.connection_pool.connection_kwargs
+#     assert _instance_info(conn_kwargs) == expected
 
-    connection = loop.run_until_complete(r.connection_pool.get_connection("SELECT"))
-    try:
-        conn_kwargs = _conn_attrs_to_dict(connection)
-        assert _instance_info(conn_kwargs) == expected
-    finally:
-        r.connection_pool.release(connection)
+
+# @pytest.mark.parametrize("client", clients)
+# @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
+# def test_strict_redis_connection_from_url(client, args, kwargs, expected, loop):
+#     r = client.from_url(*args, **kwargs)
+#     if r.connection_pool.connection_class in (aioredis.Connection, aioredis.connection.SSLConnection):
+#         r.connection_pool.connection_class = DisabledConnection
+#     elif r.connection_pool.connection_class is aioredis.UnixDomainSocketConnection:
+#         r.connection_pool.connection_class = DisabledUnixConnection
+#     else:
+#         assert False, r.connection_pool.connection_class
+
+#     connection = loop.run_until_complete(r.connection_pool.get_connection("SELECT"))
+#     try:
+#         conn_kwargs = _conn_attrs_to_dict(connection)
+#         assert _instance_info(conn_kwargs) == expected
+#     finally:
+#         r.connection_pool.release(connection)

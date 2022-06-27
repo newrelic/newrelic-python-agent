@@ -2697,6 +2697,30 @@ def _process_module_builtin_defaults():
         "redis.commands.core", "newrelic.hooks.datastore_redis", "instrument_redis_commands_core"
     )
 
+    _process_module_definition(
+        "redis.commands.sentinel", "newrelic.hooks.datastore_redis", "instrument_redis_commands_sentinel"
+    )
+
+    _process_module_definition(
+        "redis.commands.json.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_json_commands"
+    )
+
+    _process_module_definition(
+        "redis.commands.search.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_search_commands"
+    )
+
+    _process_module_definition(
+        "redis.commands.timeseries.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_timeseries_commands"
+    )
+
+    _process_module_definition(
+        "redis.commands.bf.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_bf_commands"
+    )
+
+    _process_module_definition(
+        "redis.commands.graph.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_graph_commands"
+    )
+
     _process_module_definition("motor", "newrelic.hooks.datastore_motor", "patch_motor")
 
     _process_module_definition(

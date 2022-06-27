@@ -59,7 +59,6 @@ IGNORED_METHODS = {
     "response_callbacks",
     "RESPONSE_CALLBACKS",
     "sentinel",
-    "sentinel",
     "set_file",
     "set_path",
     "set_response_callback",

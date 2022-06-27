@@ -35,6 +35,7 @@ IGNORED_METHODS = {
     "response_callbacks",
     "RESPONSE_CALLBACKS",
     "RESULT_CALLBACKS",
+    "sentinel",
     "set_response_callback",
     "transaction",
 }

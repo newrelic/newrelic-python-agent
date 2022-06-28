@@ -17,16 +17,35 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.datastore_redis import (
-    _conn_attrs_to_dict,
-    _instance_info,
     _redis_client_methods,
     _redis_multipart_commands,
     _redis_operation_re,
 )
 
 
-def _wrap_Aredis_method_wrapper_(module, instance_class_name, operation):
-    async def _nr_wrapper_Aredis_method_(wrapped, instance, args, kwargs):
+def _conn_attrs_to_dict(connection):
+    host = getattr(connection, "host", None)
+    port = getattr(connection, "port", None)
+    if not host and not port and hasattr(connection, "_address"):
+        host, port = connection._address
+    return {
+        "host": host,
+        "port": port,
+        "path": getattr(connection, "path", None),
+        "db": getattr(connection, "db", getattr(connection, "_db", None)),
+    }
+
+
+def _instance_info(kwargs):
+    host = kwargs.get("host") or "localhost"
+    port_path_or_id = str(kwargs.get("port") or kwargs.get("path", 6379))
+    db = str(kwargs.get("db") or 0)
+
+    return (host, port_path_or_id, db)
+
+
+def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
+    async def _nr_wrapper_AioRedis_method_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
         if transaction is None:
             return await wrapped(*args, **kwargs)
@@ -35,7 +54,7 @@ def _wrap_Aredis_method_wrapper_(module, instance_class_name, operation):
             return await wrapped(*args, **kwargs)
 
     name = "%s.%s" % (instance_class_name, operation)
-    wrap_function_wrapper(module, name, _nr_wrapper_Aredis_method_)
+    wrap_function_wrapper(module, name, _nr_wrapper_AioRedis_method_)
 
 
 async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
@@ -62,8 +81,7 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
     # If it's not a multi part command, there's no need to trace it, so
     # we can return early.
 
-    if operation.split()[0] not in _redis_multipart_commands:
-        # Set the datastore info on the DatastoreTrace containing this function call.
+    if operation.split()[0] not in _redis_multipart_commands:        # Set the datastore info on the DatastoreTrace containing this function call.
         trace = current_trace()
 
         # Find DatastoreTrace no matter how many other traces are inbetween
@@ -90,12 +108,20 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
 
-def instrument_aredis_client(module):
-    if hasattr(module, "StrictRedis"):
-        for name in _redis_client_methods:
-            if hasattr(module.StrictRedis, name):
-                _wrap_Aredis_method_wrapper_(module, "StrictRedis", name)
+def instrument_aioredis_client(module):
+    # StrictRedis is just an alias of Redis, no need to wrap it as well.
+    if hasattr(module, "Redis"):
+        class_ = getattr(module, "Redis")
+        for operation in _redis_client_methods:
+            if hasattr(class_, operation):
+                _wrap_AioRedis_method_wrapper(module, "Redis", operation)
 
 
-def instrument_aredis_connection(module):
-    wrap_function_wrapper(module.Connection, "send_command", wrap_Connection_send_command)
+def instrument_aioredis_connection(module):
+    if hasattr(module, "Connection"):
+        if hasattr(module.Connection, "send_command"):
+            wrap_function_wrapper(module, "Connection.send_command", wrap_Connection_send_command)
+
+    if hasattr(module, "RedisConnection"):
+        if hasattr(module.RedisConnection, "execute"):
+            wrap_function_wrapper(module, "RedisConnection.execute", wrap_Connection_send_command)

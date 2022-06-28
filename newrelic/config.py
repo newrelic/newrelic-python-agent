@@ -2605,6 +2605,8 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("aioredis.client", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client")
 
+    _process_module_definition("aioredis.commands", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client")
+
     _process_module_definition(
         "aioredis.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
     )

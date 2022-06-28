@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import aioredis
+import asyncio
+import pytest
+
 from testing_support.fixtures import (  # noqa: F401
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
+
+AIOREDIS_VERSION = tuple(int(x) for x in aioredis.__version__.split(".")[:2])
 
 _coverage_source = [
     "newrelic.hooks.datastore_aioredis",
@@ -37,3 +43,12 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (datastore)"],
 )
+
+
+event_loop = asyncio.get_event_loop()
+asyncio.set_event_loop(event_loop)
+
+
+@pytest.fixture()
+def loop():
+    yield event_loop

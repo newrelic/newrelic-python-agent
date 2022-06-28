@@ -1,22 +1,23 @@
 # Copyright 2010 New Relic, Inc.
-#
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
+
 #      http://www.apache.org/licenses/LICENSE-2.0
-#
+
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from inspect import isawaitable
 import pytest
 import aioredis
 
 from newrelic.hooks.datastore_aioredis import _conn_attrs_to_dict, _instance_info
-from testing_support.fixture.event_loop import event_loop as loop
+from conftest import event_loop, loop, AIOREDIS_VERSION
 
 _instance_info_tests = [
     ({}, ("localhost", "6379", "0")),
@@ -27,32 +28,44 @@ _instance_info_tests = [
     ({"host": "127.0.0.1", "port": 1234, "db": 2}, ("127.0.0.1", "1234", "2")),
 ]
 
-redis_client = aioredis.Redis
-strict_redis_client = aioredis.StrictRedis
+
+SKIP_IF_AIOREDIS_V1 = pytest.mark.skipif(AIOREDIS_VERSION < (2, 0), reason="Single arg commands not supported.")
+
+if AIOREDIS_VERSION >= (2, 0):
+    clients = [aioredis.Redis, aioredis.StrictRedis]
+    class DisabledConnection(aioredis.Connection):
+        @staticmethod
+        async def connect(*args, **kwargs):
+            pass
 
 
-class DisabledConnection(aioredis.Connection):
-    @staticmethod
-    async def connect(*args, **kwargs):
+    class DisabledUnixConnection(aioredis.UnixDomainSocketConnection, DisabledConnection):
         pass
 
+else:
+    clients = []
+    DisabledConnection, DisabledUnixConnection = None, None
 
-class DisabledUnixConnection(aioredis.UnixDomainSocketConnection, DisabledConnection):
-    pass
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
+@SKIP_IF_AIOREDIS_V1
+@pytest.mark.parametrize("client", clients)
 @pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
-def test_strict_redis_client_instance_info(client, kwargs, expected):
+def test_strict_redis_client_instance_info(client, kwargs, expected, loop):
     r = client(**kwargs)
+    if isawaitable(r):
+        r = loop.run_until_complete(r)
     conn_kwargs = r.connection_pool.connection_kwargs
     assert _instance_info(conn_kwargs) == expected
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
+@SKIP_IF_AIOREDIS_V1
+@pytest.mark.parametrize("client", clients)
 @pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
 def test_strict_redis_connection_instance_info(client, kwargs, expected, loop):
     r = client(**kwargs)
+    if isawaitable(r):
+        r = loop.run_until_complete(r)
     r.connection_pool.connection_class = DisabledConnection
     connection = loop.run_until_complete(r.connection_pool.get_connection("SELECT"))
     try:
@@ -85,7 +98,8 @@ _instance_info_from_url_tests = [
 ]
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
+@SKIP_IF_AIOREDIS_V1
+@pytest.mark.parametrize("client", clients)
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
 def test_strict_redis_client_from_url(client, args, kwargs, expected):
     r = client.from_url(*args, **kwargs)
@@ -93,7 +107,8 @@ def test_strict_redis_client_from_url(client, args, kwargs, expected):
     assert _instance_info(conn_kwargs) == expected
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
+@SKIP_IF_AIOREDIS_V1
+@pytest.mark.parametrize("client", clients)
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
 def test_strict_redis_connection_from_url(client, args, kwargs, expected, loop):
     r = client.from_url(*args, **kwargs)

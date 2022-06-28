@@ -22,7 +22,7 @@ from testing_support.fixtures import (  # noqa: F401
     collector_available_fixture,
 )
 
-AIOREDIS_VERSION = tuple(int(x) for x in aioredis.__version__.split(".")[:1])
+AIOREDIS_VERSION = tuple(int(x) for x in aioredis.__version__.split(".")[:2])
 
 _coverage_source = [
     "newrelic.hooks.datastore_aioredis",

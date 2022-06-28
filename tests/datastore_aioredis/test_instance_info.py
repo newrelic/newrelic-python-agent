@@ -33,19 +33,19 @@ SKIP_IF_AIOREDIS_V1 = pytest.mark.skipif(AIOREDIS_VERSION < (2, 0), reason="Sing
 
 if AIOREDIS_VERSION >= (2, 0):
     clients = [aioredis.Redis, aioredis.StrictRedis]
-else:
-    clients = []
+    class DisabledConnection(aioredis.Connection):
+        @staticmethod
+        async def connect(*args, **kwargs):
+            pass
 
 
-conn_class = getattr(aioredis, "Connection", getattr(aioredis, "RedisConnection", None))
-class DisabledConnection(conn_class):
-    @staticmethod
-    async def connect(*args, **kwargs):
+    class DisabledUnixConnection(aioredis.UnixDomainSocketConnection, DisabledConnection):
         pass
 
+else:
+    clients = []
+    DisabledConnection, DisabledUnixConnection = None, None
 
-class DisabledUnixConnection(aioredis.UnixDomainSocketConnection, DisabledConnection):
-    pass
 
 
 @SKIP_IF_AIOREDIS_V1

@@ -203,6 +203,30 @@ def test_database_db_statement_exclude():
         pass
 
 
+@pytest.mark.parametrize('trace_type,args,attrs', (
+    (DatastoreTrace, ('db_product', 'db_target', 'db_operation'), {"db.collection": "db_target", "db.operation": "db_operation"}),
+    (DatabaseTrace, ("select 1 from db_table",), {"db.collection": "db_table", "db.statement": "select ? from db_table"}),
+))
+def test_datastore_database_trace_attrs(trace_type, args, attrs):
+    @validate_span_events(
+        count=1,
+        exact_agents=attrs,
+    )
+    @override_application_settings({
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+    })
+    @background_task(name='test_database_db_statement_exclude')
+    def test():
+        transaction = current_transaction()
+        transaction._sampled = True
+
+        with trace_type(*args):
+            pass
+    
+    test()
+
+
 @pytest.mark.parametrize('exclude_url', (True, False))
 def test_external_spans(exclude_url):
     override_settings = {

@@ -64,6 +64,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'aws.lambda.arn',
         'aws.lambda.coldStart',
         'aws.lambda.eventSource.arn',
+        "db.collection",
         'db.instance',
         'db.operation',
         'db.statement',

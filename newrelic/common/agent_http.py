@@ -531,16 +531,16 @@ class SupportabilityMixin(object):
             # Compression was applied
             if compression_time is not None:
                 internal_metric(
-                    "Supportability/Python/Collector/ZLIB/Bytes/%s" % agent_method,
+                    "Supportability/Python/Collector/%s/ZLIB/Bytes" % agent_method,
                     len(payload),
                 )
                 internal_metric(
-                    "Supportability/Python/Collector/ZLIB/Compress/%s" % agent_method,
+                    "Supportability/Python/Collector/%s/ZLIB/Compress" % agent_method,
                     compression_time,
                 )
 
             internal_metric(
-                "Supportability/Python/Collector/Output/Bytes/%s" % agent_method,
+                "Supportability/Python/Collector/%s/Output/Bytes" % agent_method,
                 len(body),
             )
 

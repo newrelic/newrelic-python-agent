@@ -298,18 +298,18 @@ def test_http_payload_compression(server, client_cls, method, threshold):
 
     internal_metrics = dict(internal_metrics.metrics())
     if client_cls is ApplicationModeClient:
-        assert internal_metrics["Supportability/Python/Collector/Output/Bytes/test"][:2] == [
+        assert internal_metrics["Supportability/Python/Collector/test/Output/Bytes"][:2] == [
             1,
             payload_byte_len,
         ]
 
         if threshold < 20:
             # Verify compression time is recorded
-            assert internal_metrics["Supportability/Python/Collector/ZLIB/Compress/test"][0] == 1
-            assert internal_metrics["Supportability/Python/Collector/ZLIB/Compress/test"][1] > 0
+            assert internal_metrics["Supportability/Python/Collector/test/ZLIB/Compress"][0] == 1
+            assert internal_metrics["Supportability/Python/Collector/test/ZLIB/Compress"][1] > 0
 
             # Verify the original payload length is recorded
-            assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes/test"][:2] == [1, len(payload)]
+            assert internal_metrics["Supportability/Python/Collector/test/ZLIB/Bytes"][:2] == [1, len(payload)]
 
             assert len(internal_metrics) == 3
         else:

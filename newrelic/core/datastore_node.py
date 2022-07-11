@@ -21,9 +21,9 @@ from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
 
 _DatastoreNode = namedtuple('_DatastoreNode',
-        ['product', 'target', 'operation', 'children', 'start_time',
-        'end_time', 'duration', 'exclusive', 'host', 'port_path_or_id',
-        'database_name', 'guid', 'agent_attributes', 'user_attributes'])
+    ['product', 'target', 'operation', 'children', 'start_time',
+    'end_time', 'duration', 'exclusive', 'host', 'port_path_or_id',
+    'database_name', 'guid', 'agent_attributes', 'user_attributes'])
 
 
 class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
@@ -139,4 +139,8 @@ class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
     def span_event(self, *args, **kwargs):
         if self.operation:
             self.agent_attributes["db.operation"] = self.operation
+
+        if self.target:
+            self.agent_attributes["db.collection"] = self.target
+
         return super(DatastoreNode, self).span_event(*args, **kwargs)

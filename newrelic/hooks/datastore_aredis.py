@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.hooks.datastore_redis import _conn_attrs_to_dict, _instance_info, _redis_client_methods, _redis_multipart_commands, _redis_operation_re
+from newrelic.hooks.datastore_redis import (
+    _conn_attrs_to_dict,
+    _instance_info,
+    _redis_client_methods,
+    _redis_multipart_commands,
+    _redis_operation_re,
+)
 
 
 def _wrap_Aredis_method_wrapper_(module, instance_class_name, operation):
@@ -25,35 +31,18 @@ def _wrap_Aredis_method_wrapper_(module, instance_class_name, operation):
         if transaction is None:
             return await wrapped(*args, **kwargs)
 
-        dt = DatastoreTrace(product="Redis", target=None, operation=operation)
-
-        transaction._nr_datastore_instance_info = (None, None, None)
-
-        with dt:
-            result = await wrapped(*args, **kwargs)
-
-            host, port_path_or_id, db = transaction._nr_datastore_instance_info
-            dt.host = host
-            dt.port_path_or_id = port_path_or_id
-            dt.database_name = db
-            return result
+        with DatastoreTrace(product="Redis", target=None, operation=operation):
+            return await wrapped(*args, **kwargs)
 
     name = "%s.%s" % (instance_class_name, operation)
     wrap_function_wrapper(module, name, _nr_wrapper_Aredis_method_)
 
 
-def instrument_aredis_client(module):
-    if hasattr(module, "StrictRedis"):
-        for name in _redis_client_methods:
-            if hasattr(module.StrictRedis, name):
-                _wrap_Aredis_method_wrapper_(module, "StrictRedis", name)
-
-
-async def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
+async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return await wrapped(*args, **kwargs)
-        
+
     host, port_path_or_id, db = (None, None, None)
 
     try:
@@ -64,8 +53,6 @@ async def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     except Exception:
         pass
 
-    transaction._nr_datastore_instance_info = (host, port_path_or_id, db)
-        
     # Older Redis clients would when sending multi part commands pass
     # them in as separate arguments to send_command(). Need to therefore
     # detect those and grab the next argument from the set of arguments.
@@ -76,6 +63,18 @@ async def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     # we can return early.
 
     if operation.split()[0] not in _redis_multipart_commands:
+        # Set the datastore info on the DatastoreTrace containing this function call.
+        trace = current_trace()
+
+        # Find DatastoreTrace no matter how many other traces are inbetween
+        while trace is not None and not isinstance(trace, DatastoreTrace):
+            trace = getattr(trace, "parent", None)
+
+        if trace is not None:
+            trace.host = host
+            trace.port_path_or_id = port_path_or_id
+            trace.database_name = db
+
         return await wrapped(*args, **kwargs)
 
     # Convert multi args to single arg string
@@ -89,7 +88,14 @@ async def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
         product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db
     ):
         return await wrapped(*args, **kwargs)
-    
+
+
+def instrument_aredis_client(module):
+    if hasattr(module, "StrictRedis"):
+        for name in _redis_client_methods:
+            if hasattr(module.StrictRedis, name):
+                _wrap_Aredis_method_wrapper_(module, "StrictRedis", name)
+
 
 def instrument_aredis_connection(module):
-    wrap_function_wrapper(module.Connection, "send_command", _nr_Connection_send_command_wrapper_)
+    wrap_function_wrapper(module.Connection, "send_command", wrap_Connection_send_command)

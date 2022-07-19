@@ -289,32 +289,46 @@ def test_http_payload_compression(server, client_cls, method, threshold):
         compression_threshold=threshold,
     ) as client:
         with InternalTraceContext(internal_metrics):
-            status, data = client.send_request(payload=payload, params={"method": "test"})
+            status, data = client.send_request(payload=payload, params={"method": "method1"})
+
+    with client_cls(
+        "localhost",
+        server.port,
+        disable_certificate_validation=True,
+        compression_method=method,
+        compression_threshold=threshold,
+    ) as client:
+        with InternalTraceContext(internal_metrics):
+            status, data = client.send_request(payload=payload, params={"method": "method2"})
 
     assert status == 200
     data = data.split(b"\n")
     sent_payload = data[-1]
     payload_byte_len = len(sent_payload)
-
     internal_metrics = dict(internal_metrics.metrics())
     if client_cls is ApplicationModeClient:
-        assert internal_metrics["Supportability/Python/Collector/test/Output/Bytes"][:2] == [
+        assert internal_metrics["Supportability/Python/Collector/method1/Output/Bytes"][:2] == [
             1,
-            payload_byte_len,
+            len(payload),
+        ]
+        assert internal_metrics["Supportability/Python/Collector/Output/Bytes"][:2] == [
+            2,
+            len(payload)*2,
         ]
 
         if threshold < 20:
             # Verify compression time is recorded
-            assert internal_metrics["Supportability/Python/Collector/test/ZLIB/Compress"][0] == 1
-            assert internal_metrics["Supportability/Python/Collector/test/ZLIB/Compress"][1] > 0
+            assert internal_metrics["Supportability/Python/Collector/method1/ZLIB/Compress"][0] == 1
+            assert internal_metrics["Supportability/Python/Collector/method1/ZLIB/Compress"][1] > 0
 
-            # Verify the original payload length is recorded
-            assert internal_metrics["Supportability/Python/Collector/test/ZLIB/Bytes"][:2] == [1, len(payload)]
-
-            assert len(internal_metrics) == 3
+            # Verify the compressed payload length is recorded
+            assert internal_metrics["Supportability/Python/Collector/method2/ZLIB/Bytes"][:2] == [1, payload_byte_len]
+            assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes"][:2] == [2, payload_byte_len*2]
+            
+            assert len(internal_metrics) == 8
         else:
             # Verify no ZLIB compression metrics were sent
-            assert len(internal_metrics) == 1
+            assert len(internal_metrics) == 3
     else:
         assert not internal_metrics
 

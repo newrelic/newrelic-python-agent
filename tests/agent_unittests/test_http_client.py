@@ -291,6 +291,7 @@ def test_http_payload_compression(server, client_cls, method, threshold):
         with InternalTraceContext(internal_metrics):
             status, data = client.send_request(payload=payload, params={"method": "method1"})
 
+    # Sending one additional request to valid metric aggregation for top level data usage supportability metrics
     with client_cls(
         "localhost",
         server.port,
@@ -322,7 +323,7 @@ def test_http_payload_compression(server, client_cls, method, threshold):
             assert internal_metrics["Supportability/Python/Collector/method1/ZLIB/Compress"][1] > 0
 
             # Verify the compressed payload length is recorded
-            assert internal_metrics["Supportability/Python/Collector/method2/ZLIB/Bytes"][:2] == [1, payload_byte_len]
+            assert internal_metrics["Supportability/Python/Collector/method1/ZLIB/Bytes"][:2] == [1, payload_byte_len]
             assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes"][:2] == [2, payload_byte_len*2]
             
             assert len(internal_metrics) == 8

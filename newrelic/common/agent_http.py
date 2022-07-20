@@ -547,6 +547,7 @@ class SupportabilityMixin(object):
                 "Supportability/Python/Collector/%s/Output/Bytes" % agent_method,
                 len(payload),
             )
+            # Top level metric to aggregate overall bytes being sent
             internal_metric(
                 "Supportability/Python/Collector/Output/Bytes", len(payload)
             )

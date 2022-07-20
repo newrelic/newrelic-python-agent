@@ -2626,7 +2626,7 @@ def validate_analytics_catmap_data(name, expected_attributes=(), non_expected_at
 
         result = _new_wrapped(*args, **kwargs)
         # Check type of s[0] because it returns an integer if s is a LogEventNode
-        _samples = [s for s in samples if (type(s[0]) is not int and s[0]["type"] == "Transaction")]
+        _samples = [s for s in samples if not isinstance(s[0], int) and s[0]["type"] == "Transaction"]
         assert _samples, "No Transaction events captured."
         for sample in _samples:
             assert isinstance(sample, list)

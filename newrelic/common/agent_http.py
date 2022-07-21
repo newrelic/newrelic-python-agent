@@ -524,24 +524,32 @@ class SupportabilityMixin(object):
         # *********
         # Used only for supportability metrics. Do not use to drive business
         # logic!
+        # payload: uncompressed
+        # body: compressed
         agent_method = params and params.get("method")
         # *********
 
-        if agent_method and body:
+        if agent_method and payload:
             # Compression was applied
             if compression_time is not None:
                 internal_metric(
-                    "Supportability/Python/Collector/ZLIB/Bytes/%s" % agent_method,
-                    len(payload),
+                    "Supportability/Python/Collector/%s/ZLIB/Bytes" % agent_method,
+                    len(body),
                 )
                 internal_metric(
-                    "Supportability/Python/Collector/ZLIB/Compress/%s" % agent_method,
+                    "Supportability/Python/Collector/ZLIB/Bytes", len(body)
+                )
+                internal_metric(
+                    "Supportability/Python/Collector/%s/ZLIB/Compress" % agent_method,
                     compression_time,
                 )
-
             internal_metric(
-                "Supportability/Python/Collector/Output/Bytes/%s" % agent_method,
-                len(body),
+                "Supportability/Python/Collector/%s/Output/Bytes" % agent_method,
+                len(payload),
+            )
+            # Top level metric to aggregate overall bytes being sent
+            internal_metric(
+                "Supportability/Python/Collector/Output/Bytes", len(payload)
             )
 
     @staticmethod

@@ -896,7 +896,7 @@ def test_default_events_harvested(allowlist_event):
     num_seen = 0 if (allowlist_event != "span_event_data") else 1
     assert app._stats_engine.span_events.num_seen == num_seen
 
-    assert app._stats_engine.metrics_count() == 1
+    assert app._stats_engine.metrics_count() == 4
 
 
 @failing_endpoint("analytic_event_data")

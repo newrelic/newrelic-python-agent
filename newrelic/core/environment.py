@@ -197,7 +197,7 @@ def environment_settings():
         if name.startswith("newrelic.hooks."):
             plugins.append(name)
 
-        elif name.find(".") == -1 and hasattr(module, "__file__"):
+        elif "." not in name and hasattr(module, "__file__"):
             # XXX This is disabled as it can cause notable overhead in
             # pathalogical cases. Will be replaced with a new system
             # where have a allowlist of packages we really want version

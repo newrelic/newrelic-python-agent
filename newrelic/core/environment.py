@@ -191,7 +191,7 @@ def environment_settings():
     for name, module in sys.modules.copy().items():
         # If the module isn't actually loaded (such as failed relative imports
         # in Python 2.7), the module will be None and should not be reported.
-        if module is None:
+        if not module:
             continue
 
         if name.startswith("newrelic.hooks."):

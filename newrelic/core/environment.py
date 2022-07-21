@@ -189,15 +189,15 @@ def environment_settings():
     # list
 
     for name, module in sys.modules.copy().items():
+        # Exclude lib.sub_paths as independent modules except for newrelic.hooks.
+        if "." in name and not name.startswith("newrelic.hooks."):
+            continue
         # If the module isn't actually loaded (such as failed relative imports
         # in Python 2.7), the module will be None and should not be reported.
         if not module:
             continue
 
-        if name.startswith("newrelic.hooks."):
-            plugins.append(name)
-
-        elif "." not in name and hasattr(module, "__file__"):
+        elif hasattr(module, "__file__"):
             # XXX This is disabled as it can cause notable overhead in
             # pathalogical cases. Will be replaced with a new system
             # where have a allowlist of packages we really want version

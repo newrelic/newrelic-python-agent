@@ -184,6 +184,15 @@ def environment_settings():
 
     plugins = []
 
+    get_version = None
+    # importlib was introduced into the standard library starting in Python3.8.
+    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
+        get_version = sys.modules["importlib"].metadata.version
+    elif "pkg_resources" in sys.modules:
+
+        def get_version(name):
+            return sys.modules["pkg_resources"].get_distribution(name).version
+
     # Using any iterable to create a snapshot of sys.modules can occassionally
     # fail in a rare case when modules are imported in parallel by different
     # threads.
@@ -203,12 +212,22 @@ def environment_settings():
         # See https://docs.python.org/3/library/sysconfig.html#installation-paths.
         if (
             not hasattr(module, "__file__")
+            or not module.__file__
             or not module.__file__.startswith(purelib)
             or not module.__file__.startswith(platlib)
         ):
             continue
+        # pkg_resources is installed with setuptools and does not work on itself so
+        # skip it. importlib is part of the standard library so it is already skipped
+        # above.
+        if name.startswith("pkg_resources"):
+            continue
 
-        plugins.append(name)
+        try:
+            version = get_version(name)
+            plugins.append("%s (%s)" % (name, version))
+        except Exception:
+            pass
 
     env.append(("Plugin List", plugins))
 

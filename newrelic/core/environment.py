@@ -190,7 +190,7 @@ def environment_settings():
         get_version = sys.modules["importlib"].metadata.version
     elif "pkg_resources" in sys.modules:
 
-        def get_version(name):
+        def get_version(name):  # pylint: disable=function-redefined
             return sys.modules["pkg_resources"].get_distribution(name).version
 
     # Using any iterable to create a snapshot of sys.modules can occassionally

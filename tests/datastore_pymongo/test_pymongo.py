@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pymongo
-import pytest
 import sqlite3
 
 from testing_support.fixtures import validate_transaction_metrics, validate_transaction_errors

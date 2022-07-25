@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pymongo
 import sqlite3
 
-from testing_support.fixtures import validate_transaction_metrics, validate_transaction_errors
+import pymongo
 from testing_support.db_settings import mongodb_settings
-from testing_support.validators.validate_database_duration import validate_database_duration
+from testing_support.fixtures import (
+    validate_transaction_errors,
+    validate_transaction_metrics,
+)
+from testing_support.validators.validate_database_duration import (
+    validate_database_duration,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.packages import six
-
 
 DB_SETTINGS = mongodb_settings()[0]
 MONGODB_HOST = DB_SETTINGS["host"]
@@ -270,7 +274,9 @@ def test_mongodb_client_operation():
 
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        "test_pymongo:test_mongodb_client_operation.<locals>._test" if six.PY3 else "test_pymongo:test_mongodb_client_operation",
+        "test_pymongo:test_mongodb_client_operation.<locals>._test"
+        if six.PY3
+        else "test_pymongo:test_mongodb_client_operation",
         scoped_metrics=_test_pymongo_client_scoped_metrics,
         rollup_metrics=_test_pymongo_client_rollup_metrics,
         background_task=True,

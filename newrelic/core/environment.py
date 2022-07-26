@@ -217,11 +217,6 @@ def environment_settings():
             or not module.__file__.startswith(platlib)
         ):
             continue
-        # pkg_resources is installed with setuptools and does not work on itself so
-        # skip it. importlib is part of the standard library so it is already skipped
-        # above.
-        if name.startswith("pkg_resources"):
-            continue
 
         try:
             version = get_version(name)

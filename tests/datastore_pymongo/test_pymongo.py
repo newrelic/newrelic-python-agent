@@ -118,6 +118,7 @@ def _exercise_mongo(db):
 
 
 _test_pymongo_scoped_metrics_v3 = [
+    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
     ("Datastore/statement/MongoDB/%s/create_index" % MONGODB_COLLECTION, 1),
     ("Datastore/statement/MongoDB/%s/find" % MONGODB_COLLECTION, 3),
     ("Datastore/statement/MongoDB/%s/find_one" % MONGODB_COLLECTION, 1),
@@ -144,6 +145,7 @@ _test_pymongo_scoped_metrics_v3 = [
 
 
 _test_pymongo_scoped_metrics_v4 = [
+    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
     ("Datastore/statement/MongoDB/%s/create_index" % MONGODB_COLLECTION, 1),
     ("Datastore/statement/MongoDB/%s/find" % MONGODB_COLLECTION, 3),
     ("Datastore/statement/MongoDB/%s/find_one" % MONGODB_COLLECTION, 1),
@@ -165,6 +167,7 @@ _test_pymongo_scoped_metrics_v4 = [
 ]
 
 _test_pymongo_rollup_metrics_v3 = [
+    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
     ("Datastore/all", 28),
     ("Datastore/allOther", 28),
     ("Datastore/MongoDB/all", 28),
@@ -216,6 +219,7 @@ _test_pymongo_rollup_metrics_v3 = [
 ]
 
 _test_pymongo_rollup_metrics_v4 = [
+    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
     ("Datastore/all", 25),
     ("Datastore/allOther", 25),
     ("Datastore/MongoDB/all", 25),
@@ -267,16 +271,11 @@ def test_mongodb_client_operation():
         _test_pymongo_client_scoped_metrics = _test_pymongo_scoped_metrics_v4
         _test_pymongo_client_rollup_metrics = _test_pymongo_rollup_metrics_v4
 
-    # Add MongoClient metric
-
-    _test_pymongo_client_scoped_metrics.extend([("Function/pymongo.mongo_client:MongoClient.__init__", 1)])
-    _test_pymongo_client_rollup_metrics.extend([("Function/pymongo.mongo_client:MongoClient.__init__", 1)])
+    txn_name = "test_pymongo:test_mongodb_client_operation.<locals>._test" if six.PY3 else "test_pymongo:test_mongodb_client_operation"
 
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        "test_pymongo:test_mongodb_client_operation.<locals>._test"
-        if six.PY3
-        else "test_pymongo:test_mongodb_client_operation",
+        txn_name,
         scoped_metrics=_test_pymongo_client_scoped_metrics,
         rollup_metrics=_test_pymongo_client_rollup_metrics,
         background_task=True,

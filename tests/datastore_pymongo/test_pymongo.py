@@ -274,7 +274,7 @@ def test_mongodb_client_operation():
     txn_name = (
         "test_pymongo:test_mongodb_client_operation.<locals>._test"
         if six.PY3
-        else "test_pymongo:test_mongodb_client_operation"
+        else "test_pymongo:_test"
     )
 
     @validate_transaction_errors(errors=[])

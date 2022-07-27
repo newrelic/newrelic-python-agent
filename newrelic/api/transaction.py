@@ -61,7 +61,7 @@ from newrelic.core.attribute_filter import (
     DST_NONE,
     DST_TRANSACTION_TRACER,
 )
-from newrelic.core.config import DEFAULT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
+from newrelic.core.config import CUSTOM_EVENT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.stack_trace import exception_stack
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
@@ -327,7 +327,7 @@ class Transaction(object):
             self._custom_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data)
             self._log_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.log_event_data)
         else:
-            self._custom_events = SampledDataSet(capacity=DEFAULT_RESERVOIR_SIZE)
+            self._custom_events = SampledDataSet(capacity=CUSTOM_EVENT_RESERVOIR_SIZE)
             self._log_events = SampledDataSet(capacity=LOG_EVENT_RESERVOIR_SIZE)
 
     def __del__(self):

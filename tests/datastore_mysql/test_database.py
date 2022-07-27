@@ -25,8 +25,8 @@ DB_SETTINGS = DB_SETTINGS[0]
 DB_NAMESPACE = DB_SETTINGS["namespace"]
 DB_PROCEDURE = "hello_" + DB_NAMESPACE
 
-mysql_version = tuple(int(x) for x in mysql.connector.__version__.split(".")[:2])
-if mysql_version >= (8, 0):
+mysql_version = tuple(int(x) for x in mysql.connector.__version__.split(".")[:3])
+if mysql_version >= (8, 0, 40):
     _connector_metric_name = 'Function/mysql.connector.pooling:connect'
 else:
     _connector_metric_name = 'Function/mysql.connector:connect'

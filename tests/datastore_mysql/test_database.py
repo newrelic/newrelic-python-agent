@@ -25,8 +25,14 @@ DB_SETTINGS = DB_SETTINGS[0]
 DB_NAMESPACE = DB_SETTINGS["namespace"]
 DB_PROCEDURE = "hello_" + DB_NAMESPACE
 
+mysql_version = tuple(int(x) for x in mysql.connector.__version__.split(".")[:2])
+if mysql_version >= (8, 0):
+    _connector_metric_name = 'Function/mysql.connector.pooling:connect'
+else:
+    _connector_metric_name = 'Function/mysql.connector:connect'
+
 _test_execute_via_cursor_scoped_metrics = [
-        ('Function/mysql.connector:connect', 1),
+        (_connector_metric_name, 1),
         ('Datastore/statement/MySQL/datastore_mysql_%s/select' % DB_NAMESPACE, 1),
         ('Datastore/statement/MySQL/datastore_mysql_%s/insert' % DB_NAMESPACE, 1),
         ('Datastore/statement/MySQL/datastore_mysql_%s/update' % DB_NAMESPACE, 1),
@@ -103,7 +109,7 @@ def test_execute_via_cursor(table_name):
     connection.commit()
 
 _test_connect_using_alias_scoped_metrics = [
-        ('Function/mysql.connector:connect', 1),
+        (_connector_metric_name, 1),
         ('Datastore/statement/MySQL/datastore_mysql_%s/select' % DB_NAMESPACE, 1),
         ('Datastore/statement/MySQL/datastore_mysql_%s/insert' % DB_NAMESPACE, 1),
         ('Datastore/statement/MySQL/datastore_mysql_%s/update' % DB_NAMESPACE, 1),

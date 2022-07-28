@@ -1,5 +1,5 @@
-name: 'setup-python-matrix'
-description: 'Sets up all versions of python required for matrix testing in this repo.'
+name: "setup-python-matrix"
+description: "Sets up all versions of python required for matrix testing in this repo."
 runs:
   using: "composite"
   steps:
@@ -17,7 +17,7 @@ runs:
       with:
         python-version: "pypy-2.7"
         architecture: x64
-  
+
     - uses: actions/setup-python@v3
       with:
         python-version: "3.6"
@@ -42,7 +42,7 @@ runs:
       with:
         python-version: "3.10"
         architecture: x64
-        
+
     - uses: actions/setup-python@v3
       with:
         python-version: "2.7"

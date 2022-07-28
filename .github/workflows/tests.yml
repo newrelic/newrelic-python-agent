@@ -132,7 +132,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -213,7 +212,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -294,7 +292,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       # Special case packages
@@ -396,7 +393,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -495,7 +491,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -589,7 +584,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -685,7 +679,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -779,7 +772,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -874,7 +866,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -968,7 +959,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -1064,7 +1054,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -1160,7 +1149,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments
@@ -1253,7 +1241,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python3.10 -m pip install -U pip
-          python3.10 -m pip cache purge
           python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
 
       - name: Get Environments

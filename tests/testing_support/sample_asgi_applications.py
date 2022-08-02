@@ -22,6 +22,9 @@ class simple_app_v2_raw:
         self.scope = scope
 
     async def __call__(self, receive, send):
+        if self.scope["type"] == "lifespan":
+            return
+            
         if self.scope["type"] != "http":
             raise ValueError("unsupported")
 
@@ -41,6 +44,9 @@ class simple_app_v2_init_exc(simple_app_v2_raw):
 
 
 async def simple_app_v3_raw(scope, receive, send):
+    if scope["type"] == "lifespan":
+        return
+
     if scope["type"] != "http":
         raise ValueError("unsupported")
 

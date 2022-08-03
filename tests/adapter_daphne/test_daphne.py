@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import daphne.server
-
 import asyncio
 import threading
 from urllib.request import HTTPError, urlopen
 
+import daphne.server
 import pytest
 from testing_support.fixtures import (
     override_application_settings,
@@ -66,8 +65,9 @@ def app(request, server_and_port):
 
 @pytest.fixture(scope="session")
 def port(server_and_port):
-    _, port =server_and_port
+    _, port = server_and_port
     return port
+
 
 @pytest.fixture(scope="session")
 def server_and_port():

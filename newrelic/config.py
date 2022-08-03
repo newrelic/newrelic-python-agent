@@ -2714,7 +2714,9 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "redis.commands.timeseries.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_timeseries_commands"
+        "redis.commands.timeseries.commands",
+        "newrelic.hooks.datastore_redis",
+        "instrument_redis_commands_timeseries_commands",
     )
 
     _process_module_definition(

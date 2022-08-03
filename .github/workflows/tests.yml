@@ -80,7 +80,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -160,7 +160,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -240,7 +240,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -341,7 +341,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -439,7 +439,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -532,7 +532,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -627,7 +627,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -720,7 +720,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -814,7 +814,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -907,7 +907,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -1002,7 +1002,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -1097,7 +1097,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
@@ -1189,7 +1189,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Set up all versions of python
       # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases

@@ -51,6 +51,7 @@ jobs:
       TOTAL_GROUPS: 20
 
     strategy:
+      fail-fast: false
       matrix:
         group-number:
           [
@@ -81,58 +82,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -153,6 +103,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -161,58 +112,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -233,6 +133,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -241,58 +142,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       # Special case packages
       - name: Install libcurl-dev
@@ -319,6 +169,7 @@ jobs:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
@@ -342,58 +193,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -414,6 +214,7 @@ jobs:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
@@ -440,58 +241,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -512,6 +262,7 @@ jobs:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
@@ -533,58 +284,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -605,6 +305,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -628,58 +329,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -700,6 +350,7 @@ jobs:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
@@ -721,58 +372,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -793,6 +393,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -815,58 +416,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -887,6 +437,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -908,58 +459,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -980,6 +480,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -1003,58 +504,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -1075,6 +525,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -1098,58 +549,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -1170,6 +570,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -1190,58 +591,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      # Set up all versions of python
-      # Setup PyPy2 and Python 2.7 after Python 3 to prevent overwriting aliases
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "pypy-2.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.6"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.7"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.8"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "3.10"
-          architecture: x64
-
-      - uses: actions/setup-python@v3
-        with:
-          python-version: "2.7"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          python3.10 -m pip install -U pip
-          python3.10 -m pip install -U wheel setuptools tox virtualenv!=20.0.24
+      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs

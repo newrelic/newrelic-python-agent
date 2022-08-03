@@ -36,8 +36,8 @@ from testing_support.util import get_open_port
 from newrelic.common.object_names import callable_name
 
 DAPHNE_VERSION = tuple(int(v) for v in daphne.__version__.split(".")[:2])
-skip_asgi_3_unsupported = pytest.mark.skipif(DAPHNE_VERSION < (0, 6), reason="ASGI3 unsupported")
-skip_asgi_2_unsupported = pytest.mark.skipif(DAPHNE_VERSION >= (0, 6), reason="ASGI2 unsupported")
+skip_asgi_3_unsupported = pytest.mark.skipif(DAPHNE_VERSION < (3, 0), reason="ASGI3 unsupported")
+skip_asgi_2_unsupported = pytest.mark.skipif(DAPHNE_VERSION >= (3, 0), reason="ASGI2 unsupported")
 
 
 @pytest.fixture(

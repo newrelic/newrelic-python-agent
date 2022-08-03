@@ -19,7 +19,6 @@ import threading
 from urllib.request import HTTPError, urlopen
 
 import pytest
-from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (
     override_application_settings,
     raise_background_exceptions,

@@ -29,7 +29,7 @@ PYTHON_FLAKE8_CONFIG_FILE: setup.cfg
 PYTHON_BLACK_CONFIG_FILE: pyproject.toml
 PYTHON_PYLINT_CONFIG_FILE: pyproject.toml
 PYTHON_ISORT_CONFIG_FILE: pyproject.toml
+PYTHON_BANDIT_CONFIG_FILE: pyproject.toml
+PYTHON_BANDIT_FILTER_REGEX_EXCLUDE: ./tests
 
-# Bandit's next release supports pyproject.toml. Until then, add config by cli option
-PYTHON_BANDIT_ARGUMENTS: --skip=B110,B101,B404
 PYTHON_PYLINT_ARGUMENTS: "--fail-under=0 --fail-on=E"

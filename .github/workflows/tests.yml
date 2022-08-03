@@ -51,6 +51,7 @@ jobs:
       TOTAL_GROUPS: 20
 
     strategy:
+      fail-fast: false
       matrix:
         group-number:
           [
@@ -102,6 +103,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -131,6 +133,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -166,6 +169,7 @@ jobs:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
@@ -210,6 +214,7 @@ jobs:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
@@ -257,6 +262,7 @@ jobs:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
@@ -299,6 +305,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -343,6 +350,7 @@ jobs:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
@@ -385,6 +393,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -428,6 +437,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -470,6 +480,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -514,6 +525,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
@@ -558,6 +570,7 @@ jobs:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 

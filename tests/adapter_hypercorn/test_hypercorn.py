@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 import asyncio
-
 import threading
+import time
 from urllib.request import HTTPError, urlopen
 
 import pytest
@@ -35,11 +34,12 @@ from testing_support.util import get_open_port
 
 from newrelic.common.object_names import callable_name
 
+
 @pytest.fixture(
     params=(
-            simple_app_v2_raw,
-            AppWithCallRaw(),
-            AppWithCall(),
+        simple_app_v2_raw,
+        AppWithCallRaw(),
+        AppWithCall(),
     ),
     ids=("raw", "class_with_call", "class_with_call_double_wrapped"),
 )
@@ -60,9 +60,11 @@ def port(loop, app):
             await shutdown.wait()
             return True
 
-        config = hypercorn.config.Config.from_mapping({
-            "bind": ["127.0.0.1:%d" % port],
-        })
+        config = hypercorn.config.Config.from_mapping(
+            {
+                "bind": ["127.0.0.1:%d" % port],
+            }
+        )
 
         try:
             loop.run_until_complete(hypercorn.asyncio.serve(app, config, shutdown_trigger=shutdown_trigger))
@@ -89,7 +91,7 @@ def wait_for_port(port, retries=10):
             return
         except Exception:
             pass
-        
+
         time.sleep(1)
 
     raise RuntimeError("Failed to wait for port %d" % port)

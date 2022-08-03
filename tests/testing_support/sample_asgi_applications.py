@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.api.asgi_application import ASGIApplicationWrapper
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import add_custom_parameter, current_transaction
-from newrelic.api.asgi_application import ASGIApplicationWrapper
 
 
 class simple_app_v2_raw:
@@ -24,7 +24,7 @@ class simple_app_v2_raw:
     async def __call__(self, receive, send):
         if self.scope["type"] == "lifespan":
             return
-            
+
         if self.scope["type"] != "http":
             raise ValueError("unsupported")
 
@@ -59,7 +59,6 @@ async def simple_app_v3_raw(scope, receive, send):
     txn = current_transaction()
 
     assert txn is None
-
 
 
 class AppWithDescriptor:
@@ -110,7 +109,5 @@ async def normal_asgi_application(scope, receive, send):
     except ValueError:
         notice_error(attributes={"ohnoes": "param-value"})
 
-    await send(
-        {"type": "http.response.start", "status": 200, "headers": response_headers}
-    )
+    await send({"type": "http.response.start", "status": 200, "headers": response_headers})
     await send({"type": "http.response.body", "body": output})

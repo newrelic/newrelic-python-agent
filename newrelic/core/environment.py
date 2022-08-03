@@ -178,6 +178,7 @@ def environment_settings():
         else:
             try:
                 from importlib.metadata import version
+
                 dispatcher.append(("Dispatcher Version", version("hypercorn")))
             except Exception:
                 pass

@@ -21,8 +21,8 @@ python_version = sys.version_info[:2]
 
 assert python_version in ((2, 7),) or python_version >= (
     3,
-    6,
-), "The New Relic Python agent only supports Python 2.7 and 3.6+."
+    7,
+), "The New Relic Python agent only supports Python 2.7 and 3.7+."
 
 with_setuptools = False
 
@@ -120,7 +120,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 2.7",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -151,7 +150,7 @@ kwargs = dict(
     zip_safe=False,
     classifiers=classifiers,
     packages=packages,
-    python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*",
+    python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*",
     package_data={
         "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
     },

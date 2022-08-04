@@ -40,6 +40,7 @@ _ok_modules = (
     # These modules should not be added to the _uninstrumented_modules set
     # because they have been deemed okay to import before initialization by
     # the customer.
+    "logging",
     "gunicorn.app.base",
     "wsgiref.simple_server",
     "gevent.wsgi",

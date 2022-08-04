@@ -64,6 +64,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
         'aws.lambda.arn',
         'aws.lambda.coldStart',
         'aws.lambda.eventSource.arn',
+        "db.collection",
         'db.instance',
         'db.operation',
         'db.statement',
@@ -88,6 +89,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
 MAX_NUM_USER_ATTRIBUTES = 128
 MAX_ATTRIBUTE_LENGTH = 255
 MAX_64_BIT_INT = 2 ** 63 - 1
+MAX_LOG_MESSAGE_LENGTH = 32768
 
 
 class NameTooLongException(Exception):

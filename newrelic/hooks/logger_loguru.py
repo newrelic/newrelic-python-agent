@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import sys
 
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction, record_log_event
@@ -22,6 +23,7 @@ from newrelic.hooks.logger_logging import add_nr_linking_metadata
 from newrelic.packages import six
 
 _logger = logging.getLogger(__name__) 
+is_pypy = hasattr(sys, "pypy_version_info")
 
 def loguru_version():
     from loguru import __version__
@@ -74,7 +76,13 @@ def wrap_log(wrapped, instance, args, kwargs):
         # Loguru looks into the stack trace to find the caller's module and function names.
         # options[1] tells loguru how far up to look in the stack trace to find the caller.
         # Because wrap_log is an extra call in the stack trace, loguru needs to look 1 level higher.
-        options[1] += 1
+        if not is_pypy:
+            options[1] += 1
+        else:
+            # PyPy inspection requires an additional frame of offset, as the wrapt internals seem to
+            # add another frame on PyPy but not on CPython.
+            options[1] += 2
+
     except Exception as e:
         _logger.debug("Exception in loguru handling: %s" % str(e))
         return wrapped(*args, **kwargs)

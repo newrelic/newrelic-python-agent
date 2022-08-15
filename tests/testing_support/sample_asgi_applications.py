@@ -14,7 +14,7 @@
 
 from newrelic.api.asgi_application import ASGIApplicationWrapper
 from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import add_custom_parameter, current_transaction
+from newrelic.api.transaction import add_custom_parameter, current_transaction, ignore_transaction
 
 
 class simple_app_v2_raw:
@@ -28,18 +28,17 @@ class simple_app_v2_raw:
         if self.scope["type"] != "http":
             raise ValueError("unsupported")
 
-        txn = current_transaction()
 
         if self.scope["path"] == "/exc":
             print("1 - THOWING ERROR")
             raise ValueError("whoopsies")
         elif self.scope["path"] == "/ignored":
-            txn.ignore_transaction = True
+            ignore_transaction()
 
         await send({"type": "http.response.start", "status": 200})
         await send({"type": "http.response.body"})
-
-        assert txn is None
+ 
+        assert current_transaction() is None
 
 
 class simple_app_v2_init_exc(simple_app_v2_raw):
@@ -54,18 +53,16 @@ async def simple_app_v3_raw(scope, receive, send):
     if scope["type"] != "http":
         raise ValueError("unsupported")
 
-    txn = current_transaction()
-
     if scope["path"] == "/exc":
         print("1 - THOWING ERROR")
         raise ValueError("whoopsies")
     elif scope["path"] == "/ignored":
-        txn.ignore_transaction = True
+        ignore_transaction()
 
     await send({"type": "http.response.start", "status": 200})
     await send({"type": "http.response.body"})
 
-    assert txn is None
+    assert current_transaction() is None
 
 
 class AppWithDescriptor:

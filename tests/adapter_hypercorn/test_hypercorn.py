@@ -73,7 +73,7 @@ def port(loop, app):
 
     thread = threading.Thread(target=server_run, daemon=True)
     thread.start()
-    wait_for_port(port, 10)
+    wait_for_port(port)
     yield port
 
     shutdown.set()
@@ -85,16 +85,18 @@ def port(loop, app):
 
 
 def wait_for_port(port, retries=10):
+    status = None
     for _ in range(retries):
         try:
-            assert urlopen("http://localhost:%d" % port, timeout=1).status == 200
+            status = urlopen("http://localhost:%d" % port, timeout=1).status
+            assert status == 200
             return
-        except Exception:
-            pass
+        except Exception as e:
+            status = e
 
         time.sleep(1)
 
-    raise RuntimeError("Failed to wait for port %d" % port)
+    raise RuntimeError("Failed to wait for port %d. Got status %s" % (port, status))
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})

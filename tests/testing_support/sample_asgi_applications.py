@@ -23,7 +23,7 @@ class simple_app_v2_raw:
 
     async def __call__(self, receive, send):
         if self.scope["type"] == "lifespan":
-            return
+            return await handle_lifespan(self.scope, receive, send)
 
         if self.scope["type"] != "http":
             raise ValueError("unsupported")
@@ -45,7 +45,7 @@ class simple_app_v2_init_exc(simple_app_v2_raw):
 
 async def simple_app_v3_raw(scope, receive, send):
     if scope["type"] == "lifespan":
-        return
+        return await handle_lifespan(scope, receive, send)
 
     if scope["type"] != "http":
         raise ValueError("unsupported")
@@ -111,3 +111,14 @@ async def normal_asgi_application(scope, receive, send):
 
     await send({"type": "http.response.start", "status": 200, "headers": response_headers})
     await send({"type": "http.response.body", "body": output})
+
+
+async def handle_lifespan(scope, receive, send):
+    """Handle lifespan protocol with no-ops to allow more compatibility."""
+    while True:
+        message = await receive()
+        if message['type'] == 'lifespan.startup':
+            await send({'type': 'lifespan.startup.complete'})
+        elif message['type'] == 'lifespan.shutdown':
+            await send({'type': 'lifespan.shutdown.complete'})
+            return

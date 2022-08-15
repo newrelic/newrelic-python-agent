@@ -170,6 +170,13 @@ def environment_settings():
         if hasattr(uvicorn, "__version__"):
             dispatcher.append(("Dispatcher Version", uvicorn.__version__))
 
+    if not dispatcher and "daphne" in sys.modules:
+        dispatcher.append(("Dispatcher", "daphne"))
+        daphne = sys.modules["daphne"]
+
+        if hasattr(daphne, "__version__"):
+            dispatcher.append(("Dispatcher Version", daphne.__version__))
+
     if not dispatcher and "tornado" in sys.modules:
         dispatcher.append(("Dispatcher", "tornado"))
         tornado = sys.modules["tornado"]

@@ -2540,6 +2540,8 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("uvicorn.config", "newrelic.hooks.adapter_uvicorn", "instrument_uvicorn_config")
 
+    _process_module_definition("daphne.server", "newrelic.hooks.adapter_daphne", "instrument_daphne_server")
+
     _process_module_definition("sanic.app", "newrelic.hooks.framework_sanic", "instrument_sanic_app")
     _process_module_definition("sanic.response", "newrelic.hooks.framework_sanic", "instrument_sanic_response")
 
@@ -2712,7 +2714,9 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "redis.commands.timeseries.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_timeseries_commands"
+        "redis.commands.timeseries.commands",
+        "newrelic.hooks.datastore_redis",
+        "instrument_redis_commands_timeseries_commands",
     )
 
     _process_module_definition(

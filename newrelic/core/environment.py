@@ -20,6 +20,7 @@ system, Python and hosting environment.
 import os
 import platform
 import sys
+import sysconfig
 
 import newrelic
 from newrelic.common.system_info import (
@@ -192,8 +193,19 @@ def environment_settings():
     env.extend(dispatcher)
 
     # Module information.
+    purelib = sysconfig.get_path("purelib")
+    platlib = sysconfig.get_path("platlib")
 
     plugins = []
+
+    get_version = None
+    # importlib was introduced into the standard library starting in Python3.8.
+    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
+        get_version = sys.modules["importlib"].metadata.version
+    elif "pkg_resources" in sys.modules:
+
+        def get_version(name):  # pylint: disable=function-redefined
+            return sys.modules["pkg_resources"].get_distribution(name).version
 
     # Using any iterable to create a snapshot of sys.modules can occassionally
     # fail in a rare case when modules are imported in parallel by different
@@ -201,32 +213,30 @@ def environment_settings():
     #
     # TL;DR: Do NOT use an iterable on the original sys.modules to generate the
     # list
-
     for name, module in sys.modules.copy().items():
+        # Exclude lib.sub_paths as independent modules except for newrelic.hooks.
+        if "." in name and not name.startswith("newrelic.hooks."):
+            continue
         # If the module isn't actually loaded (such as failed relative imports
         # in Python 2.7), the module will be None and should not be reported.
-        if module is None:
+        if not module:
+            continue
+        # Exclude standard library/built-in modules.
+        # Third-party modules can be installed in either purelib or platlib directories.
+        # See https://docs.python.org/3/library/sysconfig.html#installation-paths.
+        if (
+            not hasattr(module, "__file__")
+            or not module.__file__
+            or not module.__file__.startswith(purelib)
+            or not module.__file__.startswith(platlib)
+        ):
             continue
 
-        if name.startswith("newrelic.hooks."):
-            plugins.append(name)
-
-        elif name.find(".") == -1 and hasattr(module, "__file__"):
-            # XXX This is disabled as it can cause notable overhead in
-            # pathalogical cases. Will be replaced with a new system
-            # where have a allowlist of packages we really want version
-            # information for and will work out on case by case basis
-            # how to extract that from the modules themselves.
-
-            # try:
-            #     if 'pkg_resources' in sys.modules:
-            #         version = pkg_resources.get_distribution(name).version
-            #         if version:
-            #             name = '%s (%s)' % (name, version)
-            # except Exception:
-            #     pass
-
-            plugins.append(name)
+        try:
+            version = get_version(name)
+            plugins.append("%s (%s)" % (name, version))
+        except Exception:
+            pass
 
     env.append(("Plugin List", plugins))
 

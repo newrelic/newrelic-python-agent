@@ -2548,6 +2548,8 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition("hypercorn.utils", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_utils")
 
+    _process_module_definition("daphne.server", "newrelic.hooks.adapter_daphne", "instrument_daphne_server")
+
     _process_module_definition("sanic.app", "newrelic.hooks.framework_sanic", "instrument_sanic_app")
     _process_module_definition("sanic.response", "newrelic.hooks.framework_sanic", "instrument_sanic_response")
 

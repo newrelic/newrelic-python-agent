@@ -13,13 +13,11 @@
 # limitations under the License.
 
 import asyncio
-import logging
-import socket
 import threading
 from urllib.request import HTTPError, urlopen
 
+import daphne.server
 import pytest
-import uvicorn
 from testing_support.fixtures import (
     override_application_settings,
     raise_background_exceptions,
@@ -32,94 +30,100 @@ from testing_support.sample_asgi_applications import (
     AppWithCallRaw,
     simple_app_v2_raw,
 )
-from uvicorn.config import Config
-from uvicorn.main import Server
+from testing_support.util import get_open_port
 
 from newrelic.common.object_names import callable_name
 
-UVICORN_VERSION = tuple(int(v) for v in uvicorn.__version__.split(".")[:2])
-
-
-def get_open_port():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("", 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
+DAPHNE_VERSION = tuple(int(v) for v in daphne.__version__.split(".")[:2])
+skip_asgi_3_unsupported = pytest.mark.skipif(DAPHNE_VERSION < (3, 0), reason="ASGI3 unsupported")
+skip_asgi_2_unsupported = pytest.mark.skipif(DAPHNE_VERSION >= (3, 0), reason="ASGI2 unsupported")
 
 
 @pytest.fixture(
     params=(
-        simple_app_v2_raw,
+        pytest.param(
+            simple_app_v2_raw,
+            marks=skip_asgi_2_unsupported,
+        ),
         pytest.param(
             AppWithCallRaw(),
-            marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"),
+            marks=skip_asgi_3_unsupported,
         ),
         pytest.param(
             AppWithCall(),
-            marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"),
+            marks=skip_asgi_3_unsupported,
         ),
     ),
     ids=("raw", "class_with_call", "class_with_call_double_wrapped"),
 )
-def app(request):
-    return request.param
+def app(request, server_and_port):
+    app = request.param
+    server, _ = server_and_port
+    server.application = app
+    return app
 
 
-@pytest.fixture
-def port(app):
+@pytest.fixture(scope="session")
+def port(server_and_port):
+    _, port = server_and_port
+    return port
+
+
+@pytest.fixture(scope="session")
+def server_and_port():
     port = get_open_port()
 
+    servers = []
     loops = []
     ready = threading.Event()
 
     def server_run():
-        def on_tick_sync():
+        def on_ready():
             if not ready.is_set():
                 loops.append(asyncio.get_event_loop())
+                servers.append(server)
                 ready.set()
 
-        async def on_tick():
-            on_tick_sync()
+        async def fake_app(*args, **kwargs):
+            raise RuntimeError("Failed to swap out app.")
 
-        config = Config(app, host="127.0.0.1", port=port, loop="asyncio")
-        config.callback_notify = on_tick
-        config.log_config = {"version": 1}
-        config.disable_lifespan = True
-        config.logger = logging.getLogger("uvicorn")
-        server = Server(config=config)
-        server.install_signal_handlers = lambda *args, **kwargs: None
-        try:
-            server.started.set = on_tick_sync
-        except Exception:
-            pass
+        server = daphne.server.Server(
+            fake_app,
+            endpoints=["tcp:%d:interface=127.0.0.1" % port],
+            ready_callable=on_ready,
+            signal_handlers=False,
+            verbosity=9,
+        )
+
         server.run()
 
     thread = threading.Thread(target=server_run, daemon=True)
     thread.start()
     assert ready.wait(timeout=10)
-    yield port
-    _ = [loop.stop() for loop in loops]  # Stop all loops
-    thread.join(timeout=1)
+    yield servers[0], port
+
+    reactor = daphne.server.reactor
+    _ = [loop.call_soon_threadsafe(reactor.stop) for loop in loops]  # Stop all loops
+    thread.join(timeout=10)
 
     if thread.is_alive():
         raise RuntimeError("Thread failed to exit in time.")
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
-def test_uvicorn_200(port, app):
+def test_daphne_200(port, app):
     @validate_transaction_metrics(callable_name(app))
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():
-        return urlopen("http://localhost:%d" % port)
+        return urlopen("http://localhost:%d" % port, timeout=10)
 
     assert response().status == 200
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 @validate_transaction_errors(["builtins:ValueError"])
-def test_uvicorn_500(port, app):
+def test_daphne_500(port, app):
     @validate_transaction_metrics(callable_name(app))
     @raise_background_exceptions()
     @wait_for_background_threads()

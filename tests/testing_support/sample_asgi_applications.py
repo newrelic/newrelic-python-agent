@@ -117,8 +117,8 @@ async def handle_lifespan(scope, receive, send):
     """Handle lifespan protocol with no-ops to allow more compatibility."""
     while True:
         message = await receive()
-        if message['type'] == 'lifespan.startup':
-            await send({'type': 'lifespan.startup.complete'})
-        elif message['type'] == 'lifespan.shutdown':
-            await send({'type': 'lifespan.shutdown.complete'})
+        if message["type"] == "lifespan.startup":
+            await send({"type": "lifespan.startup.complete"})
+        elif message["type"] == "lifespan.shutdown":
+            await send({"type": "lifespan.shutdown.complete"})
             return

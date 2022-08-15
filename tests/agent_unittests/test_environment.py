@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import sys
+
+import pytest
+
 from newrelic.core.environment import environment_settings
 
 
@@ -29,7 +31,7 @@ def module(version):
 
 def test_plugin_list():
     # Let's pretend we fired an import hook
-    import newrelic.hooks.adapter_gunicorn
+    import newrelic.hooks.adapter_gunicorn  # noqa: F401
 
     environment_info = environment_settings()
 
@@ -41,6 +43,8 @@ def test_plugin_list():
 
     # Check that bogus plugins don't get reported
     assert "newrelic.hooks.newrelic" not in plugin_list
+    # Check that plugin that should get reported has version info.
+    assert "pytest (%s)" % (pytest.__version__) in plugin_list
 
 
 class NoIteratorDict(object):
@@ -62,7 +66,7 @@ class NoIteratorDict(object):
 
 def test_plugin_list_uses_no_sys_modules_iterator(monkeypatch):
     modules = NoIteratorDict(sys.modules)
-    monkeypatch.setattr(sys, 'modules', modules)
+    monkeypatch.setattr(sys, "modules", modules)
 
     # If environment_settings iterates over sys.modules, an attribute error will be generated
     environment_info = environment_settings()
@@ -113,9 +117,7 @@ def test_plugin_list_uses_no_sys_modules_iterator(monkeypatch):
         ),
     ),
 )
-def test_uvicorn_dispatcher(
-    monkeypatch, loaded_modules, dispatcher, dispatcher_version, worker_version
-):
+def test_uvicorn_dispatcher(monkeypatch, loaded_modules, dispatcher, dispatcher_version, worker_version):
     # Let's pretend we load some modules
     for name, module in loaded_modules.items():
         monkeypatch.setitem(sys.modules, name, module)

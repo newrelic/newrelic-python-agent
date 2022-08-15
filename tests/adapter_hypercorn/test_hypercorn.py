@@ -88,7 +88,7 @@ def wait_for_port(port, retries=10):
     status = None
     for _ in range(retries):
         try:
-            status = urlopen("http://localhost:%d" % port, timeout=1).status
+            status = urlopen("http://localhost:%d/ignored" % port, timeout=1).status
             assert status == 200
             return
         except Exception as e:
@@ -111,8 +111,8 @@ def test_hypercorn_200(port, app):
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
-@validate_transaction_errors(["builtins:ValueError"])
 def test_hypercorn_500(port, app):
+    @validate_transaction_errors(["builtins:ValueError"])
     @validate_transaction_metrics(callable_name(app))
     @raise_background_exceptions()
     @wait_for_background_threads()

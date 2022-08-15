@@ -28,12 +28,16 @@ class simple_app_v2_raw:
         if self.scope["type"] != "http":
             raise ValueError("unsupported")
 
+        txn = current_transaction()
+
         if self.scope["path"] == "/exc":
+            print("1 - THOWING ERROR")
             raise ValueError("whoopsies")
+        elif self.scope["path"] == "/ignored":
+            txn.ignore_transaction = True
+
         await send({"type": "http.response.start", "status": 200})
         await send({"type": "http.response.body"})
-
-        txn = current_transaction()
 
         assert txn is None
 
@@ -50,13 +54,16 @@ async def simple_app_v3_raw(scope, receive, send):
     if scope["type"] != "http":
         raise ValueError("unsupported")
 
+    txn = current_transaction()
+
     if scope["path"] == "/exc":
+        print("1 - THOWING ERROR")
         raise ValueError("whoopsies")
+    elif scope["path"] == "/ignored":
+        txn.ignore_transaction = True
 
     await send({"type": "http.response.start", "status": 200})
     await send({"type": "http.response.body"})
-
-    txn = current_transaction()
 
     assert txn is None
 
@@ -116,6 +123,10 @@ async def normal_asgi_application(scope, receive, send):
 async def handle_lifespan(scope, receive, send):
     """Handle lifespan protocol with no-ops to allow more compatibility."""
     while True:
+        txn = current_transaction()
+        if txn:
+            txn.ignore_transaction = True
+
         message = await receive()
         if message["type"] == "lifespan.startup":
             await send({"type": "lifespan.startup.complete"})

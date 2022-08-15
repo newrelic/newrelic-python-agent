@@ -14,7 +14,11 @@
 
 from newrelic.api.asgi_application import ASGIApplicationWrapper
 from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import add_custom_parameter, current_transaction, ignore_transaction
+from newrelic.api.transaction import (
+    add_custom_parameter,
+    current_transaction,
+    ignore_transaction,
+)
 
 
 class simple_app_v2_raw:
@@ -28,7 +32,6 @@ class simple_app_v2_raw:
         if self.scope["type"] != "http":
             raise ValueError("unsupported")
 
-
         if self.scope["path"] == "/exc":
             print("1 - THOWING ERROR")
             raise ValueError("whoopsies")
@@ -37,7 +40,7 @@ class simple_app_v2_raw:
 
         await send({"type": "http.response.start", "status": 200})
         await send({"type": "http.response.body"})
- 
+
         assert current_transaction() is None
 
 

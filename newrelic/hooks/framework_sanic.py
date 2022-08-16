@@ -186,7 +186,7 @@ async def _nr_sanic_response_send(wrapped, instance, args, kwargs):
         await result
 
     if transaction is None:
-        return wrapped(*args, **kwargs)
+        return result
 
     # instance is the response object
     cat_headers = transaction.process_response(str(instance.status), instance.headers.items())

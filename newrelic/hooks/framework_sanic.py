@@ -15,13 +15,12 @@
 import sys
 from inspect import isawaitable
 
-from newrelic.api.web_transaction import web_transaction
-from newrelic.api.transaction import current_transaction
-from newrelic.api.function_trace import function_trace, FunctionTrace
+from newrelic.api.function_trace import FunctionTrace, function_trace
 from newrelic.api.time_trace import notice_error
-from newrelic.common.object_wrapper import (wrap_function_wrapper,
-    function_wrapper)
+from newrelic.api.transaction import current_transaction
+from newrelic.api.web_transaction import web_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 
 
 def _bind_add(uri, methods, handler, *args, **kwargs):
@@ -36,19 +35,20 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     name = callable_name(wrapped)
-    view_class = getattr(wrapped, 'view_class', None)
+    view_class = getattr(wrapped, "view_class", None)
     view = view_class or wrapped
     if view_class:
         try:
             method = args[0].method.lower()
-            name = callable_name(view_class) + '.' + method
+            name = callable_name(view_class) + "." + method
             view = getattr(view_class, method)
         except:
             pass
-    
+
     transaction.set_transaction_name(name, priority=3)
     import sanic
-    transaction.add_framework_info(name='Sanic', version=sanic.__version__)
+
+    transaction.add_framework_info(name="Sanic", version=sanic.__version__)
 
     with FunctionTrace(name=name, source=view):
         return wrapped(*args, **kwargs)
@@ -60,7 +60,7 @@ def _nr_sanic_router_add(wrapped, instance, args, kwargs):
 
     # Cache the callable_name on the handler object
     callable_name(handler)
-    if hasattr(wrapped, 'view_class'):
+    if hasattr(wrapped, "view_class"):
         callable_name(wrapped.view_class)
     wrapped_handler = _nr_wrapper_handler_(handler)
 
@@ -131,7 +131,7 @@ def error_response(wrapped, instance, args, kwargs):
         raise
     else:
         # response can be a response object or a coroutine
-        if hasattr(response, 'status'):
+        if hasattr(response, "status"):
             notice_error(error=exc_info, status_code=response.status)
         else:
             notice_error(exc_info)
@@ -144,18 +144,16 @@ def error_response(wrapped, instance, args, kwargs):
 def _sanic_app_init(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
-    error_handler = getattr(instance, 'error_handler')
-    if hasattr(error_handler, 'response'):
-        instance.error_handler.response = error_response(
-                error_handler.response)
-    if hasattr(error_handler, 'add'):
-        error_handler.add = _nr_sanic_error_handlers(
-                error_handler.add)
+    error_handler = getattr(instance, "error_handler")
+    if hasattr(error_handler, "response"):
+        instance.error_handler.response = error_response(error_handler.response)
+    if hasattr(error_handler, "add"):
+        error_handler.add = _nr_sanic_error_handlers(error_handler.add)
 
-    router = getattr(instance, 'router')
-    if hasattr(router, 'add'):
+    router = getattr(instance, "router")
+    if hasattr(router, "add"):
         router.add = _nr_sanic_router_add(router.add)
-    if hasattr(router, 'get'):
+    if hasattr(router, "get"):
         # Cache the callable_name on the router.get
         callable_name(router.get)
         router.get = _nr_sanic_router_get(router.get)
@@ -172,8 +170,7 @@ def _nr_sanic_response_get_headers(wrapped, instance, args, kwargs):
         return result
 
     # instance is the response object
-    cat_headers = transaction.process_response(str(instance.status),
-            instance.headers.items())
+    cat_headers = transaction.process_response(str(instance.status), instance.headers.items())
 
     for header_name, header_value in cat_headers:
         if header_name not in instance.headers:
@@ -192,14 +189,14 @@ async def _nr_sanic_response_send(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     # instance is the response object
-    cat_headers = transaction.process_response(str(instance.status),
-            instance.headers.items())
+    cat_headers = transaction.process_response(str(instance.status), instance.headers.items())
 
     for header_name, header_value in cat_headers:
         if header_name not in instance.headers:
             instance.headers[header_name] = header_value
 
     return result
+
 
 def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -208,8 +205,7 @@ def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     # instance is the response object
-    cat_headers = transaction.process_response(str(instance.status),
-            instance.headers.items())
+    cat_headers = transaction.process_response(str(instance.status), instance.headers.items())
 
     for header_name, header_value in cat_headers:
         if header_name not in instance.headers:
@@ -219,7 +215,7 @@ def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
 
 
 def _nr_wrapper_middleware_(attach_to):
-    is_request_middleware = attach_to == 'request'
+    is_request_middleware = attach_to == "request"
 
     @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
@@ -238,7 +234,7 @@ def _nr_wrapper_middleware_(attach_to):
     return _wrapper
 
 
-def _bind_middleware(middleware, attach_to='request', *args, **kwargs):
+def _bind_middleware(middleware, attach_to="request", *args, **kwargs):
     return middleware, attach_to
 
 
@@ -259,36 +255,55 @@ def _bind_request(request, *args, **kwargs):
 def _nr_sanic_transaction_wrapper_(wrapped, instance, args, kwargs):
     request = _bind_request(*args, **kwargs)
     # If the request is a websocket request do not wrap it
-    if request.headers.get('upgrade', '').lower() == 'websocket':
+    if request.headers.get("upgrade", "").lower() == "websocket":
         return wrapped(*args, **kwargs)
 
     return web_transaction(
         request_method=request.method,
         request_path=request.path,
         query_string=request.query_string,
-        headers=request.headers)(wrapped)(*args, **kwargs)
+        headers=request.headers,
+    )(wrapped)(*args, **kwargs)
+
+
+def _nr_wrap_touchup_run(wrapped, instance, args, kwargs):
+    # TouchUp uses metaprogramming to rewrite methods of classes on startup.
+    # To properly wrap them we need to catch the call to TouchUp.run and
+    # reinstrument any methods that were replaced with uninstrumented versions.
+
+    result = wrapped(*args, **kwargs)
+
+    if "sanic.app" in sys.modules:
+        module = sys.modules["sanic.app"]
+        target = args[0]
+
+        if isinstance(target, module.Sanic):
+            # Reinstrument class after metaclass "TouchUp" has finished rewriting methods on the class.
+            target_cls = module.Sanic
+            if hasattr(target_cls, "handle_request") and not hasattr(target_cls.handle_request, "__wrapped__"):
+                wrap_function_wrapper(module, "Sanic.handle_request", _nr_sanic_transaction_wrapper_)
+
+    return result
 
 
 def instrument_sanic_app(module):
-    wrap_function_wrapper(module, 'Sanic.handle_request',
-        _nr_sanic_transaction_wrapper_)
-    wrap_function_wrapper(module, 'Sanic.__init__',
-        _sanic_app_init)
-    wrap_function_wrapper(module, 'Sanic.register_middleware',
-        _nr_sanic_register_middleware_)
-    if hasattr(module.Sanic, 'register_named_middleware'):
-        wrap_function_wrapper(module, 'Sanic.register_named_middleware',
-            _nr_sanic_register_middleware_)
+    wrap_function_wrapper(module, "Sanic.handle_request", _nr_sanic_transaction_wrapper_)
+    wrap_function_wrapper(module, "Sanic.__init__", _sanic_app_init)
+    wrap_function_wrapper(module, "Sanic.register_middleware", _nr_sanic_register_middleware_)
+    if hasattr(module.Sanic, "register_named_middleware"):
+        wrap_function_wrapper(module, "Sanic.register_named_middleware", _nr_sanic_register_middleware_)
 
 
 def instrument_sanic_response(module):
-    if hasattr(module.BaseHTTPResponse, 'send'):
-        wrap_function_wrapper(module, 'BaseHTTPResponse.send',
-            _nr_sanic_response_send)
+    if hasattr(module.BaseHTTPResponse, "send"):
+        wrap_function_wrapper(module, "BaseHTTPResponse.send", _nr_sanic_response_send)
     else:
-        if hasattr(module.BaseHTTPResponse, 'get_headers'):
-            wrap_function_wrapper(module, 'BaseHTTPResponse.get_headers',
-                _nr_sanic_response_get_headers)
-        if hasattr(module.BaseHTTPResponse, '_parse_headers'):
-            wrap_function_wrapper(module, 'BaseHTTPResponse._parse_headers',
-                _nr_sanic_response_parse_headers)
+        if hasattr(module.BaseHTTPResponse, "get_headers"):
+            wrap_function_wrapper(module, "BaseHTTPResponse.get_headers", _nr_sanic_response_get_headers)
+        if hasattr(module.BaseHTTPResponse, "_parse_headers"):
+            wrap_function_wrapper(module, "BaseHTTPResponse._parse_headers", _nr_sanic_response_parse_headers)
+
+
+def instrument_sanic_touchup_service(module):
+    if hasattr(module, "TouchUp") and hasattr(module.TouchUp, "run"):
+        wrap_function_wrapper(module.TouchUp, "run", _nr_wrap_touchup_run)

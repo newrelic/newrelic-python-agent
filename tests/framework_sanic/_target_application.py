@@ -93,7 +93,7 @@ except TypeError:
     error_handler = CustomErrorHandler()
 
 router = CustomRouter()
-app = Sanic(name="test app", error_handler=error_handler, router=router)
+app = Sanic(name="test-app", error_handler=error_handler, router=router)
 router.app = app
 blueprint = Blueprint("test_bp")
 

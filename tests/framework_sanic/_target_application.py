@@ -209,8 +209,6 @@ async def blueprint_route(request):
 app.blueprint(blueprint)
 app.add_route(MethodView.as_view(), "/method_view")
 
-if not getattr(router, "finalized", True):
-    router.finalize()
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000)

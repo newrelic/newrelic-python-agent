@@ -80,7 +80,10 @@ def create_request_class(app, method, url, headers=None, loop=None):
         proto = MockProtocol(loop=loop, app=app)
         proto.recv_buffer = bytearray()
         http = Http(proto)
-        http.init_for_request()
+        
+        if hasattr(http, "init_for_request"):
+            http.init_for_request()
+
         http.stage = Stage.HANDLER
         http.response_func = http.http1_response_header
         _request.stream = http
@@ -127,7 +130,10 @@ def request(app, method, url, headers=None):
         # Handle startup if the router hasn't been finalized.
         # Older versions don't have this requirement or variable so
         # the default should be True.
-        loop.run_until_complete(app._startup())
+        if hasattr(app, "_startup"):
+            loop.run_until_complete(app._startup())
+        else:
+            app.router.finalize()
 
     coro = create_request_coroutine(app, method, url, headers, loop)
     loop.run_until_complete(coro)

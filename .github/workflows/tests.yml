@@ -432,6 +432,69 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
+  kafka:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      zookeeper:
+        image: bitnami/zookeeper:latest
+        env:
+          ALLOW_ANONYMOUS_LOGIN: yes
+
+        ports:
+          - 2181:2181
+
+      kafka:
+        image: bitnami/kafka:latest
+        ports:
+          - 9092:9092
+          - 9093:9093
+        env:
+          ALLOW_PLAINTEXT_LISTENER: yes
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+          KAFKA_CFG_LISTENERS: ClIENT_1://:9092,CLIENT_2://:9093
+          KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT_1://127.0.0.1:9092,CLIENT_2://kafka:9093,
+          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT_1:PLAINTEXT,CLIENT_2:PLAINTEXT
+          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT_2
+        depends_on:
+          - zookeeper
+
+        # Set health checks to wait until rabbitmq has started
+        options: >-
+          --health-cmd "nc -z localhost 9092"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+
   mongodb:
     env:
       TOTAL_GROUPS: 1

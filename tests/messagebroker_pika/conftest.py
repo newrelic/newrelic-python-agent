@@ -51,7 +51,7 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
         app_name='Python Agent Test (messagebroker_pika)',
         default_settings=_default_settings,
-        linked_applications=['Python Agent Test (messagebroker)'])
+        linked_applications=['Python Agent Test (messagebroker_pika)'])
 
 
 @pytest.fixture()

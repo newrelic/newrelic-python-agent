@@ -258,3 +258,27 @@ def rabbitmq_settings():
         for instance_num in range(instances)
     ]
     return settings
+
+
+def kafka_settings():
+    """Return a list of dict of settings for connecting to kafka.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    instances = 1
+    base_port = 9092
+
+    settings = [
+        {
+            "host": "localhost",
+            "port": base_port + instance_num,
+        }
+        for instance_num in range(instances)
+    ]
+    return settings

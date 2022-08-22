@@ -466,8 +466,6 @@ jobs:
           KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT_1://127.0.0.1:9092,CLIENT_2://kafka:9093,
           KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT_1:PLAINTEXT,CLIENT_2:PLAINTEXT
           KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT_2
-        depends_on:
-          - zookeeper
 
         # Set health checks to wait until rabbitmq has started
         options: >-

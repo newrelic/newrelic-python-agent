@@ -18,6 +18,7 @@ import json
 import time
 import pytest
 import uuid
+from threading import Thread
 
 from testing_support.db_settings import kafka_settings
 from testing_support.fixtures import (code_coverage_fixture,  # NOQA

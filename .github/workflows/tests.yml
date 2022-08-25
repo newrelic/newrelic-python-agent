@@ -468,13 +468,6 @@ jobs:
           KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT
           KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L2
 
-        # Set health checks to wait until kafka has started
-        options: >-
-          --health-cmd "(: < /dev/tcp/localhost/8080) 2>/dev/null"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-python-matrix

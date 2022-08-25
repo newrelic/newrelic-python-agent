@@ -271,8 +271,12 @@ def kafka_settings():
         2. Github Actions
     """
 
-    instances = 1
-    base_port = 9092
+    if "GITHUB_ACTIONS" in os.environ:
+        instances = 2
+        base_port = 8080
+    else:
+        instances = 1
+        base_port = 9092
 
     settings = [
         {

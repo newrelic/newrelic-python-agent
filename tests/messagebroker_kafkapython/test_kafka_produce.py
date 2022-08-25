@@ -12,11 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import kafka
-from conftest import execute_threads
-from testing_support.db_settings import kafka_settings
+import time
 
 
-def test_no_harm():
-    execute_threads()
+def test_no_harm(topic, producer, consumer):
+    MESSAGES = [
+        {"foo": "bar"},
+        {"baz": "bat"},
+    ]
 
+    for msg in MESSAGES:
+        time.sleep(1)
+        producer.send(topic, value=msg)
+    producer.flush()
+
+
+    for msg in consumer:
+        assert msg.topic == topic

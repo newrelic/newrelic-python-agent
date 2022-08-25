@@ -456,20 +456,20 @@ jobs:
       kafka:
         image: bitnami/kafka:latest
         ports:
-          - 9092:9092
-          - 9093:9093
+          - 8080:8080
+          - 8081:8081
         env:
           ALLOW_PLAINTEXT_LISTENER: yes
           KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
           KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
-          KAFKA_CFG_LISTENERS: ClIENT_1://:9092,CLIENT_2://:9093
-          KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT_1://127.0.0.1:9092,CLIENT_2://kafka:9093,
+          KAFKA_CFG_LISTENERS: ClIENT_1://:8080,CLIENT_2://:8081
+          KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT_1://127.0.0.1:8080,CLIENT_2://kafka:8081,
           KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT_1:PLAINTEXT,CLIENT_2:PLAINTEXT
           KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT_2
 
         # Set health checks to wait until rabbitmq has started
         options: >-
-          --health-cmd "nc -z localhost 9092"
+          --health-cmd "nc -z localhost 8080"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

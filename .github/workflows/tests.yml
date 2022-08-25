@@ -486,7 +486,6 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
-
   mongodb:
     env:
       TOTAL_GROUPS: 1

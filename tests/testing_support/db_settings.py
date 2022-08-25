@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pwd
 import os
+import pwd
 
 USER = pwd.getpwuid(os.getuid()).pw_name
 
@@ -168,11 +168,7 @@ def mongodb_settings():
         base_port = 27017
 
     settings = [
-        {
-            "host": "127.0.0.1",
-            "port": base_port + instance_num,
-            "collection": "mongodb_collection_" + str(os.getpid())
-        }
+        {"host": "127.0.0.1", "port": base_port + instance_num, "collection": "mongodb_collection_" + str(os.getpid())}
         for instance_num in range(instances)
     ]
     return settings

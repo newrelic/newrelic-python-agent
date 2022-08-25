@@ -26,6 +26,5 @@ def test_no_harm(topic, producer, consumer):
         producer.send(topic, value=msg)
     producer.flush()
 
-
     for msg in consumer:
         assert msg.topic == topic

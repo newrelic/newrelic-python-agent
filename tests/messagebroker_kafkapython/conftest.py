@@ -29,7 +29,8 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
 
 DB_SETTINGS = kafka_settings()[0]
-BOOTSTRAP_SERVER = ":".join(str(val) for val in DB_SETTINGS.values())
+
+BOOTSTRAP_SERVER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
 BROKER = [BOOTSTRAP_SERVER]
 
 _coverage_source = [

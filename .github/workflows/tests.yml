@@ -462,14 +462,14 @@ jobs:
           ALLOW_PLAINTEXT_LISTENER: yes
           KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
           KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
-          KAFKA_CFG_LISTENERS: ClIENT_1://:8080,CLIENT_2://:8081
-          KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT_1://127.0.0.1:8080,CLIENT_2://kafka:8081,
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT_1:PLAINTEXT,CLIENT_2:PLAINTEXT
-          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT_2
+          KAFKA_CFG_LISTENERS: L1://:8080,L2://:8081
+          KAFKA_CFG_ADVERTISED_LISTENERS: L1://127.0.0.1:8080,L2://kafka:8081,
+          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT
+          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L2
 
-        # Set health checks to wait until rabbitmq has started
+        # Set health checks to wait until kafka has started
         options: >-
-          --health-cmd "nc -z localhost 8080"
+          --health-cmd "(: < /dev/tcp/localhost/8080) 2>/dev/null"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

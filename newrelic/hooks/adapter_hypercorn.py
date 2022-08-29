@@ -29,7 +29,7 @@ async def wrap_worker_serve(wrapped, instance, args, kwargs):
 
     app, args, kwargs = bind_worker_serve(*args, **kwargs)
     
-    # Hypercorn 0.14 introduced wrappers for ASGI and WSGI apps that need to be above our instrumentation.
+    # Hypercorn 0.14.1 introduced wrappers for ASGI and WSGI apps that need to be above our instrumentation.
     if asgi_wrapper_class is not None and isinstance(app, asgi_wrapper_class):
         app.app = ASGIApplicationWrapper(app.app)
     elif wsgi_wrapper_class is not None and isinstance(app, wsgi_wrapper_class):

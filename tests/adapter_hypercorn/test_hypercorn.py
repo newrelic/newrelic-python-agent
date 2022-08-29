@@ -38,8 +38,8 @@ from newrelic.common.object_names import callable_name
 
 
 HYPERCORN_VERSION = tuple(int(v) for v in pkg_resources.get_distribution("hypercorn").version.split("."))
-asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14)
-wsgi_unsupported = HYPERCORN_VERSION < (0, 14)
+asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14, 1)
+wsgi_unsupported = HYPERCORN_VERSION < (0, 14, 1)
 
 
 def wsgi_app(environ, start_response):

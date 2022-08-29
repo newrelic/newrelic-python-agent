@@ -117,9 +117,7 @@ def test_hypercorn_500(port, app):
     @raise_background_exceptions()
     @wait_for_background_threads()
     def _test():
-        try:
+        with pytest.raises(HTTPError):
             urlopen("http://localhost:%d/exc" % port)
-        except HTTPError:
-            pass
 
     _test()

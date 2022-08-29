@@ -33,7 +33,6 @@ class simple_app_v2_raw:
             raise ValueError("unsupported")
 
         if self.scope["path"] == "/exc":
-            print("1 - THOWING ERROR")
             raise ValueError("whoopsies")
         elif self.scope["path"] == "/ignored":
             ignore_transaction()
@@ -57,7 +56,6 @@ async def simple_app_v3_raw(scope, receive, send):
         raise ValueError("unsupported")
 
     if scope["path"] == "/exc":
-        print("1 - THOWING ERROR")
         raise ValueError("whoopsies")
     elif scope["path"] == "/ignored":
         ignore_transaction()

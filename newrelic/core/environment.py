@@ -43,6 +43,17 @@ except ImportError:
 def environment_settings():
     """Returns an array of arrays of environment settings"""
 
+    # Find version resolver.
+
+    get_version = None
+    # importlib was introduced into the standard library starting in Python3.8.
+    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
+        get_version = sys.modules["importlib"].metadata.version
+    elif "pkg_resources" in sys.modules:
+
+        def get_version(name):  # pylint: disable=function-redefined
+            return sys.modules["pkg_resources"].get_distribution(name).version
+
     env = []
 
     # Agent information.
@@ -104,6 +115,8 @@ def environment_settings():
 
     dispatcher = []
 
+    # Find the first dispatcher module that's been loaded and report that as the dispatcher.
+    # If possible, also report the dispatcher's version and any other environment information.
     if not dispatcher and "mod_wsgi" in sys.modules:
         mod_wsgi = sys.modules["mod_wsgi"]
         if hasattr(mod_wsgi, "process_group"):
@@ -178,9 +191,7 @@ def environment_settings():
             dispatcher.append(("Dispatcher Version", hypercorn.__version__))
         else:
             try:
-                from importlib.metadata import version
-
-                dispatcher.append(("Dispatcher Version", version("hypercorn")))
+                dispatcher.append(("Dispatcher Version", get_version("hypercorn")))
             except Exception:
                 pass
 
@@ -204,15 +215,6 @@ def environment_settings():
     platlib = sysconfig.get_path("platlib")
 
     plugins = []
-
-    get_version = None
-    # importlib was introduced into the standard library starting in Python3.8.
-    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
-        get_version = sys.modules["importlib"].metadata.version
-    elif "pkg_resources" in sys.modules:
-
-        def get_version(name):  # pylint: disable=function-redefined
-            return sys.modules["pkg_resources"].get_distribution(name).version
 
     # Using any iterable to create a snapshot of sys.modules can occassionally
     # fail in a rare case when modules are imported in parallel by different

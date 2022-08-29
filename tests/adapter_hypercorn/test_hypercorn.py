@@ -16,9 +16,8 @@ import asyncio
 import threading
 import time
 from urllib.request import HTTPError, urlopen
-import pkg_resources
-from newrelic.api.transaction import ignore_transaction
 
+import pkg_resources
 import pytest
 from testing_support.fixtures import (
     override_application_settings,
@@ -34,8 +33,8 @@ from testing_support.sample_asgi_applications import (
 )
 from testing_support.util import get_open_port
 
+from newrelic.api.transaction import ignore_transaction
 from newrelic.common.object_names import callable_name
-
 
 HYPERCORN_VERSION = tuple(int(v) for v in pkg_resources.get_distribution("hypercorn").version.split("."))
 asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14, 1)
@@ -44,7 +43,7 @@ wsgi_unsupported = HYPERCORN_VERSION < (0, 14, 1)
 
 def wsgi_app(environ, start_response):
     path = environ["PATH_INFO"]
-    
+
     if path == "/":
         start_response("200 OK", response_headers=[])
     elif path == "/ignored":
@@ -52,7 +51,7 @@ def wsgi_app(environ, start_response):
         start_response("200 OK", response_headers=[])
     elif path == "/exc":
         raise ValueError("whoopsies")
-    
+
     return []
 
 

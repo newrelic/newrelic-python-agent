@@ -23,12 +23,13 @@ def bind_worker_serve(app, *args, **kwargs):
 
 async def wrap_worker_serve(wrapped, instance, args, kwargs):
     import hypercorn
+
     wrapper_module = getattr(hypercorn, "app_wrappers", None)
     asgi_wrapper_class = getattr(wrapper_module, "ASGIWrapper", None)
     wsgi_wrapper_class = getattr(wrapper_module, "WSGIWrapper", None)
 
     app, args, kwargs = bind_worker_serve(*args, **kwargs)
-    
+
     # Hypercorn 0.14.1 introduced wrappers for ASGI and WSGI apps that need to be above our instrumentation.
     if asgi_wrapper_class is not None and isinstance(app, asgi_wrapper_class):
         app.app = ASGIApplicationWrapper(app.app)
@@ -36,7 +37,7 @@ async def wrap_worker_serve(wrapped, instance, args, kwargs):
         app.app = WSGIApplicationWrapper(app.app)
     else:
         app = ASGIApplicationWrapper(app)
-    
+
     app._nr_wrapped = True
     return await wrapped(app, *args, **kwargs)
 

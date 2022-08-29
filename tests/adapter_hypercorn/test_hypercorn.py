@@ -16,6 +16,7 @@ import asyncio
 import threading
 import time
 from urllib.request import HTTPError, urlopen
+import pkg_resources
 
 import pytest
 from testing_support.fixtures import (
@@ -35,9 +36,16 @@ from testing_support.util import get_open_port
 from newrelic.common.object_names import callable_name
 
 
+HYPERCORN_VERSION = tuple(int(v) for v in pkg_resources.get_distribution("hypercorn").version.split("."))
+asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14)
+
+
 @pytest.fixture(
     params=(
-        simple_app_v2_raw,
+        pytest.param(
+            simple_app_v2_raw,
+            marks=pytest.mark.skipif(asgi_2_unsupported, reason="ASGI2 unsupported"),
+        ),
         AppWithCallRaw(),
         AppWithCall(),
     ),

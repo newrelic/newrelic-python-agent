@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from newrelic.api.asgi_application import ASGIApplicationWrapper
+from newrelic.api.wsgi_application import WSGIApplicationWrapper
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
@@ -20,18 +22,29 @@ def bind_worker_serve(app, *args, **kwargs):
 
 
 async def wrap_worker_serve(wrapped, instance, args, kwargs):
+    import hypercorn
+    wrapper_module = getattr(hypercorn, "app_wrappers", None)
+    asgi_wrapper_class = getattr(wrapper_module, "ASGIWrapper", None)
+
     app, args, kwargs = bind_worker_serve(*args, **kwargs)
-    app = ASGIApplicationWrapper(app)
+    
+    # Hypercorn 0.14 introduced wrappers for ASGI and WSGI apps that need to be above our instrumentation.
+    if asgi_wrapper_class is not None and isinstance(app, asgi_wrapper_class):
+        app.app = ASGIApplicationWrapper(app.app)
+    else:
+        app = ASGIApplicationWrapper(app)
+    
     app._nr_wrapped = True
     return await wrapped(app, *args, **kwargs)
 
 
-def bind_is_asgi_2(app):
+def bind_is_asgi(app):
     return app
 
 
-def wrap__is_asgi_2(wrapped, instance, args, kwargs):
-    app = bind_is_asgi_2(*args, **kwargs)
+def wrap_is_asgi(wrapped, instance, args, kwargs):
+    # Wrapper is identical and reused for the functions is_asgi and _is_asgi_2.
+    app = bind_is_asgi(*args, **kwargs)
 
     # Unwrap apps wrapped by our instrumentation.
     # ASGI 2/3 detection for hypercorn is unable to process
@@ -45,12 +58,18 @@ def wrap__is_asgi_2(wrapped, instance, args, kwargs):
 
 
 def instrument_hypercorn_asyncio_run(module):
-    wrap_function_wrapper(module, "worker_serve", wrap_worker_serve)
+    if hasattr(module, "worker_serve"):
+        wrap_function_wrapper(module, "worker_serve", wrap_worker_serve)
 
 
 def instrument_hypercorn_trio_run(module):
-    wrap_function_wrapper(module, "worker_serve", wrap_worker_serve)
+    if hasattr(module, "worker_serve"):
+        wrap_function_wrapper(module, "worker_serve", wrap_worker_serve)
 
 
 def instrument_hypercorn_utils(module):
-    wrap_function_wrapper(module, "_is_asgi_2", wrap__is_asgi_2)
+    if hasattr(module, "_is_asgi_2"):
+        wrap_function_wrapper(module, "_is_asgi_2", wrap_is_asgi)
+
+    if hasattr(module, "is_asgi"):
+        wrap_function_wrapper(module, "is_asgi", wrap_is_asgi)

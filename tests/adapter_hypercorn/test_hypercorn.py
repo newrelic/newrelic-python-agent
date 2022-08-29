@@ -17,6 +17,7 @@ import threading
 import time
 from urllib.request import HTTPError, urlopen
 import pkg_resources
+from newrelic.api.transaction import ignore_transaction
 
 import pytest
 from testing_support.fixtures import (
@@ -38,6 +39,21 @@ from newrelic.common.object_names import callable_name
 
 HYPERCORN_VERSION = tuple(int(v) for v in pkg_resources.get_distribution("hypercorn").version.split("."))
 asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14)
+wsgi_unsupported = HYPERCORN_VERSION < (0, 14)
+
+
+def wsgi_app(environ, start_response):
+    path = environ["PATH_INFO"]
+    
+    if path == "/":
+        start_response("200 OK", response_headers=[])
+    elif path == "/ignored":
+        ignore_transaction()
+        start_response("200 OK", response_headers=[])
+    elif path == "/exc":
+        raise ValueError("whoopsies")
+    
+    return []
 
 
 @pytest.fixture(
@@ -48,8 +64,12 @@ asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14)
         ),
         AppWithCallRaw(),
         AppWithCall(),
+        pytest.param(
+            wsgi_app,
+            marks=pytest.mark.skipif(wsgi_unsupported, reason="WSGI unsupported"),
+        ),
     ),
-    ids=("raw", "class_with_call", "class_with_call_double_wrapped"),
+    ids=("raw", "class_with_call", "class_with_call_double_wrapped", "wsgi"),
 )
 def app(request):
     return request.param

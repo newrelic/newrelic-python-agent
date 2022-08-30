@@ -18,7 +18,7 @@ import aioredis
 from newrelic.api.background_task import background_task
 
 from conftest import event_loop, loop, AIOREDIS_VERSION
-from testing_support.fixtures import validate_transaction_metrics, override_application_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics, override_application_settings
 from testing_support.db_settings import redis_settings
 from testing_support.util import instance_hostname
 

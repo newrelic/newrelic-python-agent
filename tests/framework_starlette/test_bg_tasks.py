@@ -14,7 +14,7 @@
 
 import pytest
 import sys
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )

@@ -19,11 +19,11 @@ from testing_support.fixtures import (
     validate_error_event_attributes_outside_transaction,
     validate_error_event_sample_data,
     validate_error_trace_attributes_outside_transaction,
-    validate_time_metrics_outside_transaction,
     validate_transaction_error_trace_attributes,
     validate_transaction_errors,
     validate_transaction_metrics,
 )
+from testing_support.validators.validate_time_metrics_outside_transaction import validate_time_metrics_outside_transaction
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task

@@ -22,13 +22,13 @@ from newrelic.api.application import application_instance
 from newrelic.api.transaction import Transaction
 from newrelic.api.external_trace import ExternalTrace
 
-from testing_support.fixtures import (validate_transaction_metrics,
+from testing_support.fixtures import (
     override_application_settings, validate_transaction_errors,
     validate_transaction_event_attributes,
     override_ignore_status_codes, override_generic_settings,
     function_not_called)
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 sanic_21 = int(sanic.__version__.split('.', 1)[0]) >= 21
 

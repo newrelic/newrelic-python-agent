@@ -18,8 +18,8 @@ import six
 
 from newrelic.api.background_task import background_task
 
-from testing_support.fixtures import (validate_transaction_metrics,
-        validate_transaction_errors)
+from testing_support.fixtures import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from _test_common import create_request, get_result
 

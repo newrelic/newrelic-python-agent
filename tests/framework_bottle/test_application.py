@@ -15,10 +15,10 @@
 import pytest
 import base64
 
-from testing_support.fixtures import (validate_transaction_metrics,
+from testing_support.fixtures import (
     validate_transaction_errors, override_ignore_status_codes,
     override_application_settings)
-
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.packages import six
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 

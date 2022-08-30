@@ -16,10 +16,11 @@ import psycopg2
 import psycopg2.extras
 import pytest
 
-from testing_support.fixtures import (validate_transaction_metrics,
+from testing_support.fixtures import (
     validate_transaction_errors,
     validate_stats_engine_explain_plan_output_is_none,
     override_application_settings)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
 from testing_support.validators.validate_transaction_slow_sql_count import (

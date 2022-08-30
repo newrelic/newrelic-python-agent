@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import (validate_transaction_metrics,
+from testing_support.fixtures import (
     validate_transaction_errors, override_application_settings,
     override_generic_settings, override_ignore_status_codes)
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from newrelic.hooks.framework_django import django_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 import os
 

@@ -20,8 +20,8 @@ from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import (
     override_application_settings,
     validate_transaction_errors,
-    validate_transaction_metrics,
 )
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.sample_asgi_applications import (
     AppWithDescriptor,
     simple_app_v2,

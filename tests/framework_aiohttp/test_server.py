@@ -17,11 +17,12 @@ import asyncio
 import aiohttp
 from newrelic.core.config import global_settings
 
-from testing_support.fixtures import (validate_transaction_metrics,
+from testing_support.fixtures import (
         validate_transaction_errors, validate_transaction_event_attributes,
         count_transactions, override_generic_settings,
         override_application_settings, override_ignore_status_codes)
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
 

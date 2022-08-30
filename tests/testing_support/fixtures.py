@@ -65,8 +65,8 @@ from newrelic.core.attribute_filter import (
 )
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
 from newrelic.core.database_utils import SQLConnections
-from newrelic.core.internal_metrics import InternalTraceContext
-from newrelic.core.stats_engine import CustomMetrics
+#from newrelic.core.internal_metrics import InternalTraceContext
+#from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import RetryDataForRequest
 from newrelic.packages import six
 
@@ -594,48 +594,48 @@ def capture_transaction_metrics(metrics_list, full_metrics=None):
     return _capture_transaction_metrics
 
 
-def validate_internal_metrics(metrics=None):
-    metrics = metrics or []
+# def validate_internal_metrics(metrics=None):
+#     metrics = metrics or []
 
-    def no_op(wrapped, instance, args, kwargs):
-        pass
+#     def no_op(wrapped, instance, args, kwargs):
+#         pass
 
-    @function_wrapper
-    def _validate_wrapper(wrapped, instance, args, kwargs):
-        # Apply no-op wrappers to prevent new internal trace contexts from being started, preventing capture
-        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__enter__")(no_op)(wrapped)
-        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__exit__")(no_op)(wrapped)
+#     @function_wrapper
+#     def _validate_wrapper(wrapped, instance, args, kwargs):
+#         # Apply no-op wrappers to prevent new internal trace contexts from being started, preventing capture
+#         wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__enter__")(no_op)(wrapped)
+#         wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__exit__")(no_op)(wrapped)
 
-        captured_metrics = CustomMetrics()
-        with InternalTraceContext(captured_metrics):
-            result = wrapped(*args, **kwargs)
-        captured_metrics = dict(captured_metrics.metrics())
+#         captured_metrics = CustomMetrics()
+#         with InternalTraceContext(captured_metrics):
+#             result = wrapped(*args, **kwargs)
+#         captured_metrics = dict(captured_metrics.metrics())
 
-        def _validate(name, count):
-            metric = captured_metrics.get(name)
+#         def _validate(name, count):
+#             metric = captured_metrics.get(name)
 
-            def _metrics_table():
-                return "metric=%r, metrics=%r" % (name, captured_metrics)
+#             def _metrics_table():
+#                 return "metric=%r, metrics=%r" % (name, captured_metrics)
 
-            def _metric_details():
-                return "metric=%r, count=%r" % (name, metric.call_count)
+#             def _metric_details():
+#                 return "metric=%r, count=%r" % (name, metric.call_count)
 
-            if count is not None and count > 0:
-                assert metric is not None, _metrics_table()
-                if count == "present":
-                    assert metric.call_count > 0, _metric_details()
-                else:
-                    assert metric.call_count == count, _metric_details()
+#             if count is not None and count > 0:
+#                 assert metric is not None, _metrics_table()
+#                 if count == "present":
+#                     assert metric.call_count > 0, _metric_details()
+#                 else:
+#                     assert metric.call_count == count, _metric_details()
 
-            else:
-                assert metric is None, _metrics_table()
+#             else:
+#                 assert metric is None, _metrics_table()
 
-        for metric, count in metrics:
-            _validate(metric, count)
+#         for metric, count in metrics:
+#             _validate(metric, count)
 
-        return result
+#         return result
 
-    return _validate_wrapper
+#     return _validate_wrapper
 
 
 def validate_transaction_errors(errors=None, required_params=None, forgone_params=None):

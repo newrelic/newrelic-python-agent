@@ -19,8 +19,8 @@ import pytest
 import time
 from newrelic.api.application import application_instance
 from newrelic.api.web_transaction import WebTransaction
-from testing_support.fixtures import (validate_transaction_metrics,
-        validate_attributes)
+from testing_support.fixtures import validate_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.sample_applications import simple_app
 import newrelic.packages.six as six
 application = webtest.TestApp(simple_app)

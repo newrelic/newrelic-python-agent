@@ -734,36 +734,36 @@ def capture_transaction_metrics(metrics_list, full_metrics=None):
 #     return _validate_application_errors
 
 
-def validate_custom_parameters(required_params=None, forgone_params=None):
-    required_params = required_params or []
-    forgone_params = forgone_params or []
+# def validate_custom_parameters(required_params=None, forgone_params=None):
+#     required_params = required_params or []
+#     forgone_params = forgone_params or []
 
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-    @catch_background_exceptions
-    def _validate_custom_parameters(wrapped, instance, args, kwargs):
-        def _bind_params(transaction, *args, **kwargs):
-            return transaction
+#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+#     @catch_background_exceptions
+#     def _validate_custom_parameters(wrapped, instance, args, kwargs):
+#         def _bind_params(transaction, *args, **kwargs):
+#             return transaction
 
-        transaction = _bind_params(*args, **kwargs)
+#         transaction = _bind_params(*args, **kwargs)
 
-        # these are pre-destination applied attributes, so they may not
-        # actually end up in a transaction/error trace, we are merely testing
-        # for presence on the TransactionNode
+#         # these are pre-destination applied attributes, so they may not
+#         # actually end up in a transaction/error trace, we are merely testing
+#         # for presence on the TransactionNode
 
-        attrs = {}
-        for attr in transaction.user_attributes:
-            attrs[attr.name] = attr.value
+#         attrs = {}
+#         for attr in transaction.user_attributes:
+#             attrs[attr.name] = attr.value
 
-        for name, value in required_params:
-            assert name in attrs, "name=%r, params=%r" % (name, attrs)
-            assert attrs[name] == value, "name=%r, value=%r, params=%r" % (name, value, attrs)
+#         for name, value in required_params:
+#             assert name in attrs, "name=%r, params=%r" % (name, attrs)
+#             assert attrs[name] == value, "name=%r, value=%r, params=%r" % (name, value, attrs)
 
-        for name, value in forgone_params:
-            assert name not in attrs, "name=%r, params=%r" % (name, attrs)
+#         for name, value in forgone_params:
+#             assert name not in attrs, "name=%r, params=%r" % (name, attrs)
 
-        return wrapped(*args, **kwargs)
+#         return wrapped(*args, **kwargs)
 
-    return _validate_custom_parameters
+#     return _validate_custom_parameters
 
 
 def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_exist=True):

@@ -27,9 +27,9 @@ from newrelic.packages import six
 
 from testing_support.fixtures import (override_application_settings,
     validate_attributes, validate_attributes_complete,
-    validate_custom_parameters, validate_agent_attribute_types)
+    validate_agent_attribute_types)
 from testing_support.sample_applications import fully_featured_app
-
+from testing_support.validators.validate_custom_parameters import validate_custom_parameters
 
 # Python 3 lacks longs
 

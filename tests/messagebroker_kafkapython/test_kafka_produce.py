@@ -12,12 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 import kafka
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import validate_transaction_metrics
 
 from conftest import cache_kafka_headers
 from testing_support.validators.validate_messagebroker_headers import validate_messagebroker_headers
+
+
+def test_no_harm(topic, producer, consumer):
+    MESSAGES = [
+        {"foo": "bar"},
+        {"baz": "bat"},
+    ]
+
+    for msg in MESSAGES:
+        time.sleep(1)
+        producer.send(topic, value=msg)
+    producer.flush()
+
+    for msg in consumer:
+        assert msg.topic == topic
+
 
 def test_producer(topic, producer, consumer):
     scoped_metrics = [

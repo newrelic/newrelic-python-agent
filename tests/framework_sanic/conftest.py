@@ -80,10 +80,13 @@ def create_request_class(app, method, url, headers=None, loop=None):
         proto = MockProtocol(loop=loop, app=app)
         proto.recv_buffer = bytearray()
         http = Http(proto)
+        
+        if hasattr(http, "init_for_request"):
+            http.init_for_request()
+
         http.stage = Stage.HANDLER
         http.response_func = http.http1_response_header
         _request.stream = http
-        pass
     except ImportError:
         pass
 
@@ -122,6 +125,15 @@ def request(app, method, url, headers=None):
     global loop
     if loop is None:
         loop = asyncio.new_event_loop()
+
+    if not getattr(app.router, "finalized", True):
+        # Handle startup if the router hasn't been finalized.
+        # Older versions don't have this requirement or variable so
+        # the default should be True.
+        if hasattr(app, "_startup"):
+            loop.run_until_complete(app._startup())
+        else:
+            app.router.finalize()
 
     coro = create_request_coroutine(app, method, url, headers, loop)
     loop.run_until_complete(coro)

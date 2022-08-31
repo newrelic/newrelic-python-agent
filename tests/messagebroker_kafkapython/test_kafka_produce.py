@@ -23,14 +23,16 @@ from testing_support.validators.validate_messagebroker_headers import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.packages import six
 
 
 def test_producer_records_trace(topic, send_producer_messages):
     scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 3)]
     unscoped_metrics = scoped_metrics
+    txn_name = "test_kafka_produce:test_producer_records_trace.<locals>.test" if six.PY3 else "test_kafka_produce:test"
 
     @validate_transaction_metrics(
-        "test_kafka_produce:test_producer_records_trace.<locals>.test",
+        txn_name,
         scoped_metrics=scoped_metrics,
         rollup_metrics=unscoped_metrics,
         background_task=True,

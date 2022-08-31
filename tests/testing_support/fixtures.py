@@ -818,38 +818,38 @@ def capture_transaction_metrics(metrics_list, full_metrics=None):
 #     return wrapper
 
 
-def validate_transaction_event_attributes(required_params=None, forgone_params=None, exact_attrs=None, index=-1):
-    required_params = required_params or {}
-    forgone_params = forgone_params or {}
-    exact_attrs = exact_attrs or {}
+# def validate_transaction_event_attributes(required_params=None, forgone_params=None, exact_attrs=None, index=-1):
+#     required_params = required_params or {}
+#     forgone_params = forgone_params or {}
+#     exact_attrs = exact_attrs or {}
 
-    captured_events = []
+#     captured_events = []
 
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-    def _capture_transaction_events(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            event_data = instance.transaction_events
-            captured_events.append(event_data)
-            return result
+#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+#     def _capture_transaction_events(wrapped, instance, args, kwargs):
+#         try:
+#             result = wrapped(*args, **kwargs)
+#         except:
+#             raise
+#         else:
+#             event_data = instance.transaction_events
+#             captured_events.append(event_data)
+#             return result
 
-    @function_wrapper
-    def _validate_transaction_event_attributes(wrapped, instance, args, kwargs):
-        _new_wrapper = _capture_transaction_events(wrapped)
-        result = _new_wrapper(*args, **kwargs)
+#     @function_wrapper
+#     def _validate_transaction_event_attributes(wrapped, instance, args, kwargs):
+#         _new_wrapper = _capture_transaction_events(wrapped)
+#         result = _new_wrapper(*args, **kwargs)
 
-        assert captured_events, "No events captured"
-        event_data = captured_events[index]
-        captured_events[:] = []
+#         assert captured_events, "No events captured"
+#         event_data = captured_events[index]
+#         captured_events[:] = []
 
-        check_event_attributes(event_data, required_params, forgone_params, exact_attrs)
+#         check_event_attributes(event_data, required_params, forgone_params, exact_attrs)
 
-        return result
+#         return result
 
-    return _validate_transaction_event_attributes
+#     return _validate_transaction_event_attributes
 
 
 def check_event_attributes(event_data, required_params=None, forgone_params=None, exact_attrs=None):

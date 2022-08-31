@@ -26,9 +26,10 @@ from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.wsgi_application import wsgi_application
 
 from testing_support.fixtures import (override_application_settings,
-        validate_attributes, validate_transaction_event_attributes,
+        validate_attributes, 
         validate_error_event_attributes)
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
 distributed_trace_intrinsics = ['guid', 'traceId', 'priority', 'sampled']
 inbound_payload_intrinsics = ['parent.type', 'parent.app', 'parent.account',

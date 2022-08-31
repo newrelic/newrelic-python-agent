@@ -638,60 +638,60 @@ def capture_transaction_metrics(metrics_list, full_metrics=None):
 #     return _validate_wrapper
 
 
-def validate_transaction_errors(errors=None, required_params=None, forgone_params=None):
-    errors = errors or []
-    required_params = required_params or []
-    forgone_params = forgone_params or []
-    captured_errors = []
+# def validate_transaction_errors(errors=None, required_params=None, forgone_params=None):
+#     errors = errors or []
+#     required_params = required_params or []
+#     forgone_params = forgone_params or []
+#     captured_errors = []
 
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-    @catch_background_exceptions
-    def _capture_transaction_errors(wrapped, instance, args, kwargs):
-        def _bind_params(transaction, *args, **kwargs):
-            return transaction
+#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+#     @catch_background_exceptions
+#     def _capture_transaction_errors(wrapped, instance, args, kwargs):
+#         def _bind_params(transaction, *args, **kwargs):
+#             return transaction
 
-        transaction = _bind_params(*args, **kwargs)
-        captured = transaction.errors
+#         transaction = _bind_params(*args, **kwargs)
+#         captured = transaction.errors
 
-        captured_errors.append(captured)
+#         captured_errors.append(captured)
 
-        return wrapped(*args, **kwargs)
+#         return wrapped(*args, **kwargs)
 
-    @function_wrapper
-    def _validate_transaction_errors(wrapped, instance, args, kwargs):
-        _new_wrapped = _capture_transaction_errors(wrapped)
-        output = _new_wrapped(*args, **kwargs)
+#     @function_wrapper
+#     def _validate_transaction_errors(wrapped, instance, args, kwargs):
+#         _new_wrapped = _capture_transaction_errors(wrapped)
+#         output = _new_wrapped(*args, **kwargs)
 
-        expected = sorted(errors)
+#         expected = sorted(errors)
 
-        if captured_errors:
-            captured = captured_errors[0]
-        else:
-            captured = []
+#         if captured_errors:
+#             captured = captured_errors[0]
+#         else:
+#             captured = []
 
-        if errors and isinstance(errors[0], (tuple, list)):
-            compare_to = sorted([(e.type, e.message) for e in captured])
-        else:
-            compare_to = sorted([e.type for e in captured])
+#         if errors and isinstance(errors[0], (tuple, list)):
+#             compare_to = sorted([(e.type, e.message) for e in captured])
+#         else:
+#             compare_to = sorted([e.type for e in captured])
 
-        assert expected == compare_to, "expected=%r, captured=%r, errors=%r" % (expected, compare_to, captured)
+#         assert expected == compare_to, "expected=%r, captured=%r, errors=%r" % (expected, compare_to, captured)
 
-        for e in captured:
-            assert e.span_id
-            for name, value in required_params:
-                assert name in e.custom_params, "name=%r, params=%r" % (name, e.custom_params)
-                assert e.custom_params[name] == value, "name=%r, value=%r, params=%r" % (
-                    name,
-                    value,
-                    e.custom_params,
-                )
+#         for e in captured:
+#             assert e.span_id
+#             for name, value in required_params:
+#                 assert name in e.custom_params, "name=%r, params=%r" % (name, e.custom_params)
+#                 assert e.custom_params[name] == value, "name=%r, value=%r, params=%r" % (
+#                     name,
+#                     value,
+#                     e.custom_params,
+#                 )
 
-            for name, value in forgone_params:
-                assert name not in e.custom_params, "name=%r, params=%r" % (name, e.custom_params)
+#             for name, value in forgone_params:
+#                 assert name not in e.custom_params, "name=%r, params=%r" % (name, e.custom_params)
 
-        return output
+#         return output
 
-    return _validate_transaction_errors
+#     return _validate_transaction_errors
 
 
 def validate_application_errors(errors=None, required_params=None, forgone_params=None):

@@ -20,10 +20,10 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.wsgi_application import wsgi_application
 from testing_support.fixtures import (override_application_settings,
-        validate_transaction_event_attributes, validate_transaction_metrics)
+        validate_transaction_event_attributes)
 from testing_support.validators.validate_span_events import (
     validate_span_events)
-
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 @wsgi_application()
 def target_wsgi_application(environ, start_response):

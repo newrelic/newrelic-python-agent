@@ -34,9 +34,9 @@ import pkg_resources
 import pytest
 import re
 
-from testing_support.fixtures import (
-    validate_transaction_errors, override_application_settings)
+from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
 def _to_int(version_str):
     m = re.match(r'\d+', version_str)

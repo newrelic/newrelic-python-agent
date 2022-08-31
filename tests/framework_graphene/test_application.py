@@ -14,15 +14,13 @@
 
 import pytest
 import six
-from testing_support.fixtures import (
-    dt_enabled,
-    validate_transaction_errors,
-    validate_transaction_metrics,
-)
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name

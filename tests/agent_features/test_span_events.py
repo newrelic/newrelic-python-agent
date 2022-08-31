@@ -31,10 +31,11 @@ from newrelic.api.solr_trace import SolrTrace
 
 from testing_support.fixtures import (override_application_settings,
         function_not_called, validate_tt_segment_params,
-        validate_transaction_metrics, dt_enabled,
+        dt_enabled,
         validate_transaction_event_attributes)
 from testing_support.validators.validate_span_events import (
         validate_span_events)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 ERROR = ValueError("whoops")
 ERROR_NAME = callable_name(ERROR)

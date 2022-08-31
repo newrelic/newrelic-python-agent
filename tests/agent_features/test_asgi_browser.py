@@ -19,9 +19,9 @@ import pytest
 import six
 
 from testing_support.fixtures import (override_application_settings,
-    validate_transaction_errors, validate_custom_parameters)
+    validate_custom_parameters)
 from testing_support.asgi_testing import AsgiTest
-
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from newrelic.api.application import application_settings
 from newrelic.api.transaction import (get_browser_timing_header,
         get_browser_timing_footer, add_custom_parameter,

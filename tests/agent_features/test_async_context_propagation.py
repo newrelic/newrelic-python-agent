@@ -16,9 +16,8 @@ import pytest
 from testing_support.fixtures import (
     function_not_called,
     override_generic_settings,
-    validate_transaction_metrics,
 )
-
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import BackgroundTask, background_task
 from newrelic.api.database_trace import database_trace

@@ -25,8 +25,8 @@ from newrelic.api.transaction import Transaction
 
 from testing_support.fixtures import (override_application_settings,
         make_cross_agent_headers, validate_analytics_catmap_data,
-        validate_transaction_metrics, validate_transaction_event_attributes)
-
+        validate_transaction_event_attributes)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 BASE_METRICS = [
     ('Function/_target_application:index', 1),

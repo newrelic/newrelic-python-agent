@@ -23,10 +23,10 @@ import uvicorn
 from testing_support.fixtures import (
     override_application_settings,
     raise_background_exceptions,
-    validate_transaction_errors,
     wait_for_background_threads,
 )
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.sample_asgi_applications import (
     AppWithCall,
     AppWithCallRaw,

@@ -24,9 +24,10 @@ from newrelic.common.object_wrapper import transient_function_wrapper
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 from testing_support.fixtures import (override_application_settings,
-        validate_transaction_metrics, validate_transaction_event_attributes,
+        validate_transaction_event_attributes,
         validate_attributes)
 from newrelic.common.encoding_utils import W3CTraceState
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',

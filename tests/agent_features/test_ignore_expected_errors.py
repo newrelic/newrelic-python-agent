@@ -20,11 +20,10 @@ from testing_support.fixtures import (
     validate_error_event_sample_data,
     validate_error_trace_attributes_outside_transaction,
     validate_transaction_error_trace_attributes,
-    validate_transaction_errors,
-    validate_transaction_metrics,
 )
 from testing_support.validators.validate_time_metrics_outside_transaction import validate_time_metrics_outside_transaction
-
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import notice_error

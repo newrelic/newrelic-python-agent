@@ -27,10 +27,9 @@ from testing_support.fixtures import (
     validate_custom_parameters,
     validate_non_transaction_error_event,
     validate_request_params_omitted,
-    validate_transaction_errors,
     validate_tt_segment_params,
 )
-
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace

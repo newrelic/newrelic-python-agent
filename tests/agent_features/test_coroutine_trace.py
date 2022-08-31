@@ -20,11 +20,10 @@ import time
 import pytest
 from testing_support.fixtures import (
     capture_transaction_metrics,
-    validate_transaction_errors,
-    validate_transaction_metrics,
     validate_tt_parenting,
 )
-
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import database_trace
 from newrelic.api.datastore_trace import datastore_trace

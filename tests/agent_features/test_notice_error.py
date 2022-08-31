@@ -24,9 +24,9 @@ from testing_support.fixtures import (
     validate_application_errors,
     validate_transaction_error_event_count,
     validate_transaction_error_trace_count,
-    validate_transaction_errors,
 )
 
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from newrelic.api.application import application_instance as application
 from newrelic.api.application import application_settings
 from newrelic.api.background_task import background_task

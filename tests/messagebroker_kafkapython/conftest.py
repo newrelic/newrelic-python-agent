@@ -70,6 +70,8 @@ def consumer(topic):
         value_deserializer=lambda v: json.loads(v.decode("utf-8")),
         auto_offset_reset="earliest",
         consumer_timeout_ms=5000,
+        heartbeat_interval_ms=1000,
+        group_id="test",
     )
     yield consumer
     consumer.close()

@@ -13,20 +13,24 @@
 # limitations under the License.
 
 import time
+
 import kafka
+from testing_support.validators.validate_custom_metrics_outside_transaction import (
+    validate_custom_metrics_outside_transaction,
+)
 
-from testing_support.validators.validate_custom_metrics_outside_transaction import validate_custom_metrics_outside_transaction
 
-
-@validate_custom_metrics_outside_transaction([
-    ("MessageBroker/Kafka/Heartbeat/Poll", "present"),
-    ("MessageBroker/Kafka/Heartbeat/Sent", "present"),
-    ("MessageBroker/Kafka/Heartbeat/Receive", "present"),
-    ("MessageBroker/Kafka/Heartbeat/Fail", None),
-    ("MessageBroker/Kafka/Heartbeat/SessionTimeout", None),
-    ("MessageBroker/Kafka/Heartbeat/PollTimeout", None),
-])
-def test_heartbeat_metrics_from_thread(topic, producer, consumer):
+@validate_custom_metrics_outside_transaction(
+    [
+        ("MessageBroker/Kafka/Heartbeat/Poll", "present"),
+        ("MessageBroker/Kafka/Heartbeat/Sent", "present"),
+        ("MessageBroker/Kafka/Heartbeat/Receive", "present"),
+        ("MessageBroker/Kafka/Heartbeat/Fail", None),
+        ("MessageBroker/Kafka/Heartbeat/SessionTimeout", None),
+        ("MessageBroker/Kafka/Heartbeat/PollTimeout", None),
+    ]
+)
+def test_successful_heartbeat_metrics_recorded(topic, producer, consumer):
     producer.send(topic, value=1)
     producer.flush()
 
@@ -34,17 +38,19 @@ def test_heartbeat_metrics_from_thread(topic, producer, consumer):
     time.sleep(1.5)
 
 
-@validate_custom_metrics_outside_transaction([
-    ("MessageBroker/Kafka/Heartbeat/Poll", "present"),
-    ("MessageBroker/Kafka/Heartbeat/Sent", "present"),
-    ("MessageBroker/Kafka/Heartbeat/Fail", "present"),
-    ("MessageBroker/Kafka/Heartbeat/Receive", "present"),
-    ("MessageBroker/Kafka/Heartbeat/SessionTimeout", "present"),
-    ("MessageBroker/Kafka/Heartbeat/PollTimeout", "present"),
-])
-def test_heartbeat_metrics_from_mock():
+@validate_custom_metrics_outside_transaction(
+    [
+        ("MessageBroker/Kafka/Heartbeat/Poll", "present"),
+        ("MessageBroker/Kafka/Heartbeat/Sent", "present"),
+        ("MessageBroker/Kafka/Heartbeat/Fail", "present"),
+        ("MessageBroker/Kafka/Heartbeat/Receive", "present"),
+        ("MessageBroker/Kafka/Heartbeat/SessionTimeout", "present"),
+        ("MessageBroker/Kafka/Heartbeat/PollTimeout", "present"),
+    ]
+)
+def test_fail_timeout_heartbeat_metrics_recorded():
     heartbeat = kafka.coordinator.heartbeat.Heartbeat(session_timeout_ms=0, max_poll_interval_ms=0)
-    
+
     heartbeat.poll()
     heartbeat.sent_heartbeat()
     heartbeat.received_heartbeat()

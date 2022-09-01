@@ -2308,11 +2308,6 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "kafka.producer.kafka",
-        "newrelic.hooks.messagebroker_kafkapython",
-        "instrument_kafka_producer",
-    )
-    _process_module_definition(
         "kafka.coordinator.heartbeat",
         "newrelic.hooks.messagebroker_kafkapython",
         "instrument_kafka_heartbeat",
@@ -2559,7 +2554,6 @@ def _process_module_builtin_defaults():
         "sanic.touchup.service", "newrelic.hooks.framework_sanic", "instrument_sanic_touchup_service"
     )
 
-    
     _process_module_definition("aiohttp.wsgi", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_wsgi")
     _process_module_definition("aiohttp.web", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web")
     _process_module_definition(

@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kafka.metrics.dict_reporter import DictReporter as KafkaMetricsDictReporter
-
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
@@ -52,4 +50,3 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
 def instrument_kafka_producer(module):
     if hasattr(module, "KafkaProducer"):
         wrap_function_wrapper(module, "KafkaProducer.send", wrap_KafkaProducer_send)
-

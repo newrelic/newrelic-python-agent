@@ -16,14 +16,14 @@ import logging
 import math
 import threading
 
+from kafka.metrics.metrics_reporter import AbstractMetricsReporter
+
+import newrelic.core.agent
 from newrelic.api.application import application_instance
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
-import newrelic.core.agent
-
-from kafka.metrics.metrics_reporter import AbstractMetricsReporter
 from newrelic.packages import six
 from newrelic.samplers.decorators import data_source_factory
 
@@ -64,11 +64,6 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
         except Exception:
             notice_error()
             raise
-
-
-def instrument_kafka_producer(module):
-    if hasattr(module, "KafkaProducer"):
-        wrap_function_wrapper(module, "KafkaProducer.send", wrap_KafkaProducer_send)
 
 
 def metric_wrapper(metric_name, check_result=False):
@@ -112,7 +107,6 @@ def instrument_kafka_heartbeat(module):
             wrap_function_wrapper(
                 module, "Heartbeat.poll_timeout_expired", metric_wrapper(HEARTBEAT_POLL_TIMEOUT, check_result=True)
             )
-
 
 
 class KafkaMetricsDataSource(object):
@@ -246,6 +240,9 @@ def wrap_KafkaProducerConsumer_init(wrapped, instance, args, kwargs):
 def instrument_kafka_producer(module):
     if hasattr(module, "KafkaProducer"):
         wrap_function_wrapper(module, "KafkaProducer.__init__", wrap_KafkaProducerConsumer_init)
+
+    if hasattr(module, "KafkaProducer"):
+        wrap_function_wrapper(module, "KafkaProducer.send", wrap_KafkaProducer_send)
 
 
 def instrument_kafka_consumer_group(module):

@@ -205,8 +205,9 @@ class DatabaseTrace(TimeTrace):
                         execute_params = self.execute_params
                         transaction._explain_plan_count += 1
 
-        self.sql_format = tt.record_sql
-
+        self.sql_format = (
+            tt.record_sql if tt.record_sql else ""
+        )  # If tt.record_sql is None, then the empty string will default to sql being obfuscated
         self.connect_params = connect_params
         self.cursor_params = cursor_params
         self.sql_parameters = sql_parameters

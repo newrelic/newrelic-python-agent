@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import math
 import threading
-import logging
+
+from kafka.metrics.metrics_reporter import AbstractMetricsReporter
 
 import newrelic.core.agent
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.samplers.decorators import data_source_factory
-
 from newrelic.packages import six
-
-from kafka.metrics.metrics_reporter import AbstractMetricsReporter
+from newrelic.samplers.decorators import data_source_factory
 
 _logger = logging.getLogger(__name__)
 
@@ -32,7 +31,6 @@ class KafkaMetricsDataSource(object):
 
     def __init__(self):
         self.reporters = []
-
 
     @data_source_factory(name="Kafka Metrics Reporter")
     @classmethod
@@ -55,7 +53,9 @@ class KafkaMetricsDataSource(object):
                 _logger.debug("Registering kafka metrics data source.")
                 newrelic.core.agent.agent_instance().register_data_source(cls.factory)
             except Exception:
-                _logger.exception("Attempt to register kafka metrics data source has failed. Data source will be skipped.")
+                _logger.exception(
+                    "Attempt to register kafka metrics data source has failed. Data source will be skipped."
+                )
 
         return instance
 
@@ -77,6 +77,7 @@ class KafkaMetricsDataSource(object):
         for reporter in self.reporters:
             for name, metric in six.iteritems(reporter.snapshot()):
                 yield name, metric
+
 
 class NewRelicMetricsReporter(AbstractMetricsReporter):
     def __init__(self, *args, **kwargs):
@@ -107,14 +108,17 @@ class NewRelicMetricsReporter(AbstractMetricsReporter):
         with self._lock:
             # metric.value can only be called once, so care must be taken when filtering
             metrics = ((name, metric.value()) for name, metric in six.iteritems(self._metrics))
-            return {"MessageBroker/Kafka/Internal/%s" % name: {"count": value} for name, value in filter(self.invalid_metric_value, metrics)}
+            return {
+                "MessageBroker/Kafka/Internal/%s" % name: {"count": value}
+                for name, value in filter(self.invalid_metric_value, metrics)
+            }
 
     def get_metric_name(self, metric):
         metric_name = metric.metric_name  # Get MetricName object to work with
-        
+
         name = metric_name.name
         group = metric_name.group
-        
+
         if "topic" in metric_name.tags:
             topic = metric_name.tags["topic"]
             return "/".join((group, topic, name))

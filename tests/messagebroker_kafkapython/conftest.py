@@ -24,10 +24,9 @@ from testing_support.fixtures import (  # noqa: F401
     collector_available_fixture,
 )
 
-from newrelic.hooks.messagebroker_kafkapython import KafkaMetricsDataSource
-
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
+from newrelic.hooks.messagebroker_kafkapython import KafkaMetricsDataSource
 
 DB_SETTINGS = kafka_settings()[0]
 

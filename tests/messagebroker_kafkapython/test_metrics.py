@@ -21,7 +21,6 @@ def test_data_source_metrics(data_source, topic, producer, consumer):
     metrics = {k: v for k, v in data_source()}
     metric_names = list(metrics.keys())
     assert metrics
-    breakpoint()
     pass
 
 

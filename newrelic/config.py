@@ -2313,6 +2313,12 @@ def _process_module_builtin_defaults():
         "instrument_kafka_producer",
     )
     _process_module_definition(
+        "kafka.coordinator.heartbeat",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_heartbeat",
+    )
+
+    _process_module_definition(
         "kafka.consumer.group",
         "newrelic.hooks.messagebroker_kafkapython",
         "instrument_kafka_consumer_group",

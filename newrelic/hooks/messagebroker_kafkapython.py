@@ -13,6 +13,9 @@
 # limitations under the License.
 
 from newrelic.api.application import application_instance
+from newrelic.api.message_trace import MessageTrace
+from newrelic.api.time_trace import notice_error
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 HEARTBEAT_POLL = "MessageBroker/Kafka/Heartbeat/Poll"
@@ -21,6 +24,40 @@ HEARTBEAT_FAIL = "MessageBroker/Kafka/Heartbeat/Fail"
 HEARTBEAT_RECEIVE = "MessageBroker/Kafka/Heartbeat/Receive"
 HEARTBEAT_SESSION_TIMEOUT = "MessageBroker/Kafka/Heartbeat/SessionTimeout"
 HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
+
+
+def _bind_send(topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None):
+    return topic, value, key, headers, partition, timestamp_ms
+
+
+def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    topic, value, key, headers, partition, timestamp_ms = _bind_send(*args, **kwargs)
+    headers = list(headers) if headers else []
+
+    with MessageTrace(
+        library="Kafka",
+        operation="Produce",
+        destination_type="Topic",
+        destination_name=topic or "Default",
+        source=wrapped,
+    ) as trace:
+        dt_headers = [(k, v.encode("utf-8")) for k, v in trace.generate_request_headers(transaction)]
+        headers.extend(dt_headers)
+        try:
+            return wrapped(topic, value=value, key=key, headers=headers, partition=partition, timestamp_ms=timestamp_ms)
+        except Exception:
+            notice_error()
+            raise
+
+
+def instrument_kafka_producer(module):
+    if hasattr(module, "KafkaProducer"):
+        wrap_function_wrapper(module, "KafkaProducer.send", wrap_KafkaProducer_send)
 
 
 def metric_wrapper(metric_name, check_result=False):

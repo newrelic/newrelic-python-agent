@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
-
 import logging
 import math
+import sys
 import threading
 
 from kafka.metrics.metrics_reporter import AbstractMetricsReporter
@@ -319,8 +318,6 @@ def wrap_KafkaProducerConsumer_init(wrapped, instance, args, kwargs):
 def instrument_kafka_producer(module):
     if hasattr(module, "KafkaProducer"):
         wrap_function_wrapper(module, "KafkaProducer.__init__", wrap_KafkaProducerConsumer_init)
-
-    if hasattr(module, "KafkaProducer"):
         wrap_function_wrapper(module, "KafkaProducer.send", wrap_KafkaProducer_send)
 
 

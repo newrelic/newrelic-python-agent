@@ -18,7 +18,7 @@ import uuid
 import kafka
 import pytest
 from testing_support.db_settings import kafka_settings
-from testing_support.fixtures import (  # noqa: F401
+from testing_support.fixtures import (  # noqa: F401, W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -26,6 +26,7 @@ from testing_support.fixtures import (  # noqa: F401
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
+from newrelic.hooks.messagebroker_kafkapython import KafkaMetricsDataSource
 
 DB_SETTINGS = kafka_settings()[0]
 
@@ -54,7 +55,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 
 @pytest.fixture(scope="function")
-def producer():
+def producer(data_source):
     producer = kafka.KafkaProducer(
         bootstrap_servers=BROKER, api_version=(2, 0, 2), value_serializer=lambda v: json.dumps(v).encode("utf-8")
     )
@@ -63,7 +64,7 @@ def producer():
 
 
 @pytest.fixture(scope="function")
-def consumer(topic):
+def consumer(topic, data_source):
     consumer = kafka.KafkaConsumer(
         topic,
         bootstrap_servers=BROKER,
@@ -80,6 +81,17 @@ def consumer(topic):
 @pytest.fixture(scope="function")
 def topic():
     yield "test-topic-%s" % str(uuid.uuid4())
+
+
+@pytest.fixture(scope="session")
+def data_source():
+    """
+    Must be required by consumer and producer fixtures, or the first one of them to be
+    instantiated will create and register the singleton. We rely on the singleton to
+    not be registered to properly test the output of it without interference from the
+    harvest thread.
+    """
+    return KafkaMetricsDataSource.singleton(register=False)
 
 
 @transient_function_wrapper(kafka.producer.kafka, "KafkaProducer.send.__wrapped__")

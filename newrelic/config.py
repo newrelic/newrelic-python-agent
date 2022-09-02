@@ -2319,6 +2319,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "kafka.consumer.group",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_consumer_group",
+    )
+
+    _process_module_definition(
         "logging",
         "newrelic.hooks.logger_logging",
         "instrument_logging",

@@ -34,7 +34,8 @@ def test_successful_heartbeat_metrics_recorded(topic, producer, consumer):
     producer.send(topic, value=1)
     producer.flush()
 
-    next(iter(consumer))
+    for record in consumer:
+        pass
     time.sleep(1.5)
 
 

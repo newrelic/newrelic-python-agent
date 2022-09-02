@@ -18,10 +18,9 @@ def test_data_source_metrics(data_source, topic, producer, consumer):
     producer.flush()
     next(iter(consumer))
 
-    metrics = {k: v for k, v in data_source()}
+    metrics = dict(data_source())
     metric_names = list(metrics.keys())
     assert metrics
-    pass
 
 
 # Example metrics

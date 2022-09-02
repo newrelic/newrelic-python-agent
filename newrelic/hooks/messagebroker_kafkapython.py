@@ -115,10 +115,11 @@ class KafkaMetricsDataSource(object):
     def __init__(self):
         self.reporters = []
 
-    @data_source_factory(name="Kafka Metrics Reporter")
     @classmethod
+    @data_source_factory(name="Kafka Metrics Reporter")
     def factory(cls, settings=None, environ=None):
-        return cls.singleton()
+        variable = cls.singleton()
+        return variable
 
     @classmethod
     def singleton(cls, register=True):
@@ -164,7 +165,7 @@ class KafkaMetricsDataSource(object):
 
 class NewRelicMetricsReporter(AbstractMetricsReporter):
     def __init__(self, *args, **kwargs):
-        super(NewRelicMetricsReporter).__init__(*args, **kwargs)
+        super(NewRelicMetricsReporter, self).__init__(*args, **kwargs)
 
         # Register with data source for harvesting
         self.data_source = KafkaMetricsDataSource.singleton()

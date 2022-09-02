@@ -118,8 +118,7 @@ class KafkaMetricsDataSource(object):
     @classmethod
     @data_source_factory(name="Kafka Metrics Reporter")
     def factory(cls, settings=None, environ=None):
-        variable = cls.singleton()
-        return variable
+        return cls.singleton()
 
     @classmethod
     def singleton(cls, register=True):

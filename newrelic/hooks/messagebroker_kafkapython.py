@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import logging
 import math
+import sys
 import threading
 
 from kafka.metrics.metrics_reporter import AbstractMetricsReporter
@@ -21,6 +21,7 @@ from kafka.metrics.metrics_reporter import AbstractMetricsReporter
 import newrelic.core.agent
 from newrelic.api.application import application_instance
 from newrelic.api.message_trace import MessageTrace
+from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -107,6 +108,83 @@ def instrument_kafka_heartbeat(module):
             wrap_function_wrapper(
                 module, "Heartbeat.poll_timeout_expired", metric_wrapper(HEARTBEAT_POLL_TIMEOUT, check_result=True)
             )
+
+
+def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
+    if hasattr(instance, "_nr_transaction") and not instance._nr_transaction.stopped:
+        instance._nr_transaction.__exit__(*sys.exc_info())
+
+    try:
+        record = wrapped(*args, **kwargs)
+    except Exception as e:
+        # StopIteration is an expected error, indicating the end of an iterable,
+        # that should not be captured.
+        if not isinstance(e, StopIteration):
+            notice_error()
+        raise
+
+    if record:
+        # This iterator can be called either outside of a transaction, or
+        # within the context of an existing transaction.  There are 3
+        # possibilities we need to handle: (Note that this is similar to
+        # our Pika and Celery instrumentation)
+        #
+        #   1. In an inactive transaction
+        #
+        #      If the end_of_transaction() or ignore_transaction() API
+        #      calls have been invoked, this iterator may be called in the
+        #      context of an inactive transaction. In this case, don't wrap
+        #      the iterator in any way. Just run the original iterator.
+        #
+        #   2. In an active transaction
+        #
+        #      Do nothing.
+        #
+        #   3. Outside of a transaction
+        #
+        #      Since it's not running inside of an existing transaction, we
+        #      want to create a new background transaction for it.
+
+        library = "Kafka"
+        destination_type = "Topic"
+        destination_name = record.topic
+        received_bytes = len(str(record.value).encode("utf-8"))
+        message_count = 1
+
+        transaction = current_transaction(active_only=False)
+        if not transaction:
+            transaction = MessageTransaction(
+                application=application_instance(),
+                library=library,
+                destination_type=destination_type,
+                destination_name=destination_name,
+                headers=record.headers,
+                transport_type="Kafka",
+                routing_key=record.key,
+                source=wrapped,
+            )
+            instance._nr_transaction = transaction
+            transaction.__enter__()
+
+            # Obtain consumer client_id to send up as agent attribute
+            if hasattr(instance, "config") and "client_id" in instance.config:
+                client_id = instance.config["client_id"]
+                transaction._add_agent_attribute("kafka.consume.client_id", client_id)
+
+            transaction._add_agent_attribute("kafka.consume.byteCount", received_bytes)
+
+        transaction = current_transaction()
+        if transaction:  # If there is an active transaction now.
+            # Add metrics whether or not a transaction was already active, or one was just started.
+            # Don't add metrics if there was an inactive transaction.
+            # Name the metrics using the same format as the transaction, but in case the active transaction
+            # was an existing one and not a message transaction, reproduce the naming logic here.
+            group = "Message/%s/%s" % (library, destination_type)
+            name = "Named/%s" % destination_name
+            transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
+            transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
+
+    return record
 
 
 class KafkaMetricsDataSource(object):
@@ -240,11 +318,10 @@ def wrap_KafkaProducerConsumer_init(wrapped, instance, args, kwargs):
 def instrument_kafka_producer(module):
     if hasattr(module, "KafkaProducer"):
         wrap_function_wrapper(module, "KafkaProducer.__init__", wrap_KafkaProducerConsumer_init)
-
-    if hasattr(module, "KafkaProducer"):
         wrap_function_wrapper(module, "KafkaProducer.send", wrap_KafkaProducer_send)
 
 
 def instrument_kafka_consumer_group(module):
     if hasattr(module, "KafkaConsumer"):
         wrap_function_wrapper(module, "KafkaConsumer.__init__", wrap_KafkaProducerConsumer_init)
+        wrap_function_wrapper(module.KafkaConsumer, "__next__", wrap_kafkaconsumer_next)

@@ -18,14 +18,19 @@ from sklearn.tree import DecisionTreeRegressor
 from newrelic.api.application import Application
 
 from newrelic.api.transaction import Transaction
+from newrelic.api.background_task import background_task
+from testing_support.fixtures import validate_transaction_metrics
 
 
-# @validate_transaction_metrics(
-#     "test_sklearn:test_poc",
-#     [("sklearn.tree:DecisionTreeClassifier.Predict", 1)]
-# )
+@validate_transaction_metrics(
+    "test_sklearn:test_sklearn_tree",
+    scoped_metrics=[
+        ('ML/DecisionTreeClassifier.Predict', 1)
+    ],
+    background_task=True
+)
+@background_task()
 def test_sklearn_tree():
-    transaction = Transaction(Application._instance("asdf", activate=True))
     rng = np.random.RandomState(1)
     X = np.sort(5 * rng.rand(80, 1), axis=0)
     y = np.sin(X).ravel()

@@ -13,7 +13,7 @@ def _nr_wrapper_sklearn_base_decision_tree_predict(wrapped, instance, args, kwar
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    with FunctionTrace(name="NameDanil"):
+    with FunctionTrace(name="DecisionTreeClassifier.Predict", group="ML"):
         return wrapped(*args, **kwargs)
 
 

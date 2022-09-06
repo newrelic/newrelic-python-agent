@@ -986,54 +986,54 @@ def check_event_attributes(event_data, required_params=None, forgone_params=None
 #     return _validate_application_error_event_count
 
 
-def validate_synthetics_transaction_trace(required_params=None, forgone_params=None, should_exist=True):
-    required_params = required_params or {}
-    forgone_params = forgone_params or {}
+# def validate_synthetics_transaction_trace(required_params=None, forgone_params=None, should_exist=True):
+#     required_params = required_params or {}
+#     forgone_params = forgone_params or {}
 
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-    def _validate_synthetics_transaction_trace(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
+#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+#     def _validate_synthetics_transaction_trace(wrapped, instance, args, kwargs):
+#         try:
+#             result = wrapped(*args, **kwargs)
+#         except:
+#             raise
+#         else:
 
-            # Now that transaction has been recorded, generate
-            # a transaction trace
+#             # Now that transaction has been recorded, generate
+#             # a transaction trace
 
-            connections = SQLConnections()
-            trace_data = instance.transaction_trace_data(connections)
+#             connections = SQLConnections()
+#             trace_data = instance.transaction_trace_data(connections)
 
-            # Check that synthetics resource id is in TT header
+#             # Check that synthetics resource id is in TT header
 
-            header = trace_data[0]
-            header_key = "synthetics_resource_id"
+#             header = trace_data[0]
+#             header_key = "synthetics_resource_id"
 
-            if should_exist:
-                assert header_key in required_params
-                assert header[9] == required_params[header_key], "name=%r, header=%r" % (header_key, header)
-            else:
-                assert header[9] is None
+#             if should_exist:
+#                 assert header_key in required_params
+#                 assert header[9] == required_params[header_key], "name=%r, header=%r" % (header_key, header)
+#             else:
+#                 assert header[9] is None
 
-            # Check that synthetics ids are in TT custom params
+#             # Check that synthetics ids are in TT custom params
 
-            pack_data = unpack_field(trace_data[0][4])
-            tt_intrinsics = pack_data[0][4]["intrinsics"]
+#             pack_data = unpack_field(trace_data[0][4])
+#             tt_intrinsics = pack_data[0][4]["intrinsics"]
 
-            for name in required_params:
-                assert name in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
-                assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
-                    name,
-                    required_params[name],
-                    tt_intrinsics,
-                )
+#             for name in required_params:
+#                 assert name in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
+#                 assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
+#                     name,
+#                     required_params[name],
+#                     tt_intrinsics,
+#                 )
 
-            for name in forgone_params:
-                assert name not in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
+#             for name in forgone_params:
+#                 assert name not in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
 
-        return result
+#         return result
 
-    return _validate_synthetics_transaction_trace
+#     return _validate_synthetics_transaction_trace
 
 
 def validate_tt_collector_json(

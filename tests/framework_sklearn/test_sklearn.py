@@ -13,7 +13,12 @@
 # limitations under the License.
 
 import numpy as np
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import (
+    DecisionTreeClassifier,
+    DecisionTreeRegressor,
+    ExtraTreeRegressor,
+    ExtraTreeClassifier
+)
 
 from newrelic.api.application import Application
 
@@ -23,21 +28,60 @@ from testing_support.fixtures import validate_transaction_metrics
 
 
 @validate_transaction_metrics(
-    "test_sklearn:test_sklearn_tree",
-    scoped_metrics=[
-        ('ML/DecisionTreeClassifier.Predict', 1)
-    ],
+    "test_sklearn:test_sklearn_tree_DecisionTreeClassifier",
+    scoped_metrics=[('Function/sklearn.tree._classes:DecisionTreeClassifier.predict', 1)],
     background_task=True
 )
 @background_task()
-def test_sklearn_tree():
-    rng = np.random.RandomState(1)
-    X = np.sort(5 * rng.rand(80, 1), axis=0)
-    y = np.sin(X).ravel()
-    y[::5] += 3 * (0.5 - rng.rand(16))
+def test_sklearn_tree_DecisionTreeClassifier():
+    X = [[0, 0], [1, 1]]
+    Y = [0, 1]
+    clf = DecisionTreeClassifier()
+    clf = clf.fit(X, Y)
 
-    regr = DecisionTreeRegressor(max_depth=2)
-    regr.fit(X, y)
+    clf.predict([[2., 2.]])
 
-    X_test = np.arange(0.0, 5.0, 0.01)[:, np.newaxis]
-    regr.predict(X_test)
+
+@validate_transaction_metrics(
+    "test_sklearn:test_sklearn_tree_DecisionTreeRegressor",
+    scoped_metrics=[('Function/sklearn.tree._classes:DecisionTreeRegressor.predict', 1)],
+    background_task=True
+)
+@background_task()
+def test_sklearn_tree_DecisionTreeRegressor():
+    X = [[0, 0], [1, 1]]
+    Y = [0, 1]
+    clf = DecisionTreeRegressor()
+    clf = clf.fit(X, Y)
+
+    clf.predict([[2., 2.]])
+
+
+@validate_transaction_metrics(
+    "test_sklearn:test_sklearn_tree_ExtraTreeRegressor",
+    scoped_metrics=[('Function/sklearn.tree._classes:ExtraTreeRegressor.predict', 2)],
+    background_task=True
+)
+@background_task()
+def test_sklearn_tree_ExtraTreeRegressor():
+    X = [[0, 0], [1, 1]]
+    Y = [0, 1]
+    clf = ExtraTreeRegressor()
+    clf = clf.fit(X, Y)
+
+    clf.predict([[2., 2.]])
+
+
+@validate_transaction_metrics(
+    "test_sklearn:test_sklearn_tree_ExtraTreeClassifier",
+    scoped_metrics=[('Function/sklearn.tree._classes:ExtraTreeClassifier.predict', 2)],
+    background_task=True
+)
+@background_task()
+def test_sklearn_tree_ExtraTreeClassifier():
+    X = [[0, 0], [1, 1]]
+    Y = [0, 1]
+    clf = ExtraTreeClassifier()
+    clf = clf.fit(X, Y)
+
+    clf.predict([[2., 2.]])

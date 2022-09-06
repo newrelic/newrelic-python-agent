@@ -65,8 +65,9 @@ from newrelic.core.attribute_filter import (
 )
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
 from newrelic.core.database_utils import SQLConnections
-#from newrelic.core.internal_metrics import InternalTraceContext
-#from newrelic.core.stats_engine import CustomMetrics
+
+# from newrelic.core.internal_metrics import InternalTraceContext
+# from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import RetryDataForRequest
 from newrelic.packages import six
 
@@ -889,56 +890,56 @@ def check_event_attributes(event_data, required_params=None, forgone_params=None
             assert intrinsics[param] == value, ((param, value), intrinsics)
 
 
-def validate_non_transaction_error_event(required_intrinsics=None, num_errors=1, required_user=None, forgone_user=None):
-    """Validate error event data for a single error occurring outside of a
-    transaction.
-    """
-    required_intrinsics = required_intrinsics or {}
-    required_user = required_user or {}
-    forgone_user = forgone_user or []
+# def validate_non_transaction_error_event(required_intrinsics=None, num_errors=1, required_user=None, forgone_user=None):
+#     """Validate error event data for a single error occurring outside of a
+#     transaction.
+#     """
+#     required_intrinsics = required_intrinsics or {}
+#     required_user = required_user or {}
+#     forgone_user = forgone_user or []
 
-    @function_wrapper
-    def _validate_non_transaction_error_event(wrapped, instace, args, kwargs):
+#     @function_wrapper
+#     def _validate_non_transaction_error_event(wrapped, instace, args, kwargs):
 
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
+#         try:
+#             result = wrapped(*args, **kwargs)
+#         except:
+#             raise
+#         else:
 
-            stats = core_application_stats_engine(None)
+#             stats = core_application_stats_engine(None)
 
-            assert stats.error_events.num_seen == num_errors
-            for event in stats.error_events:
+#             assert stats.error_events.num_seen == num_errors
+#             for event in stats.error_events:
 
-                assert len(event) == 3  # [intrinsic, user, agent attributes]
+#                 assert len(event) == 3  # [intrinsic, user, agent attributes]
 
-                intrinsics = event[0]
+#                 intrinsics = event[0]
 
-                # The following attributes are all required, and also the only
-                # intrinsic attributes that can be included in an error event
-                # recorded outside of a transaction
+#                 # The following attributes are all required, and also the only
+#                 # intrinsic attributes that can be included in an error event
+#                 # recorded outside of a transaction
 
-                assert intrinsics["type"] == "TransactionError"
-                assert intrinsics["transactionName"] is None
-                assert intrinsics["error.class"] == required_intrinsics["error.class"]
-                assert intrinsics["error.message"].startswith(required_intrinsics["error.message"])
-                assert intrinsics["error.expected"] == required_intrinsics["error.expected"]
-                now = time.time()
-                assert isinstance(intrinsics["timestamp"], int)
-                assert intrinsics["timestamp"] <= 1000.0 * now
+#                 assert intrinsics["type"] == "TransactionError"
+#                 assert intrinsics["transactionName"] is None
+#                 assert intrinsics["error.class"] == required_intrinsics["error.class"]
+#                 assert intrinsics["error.message"].startswith(required_intrinsics["error.message"])
+#                 assert intrinsics["error.expected"] == required_intrinsics["error.expected"]
+#                 now = time.time()
+#                 assert isinstance(intrinsics["timestamp"], int)
+#                 assert intrinsics["timestamp"] <= 1000.0 * now
 
-                user_params = event[1]
-                for name, value in required_user.items():
-                    assert name in user_params, "name=%r, params=%r" % (name, user_params)
-                    assert user_params[name] == value, "name=%r, value=%r, params=%r" % (name, value, user_params)
+#                 user_params = event[1]
+#                 for name, value in required_user.items():
+#                     assert name in user_params, "name=%r, params=%r" % (name, user_params)
+#                     assert user_params[name] == value, "name=%r, value=%r, params=%r" % (name, value, user_params)
 
-                for param in forgone_user:
-                    assert param not in user_params
+#                 for param in forgone_user:
+#                     assert param not in user_params
 
-        return result
+#         return result
 
-    return _validate_non_transaction_error_event
+#     return _validate_non_transaction_error_event
 
 
 def validate_application_error_trace_count(num_errors):
@@ -2434,25 +2435,25 @@ def override_ignore_status_codes(status_codes):
     return _override_ignore_status_codes
 
 
-def code_coverage_fixture(source=['newrelic']):
-    @pytest.fixture(scope='session')
+def code_coverage_fixture(source=["newrelic"]):
+    @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:
             return
 
-        if os.environ.get('GITHUB_ACTIONS') is not None:
+        if os.environ.get("GITHUB_ACTIONS") is not None:
             return
 
         from coverage import coverage
 
-        env_directory = os.environ.get('TOX_ENVDIR', None)
+        env_directory = os.environ.get("TOX_ENVDIR", None)
 
         if env_directory is not None:
-            coverage_directory = os.path.join(env_directory, 'htmlcov')
-            xml_report = os.path.join(env_directory, 'coverage.xml')
+            coverage_directory = os.path.join(env_directory, "htmlcov")
+            xml_report = os.path.join(env_directory, "coverage.xml")
         else:
-            coverage_directory = 'htmlcov'
-            xml_report = 'coverage.xml'
+            coverage_directory = "htmlcov"
+            xml_report = "coverage.xml"
 
         def finalize():
             cov.stop()
@@ -2469,18 +2470,19 @@ def code_coverage_fixture(source=['newrelic']):
 
 def reset_core_stats_engine():
     """Reset the StatsEngine and custom StatsEngine of the core application."""
+
     @function_wrapper
     def _reset_core_stats_engine(wrapped, instance, args, kwargs):
         api_application = application_instance()
         api_name = api_application.name
         core_application = api_application._agent.application(api_name)
-        
+
         stats = core_application._stats_engine
         stats.reset_stats(stats.settings)
-        
+
         custom_stats = core_application._stats_custom_engine
         custom_stats.reset_stats(custom_stats.settings)
-        
+
         return wrapped(*args, **kwargs)
 
     return _reset_core_stats_engine

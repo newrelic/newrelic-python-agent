@@ -85,3 +85,7 @@ def test_sklearn_tree_ExtraTreeClassifier():
     clf = clf.fit(X, Y)
 
     clf.predict([[2., 2.]])
+
+## sklearn\.([^\.]*)\.([^\.]*)\.([^\.]*)
+## if module.__name__ == 'sklearn.$1':
+## if hasattr(module.$2, "$3"): wrap_function_trace(module, "$2.$3")

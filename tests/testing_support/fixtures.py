@@ -942,26 +942,26 @@ def check_event_attributes(event_data, required_params=None, forgone_params=None
 #     return _validate_non_transaction_error_event
 
 
-def validate_application_error_trace_count(num_errors):
-    """Validate error event data for a single error occurring outside of a
-    transaction.
-    """
+# def validate_application_error_trace_count(num_errors):
+#     """Validate error event data for a single error occurring outside of a
+#     transaction.
+#     """
 
-    @function_wrapper
-    def _validate_application_error_trace_count(wrapped, instace, args, kwargs):
+#     @function_wrapper
+#     def _validate_application_error_trace_count(wrapped, instace, args, kwargs):
 
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
+#         try:
+#             result = wrapped(*args, **kwargs)
+#         except:
+#             raise
+#         else:
 
-            stats = core_application_stats_engine(None)
-            assert len(stats.error_data()) == num_errors
+#             stats = core_application_stats_engine(None)
+#             assert len(stats.error_data()) == num_errors
 
-        return result
+#         return result
 
-    return _validate_application_error_trace_count
+#     return _validate_application_error_trace_count
 
 
 def validate_application_error_event_count(num_errors):

@@ -154,7 +154,6 @@ def test_distributed_tracing_headers(topic, producer, consumer):
     def _test():
         # Start the transaction but don't exit it.
         record = next(consumer_iter)
-        breakpoint()
         pass
 
     _produce()

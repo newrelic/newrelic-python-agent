@@ -70,7 +70,7 @@ def consumer(topic, data_source):
         bootstrap_servers=BROKER,
         value_deserializer=lambda v: json.loads(v.decode("utf-8")),
         auto_offset_reset="earliest",
-        consumer_timeout_ms=5000,
+        consumer_timeout_ms=500,
         heartbeat_interval_ms=1000,
         group_id="test",
     )
@@ -96,7 +96,7 @@ def data_source():
 
 @transient_function_wrapper(kafka.producer.kafka, "KafkaProducer.send.__wrapped__")
 # Place transient wrapper underneath instrumentation
-def cache_kafka_headers(wrapped, instance, args, kwargs):
+def cache_kafka_producer_headers(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if transaction is None:
@@ -107,3 +107,18 @@ def cache_kafka_headers(wrapped, instance, args, kwargs):
     headers = dict(headers)
     transaction._test_request_headers = headers
     return ret
+
+
+@transient_function_wrapper(kafka.consumer.group, "KafkaConsumer.__next__")
+# Place transient wrapper underneath instrumentation
+def cache_kafka_consumer_headers(wrapped, instance, args, kwargs):
+    record = wrapped(*args, **kwargs)
+    transaction = current_transaction()
+
+    if transaction is None:
+        return record
+
+    headers = record.headers
+    headers = dict(headers)
+    transaction._test_request_headers = headers
+    return record

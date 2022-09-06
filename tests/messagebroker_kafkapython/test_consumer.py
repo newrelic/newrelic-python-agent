@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import kafka
 import kafka.errors as Errors
 import pytest
+from conftest import BROKER, cache_kafka_consumer_headers
 from testing_support.fixtures import (
     validate_attributes,
     validate_error_event_attributes_outside_transaction,
     validate_transaction_errors,
     validate_transaction_metrics,
+)
+from testing_support.validators.validate_messagebroker_headers import (
+    validate_messagebroker_headers,
 )
 
 from newrelic.api.background_task import background_task
@@ -26,7 +31,7 @@ from newrelic.api.transaction import end_of_transaction
 from newrelic.packages import six
 
 
-def test_custom_metrics_are_recorded(get_consumer_records, topic):
+def test_custom_metrics(get_consumer_records, topic):
     @validate_transaction_metrics(
         "Named/%s" % topic,
         group="Message/Kafka/Topic",
@@ -42,11 +47,9 @@ def test_custom_metrics_are_recorded(get_consumer_records, topic):
     _test()
 
 
-def test_custom_metrics_are_recorded_on_already_active_transaction(get_consumer_records, topic):
+def test_custom_metrics_on_existing_transaction(get_consumer_records, topic):
     transaction_name = (
-        "test_kafka_consumer:test_custom_metrics_are_recorded_on_already_active_transaction.<locals>._test"
-        if six.PY3
-        else "test_kafka_consumer:_test"
+        "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"
     )
 
     @validate_transaction_metrics(
@@ -64,11 +67,9 @@ def test_custom_metrics_are_recorded_on_already_active_transaction(get_consumer_
     _test()
 
 
-def test_custom_metrics_are_not_recorded_on_inactive_transaction(get_consumer_records, topic):
+def test_custom_metrics_inactive_transaction(get_consumer_records, topic):
     transaction_name = (
-        "test_kafka_consumer:test_custom_metrics_are_not_recorded_on_inactive_transaction.<locals>._test"
-        if six.PY3
-        else "test_kafka_consumer:_test"
+        "test_consumer:test_custom_metrics_inactive_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"
     )
 
     @validate_transaction_metrics(
@@ -87,7 +88,7 @@ def test_custom_metrics_are_not_recorded_on_inactive_transaction(get_consumer_re
     _test()
 
 
-def test_agent_attributes_are_recorded(get_consumer_records):
+def test_agent_attributes(get_consumer_records):
     @validate_attributes("agent", ["kafka.consume.client_id", "kafka.consume.byteCount"])
     def _test():
         get_consumer_records()
@@ -95,7 +96,7 @@ def test_agent_attributes_are_recorded(get_consumer_records):
     _test()
 
 
-def test_agent_records_error_if_raised(get_consumer_records, consumer_next_raises):
+def test_consumer_errors(get_consumer_records, consumer_next_raises):
     @validate_error_event_attributes_outside_transaction(
         exact_attrs={"intrinsic": {"error.class": "kafka.errors:KafkaError"}}
     )
@@ -106,13 +107,63 @@ def test_agent_records_error_if_raised(get_consumer_records, consumer_next_raise
     _test()
 
 
-def test_agent_does_not_record_error_if_not_raised(get_consumer_records):
+def test_consumer_deserialization_errors(topic, consumer):
+    producer = kafka.KafkaProducer(
+        bootstrap_servers=BROKER, api_version=(2, 0, 2), value_serializer=lambda v: str(v).encode("utf-8")
+    )  # Producer that allows us to upload invalid JSON.
+
+    @validate_error_event_attributes_outside_transaction(exact_attrs={"intrinsic": {"error.class": "ValueError"}})
+    def _test():
+        with pytest.raises(ValueError):
+            producer.send(topic, value="%")  # Invalid JSON
+            producer.flush()
+            for _ in consumer:
+                pass
+
+    _test()
+
+
+def test_consumer_handled_errors_not_recorded(get_consumer_records):
     # It's important to check that we do not notice the StopIteration error.
     @validate_transaction_errors([])
     def _test():
         get_consumer_records()
 
     _test()
+
+
+@validate_transaction_metrics(
+    "test_consumer:test_distributed_tracing_headers.<locals>._test" if six.PY3 else "test_consumer:_test",
+    rollup_metrics=[
+        ("Supportability/DistributedTrace/AcceptPayload/Success", None),
+        ("Supportability/TraceContext/Accept/Success", 1),
+    ],
+    background_task=True,
+)
+def test_distributed_tracing_headers(topic, producer, consumer):
+    # Send the messages inside a transaction, making sure to close it.
+    @background_task()
+    def _produce():
+        producer.send(topic, value={"foo": "bar"})
+        producer.flush()
+
+    consumer_iter = iter(consumer)
+
+    @validate_messagebroker_headers
+    @cache_kafka_consumer_headers
+    def _test():
+        # Start the transaction but don't exit it.
+        record = next(consumer_iter)
+        breakpoint()
+        pass
+
+    _produce()
+
+    _test()
+
+    # Exit the transaction.
+    with pytest.raises(StopIteration):
+        next(consumer_iter)
 
 
 @pytest.fixture()

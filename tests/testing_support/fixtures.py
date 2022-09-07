@@ -444,7 +444,6 @@ def validate_transaction_metrics(
         def _validate(metrics, name, scope, count):
             key = (name, scope)
             metric = metrics.get(key)
-            import pdb;pdb.set_trace()
 
             def _metrics_table():
                 out = [""]

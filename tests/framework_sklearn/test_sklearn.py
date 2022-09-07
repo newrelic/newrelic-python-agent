@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
 from sklearn.tree import (
     DecisionTreeClassifier,
     DecisionTreeRegressor,
     ExtraTreeRegressor,
     ExtraTreeClassifier
 )
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 
-from newrelic.api.application import Application
-
-from newrelic.api.transaction import Transaction
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import validate_transaction_metrics
 
@@ -87,7 +86,7 @@ def test_sklearn_tree_ExtraTreeClassifier():
     clf.predict([[2., 2.]])
 
 @validate_transaction_metrics(
-    "test_sklearn:test_sklean_pipeline",
+    "test_sklearn:test_sklearn_pipeline",
     scoped_metrics=[
         ('Function/sklearn.pipeline:Pipeline.predict', 1),
         ('Function/sklearn.svm._classes:SVC.predict', 1)
@@ -95,21 +94,12 @@ def test_sklearn_tree_ExtraTreeClassifier():
     background_task=True
 )
 @background_task()
-def test_sklean_pipeline():
-    from sklearn.svm import SVC
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.datasets import make_classification
-    from sklearn.model_selection import train_test_split
-    from sklearn.pipeline import Pipeline
-    X, y = make_classification(random_state=0)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+def test_sklearn_pipeline():
+    X = [[0, 0], [1, 1]]
+    Y = [0, 1]
     pipe = Pipeline([('scaler', StandardScaler()), ('svc', SVC())])
     # The pipeline can be used as any other estimator
     # and avoids leaking the test set into the train set
-    pipe.fit(X_train, y_train)
+    pipe.fit(X, Y)
     Pipeline(steps=[('scaler', StandardScaler()), ('svc', SVC())])
-    pipe.predict(X_test)
-
-## sklearn\.([^\.]*)\.([^\.]*)\.([^\.]*)
-## if module.__name__ == 'sklearn.$1':
-## if hasattr(module.$2, "$3"): wrap_function_trace(module, "$2.$3")
+    pipe.predict([[2., 2.]])

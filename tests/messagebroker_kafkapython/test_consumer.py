@@ -29,6 +29,7 @@ from testing_support.validators.validate_messagebroker_headers import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 from newrelic.packages import six
+from testing_support.validators.validate_distributed_trace_accepted import validate_distributed_trace_accepted
 
 
 def test_custom_metrics(get_consumer_records, topic):
@@ -132,14 +133,6 @@ def test_consumer_handled_errors_not_recorded(get_consumer_records):
     _test()
 
 
-@validate_transaction_metrics(
-    "test_consumer:test_distributed_tracing_headers.<locals>._test" if six.PY3 else "test_consumer:_test",
-    rollup_metrics=[
-        ("Supportability/DistributedTrace/AcceptPayload/Success", None),
-        ("Supportability/TraceContext/Accept/Success", 1),
-    ],
-    background_task=True,
-)
 def test_distributed_tracing_headers(topic, producer, consumer):
     # Send the messages inside a transaction, making sure to close it.
     @background_task()
@@ -149,20 +142,30 @@ def test_distributed_tracing_headers(topic, producer, consumer):
 
     consumer_iter = iter(consumer)
 
-    @validate_messagebroker_headers
-    @cache_kafka_consumer_headers
-    def _test():
-        # Start the transaction but don't exit it.
-        record = next(consumer_iter)
-        pass
+    @validate_transaction_metrics(
+        "Named/%s" % topic,
+        group="Message/Kafka/Topic",
+        rollup_metrics=[
+            ("Supportability/DistributedTrace/AcceptPayload/Success", None),
+            ("Supportability/TraceContext/Accept/Success", 1),
+        ],
+        background_task=True,
+    )
+    def _consume():
+        @validate_distributed_trace_accepted(transport_type="Kafka")
+        @cache_kafka_consumer_headers
+        def _test():
+            # Start the transaction but don't exit it.
+            next(consumer_iter)
+
+        _test()
+
+        # Exit the transaction.
+        with pytest.raises(StopIteration):
+            next(consumer_iter)
 
     _produce()
-
-    _test()
-
-    # Exit the transaction.
-    with pytest.raises(StopIteration):
-        next(consumer_iter)
+    _consume()
 
 
 @pytest.fixture()

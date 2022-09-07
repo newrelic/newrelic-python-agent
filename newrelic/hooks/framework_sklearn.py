@@ -15,7 +15,7 @@ from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapp
 #         return wrapped(*args, **kwargs)
 
 
-def instrument_sklearn_tree(module):
+def instrument_sklearn(module):
 #     if module.__name__ == 'sklearn.tree':
 #         if hasattr(module.DecisionTreeClassifier, "predict"):
 #             wrap_function_trace(module, "DecisionTreeClassifier.predict")
@@ -253,10 +253,10 @@ def instrument_sklearn_tree(module):
                                                                                            "PrecisionRecallDisplay.from_predictions")
         if hasattr(module.RocCurveDisplay, "from_predictions"): wrap_function_trace(module,
                                                                                     "RocCurveDisplay.from_predictions")
-        if hasattr(module.BayesianGaussianMixture, "fit_predict"): wrap_function_trace(module,
-                                                                                       "BayesianGaussianMixture.fit_predict")
 
     if module.__name__ == 'sklearn.mixture':
+        if hasattr(module.BayesianGaussianMixture, "fit_predict"): wrap_function_trace(module,
+                                                                                       "BayesianGaussianMixture.fit_predict")
         if hasattr(module.BayesianGaussianMixture, "predict"): wrap_function_trace(module,
                                                                                    "BayesianGaussianMixture.predict")
         if hasattr(module.BayesianGaussianMixture, "predict_proba"): wrap_function_trace(module,
@@ -273,17 +273,19 @@ def instrument_sklearn_tree(module):
         if hasattr(module.GridSearchCV, "predict_log_proba"): wrap_function_trace(module,
                                                                                   "GridSearchCV.predict_log_proba")
         if hasattr(module.GridSearchCV, "predict_proba"): wrap_function_trace(module, "GridSearchCV.predict_proba")
-        if hasattr(module.HalvingGridSearchCV, "predict"): wrap_function_trace(module, "HalvingGridSearchCV.predict")
-        if hasattr(module.HalvingGridSearchCV, "predict_log_proba"): wrap_function_trace(module,
-                                                                                         "HalvingGridSearchCV.predict_log_proba")
-        if hasattr(module.HalvingGridSearchCV, "predict_proba"): wrap_function_trace(module,
-                                                                                     "HalvingGridSearchCV.predict_proba")
-        if hasattr(module.HalvingRandomSearchCV, "predict"): wrap_function_trace(module,
-                                                                                 "HalvingRandomSearchCV.predict")
-        if hasattr(module.HalvingRandomSearchCV, "predict_log_proba"): wrap_function_trace(module,
-                                                                                           "HalvingRandomSearchCV.predict_log_proba")
-        if hasattr(module.HalvingRandomSearchCV, "predict_proba"): wrap_function_trace(module,
-                                                                                       "HalvingRandomSearchCV.predict_proba")
+
+        ### TODO! E           ImportError: HalvingGridSearchCV is experimental and the API might change without any deprecation cycle. To use it, you need to explicitly import enable_halving_search_cv:
+        # if hasattr(module.HalvingGridSearchCV, "predict"): wrap_function_trace(module, "HalvingGridSearchCV.predict")
+        # if hasattr(module.HalvingGridSearchCV, "predict_log_proba"): wrap_function_trace(module,
+        #                                                                                  "HalvingGridSearchCV.predict_log_proba")
+        # if hasattr(module.HalvingGridSearchCV, "predict_proba"): wrap_function_trace(module,
+        #                                                                              "HalvingGridSearchCV.predict_proba")
+        # if hasattr(module.HalvingRandomSearchCV, "predict"): wrap_function_trace(module,
+        #                                                                          "HalvingRandomSearchCV.predict")
+        # if hasattr(module.HalvingRandomSearchCV, "predict_log_proba"): wrap_function_trace(module,
+        #                                                                                    "HalvingRandomSearchCV.predict_log_proba")
+        # if hasattr(module.HalvingRandomSearchCV, "predict_proba"): wrap_function_trace(module,
+        #                                                                                "HalvingRandomSearchCV.predict_proba")
         if hasattr(module.RandomizedSearchCV, "predict"): wrap_function_trace(module, "RandomizedSearchCV.predict")
         if hasattr(module.RandomizedSearchCV, "predict_log_proba"): wrap_function_trace(module,
                                                                                         "RandomizedSearchCV.predict_log_proba")

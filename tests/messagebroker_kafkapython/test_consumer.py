@@ -22,9 +22,6 @@ from testing_support.fixtures import (
     validate_transaction_errors,
     validate_transaction_metrics,
 )
-from testing_support.validators.validate_messagebroker_headers import (
-    validate_messagebroker_headers,
-)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
@@ -185,4 +182,4 @@ def consumer_next_raises(consumer):
         raise Errors.KafkaError()
 
     consumer.poll = _poll
-    consumer
+    return consumer

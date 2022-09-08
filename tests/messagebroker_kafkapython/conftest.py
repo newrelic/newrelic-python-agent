@@ -122,3 +122,14 @@ def cache_kafka_consumer_headers(wrapped, instance, args, kwargs):
     headers = dict(headers)
     transaction._test_request_headers = headers
     return record
+
+
+@pytest.fixture(autouse=True)
+def assert_no_active_transaction():
+    # Run before test
+    assert not current_transaction(active_only=False), "Transaction exists before test run."
+    
+    yield  # Run test
+    
+    # Run after test
+    assert not current_transaction(active_only=False), "Transaction was not properly exited."

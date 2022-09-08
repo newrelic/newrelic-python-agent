@@ -3,7 +3,7 @@ from newrelic.api.function_trace import wrap_function_trace
 
 def instrument_sklearn(module):
     if module.__name__ == 'sklearn.base':
-        if hasattr(module.ClusterMixin, "fit_predict"): 
+        if hasattr(module.ClusterMixin, "fit_predict"):
             wrap_function_trace(module, "ClusterMixin.fit_predict")
 
     if module.__name__ == 'sklearn.calibration':
@@ -315,7 +315,7 @@ def instrument_sklearn(module):
         if hasattr(module.GaussianMixture, "predict_proba"):
             wrap_function_trace(module, "GaussianMixture.predict_proba")
 
-        ## TODO! sklearn.model_selection.cross_val_predict
+    # TODO! sklearn.model_selection.cross_val_predict
 
     if module.__name__ == 'sklearn.model_selection':
         if hasattr(module.GridSearchCV, "predict"):
@@ -325,7 +325,9 @@ def instrument_sklearn(module):
         if hasattr(module.GridSearchCV, "predict_proba"):
             wrap_function_trace(module, "GridSearchCV.predict_proba")
 
-        ### TODO! "E           ImportError: HalvingGridSearchCV is experimental and the API might change without any deprecation cycle. To use it, you need to explicitly import enable_halving_search_cv:"
+        # TODO! "ImportError: HalvingGridSearchCV is experimental and the API might change without any
+        # deprecation cycle. To use it, you need to explicitly import enable_halving_search_cv:"
+
         # if hasattr(module.HalvingGridSearchCV, "predict"):
         #     wrap_function_trace(module, "HalvingGridSearchCV.predict")
         # if hasattr(module.HalvingGridSearchCV, "predict_log_proba"):

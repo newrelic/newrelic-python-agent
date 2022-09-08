@@ -85,6 +85,7 @@ def test_sklearn_tree_ExtraTreeClassifier():
 
     clf.predict([[2., 2.]])
 
+
 @validate_transaction_metrics(
     "test_sklearn:test_sklearn_pipeline",
     scoped_metrics=[

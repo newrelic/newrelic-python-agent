@@ -22,11 +22,13 @@ from testing_support.fixtures import (
     validate_transaction_errors,
     validate_transaction_metrics,
 )
+from testing_support.validators.validate_distributed_trace_accepted import (
+    validate_distributed_trace_accepted,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 from newrelic.packages import six
-from testing_support.validators.validate_distributed_trace_accepted import validate_distributed_trace_accepted
 
 
 def test_custom_metrics(get_consumer_records, topic):

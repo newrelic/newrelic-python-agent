@@ -128,8 +128,8 @@ def cache_kafka_consumer_headers(wrapped, instance, args, kwargs):
 def assert_no_active_transaction():
     # Run before test
     assert not current_transaction(active_only=False), "Transaction exists before test run."
-    
+
     yield  # Run test
-    
+
     # Run after test
     assert not current_transaction(active_only=False), "Transaction was not properly exited."

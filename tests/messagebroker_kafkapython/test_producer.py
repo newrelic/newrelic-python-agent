@@ -23,9 +23,8 @@ from testing_support.validators.validate_messagebroker_headers import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
-
 from newrelic.common.object_names import callable_name
+from newrelic.packages import six
 
 
 def test_trace_metrics(topic, send_producer_messages):
@@ -81,7 +80,7 @@ def test_producer_errors(topic, producer, input, error, message):
         with pytest.raises(error, match=message):
             producer.send(topic, input)
             producer.flush()
-    
+
     test()
 
 

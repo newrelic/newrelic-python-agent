@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import (code_coverage_fixture, collector_agent_registration_fixture)
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    code_coverage_fixture,
+    collector_agent_registration_fixture,
+    collector_available_fixture
+)
 
 _coverage_source = [
     'newrelic.hooks.framework_sklearn',

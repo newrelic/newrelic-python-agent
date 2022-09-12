@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
+import time
 import math
 import sys
 import threading
 
 from kafka.metrics.metrics_reporter import AbstractMetricsReporter
+from kafka.serializer import Serializer
 
 import newrelic.core.agent
 from newrelic.api.application import application_instance
@@ -24,7 +26,7 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
 from newrelic.packages import six
 from newrelic.samplers.decorators import data_source_factory
 
@@ -50,6 +52,22 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
 
     topic, value, key, headers, partition, timestamp_ms = _bind_send(*args, **kwargs)
     headers = list(headers) if headers else []
+
+    # Serialization Metrics
+    group = "MessageBroker/Kafka/Topic"
+    name = "Named/%s" % topic
+
+    if hasattr(instance, "_nr_key_serialization_time"):
+        key_serialization_time = instance._nr_key_serialization_time
+        if key_serialization_time:
+            transaction.record_custom_metric("%s/%s/Serialization/Key" % (group, name), key_serialization_time)
+        instance._nr_key_serialization_time = None
+
+    if hasattr(instance, "_nr_value_serialization_time"):
+        value_serialization_time = instance._nr_value_serialization_time
+        if value_serialization_time:
+            transaction.record_custom_metric("%s/%s/Serialization/Value" % (group, name), value_serialization_time)
+        instance._nr_value_serialization_time = None
 
     with MessageTrace(
         library="Kafka",
@@ -184,6 +202,19 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
             transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
 
+            # Deserialization Metrics
+            if hasattr(instance, "_nr_key_deserialization_time"):
+                key_deserialization_time = instance._nr_key_deserialization_time
+                if key_deserialization_time:
+                    transaction.record_custom_metric("%s/%s/Deserialization/Key" % (group, name), key_deserialization_time)
+                instance._nr_key_deserialization_time = None
+
+            if hasattr(instance, "_nr_value_deserialization_time"):
+                value_deserialization_time = instance._nr_value_deserialization_time
+                if value_deserialization_time:
+                    transaction.record_custom_metric("%s/%s/Deserialization/Value" % (group, name), value_deserialization_time)
+                instance._nr_value_deserialization_time = None
+
     return record
 
 
@@ -301,27 +332,66 @@ class NewRelicMetricsReporter(AbstractMetricsReporter):
         return
 
 
-def wrap_KafkaProducerConsumer_init(wrapped, instance, args, kwargs):
-    try:
-        if "metric_reporters" in kwargs:
-            metric_reporters = list(kwargs.get("metric_reporters", []))
-            metric_reporters.append(NewRelicMetricsReporter)
-            kwargs["metric_reporters"] = [metric_reporters]
-        else:
-            kwargs["metric_reporters"] = [NewRelicMetricsReporter]
-    except Exception:
-        pass
+def wrap_serializer(serializer, client, key):
+    @function_wrapper
+    def _serializer_wrapper(wrapped, instance, args, kwargs):
+        start_time = time.time()
+        result = wrapped(*args, **kwargs)
+        
+        try:
+            setattr(serializer, key, (time.time() - start_time))
+        except Exception:
+            # Don't raise errors if object is immutable
+            pass
+
+        return result
+
+    # Apply wrapper to serializer
+    if serializer is None:
+        # Do nothing
+        return serializer
+    elif isinstance(serializer, Serializer):
+        # Wrap serialize method of Serializer in wrapper
+        serializer.serialize = _serializer_wrapper(serializer.serialize)
+        return serializer
+    else:
+        # Wrap callable in wrapper
+        return _serializer_wrapper(serializer)
+
+
+def wrap_KafkaProducer_init(wrapped, instance, args, kwargs):
+    get_config_key = lambda key: kwargs.get(key, instance.DEFAULT_CONFIG[key])
+    
+    metric_reporters = list(get_config_key("metric_reporters"))
+    metric_reporters.append(NewRelicMetricsReporter)
+    kwargs["metric_reporters"] = metric_reporters
+
+    kwargs["key_serializer"] = wrap_serializer(get_config_key("key_serializer"), instance, "_nr_key_serialization_time")
+    kwargs["value_serializer"] = wrap_serializer(get_config_key("value_serializer"), instance, "_nr_value_serialization_time")
+
+    return wrapped(*args, **kwargs)
+
+
+def wrap_KafkaConsumer_init(wrapped, instance, args, kwargs):
+    get_config_key = lambda key: kwargs.get(key, instance.DEFAULT_CONFIG[key])
+    
+    metric_reporters = list(get_config_key("metric_reporters"))
+    metric_reporters.append(NewRelicMetricsReporter)
+    kwargs["metric_reporters"] = metric_reporters
+
+    kwargs["key_deserializer"] = wrap_serializer(get_config_key("key_deserializer"), instance, "_nr_key_deserialization_time")
+    kwargs["value_deserializer"] = wrap_serializer(get_config_key("value_deserializer"), instance, "_nr_value_deserialization_time")
 
     return wrapped(*args, **kwargs)
 
 
 def instrument_kafka_producer(module):
     if hasattr(module, "KafkaProducer"):
-        wrap_function_wrapper(module, "KafkaProducer.__init__", wrap_KafkaProducerConsumer_init)
+        wrap_function_wrapper(module, "KafkaProducer.__init__", wrap_KafkaProducer_init)
         wrap_function_wrapper(module, "KafkaProducer.send", wrap_KafkaProducer_send)
 
 
 def instrument_kafka_consumer_group(module):
     if hasattr(module, "KafkaConsumer"):
-        wrap_function_wrapper(module, "KafkaConsumer.__init__", wrap_KafkaProducerConsumer_init)
+        wrap_function_wrapper(module, "KafkaConsumer.__init__", wrap_KafkaConsumer_init)
         wrap_function_wrapper(module.KafkaConsumer, "__next__", wrap_kafkaconsumer_next)

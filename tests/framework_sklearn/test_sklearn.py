@@ -28,7 +28,7 @@ from testing_support.fixtures import validate_transaction_metrics
 
 @validate_transaction_metrics(
     "test_sklearn:test_sklearn_tree_DecisionTreeClassifier",
-    scoped_metrics=[('Function/sklearn.tree._classes:DecisionTreeClassifier.predict', 1)],
+    scoped_metrics=[('Function/sklearn.tree.DecisionTreeClassifier.predict', 1)],
     background_task=True
 )
 @background_task()
@@ -43,7 +43,7 @@ def test_sklearn_tree_DecisionTreeClassifier():
 
 @validate_transaction_metrics(
     "test_sklearn:test_sklearn_tree_DecisionTreeRegressor",
-    scoped_metrics=[('Function/sklearn.tree._classes:DecisionTreeRegressor.predict', 1)],
+    scoped_metrics=[('Function/sklearn.tree.DecisionTreeRegressor.predict', 1)],
     background_task=True
 )
 @background_task()
@@ -58,7 +58,7 @@ def test_sklearn_tree_DecisionTreeRegressor():
 
 @validate_transaction_metrics(
     "test_sklearn:test_sklearn_tree_ExtraTreeRegressor",
-    scoped_metrics=[('Function/sklearn.tree._classes:ExtraTreeRegressor.predict', 2)],
+    scoped_metrics=[('Function/sklearn.tree.ExtraTreeRegressor.predict', 1)],
     background_task=True
 )
 @background_task()
@@ -73,7 +73,7 @@ def test_sklearn_tree_ExtraTreeRegressor():
 
 @validate_transaction_metrics(
     "test_sklearn:test_sklearn_tree_ExtraTreeClassifier",
-    scoped_metrics=[('Function/sklearn.tree._classes:ExtraTreeClassifier.predict', 2)],
+    scoped_metrics=[('Function/sklearn.tree.ExtraTreeClassifier.predict', 1)],
     background_task=True
 )
 @background_task()
@@ -89,8 +89,8 @@ def test_sklearn_tree_ExtraTreeClassifier():
 @validate_transaction_metrics(
     "test_sklearn:test_sklearn_pipeline",
     scoped_metrics=[
-        ('Function/sklearn.pipeline:Pipeline.predict', 1),
-        ('Function/sklearn.svm._classes:SVC.predict', 1)
+        ('Function/sklearn.pipeline.Pipeline.predict', 1),
+        ('Function/sklearn.svm.SVC.predict', 1)
     ],
     background_task=True
 )

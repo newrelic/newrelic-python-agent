@@ -14,11 +14,13 @@
 
 import aioredis
 import pytest
-
-from conftest import event_loop, loop, AIOREDIS_VERSION
-from testing_support.fixtures import validate_tt_collector_json, override_application_settings
-from testing_support.util import instance_hostname
+from conftest import AIOREDIS_VERSION, event_loop
 from testing_support.db_settings import redis_settings
+from testing_support.fixtures import override_application_settings
+from testing_support.util import instance_hostname
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 from newrelic.api.background_task import background_task
 

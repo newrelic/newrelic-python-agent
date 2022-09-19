@@ -158,7 +158,7 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
                 library=library,
                 destination_type=destination_type,
                 destination_name=destination_name,
-                headers=record.headers,
+                headers=dict(record.headers),
                 transport_type="Kafka",
                 routing_key=record.key,
                 source=wrapped,

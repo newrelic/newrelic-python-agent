@@ -1192,54 +1192,54 @@ def check_event_attributes(event_data, required_params=None, forgone_params=None
 #     return _validate_wrapper
 
 
-def validate_transaction_trace_attributes(
-    required_params=None, forgone_params=None, should_exist=True, url=None, index=-1
-):
-    required_params = required_params or {}
-    forgone_params = forgone_params or {}
+# def validate_transaction_trace_attributes(
+#     required_params=None, forgone_params=None, should_exist=True, url=None, index=-1
+# ):
+#     required_params = required_params or {}
+#     forgone_params = forgone_params or {}
 
-    trace_data = []
+#     trace_data = []
 
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-    def _validate_transaction_trace_attributes(wrapped, instance, args, kwargs):
+#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+#     def _validate_transaction_trace_attributes(wrapped, instance, args, kwargs):
 
-        result = wrapped(*args, **kwargs)
+#         result = wrapped(*args, **kwargs)
 
-        # Now that transaction has been recorded, generate
-        # a transaction trace
+#         # Now that transaction has been recorded, generate
+#         # a transaction trace
 
-        connections = SQLConnections()
-        _trace_data = instance.transaction_trace_data(connections)
-        trace_data.append(_trace_data)
+#         connections = SQLConnections()
+#         _trace_data = instance.transaction_trace_data(connections)
+#         trace_data.append(_trace_data)
 
-        return result
+#         return result
 
-    @function_wrapper
-    def wrapper(wrapped, instance, args, kwargs):
-        _new_wrapper = _validate_transaction_trace_attributes(wrapped)
-        result = _new_wrapper(*args, **kwargs)
+#     @function_wrapper
+#     def wrapper(wrapped, instance, args, kwargs):
+#         _new_wrapper = _validate_transaction_trace_attributes(wrapped)
+#         result = _new_wrapper(*args, **kwargs)
 
-        _trace_data = trace_data[index]
-        trace_data[:] = []
+#         _trace_data = trace_data[index]
+#         trace_data[:] = []
 
-        if url is not None:
-            trace_url = _trace_data[0][3]
-            assert url == trace_url
+#         if url is not None:
+#             trace_url = _trace_data[0][3]
+#             assert url == trace_url
 
-        pack_data = unpack_field(_trace_data[0][4])
-        assert len(pack_data) == 2
-        assert len(pack_data[0]) == 5
-        parameters = pack_data[0][4]
+#         pack_data = unpack_field(_trace_data[0][4])
+#         assert len(pack_data) == 2
+#         assert len(pack_data[0]) == 5
+#         parameters = pack_data[0][4]
 
-        assert "intrinsics" in parameters
-        assert "userAttributes" in parameters
-        assert "agentAttributes" in parameters
+#         assert "intrinsics" in parameters
+#         assert "userAttributes" in parameters
+#         assert "agentAttributes" in parameters
 
-        check_attributes(parameters, required_params, forgone_params)
+#         check_attributes(parameters, required_params, forgone_params)
 
-        return result
+#         return result
 
-    return wrapper
+#     return wrapper
 
 
 def validate_transaction_error_trace_attributes(required_params=None, forgone_params=None, exact_attrs=None):

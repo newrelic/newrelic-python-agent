@@ -184,4 +184,4 @@ def consumer_next_raises(consumer):
         raise Errors.KafkaError()
 
     consumer.poll = _poll
-    consumer
+    return consumer

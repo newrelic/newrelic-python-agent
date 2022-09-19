@@ -23,6 +23,7 @@ from testing_support.validators.validate_messagebroker_headers import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
 
@@ -44,14 +45,14 @@ def test_trace_metrics(topic, send_producer_messages):
     test()
 
 
-def test_distributed_trace_headers(topic, send_producer_messages):
-    txn_name = "test_producer:test_distributed_trace_headers.<locals>.test" if six.PY3 else "test_producer:test"
+def test_distributed_tracing_headers(topic, send_producer_messages):
+    txn_name = "test_producer:test_distributed_tracing_headers.<locals>.test" if six.PY3 else "test_producer:test"
 
     @validate_transaction_metrics(
         txn_name,
         rollup_metrics=[
-            ("Supportability/TraceContext/Create/Success", 1),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 1),
+            ("Supportability/TraceContext/Create/Success", 3),
+            ("Supportability/DistributedTrace/CreatePayload/Success", 3),
         ],
         background_task=True,
     )
@@ -73,14 +74,14 @@ def test_distributed_trace_headers(topic, send_producer_messages):
     ids=("None Value", "Serialization Error"),
 )
 def test_producer_errors(topic, producer, input, error, message):
-    @validate_transaction_errors([AssertionError])
+    @validate_transaction_errors([callable_name(error)])
     @background_task()
     def test():
-        producer.send(topic, input)
-        producer.flush()
+        with pytest.raises(error, match=message):
+            producer.send(topic, input)
+            producer.flush()
 
-    with pytest.raises(error, match=message):
-        test()
+    test()
 
 
 @pytest.fixture

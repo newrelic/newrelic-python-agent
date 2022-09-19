@@ -17,7 +17,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper
 
 
-def validate_distributed_trace_accepted(header='newrelic', transport_type="HTTP"):
+def validate_distributed_trace_accepted(header="newrelic", transport_type="HTTP"):
     @function_wrapper
     def _validate_distributed_trace_accepted(wrapped, instance, args, kwargs):
         result = wrapped(*args, **kwargs)
@@ -26,7 +26,7 @@ def validate_distributed_trace_accepted(header='newrelic', transport_type="HTTP"
 
         assert txn
         assert txn._distributed_trace_state
-        assert txn.parent_type == 'App'
+        assert txn.parent_type == "App"
         assert txn._trace_id.startswith(txn.parent_tx)
         assert txn.parent_span is not None
         assert txn.parent_account == txn.settings.account_id

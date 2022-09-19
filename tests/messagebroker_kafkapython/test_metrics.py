@@ -117,7 +117,8 @@ def test_data_source_metrics(data_source, topic, producer, consumer):
 
     producer.send(topic, value=1)
     producer.flush()
-    next(iter(consumer))
+    for _ in consumer:
+        pass
 
     metrics = dict(data_source())
     assert metrics

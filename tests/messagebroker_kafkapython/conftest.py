@@ -55,7 +55,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 
 @pytest.fixture(scope="function")
-def producer(data_source):
+def producer(topic, data_source):
     producer = kafka.KafkaProducer(
         bootstrap_servers=BROKER, api_version=(2, 0, 2), value_serializer=lambda v: json.dumps(v).encode("utf-8")
     )
@@ -64,23 +64,39 @@ def producer(data_source):
 
 
 @pytest.fixture(scope="function")
-def consumer(topic, data_source):
+def consumer(topic, data_source, producer):
     consumer = kafka.KafkaConsumer(
         topic,
         bootstrap_servers=BROKER,
         value_deserializer=lambda v: json.loads(v.decode("utf-8")),
         auto_offset_reset="earliest",
-        consumer_timeout_ms=5000,
+        consumer_timeout_ms=500,
         heartbeat_interval_ms=1000,
         group_id="test",
     )
+    # The first time the kafka consumer is created and polled, it returns a StopIterator
+    # exception. To by-pass this, loop over the consumer before using it.
+    # NOTE: This seems to only happen in Python2.7.
+    for record in consumer:
+        pass
     yield consumer
     consumer.close()
 
 
 @pytest.fixture(scope="function")
 def topic():
-    yield "test-topic-%s" % str(uuid.uuid4())
+    # from kafka.admin.client import KafkaAdminClient
+    # from kafka.admin.new_topic import NewTopic
+
+    topic = "test-topic-%s" % str(uuid.uuid4())
+
+    # admin = KafkaAdminClient(bootstrap_servers=BROKER)
+    # new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
+    # topics = admin.create_topics(new_topics)
+
+    yield topic
+
+    # admin.delete_topics([topic])
 
 
 @pytest.fixture(scope="session")
@@ -96,7 +112,7 @@ def data_source():
 
 @transient_function_wrapper(kafka.producer.kafka, "KafkaProducer.send.__wrapped__")
 # Place transient wrapper underneath instrumentation
-def cache_kafka_headers(wrapped, instance, args, kwargs):
+def cache_kafka_producer_headers(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if transaction is None:
@@ -107,3 +123,29 @@ def cache_kafka_headers(wrapped, instance, args, kwargs):
     headers = dict(headers)
     transaction._test_request_headers = headers
     return ret
+
+
+@transient_function_wrapper(kafka.consumer.group, "KafkaConsumer.__next__")
+# Place transient wrapper underneath instrumentation
+def cache_kafka_consumer_headers(wrapped, instance, args, kwargs):
+    record = wrapped(*args, **kwargs)
+    transaction = current_transaction()
+
+    if transaction is None:
+        return record
+
+    headers = record.headers
+    headers = dict(headers)
+    transaction._test_request_headers = headers
+    return record
+
+
+@pytest.fixture(autouse=True)
+def assert_no_active_transaction():
+    # Run before test
+    assert not current_transaction(active_only=False), "Transaction exists before test run."
+
+    yield  # Run test
+
+    # Run after test
+    assert not current_transaction(active_only=False), "Transaction was not properly exited."

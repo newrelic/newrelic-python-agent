@@ -74,6 +74,11 @@ def consumer(topic, data_source):
         heartbeat_interval_ms=1000,
         group_id="test",
     )
+    # The first time the kafka consumer is created and polled, it returns a StopIterator
+    # exception. To by-pass this, loop over the consumer before using it.
+    # NOTE: This seems to only happen in Python2.7.
+    for record in consumer:
+        pass
     yield consumer
     consumer.close()
 

@@ -93,7 +93,7 @@ def test_data_source_metrics(data_source, topic, producer, consumer):
         "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/fetch-size-avg": "present",
         "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/fetch-size-max": "present",
         "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/bytes-consumed-rate": "present",
-        "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/records-per-request-avg": 1,
+        "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/records-per-request-avg": 0.5,
         "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/records-consumed-rate": "present",
         "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/fetch-latency-avg": "present",
         "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/fetch-latency-max": "present",
@@ -111,7 +111,7 @@ def test_data_source_metrics(data_source, topic, producer, consumer):
         "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/%s/fetch-size-avg" % topic: "present",
         "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/%s/fetch-size-max" % topic: "present",
         "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/%s/bytes-consumed-rate" % topic: "present",
-        "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/%s/records-per-request-avg" % topic: 1,
+        "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/%s/records-per-request-avg" % topic: 0.5,
         "MessageBroker/Kafka/Internal/consumer-fetch-manager-metrics/%s/records-consumed-rate" % topic: "present",
     }
 

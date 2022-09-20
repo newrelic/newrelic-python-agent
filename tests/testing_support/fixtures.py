@@ -1330,43 +1330,43 @@ def check_attributes(parameters, required_params=None, forgone_params=None, exac
             assert intrinsics[param] == value, ((param, value), intrinsics)
 
 
-def validate_error_trace_collector_json():
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-    def _validate_error_trace_collector_json(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            errors = instance.error_data()
+# def validate_error_trace_collector_json():
+#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+#     def _validate_error_trace_collector_json(wrapped, instance, args, kwargs):
+#         try:
+#             result = wrapped(*args, **kwargs)
+#         except:
+#             raise
+#         else:
+#             errors = instance.error_data()
 
-            # recreate what happens right before data is sent to the collector
-            # in data_collector.py via ApplicationSession.send_errors
-            agent_run_id = 666
-            payload = (agent_run_id, errors)
-            collector_json = json_encode(payload)
+#             # recreate what happens right before data is sent to the collector
+#             # in data_collector.py via ApplicationSession.send_errors
+#             agent_run_id = 666
+#             payload = (agent_run_id, errors)
+#             collector_json = json_encode(payload)
 
-            decoded_json = json.loads(collector_json)
+#             decoded_json = json.loads(collector_json)
 
-            assert decoded_json[0] == agent_run_id
-            err = decoded_json[1][0]
-            assert len(err) == 5
-            assert isinstance(err[0], (int, float))
-            assert isinstance(err[1], six.string_types)  # path
-            assert isinstance(err[2], six.string_types)  # error message
-            assert isinstance(err[3], six.string_types)  # exception name
-            parameters = err[4]
+#             assert decoded_json[0] == agent_run_id
+#             err = decoded_json[1][0]
+#             assert len(err) == 5
+#             assert isinstance(err[0], (int, float))
+#             assert isinstance(err[1], six.string_types)  # path
+#             assert isinstance(err[2], six.string_types)  # error message
+#             assert isinstance(err[3], six.string_types)  # exception name
+#             parameters = err[4]
 
-            parameter_fields = ["userAttributes", "stack_trace", "agentAttributes", "intrinsics"]
+#             parameter_fields = ["userAttributes", "stack_trace", "agentAttributes", "intrinsics"]
 
-            for field in parameter_fields:
-                assert field in parameters
+#             for field in parameter_fields:
+#                 assert field in parameters
 
-            assert "request_uri" not in parameters
+#             assert "request_uri" not in parameters
 
-        return result
+#         return result
 
-    return _validate_error_trace_collector_json
+#     return _validate_error_trace_collector_json
 
 
 def validate_error_event_collector_json(num_errors=1):

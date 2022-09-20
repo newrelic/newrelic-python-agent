@@ -620,39 +620,39 @@ def check_attributes(parameters, required_params=None, forgone_params=None, exac
 #     return _validate_browser_attributes
 
 
-def validate_error_event_attributes(required_params=None, forgone_params=None, exact_attrs=None):
-    """Check the error event for attributes, expect only one error to be
-    present in the transaction.
-    """
-    required_params = required_params or {}
-    forgone_params = forgone_params or {}
-    exact_attrs = exact_attrs or {}
-    error_data_samples = []
+# def validate_error_event_attributes(required_params=None, forgone_params=None, exact_attrs=None):
+#     """Check the error event for attributes, expect only one error to be
+#     present in the transaction.
+#     """
+#     required_params = required_params or {}
+#     forgone_params = forgone_params or {}
+#     exact_attrs = exact_attrs or {}
+#     error_data_samples = []
 
-    @function_wrapper
-    def _validate_wrapper(wrapped, instance, args, kwargs):
-        @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-        def _validate_error_event_attributes(wrapped, instance, args, kwargs):
-            try:
-                result = wrapped(*args, **kwargs)
-            except:
-                raise
-            else:
+#     @function_wrapper
+#     def _validate_wrapper(wrapped, instance, args, kwargs):
+#         @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+#         def _validate_error_event_attributes(wrapped, instance, args, kwargs):
+#             try:
+#                 result = wrapped(*args, **kwargs)
+#             except:
+#                 raise
+#             else:
 
-                event_data = instance.error_events
-                for sample in event_data:
-                    error_data_samples.append(sample)
+#                 event_data = instance.error_events
+#                 for sample in event_data:
+#                     error_data_samples.append(sample)
 
-                check_event_attributes(event_data, required_params, forgone_params, exact_attrs)
+#                 check_event_attributes(event_data, required_params, forgone_params, exact_attrs)
 
-            return result
+#             return result
 
-        _new_wrapper = _validate_error_event_attributes(wrapped)
-        val = _new_wrapper(*args, **kwargs)
-        assert error_data_samples
-        return val
+#         _new_wrapper = _validate_error_event_attributes(wrapped)
+#         val = _new_wrapper(*args, **kwargs)
+#         assert error_data_samples
+#         return val
 
-    return _validate_wrapper
+# t     return _validate_wrapper
 
 
 def validate_error_trace_attributes_outside_transaction(

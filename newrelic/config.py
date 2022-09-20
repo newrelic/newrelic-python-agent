@@ -2308,11 +2308,26 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "confluent_kafka.cimpl",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_cimpl",
+    )
+    _process_module_definition(
+        "confluent_kafka.serializing_producer",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_serializing_producer",
+    )
+    _process_module_definition(
+        "confluent_kafka.deserializing_consumer",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_deserializing_consumer",
+    )
+
+    _process_module_definition(
         "kafka.consumer.group",
         "newrelic.hooks.messagebroker_kafkapython",
         "instrument_kafka_consumer_group",
     )
-
     _process_module_definition(
         "kafka.producer.kafka",
         "newrelic.hooks.messagebroker_kafkapython",

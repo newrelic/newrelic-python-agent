@@ -590,42 +590,42 @@ def check_attributes(parameters, required_params=None, forgone_params=None, exac
 #     return _validate_error_event_collector_json
 
 
-def validate_transaction_event_collector_json():
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-    def _validate_transaction_event_collector_json(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            samples = list(instance.transaction_events)
+# def validate_transaction_event_collector_json():
+#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+#     def _validate_transaction_event_collector_json(wrapped, instance, args, kwargs):
+#         try:
+#             result = wrapped(*args, **kwargs)
+#         except:
+#             raise
+#         else:
+#             samples = list(instance.transaction_events)
 
-            # recreate what happens right before data is sent to the collector
-            # in data_collector.py during the harvest via analytic_event_data
-            agent_run_id = 666
-            payload = (agent_run_id, samples)
-            collector_json = json_encode(payload)
+#             # recreate what happens right before data is sent to the collector
+#             # in data_collector.py during the harvest via analytic_event_data
+#             agent_run_id = 666
+#             payload = (agent_run_id, samples)
+#             collector_json = json_encode(payload)
 
-            decoded_json = json.loads(collector_json)
+#             decoded_json = json.loads(collector_json)
 
-            assert decoded_json[0] == agent_run_id
+#             assert decoded_json[0] == agent_run_id
 
-            # list of events
+#             # list of events
 
-            events = decoded_json[1]
+#             events = decoded_json[1]
 
-            for event in events:
+#             for event in events:
 
-                # event is an array containing intrinsics, user-attributes,
-                # and agent-attributes
+#                 # event is an array containing intrinsics, user-attributes,
+#                 # and agent-attributes
 
-                assert len(event) == 3
-                for d in event:
-                    assert isinstance(d, dict)
+#                 assert len(event) == 3
+#                 for d in event:
+#                     assert isinstance(d, dict)
 
-        return result
+#         return result
 
-    return _validate_transaction_event_collector_json
+#     return _validate_transaction_event_collector_json
 
 
 def validate_custom_event_collector_json(num_events=1):

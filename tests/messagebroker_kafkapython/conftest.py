@@ -85,18 +85,18 @@ def consumer(topic, data_source, producer):
 
 @pytest.fixture(scope="function")
 def topic():
-    # from kafka.admin.client import KafkaAdminClient
-    # from kafka.admin.new_topic import NewTopic
+    from kafka.admin.client import KafkaAdminClient
+    from kafka.admin.new_topic import NewTopic
 
     topic = "test-topic-%s" % str(uuid.uuid4())
 
-    # admin = KafkaAdminClient(bootstrap_servers=BROKER)
-    # new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
-    # topics = admin.create_topics(new_topics)
+    admin = KafkaAdminClient(bootstrap_servers=BROKER)
+    new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
+    admin.create_topics(new_topics)
 
     yield topic
 
-    # admin.delete_topics([topic])
+    admin.delete_topics([topic])
 
 
 @pytest.fixture(scope="session")

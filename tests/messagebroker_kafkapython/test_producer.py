@@ -30,16 +30,30 @@ from newrelic.packages import six
 def test_trace_metrics(topic, send_producer_messages):
     scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 3)]
     unscoped_metrics = scoped_metrics
-    custom_metrics = [
-            ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Value" % topic, 3),
-            ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Key" % topic, 3),
-    ]
     txn_name = "test_producer:test_trace_metrics.<locals>.test" if six.PY3 else "test_producer:test"
 
     @validate_transaction_metrics(
         txn_name,
         scoped_metrics=scoped_metrics,
         rollup_metrics=unscoped_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        send_producer_messages()
+
+    test()
+
+
+def test_serialization_metrics(topic, send_producer_messages):
+    custom_metrics = [
+            ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Value" % topic, 3),
+            ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Key" % topic, 3),
+    ]
+    txn_name = "test_producer:test_serialization_metrics.<locals>.test" if six.PY3 else "test_producer:test"
+
+    @validate_transaction_metrics(
+        txn_name,
         custom_metrics=custom_metrics,
         background_task=True,
     )

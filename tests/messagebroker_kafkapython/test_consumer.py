@@ -47,6 +47,22 @@ def test_custom_metrics(get_consumer_records, topic):
     _test()
 
 
+def test_deserialization_metrics(get_consumer_records, topic):
+    @validate_transaction_metrics(
+        "Named/%s" % topic,
+        group="Message/Kafka/Topic",
+        custom_metrics=[
+            ("MessageBroker/Kafka/Topic/Named/%s/Deserialization/Value" % topic, 1),
+            ("MessageBroker/Kafka/Topic/Named/%s/Deserialization/Key" % topic, 1),
+        ],
+        background_task=True,
+    )
+    def _test():
+        get_consumer_records()
+
+    _test()
+
+
 def test_custom_metrics_on_existing_transaction(get_consumer_records, topic):
     transaction_name = (
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"

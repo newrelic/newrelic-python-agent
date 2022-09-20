@@ -1242,35 +1242,35 @@ def check_event_attributes(event_data, required_params=None, forgone_params=None
 #     return wrapper
 
 
-def validate_transaction_error_trace_attributes(required_params=None, forgone_params=None, exact_attrs=None):
-    """Check the error trace for attributes, expect only one error to be
-    present in the transaction.
-    """
-    required_params = required_params or {}
-    forgone_params = forgone_params or {}
-    exact_attrs = exact_attrs or {}
+# def validate_transaction_error_trace_attributes(required_params=None, forgone_params=None, exact_attrs=None):
+#     """Check the error trace for attributes, expect only one error to be
+#     present in the transaction.
+#     """
+#     required_params = required_params or {}
+#     forgone_params = forgone_params or {}
+#     exact_attrs = exact_attrs or {}
 
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-    def _validate_transaction_error_trace(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
+#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+#     def _validate_transaction_error_trace(wrapped, instance, args, kwargs):
+#         try:
+#             result = wrapped(*args, **kwargs)
+#         except:
+#             raise
+#         else:
 
-            error_data = instance.error_data()
+#             error_data = instance.error_data()
 
-            # there should be only one error
-            assert len(error_data) == 1
-            traced_error = error_data[0]
+#             # there should be only one error
+#             assert len(error_data) == 1
+#             traced_error = error_data[0]
 
-            check_error_attributes(
-                traced_error.parameters, required_params, forgone_params, exact_attrs, is_transaction=True
-            )
+#             check_error_attributes(
+#                 traced_error.parameters, required_params, forgone_params, exact_attrs, is_transaction=True
+#             )
 
-        return result
+#         return result
 
-    return _validate_transaction_error_trace
+#     return _validate_transaction_error_trace
 
 
 def check_error_attributes(

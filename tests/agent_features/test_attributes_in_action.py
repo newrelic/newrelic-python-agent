@@ -24,9 +24,11 @@ from testing_support.fixtures import (
     validate_error_event_attributes,
     validate_error_event_attributes_outside_transaction,
     validate_error_trace_attributes_outside_transaction,
-    validate_transaction_error_trace_attributes,
 )
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_error_trace_attributes import (
+    validate_transaction_error_trace_attributes,
+)
 from testing_support.validators.validate_transaction_event_attributes import (
     validate_transaction_event_attributes,
 )

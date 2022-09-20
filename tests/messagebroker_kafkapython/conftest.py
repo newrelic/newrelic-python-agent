@@ -55,7 +55,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 
 @pytest.fixture(scope="function")
-def producer(data_source):
+def producer(topic, data_source):
     producer = kafka.KafkaProducer(
         bootstrap_servers=BROKER, api_version=(2, 0, 2), value_serializer=lambda v: json.dumps(v).encode("utf-8")
     )
@@ -64,7 +64,7 @@ def producer(data_source):
 
 
 @pytest.fixture(scope="function")
-def consumer(topic, data_source):
+def consumer(topic, data_source, producer):
     consumer = kafka.KafkaConsumer(
         topic,
         bootstrap_servers=BROKER,
@@ -74,13 +74,29 @@ def consumer(topic, data_source):
         heartbeat_interval_ms=1000,
         group_id="test",
     )
+    # The first time the kafka consumer is created and polled, it returns a StopIterator
+    # exception. To by-pass this, loop over the consumer before using it.
+    # NOTE: This seems to only happen in Python2.7.
+    for record in consumer:
+        pass
     yield consumer
     consumer.close()
 
 
 @pytest.fixture(scope="function")
 def topic():
-    yield "test-topic-%s" % str(uuid.uuid4())
+    # from kafka.admin.client import KafkaAdminClient
+    # from kafka.admin.new_topic import NewTopic
+
+    topic = "test-topic-%s" % str(uuid.uuid4())
+
+    # admin = KafkaAdminClient(bootstrap_servers=BROKER)
+    # new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
+    # topics = admin.create_topics(new_topics)
+
+    yield topic
+
+    # admin.delete_topics([topic])
 
 
 @pytest.fixture(scope="session")

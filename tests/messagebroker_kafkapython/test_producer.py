@@ -28,7 +28,7 @@ from newrelic.packages import six
 
 
 def test_trace_metrics(topic, send_producer_messages):
-    scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 3),]
+    scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 3)]
     unscoped_metrics = scoped_metrics
     custom_metrics = [
             ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Value" % topic, 3),

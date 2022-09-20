@@ -25,7 +25,6 @@ from testing_support.fixtures import (
     validate_custom_event_count,
     validate_custom_event_in_application_stats_engine,
     validate_request_params_omitted,
-    validate_tt_segment_params,
 )
 from testing_support.validators.validate_custom_parameters import (
     validate_custom_parameters,
@@ -35,6 +34,9 @@ from testing_support.validators.validate_non_transaction_error_event import (
 )
 from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
+)
+from testing_support.validators.validate_tt_segment_params import (
+    validate_tt_segment_params,
 )
 
 from newrelic.api.application import application_instance as application

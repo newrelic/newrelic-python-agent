@@ -40,12 +40,11 @@ from newrelic.api.application import (
     register_application,
 )
 from newrelic.common.agent_http import DeveloperModeClient
-from newrelic.common.encoding_utils import (
+from newrelic.common.encoding_utils import (  # unpack_field,
     deobfuscate,
     json_decode,
     json_encode,
     obfuscate,
-    unpack_field,
 )
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (
@@ -63,12 +62,14 @@ from newrelic.core.attribute_filter import (
     AttributeFilter,
 )
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
-from newrelic.core.database_utils import SQLConnections
 
 # from newrelic.core.internal_metrics import InternalTraceContext
 # from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import RetryDataForRequest
 from newrelic.packages import six
+
+# from newrelic.core.database_utils import SQLConnections
+
 
 _logger = logging.getLogger("newrelic.tests")
 
@@ -710,78 +711,78 @@ def check_attributes(parameters, required_params=None, forgone_params=None, exac
 #     return _validate_tt_parameters
 
 
-def validate_tt_segment_params(forgone_params=(), present_params=(), exact_params=None):
-    exact_params = exact_params or {}
-    recorded_traces = []
+# def validate_tt_segment_params(forgone_params=(), present_params=(), exact_params=None):
+#     exact_params = exact_params or {}
+#     recorded_traces = []
 
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-    def _extract_trace(wrapped, instance, args, kwargs):
-        result = wrapped(*args, **kwargs)
+#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+#     def _extract_trace(wrapped, instance, args, kwargs):
+#         result = wrapped(*args, **kwargs)
 
-        # Now that transaction has been recorded, generate
-        # a transaction trace
+#         # Now that transaction has been recorded, generate
+#         # a transaction trace
 
-        connections = SQLConnections()
-        trace_data = instance.transaction_trace_data(connections)
-        # Save the recorded traces
-        recorded_traces.extend(trace_data)
+#         connections = SQLConnections()
+#         trace_data = instance.transaction_trace_data(connections)
+#         # Save the recorded traces
+#         recorded_traces.extend(trace_data)
 
-        return result
+#         return result
 
-    @function_wrapper
-    def validator(wrapped, instance, args, kwargs):
-        new_wrapper = _extract_trace(wrapped)
-        result = new_wrapper(*args, **kwargs)
+#     @function_wrapper
+#     def validator(wrapped, instance, args, kwargs):
+#         new_wrapper = _extract_trace(wrapped)
+#         result = new_wrapper(*args, **kwargs)
 
-        # Verify that traces have been recorded
-        assert recorded_traces
+#         # Verify that traces have been recorded
+#         assert recorded_traces
 
-        # Extract the first transaction trace
-        transaction_trace = recorded_traces[0]
-        pack_data = unpack_field(transaction_trace[4])
+#         # Extract the first transaction trace
+#         transaction_trace = recorded_traces[0]
+#         pack_data = unpack_field(transaction_trace[4])
 
-        # Extract the root segment from the root node
-        root_segment = pack_data[0][3]
+#         # Extract the root segment from the root node
+#         root_segment = pack_data[0][3]
 
-        recorded_params = {}
+#         recorded_params = {}
 
-        def _validate_segment_params(segment):
-            segment_params = segment[3]
+#         def _validate_segment_params(segment):
+#             segment_params = segment[3]
 
-            # Translate from the string cache
-            for key, value in segment_params.items():
-                if hasattr(value, "startswith") and value.startswith("`"):
-                    try:
-                        index = int(value[1:])
-                        value = pack_data[1][index]
-                    except ValueError:
-                        pass
-                segment_params[key] = value
+#             # Translate from the string cache
+#             for key, value in segment_params.items():
+#                 if hasattr(value, "startswith") and value.startswith("`"):
+#                     try:
+#                         index = int(value[1:])
+#                         value = pack_data[1][index]
+#                     except ValueError:
+#                         pass
+#                 segment_params[key] = value
 
-            recorded_params.update(segment_params)
+#             recorded_params.update(segment_params)
 
-            for child_segment in segment[4]:
-                _validate_segment_params(child_segment)
+#             for child_segment in segment[4]:
+#                 _validate_segment_params(child_segment)
 
-        _validate_segment_params(root_segment)
+#         _validate_segment_params(root_segment)
 
-        recorded_params_set = set(recorded_params.keys())
+#         recorded_params_set = set(recorded_params.keys())
 
-        # Verify that the params in present params have been recorded
-        present_params_set = set(present_params)
-        assert recorded_params_set.issuperset(present_params_set)
+#         # Verify that the params in present params have been recorded
+#         present_params_set = set(present_params)
+#         assert recorded_params_set.issuperset(present_params_set)
 
-        # Verify that all forgone params are omitted
-        recorded_forgone_params = recorded_params_set & set(forgone_params)
-        assert not recorded_forgone_params
+#         # Verify that all forgone params are omitted
+#         recorded_forgone_params = recorded_params_set & set(forgone_params)
+#         assert not recorded_forgone_params
 
-        # Verify that all exact params are correct
-        for key, value in exact_params.items():
-            assert recorded_params[key] == value
+#         # Verify that all exact params are correct
+#         for key, value in exact_params.items():
+#             assert recorded_params[key] == value
 
-        return result
+#         return result
 
-    return validator
+#     return validator
 
 
 def validate_browser_attributes(required_params=None, forgone_params=None):

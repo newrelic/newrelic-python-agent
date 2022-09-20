@@ -40,12 +40,7 @@ from newrelic.api.application import (
     register_application,
 )
 from newrelic.common.agent_http import DeveloperModeClient
-from newrelic.common.encoding_utils import (  # unpack_field,
-    deobfuscate,
-    json_decode,
-    json_encode,
-    obfuscate,
-)
+from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (
     ObjectProxy,
@@ -62,14 +57,8 @@ from newrelic.core.attribute_filter import (
     AttributeFilter,
 )
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
-
-# from newrelic.core.internal_metrics import InternalTraceContext
-# from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import RetryDataForRequest
 from newrelic.packages import six
-
-# from newrelic.core.database_utils import SQLConnections
-
 
 _logger = logging.getLogger("newrelic.tests")
 
@@ -501,216 +490,6 @@ def check_attributes(parameters, required_params=None, forgone_params=None, exac
             assert intrinsics[param] == value, ((param, value), intrinsics)
 
 
-# def validate_error_trace_collector_json():
-#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-#     def _validate_error_trace_collector_json(wrapped, instance, args, kwargs):
-#         try:
-#             result = wrapped(*args, **kwargs)
-#         except:
-#             raise
-#         else:
-#             errors = instance.error_data()
-
-#             # recreate what happens right before data is sent to the collector
-#             # in data_collector.py via ApplicationSession.send_errors
-#             agent_run_id = 666
-#             payload = (agent_run_id, errors)
-#             collector_json = json_encode(payload)
-
-#             decoded_json = json.loads(collector_json)
-
-#             assert decoded_json[0] == agent_run_id
-#             err = decoded_json[1][0]
-#             assert len(err) == 5
-#             assert isinstance(err[0], (int, float))
-#             assert isinstance(err[1], six.string_types)  # path
-#             assert isinstance(err[2], six.string_types)  # error message
-#             assert isinstance(err[3], six.string_types)  # exception name
-#             parameters = err[4]
-
-#             parameter_fields = ["userAttributes", "stack_trace", "agentAttributes", "intrinsics"]
-
-#             for field in parameter_fields:
-#                 assert field in parameters
-
-#             assert "request_uri" not in parameters
-
-#         return result
-
-#     return _validate_error_trace_collector_json
-
-
-# def validate_error_event_collector_json(num_errors=1):
-#     """Validate the format, types and number of errors of the data we
-#     send to the collector for harvest.
-#     """
-
-#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-#     def _validate_error_event_collector_json(wrapped, instance, args, kwargs):
-#         try:
-#             result = wrapped(*args, **kwargs)
-#         except:
-#             raise
-#         else:
-
-#             samples = list(instance.error_events)
-#             s_info = instance.error_events.sampling_info
-#             agent_run_id = 666
-
-#             # emulate the payload used in data_collector.py
-
-#             payload = (agent_run_id, s_info, samples)
-#             collector_json = json_encode(payload)
-
-#             decoded_json = json.loads(collector_json)
-
-#             assert decoded_json[0] == agent_run_id
-
-#             sampling_info = decoded_json[1]
-
-#             harvest_config = instance.settings.event_harvest_config
-#             reservoir_size = harvest_config.harvest_limits.error_event_data
-
-#             assert sampling_info["reservoir_size"] == reservoir_size
-#             assert sampling_info["events_seen"] == num_errors
-
-#             error_events = decoded_json[2]
-
-#             assert len(error_events) == num_errors
-#             for event in error_events:
-
-#                 # event is an array containing intrinsics, user-attributes,
-#                 # and agent-attributes
-
-#                 assert len(event) == 3
-#                 for d in event:
-#                     assert isinstance(d, dict)
-
-#         return result
-
-#     return _validate_error_event_collector_json
-
-
-# def validate_transaction_event_collector_json():
-#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-#     def _validate_transaction_event_collector_json(wrapped, instance, args, kwargs):
-#         try:
-#             result = wrapped(*args, **kwargs)
-#         except:
-#             raise
-#         else:
-#             samples = list(instance.transaction_events)
-
-#             # recreate what happens right before data is sent to the collector
-#             # in data_collector.py during the harvest via analytic_event_data
-#             agent_run_id = 666
-#             payload = (agent_run_id, samples)
-#             collector_json = json_encode(payload)
-
-#             decoded_json = json.loads(collector_json)
-
-#             assert decoded_json[0] == agent_run_id
-
-#             # list of events
-
-#             events = decoded_json[1]
-
-#             for event in events:
-
-#                 # event is an array containing intrinsics, user-attributes,
-#                 # and agent-attributes
-
-#                 assert len(event) == 3
-#                 for d in event:
-#                     assert isinstance(d, dict)
-
-#         return result
-
-#     return _validate_transaction_event_collector_json
-
-
-# def validate_custom_event_collector_json(num_events=1):
-#     """Validate the format, types and number of custom events."""
-
-#     @transient_function_wrapper("newrelic.core.application", "Application.record_transaction")
-#     def _validate_custom_event_collector_json(wrapped, instance, args, kwargs):
-#         try:
-#             result = wrapped(*args, **kwargs)
-#         except:
-#             raise
-#         else:
-#             stats = instance._stats_engine
-#             settings = stats.settings
-
-#             agent_run_id = 666
-#             sampling_info = stats.custom_events.sampling_info
-#             samples = list(stats.custom_events)
-
-#             # Emulate the payload used in data_collector.py
-
-#             payload = (agent_run_id, sampling_info, samples)
-#             collector_json = json_encode(payload)
-
-#             decoded_json = json.loads(collector_json)
-
-#             decoded_agent_run_id = decoded_json[0]
-#             decoded_sampling_info = decoded_json[1]
-#             decoded_events = decoded_json[2]
-
-#             assert decoded_agent_run_id == agent_run_id
-#             assert decoded_sampling_info == sampling_info
-
-#             max_setting = settings.event_harvest_config.harvest_limits.custom_event_data
-#             assert decoded_sampling_info["reservoir_size"] == max_setting
-
-#             assert decoded_sampling_info["events_seen"] == num_events
-#             assert len(decoded_events) == num_events
-
-#             for (intrinsics, attributes) in decoded_events:
-#                 assert isinstance(intrinsics, dict)
-#                 assert isinstance(attributes, dict)
-
-#         return result
-
-#     return _validate_custom_event_collector_json
-
-
-# def validate_tt_parameters(required_params=None, forgone_params=None):
-#     required_params = required_params or {}
-#     forgone_params = forgone_params or {}
-
-#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-#     def _validate_tt_parameters(wrapped, instance, args, kwargs):
-#         try:
-#             result = wrapped(*args, **kwargs)
-#         except:
-#             raise
-#         else:
-
-#             # Now that transaction has been recorded, generate
-#             # a transaction trace
-
-#             connections = SQLConnections()
-#             trace_data = instance.transaction_trace_data(connections)
-#             pack_data = unpack_field(trace_data[0][4])
-#             tt_intrinsics = pack_data[0][4]["intrinsics"]
-
-#             for name in required_params:
-#                 assert name in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
-#                 assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
-#                     name,
-#                     required_params[name],
-#                     tt_intrinsics,
-#                 )
-
-#             for name in forgone_params:
-#                 assert name not in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
-
-#         return result
-
-#     return _validate_tt_parameters
-
-
 # def validate_tt_segment_params(forgone_params=(), present_params=(), exact_params=None):
 #     exact_params = exact_params or {}
 #     recorded_traces = []
@@ -785,60 +564,60 @@ def check_attributes(parameters, required_params=None, forgone_params=None, exac
 #     return validator
 
 
-def validate_browser_attributes(required_params=None, forgone_params=None):
-    required_params = required_params or {}
-    forgone_params = forgone_params or {}
+# def validate_browser_attributes(required_params=None, forgone_params=None):
+#     required_params = required_params or {}
+#     forgone_params = forgone_params or {}
 
-    @transient_function_wrapper("newrelic.api.web_transaction", "WSGIWebTransaction.browser_timing_footer")
-    def _validate_browser_attributes(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
+#     @transient_function_wrapper("newrelic.api.web_transaction", "WSGIWebTransaction.browser_timing_footer")
+#     def _validate_browser_attributes(wrapped, instance, args, kwargs):
+#         try:
+#             result = wrapped(*args, **kwargs)
+#         except:
+#             raise
 
-        # pick out attributes from footer string_types
+#         # pick out attributes from footer string_types
 
-        footer_data = result.split("NREUM.info=")[1]
-        footer_data = footer_data.split("</script>")[0]
-        footer_data = json.loads(footer_data)
+#         footer_data = result.split("NREUM.info=")[1]
+#         footer_data = footer_data.split("</script>")[0]
+#         footer_data = json.loads(footer_data)
 
-        if "intrinsic" in required_params:
-            for attr in required_params["intrinsic"]:
-                assert attr in footer_data
+#         if "intrinsic" in required_params:
+#             for attr in required_params["intrinsic"]:
+#                 assert attr in footer_data
 
-        if "atts" in footer_data:
-            obfuscation_key = instance._settings.license_key[:13]
-            attributes = json_decode(deobfuscate(footer_data["atts"], obfuscation_key))
-        else:
+#         if "atts" in footer_data:
+#             obfuscation_key = instance._settings.license_key[:13]
+#             attributes = json_decode(deobfuscate(footer_data["atts"], obfuscation_key))
+#         else:
 
-            # if there are no user or agent attributes, there will be no dict
-            # for them in the browser data
+#             # if there are no user or agent attributes, there will be no dict
+#             # for them in the browser data
 
-            attributes = None
+#             attributes = None
 
-        if "user" in required_params:
-            for attr in required_params["user"]:
-                assert attr in attributes["u"]
+#         if "user" in required_params:
+#             for attr in required_params["user"]:
+#                 assert attr in attributes["u"]
 
-        if "agent" in required_params:
-            for attr in required_params["agent"]:
-                assert attr in attributes["a"]
+#         if "agent" in required_params:
+#             for attr in required_params["agent"]:
+#                 assert attr in attributes["a"]
 
-        if "user" in forgone_params:
-            if attributes:
-                if "u" in attributes:
-                    for attr in forgone_params["user"]:
-                        assert attr not in attributes["u"]
+#         if "user" in forgone_params:
+#             if attributes:
+#                 if "u" in attributes:
+#                     for attr in forgone_params["user"]:
+#                         assert attr not in attributes["u"]
 
-        if "agent" in forgone_params:
-            if attributes:
-                if "a" in attributes:
-                    for attr in forgone_params["agent"]:
-                        assert attr not in attributes["a"]
+#         if "agent" in forgone_params:
+#             if attributes:
+#                 if "a" in attributes:
+#                     for attr in forgone_params["agent"]:
+#                         assert attr not in attributes["a"]
 
-        return result
+#         return result
 
-    return _validate_browser_attributes
+#     return _validate_browser_attributes
 
 
 def validate_error_event_attributes(required_params=None, forgone_params=None, exact_attrs=None):

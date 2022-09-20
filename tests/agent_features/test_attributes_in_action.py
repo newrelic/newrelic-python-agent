@@ -20,10 +20,12 @@ from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
-    validate_browser_attributes,
     validate_error_event_attributes,
     validate_error_event_attributes_outside_transaction,
     validate_error_trace_attributes_outside_transaction,
+)
+from testing_support.validators.validate_browser_attributes import (
+    validate_browser_attributes,
 )
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_trace_attributes import (

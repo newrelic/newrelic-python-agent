@@ -3082,7 +3082,6 @@ def initialize(
     else:
         _settings.enabled = False
     if _settings.k2_enabled:
-        log_message("Invoking K2 security module.", critical=True)
         # run k2 agent
         import k2_python_agent
         k2_python_agent.init_k2({}, {})

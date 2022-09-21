@@ -109,24 +109,19 @@ def test_agent_attributes(get_consumer_records):
     _test()
 
 
-def test_consumer_errors(topic, consumer, producer, producer_cimpl):
-    from confluent_kafka import SerializingProducer
-    from confluent_kafka.error import ValueDeserializationError
+def test_consumer_errors(topic, consumer, producer):
+    # Close the consumer in order to force poll to raise an exception.
+    consumer.close()
 
-    if isinstance(producer, SerializingProducer):
-        expected_error = ValueDeserializationError
-    else:
-        # Close the consumer in order to force poll to raise an exception.
-        consumer.close()
-        expected_error = RuntimeError
-
+    expected_error = RuntimeError
+    
     @validate_error_event_attributes_outside_transaction(
         exact_attrs={"intrinsic": {"error.class": expected_error.__name__}}
     )
     def _test():
         with pytest.raises(expected_error):
-            producer_cimpl.produce(topic, value=b"%")  # Invalid JSON
-            producer_cimpl.flush()
+            producer.produce(topic, value="A")
+            producer.flush()
             while consumer.poll(0.5):
                 pass
 
@@ -174,24 +169,3 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize):
 
     _produce()
     _consume()
-
-
-@pytest.fixture()
-def get_consumer_records(topic, producer, consumer, serialize, deserialize):
-    def _test():
-        producer.produce(topic, key="1", value=serialize({"foo": "bar"}))
-        producer.flush()
-
-        record_count = 0
-        while True:
-            record = consumer.poll(0.5)
-            if not record:
-                break
-            assert not record.error()
-
-            record_count += 1
-            assert deserialize(record.value()) == {"foo": "bar"}
-
-        assert record_count, "No records consumed."
-
-    return _test

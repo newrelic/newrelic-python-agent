@@ -29,7 +29,7 @@ from newrelic.common.object_names import callable_name
 
 
 def test_trace_metrics(topic, send_producer_messages):
-    scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 3)]
+    scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
     unscoped_metrics = scoped_metrics
     txn_name = "test_producer:test_trace_metrics.<locals>.test" if six.PY3 else "test_producer:test"
 
@@ -74,8 +74,8 @@ def test_distributed_tracing_headers(topic, send_producer_messages):
     @validate_transaction_metrics(
         txn_name,
         rollup_metrics=[
-            ("Supportability/TraceContext/Create/Success", 3),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 3),
+            ("Supportability/TraceContext/Create/Success", 1),
+            ("Supportability/DistributedTrace/CreatePayload/Success", 1),
         ],
         background_task=True,
     )
@@ -88,27 +88,16 @@ def test_distributed_tracing_headers(topic, send_producer_messages):
     test()
 
 
-def test_producer_errors(topic, producer):
-    # from confluent_kafka import SerializingProducer
-    from confluent_kafka.error import ValueSerializationError
+def test_producer_errors(topic, producer, monkeypatch):
+    if hasattr(producer, "_value_serializer"):
+        # Remove serializer to intentionally cause a type error in underlying producer implementation
+        monkeypatch.setattr(producer, "_value_serializer", None)
 
     @validate_transaction_errors([callable_name(TypeError)])
     @background_task()
     def test():
-        with pytest.raises((TypeError, ValueSerializationError)):
-            producer.produce(topic, value=object())
+        with pytest.raises(TypeError):
+            producer.produce(topic, value=object(), partition=100)
             producer.flush()
 
     test()
-
-
-@pytest.fixture
-def send_producer_messages(topic, producer, serialize):
-    def _test():
-        messages = [1, 2, 3]
-        for message in messages:
-            producer.produce(topic, value=serialize(message))
-
-        producer.flush()
-
-    return _test

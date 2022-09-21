@@ -94,8 +94,18 @@ def consumer_cimpl(topic, producer_cimpl):
         "heartbeat.interval.ms": 1000,
         "group.id": "test",
     }
+    consumer = Consumer(consumer_config)
 
-    return Consumer(consumer_config)
+    # The first time the kafka consumer is created and polled, it returns None.
+    # To by-pass this, loop over the consumer before using it.
+    # NOTE: This seems to only happen in Python2.7.
+    while True:
+        record = consumer.poll(0.5)
+        if not record:
+            break
+        assert not record.error()
+
+    return consumer
 
 
 @pytest.fixture(scope="function")
@@ -110,8 +120,18 @@ def consumer_deserializing(topic, producer_serializing):
         "value.deserializer": lambda v, c: json.loads(v.decode("utf-8")),
         "key.deserializer": lambda v, c: v.decode("utf-8") if v is not None else None,
     }
+    consumer = DeserializingConsumer(consumer_config)
 
-    return DeserializingConsumer(consumer_config)
+    # The first time the kafka consumer is created and polled, it returns None.
+    # To by-pass this, loop over the consumer before using it.
+    # NOTE: This seems to only happen in Python2.7.
+    while True:
+        record = consumer.poll(0.5)
+        if not record:
+            break
+        assert not record.error()
+
+    return consumer
 
 
 @pytest.fixture(scope="function")
@@ -124,15 +144,6 @@ def consumer(topic, producer, consumer_cimpl, consumer_deserializing):
         consumer = consumer_cimpl
 
     consumer.subscribe([topic])
-
-    # The first time the kafka consumer is created and polled, it returns None.
-    # To by-pass this, loop over the consumer before using it.
-    # NOTE: This seems to only happen in Python2.7.
-    while True:
-        record = consumer.poll(0.5)
-        if not record:
-            break
-        assert not record.error()
 
     yield consumer
     consumer.close()
@@ -173,6 +184,35 @@ def topic():
     yield topic
 
     admin.delete_topics(new_topics)
+
+
+@pytest.fixture
+def send_producer_messages(topic, producer, serialize):
+    def _test():
+        producer.produce(topic, value=serialize({"foo": 1}))
+        producer.flush()
+
+    return _test
+
+
+@pytest.fixture()
+def get_consumer_records(topic, send_producer_messages, consumer, serialize, deserialize):
+    def _test():
+        send_producer_messages()
+
+        record_count = 0
+        while True:
+            record = consumer.poll(0.5)
+            if not record:
+                break
+            assert not record.error()
+
+            assert deserialize(record.value()) == {"foo": 1}
+            record_count += 1
+
+        assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
+
+    return _test
 
 
 def cache_kafka_producer_headers():

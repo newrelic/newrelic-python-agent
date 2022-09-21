@@ -54,6 +54,45 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
+@pytest.fixture(scope="session", params=["no_serializer", "serializer_function", "callable_object", "serializer_object"])
+def client_type(request):
+    return request.param
+
+
+@pytest.fixture()
+def skip_if_not_serializing(client_type):
+    if client_type == "cimpl":
+        pytest.skip("Only serializing clients supported.")
+
+
+@pytest.fixture(scope="function")
+def producer(client_type, json_serializer, json_serializer_callable):
+    from confluent_kafka import Producer, SerializingProducer
+
+    if client_type == "no_serializer":
+        producer =  kafka.KafkaProducer(bootstrap_servers=BROKER)
+    elif client_type == "serializer_function":
+        producer =  kafka.KafkaProducer(
+            bootstrap_servers=BROKER,
+            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            key_serializer=lambda v: json.dumps(v).encode("utf-8"),
+        )
+    elif client_type == "callable_object":
+        producer =  kafka.KafkaProducer(
+            bootstrap_servers=BROKER,
+            value_serializer=lambda v: json_serializer_callable,
+            key_serializer=lambda v: json_serializer_callable,
+        )
+    elif client_type == "serializer_object":
+        producer =  kafka.KafkaProducer(
+            bootstrap_servers=BROKER,
+            value_serializer=lambda v: json_serializer,
+            key_serializer=lambda v: json_serializer,
+        )
+
+    yield producer
+    producer.purge()
+
 @pytest.fixture(scope="function")
 def producer(topic, data_source):
     producer = kafka.KafkaProducer(

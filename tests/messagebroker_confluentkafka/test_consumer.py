@@ -32,19 +32,11 @@ from newrelic.api.transaction import end_of_transaction
 from newrelic.packages import six
 
 
-def test_custom_metrics(get_consumer_records, producer, topic):
-    from confluent_kafka import SerializingProducer
-
+def test_custom_metrics(get_consumer_records, topic):
     custom_metrics = [
         ("Message/Kafka/Topic/Named/%s/Received/Bytes" % topic, 1),
         ("Message/Kafka/Topic/Named/%s/Received/Messages" % topic, 1),
     ]
-    if isinstance(producer, SerializingProducer):
-        custom_metrics.extend([
-            ("Message/Kafka/Topic/Named/%s/Deserialization/Value" % topic, 1),
-            ("Message/Kafka/Topic/Named/%s/Deserialization/Key" % topic, 1),
-        ])
-
     @validate_transaction_metrics(
         "Named/%s" % topic,
         group="Message/Kafka/Topic",

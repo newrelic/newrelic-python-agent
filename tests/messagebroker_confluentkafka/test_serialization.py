@@ -25,22 +25,22 @@ from newrelic.common.object_names import callable_name
 
 
 @pytest.fixture
-def send_producer_messages(topic, producer_serializing):
+def send_producer_messages(topic, producer):
     def _test():
-        producer_serializing.produce(topic, value={"foo": 1})
-        producer_serializing.flush()
+        producer.produce(topic, value={"foo": 1})
+        producer.flush()
 
     return _test
 
 
 @pytest.fixture()
-def get_consumer_records(topic, send_producer_messages, producer_serializing, consumer_deserializing):
+def get_consumer_records(topic, send_producer_messages, consumer):
     def _test():
         send_producer_messages()
 
         record_count = 0
         while True:
-            record = consumer_deserializing.poll(0.5)
+            record = consumer.poll(0.5)
             if not record:
                 break
             assert not record.error()
@@ -53,7 +53,7 @@ def get_consumer_records(topic, send_producer_messages, producer_serializing, co
     return _test
 
 
-def test_serialization_metrics(topic, send_producer_messages):
+def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_messages):
     txn_name = "test_serialization:test_serialization_metrics.<locals>.test" if six.PY3 else "test_serialization:test"
 
     _metrics = [
@@ -74,21 +74,19 @@ def test_serialization_metrics(topic, send_producer_messages):
     test()
 
 
-def test_deserialization_metrics(topic, get_consumer_records):
-    txn_name = "test_serialization:test_deserialization_metrics.<locals>.test" if six.PY3 else "test_serialization:test"
-
+def test_deserialization_metrics(skip_if_not_serializing, topic, get_consumer_records):
     _metrics = [
-        ("MessageBroker/Kafka/Topic/Named/%s/Deserialization/Value" % topic, 1),
-        ("MessageBroker/Kafka/Topic/Named/%s/Deserialization/Key" % topic, 1),
+        ("Message/Kafka/Topic/Named/%s/Deserialization/Value" % topic, 1),
+        ("Message/Kafka/Topic/Named/%s/Deserialization/Key" % topic, 1),
     ]
 
     @validate_transaction_metrics(
-        txn_name,
+        "Named/%s" % topic,
+        group="Message/Kafka/Topic",
         scoped_metrics=_metrics,
         rollup_metrics=_metrics,
         background_task=True,
     )
-    @background_task()
     def test():
         get_consumer_records()
 
@@ -99,7 +97,7 @@ def test_deserialization_metrics(topic, get_consumer_records):
     (object(), "A", "KeySerializationError"),
     ("A", object(), "ValueSerializationError"),
 ))
-def test_serialization_errors(topic, producer_serializing, key, value, error):
+def test_serialization_errors(skip_if_not_serializing, topic, producer, key, value, error):
     import confluent_kafka.error
     error = getattr(confluent_kafka.error, error)
 
@@ -107,27 +105,31 @@ def test_serialization_errors(topic, producer_serializing, key, value, error):
     @background_task()
     def test():
         with pytest.raises(error):
-            producer_serializing.produce(topic=topic, key=key, value=value)
+            producer.produce(topic=topic, key=key, value=value)
 
     test()
 
 
 @pytest.mark.parametrize("key,value,error", (
-    ("%", "A", "KeyDeserializationError"),
-    ("A", "%", "ValueDeserializationError"),
+    ("%", "{}", "KeyDeserializationError"),
+    ("{}", "%", "ValueDeserializationError"),
 ))
-def test_deserialization_errors(topic, producer_cimpl, consumer_deserializing, key, value, error):
+def test_deserialization_errors(skip_if_not_serializing, topic, producer, consumer, key, value, error):
     import confluent_kafka.error
-    error = getattr(confluent_kafka.error, error)
+    error_cls = getattr(confluent_kafka.error, error)
+    
+    # Remove serializers to cause intentional issues
+    producer._value_serializer = None
+    producer._key_serializer = None
 
-    producer_cimpl.produce(topic=topic, key=key, value=value)
-    producer_cimpl.flush()
+    producer.produce(topic=topic, key=key, value=value)
+    producer.flush()
 
-    @validate_transaction_errors([callable_name(error)])
+    @validate_transaction_errors([callable_name(error_cls)])
     @background_task()
     def test():
-        with pytest.raises(error):
-            record = consumer_deserializing.poll(0.5)
+        with pytest.raises(error_cls):
+            record = consumer.poll(0.5)
             assert record is not None, "No record consumed."
 
     test()

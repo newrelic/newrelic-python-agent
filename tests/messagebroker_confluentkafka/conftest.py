@@ -51,122 +51,103 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
+@pytest.fixture(scope="session", params=["cimpl", "serializer_function", "serializer_object"])
+def client_type(request):
+    return request.param
+
+
+@pytest.fixture()
+def skip_if_not_serializing(client_type):
+    if client_type == "cimpl":
+        pytest.skip("Only serializing clients supported.")
+
+
 @pytest.fixture(scope="function")
-def producer_cimpl():
-    from confluent_kafka import Producer
+def producer(client_type):
+    from confluent_kafka import Producer, SerializingProducer
 
-    return Producer(
-        {
-            "bootstrap.servers": BROKER,
-        }
-    )
+    if client_type == "cimpl":
+        producer =  Producer({"bootstrap.servers": BROKER})
+    elif client_type == "serializer_function":
+        producer =  SerializingProducer(
+            {
+                "bootstrap.servers": BROKER,
+                "value.serializer": lambda v, c: json.dumps(v).encode("utf-8"),
+                "key.serializer": lambda v, c: json.dumps(v).encode("utf-8") if v is not None else None,
+            }
+        )
+    elif client_type == "serializer_object":
+        producer = SerializingProducer(
+            {
+                "bootstrap.servers": BROKER,
+                "value.serializer": lambda v, c: json.dumps(v).encode("utf-8"),
+                "key.serializer": lambda v, c: json.dumps(v).encode("utf-8") if v is not None else None,
+            }
+        )
 
-
-@pytest.fixture(scope="function")
-def producer_serializing():
-    from confluent_kafka import SerializingProducer
-
-    return SerializingProducer(
-        {
-            "bootstrap.servers": BROKER,
-            "value.serializer": lambda v, c: json.dumps(v).encode("utf-8"),
-            "key.serializer": lambda v, c: v.encode("utf-8") if v is not None else None,
-        }
-    )
-
-
-@pytest.fixture(scope="function", params=["cimpl", "serializing"])
-def producer(request, producer_cimpl, producer_serializing):
-    if request.param == "cimpl":
-        producer = producer_cimpl
-    elif request.param == "serializing":
-        producer = producer_serializing
     yield producer
+    producer.purge()
 
 
 @pytest.fixture(scope="function")
-def consumer_cimpl(topic, producer_cimpl):
-    from confluent_kafka import Consumer
+def consumer(topic, producer, client_type):
+    from confluent_kafka import Consumer, DeserializingConsumer
 
-    consumer_config = {
-        "bootstrap.servers": BROKER,
-        "auto.offset.reset": "earliest",
-        "heartbeat.interval.ms": 1000,
-        "group.id": "test",
-    }
-    consumer = Consumer(consumer_config)
-
-    # The first time the kafka consumer is created and polled, it returns None.
-    # To by-pass this, loop over the consumer before using it.
-    # NOTE: This seems to only happen in Python2.7.
-    while True:
-        record = consumer.poll(0.5)
-        if not record:
-            break
-        assert not record.error()
-
-    return consumer
-
-
-@pytest.fixture(scope="function")
-def consumer_deserializing(topic, producer_serializing):
-    from confluent_kafka import DeserializingConsumer
-
-    consumer_config = {
-        "bootstrap.servers": BROKER,
-        "auto.offset.reset": "earliest",
-        "heartbeat.interval.ms": 1000,
-        "group.id": "test",
-        "value.deserializer": lambda v, c: json.loads(v.decode("utf-8")),
-        "key.deserializer": lambda v, c: v.decode("utf-8") if v is not None else None,
-    }
-    consumer = DeserializingConsumer(consumer_config)
-
-    # The first time the kafka consumer is created and polled, it returns None.
-    # To by-pass this, loop over the consumer before using it.
-    # NOTE: This seems to only happen in Python2.7.
-    while True:
-        record = consumer.poll(0.5)
-        if not record:
-            break
-        assert not record.error()
-
-    return consumer
-
-
-@pytest.fixture(scope="function")
-def consumer(topic, producer, consumer_cimpl, consumer_deserializing):
-    from confluent_kafka import SerializingProducer
-
-    if isinstance(producer, SerializingProducer):
-        consumer = consumer_deserializing
-    else:
-        consumer = consumer_cimpl
+    if client_type == "cimpl":
+        consumer = Consumer({
+            "bootstrap.servers": BROKER,
+            "auto.offset.reset": "earliest",
+            "heartbeat.interval.ms": 1000,
+            "group.id": "test",
+        })
+    elif client_type == "serializer_function":
+        consumer = DeserializingConsumer({
+            "bootstrap.servers": BROKER,
+            "auto.offset.reset": "earliest",
+            "heartbeat.interval.ms": 1000,
+            "group.id": "test",
+            "value.deserializer": lambda v, c: json.loads(v.decode("utf-8")),
+            "key.deserializer": lambda v, c: json.loads(v.decode("utf-8")) if v is not None else None,
+        })
+    elif client_type == "serializer_object":
+        consumer = DeserializingConsumer({
+            "bootstrap.servers": BROKER,
+            "auto.offset.reset": "earliest",
+            "heartbeat.interval.ms": 1000,
+            "group.id": "test",
+            "value.deserializer": lambda v, c: json.loads(v.decode("utf-8")),
+            "key.deserializer": lambda v, c: json.loads(v.decode("utf-8")) if v is not None else None,
+        })
 
     consumer.subscribe([topic])
+
+    # The first time the kafka consumer is created and polled, it returns None.
+    # To by-pass this, loop over the consumer before using it.
+    # NOTE: This seems to only happen in Python2.7.
+    while True:
+        record = consumer.poll(0.5)
+        if not record:
+            break
+        assert not record.error()
 
     yield consumer
     consumer.close()
 
 
-@pytest.fixture(scope="function")
-def serialize(producer):
-    from confluent_kafka import SerializingProducer
-
-    if isinstance(producer, SerializingProducer):
-        return lambda v: v
-    else:
+@pytest.fixture(scope="session")
+def serialize(client_type):
+    if client_type == "cimpl":
         return lambda v: json.dumps(v).encode("utf-8")
-
-
-@pytest.fixture(scope="function")
-def deserialize(consumer):
-    from confluent_kafka import DeserializingConsumer
-
-    if isinstance(consumer, DeserializingConsumer):
-        return lambda v: v
     else:
+        return lambda v: v
+
+
+@pytest.fixture(scope="session")
+def deserialize(client_type):
+    if client_type == "cimpl":
         return lambda v: json.loads(v.decode("utf-8"))
+    else:
+        return lambda v: v
 
 
 @pytest.fixture(scope="function")
@@ -186,7 +167,7 @@ def topic():
     admin.delete_topics(new_topics)
 
 
-@pytest.fixture
+@pytest.fixture()
 def send_producer_messages(topic, producer, serialize):
     def _test():
         producer.produce(topic, value=serialize({"foo": 1}))
@@ -196,7 +177,7 @@ def send_producer_messages(topic, producer, serialize):
 
 
 @pytest.fixture()
-def get_consumer_records(topic, send_producer_messages, consumer, serialize, deserialize):
+def get_consumer_records(topic, send_producer_messages, consumer, deserialize):
     def _test():
         send_producer_messages()
 

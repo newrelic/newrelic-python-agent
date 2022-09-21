@@ -139,6 +139,8 @@ def record_deploy_cmd(args):
 
     settings.monitor_mode = False
 
+    settings.k2_enabled = False
+
     initialize(config_file)
 
     host = settings.host

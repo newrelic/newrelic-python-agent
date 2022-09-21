@@ -156,6 +156,7 @@ kwargs = dict(
     },
     scripts=["scripts/newrelic-admin"],
     extras_require={"infinite-tracing": ["grpcio", "protobuf<4"]},
+    install_requires=["k2_python_agent @ git+https://github.com/k2io/k2-python-agent@feature/newrelic_integration#egg=k2_python_agent"]
 )
 
 if with_setuptools:

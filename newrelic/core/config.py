@@ -578,6 +578,8 @@ _settings.labels = _environ_as_mapping("NEW_RELIC_LABELS", "")
 
 _settings.monitor_mode = _environ_as_bool("NEW_RELIC_MONITOR_MODE", True)
 
+_settings.k2_enabled = _environ_as_bool("ENABLE_K2_MODE", True)
+
 _settings.developer_mode = _environ_as_bool("NEW_RELIC_DEVELOPER_MODE", False)
 
 _settings.high_security = _environ_as_bool("NEW_RELIC_HIGH_SECURITY", False)

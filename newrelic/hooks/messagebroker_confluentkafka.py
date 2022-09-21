@@ -13,14 +13,15 @@
 # limitations under the License.
 import logging
 import sys
-import time
 
 from newrelic.api.application import application_instance
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
-from newrelic.api.time_trace import current_trace, notice_error
+from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.api.function_trace import FunctionTraceWrapper
+from newrelic.api.error_trace import wrap_error_trace
 
 _logger = logging.getLogger(__name__)
 
@@ -43,27 +44,6 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
 
     topic, value, key, partition, on_delivery, timestamp, headers = _bind_Producer_produce(*args, **kwargs)
     headers = list(headers) if headers else []
-
-    # Serialization Metrics
-    group = "MessageBroker/Kafka/Topic"
-    name = "Named/%s" % topic
-
-    if hasattr(instance, "_nr_key_serialization_time"):
-        key_serialization_time = instance._nr_key_serialization_time
-        if key_serialization_time:
-            transaction.record_custom_metric("%s/%s/Serialization/Key" % (group, name), key_serialization_time)
-        instance._nr_key_serialization_time = None
-
-    if hasattr(instance, "_nr_value_serialization_time"):
-        value_serialization_time = instance._nr_value_serialization_time
-        if value_serialization_time:
-            transaction.record_custom_metric("%s/%s/Serialization/Value" % (group, name), value_serialization_time)
-        instance._nr_value_serialization_time = None
-
-    # Avoid double wrapping with traces for subclasses of Producer
-    trace = current_trace()
-    if isinstance(trace, MessageTrace):
-        return wrapped(*args, **kwargs)
 
     with MessageTrace(
         library="Kafka",
@@ -95,176 +75,137 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
             raise
 
 
-def metric_wrapper(metric_name, check_result=False):
-    def _metric_wrapper(wrapped, instance, args, kwargs):
-        result = wrapped(*args, **kwargs)
+def wrap_Consumer_poll(wrapped, instance, args, kwargs):
+    # This wrapper can be called either outside of a transaction, or
+    # within the context of an existing transaction.  There are 4
+    # possibilities we need to handle: (Note that this is similar to
+    # our Pika, Celery, and Kafka-Python instrumentation)
+    #
+    #   1. Inside an inner wrapper in the DeserializingConsumer
+    #
+    #       Do nothing. The DeserializingConsumer is double wrapped because
+    #       the underlying C implementation is wrapped as well. We need to
+    #       detect when the second wrapper is called and ignore it completely
+    #       or transactions will be stopped early.
+    #
+    #   2. In an inactive transaction
+    #
+    #      If the end_of_transaction() or ignore_transaction() API
+    #      calls have been invoked, this iterator may be called in the
+    #      context of an inactive transaction. In this case, don't wrap
+    #      the iterator in any way. Just run the original iterator.
+    #
+    #   3. In an active transaction
+    #
+    #      Do nothing.
+    #
+    #   4. Outside of a transaction
+    #
+    #      Since it's not running inside of an existing transaction, we
+    #      want to create a new background transaction for it.
 
-        application = application_instance(activate=False)
-        if application:
-            if not check_result or check_result and result:
-                # If the result does not need validated, send metric.
-                # If the result does need validated, ensure it is True.
-                application.record_custom_metric(metric_name, 1)
+    # Step 1: Stop existing transactions
+    if hasattr(instance, "_nr_transaction") and not instance._nr_transaction.stopped:
+        instance._nr_transaction.__exit__(*sys.exc_info())
+        instance._nr_transaction = None
 
-        return result
+    # Step 2: Poll for records
+    try:
+        record = wrapped(*args, **kwargs)
+    except Exception as e:
+        notice_error()
+        raise
 
-    return _metric_wrapper
+    # Step 3: Start new transaction for received record
+    if record:
+        library = "Kafka"
+        destination_type = "Topic"
+        destination_name = record.topic()
+        received_bytes = len(str(record.value()).encode("utf-8"))
+        message_count = 1
+
+        headers = record.headers()
+        headers = dict(headers) if headers else {}
+
+        transaction = current_transaction(active_only=False)
+        if not transaction:
+            transaction = MessageTransaction(
+                application=application_instance(),
+                library=library,
+                destination_type=destination_type,
+                destination_name=destination_name,
+                headers=headers,
+                transport_type="Kafka",
+                routing_key=record.key(),
+                source=wrapped,
+            )
+            instance._nr_transaction = transaction
+            transaction.__enter__()
+
+            transaction._add_agent_attribute("kafka.consume.byteCount", received_bytes)
+
+        transaction = current_transaction()
+
+        if transaction:  # If there is an active transaction now.
+            # Add metrics whether or not a transaction was already active, or one was just started.
+            # Don't add metrics if there was an inactive transaction.
+            # Name the metrics using the same format as the transaction, but in case the active transaction
+            # was an existing one and not a message transaction, reproduce the naming logic here.
+            group = "Message/%s/%s" % (library, destination_type)
+            name = "Named/%s" % destination_name
+            transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
+            transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
+
+    return record
 
 
-def wrap_Consumer_poll(is_cimpl_wrapper):
-    # Hold a flag to determine if this wrapper is applied to the C implementation
-    # or to the Python implementation of DeserializingConsumer. Used to differentiate
-    # states listed in the comment below.
+def wrap_DeserializingConsumer_poll(wrapped, instance, args, kwargs):
+    try:
+        return wrapped(*args, **kwargs)
+    except Exception:
+        notice_error()
 
-    def _wrap_Consumer_poll(wrapped, instance, args, kwargs):
-        # This wrapper can be called either outside of a transaction, or
-        # within the context of an existing transaction.  There are 4
-        # possibilities we need to handle: (Note that this is similar to
-        # our Pika, Celery, and Kafka-Python instrumentation)
-        #
-        #   1. Inside an inner wrapper in the DeserializingConsumer
-        #
-        #       Do nothing. The DeserializingConsumer is double wrapped because
-        #       the underlying C implementation is wrapped as well. We need to
-        #       detect when the second wrapper is called and ignore it completely
-        #       or transactions will be stopped early.
-        #
-        #   2. In an inactive transaction
-        #
-        #      If the end_of_transaction() or ignore_transaction() API
-        #      calls have been invoked, this iterator may be called in the
-        #      context of an inactive transaction. In this case, don't wrap
-        #      the iterator in any way. Just run the original iterator.
-        #
-        #   3. In an active transaction
-        #
-        #      Do nothing.
-        #
-        #   4. Outside of a transaction
-        #
-        #      Since it's not running inside of an existing transaction, we
-        #      want to create a new background transaction for it.
-
-        try:
-            from confluent_kafka.deserializing_consumer import DeserializingConsumer
-
-            if is_cimpl_wrapper and isinstance(instance, DeserializingConsumer):
-                return wrapped(*args, **kwargs)  # Do nothing
-        except ImportError:
-            return wrapped(*args, **kwargs)
-
+        # Stop existing transactions
         if hasattr(instance, "_nr_transaction") and not instance._nr_transaction.stopped:
             instance._nr_transaction.__exit__(*sys.exc_info())
             instance._nr_transaction = None
 
-        try:
-            record = wrapped(*args, **kwargs)
-        except Exception as e:
-            notice_error()
-            raise
-
-        if record:
-            library = "Kafka"
-            destination_type = "Topic"
-            destination_name = record.topic()
-            received_bytes = len(str(record.value()).encode("utf-8"))
-            message_count = 1
-
-            headers = record.headers()
-            headers = dict(headers) if headers else {}
-
-            transaction = current_transaction(active_only=False)
-            if not transaction:
-                transaction = MessageTransaction(
-                    application=application_instance(),
-                    library=library,
-                    destination_type=destination_type,
-                    destination_name=destination_name,
-                    headers=headers,
-                    transport_type="Kafka",
-                    routing_key=record.key(),
-                    source=wrapped,
-                )
-                instance._nr_transaction = transaction
-                transaction.__enter__()
-
-                transaction._add_agent_attribute("kafka.consume.byteCount", received_bytes)
-
-            transaction = current_transaction()
-
-            if transaction:  # If there is an active transaction now.
-                # Add metrics whether or not a transaction was already active, or one was just started.
-                # Don't add metrics if there was an inactive transaction.
-                # Name the metrics using the same format as the transaction, but in case the active transaction
-                # was an existing one and not a message transaction, reproduce the naming logic here.
-                group = "Message/%s/%s" % (library, destination_type)
-                name = "Named/%s" % destination_name
-                transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
-                transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
-
-                # Deserialization Metrics
-                if hasattr(instance, "_nr_key_deserialization_time"):
-                    key_deserialization_time = instance._nr_key_deserialization_time
-                    if key_deserialization_time:
-                        transaction.record_custom_metric(
-                            "%s/%s/Deserialization/Key" % (group, name), key_deserialization_time
-                        )
-                    instance._nr_key_deserialization_time = None
-
-                if hasattr(instance, "_nr_value_deserialization_time"):
-                    value_deserialization_time = instance._nr_value_deserialization_time
-                    if value_deserialization_time:
-                        transaction.record_custom_metric(
-                            "%s/%s/Deserialization/Value" % (group, name), value_deserialization_time
-                        )
-                    instance._nr_value_deserialization_time = None
-
-        return record
-
-    return _wrap_Consumer_poll
+        raise
 
 
-def serializer_wrapper(client, key):
+def wrap_serializer(serializer_name, group_prefix):
     @function_wrapper
-    def _serializer_wrapper(wrapped, instance, args, kwargs):
-        start_time = time.time()
-        result = wrapped(*args, **kwargs)
+    def _wrap_serializer(wrapped, instance, args, kwargs):
+        if not current_transaction():
+            return wrapped(*args, **kwargs)
 
-        try:
-            setattr(client, key, (time.time() - start_time))
-        except Exception:
-            # Don't raise errors if object is immutable
-            pass
+        topic = args[1].topic
+        group = "%s/Kafka/Topic" % group_prefix
+        name = "Named/%s/%s" % (topic, serializer_name)
 
-        return result
+        return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
 
-    return _serializer_wrapper
+    return _wrap_serializer
 
 
 def wrap_SerializingProducer_init(wrapped, instance, args, kwargs):
     wrapped(*args, **kwargs)
 
     if hasattr(instance, "_key_serializer") and callable(instance._key_serializer):
-        instance._key_serializer = serializer_wrapper(instance, "_nr_key_serialization_time")(instance._key_serializer)
+        instance._key_serializer = wrap_serializer("Serialization/Key", "MessageBroker")(instance._key_serializer)
 
     if hasattr(instance, "_value_serializer") and callable(instance._value_serializer):
-        instance._value_serializer = serializer_wrapper(instance, "_nr_value_serialization_time")(
-            instance._value_serializer
-        )
+        instance._value_serializer = wrap_serializer("Serialization/Value", "MessageBroker")(instance._value_serializer)
 
 
 def wrap_DeserializingConsumer_init(wrapped, instance, args, kwargs):
     wrapped(*args, **kwargs)
 
     if hasattr(instance, "_key_deserializer") and callable(instance._key_deserializer):
-        instance._key_deserializer = serializer_wrapper(instance, "_nr_key_deserialization_time")(
-            instance._key_deserializer
-        )
+        instance._key_deserializer = wrap_serializer("Deserialization/Key", "Message")(instance._key_deserializer)
 
     if hasattr(instance, "_value_deserializer") and callable(instance._value_deserializer):
-        instance._value_deserializer = serializer_wrapper(instance, "_nr_value_deserialization_time")(
-            instance._value_deserializer
-        )
+        instance._value_deserializer = wrap_serializer("Deserialization/Value", "Message")(instance._value_deserializer)
 
 
 def wrap_immutable_class(module, class_name):
@@ -281,16 +222,16 @@ def instrument_confluentkafka_cimpl(module):
 
     if hasattr(module, "Consumer"):
         wrap_immutable_class(module, "Consumer")
-        wrap_function_wrapper(module, "Consumer.poll", wrap_Consumer_poll(is_cimpl_wrapper=True))
+        wrap_function_wrapper(module, "Consumer.poll", wrap_Consumer_poll)
 
 
 def instrument_confluentkafka_serializing_producer(module):
     if hasattr(module, "SerializingProducer"):
         wrap_function_wrapper(module, "SerializingProducer.__init__", wrap_SerializingProducer_init)
-        wrap_function_wrapper(module, "SerializingProducer.produce", wrap_Producer_produce)
+        wrap_error_trace(module, "SerializingProducer.produce")
 
 
 def instrument_confluentkafka_deserializing_consumer(module):
     if hasattr(module, "DeserializingConsumer"):
         wrap_function_wrapper(module, "DeserializingConsumer.__init__", wrap_DeserializingConsumer_init)
-        wrap_function_wrapper(module, "DeserializingConsumer.poll", wrap_Consumer_poll(is_cimpl_wrapper=False))
+        wrap_function_wrapper(module, "DeserializingConsumer.poll", wrap_DeserializingConsumer_poll)

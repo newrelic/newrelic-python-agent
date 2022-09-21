@@ -46,28 +46,6 @@ def test_trace_metrics(topic, send_producer_messages):
     test()
 
 
-def test_serialization_metrics(topic, producer_serializing):
-    txn_name = "test_producer:test_serialization_metrics.<locals>.test" if six.PY3 else "test_producer:test"
-
-    @validate_transaction_metrics(
-        txn_name,
-        custom_metrics=[
-            ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Value" % topic, 3),
-            ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Key" % topic, 3),
-        ],
-        background_task=True,
-    )
-    @background_task()
-    def test():
-        messages = [1, 2, 3]
-        for message in messages:
-            producer_serializing.produce(topic, key="1", value=message)
-
-        producer_serializing.flush()
-
-    test()
-
-
 def test_distributed_tracing_headers(topic, send_producer_messages):
     txn_name = "test_producer:test_distributed_tracing_headers.<locals>.test" if six.PY3 else "test_producer:test"
 

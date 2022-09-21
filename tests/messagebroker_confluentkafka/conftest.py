@@ -63,7 +63,7 @@ def skip_if_not_serializing(client_type):
 
 
 @pytest.fixture(scope="function")
-def producer(client_type):
+def producer(client_type, json_serializer):
     from confluent_kafka import Producer, SerializingProducer
 
     if client_type == "cimpl":
@@ -80,8 +80,8 @@ def producer(client_type):
         producer = SerializingProducer(
             {
                 "bootstrap.servers": BROKER,
-                "value.serializer": lambda v, c: json.dumps(v).encode("utf-8"),
-                "key.serializer": lambda v, c: json.dumps(v).encode("utf-8") if v is not None else None,
+                "value.serializer": json_serializer,
+                "key.serializer": json_serializer,
             }
         )
 
@@ -90,7 +90,7 @@ def producer(client_type):
 
 
 @pytest.fixture(scope="function")
-def consumer(topic, producer, client_type):
+def consumer(topic, producer, client_type, json_deserializer):
     from confluent_kafka import Consumer, DeserializingConsumer
 
     if client_type == "cimpl":
@@ -115,8 +115,8 @@ def consumer(topic, producer, client_type):
             "auto.offset.reset": "earliest",
             "heartbeat.interval.ms": 1000,
             "group.id": "test",
-            "value.deserializer": lambda v, c: json.loads(v.decode("utf-8")),
-            "key.deserializer": lambda v, c: json.loads(v.decode("utf-8")) if v is not None else None,
+            "value.deserializer": json_deserializer,
+            "key.deserializer": json_deserializer,
         })
 
     consumer.subscribe([topic])
@@ -148,6 +148,26 @@ def deserialize(client_type):
         return lambda v: json.loads(v.decode("utf-8"))
     else:
         return lambda v: v
+
+
+@pytest.fixture(scope="session")
+def json_serializer():
+    from confluent_kafka.serialization import Serializer
+    class JSONSerializer(Serializer):
+        def __call__(self, obj, ctx):
+            return json.dumps(obj).encode("utf-8") if obj is not None else None
+
+    return JSONSerializer()
+
+
+@pytest.fixture(scope="session")
+def json_deserializer():
+    from confluent_kafka.serialization import Deserializer
+    class JSONDeserializer(Deserializer):
+        def __call__(self, obj, ctx):
+            return json.loads(obj.decode("utf-8")) if obj is not None else None
+
+    return JSONDeserializer()
 
 
 @pytest.fixture(scope="function")

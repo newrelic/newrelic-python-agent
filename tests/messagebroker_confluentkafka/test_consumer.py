@@ -130,11 +130,11 @@ def test_consumer_handled_errors_not_recorded(get_consumer_records):
 
 
 def test_distributed_tracing_headers(topic, producer, consumer, serialize):
-    # produce the messages inside a transaction, making sure to close it.
+    # Produce the messages inside a transaction, making sure to close it.
     @validate_transaction_count(1)
     @background_task()
     def _produce():
-        producer.produce(topic, value=serialize({"foo": "bar"}))
+        producer.produce(topic, key="bar", value=serialize({"foo": 1}))
         producer.flush()
 
     @validate_transaction_metrics(

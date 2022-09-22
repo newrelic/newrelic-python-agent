@@ -75,7 +75,7 @@ def test_producer_errors(topic, producer, monkeypatch):
     @background_task()
     def test():
         with pytest.raises(TypeError):
-            producer.produce(topic, value=object(), partition=100)
+            producer.produce(topic, value=object())
             producer.flush()
 
     test()

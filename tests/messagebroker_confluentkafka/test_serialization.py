@@ -27,7 +27,7 @@ from newrelic.common.object_names import callable_name
 @pytest.fixture
 def send_producer_messages(topic, producer):
     def _test():
-        producer.produce(topic, value={"foo": 1})
+        producer.produce(topic, key="bar", value={"foo": 1})
         producer.flush()
 
     return _test
@@ -99,12 +99,12 @@ def test_deserialization_metrics(skip_if_not_serializing, topic, get_consumer_re
 ))
 def test_serialization_errors(skip_if_not_serializing, topic, producer, key, value, error):
     import confluent_kafka.error
-    error = getattr(confluent_kafka.error, error)
+    error_cls = getattr(confluent_kafka.error, error)
 
-    @validate_transaction_errors([callable_name(error)])
+    @validate_transaction_errors([callable_name(error_cls)])
     @background_task()
     def test():
-        with pytest.raises(error):
+        with pytest.raises(error_cls):
             producer.produce(topic=topic, key=key, value=value)
 
     test()

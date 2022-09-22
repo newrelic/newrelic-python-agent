@@ -3084,7 +3084,7 @@ def initialize(
     if _settings.k2_enabled:
         # run k2 agent
         import k2_python_agent
-        k2_python_agent.init_k2({}, {})
+        k2_python_agent.init_k2()
 
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

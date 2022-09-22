@@ -30,12 +30,9 @@ from testing_support.validators.validate_custom_metrics_outside_transaction impo
         ("MessageBroker/Kafka/Heartbeat/PollTimeout", None),
     ]
 )
-def test_successful_heartbeat_metrics_recorded(topic, producer, consumer):
-    producer.send(topic, value=1)
-    producer.flush()
-
-    for record in consumer:
-        pass
+def test_successful_heartbeat_metrics_recorded(topic, send_producer_messages, get_consumer_records):
+    send_producer_messages()
+    get_consumer_records()
     time.sleep(1.5)
 
 

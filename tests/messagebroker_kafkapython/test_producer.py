@@ -28,7 +28,7 @@ from newrelic.packages import six
 
 
 def test_trace_metrics(topic, send_producer_messages):
-    scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 3)]
+    scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
     unscoped_metrics = scoped_metrics
     txn_name = "test_producer:test_trace_metrics.<locals>.test" if six.PY3 else "test_producer:test"
 
@@ -45,33 +45,14 @@ def test_trace_metrics(topic, send_producer_messages):
     test()
 
 
-def test_serialization_metrics(topic, send_producer_messages):
-    custom_metrics = [
-            ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Value" % topic, 3),
-            ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Key" % topic, 3),
-    ]
-    txn_name = "test_producer:test_serialization_metrics.<locals>.test" if six.PY3 else "test_producer:test"
-
-    @validate_transaction_metrics(
-        txn_name,
-        custom_metrics=custom_metrics,
-        background_task=True,
-    )
-    @background_task()
-    def test():
-        send_producer_messages()
-
-    test()
-
-
 def test_distributed_tracing_headers(topic, send_producer_messages):
     txn_name = "test_producer:test_distributed_tracing_headers.<locals>.test" if six.PY3 else "test_producer:test"
 
     @validate_transaction_metrics(
         txn_name,
         rollup_metrics=[
-            ("Supportability/TraceContext/Create/Success", 3),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 3),
+            ("Supportability/TraceContext/Create/Success", 1),
+            ("Supportability/DistributedTrace/CreatePayload/Success", 1),
         ],
         background_task=True,
     )
@@ -84,32 +65,14 @@ def test_distributed_tracing_headers(topic, send_producer_messages):
     test()
 
 
-@pytest.mark.parametrize(
-    "input,error,message",
-    (
-        (None, AssertionError, "Need at least one: key or value"),
-        (object(), TypeError, r".* is not JSON serializable"),
-    ),
-    ids=("None Value", "Serialization Error"),
-)
-def test_producer_errors(topic, producer, input, error, message):
-    @validate_transaction_errors([callable_name(error)])
+def test_producer_errors(topic, producer, monkeypatch):
+    monkeypatch.setitem(producer.config, "value_serializer", None)
+
+    @validate_transaction_errors([callable_name(AssertionError)])
     @background_task()
     def test():
-        with pytest.raises(error, match=message):
+        with pytest.raises(AssertionError):
             producer.send(topic, input)
             producer.flush()
 
     test()
-
-
-@pytest.fixture
-def send_producer_messages(topic, producer):
-    def _test():
-        messages = [1, 2, 3]
-        for message in messages:
-            producer.send(topic, message)
-
-        producer.flush()
-
-    return _test

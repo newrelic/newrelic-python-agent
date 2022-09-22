@@ -67,12 +67,13 @@ def test_distributed_tracing_headers(topic, send_producer_messages):
 
 def test_producer_errors(topic, producer, monkeypatch):
     monkeypatch.setitem(producer.config, "value_serializer", None)
+    monkeypatch.setitem(producer.config, "key_serializer", None)
 
     @validate_transaction_errors([callable_name(AssertionError)])
     @background_task()
     def test():
         with pytest.raises(AssertionError):
-            producer.send(topic, input)
+            producer.send(topic, value=object())
             producer.flush()
 
     test()

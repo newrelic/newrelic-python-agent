@@ -15,7 +15,7 @@
 from newrelic.packages import six
 
 
-def test_data_source_metrics(data_source, topic, producer, consumer):
+def test_data_source_metrics(data_source, topic, get_consumer_records):
     _data_source_metrics = {
         "MessageBroker/Kafka/Internal/kafka-metrics-count/count": "present",
         "MessageBroker/Kafka/Internal/producer-metrics/request-rate": "present",
@@ -23,10 +23,7 @@ def test_data_source_metrics(data_source, topic, producer, consumer):
         "MessageBroker/Kafka/Internal/consumer-metrics/request-rate": "present",
     }
 
-    producer.send(topic, value=1)
-    producer.flush()
-    for _ in consumer:
-        pass
+    get_consumer_records()
 
     metrics = dict(data_source())
     assert metrics

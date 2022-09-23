@@ -16,13 +16,16 @@ import sys
 from kafka.serializer import Serializer
 
 from newrelic.api.application import application_instance
+from newrelic.api.function_trace import FunctionTraceWrapper
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
-from newrelic.api.time_trace import notice_error, current_trace
+from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper, function_wrapper
-from newrelic.api.function_trace import FunctionTraceWrapper
-
+from newrelic.common.object_wrapper import (
+    ObjectProxy,
+    function_wrapper,
+    wrap_function_wrapper,
+)
 
 HEARTBEAT_POLL = "MessageBroker/Kafka/Heartbeat/Poll"
 HEARTBEAT_SENT = "MessageBroker/Kafka/Heartbeat/Sent"
@@ -65,7 +68,6 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
 def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
     if hasattr(instance, "_nr_transaction") and not instance._nr_transaction.stopped:
         instance._nr_transaction.__exit__(*sys.exc_info())
-        instance._nr_transaction = None
 
     try:
         record = wrapped(*args, **kwargs)
@@ -146,10 +148,14 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
 
 
 def wrap_KafkaProducer_init(wrapped, instance, args, kwargs):
-    get_config_key = lambda key: kwargs.get(key, instance.DEFAULT_CONFIG[key])
+    get_config_key = lambda key: kwargs.get(key, instance.DEFAULT_CONFIG[key])  # noqa: E731
 
-    kwargs["key_serializer"] = wrap_serializer(instance, "Serialization/Key", "MessageBroker", get_config_key("key_serializer"))
-    kwargs["value_serializer"] = wrap_serializer(instance, "Serialization/Value", "MessageBroker", get_config_key("value_serializer"))
+    kwargs["key_serializer"] = wrap_serializer(
+        instance, "Serialization/Key", "MessageBroker", get_config_key("key_serializer")
+    )
+    kwargs["value_serializer"] = wrap_serializer(
+        instance, "Serialization/Value", "MessageBroker", get_config_key("value_serializer")
+    )
 
     return wrapped(*args, **kwargs)
 
@@ -157,7 +163,7 @@ def wrap_KafkaProducer_init(wrapped, instance, args, kwargs):
 class NewRelicSerializerWrapper(ObjectProxy):
     def __init__(self, wrapped, serializer_name, group_prefix):
         ObjectProxy.__init__.__get__(self)(wrapped)
-        
+
         self._nr_serializer_name = serializer_name
         self._nr_group_prefix = group_prefix
 
@@ -192,7 +198,7 @@ def wrap_serializer(client, serializer_name, group_prefix, serializer):
                 message_trace = message_trace.parent
             if message_trace:
                 topic = message_trace.destination_name
-        
+
         group = "%s/Kafka/Topic" % group_prefix
         name = "Named/%s/%s" % (topic, serializer_name)
 

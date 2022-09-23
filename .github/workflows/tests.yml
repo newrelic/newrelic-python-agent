@@ -435,12 +435,12 @@ jobs:
 
   kafka:
     env:
-      TOTAL_GROUPS: 1
+      TOTAL_GROUPS: 2
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1]
+        group-number: [1, 2]
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -472,6 +472,18 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-python-matrix
 
+      # Special case packages
+      - name: Install librdkafka-dev
+        run: |
+          # Use lsb-release to find the codename of Ubuntu to use to install the correct library name
+          sudo apt-get update
+          sudo ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+          sudo apt-get install -y wget gnupg2 software-properties-common
+          sudo wget -qO - https://packages.confluent.io/deb/7.2/archive.key | sudo apt-key add -
+          sudo add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
+          sudo apt-get update
+          sudo apt-get install -y librdkafka-dev/$(lsb_release -c | cut -f 2)
+
       - name: Get Environments
         id: get-envs
         run: |
@@ -481,7 +493,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox -vv -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0

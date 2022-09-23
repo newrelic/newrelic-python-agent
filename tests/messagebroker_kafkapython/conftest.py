@@ -18,7 +18,7 @@ import uuid
 import kafka
 import pytest
 from testing_support.db_settings import kafka_settings
-from testing_support.fixtures import (  # noqa: F401, W0611
+from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -84,18 +84,18 @@ def consumer(topic, producer):
 
 @pytest.fixture(scope="function")
 def topic():
-    # from kafka.admin.client import KafkaAdminClient
-    # from kafka.admin.new_topic import NewTopic
+    from kafka.admin.client import KafkaAdminClient
+    from kafka.admin.new_topic import NewTopic
 
     topic = "test-topic-%s" % str(uuid.uuid4())
 
-    # admin = KafkaAdminClient(bootstrap_servers=BROKER)
-    # new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
-    # topics = admin.create_topics(new_topics)
+    admin = KafkaAdminClient(bootstrap_servers=BROKER)
+    new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
+    topics = admin.create_topics(new_topics)
 
     yield topic
 
-    # admin.delete_topics([topic])
+    admin.delete_topics([topic])
 
 
 @transient_function_wrapper(kafka.producer.kafka, "KafkaProducer.send.__wrapped__")

@@ -100,7 +100,7 @@ def consumer(topic, producer, client_type, json_deserializer):
                 "bootstrap.servers": BROKER,
                 "auto.offset.reset": "earliest",
                 "heartbeat.interval.ms": 1000,
-                "group.id": "test",
+                "group.id": f"{client_type}-{topic}",
             }
         )
     elif client_type == "serializer_function":
@@ -109,7 +109,7 @@ def consumer(topic, producer, client_type, json_deserializer):
                 "bootstrap.servers": BROKER,
                 "auto.offset.reset": "earliest",
                 "heartbeat.interval.ms": 1000,
-                "group.id": "test",
+                "group.id": f"{client_type}-{topic}",
                 "value.deserializer": lambda v, c: json.loads(v.decode("utf-8")),
                 "key.deserializer": lambda v, c: json.loads(v.decode("utf-8")) if v is not None else None,
             }
@@ -120,7 +120,7 @@ def consumer(topic, producer, client_type, json_deserializer):
                 "bootstrap.servers": BROKER,
                 "auto.offset.reset": "earliest",
                 "heartbeat.interval.ms": 1000,
-                "group.id": "test",
+                "group.id": f"{client_type}-{topic}",
                 "value.deserializer": json_deserializer,
                 "key.deserializer": json_deserializer,
             }

@@ -20,8 +20,6 @@ from testing_support.fixtures import (
     reset_core_stats_engine,
 )
 
-from testing_support.validators.validate_transaction_count import validate_transaction_count
-
 from newrelic.api.background_task import background_task
 from newrelic.packages import six
 

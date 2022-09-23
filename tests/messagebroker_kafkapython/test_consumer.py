@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import kafka
-import kafka.errors as Errors
 import pytest
-from conftest import BROKER, cache_kafka_consumer_headers
+from conftest import cache_kafka_consumer_headers
 from testing_support.fixtures import (
     validate_attributes,
     validate_error_event_attributes_outside_transaction,

@@ -53,26 +53,91 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
+@pytest.fixture(
+    scope="session", params=["no_serializer", "serializer_function", "callable_object", "serializer_object"]
+)
+def client_type(request):
+    return request.param
+
+
+@pytest.fixture()
+def skip_if_not_serializing(client_type):
+    if client_type == "no_serializer":
+        pytest.skip("Only serializing clients supported.")
+
+
 @pytest.fixture(scope="function")
-def producer(topic):
-    producer = kafka.KafkaProducer(
-        bootstrap_servers=BROKER, api_version=(2, 0, 2), value_serializer=lambda v: json.dumps(v).encode("utf-8")
-    )
+def producer(client_type, json_serializer, json_callable_serializer):
+    if client_type == "no_serializer":
+        producer = kafka.KafkaProducer(bootstrap_servers=BROKER)
+    elif client_type == "serializer_function":
+        producer = kafka.KafkaProducer(
+            bootstrap_servers=BROKER,
+            value_serializer=lambda v: json.dumps(v).encode("utf-8") if v else None,
+            key_serializer=lambda v: json.dumps(v).encode("utf-8") if v else None,
+        )
+    elif client_type == "callable_object":
+        producer = kafka.KafkaProducer(
+            bootstrap_servers=BROKER,
+            value_serializer=json_callable_serializer,
+            key_serializer=json_callable_serializer,
+        )
+    elif client_type == "serializer_object":
+        producer = kafka.KafkaProducer(
+            bootstrap_servers=BROKER,
+            value_serializer=json_serializer,
+            key_serializer=json_serializer,
+        )
+
     yield producer
     producer.close()
 
 
 @pytest.fixture(scope="function")
-def consumer(topic, producer):
-    consumer = kafka.KafkaConsumer(
-        topic,
-        bootstrap_servers=BROKER,
-        value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-        auto_offset_reset="earliest",
-        consumer_timeout_ms=500,
-        heartbeat_interval_ms=1000,
-        group_id="test",
-    )
+def consumer(topic, producer, client_type, json_deserializer, json_callable_deserializer):
+    if client_type == "no_serializer":
+        consumer = kafka.KafkaConsumer(
+            topic,
+            bootstrap_servers=BROKER,
+            auto_offset_reset="earliest",
+            consumer_timeout_ms=100,
+            heartbeat_interval_ms=1000,
+            group_id="test",
+        )
+    elif client_type == "serializer_function":
+        consumer = kafka.KafkaConsumer(
+            topic,
+            bootstrap_servers=BROKER,
+            key_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else None,
+            value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else None,
+            auto_offset_reset="earliest",
+            consumer_timeout_ms=100,
+            heartbeat_interval_ms=1000,
+            group_id="test",
+        )
+    elif client_type == "callable_object":
+        consumer = kafka.KafkaConsumer(
+            topic,
+            bootstrap_servers=BROKER,
+            key_deserializer=json_callable_deserializer,
+            value_deserializer=json_callable_deserializer,
+            auto_offset_reset="earliest",
+            consumer_timeout_ms=100,
+            heartbeat_interval_ms=1000,
+            group_id="test",
+        )
+    elif client_type == "serializer_object":
+        consumer = kafka.KafkaConsumer(
+            topic,
+            bootstrap_servers=BROKER,
+            key_deserializer=json_deserializer,
+            value_deserializer=json_deserializer,
+            auto_offset_reset="earliest",
+            consumer_timeout_ms=100,
+            heartbeat_interval_ms=1000,
+            group_id="test",
+        )
+
     # The first time the kafka consumer is created and polled, it returns a StopIterator
     # exception. To by-pass this, loop over the consumer before using it.
     # NOTE: This seems to only happen in Python2.7.
@@ -80,6 +145,58 @@ def consumer(topic, producer):
         pass
     yield consumer
     consumer.close()
+
+
+@pytest.fixture(scope="session")
+def serialize(client_type):
+    if client_type == "no_serializer":
+        return lambda v: json.dumps(v).encode("utf-8")
+    else:
+        return lambda v: v
+
+
+@pytest.fixture(scope="session")
+def deserialize(client_type):
+    if client_type == "no_serializer":
+        return lambda v: json.loads(v.decode("utf-8"))
+    else:
+        return lambda v: v
+
+
+@pytest.fixture(scope="session")
+def json_serializer():
+    class JSONSerializer(kafka.serializer.Serializer):
+        def serialize(self, topic, obj):
+            return json.dumps(obj).encode("utf-8") if obj is not None else None
+
+    return JSONSerializer()
+
+
+@pytest.fixture(scope="session")
+def json_deserializer():
+    class JSONDeserializer(kafka.serializer.Deserializer):
+        def deserialize(self, topic, bytes_):
+            return json.loads(bytes_.decode("utf-8")) if bytes_ is not None else None
+
+    return JSONDeserializer()
+
+
+@pytest.fixture(scope="session")
+def json_callable_serializer():
+    class JSONCallableSerializer(object):
+        def __call__(self, obj):
+            return json.dumps(obj).encode("utf-8") if obj is not None else None
+
+    return JSONCallableSerializer()
+
+
+@pytest.fixture(scope="session")
+def json_callable_deserializer():
+    class JSONCallableDeserializer(object):
+        def __call__(self, obj):
+            return json.loads(obj.decode("utf-8")) if obj is not None else None
+
+    return JSONCallableDeserializer()
 
 
 @pytest.fixture(scope="function")
@@ -91,11 +208,35 @@ def topic():
 
     admin = KafkaAdminClient(bootstrap_servers=BROKER)
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
-    topics = admin.create_topics(new_topics)
+    admin.create_topics(new_topics)
 
     yield topic
 
     admin.delete_topics([topic])
+
+
+@pytest.fixture()
+def send_producer_message(topic, producer, serialize):
+    def _test():
+        producer.send(topic, key=serialize("bar"), value=serialize({"foo": 1}))
+        producer.flush()
+
+    return _test
+
+
+@pytest.fixture()
+def get_consumer_record(topic, send_producer_message, consumer, deserialize):
+    def _test():
+        send_producer_message()
+
+        record_count = 0
+        for record in consumer:
+            assert deserialize(record.value) == {"foo": 1}
+            record_count += 1
+
+        assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
+
+    return _test
 
 
 @transient_function_wrapper(kafka.producer.kafka, "KafkaProducer.send.__wrapped__")

@@ -13,12 +13,19 @@
 # limitations under the License.
 import sys
 
+from kafka.serializer import Serializer
+
 from newrelic.api.application import application_instance
+from newrelic.api.function_trace import FunctionTraceWrapper
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
-from newrelic.api.time_trace import notice_error
+from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import (
+    ObjectProxy,
+    function_wrapper,
+    wrap_function_wrapper,
+)
 
 HEARTBEAT_POLL = "MessageBroker/Kafka/Heartbeat/Poll"
 HEARTBEAT_SENT = "MessageBroker/Kafka/Heartbeat/Sent"
@@ -47,6 +54,7 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
         destination_type="Topic",
         destination_name=topic or "Default",
         source=wrapped,
+        terminal=False,
     ) as trace:
         dt_headers = [(k, v.encode("utf-8")) for k, v in trace.generate_request_headers(transaction)]
         headers.extend(dt_headers)
@@ -55,49 +63,6 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
         except Exception:
             notice_error()
             raise
-
-
-def metric_wrapper(metric_name, check_result=False):
-    def _metric_wrapper(wrapped, instance, args, kwargs):
-        result = wrapped(*args, **kwargs)
-
-        application = application_instance(activate=False)
-        if application:
-            if not check_result or check_result and result:
-                # If the result does not need validated, send metric.
-                # If the result does need validated, ensure it is True.
-                application.record_custom_metric(metric_name, 1)
-
-        return result
-
-    return _metric_wrapper
-
-
-def instrument_kafka_heartbeat(module):
-    if hasattr(module, "Heartbeat"):
-        if hasattr(module.Heartbeat, "poll"):
-            wrap_function_wrapper(module, "Heartbeat.poll", metric_wrapper(HEARTBEAT_POLL))
-
-        if hasattr(module.Heartbeat, "fail_heartbeat"):
-            wrap_function_wrapper(module, "Heartbeat.fail_heartbeat", metric_wrapper(HEARTBEAT_FAIL))
-
-        if hasattr(module.Heartbeat, "sent_heartbeat"):
-            wrap_function_wrapper(module, "Heartbeat.sent_heartbeat", metric_wrapper(HEARTBEAT_SENT))
-
-        if hasattr(module.Heartbeat, "received_heartbeat"):
-            wrap_function_wrapper(module, "Heartbeat.received_heartbeat", metric_wrapper(HEARTBEAT_RECEIVE))
-
-        if hasattr(module.Heartbeat, "session_timeout_expired"):
-            wrap_function_wrapper(
-                module,
-                "Heartbeat.session_timeout_expired",
-                metric_wrapper(HEARTBEAT_SESSION_TIMEOUT, check_result=True),
-            )
-
-        if hasattr(module.Heartbeat, "poll_timeout_expired"):
-            wrap_function_wrapper(
-                module, "Heartbeat.poll_timeout_expired", metric_wrapper(HEARTBEAT_POLL_TIMEOUT, check_result=True)
-            )
 
 
 def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
@@ -110,7 +75,12 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
         # StopIteration is an expected error, indicating the end of an iterable,
         # that should not be captured.
         if not isinstance(e, StopIteration):
-            notice_error()
+            if current_transaction():
+                # Report error on existing transaction if there is one
+                notice_error()
+            else:
+                # Report error on application
+                notice_error(application=application_instance(activate=False))
         raise
 
     if record:
@@ -177,11 +147,126 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
     return record
 
 
+def wrap_KafkaProducer_init(wrapped, instance, args, kwargs):
+    get_config_key = lambda key: kwargs.get(key, instance.DEFAULT_CONFIG[key])  # noqa: E731
+
+    kwargs["key_serializer"] = wrap_serializer(
+        instance, "Serialization/Key", "MessageBroker", get_config_key("key_serializer")
+    )
+    kwargs["value_serializer"] = wrap_serializer(
+        instance, "Serialization/Value", "MessageBroker", get_config_key("value_serializer")
+    )
+
+    return wrapped(*args, **kwargs)
+
+
+class NewRelicSerializerWrapper(ObjectProxy):
+    def __init__(self, wrapped, serializer_name, group_prefix):
+        ObjectProxy.__init__.__get__(self)(wrapped)
+
+        self._nr_serializer_name = serializer_name
+        self._nr_group_prefix = group_prefix
+
+    def serialize(self, topic, object):
+        wrapped = self.__wrapped__.serialize
+        args = (topic, object)
+        kwargs = {}
+
+        if not current_transaction():
+            return wrapped(*args, **kwargs)
+
+        group = "%s/Kafka/Topic" % self._nr_group_prefix
+        name = "Named/%s/%s" % (topic, self._nr_serializer_name)
+
+        return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
+
+
+def wrap_serializer(client, serializer_name, group_prefix, serializer):
+    @function_wrapper
+    def _wrap_serializer(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        topic = "Unknown"
+        if isinstance(transaction, MessageTransaction):
+            topic = transaction.destination_name
+        else:
+            # Find parent message trace to retrieve topic
+            message_trace = current_trace()
+            while message_trace is not None and not isinstance(message_trace, MessageTrace):
+                message_trace = message_trace.parent
+            if message_trace:
+                topic = message_trace.destination_name
+
+        group = "%s/Kafka/Topic" % group_prefix
+        name = "Named/%s/%s" % (topic, serializer_name)
+
+        return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
+
+    try:
+        # Apply wrapper to serializer
+        if serializer is None:
+            # Do nothing
+            return serializer
+        elif isinstance(serializer, Serializer):
+            return NewRelicSerializerWrapper(serializer, group_prefix=group_prefix, serializer_name=serializer_name)
+        else:
+            # Wrap callable in wrapper
+            return _wrap_serializer(serializer)
+    except Exception:
+        return serializer  # Avoid crashes from immutable serializers
+
+
+def metric_wrapper(metric_name, check_result=False):
+    def _metric_wrapper(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+
+        application = application_instance(activate=False)
+        if application:
+            if not check_result or check_result and result:
+                # If the result does not need validated, send metric.
+                # If the result does need validated, ensure it is True.
+                application.record_custom_metric(metric_name, 1)
+
+        return result
+
+    return _metric_wrapper
+
+
 def instrument_kafka_producer(module):
     if hasattr(module, "KafkaProducer"):
+        wrap_function_wrapper(module, "KafkaProducer.__init__", wrap_KafkaProducer_init)
         wrap_function_wrapper(module, "KafkaProducer.send", wrap_KafkaProducer_send)
 
 
 def instrument_kafka_consumer_group(module):
     if hasattr(module, "KafkaConsumer"):
-        wrap_function_wrapper(module.KafkaConsumer, "__next__", wrap_kafkaconsumer_next)
+        wrap_function_wrapper(module, "KafkaConsumer.__next__", wrap_kafkaconsumer_next)
+
+
+def instrument_kafka_heartbeat(module):
+    if hasattr(module, "Heartbeat"):
+        if hasattr(module.Heartbeat, "poll"):
+            wrap_function_wrapper(module, "Heartbeat.poll", metric_wrapper(HEARTBEAT_POLL))
+
+        if hasattr(module.Heartbeat, "fail_heartbeat"):
+            wrap_function_wrapper(module, "Heartbeat.fail_heartbeat", metric_wrapper(HEARTBEAT_FAIL))
+
+        if hasattr(module.Heartbeat, "sent_heartbeat"):
+            wrap_function_wrapper(module, "Heartbeat.sent_heartbeat", metric_wrapper(HEARTBEAT_SENT))
+
+        if hasattr(module.Heartbeat, "received_heartbeat"):
+            wrap_function_wrapper(module, "Heartbeat.received_heartbeat", metric_wrapper(HEARTBEAT_RECEIVE))
+
+        if hasattr(module.Heartbeat, "session_timeout_expired"):
+            wrap_function_wrapper(
+                module,
+                "Heartbeat.session_timeout_expired",
+                metric_wrapper(HEARTBEAT_SESSION_TIMEOUT, check_result=True),
+            )
+
+        if hasattr(module.Heartbeat, "poll_timeout_expired"):
+            wrap_function_wrapper(
+                module, "Heartbeat.poll_timeout_expired", metric_wrapper(HEARTBEAT_POLL_TIMEOUT, check_result=True)
+            )

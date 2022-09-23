@@ -13,7 +13,7 @@
 # limitations under the License.
 import sys
 
-from kafka.serializer import Serializer, Deserializer
+from kafka.serializer import Serializer
 
 from newrelic.api.application import application_instance
 from newrelic.api.message_trace import MessageTrace
@@ -147,28 +147,12 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
 
 def wrap_KafkaProducer_init(wrapped, instance, args, kwargs):
     get_config_key = lambda key: kwargs.get(key, instance.DEFAULT_CONFIG[key])
-    
-    metric_reporters = list(get_config_key("metric_reporters"))
-    metric_reporters.append(NewRelicMetricsReporter)
-    kwargs["metric_reporters"] = metric_reporters
 
     kwargs["key_serializer"] = wrap_serializer(instance, "Serialization/Key", "MessageBroker", get_config_key("key_serializer"))
     kwargs["value_serializer"] = wrap_serializer(instance, "Serialization/Value", "MessageBroker", get_config_key("value_serializer"))
 
     return wrapped(*args, **kwargs)
 
-
-def wrap_KafkaConsumer_init(wrapped, instance, args, kwargs):
-    get_config_key = lambda key: kwargs.get(key, instance.DEFAULT_CONFIG[key])
-    
-    metric_reporters = list(get_config_key("metric_reporters"))
-    metric_reporters.append(NewRelicMetricsReporter)
-    kwargs["metric_reporters"] = metric_reporters
-
-    kwargs["key_deserializer"] = wrap_serializer(instance, "Deserialization/Key", "Message", get_config_key("key_deserializer"))
-    kwargs["value_deserializer"] = wrap_serializer(instance, "Deserialization/Value", "Message", get_config_key("value_deserializer"))
-
-    return wrapped(*args, **kwargs)
 
 class NewRelicSerializerWrapper(ObjectProxy):
     def __init__(self, wrapped, serializer_name, group_prefix):
@@ -187,27 +171,6 @@ class NewRelicSerializerWrapper(ObjectProxy):
 
         group = "%s/Kafka/Topic" % self._nr_group_prefix
         name = "Named/%s/%s" % (topic, self._nr_serializer_name)
-
-        return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
-
-class NewRelicDeserializerWrapper(ObjectProxy):
-    def __init__(self, wrapped, deserializer_name, group_prefix):
-        ObjectProxy.__init__.__get__(self)(wrapped)
-        
-        self._nr_deserializer_name = deserializer_name
-        self._nr_group_prefix = group_prefix
-
-    def deserialize(self, topic, bytes_):
-        wrapped = self.__wrapped__.deserialize
-        args = (topic, bytes_)
-        kwargs = {}
-
-        transaction = current_transaction()
-        if not transaction:
-            return wrapped(*args, **kwargs)
-
-        group = "%s/Kafka/Topic" % self._nr_group_prefix
-        name = "Named/%s/%s" % (topic, self._nr_deserializer_name)
 
         return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
 
@@ -242,8 +205,6 @@ def wrap_serializer(client, serializer_name, group_prefix, serializer):
             return serializer
         elif isinstance(serializer, Serializer):
             return NewRelicSerializerWrapper(serializer, group_prefix=group_prefix, serializer_name=serializer_name)
-        elif isinstance(serializer, Deserializer):
-            return NewRelicDeserializerWrapper(serializer, group_prefix=group_prefix, deserializer_name=serializer_name)
         else:
             # Wrap callable in wrapper
             return _wrap_serializer(serializer)
@@ -275,7 +236,6 @@ def instrument_kafka_producer(module):
 
 def instrument_kafka_consumer_group(module):
     if hasattr(module, "KafkaConsumer"):
-        wrap_function_wrapper(module, "KafkaConsumer.__init__", wrap_KafkaConsumer_init)
         wrap_function_wrapper(module, "KafkaConsumer.__next__", wrap_kafkaconsumer_next)
 
 

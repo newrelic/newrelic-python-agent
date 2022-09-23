@@ -48,25 +48,6 @@ def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_mes
     test()
 
 
-def test_deserialization_metrics(skip_if_not_serializing, topic, get_consumer_records):
-    _metrics = [
-        ("Message/Kafka/Topic/Named/%s/Deserialization/Value" % topic, 1),
-        ("Message/Kafka/Topic/Named/%s/Deserialization/Key" % topic, 1),
-    ]
-
-    @validate_transaction_metrics(
-        "Named/%s" % topic,
-        group="Message/Kafka/Topic",
-        scoped_metrics=_metrics,
-        rollup_metrics=_metrics,
-        background_task=True,
-    )
-    def test():
-        get_consumer_records()
-
-    test()
-
-
 @pytest.mark.parametrize("key,value", (
     (object(), "A"),
     ("A", object()),

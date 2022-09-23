@@ -603,8 +603,12 @@ def validate_internal_metrics(metrics=None):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
         # Apply no-op wrappers to prevent new internal trace contexts from being started, preventing capture
-        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__enter__")(no_op)(wrapped)
-        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__exit__")(no_op)(wrapped)
+        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__enter__")(no_op)(
+            wrapped
+        )
+        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__exit__")(no_op)(
+            wrapped
+        )
 
         captured_metrics = CustomMetrics()
         with InternalTraceContext(captured_metrics):
@@ -1736,16 +1740,27 @@ def validate_error_event_attributes_outside_transaction(
     required_params = required_params or {}
     forgone_params = forgone_params or {}
 
+    event_data = []
+
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
     def _validate_error_event_attributes_outside_transaction(wrapped, instance, args, kwargs):
-
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
-            event_data = list(instance.error_events)
+            for event in instance.error_events:
+                event_data.append(event)
 
+        return result
+
+    @function_wrapper
+    def wrapper(wrapped, instance, args, kwargs):
+        try:
+            result = _validate_error_event_attributes_outside_transaction(wrapped)(*args, **kwargs)
+        except:
+            raise
+        else:
             if num_errors is not None:
                 exc_message = (
                     "Expected: %d, Got: %d. Verify StatsEngine is being reset before using this validator."
@@ -1758,7 +1773,7 @@ def validate_error_event_attributes_outside_transaction(
 
         return result
 
-    return _validate_error_event_attributes_outside_transaction
+    return wrapper
 
 
 def validate_request_params_omitted():
@@ -2434,25 +2449,25 @@ def override_ignore_status_codes(status_codes):
     return _override_ignore_status_codes
 
 
-def code_coverage_fixture(source=['newrelic']):
-    @pytest.fixture(scope='session')
+def code_coverage_fixture(source=["newrelic"]):
+    @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:
             return
 
-        if os.environ.get('GITHUB_ACTIONS') is not None:
+        if os.environ.get("GITHUB_ACTIONS") is not None:
             return
 
         from coverage import coverage
 
-        env_directory = os.environ.get('TOX_ENVDIR', None)
+        env_directory = os.environ.get("TOX_ENVDIR", None)
 
         if env_directory is not None:
-            coverage_directory = os.path.join(env_directory, 'htmlcov')
-            xml_report = os.path.join(env_directory, 'coverage.xml')
+            coverage_directory = os.path.join(env_directory, "htmlcov")
+            xml_report = os.path.join(env_directory, "coverage.xml")
         else:
-            coverage_directory = 'htmlcov'
-            xml_report = 'coverage.xml'
+            coverage_directory = "htmlcov"
+            xml_report = "coverage.xml"
 
         def finalize():
             cov.stop()
@@ -2469,18 +2484,19 @@ def code_coverage_fixture(source=['newrelic']):
 
 def reset_core_stats_engine():
     """Reset the StatsEngine and custom StatsEngine of the core application."""
+
     @function_wrapper
     def _reset_core_stats_engine(wrapped, instance, args, kwargs):
         api_application = application_instance()
         api_name = api_application.name
         core_application = api_application._agent.application(api_name)
-        
+
         stats = core_application._stats_engine
         stats.reset_stats(stats.settings)
-        
+
         custom_stats = core_application._stats_custom_engine
         custom_stats.reset_stats(custom_stats.settings)
-        
+
         return wrapped(*args, **kwargs)
 
     return _reset_core_stats_engine

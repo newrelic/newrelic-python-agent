@@ -52,6 +52,15 @@ def test_custom_metrics(get_consumer_records, topic):
     _test()
 
 
+def test_multiple_transactions(get_consumer_record, topic):
+    @validate_transaction_count(2)
+    def _test():
+        get_consumer_record()
+        get_consumer_record()
+
+    _test()
+
+
 def test_custom_metrics_on_existing_transaction(get_consumer_records, topic):
     transaction_name = (
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"

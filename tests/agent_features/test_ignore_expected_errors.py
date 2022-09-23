@@ -37,12 +37,8 @@ _error_message = "Test error message."
 # Settings presets
 
 # Error classes settings
-expected_runtime_error_settings = {
-    "error_collector.expected_classes": [_runtime_error_name]
-}
-ignore_runtime_error_settings = {
-    "error_collector.ignore_classes": [_runtime_error_name]
-}
+expected_runtime_error_settings = {"error_collector.expected_classes": [_runtime_error_name]}
+ignore_runtime_error_settings = {"error_collector.ignore_classes": [_runtime_error_name]}
 
 # Status code settings
 expected_status_code_settings = {"error_collector.expected_status_codes": [418]}
@@ -141,9 +137,7 @@ override_expected_matrix = (True, False, None)
 
 @pytest.mark.parametrize("settings,expected", error_trace_settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
-def test_error_trace_attributes_inside_transaction(
-    settings, expected, override_expected
-):
+def test_error_trace_attributes_inside_transaction(settings, expected, override_expected):
     expected = override_expected if override_expected is not None else expected
 
     error_trace_attributes = {
@@ -165,9 +159,7 @@ def test_error_trace_attributes_inside_transaction(
 
 @pytest.mark.parametrize("settings,expected", error_trace_settings_matrix)
 @pytest.mark.parametrize("override_expected", override_expected_matrix)
-def test_error_trace_attributes_outside_transaction(
-    settings, expected, override_expected
-):
+def test_error_trace_attributes_outside_transaction(settings, expected, override_expected):
     expected = override_expected if override_expected is not None else expected
 
     error_trace_attributes = {
@@ -182,9 +174,7 @@ def test_error_trace_attributes_outside_transaction(
     }
 
     @reset_core_stats_engine()
-    @validate_error_trace_attributes_outside_transaction(
-        _runtime_error_name, exact_attrs=error_trace_attributes
-    )
+    @validate_error_trace_attributes_outside_transaction(_runtime_error_name, exact_attrs=error_trace_attributes)
     @override_application_settings(settings)
     def _test():
         exercise(override_expected)
@@ -206,9 +196,7 @@ def test_error_metrics_inside_transaction(expected):
         ("ErrorsExpected/all", expected_metrics_count),
     ]
 
-    @validate_transaction_metrics(
-        "test", background_task=True, rollup_metrics=metrics_payload
-    )
+    @validate_transaction_metrics("test", background_task=True, rollup_metrics=metrics_payload)
     @background_task(name="test")
     def _test():
         exercise(expected)
@@ -316,7 +304,7 @@ def test_status_codes_outside_transaction(settings, expected, ignore, status_cod
         try:
             raise TeapotError(_error_message)
         except:
-            notice_error(status_code=status_code)
+            notice_error(status_code=status_code, application=application_instance(activate=False))
 
     _test()
 

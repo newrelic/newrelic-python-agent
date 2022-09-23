@@ -69,7 +69,7 @@ def test_serialization_errors(skip_if_not_serializing, topic, producer, key, val
     (b"{}", b"%"),
 ))
 def test_deserialization_errors(skip_if_not_serializing, monkeypatch, topic, producer, consumer, key, value):
-    error_cls = json.decoder.JSONDecodeError
+    error_cls = json.decoder.JSONDecodeError if six.PY3 else ValueError
     
     # Remove serializers to cause intentional issues
     monkeypatch.setitem(producer.config, "value_serializer", None)

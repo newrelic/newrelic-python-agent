@@ -14,6 +14,9 @@
 
 import pytest
 from conftest import cache_kafka_consumer_headers
+
+from newrelic.common.object_names import callable_name
+
 from testing_support.fixtures import (
     validate_attributes,
     validate_error_event_attributes_outside_transaction,
@@ -101,13 +104,15 @@ def test_agent_attributes(get_consumer_records):
 
 
 def test_consumer_errors(get_consumer_records, consumer_next_raises):
+    exc_class = RuntimeError
+
     @reset_core_stats_engine()
     @validate_error_event_attributes_outside_transaction(
         num_errors=1,
-        exact_attrs={"intrinsic": {"error.class": "builtins:RuntimeError"}, "agent": {}, "user": {}}
+        exact_attrs={"intrinsic": {"error.class": callable_name(exc_class)}, "agent": {}, "user": {}}
     )
     def _test():
-        with pytest.raises(RuntimeError):
+        with pytest.raises(exc_class):
             get_consumer_records()
 
     _test()

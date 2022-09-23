@@ -27,7 +27,6 @@ from testing_support.fixtures import (  # noqa: F401, W0611
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
-from newrelic.hooks.messagebroker_kafkapython import KafkaMetricsDataSource
 
 DB_SETTINGS = kafka_settings()[0]
 
@@ -210,17 +209,6 @@ def topic():
     yield topic
 
     admin.delete_topics([topic])
-
-
-@pytest.fixture(scope="session")
-def data_source():
-    """
-    Must be required by consumer and producer fixtures, or the first one of them to be
-    instantiated will create and register the singleton. We rely on the singleton to
-    not be registered to properly test the output of it without interference from the
-    harvest thread.
-    """
-    return KafkaMetricsDataSource.singleton(register=False)
 
 
 @pytest.fixture()

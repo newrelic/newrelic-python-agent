@@ -200,6 +200,9 @@ def send_producer_message(topic, producer, serialize):
 @pytest.fixture()
 def get_consumer_record(topic, send_producer_message, consumer, deserialize):
     def _test():
+        # Register the consumer before producing a message.
+        assert not consumer.poll(0.5)
+
         send_producer_message()
 
         record_count = 0

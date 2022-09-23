@@ -2377,14 +2377,14 @@ def cat_enabled(wrapped, instance, args, kwargs):
 def override_application_settings(overrides):
     @function_wrapper
     def _override_application_settings(wrapped, instance, args, kwargs):
-        try:
-            # The settings object has references from a number of
-            # different places. We have to create a copy, overlay
-            # the temporary settings and then when done clear the
-            # top level settings object and rebuild it when done.
+        # The settings object has references from a number of
+        # different places. We have to create a copy, overlay
+        # the temporary settings and then when done clear the
+        # top level settings object and rebuild it when done.
+        original_settings = application_settings()
+        backup = copy.deepcopy(original_settings.__dict__)
 
-            original_settings = application_settings()
-            backup = copy.deepcopy(original_settings.__dict__)
+        try:
             for name, value in overrides.items():
                 apply_config_setting(original_settings, name, value)
 
@@ -2405,16 +2405,15 @@ def override_application_settings(overrides):
 def override_generic_settings(settings_object, overrides):
     @function_wrapper
     def _override_generic_settings(wrapped, instance, args, kwargs):
+        # In some cases, a settings object may have references
+        # from a number of different places. We have to create
+        # a copy, overlay the temporary settings and then when
+        # done, clear the top level settings object and rebuild
+        # it when done.
+        original = settings_object
+        backup = copy.deepcopy(original.__dict__)
+
         try:
-            # In some cases, a settings object may have references
-            # from a number of different places. We have to create
-            # a copy, overlay the temporary settings and then when
-            # done, clear the top level settings object and rebuild
-            # it when done.
-
-            original = settings_object
-
-            backup = copy.deepcopy(original.__dict__)
             for name, value in overrides.items():
                 apply_config_setting(original, name, value)
             return wrapped(*args, **kwargs)
@@ -2428,19 +2427,20 @@ def override_generic_settings(settings_object, overrides):
 def override_ignore_status_codes(status_codes):
     @function_wrapper
     def _override_ignore_status_codes(wrapped, instance, args, kwargs):
+        # Updates can be made to ignored status codes in server
+        # side configs. Changes will be applied to application
+        # settings so we first check there and if they don't
+        # exist, we default to global settings
+
+        application = application_instance()
+        settings = application and application.settings
+
+        if not settings:
+            settings = global_settings()
+
+        original = settings.error_collector.ignore_status_codes
+
         try:
-            # Updates can be made to ignored status codes in server
-            # side configs. Changes will be applied to application
-            # settings so we first check there and if they don't
-            # exist, we default to global settings
-
-            application = application_instance()
-            settings = application and application.settings
-
-            if not settings:
-                settings = global_settings()
-
-            original = settings.error_collector.ignore_status_codes
             settings.error_collector.ignore_status_codes = status_codes
             return wrapped(*args, **kwargs)
         finally:
@@ -2449,7 +2449,10 @@ def override_ignore_status_codes(status_codes):
     return _override_ignore_status_codes
 
 
-def code_coverage_fixture(source=["newrelic"]):
+def code_coverage_fixture(source=None):
+    if source is None:
+        source = ["newrelic"]
+
     @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:

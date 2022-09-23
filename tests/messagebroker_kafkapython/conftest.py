@@ -174,8 +174,8 @@ def json_serializer():
 @pytest.fixture(scope="session")
 def json_deserializer():
     class JSONDeserializer(kafka.serializer.Deserializer):
-        def deserialize(self, topic, obj):
-            return json.loads(obj.decode("utf-8")) if obj is not None else None
+        def deserialize(self, topic, bytes_):
+            return json.loads(bytes_.decode("utf-8")) if bytes_ is not None else None
 
     return JSONDeserializer()
 

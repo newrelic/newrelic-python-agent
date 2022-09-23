@@ -21,6 +21,7 @@ from testing_support.fixtures import (
     validate_error_event_attributes_outside_transaction,
     validate_transaction_errors,
     validate_transaction_metrics,
+    reset_core_stats_engine,
 )
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
@@ -102,8 +103,10 @@ def test_agent_attributes(get_consumer_records):
 
 
 def test_consumer_errors(get_consumer_records, consumer_next_raises):
+    @reset_core_stats_engine()
     @validate_error_event_attributes_outside_transaction(
-        exact_attrs={"intrinsic": {"error.class": "RuntimeError"}}
+        num_errors=1,
+        exact_attrs={"intrinsic": {"error.class": "builtins:RuntimeError"}, "agent": {}, "user": {}}
     )
     def _test():
         with pytest.raises(RuntimeError):

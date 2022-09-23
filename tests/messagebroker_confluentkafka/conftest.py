@@ -17,7 +17,7 @@ import uuid
 
 import pytest
 from testing_support.db_settings import kafka_settings
-from testing_support.fixtures import (  # noqa: F401, W0611
+from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -67,9 +67,9 @@ def producer(client_type, json_serializer):
     from confluent_kafka import Producer, SerializingProducer
 
     if client_type == "cimpl":
-        producer =  Producer({"bootstrap.servers": BROKER})
+        producer = Producer({"bootstrap.servers": BROKER})
     elif client_type == "serializer_function":
-        producer =  SerializingProducer(
+        producer = SerializingProducer(
             {
                 "bootstrap.servers": BROKER,
                 "value.serializer": lambda v, c: json.dumps(v).encode("utf-8"),
@@ -94,43 +94,41 @@ def consumer(topic, producer, client_type, json_deserializer):
     from confluent_kafka import Consumer, DeserializingConsumer
 
     if client_type == "cimpl":
-        consumer = Consumer({
-            "bootstrap.servers": BROKER,
-            "auto.offset.reset": "earliest",
-            "heartbeat.interval.ms": 1000,
-            "group.id": "test",
-        })
+        consumer = Consumer(
+            {
+                "bootstrap.servers": BROKER,
+                "auto.offset.reset": "earliest",
+                "heartbeat.interval.ms": 1000,
+                "group.id": "test",
+            }
+        )
     elif client_type == "serializer_function":
-        consumer = DeserializingConsumer({
-            "bootstrap.servers": BROKER,
-            "auto.offset.reset": "earliest",
-            "heartbeat.interval.ms": 1000,
-            "group.id": "test",
-            "value.deserializer": lambda v, c: json.loads(v.decode("utf-8")),
-            "key.deserializer": lambda v, c: json.loads(v.decode("utf-8")) if v is not None else None,
-        })
+        consumer = DeserializingConsumer(
+            {
+                "bootstrap.servers": BROKER,
+                "auto.offset.reset": "earliest",
+                "heartbeat.interval.ms": 1000,
+                "group.id": "test",
+                "value.deserializer": lambda v, c: json.loads(v.decode("utf-8")),
+                "key.deserializer": lambda v, c: json.loads(v.decode("utf-8")) if v is not None else None,
+            }
+        )
     elif client_type == "serializer_object":
-        consumer = DeserializingConsumer({
-            "bootstrap.servers": BROKER,
-            "auto.offset.reset": "earliest",
-            "heartbeat.interval.ms": 1000,
-            "group.id": "test",
-            "value.deserializer": json_deserializer,
-            "key.deserializer": json_deserializer,
-        })
+        consumer = DeserializingConsumer(
+            {
+                "bootstrap.servers": BROKER,
+                "auto.offset.reset": "earliest",
+                "heartbeat.interval.ms": 1000,
+                "group.id": "test",
+                "value.deserializer": json_deserializer,
+                "key.deserializer": json_deserializer,
+            }
+        )
 
     consumer.subscribe([topic])
 
-    # The first time the kafka consumer is created and polled, it returns None.
-    # To by-pass this, loop over the consumer before using it.
-    # NOTE: This seems to only happen in Python2.7.
-    while True:
-        record = consumer.poll(0.5)
-        if not record:
-            break
-        assert not record.error()
-
     yield consumer
+
     consumer.close()
 
 
@@ -153,6 +151,7 @@ def deserialize(client_type):
 @pytest.fixture(scope="session")
 def json_serializer():
     from confluent_kafka.serialization import Serializer
+
     class JSONSerializer(Serializer):
         def __call__(self, obj, ctx):
             return json.dumps(obj).encode("utf-8") if obj is not None else None
@@ -163,6 +162,7 @@ def json_serializer():
 @pytest.fixture(scope="session")
 def json_deserializer():
     from confluent_kafka.serialization import Deserializer
+
     class JSONDeserializer(Deserializer):
         def __call__(self, obj, ctx):
             return json.loads(obj.decode("utf-8")) if obj is not None else None
@@ -188,7 +188,7 @@ def topic():
 
 
 @pytest.fixture()
-def send_producer_messages(topic, producer, serialize):
+def send_producer_message(topic, producer, serialize):
     def _test():
         producer.produce(topic, value=serialize({"foo": 1}))
         producer.flush()
@@ -197,19 +197,25 @@ def send_producer_messages(topic, producer, serialize):
 
 
 @pytest.fixture()
-def get_consumer_records(topic, send_producer_messages, consumer, deserialize):
+def get_consumer_record(topic, send_producer_message, consumer, deserialize):
     def _test():
-        send_producer_messages()
+        send_producer_message()
 
         record_count = 0
-        while True:
+
+        timeout = 10
+        attempts = 0
+        record = None
+        while not record and attempts < timeout:
             record = consumer.poll(0.5)
             if not record:
-                break
+                attempts += 1
+                continue
             assert not record.error()
 
             assert deserialize(record.value()) == {"foo": 1}
             record_count += 1
+        consumer.poll(0.5)  # Exit the transaction.
 
         assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
 

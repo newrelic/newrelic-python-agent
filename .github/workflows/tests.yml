@@ -435,12 +435,12 @@ jobs:
 
   kafka:
     env:
-      TOTAL_GROUPS: 1
+      TOTAL_GROUPS: 2
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1]
+        group-number: [1, 2]
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -493,7 +493,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox -vv -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0

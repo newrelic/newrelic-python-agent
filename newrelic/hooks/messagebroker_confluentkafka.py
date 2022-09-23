@@ -15,13 +15,13 @@ import logging
 import sys
 
 from newrelic.api.application import application_instance
+from newrelic.api.error_trace import wrap_error_trace
+from newrelic.api.function_trace import FunctionTraceWrapper
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
-from newrelic.api.function_trace import FunctionTraceWrapper
-from newrelic.api.error_trace import wrap_error_trace
 
 _logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
         except Exception as error:
             # Unwrap kafka errors
             while hasattr(error, "exception"):
-                error = error.exception
+                error = error.exception  # pylint: disable=E1101
 
             _, _, tb = sys.exc_info()
             notice_error((type(error), error, tb))
@@ -107,13 +107,15 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
     # Step 1: Stop existing transactions
     if hasattr(instance, "_nr_transaction") and not instance._nr_transaction.stopped:
         instance._nr_transaction.__exit__(*sys.exc_info())
-        instance._nr_transaction = None
 
     # Step 2: Poll for records
     try:
         record = wrapped(*args, **kwargs)
     except Exception as e:
-        notice_error()
+        if current_transaction():
+            notice_error()
+        else:
+            notice_error(application=application_instance(activate=False))
         raise
 
     # Step 3: Start new transaction for received record
@@ -140,7 +142,7 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
                 source=wrapped,
             )
             instance._nr_transaction = transaction
-            transaction.__enter__()
+            transaction.__enter__()  # pylint: disable=C2801
 
             transaction._add_agent_attribute("kafka.consume.byteCount", received_bytes)
 
@@ -168,7 +170,6 @@ def wrap_DeserializingConsumer_poll(wrapped, instance, args, kwargs):
         # Stop existing transactions
         if hasattr(instance, "_nr_transaction") and not instance._nr_transaction.stopped:
             instance._nr_transaction.__exit__(*sys.exc_info())
-            instance._nr_transaction = None
 
         raise
 

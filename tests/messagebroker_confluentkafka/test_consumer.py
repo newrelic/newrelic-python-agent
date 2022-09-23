@@ -15,28 +15,31 @@
 import pytest
 from conftest import cache_kafka_consumer_headers
 from testing_support.fixtures import (
+    reset_core_stats_engine,
     validate_attributes,
     validate_error_event_attributes_outside_transaction,
     validate_transaction_errors,
     validate_transaction_metrics,
 )
-from testing_support.validators.validate_transaction_count import (
-    validate_transaction_count,
-)
 from testing_support.validators.validate_distributed_trace_accepted import (
     validate_distributed_trace_accepted,
+)
+from testing_support.validators.validate_transaction_count import (
+    validate_transaction_count,
 )
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
+from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
 
-def test_custom_metrics(get_consumer_records, topic):
+def test_custom_metrics(get_consumer_record, topic):
     custom_metrics = [
         ("Message/Kafka/Topic/Named/%s/Received/Bytes" % topic, 1),
         ("Message/Kafka/Topic/Named/%s/Received/Messages" % topic, 1),
     ]
+
     @validate_transaction_metrics(
         "Named/%s" % topic,
         group="Message/Kafka/Topic",
@@ -45,12 +48,21 @@ def test_custom_metrics(get_consumer_records, topic):
     )
     @validate_transaction_count(1)
     def _test():
-        get_consumer_records()
+        get_consumer_record()
 
     _test()
 
 
-def test_custom_metrics_on_existing_transaction(get_consumer_records, topic):
+def test_multiple_transactions(get_consumer_record, topic):
+    @validate_transaction_count(2)
+    def _test():
+        get_consumer_record()
+        get_consumer_record()
+
+    _test()
+
+
+def test_custom_metrics_on_existing_transaction(get_consumer_record, topic):
     transaction_name = (
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"
     )
@@ -66,12 +78,12 @@ def test_custom_metrics_on_existing_transaction(get_consumer_records, topic):
     @validate_transaction_count(1)
     @background_task()
     def _test():
-        get_consumer_records()
+        get_consumer_record()
 
     _test()
 
 
-def test_custom_metrics_inactive_transaction(get_consumer_records, topic):
+def test_custom_metrics_inactive_transaction(get_consumer_record, topic):
     transaction_name = (
         "test_consumer:test_custom_metrics_inactive_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"
     )
@@ -88,15 +100,15 @@ def test_custom_metrics_inactive_transaction(get_consumer_records, topic):
     @background_task()
     def _test():
         end_of_transaction()
-        get_consumer_records()
+        get_consumer_record()
 
     _test()
 
 
-def test_agent_attributes(get_consumer_records):
+def test_agent_attributes(get_consumer_record):
     @validate_attributes("agent", ["kafka.consume.byteCount"])
     def _test():
-        get_consumer_records()
+        get_consumer_record()
 
     _test()
 
@@ -106,9 +118,10 @@ def test_consumer_errors(topic, consumer, producer):
     consumer.close()
 
     expected_error = RuntimeError
-    
+
+    @reset_core_stats_engine()
     @validate_error_event_attributes_outside_transaction(
-        exact_attrs={"intrinsic": {"error.class": expected_error.__name__}}
+        num_errors=1, exact_attrs={"intrinsic": {"error.class": callable_name(expected_error)}, "agent": {}, "user": {}}
     )
     def _test():
         with pytest.raises(expected_error):
@@ -120,11 +133,11 @@ def test_consumer_errors(topic, consumer, producer):
     _test()
 
 
-def test_consumer_handled_errors_not_recorded(get_consumer_records):
+def test_consumer_handled_errors_not_recorded(get_consumer_record):
     # It's important to check that we do not notice the StopIteration error.
     @validate_transaction_errors([])
     def _test():
-        get_consumer_records()
+        get_consumer_record()
 
     _test()
 

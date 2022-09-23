@@ -2338,7 +2338,6 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.messagebroker_kafkapython",
         "instrument_kafka_heartbeat",
     )
-
     _process_module_definition(
         "kafka.consumer.group",
         "newrelic.hooks.messagebroker_kafkapython",

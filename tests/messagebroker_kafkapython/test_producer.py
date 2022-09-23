@@ -27,7 +27,7 @@ from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
 
-def test_trace_metrics(topic, send_producer_messages):
+def test_trace_metrics(topic, send_producer_message):
     scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
     unscoped_metrics = scoped_metrics
     txn_name = "test_producer:test_trace_metrics.<locals>.test" if six.PY3 else "test_producer:test"
@@ -40,12 +40,12 @@ def test_trace_metrics(topic, send_producer_messages):
     )
     @background_task()
     def test():
-        send_producer_messages()
+        send_producer_message()
 
     test()
 
 
-def test_distributed_tracing_headers(topic, send_producer_messages):
+def test_distributed_tracing_headers(topic, send_producer_message):
     txn_name = "test_producer:test_distributed_tracing_headers.<locals>.test" if six.PY3 else "test_producer:test"
 
     @validate_transaction_metrics(
@@ -60,7 +60,7 @@ def test_distributed_tracing_headers(topic, send_producer_messages):
     @cache_kafka_producer_headers
     @validate_messagebroker_headers
     def test():
-        send_producer_messages()
+        send_producer_message()
 
     test()
 

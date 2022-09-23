@@ -27,7 +27,7 @@ from newrelic.common.object_names import callable_name
 
 import json
 
-def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_messages):
+def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_message):
     txn_name = "test_serialization:test_serialization_metrics.<locals>.test" if six.PY3 else "test_serialization:test"
 
     _metrics = [
@@ -43,7 +43,7 @@ def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_mes
     )
     @background_task()
     def test():
-        send_producer_messages()
+        send_producer_message()
 
     test()
 

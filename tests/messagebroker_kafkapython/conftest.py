@@ -216,7 +216,7 @@ def topic():
 
 
 @pytest.fixture()
-def send_producer_messages(topic, producer, serialize):
+def send_producer_message(topic, producer, serialize):
     def _test():
         producer.send(topic, key=serialize("bar"), value=serialize({"foo": 1}))
         producer.flush()
@@ -225,9 +225,9 @@ def send_producer_messages(topic, producer, serialize):
 
 
 @pytest.fixture()
-def get_consumer_records(topic, send_producer_messages, consumer, deserialize):
+def get_consumer_record(topic, send_producer_message, consumer, deserialize):
     def _test():
-        send_producer_messages()
+        send_producer_message()
 
         record_count = 0
         for record in consumer:

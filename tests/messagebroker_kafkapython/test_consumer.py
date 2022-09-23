@@ -36,7 +36,7 @@ from newrelic.api.transaction import end_of_transaction
 from newrelic.packages import six
 
 
-def test_custom_metrics(get_consumer_records, topic):
+def test_custom_metrics(get_consumer_record, topic):
     @validate_transaction_metrics(
         "Named/%s" % topic,
         group="Message/Kafka/Topic",
@@ -47,7 +47,7 @@ def test_custom_metrics(get_consumer_records, topic):
         background_task=True,
     )
     def _test():
-        get_consumer_records()
+        get_consumer_record()
 
     _test()
 
@@ -61,7 +61,7 @@ def test_multiple_transactions(get_consumer_record, topic):
     _test()
 
 
-def test_custom_metrics_on_existing_transaction(get_consumer_records, topic):
+def test_custom_metrics_on_existing_transaction(get_consumer_record, topic):
     transaction_name = (
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"
     )
@@ -77,12 +77,12 @@ def test_custom_metrics_on_existing_transaction(get_consumer_records, topic):
     @validate_transaction_count(1)
     @background_task()
     def _test():
-        get_consumer_records()
+        get_consumer_record()
 
     _test()
 
 
-def test_custom_metrics_inactive_transaction(get_consumer_records, topic):
+def test_custom_metrics_inactive_transaction(get_consumer_record, topic):
     transaction_name = (
         "test_consumer:test_custom_metrics_inactive_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"
     )
@@ -99,20 +99,20 @@ def test_custom_metrics_inactive_transaction(get_consumer_records, topic):
     @background_task()
     def _test():
         end_of_transaction()
-        get_consumer_records()
+        get_consumer_record()
 
     _test()
 
 
-def test_agent_attributes(get_consumer_records):
+def test_agent_attributes(get_consumer_record):
     @validate_attributes("agent", ["kafka.consume.client_id", "kafka.consume.byteCount"])
     def _test():
-        get_consumer_records()
+        get_consumer_record()
 
     _test()
 
 
-def test_consumer_errors(get_consumer_records, consumer_next_raises):
+def test_consumer_errors(get_consumer_record, consumer_next_raises):
     exc_class = RuntimeError
 
     @reset_core_stats_engine()
@@ -122,16 +122,16 @@ def test_consumer_errors(get_consumer_records, consumer_next_raises):
     )
     def _test():
         with pytest.raises(exc_class):
-            get_consumer_records()
+            get_consumer_record()
 
     _test()
 
 
-def test_consumer_handled_errors_not_recorded(get_consumer_records):
+def test_consumer_handled_errors_not_recorded(get_consumer_record):
     # It's important to check that we do not notice the StopIteration error.
     @validate_transaction_errors([])
     def _test():
-        get_consumer_records()
+        get_consumer_record()
 
     _test()
 

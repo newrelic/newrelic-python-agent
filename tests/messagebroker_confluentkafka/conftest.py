@@ -86,7 +86,9 @@ def producer(client_type, json_serializer):
         )
 
     yield producer
-    producer.purge()
+
+    if hasattr(producer, "purge"):
+        producer.purge()
 
 
 @pytest.fixture(scope="function")

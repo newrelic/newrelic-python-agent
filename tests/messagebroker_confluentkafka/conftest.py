@@ -66,7 +66,6 @@ def skip_if_not_serializing(client_type):
 def producer(client_type, json_serializer):
     from confluent_kafka import Producer, SerializingProducer
 
-    # TODO: does it create all of these at once or one at a time?
     if client_type == "cimpl":
         producer = Producer({"bootstrap.servers": BROKER})
     elif client_type == "serializer_function":
@@ -203,14 +202,20 @@ def get_consumer_record(topic, send_producer_message, consumer, deserialize):
         send_producer_message()
 
         record_count = 0
-        while True:
+
+        timeout = 10
+        attempts = 0
+        record = None
+        while not record and attempts < timeout:
             record = consumer.poll(0.5)
             if not record:
-                break
+                attempts += 1
+                continue
             assert not record.error()
 
             assert deserialize(record.value()) == {"foo": 1}
             record_count += 1
+        consumer.poll(0.5)  # Exit the transaction.
 
         assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
 

@@ -132,14 +132,20 @@ def get_consumer_record(topic, send_producer_message, consumer):
         send_producer_message()
 
         record_count = 0
-        while True:
+
+        timeout = 10
+        attempts = 0
+        record = None
+        while not record and attempts < timeout:
             record = consumer.poll(0.5)
             if not record:
-                break
+                attempts += 1
+                continue
             assert not record.error()
 
             assert record.value() == {"foo": 1}
             record_count += 1
+        consumer.poll(0.5)  # Exit the transaction.
 
         assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
 

@@ -165,7 +165,15 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize):
         @cache_kafka_consumer_headers()
         def _test():
             # Start the transaction but don't exit it.
-            consumer.poll(0.5)
+            # Keep polling until we get the record or the timeout is exceeded.
+            timeout = 10
+            attempts = 0
+            record = None
+            while not record and attempts < timeout:
+                record = consumer.poll(0.5)
+                if not record:
+                    attempts += 1
+                    continue
 
         _test()
 

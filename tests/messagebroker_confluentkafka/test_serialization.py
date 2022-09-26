@@ -107,8 +107,12 @@ def test_deserialization_errors(skip_if_not_serializing, monkeypatch, topic, pro
     @background_task()
     def test():
         with pytest.raises(error_cls):
-            record = consumer.poll(0.5)
-            assert record is not None, "No record consumed."
+            timeout = 10
+            attempts = 0
+            while attempts < timeout:
+                if not consumer.poll(0.5):
+                    attempts += 1
+                    continue
 
     test()
 

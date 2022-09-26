@@ -63,7 +63,7 @@ def skip_if_not_serializing(client_type):
 
 
 @pytest.fixture(scope="function")
-def producer(client_type, json_serializer):
+def producer(topic, client_type, json_serializer):
     from confluent_kafka import Producer, SerializingProducer
 
     if client_type == "cimpl":

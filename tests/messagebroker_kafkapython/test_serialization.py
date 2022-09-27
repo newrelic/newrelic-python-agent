@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+
 import pytest
 from testing_support.fixtures import (
+    reset_core_stats_engine,
+    validate_error_event_attributes_outside_transaction,
     validate_transaction_errors,
     validate_transaction_metrics,
-    validate_error_event_attributes_outside_transaction,
-    reset_core_stats_engine,
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
-from newrelic.common.object_names import callable_name
-
-import json
 
 def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_message):
     txn_name = "test_serialization:test_serialization_metrics.<locals>.test" if six.PY3 else "test_serialization:test"
@@ -48,10 +48,13 @@ def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_mes
     test()
 
 
-@pytest.mark.parametrize("key,value", (
-    (object(), "A"),
-    ("A", object()),
-))
+@pytest.mark.parametrize(
+    "key,value",
+    (
+        (object(), "A"),
+        ("A", object()),
+    ),
+)
 def test_serialization_errors(skip_if_not_serializing, topic, producer, key, value):
     error_cls = TypeError
 
@@ -64,13 +67,16 @@ def test_serialization_errors(skip_if_not_serializing, topic, producer, key, val
     test()
 
 
-@pytest.mark.parametrize("key,value", (
-    (b"%", b"{}"),
-    (b"{}", b"%"),
-))
+@pytest.mark.parametrize(
+    "key,value",
+    (
+        (b"%", b"{}"),
+        (b"{}", b"%"),
+    ),
+)
 def test_deserialization_errors(skip_if_not_serializing, monkeypatch, topic, producer, consumer, key, value):
     error_cls = json.decoder.JSONDecodeError if six.PY3 else ValueError
-    
+
     # Remove serializers to cause intentional issues
     monkeypatch.setitem(producer.config, "value_serializer", None)
     monkeypatch.setitem(producer.config, "key_serializer", None)
@@ -80,13 +86,16 @@ def test_deserialization_errors(skip_if_not_serializing, monkeypatch, topic, pro
 
     @reset_core_stats_engine()
     @validate_error_event_attributes_outside_transaction(
-        num_errors=1,
-        exact_attrs={"intrinsic": {"error.class": callable_name(error_cls)}, "agent": {}, "user": {}}
+        num_errors=1, exact_attrs={"intrinsic": {"error.class": callable_name(error_cls)}, "agent": {}, "user": {}}
     )
     def test():
         with pytest.raises(error_cls):
-            for record in consumer:
-                pass
-            assert record is not None, "No record consumed."
+            timeout = 10
+            attempts = 0
+            record = None
+            while not record and attempts < timeout:
+                for record in consumer:
+                    pass
+                attempts += 1
 
     test()

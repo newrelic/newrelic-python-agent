@@ -138,11 +138,6 @@ def consumer(topic, producer, client_type, json_deserializer, json_callable_dese
             group_id="test",
         )
 
-    # The first time the kafka consumer is created and polled, it returns a StopIterator
-    # exception. To by-pass this, loop over the consumer before using it.
-    # NOTE: This seems to only happen in Python2.7.
-    for record in consumer:
-        pass
     yield consumer
     consumer.close()
 
@@ -230,9 +225,15 @@ def get_consumer_record(topic, send_producer_message, consumer, deserialize):
         send_producer_message()
 
         record_count = 0
-        for record in consumer:
-            assert deserialize(record.value) == {"foo": 1}
-            record_count += 1
+
+        timeout = 10
+        attempts = 0
+        record = None
+        while not record and attempts < timeout:
+            for record in consumer:
+                assert deserialize(record.value) == {"foo": 1}
+                record_count += 1
+            attempts += 1
 
         assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
 

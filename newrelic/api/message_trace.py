@@ -28,13 +28,15 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
     cat_appdata_key = "NewRelicAppData"
     cat_synthetics_key = "NewRelicSynthetics"
 
-    def __init__(self, library, operation, destination_type, destination_name, params=None, **kwargs):
+    def __init__(self, library, operation, destination_type, destination_name, params=None, terminal=True, **kwargs):
         parent = kwargs.pop("parent", None)
         source = kwargs.pop("source", None)
         if kwargs:
             raise TypeError("Invalid keyword arguments:", kwargs)
 
         super(MessageTrace, self).__init__(parent=parent, source=source)
+
+        self.terminal = terminal
 
         self.library = library
         self.operation = operation
@@ -69,7 +71,7 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
         )
 
     def terminal_node(self):
-        return True
+        return self.terminal
 
     def create_node(self):
         return MessageNode(
@@ -89,7 +91,7 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
         )
 
 
-def MessageTraceWrapper(wrapped, library, operation, destination_type, destination_name, params={}):
+def MessageTraceWrapper(wrapped, library, operation, destination_type, destination_name, params={}, terminal=True):
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -131,7 +133,7 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type, destinati
         else:
             _destination_name = destination_name
 
-        trace = MessageTrace(_library, _operation, _destination_type, _destination_name, params={}, parent=parent, source=wrapped)
+        trace = MessageTrace(_library, _operation, _destination_type, _destination_name, params={}, terminal=terminal, parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -142,7 +144,7 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type, destinati
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
 
 
-def message_trace(library, operation, destination_type, destination_name, params={}):
+def message_trace(library, operation, destination_type, destination_name, params={}, terminal=True):
     return functools.partial(
         MessageTraceWrapper,
         library=library,
@@ -150,10 +152,11 @@ def message_trace(library, operation, destination_type, destination_name, params
         destination_type=destination_type,
         destination_name=destination_name,
         params=params,
+        terminal=terminal,
     )
 
 
-def wrap_message_trace(module, object_path, library, operation, destination_type, destination_name, params={}):
+def wrap_message_trace(module, object_path, library, operation, destination_type, destination_name, params={}, terminal=True):
     wrap_object(
-        module, object_path, MessageTraceWrapper, (library, operation, destination_type, destination_name, params)
+        module, object_path, MessageTraceWrapper, (library, operation, destination_type, destination_name, params, terminal)
     )

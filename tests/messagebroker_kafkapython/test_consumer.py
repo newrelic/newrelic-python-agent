@@ -14,25 +14,23 @@
 
 import pytest
 from conftest import cache_kafka_consumer_headers
-
-from newrelic.common.object_names import callable_name
-
 from testing_support.fixtures import (
+    reset_core_stats_engine,
     validate_attributes,
     validate_error_event_attributes_outside_transaction,
     validate_transaction_errors,
     validate_transaction_metrics,
-    reset_core_stats_engine,
-)
-from testing_support.validators.validate_transaction_count import (
-    validate_transaction_count,
 )
 from testing_support.validators.validate_distributed_trace_accepted import (
     validate_distributed_trace_accepted,
 )
+from testing_support.validators.validate_transaction_count import (
+    validate_transaction_count,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
+from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
 
@@ -117,8 +115,7 @@ def test_consumer_errors(get_consumer_record, consumer_next_raises):
 
     @reset_core_stats_engine()
     @validate_error_event_attributes_outside_transaction(
-        num_errors=1,
-        exact_attrs={"intrinsic": {"error.class": callable_name(exc_class)}, "agent": {}, "user": {}}
+        num_errors=1, exact_attrs={"intrinsic": {"error.class": callable_name(exc_class)}, "agent": {}, "user": {}}
     )
     def _test():
         with pytest.raises(exc_class):
@@ -160,7 +157,12 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize):
         @cache_kafka_consumer_headers
         def _test():
             # Start the transaction but don't exit it.
-            next(consumer_iter)
+            timeout = 10
+            attempts = 0
+            record = None
+            while not record and attempts < timeout:
+                record = next(consumer_iter)
+                attempts += 1
 
         _test()
 

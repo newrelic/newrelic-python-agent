@@ -275,6 +275,9 @@ class ApplicationLoggingMetricsSettings(Settings):
 class ApplicationLoggingLocalDecoratingSettings(Settings):
     pass
 
+class SecurityModuleSettings(Settings):
+    pass
+
 
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
@@ -398,7 +401,7 @@ _settings.serverless_mode = ServerlessModeSettings()
 _settings.infinite_tracing = InfiniteTracingSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = EventHarvestConfigHarvestLimitSettings()
-
+_settings.security = SecurityModuleSettings()
 
 _settings.log_file = os.environ.get("NEW_RELIC_LOG", None)
 _settings.audit_log_file = os.environ.get("NEW_RELIC_AUDIT_LOG", None)
@@ -577,8 +580,6 @@ _settings.process_host.display_name = os.environ.get("NEW_RELIC_PROCESS_HOST_DIS
 _settings.labels = _environ_as_mapping("NEW_RELIC_LABELS", "")
 
 _settings.monitor_mode = _environ_as_bool("NEW_RELIC_MONITOR_MODE", True)
-
-_settings.k2_enabled = _environ_as_bool("ENABLE_K2_MODE", True)
 
 _settings.developer_mode = _environ_as_bool("NEW_RELIC_DEVELOPER_MODE", False)
 
@@ -822,6 +823,12 @@ _settings.application_logging.metrics.enabled = _environ_as_bool(
 _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
+
+_settings.security.enabled = False
+_settings.security.mode = "RASP"
+_settings.security.validator_service_endpoint_url = ""
+_settings.security.resource_service_endpoint_url = ""
+_settings.security.accessor_token = ""
 
 
 def global_settings():

@@ -328,7 +328,11 @@ def _process_configuration(section):
     _process_setting(section, "ca_bundle_path", "get", None)
     _process_setting(section, "audit_log_file", "get", None)
     _process_setting(section, "monitor_mode", "getboolean", None)
-    _process_setting(section, "k2_enabled", "getboolean", None)
+    _process_setting(section, "security.enabled", "getboolean", False)
+    _process_setting(section, "security.mode", "get", "RASP")
+    _process_setting(section, "security.validator_service_endpoint_url", "get", "")
+    _process_setting(section, "security.resource_service_endpoint_url", "get", "")
+    _process_setting(section, "security.accessor_token", "get", "")
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)
@@ -3081,10 +3085,10 @@ def initialize(
         _setup_agent_console()
     else:
         _settings.enabled = False
-    if _settings.k2_enabled:
-        # run k2 agent
-        import k2_python_agent
-        k2_python_agent.init_k2()
+
+    # run k2 agent
+    import k2_python_agent
+    k2_python_agent.init_k2()
 
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

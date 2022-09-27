@@ -19,6 +19,6 @@ try:
     with open(os.path.join(THIS_DIR, 'version.txt'), 'r') as f:
         version = f.read()
 except:
-    version = '0.0.0.0'
+    version = '0.0.0'
 
 version_info = list(map(int, version.split('.')))

@@ -161,8 +161,10 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize):
             attempts = 0
             record = None
             while not record and attempts < timeout:
-                record = next(consumer_iter)
-                attempts += 1
+                try:
+                    record = next(consumer_iter)
+                except StopIteration:
+                    attempts += 1
 
         _test()
 

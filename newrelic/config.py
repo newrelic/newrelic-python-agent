@@ -3087,8 +3087,14 @@ def initialize(
         _settings.enabled = False
 
     # run k2 agent
-    import k2_python_agent
-    k2_python_agent.init_k2()
+    from k2_python_agent import AgentConfig, ModuleLoadAgent
+    config = AgentConfig()
+    config.set_base_config(_settings.security)
+    config.application_name = _settings.app_name
+    # TODO: replace with identified app id
+    config.application_id = _settings.application_id
+
+    ModuleLoadAgent().initialise()
 
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

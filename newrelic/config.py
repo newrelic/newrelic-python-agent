@@ -3092,9 +3092,9 @@ def initialize(
     config.set_base_config(_settings.security)
     config.application_name = _settings.app_name
     # TODO: replace with identified app id
-    config.application_id = _settings.application_id
+    config.application_id = None
 
-    ModuleLoadAgent().initialise()
+    ModuleLoadAgent(config).initialise()
 
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

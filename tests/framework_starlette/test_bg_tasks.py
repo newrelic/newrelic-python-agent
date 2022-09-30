@@ -88,9 +88,7 @@ def test_basehttp_style_middleware(target_application, route):
     BUG_COMPLETELY_FIXED = (starlette_version >= (0, 21, 0)) or (
         starlette_version >= (0, 20, 1) and sys.version_info[:2] > (3, 7)
     )
-    BUG_PARTIALLY_FIXED = (
-        starlette_version >= (0, 20, 1) and starlette_version < (0, 21, 0) and sys.version_info[:2] <= (3, 7)
-    )
+    BUG_PARTIALLY_FIXED = (0, 20, 1) <= starlette_version < (0, 21, 0) and sys.version_info[:2] <= (3, 7)
 
     if BUG_COMPLETELY_FIXED:
         # Assert both web transaction and background task transactions are present.

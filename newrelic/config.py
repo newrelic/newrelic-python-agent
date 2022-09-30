@@ -333,6 +333,7 @@ def _process_configuration(section):
     _process_setting(section, "security.validator_service_endpoint_url", "get", None)
     _process_setting(section, "security.resource_service_endpoint_url", "get", None)
     _process_setting(section, "security.accessor_token", "get", None)
+    _process_setting(section, "security.customer_id", "get", None)
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)

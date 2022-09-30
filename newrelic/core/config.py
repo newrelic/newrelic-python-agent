@@ -829,6 +829,7 @@ _settings.security.mode = "RASP"
 _settings.security.validator_service_endpoint_url = ""
 _settings.security.resource_service_endpoint_url = ""
 _settings.security.accessor_token = ""
+_settings.security.customer_id = ""
 
 
 def global_settings():

@@ -19,33 +19,39 @@ from newrelic.api.application import Application, application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
+from newrelic.common.async_proxy import TransactionContext, async_proxy
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.common.async_proxy import async_proxy, TransactionContext
 
 
 class MessageTransaction(BackgroundTask):
+    def __init__(
+        self,
+        library,
+        destination_type,
+        destination_name,
+        application,
+        routing_key=None,
+        exchange_type=None,
+        headers=None,
+        queue_name=None,
+        reply_to=None,
+        correlation_id=None,
+        transport_type="AMQP",
+        source=None,
+    ):
 
-    def __init__(self, library, destination_type,
-            destination_name, application, routing_key=None,
-            exchange_type=None, headers=None, queue_name=None, reply_to=None,
-            correlation_id=None, source=None):
+        name, group = self.get_transaction_name(library, destination_type, destination_name)
 
-        name, group = self.get_transaction_name(library, destination_type,
-                destination_name)
-
-        super(MessageTransaction, self).__init__(application, name,
-                group=group, source=source)
+        super(MessageTransaction, self).__init__(application, name, group=group, source=source)
 
         self.headers = headers
 
         if headers is not None and self.settings is not None:
             if self.settings.distributed_tracing.enabled:
-                self.accept_distributed_trace_headers(
-                        headers, transport_type='AMQP')
+                self.accept_distributed_trace_headers(headers, transport_type=transport_type)
             elif self.settings.cross_application_tracer.enabled:
                 self._process_incoming_cat_headers(
-                    headers.pop(MessageTrace.cat_id_key, None),
-                    headers.pop(MessageTrace.cat_transaction_key, None)
+                    headers.pop(MessageTrace.cat_id_key, None), headers.pop(MessageTrace.cat_transaction_key, None)
                 )
 
         self.routing_key = routing_key
@@ -56,37 +62,45 @@ class MessageTransaction(BackgroundTask):
 
     @staticmethod
     def get_transaction_name(library, destination_type, destination_name):
-        group = 'Message/%s/%s' % (library, destination_type)
-        name = 'Named/%s' % destination_name
+        group = "Message/%s/%s" % (library, destination_type)
+        name = "Named/%s" % destination_name
         return name, group
 
     def _update_agent_attributes(self):
         ms_attrs = self._agent_attributes
 
         if self.exchange_type is not None:
-            ms_attrs['message.exchangeType'] = self.exchange_type
+            ms_attrs["message.exchangeType"] = self.exchange_type
         if self.queue_name is not None:
-            ms_attrs['message.queueName'] = self.queue_name
+            ms_attrs["message.queueName"] = self.queue_name
         if self.reply_to is not None:
-            ms_attrs['message.replyTo'] = self.reply_to
+            ms_attrs["message.replyTo"] = self.reply_to
         if self.correlation_id is not None:
-            ms_attrs['message.correlationId'] = self.correlation_id
+            ms_attrs["message.correlationId"] = self.correlation_id
         if self.headers:
             for k, v in self.headers.items():
-                new_key = 'message.headers.%s' % k
+                new_key = "message.headers.%s" % k
                 new_val = str(v)
                 ms_attrs[new_key] = new_val
         if self.routing_key is not None:
-            ms_attrs['message.routingKey'] = self.routing_key
+            ms_attrs["message.routingKey"] = self.routing_key
 
         super(MessageTransaction, self)._update_agent_attributes()
 
 
-def MessageTransactionWrapper(wrapped, library, destination_type,
-        destination_name, application=None, routing_key=None,
-        exchange_type=None, headers=None, queue_name=None, reply_to=None,
-        correlation_id=None):
-
+def MessageTransactionWrapper(
+    wrapped,
+    library,
+    destination_type,
+    destination_name,
+    application=None,
+    routing_key=None,
+    exchange_type=None,
+    headers=None,
+    queue_name=None,
+    reply_to=None,
+    correlation_id=None,
+):
     def wrapper(wrapped, instance, args, kwargs):
         if callable(library):
             if instance is not None:
@@ -173,9 +187,8 @@ def MessageTransactionWrapper(wrapped, library, destination_type,
                 if not transaction.background_task:
                     transaction.background_task = True
                     transaction.set_transaction_name(
-                            *MessageTransaction.get_transaction_name(
-                                _library, _destination_type,
-                                _destination_name))
+                        *MessageTransaction.get_transaction_name(_library, _destination_type, _destination_name)
+                    )
 
                 return None
 
@@ -233,22 +246,61 @@ def MessageTransactionWrapper(wrapped, library, destination_type,
     return FunctionWrapper(wrapped, wrapper)
 
 
-def message_transaction(library, destination_type, destination_name,
-        application=None, routing_key=None, exchange_type=None, headers=None,
-        queue_name=None, reply_to=None, correlation_id=None):
-    return functools.partial(MessageTransactionWrapper,
-            library=library, destination_type=destination_type,
-            destination_name=destination_name, application=application,
-            routing_key=routing_key, exchange_type=exchange_type,
-            headers=headers, queue_name=queue_name, reply_to=reply_to,
-            correlation_id=correlation_id)
+def message_transaction(
+    library,
+    destination_type,
+    destination_name,
+    application=None,
+    routing_key=None,
+    exchange_type=None,
+    headers=None,
+    queue_name=None,
+    reply_to=None,
+    correlation_id=None,
+):
+    return functools.partial(
+        MessageTransactionWrapper,
+        library=library,
+        destination_type=destination_type,
+        destination_name=destination_name,
+        application=application,
+        routing_key=routing_key,
+        exchange_type=exchange_type,
+        headers=headers,
+        queue_name=queue_name,
+        reply_to=reply_to,
+        correlation_id=correlation_id,
+    )
 
 
-def wrap_message_transaction(module, object_path, library, destination_type,
-        destination_name, application=None, routing_key=None,
-        exchange_type=None, headers=None, queue_name=None, reply_to=None,
-        correlation_id=None):
-    wrap_object(module, object_path, MessageTransactionWrapper,
-            (library, destination_type, destination_name, application,
-            routing_key, exchange_type, headers, queue_name, reply_to,
-            correlation_id))
+def wrap_message_transaction(
+    module,
+    object_path,
+    library,
+    destination_type,
+    destination_name,
+    application=None,
+    routing_key=None,
+    exchange_type=None,
+    headers=None,
+    queue_name=None,
+    reply_to=None,
+    correlation_id=None,
+):
+    wrap_object(
+        module,
+        object_path,
+        MessageTransactionWrapper,
+        (
+            library,
+            destination_type,
+            destination_name,
+            application,
+            routing_key,
+            exchange_type,
+            headers,
+            queue_name,
+            reply_to,
+            correlation_id,
+        ),
+    )

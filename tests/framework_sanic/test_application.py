@@ -30,9 +30,6 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 
-sanic_21 = int(sanic.__version__.split('.', 1)[0]) >= 21
-
-
 BASE_METRICS = [
     ('Function/_target_application:index', 1),
     ('Function/_target_application:request_middleware', 1 if int(sanic.__version__.split('.', 1)[0]) > 18 else 2),
@@ -114,11 +111,11 @@ def test_inbound_distributed_trace(app):
     response = app.fetch('get', '/', headers=dict(dt_headers))
     assert response.status == 200
 
-_params = ["error"]
-if not sanic_21:
-    _params.append('write_response_error')
-@pytest.mark.parametrize('endpoint', _params)
-def test_recorded_error(app, endpoint):
+@pytest.mark.parametrize("endpoint", ["error", "write_response_error"])
+def test_recorded_error(app, endpoint, sanic_version):
+    if sanic_version >= (21, 0, 0) and endpoint == "write_response_error":
+        pytest.skip()
+
     ERROR_METRICS = [
         ('Function/_target_application:%s' % endpoint, 1),
     ]
@@ -366,13 +363,13 @@ def test_unknown_route(app):
     import sanic
     sanic_version = [int(x) for x in sanic.__version__.split(".")]
     _tx_name = "_target_application:CustomRouter.get" if sanic_version[0] < 21 else "_target_application:request_middleware"
-    
+
     @validate_transaction_metrics(_tx_name)
     def _test():
         response = app.fetch('get', '/what-route')
         assert response.status == 404
-    
-    _test()    
+
+    _test()
 
 def test_bad_method(app):
     import sanic
@@ -386,3 +383,7 @@ def test_bad_method(app):
         response = app.fetch('post', '/')
         assert response.status == 405
     _test()
+
+@pytest.fixture
+def sanic_version():
+    return tuple([int(v) for v in sanic.__version__.split(".")])

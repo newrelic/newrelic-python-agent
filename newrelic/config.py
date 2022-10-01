@@ -3068,9 +3068,8 @@ def _generate_security_module_config():
     # propogate app name and id
     agent_instance = newrelic.core.agent.agent_instance()
     application = agent_instance.application(_settings.app_name)
-    configuration = application.configuration
-
-    if configuration and hasattr(configuration, 'primary_application_id'):
+    if application:
+        configuration = application.configuration
         config.application_id = configuration.primary_application_id
     config.application_name = _settings.app_name
 

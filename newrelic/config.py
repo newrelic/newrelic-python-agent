@@ -329,10 +329,12 @@ def _process_configuration(section):
     _process_setting(section, "audit_log_file", "get", None)
     _process_setting(section, "monitor_mode", "getboolean", None)
     _process_setting(section, "security.enabled", "getboolean", None)
+    _process_setting(section, "security.force_complete_disable", "getboolean", None)
     _process_setting(section, "security.mode", "get", None)
     _process_setting(section, "security.validator_service_endpoint_url", "get", None)
     _process_setting(section, "security.resource_service_endpoint_url", "get", None)
     _process_setting(section, "security.accessor_token", "get", None)
+    _process_setting(section, "security.customer_id", "get", None)
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)
@@ -3059,6 +3061,48 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
+def _generate_security_module_config():
+    from k2_python_agent import AgentConfig
+    config = AgentConfig()
+    config.set_base_config(_settings.security)
+    # propogate app name and id
+    agent_instance = newrelic.core.agent.agent_instance()
+    application = agent_instance.application(_settings.app_name)
+    if application:
+        configuration = application.configuration
+        config.application_id = configuration.entity_guid
+    config.application_name = _settings.app_name
+
+    return config
+
+
+def _update_security_module(agent):
+    config = _generate_security_module_config()
+    agent.refresh_agent(config)
+    agent.connect()
+
+
+def _setup_security_module():
+    """Initiates k2 security module and adds a
+    callback to agent startup to propagate NR config
+    """
+    if _settings.security.force_complete_disable:
+        return
+
+    # run security module
+    from k2_python_agent import AgentConfig, ModuleLoadAgent
+    from functools import partial as Partial
+
+    config =_generate_security_module_config()
+
+    security_module_agent = ModuleLoadAgent(config)
+    security_module_agent.initialise()
+
+    # create a callback to reinitialise the security module
+    callback = Partial(_update_security_module, security_module_agent)
+    newrelic.core.agent.Agent.run_on_startup(callback)
+
+
 def initialize(
     config_file=None,
     environment=None,
@@ -3086,9 +3130,7 @@ def initialize(
     else:
         _settings.enabled = False
 
-    # run k2 agent
-    import k2_python_agent
-    k2_python_agent.init_k2()
+    _setup_security_module()
 
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

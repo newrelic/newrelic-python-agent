@@ -824,12 +824,13 @@ _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
 
-_settings.security.enabled = False
+_settings.security.force_complete_disable = False
+_settings.security.enable = False
 _settings.security.mode = "RASP"
 _settings.security.validator_service_endpoint_url = ""
 _settings.security.resource_service_endpoint_url = ""
 _settings.security.accessor_token = ""
-
+_settings.security.customer_id = ""
 
 def global_settings():
     """This returns the default global settings. Generally only used

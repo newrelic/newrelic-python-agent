@@ -278,6 +278,30 @@ class ApplicationLoggingLocalDecoratingSettings(Settings):
 class SecurityModuleSettings(Settings):
     pass
 
+class SecurityDetectionSettings(Settings):
+    pass
+
+class SecurityPolicySettings(Settings):
+    pass
+
+class SecurityPolicyVulnerabilityScanSettings(Settings):
+    pass
+
+class SecurityPolicyIASTSettings(Settings):
+    pass
+
+class SecurityPolicyIASTProbingSettings(Settings):
+    pass
+
+class SecurityPolicyprotectionModeSettings(Settings):
+    pass
+
+class SecurityPolicyIPBlockingSettings(Settings):
+    pass
+
+class SecurityPolicyAPIBlockingSettings(Settings):
+    pass
+
 
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
@@ -401,7 +425,6 @@ _settings.serverless_mode = ServerlessModeSettings()
 _settings.infinite_tracing = InfiniteTracingSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = EventHarvestConfigHarvestLimitSettings()
-_settings.security = SecurityModuleSettings()
 
 _settings.log_file = os.environ.get("NEW_RELIC_LOG", None)
 _settings.audit_log_file = os.environ.get("NEW_RELIC_AUDIT_LOG", None)
@@ -824,13 +847,122 @@ _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
 
-_settings.security.force_complete_disable = False
-_settings.security.enable = False
-_settings.security.mode = "RASP"
-_settings.security.validator_service_endpoint_url = ""
-_settings.security.resource_service_endpoint_url = ""
-_settings.security.accessor_token = ""
-_settings.security.customer_id = ""
+_settings.security = SecurityModuleSettings()
+_settings.security.detection = SecurityDetectionSettings()
+_settings.security.policy = SecurityPolicySettings()
+_settings.security.policy.vulnerabilityScan = SecurityPolicyVulnerabilityScanSettings()
+_settings.security.policy.vulnerabilityScan = SecurityPolicyIASTSettings()
+_settings.security.policy.vulnerabilityScan = SecurityPolicyIASTProbingSettings()
+_settings.security.policy.protectionMode = SecurityPolicyprotectionModeSettings()
+_settings.security.policy.protectionMode.ipBlocking = SecurityPolicyIPBlockingSettings()
+_settings.security.policy.protectionMode.ipBlocking = SecurityPolicyAPIBlockingSettings()
+
+_settings.security.force_complete_disable = _environ_as_bool(
+    "NEW_RELIC_SECURITY_FORCE_COMPLETE_DISABLE",
+    default=False
+)
+_settings.security.enable = _environ_as_bool(
+    "NEW_RELIC_SECURITY_ENABLE",
+    default=False
+)
+_settings.security.mode = os.environ.get(
+    "NEW_RELIC_SECURITY_MODE",
+    default="RASP"
+)
+_settings.security.validator_service_endpoint_url = os.environ.get(
+    "NEW_RELIC_SECURITY_VALIDATOR_SERVICE_ENDPOINT_URL",
+    default=None
+)
+_settings.security.resource_service_endpoint_url = os.environ.get(
+    "NEW_RELIC_SECURITY_RESOURCE_SERVICE_ENDPOINT_URL",
+    default=None
+)
+_settings.security.accessor_token = os.environ.get(
+    "NEW_RELIC_SECURITY_ACCESSOR_TOKEN",
+    default=None
+)
+_settings.security.customer_id = os.environ.get(
+    "NEW_RELIC_SECURITY_CUSTOMER_ID",
+    default=None
+)
+_settings.security.log_level = os.environ.get(
+    "NEW_RELIC_SECURITY_LOG_LEVEL",
+    default="INFO"
+)
+_settings.security.sec_home_path = os.environ.get(
+    "NEW_RELIC_SECURITY_SEC_HOME_PATH",
+    default="/opt"
+)
+_settings.security.sec_log_file_name = os.environ.get(
+    "NEW_RELIC_SECURITY_SEC_LOG_FILE_NAME",
+    default="/temp/security_log"
+)
+_settings.security.detection.disable_rci = _environ_as_bool(
+    "NEW_RELIC_SECURITY_DETECTION_DISABLE_RCI",
+    default=False
+)
+_settings.security.detection.disable_rxss = _environ_as_bool(
+    "NEW_RELIC_SECURITY_DETECTION_DISABLE_RXSS",
+    default=False
+)
+_settings.security.detection.disable_deserialization = _environ_as_bool(
+    "NEW_RELIC_SECURITY_DETECTION_DISABLE_DESERIALIZATION",
+    default=False
+)
+
+_settings.security.policy.vulnerabilityScan.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_ENABLED",
+    default=False
+)
+_settings.security.policy.vulnerabilityScan.iastScan.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_IASTSCAN_ENABLED",
+    default=False
+)
+_settings.security.policy.vulnerabilityScan.iastScan.probing.interval = _environ_as_int(
+    "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_IASTSCAN_PROBING_INTERVAL",
+    default=1
+)
+_settings.security.policy.vulnerabilityScan.iastScan.probing.batchSize = _environ_as_int(
+    "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_IASTSCAN_PROBING_BATCHSIZE",
+    default=5
+)
+_settings.security.policy.protectionMode.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_ENABLED",
+    default=False
+)
+_settings.security.policy.protectionMode.ipBlocking.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_ENABLED",
+    default=False
+)
+_settings.security.policy.protectionMode.ipBlocking.attackerIpBlocking = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_ATTACKERIPBLOCKING",
+    default=False
+)
+_settings.security.policy.protectionMode.ipBlocking.ipDetectViaXFF = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_IPDETECTVIAXFF",
+    default=False
+)
+_settings.security.policy.protectionMode.ipBlocking.timeout = _environ_as_int(
+    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_TIMEOUT",
+    default=120
+)
+_settings.security.policy.protectionMode.apiBlocking.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_ENABLED",
+    default=False
+)
+_settings.security.policy.protectionMode.apiBlocking.protectAllApis = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_PROTECTALLAPIS",
+    default=False
+)
+_settings.security.policy.protectionMode.apiBlocking.protectKnownVulnerableApis = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_PROTECTKNOWNVULNERABLEAPIS",
+    default=False
+)
+_settings.security.policy.protectionMode.apiBlocking.protectAttackedApis = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_PROTECTATTACKEDAPIS",
+    default=False
+)
+
 
 def global_settings():
     """This returns the default global settings. Generally only used

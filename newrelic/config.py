@@ -3070,7 +3070,7 @@ def _generate_security_module_config():
     application = agent_instance.application(_settings.app_name)
     if application:
         configuration = application.configuration
-        config.application_id = configuration.primary_application_id
+        config.application_id = configuration.entity_guid
     config.application_name = _settings.app_name
 
     return config
@@ -3079,6 +3079,7 @@ def _generate_security_module_config():
 def _update_security_module(agent):
     config = _generate_security_module_config()
     agent.refresh_agent(config)
+    agent.connect()
 
 
 def _setup_security_module():

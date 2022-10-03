@@ -15,13 +15,13 @@
 import asyncio
 
 import pytest
-from testing_support.fixtures import (
+from testing_support.fixtures import (  # noqa: F401
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
 
-from newrelic.common.object_wrapper import transient_function_wrapper
+from newrelic.common.object_wrapper import transient_function_wrapper  # noqa: F401
 
 _coverage_source = [
     "newrelic.hooks.framework_sanic",
@@ -80,7 +80,7 @@ def create_request_class(app, method, url, headers=None, loop=None):
         proto = MockProtocol(loop=loop, app=app)
         proto.recv_buffer = bytearray()
         http = Http(proto)
-        
+
         if hasattr(http, "init_for_request"):
             http.init_for_request()
 
@@ -134,6 +134,12 @@ def request(app, method, url, headers=None):
             loop.run_until_complete(app._startup())
         else:
             app.router.finalize()
+    # Starting in 22.9.0 sanic introduced an API to control middleware ordering.
+    # This included a new method called finalize_middleware that sets the middleware
+    # to be used on the request.route during the app._startup. In order to register
+    # new middleware the finalize_middleware must be called.
+    elif hasattr(app, "finalize_middleware"):
+        app.finalize_middleware()
 
     coro = create_request_coroutine(app, method, url, headers, loop)
     loop.run_until_complete(coro)

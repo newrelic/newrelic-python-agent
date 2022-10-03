@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import asyncio
 from collections import namedtuple
 
@@ -62,10 +63,17 @@ class SimpleAiohttpApp(AioHTTPTestCase):
 
     def setUp(self):
         super(SimpleAiohttpApp, self).setUp()
+        if hasattr(self, "asyncSetUp"):
+            asyncio.get_event_loop().run_until_complete(self.asyncSetUp())
         asyncio.set_event_loop(self.loop)
 
     def get_app(self, *args, **kwargs):
-        return make_app(self.middleware, loop=self.loop)
+        return make_app(self.middleware)
+
+    def tearDown(self):
+        super(SimpleAiohttpApp, self).tearDown()
+        if hasattr(self, "asyncTearDown"):
+            asyncio.get_event_loop().run_until_complete(self.asyncTearDown())
 
     @asyncio.coroutine
     def _get_client(self, app_or_server):
@@ -79,10 +87,7 @@ class SimpleAiohttpApp(AioHTTPTestCase):
             test_server = self.server_cls(app_or_server, scheme=scheme, host=host, **server_kwargs)
             client_constructor_arg = test_server
 
-        try:
-            return _TestClient(client_constructor_arg, loop=self.loop)
-        except TypeError:
-            return _TestClient(client_constructor_arg)
+        return _TestClient(client_constructor_arg)
 
     get_client = _get_client
 

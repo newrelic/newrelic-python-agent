@@ -15,13 +15,15 @@
 import asyncio
 
 import pytest
-from testing_support.fixtures import (  # noqa: F401
+from testing_support.fixtures import (  # noqa: F401 pylint: disable=W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
 
-from newrelic.common.object_wrapper import transient_function_wrapper  # noqa: F401
+from newrelic.common.object_wrapper import (  # noqa: F401 pylint: disable=W0611
+    transient_function_wrapper,
+)
 
 _coverage_source = [
     "newrelic.hooks.framework_sanic",
@@ -74,7 +76,7 @@ def create_request_class(app, method, url, headers=None, loop=None):
         from sanic.server import HttpProtocol
 
         class MockProtocol(HttpProtocol):
-            async def send(*args, **kwargs):
+            async def send(*args, **kwargs):  # pylint: disable=E0211
                 return
 
         proto = MockProtocol(loop=loop, app=app)

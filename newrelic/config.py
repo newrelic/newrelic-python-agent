@@ -3080,6 +3080,10 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
+def _generate_security_policy():
+    return _settings.security.policy.to_deep_dict()
+
+
 def _generate_security_module_config():
     from k2_python_agent import AgentConfig
     config = AgentConfig()
@@ -3098,7 +3102,8 @@ def _generate_security_module_config():
 def _update_security_module(agent):
     config = _generate_security_module_config()
     agent.refresh_agent(config)
-    agent.connect()
+    if _settings.security.enable:
+        agent.connect()
 
 
 def _setup_security_module():
@@ -3107,16 +3112,19 @@ def _setup_security_module():
     """
     if _settings.security.force_complete_disable:
         return
-
     # run security module
     from k2_python_agent import AgentConfig, ModuleLoadAgent
     from functools import partial as Partial
 
     config =_generate_security_module_config()
+    policy = _generate_security_policy()
 
     security_module_agent = ModuleLoadAgent(config)
     security_module_agent.initialise()
 
+    security_module_agent.set_policy(policy)
+    if not _settings.security.enable:
+        security_module_agent.disable()
     # create a callback to reinitialise the security module
     callback = Partial(_update_security_module, security_module_agent)
     newrelic.core.agent.Agent.run_on_startup(callback)

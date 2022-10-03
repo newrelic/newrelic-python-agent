@@ -94,6 +94,16 @@ class Settings(object):
         return hasattr(self, item)
 
 
+class DeepDictableSetting:
+    def to_deep_dict(self):
+        _dict = self.__dict__
+        for attr in _dict.keys():
+            value = _dict[attr]
+            if isinstance(value, DeepDictableSetting):
+                _dict[attr] = value.to_deep_dict()
+        return _dict
+
+
 def create_settings(nested):
     return type("Settings", (Settings,), {"nested": nested})()
 
@@ -281,25 +291,25 @@ class SecurityModuleSettings(Settings):
 class SecurityDetectionSettings(Settings):
     pass
 
-class SecurityPolicySettings(Settings):
+class SecurityPolicySettings(Settings, DeepDictableSetting):
     pass
 
-class SecurityPolicyVulnerabilityScanSettings(Settings):
+class SecurityPolicyVulnerabilityScanSettings(Settings, DeepDictableSetting):
     pass
 
-class SecurityPolicyIASTSettings(Settings):
+class SecurityPolicyIASTSettings(Settings, DeepDictableSetting):
     pass
 
-class SecurityPolicyIASTProbingSettings(Settings):
+class SecurityPolicyIASTProbingSettings(Settings, DeepDictableSetting):
     pass
 
-class SecurityPolicyprotectionModeSettings(Settings):
+class SecurityPolicyprotectionModeSettings(Settings, DeepDictableSetting):
     pass
 
-class SecurityPolicyIPBlockingSettings(Settings):
+class SecurityPolicyIPBlockingSettings(Settings, DeepDictableSetting):
     pass
 
-class SecurityPolicyAPIBlockingSettings(Settings):
+class SecurityPolicyAPIBlockingSettings(Settings, DeepDictableSetting):
     pass
 
 
@@ -851,11 +861,11 @@ _settings.security = SecurityModuleSettings()
 _settings.security.detection = SecurityDetectionSettings()
 _settings.security.policy = SecurityPolicySettings()
 _settings.security.policy.vulnerabilityScan = SecurityPolicyVulnerabilityScanSettings()
-_settings.security.policy.vulnerabilityScan = SecurityPolicyIASTSettings()
-_settings.security.policy.vulnerabilityScan = SecurityPolicyIASTProbingSettings()
+_settings.security.policy.vulnerabilityScan.iastScan = SecurityPolicyIASTSettings()
+_settings.security.policy.vulnerabilityScan.iastScan.probing = SecurityPolicyIASTProbingSettings()
 _settings.security.policy.protectionMode = SecurityPolicyprotectionModeSettings()
 _settings.security.policy.protectionMode.ipBlocking = SecurityPolicyIPBlockingSettings()
-_settings.security.policy.protectionMode.ipBlocking = SecurityPolicyAPIBlockingSettings()
+_settings.security.policy.protectionMode.apiBlocking = SecurityPolicyAPIBlockingSettings()
 
 _settings.security.force_complete_disable = _environ_as_bool(
     "NEW_RELIC_SECURITY_FORCE_COMPLETE_DISABLE",

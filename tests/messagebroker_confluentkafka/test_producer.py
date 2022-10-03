@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import threading
+
 import pytest
 from conftest import cache_kafka_producer_headers
 from testing_support.fixtures import (
@@ -25,6 +27,38 @@ from testing_support.validators.validate_messagebroker_headers import (
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.packages import six
+
+
+@background_task()
+def test_produce_arguments(topic, producer, client_type, serialize):
+    callback_called = threading.Event()
+
+    def producer_callback(err, msg):
+        callback_called.set()
+
+    if client_type == "cimpl":
+        producer.produce(
+            topic,
+            value=serialize({"foo": 1}),
+            key=serialize("my-key"),
+            callback=producer_callback,
+            partition=1,
+            timestamp=1,
+            headers=[("MY-HEADER", "nonsense")],
+        )
+    else:
+        producer.produce(
+            topic,
+            value=serialize({"foo": 1}),
+            key=serialize("my-key"),
+            partition=1,
+            on_delivery=producer_callback,
+            timestamp=1,
+            headers=[("MY-HEADER", "nonsense")],
+        )
+    producer.flush()
+
+    assert callback_called.wait(5), "Callback never called."
 
 
 def test_trace_metrics(topic, send_producer_message):

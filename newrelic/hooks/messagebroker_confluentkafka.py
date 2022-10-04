@@ -33,17 +33,28 @@ HEARTBEAT_SESSION_TIMEOUT = "MessageBroker/Kafka/Heartbeat/SessionTimeout"
 HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
 
 
-def _bind_Producer_produce(topic, value=None, key=None, partition=-1, on_delivery=None, timestamp=0, headers=None):
-    return topic, value, key, partition, on_delivery, timestamp, headers
-
-
 def wrap_Producer_produce(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    topic, value, key, partition, on_delivery, timestamp, headers = _bind_Producer_produce(*args, **kwargs)
-    headers = list(headers) if headers else []
+    # Binding with a standard function signature does not work properly due to a bug in handling arguments
+    # in the underlying C code, where callback=None being specified causes on_delivery=callback to never run.
+
+    # Bind out headers from end of args list
+    if len(args) == 8:
+        # Take headers off the end of the positional args
+        headers = args[7]
+        args = args[0:7]
+    else:
+        headers = kwargs.pop("headers", [])
+
+    # Bind topic off of the beginning of the args list
+    if len(args) >= 1:
+        topic = args[0]
+        args = args[1:]
+    else:
+        topic = kwargs.get("topic", None)
 
     with MessageTrace(
         library="Kafka",
@@ -52,18 +63,11 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
         destination_name=topic or "Default",
         source=wrapped,
     ) as trace:
-        dt_headers = [(k, v.encode("utf-8")) for k, v in trace.generate_request_headers(transaction)]
-        headers.extend(dt_headers)
+        dt_headers = {k: v.encode("utf-8") for k, v in trace.generate_request_headers(transaction)}
+        # headers can be a list of tuples or a dict so convert to dict for consistency.
+        dt_headers.update(dict(headers) if headers else {})
         try:
-            return wrapped(
-                topic,
-                value=value,
-                key=key,
-                partition=partition,
-                on_delivery=on_delivery,
-                timestamp=timestamp,
-                headers=headers,
-            )
+            return wrapped(topic, headers=dt_headers, *args, **kwargs)
         except Exception as error:
             # Unwrap kafka errors
             while hasattr(error, "exception"):

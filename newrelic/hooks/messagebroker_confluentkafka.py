@@ -66,12 +66,7 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
         dt_headers = [(k, v.encode("utf-8")) for k, v in trace.generate_request_headers(transaction)]
         dt_headers.extend(headers if headers else [])
         try:
-            return wrapped(
-                topic,
-                *args,
-                headers=dt_headers,
-                **kwargs,
-            )
+            return wrapped(topic, headers=dt_headers, *args, **kwargs)
         except Exception as error:
             # Unwrap kafka errors
             while hasattr(error, "exception"):

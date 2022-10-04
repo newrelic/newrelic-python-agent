@@ -13,13 +13,11 @@
 # limitations under the License.
 
 import pytest
-import aioredis
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.background_task import background_task
 
 from testing_support.db_settings import redis_settings
-from conftest import event_loop, loop, AIOREDIS_VERSION
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.util import instance_hostname
@@ -40,19 +38,6 @@ _disable_instance_settings = {
     "span_events.enabled": True,
 }
 
-if AIOREDIS_VERSION >= (2, 0):
-    clients = [
-        aioredis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0),
-        aioredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0),
-    ]
-else:
-    clients = [
-        event_loop.run_until_complete(
-            aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], DB_SETTINGS["port"]), db=0)
-        ),
-    ]
-
-
 async def _exercise_db(client):
     await client.set("key", "value")
     await client.get("key")
@@ -63,7 +48,6 @@ async def _exercise_db(client):
         await client.execute("CLIENT", "LIST")
 
 
-@pytest.mark.parametrize("client", clients)
 @pytest.mark.parametrize("db_instance_enabled", (True, False))
 @pytest.mark.parametrize("instance_enabled", (True, False))
 def test_span_events(client, instance_enabled, db_instance_enabled, loop):

@@ -17,7 +17,7 @@ import pytest
 import aioredis
 
 from newrelic.hooks.datastore_aioredis import _conn_attrs_to_dict, _instance_info
-from conftest import event_loop, loop, AIOREDIS_VERSION
+from conftest import AIOREDIS_VERSION, SKIPIF_AIOREDIS_V1
 
 _instance_info_tests = [
     ({}, ("localhost", "6379", "0")),
@@ -28,8 +28,6 @@ _instance_info_tests = [
     ({"host": "127.0.0.1", "port": 1234, "db": 2}, ("127.0.0.1", "1234", "2")),
 ]
 
-
-SKIP_IF_AIOREDIS_V1 = pytest.mark.skipif(AIOREDIS_VERSION < (2, 0), reason="Single arg commands not supported.")
 
 if AIOREDIS_VERSION >= (2, 0):
     clients = [aioredis.Redis, aioredis.StrictRedis]
@@ -48,22 +46,22 @@ else:
 
 
 
-@SKIP_IF_AIOREDIS_V1
-@pytest.mark.parametrize("client", clients)
+@SKIPIF_AIOREDIS_V1
+@pytest.mark.parametrize("client_cls", clients)
 @pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
-def test_strict_redis_client_instance_info(client, kwargs, expected, loop):
-    r = client(**kwargs)
+def test_strict_redis_client_instance_info(client_cls, kwargs, expected, loop):
+    r = client_cls(**kwargs)
     if isawaitable(r):
         r = loop.run_until_complete(r)
     conn_kwargs = r.connection_pool.connection_kwargs
     assert _instance_info(conn_kwargs) == expected
 
 
-@SKIP_IF_AIOREDIS_V1
-@pytest.mark.parametrize("client", clients)
+@SKIPIF_AIOREDIS_V1
+@pytest.mark.parametrize("client_cls", clients)
 @pytest.mark.parametrize("kwargs,expected", _instance_info_tests)
-def test_strict_redis_connection_instance_info(client, kwargs, expected, loop):
-    r = client(**kwargs)
+def test_strict_redis_connection_instance_info(client_cls, kwargs, expected, loop):
+    r = client_cls(**kwargs)
     if isawaitable(r):
         r = loop.run_until_complete(r)
     r.connection_pool.connection_class = DisabledConnection
@@ -72,7 +70,7 @@ def test_strict_redis_connection_instance_info(client, kwargs, expected, loop):
         conn_kwargs = _conn_attrs_to_dict(connection)
         assert _instance_info(conn_kwargs) == expected
     finally:
-        r.connection_pool.release(connection)
+        loop.run_until_complete(r.connection_pool.release(connection))
 
 
 _instance_info_from_url_tests = [
@@ -98,20 +96,20 @@ _instance_info_from_url_tests = [
 ]
 
 
-@SKIP_IF_AIOREDIS_V1
-@pytest.mark.parametrize("client", clients)
+@SKIPIF_AIOREDIS_V1
+@pytest.mark.parametrize("client_cls", clients)
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
-def test_strict_redis_client_from_url(client, args, kwargs, expected):
-    r = client.from_url(*args, **kwargs)
+def test_strict_redis_client_from_url(client_cls, args, kwargs, expected):
+    r = client_cls.from_url(*args, **kwargs)
     conn_kwargs = r.connection_pool.connection_kwargs
     assert _instance_info(conn_kwargs) == expected
 
 
-@SKIP_IF_AIOREDIS_V1
-@pytest.mark.parametrize("client", clients)
+@SKIPIF_AIOREDIS_V1
+@pytest.mark.parametrize("client_cls", clients)
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
-def test_strict_redis_connection_from_url(client, args, kwargs, expected, loop):
-    r = client.from_url(*args, **kwargs)
+def test_strict_redis_connection_from_url(client_cls, args, kwargs, expected, loop):
+    r = client_cls.from_url(*args, **kwargs)
     if r.connection_pool.connection_class in (aioredis.Connection, aioredis.connection.SSLConnection):
         r.connection_pool.connection_class = DisabledConnection
     elif r.connection_pool.connection_class is aioredis.UnixDomainSocketConnection:
@@ -124,4 +122,4 @@ def test_strict_redis_connection_from_url(client, args, kwargs, expected, loop):
         conn_kwargs = _conn_attrs_to_dict(connection)
         assert _instance_info(conn_kwargs) == expected
     finally:
-        r.connection_pool.release(connection)
+        loop.run_until_complete(r.connection_pool.release(connection))

@@ -29,8 +29,11 @@ from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
 
+@pytest.mark.parametrize(
+    "headers", [[("MY-HEADER", "nonsense")], {"MY-HEADER": "nonsense"}], ids=["list of tuples headers", "dict headers"]
+)
 @background_task()
-def test_produce_arguments(topic, producer, client_type, serialize):
+def test_produce_arguments(topic, producer, client_type, serialize, headers):
     callback_called = threading.Event()
 
     def producer_callback(err, msg):
@@ -44,7 +47,7 @@ def test_produce_arguments(topic, producer, client_type, serialize):
             callback=producer_callback,
             partition=1,
             timestamp=1,
-            headers=[("MY-HEADER", "nonsense")],
+            headers=headers,
         )
     else:
         producer.produce(
@@ -54,7 +57,7 @@ def test_produce_arguments(topic, producer, client_type, serialize):
             partition=1,
             on_delivery=producer_callback,
             timestamp=1,
-            headers=[("MY-HEADER", "nonsense")],
+            headers=headers,
         )
     producer.flush()
 

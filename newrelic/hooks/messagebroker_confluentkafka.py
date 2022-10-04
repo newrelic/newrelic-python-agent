@@ -63,8 +63,9 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
         destination_name=topic or "Default",
         source=wrapped,
     ) as trace:
-        dt_headers = [(k, v.encode("utf-8")) for k, v in trace.generate_request_headers(transaction)]
-        dt_headers.extend(headers if headers else [])
+        dt_headers = {k: v.encode("utf-8") for k, v in trace.generate_request_headers(transaction)}
+        # headers can be a list of tuples or a dict so convert to dict for consistency.
+        dt_headers.update(dict(headers) if headers else {})
         try:
             return wrapped(topic, headers=dt_headers, *args, **kwargs)
         except Exception as error:

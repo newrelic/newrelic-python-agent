@@ -29,11 +29,6 @@ from newrelic.common.system_info import (
     total_physical_memory,
 )
 
-# try:
-#     import pkg_resources
-# except ImportError:
-#     pass
-
 try:
     import newrelic.core._thread_utilization
 except ImportError:
@@ -245,7 +240,7 @@ def environment_settings():
             version = get_version(name)
             plugins.append("%s (%s)" % (name, version))
         except Exception:
-            pass
+            plugins.append(name)
 
     env.append(("Plugin List", plugins))
 

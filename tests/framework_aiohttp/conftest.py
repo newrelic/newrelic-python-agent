@@ -18,9 +18,11 @@ from collections import namedtuple
 import pytest
 from _target_application import make_app
 from aiohttp.test_utils import AioHTTPTestCase
-from testing_support.fixture.event_loop import event_loop  # noqa: F401
 from aiohttp.test_utils import TestClient as _TestClient
-from testing_support.fixtures import (  # noqa: F401
+from testing_support.fixture.event_loop import (  # noqa: F401 pylint: disable=W0611
+    event_loop,
+)
+from testing_support.fixtures import (  # noqa: F401 pylint: disable=W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,

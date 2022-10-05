@@ -190,10 +190,19 @@ def topic():
 
 
 @pytest.fixture()
-def send_producer_message(topic, producer, serialize):
+def send_producer_message(topic, producer, serialize, client_type):
+    callback_called = []
+
+    def producer_callback(err, msg):
+        callback_called.append(True)
+
     def _test():
-        producer.produce(topic, value=serialize({"foo": 1}))
+        if client_type == "cimpl":
+            producer.produce(topic, value=serialize({"foo": 1}), callback=producer_callback)
+        else:
+            producer.produce(topic, value=serialize({"foo": 1}), on_delivery=producer_callback)
         producer.flush()
+        assert callback_called
 
     return _test
 

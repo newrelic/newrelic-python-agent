@@ -3081,7 +3081,7 @@ def _setup_agent_console():
 
 
 def _generate_security_policy():
-    return _settings.security.policy.to_deep_dict()
+    return dict(_settings.security.policy)
 
 
 def _generate_security_module_config():

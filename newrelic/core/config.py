@@ -94,16 +94,6 @@ class Settings(object):
         return hasattr(self, item)
 
 
-class DeepDictableSetting:
-    def to_deep_dict(self):
-        _dict = self.__dict__
-        for attr in _dict.keys():
-            value = _dict[attr]
-            if isinstance(value, DeepDictableSetting):
-                _dict[attr] = value.to_deep_dict()
-        return _dict
-
-
 def create_settings(nested):
     return type("Settings", (Settings,), {"nested": nested})()
 
@@ -291,25 +281,25 @@ class SecurityModuleSettings(Settings):
 class SecurityDetectionSettings(Settings):
     pass
 
-class SecurityPolicySettings(Settings, DeepDictableSetting):
+class SecurityPolicySettings(Settings):
     pass
 
-class SecurityPolicyVulnerabilityScanSettings(Settings, DeepDictableSetting):
+class SecurityPolicyVulnerabilityScanSettings(Settings):
     pass
 
-class SecurityPolicyIASTSettings(Settings, DeepDictableSetting):
+class SecurityPolicyIASTSettings(Settings):
     pass
 
-class SecurityPolicyIASTProbingSettings(Settings, DeepDictableSetting):
+class SecurityPolicyIASTProbingSettings(Settings):
     pass
 
-class SecurityPolicyprotectionModeSettings(Settings, DeepDictableSetting):
+class SecurityPolicyprotectionModeSettings(Settings):
     pass
 
-class SecurityPolicyIPBlockingSettings(Settings, DeepDictableSetting):
+class SecurityPolicyIPBlockingSettings(Settings):
     pass
 
-class SecurityPolicyAPIBlockingSettings(Settings, DeepDictableSetting):
+class SecurityPolicyAPIBlockingSettings(Settings):
     pass
 
 
@@ -922,55 +912,55 @@ _settings.security.detection.disable_deserialization = _environ_as_bool(
 
 _settings.security.policy.vulnerabilityScan.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_ENABLED",
-    default=False
+    default=None
 )
 _settings.security.policy.vulnerabilityScan.iastScan.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_IASTSCAN_ENABLED",
-    default=False
+    default=None
 )
 _settings.security.policy.vulnerabilityScan.iastScan.probing.interval = _environ_as_int(
     "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_IASTSCAN_PROBING_INTERVAL",
-    default=1
+    default=-1
 )
 _settings.security.policy.vulnerabilityScan.iastScan.probing.batchSize = _environ_as_int(
     "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_IASTSCAN_PROBING_BATCHSIZE",
-    default=5
+    default=-1
 )
 _settings.security.policy.protectionMode.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_ENABLED",
-    default=False
+    default=None
 )
 _settings.security.policy.protectionMode.ipBlocking.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_ENABLED",
-    default=False
+    default=None
 )
 _settings.security.policy.protectionMode.ipBlocking.attackerIpBlocking = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_ATTACKERIPBLOCKING",
-    default=False
+    default=None
 )
 _settings.security.policy.protectionMode.ipBlocking.ipDetectViaXFF = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_IPDETECTVIAXFF",
-    default=False
+    default=None
 )
 _settings.security.policy.protectionMode.ipBlocking.timeout = _environ_as_int(
     "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_TIMEOUT",
-    default=120
+    default=-1
 )
 _settings.security.policy.protectionMode.apiBlocking.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_ENABLED",
-    default=False
+    default=None
 )
 _settings.security.policy.protectionMode.apiBlocking.protectAllApis = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_PROTECTALLAPIS",
-    default=False
+    default=None
 )
 _settings.security.policy.protectionMode.apiBlocking.protectKnownVulnerableApis = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_PROTECTKNOWNVULNERABLEAPIS",
-    default=False
+    default=None
 )
 _settings.security.policy.protectionMode.apiBlocking.protectAttackedApis = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_PROTECTATTACKEDAPIS",
-    default=False
+    default=None
 )
 
 

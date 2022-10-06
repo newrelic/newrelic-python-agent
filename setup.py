@@ -48,7 +48,7 @@ def newrelic_agent_guess_next_version(tag_version):
     if len(version_info) < 3:
         return version
     elif len(version_info) >= 4:
-        version_info = version_info[0:2]
+        version_info = version_info[0:3]
 
     version_info[1] += 1
     version_info[2] = 0

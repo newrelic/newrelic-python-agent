@@ -12,27 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-import aioredis
-
-from conftest import event_loop, loop, AIOREDIS_VERSION
-
-from testing_support.db_settings import redis_settings
-
-DB_SETTINGS = redis_settings()[0]
-
-if AIOREDIS_VERSION >= (2, 0):
-    clients = [
-        aioredis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0),
-        aioredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0),
-    ]
-else:
-    clients = [
-        event_loop.run_until_complete(
-            aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], DB_SETTINGS["port"]), db=0)
-        ),
-    ]
-
 
 IGNORED_METHODS = {
     "address",
@@ -83,7 +62,6 @@ IGNORED_METHODS = {
 }
 
 
-@pytest.mark.parametrize("client", clients)
 def test_uninstrumented_methods(client):
     methods = {m for m in dir(client) if not m[0] == "_"}
     is_wrapped = lambda m: hasattr(getattr(client, m), "__wrapped__")

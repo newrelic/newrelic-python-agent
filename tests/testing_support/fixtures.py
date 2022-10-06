@@ -603,8 +603,12 @@ def validate_internal_metrics(metrics=None):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
         # Apply no-op wrappers to prevent new internal trace contexts from being started, preventing capture
-        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__enter__")(no_op)(wrapped)
-        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__exit__")(no_op)(wrapped)
+        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__enter__")(no_op)(
+            wrapped
+        )
+        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__exit__")(no_op)(
+            wrapped
+        )
 
         captured_metrics = CustomMetrics()
         with InternalTraceContext(captured_metrics):
@@ -1736,16 +1740,27 @@ def validate_error_event_attributes_outside_transaction(
     required_params = required_params or {}
     forgone_params = forgone_params or {}
 
+    event_data = []
+
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
     def _validate_error_event_attributes_outside_transaction(wrapped, instance, args, kwargs):
-
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
-            event_data = list(instance.error_events)
+            for event in instance.error_events:
+                event_data.append(event)
 
+        return result
+
+    @function_wrapper
+    def wrapper(wrapped, instance, args, kwargs):
+        try:
+            result = _validate_error_event_attributes_outside_transaction(wrapped)(*args, **kwargs)
+        except:
+            raise
+        else:
             if num_errors is not None:
                 exc_message = (
                     "Expected: %d, Got: %d. Verify StatsEngine is being reset before using this validator."
@@ -1758,7 +1773,7 @@ def validate_error_event_attributes_outside_transaction(
 
         return result
 
-    return _validate_error_event_attributes_outside_transaction
+    return wrapper
 
 
 def validate_request_params_omitted():
@@ -2362,14 +2377,14 @@ def cat_enabled(wrapped, instance, args, kwargs):
 def override_application_settings(overrides):
     @function_wrapper
     def _override_application_settings(wrapped, instance, args, kwargs):
-        try:
-            # The settings object has references from a number of
-            # different places. We have to create a copy, overlay
-            # the temporary settings and then when done clear the
-            # top level settings object and rebuild it when done.
+        # The settings object has references from a number of
+        # different places. We have to create a copy, overlay
+        # the temporary settings and then when done clear the
+        # top level settings object and rebuild it when done.
+        original_settings = application_settings()
+        backup = copy.deepcopy(original_settings.__dict__)
 
-            original_settings = application_settings()
-            backup = copy.deepcopy(original_settings.__dict__)
+        try:
             for name, value in overrides.items():
                 apply_config_setting(original_settings, name, value)
 
@@ -2390,16 +2405,15 @@ def override_application_settings(overrides):
 def override_generic_settings(settings_object, overrides):
     @function_wrapper
     def _override_generic_settings(wrapped, instance, args, kwargs):
+        # In some cases, a settings object may have references
+        # from a number of different places. We have to create
+        # a copy, overlay the temporary settings and then when
+        # done, clear the top level settings object and rebuild
+        # it when done.
+        original = settings_object
+        backup = copy.deepcopy(original.__dict__)
+
         try:
-            # In some cases, a settings object may have references
-            # from a number of different places. We have to create
-            # a copy, overlay the temporary settings and then when
-            # done, clear the top level settings object and rebuild
-            # it when done.
-
-            original = settings_object
-
-            backup = copy.deepcopy(original.__dict__)
             for name, value in overrides.items():
                 apply_config_setting(original, name, value)
             return wrapped(*args, **kwargs)
@@ -2413,19 +2427,20 @@ def override_generic_settings(settings_object, overrides):
 def override_ignore_status_codes(status_codes):
     @function_wrapper
     def _override_ignore_status_codes(wrapped, instance, args, kwargs):
+        # Updates can be made to ignored status codes in server
+        # side configs. Changes will be applied to application
+        # settings so we first check there and if they don't
+        # exist, we default to global settings
+
+        application = application_instance()
+        settings = application and application.settings
+
+        if not settings:
+            settings = global_settings()
+
+        original = settings.error_collector.ignore_status_codes
+
         try:
-            # Updates can be made to ignored status codes in server
-            # side configs. Changes will be applied to application
-            # settings so we first check there and if they don't
-            # exist, we default to global settings
-
-            application = application_instance()
-            settings = application and application.settings
-
-            if not settings:
-                settings = global_settings()
-
-            original = settings.error_collector.ignore_status_codes
             settings.error_collector.ignore_status_codes = status_codes
             return wrapped(*args, **kwargs)
         finally:
@@ -2434,25 +2449,28 @@ def override_ignore_status_codes(status_codes):
     return _override_ignore_status_codes
 
 
-def code_coverage_fixture(source=['newrelic']):
-    @pytest.fixture(scope='session')
+def code_coverage_fixture(source=None):
+    if source is None:
+        source = ["newrelic"]
+
+    @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:
             return
 
-        if os.environ.get('GITHUB_ACTIONS') is not None:
+        if os.environ.get("GITHUB_ACTIONS") is not None:
             return
 
         from coverage import coverage
 
-        env_directory = os.environ.get('TOX_ENVDIR', None)
+        env_directory = os.environ.get("TOX_ENVDIR", None)
 
         if env_directory is not None:
-            coverage_directory = os.path.join(env_directory, 'htmlcov')
-            xml_report = os.path.join(env_directory, 'coverage.xml')
+            coverage_directory = os.path.join(env_directory, "htmlcov")
+            xml_report = os.path.join(env_directory, "coverage.xml")
         else:
-            coverage_directory = 'htmlcov'
-            xml_report = 'coverage.xml'
+            coverage_directory = "htmlcov"
+            xml_report = "coverage.xml"
 
         def finalize():
             cov.stop()
@@ -2469,18 +2487,19 @@ def code_coverage_fixture(source=['newrelic']):
 
 def reset_core_stats_engine():
     """Reset the StatsEngine and custom StatsEngine of the core application."""
+
     @function_wrapper
     def _reset_core_stats_engine(wrapped, instance, args, kwargs):
         api_application = application_instance()
         api_name = api_application.name
         core_application = api_application._agent.application(api_name)
-        
+
         stats = core_application._stats_engine
         stats.reset_stats(stats.settings)
-        
+
         custom_stats = core_application._stats_custom_engine
         custom_stats.reset_stats(custom_stats.settings)
-        
+
         return wrapped(*args, **kwargs)
 
     return _reset_core_stats_engine
@@ -2625,8 +2644,8 @@ def validate_analytics_catmap_data(name, expected_attributes=(), non_expected_at
         _new_wrapped = _capture_samples(wrapped)
 
         result = _new_wrapped(*args, **kwargs)
-
-        _samples = [s for s in samples if s[0]["type"] == "Transaction"]
+        # Check type of s[0] because it returns an integer if s is a LogEventNode
+        _samples = [s for s in samples if not isinstance(s[0], int) and s[0]["type"] == "Transaction"]
         assert _samples, "No Transaction events captured."
         for sample in _samples:
             assert isinstance(sample, list)

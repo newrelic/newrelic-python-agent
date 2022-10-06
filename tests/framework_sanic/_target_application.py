@@ -15,9 +15,16 @@
 from sanic import Blueprint, Sanic
 from sanic.exceptions import NotFound, SanicException, ServerError
 from sanic.handlers import ErrorHandler
-from sanic.response import json, stream
+from sanic.response import json
 from sanic.router import Router
 from sanic.views import HTTPMethodView
+
+
+try:
+    # Old style response streaming
+    from sanic.response import stream
+except ImportError:
+    stream = None
 
 
 class MethodView(HTTPMethodView):
@@ -93,7 +100,7 @@ except TypeError:
     error_handler = CustomErrorHandler()
 
 router = CustomRouter()
-app = Sanic(name="test app", error_handler=error_handler, router=router)
+app = Sanic(name="test-app", error_handler=error_handler, router=router)
 router.app = app
 blueprint = Blueprint("test_bp")
 
@@ -139,13 +146,25 @@ async def blueprint_middleware(request):
 app.register_middleware(request_middleware)
 
 
+async def do_streaming(request):
+    if stream is not None:
+        # Old style response streaming
+        async def streaming_fn(response):
+            response.write("foo")
+            response.write("bar")
+
+        return stream(streaming_fn)
+    else:
+        # New style response streaming
+        response = await request.respond(content_type="text/plain")
+        await response.send("foo")
+        await response.send("bar")
+        await response.eof()
+
+
 @app.route("/streaming")
 async def streaming(request):
-    async def streaming_fn(response):
-        response.write("foo")
-        response.write("bar")
-
-    return stream(streaming_fn)
+    return await do_streaming(request)
 
 
 # Fake websocket endpoint to enable websockets on the server
@@ -200,17 +219,11 @@ async def async_error(request):
 
 @blueprint.route("/blueprint")
 async def blueprint_route(request):
-    async def streaming_fn(response):
-        response.write("foo")
-
-    return stream(streaming_fn)
-
+    return await do_streaming(request)
 
 app.blueprint(blueprint)
 app.add_route(MethodView.as_view(), "/method_view")
 
-if not getattr(router, "finalized", True):
-    router.finalize()
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000)

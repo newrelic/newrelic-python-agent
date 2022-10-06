@@ -15,7 +15,6 @@
 import sys
 
 import pytest
-import uvloop
 from testing_support.fixtures import (
     function_not_called,
     override_generic_settings,
@@ -33,6 +32,14 @@ from newrelic.api.message_trace import message_trace
 from newrelic.api.time_trace import current_trace
 from newrelic.core.config import global_settings
 from newrelic.core.trace_cache import trace_cache
+
+# uvloop is not available on PyPy.
+try:
+    import uvloop
+
+    loop_policies = (None, uvloop.EventLoopPolicy())
+except ImportError:
+    loop_policies = (None,)
 
 
 @function_trace("waiter3")
@@ -88,7 +95,7 @@ async def _test(asyncio, schedule, nr_enabled=True):
     return trace
 
 
-@pytest.mark.parametrize("loop_policy", (None, uvloop.EventLoopPolicy()))
+@pytest.mark.parametrize("loop_policy", loop_policies)
 @pytest.mark.parametrize(
     "schedule",
     (

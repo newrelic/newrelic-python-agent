@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -57,7 +57,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.1.3
         env:
           CIBW_PLATFORM: linux
-          CIBW_BUILD: cp36-manylinux_aarch64 cp37-manylinux_aarch64 cp38-manylinux_aarch64 cp39-manylinux_aarch64 cp310-manylinux_aarch64 cp36-manylinux_x86_64 cp37-manylinux_x86_64 cp38-manylinux_x86_64 cp39-manylinux_x86_64 cp310-manylinux_x86_64
+          CIBW_BUILD: cp37-manylinux_aarch64 cp38-manylinux_aarch64 cp39-manylinux_aarch64 cp310-manylinux_aarch64 cp37-manylinux_x86_64 cp38-manylinux_x86_64 cp39-manylinux_x86_64 cp310-manylinux_x86_64
           CIBW_ARCHS: x86_64 aarch64
           CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
 

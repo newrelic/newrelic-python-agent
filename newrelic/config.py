@@ -2308,6 +2308,43 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "confluent_kafka.cimpl",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_cimpl",
+    )
+    _process_module_definition(
+        "confluent_kafka.serializing_producer",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_serializing_producer",
+    )
+    _process_module_definition(
+        "confluent_kafka.deserializing_consumer",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_deserializing_consumer",
+    )
+
+    _process_module_definition(
+        "kafka.consumer.group",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_consumer_group",
+    )
+    _process_module_definition(
+        "kafka.producer.kafka",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_producer",
+    )
+    _process_module_definition(
+        "kafka.coordinator.heartbeat",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_heartbeat",
+    )
+    _process_module_definition(
+        "kafka.consumer.group",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_consumer_group",
+    )
+
+    _process_module_definition(
         "logging",
         "newrelic.hooks.logger_logging",
         "instrument_logging",
@@ -2540,8 +2577,21 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("uvicorn.config", "newrelic.hooks.adapter_uvicorn", "instrument_uvicorn_config")
 
+    _process_module_definition(
+        "hypercorn.asyncio.run", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_asyncio_run"
+    )
+    _process_module_definition(
+        "hypercorn.trio.run", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_trio_run"
+    )
+    _process_module_definition("hypercorn.utils", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_utils")
+
+    _process_module_definition("daphne.server", "newrelic.hooks.adapter_daphne", "instrument_daphne_server")
+
     _process_module_definition("sanic.app", "newrelic.hooks.framework_sanic", "instrument_sanic_app")
     _process_module_definition("sanic.response", "newrelic.hooks.framework_sanic", "instrument_sanic_response")
+    _process_module_definition(
+        "sanic.touchup.service", "newrelic.hooks.framework_sanic", "instrument_sanic_touchup_service"
+    )
 
     _process_module_definition("aiohttp.wsgi", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_wsgi")
     _process_module_definition("aiohttp.web", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web")
@@ -2712,7 +2762,9 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "redis.commands.timeseries.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_timeseries_commands"
+        "redis.commands.timeseries.commands",
+        "newrelic.hooks.datastore_redis",
+        "instrument_redis_commands_timeseries_commands",
     )
 
     _process_module_definition(

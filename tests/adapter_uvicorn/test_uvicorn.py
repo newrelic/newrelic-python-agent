@@ -97,7 +97,7 @@ def port(app):
 
     thread = threading.Thread(target=server_run, daemon=True)
     thread.start()
-    ready.wait()
+    assert ready.wait(timeout=10)
     yield port
     _ = [loop.stop() for loop in loops]  # Stop all loops
     thread.join(timeout=1)

@@ -154,7 +154,6 @@ kwargs = dict(
     package_data={
         "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
     },
-    scripts=["scripts/newrelic-admin"],
     extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
 )
 
@@ -162,6 +161,8 @@ if with_setuptools:
     kwargs["entry_points"] = {
         "console_scripts": ["newrelic-admin = newrelic.admin:main"],
     }
+else:
+    kwargs["scripts"] = ["scripts/newrelic-admin"]
 
 
 def with_librt():

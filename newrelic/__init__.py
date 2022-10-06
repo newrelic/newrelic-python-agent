@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import os.path
+
 THIS_DIR = os.path.dirname(__file__)
 
 try:
-    with open(os.path.join(THIS_DIR, 'version.txt'), 'r') as f:
+    with open(os.path.join(THIS_DIR, "version.txt"), "r") as f:
         version = f.read()
 except:
-    version = '0.0.0'
+    version = "0.0.0"
 
-version_info = list(map(int, version.split('.')))
+version_info = list(map(int, version.split(".")))

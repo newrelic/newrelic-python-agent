@@ -25,13 +25,12 @@ import warnings
 import weakref
 from collections import OrderedDict
 
-from newrelic.api.application import application_instance
 import newrelic.core.database_node
 import newrelic.core.error_node
-from newrelic.core.log_event_node import LogEventNode
 import newrelic.core.root_node
 import newrelic.core.transaction_node
 import newrelic.packages.six as six
+from newrelic.api.application import application_instance
 from newrelic.api.time_trace import TimeTrace, get_linking_metadata
 from newrelic.common.encoding_utils import (
     DistributedTracePayload,
@@ -63,6 +62,7 @@ from newrelic.core.attribute_filter import (
 )
 from newrelic.core.config import DEFAULT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
+from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.stack_trace import exception_stack
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.thread_utilization import utilization_tracker
@@ -324,8 +324,12 @@ class Transaction(object):
                     self.enabled = True
 
         if self._settings:
-            self._custom_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data)
-            self._log_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.log_event_data)
+            self._custom_events = SampledDataSet(
+                capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data
+            )
+            self._log_events = SampledDataSet(
+                capacity=self._settings.event_harvest_config.harvest_limits.log_event_data
+            )
         else:
             self._custom_events = SampledDataSet(capacity=DEFAULT_RESERVOIR_SIZE)
             self._log_events = SampledDataSet(capacity=LOG_EVENT_RESERVOIR_SIZE)
@@ -1473,30 +1477,34 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-
     def record_log_event(self, message, level=None, timestamp=None, priority=None):
         settings = self.settings
-        if not (settings and settings.application_logging and settings.application_logging.enabled and settings.application_logging.forwarding and settings.application_logging.forwarding.enabled):
+        if not (
+            settings
+            and settings.application_logging
+            and settings.application_logging.enabled
+            and settings.application_logging.forwarding
+            and settings.application_logging.forwarding.enabled
+        ):
             return
-        
+
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
-        
+
         if not message or message.isspace():
             _logger.debug("record_log_event called where message was missing. No log event will be sent.")
             return
-        
+
         message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
 
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=get_linking_metadata(), 
+            attributes=get_linking_metadata(),
         )
 
         self._log_events.add(event, priority=priority)
-
 
     def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
@@ -1871,7 +1879,9 @@ def record_log_event(message, level=None, timestamp=None, application=None, prio
                     "record_log_event has been called but no transaction or application was running. As a result, "
                     "the following event has not been recorded. message: %r level: %r timestamp %r. To correct "
                     "this problem, supply an application object as a parameter to this record_log_event call.",
-                    message, level, timestamp,
+                    message,
+                    level,
+                    timestamp,
                 )
     elif application.enabled:
         application.record_log_event(message, level, timestamp, priority=priority)

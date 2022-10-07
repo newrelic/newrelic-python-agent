@@ -893,10 +893,6 @@ _settings.security.sec_home_path = os.environ.get(
     "NEW_RELIC_SECURITY_SEC_HOME_PATH",
     default="/opt"
 )
-_settings.security.sec_log_file_name = os.environ.get(
-    "NEW_RELIC_SECURITY_SEC_LOG_FILE_NAME",
-    default="/temp/security_log"
-)
 _settings.security.detection.disable_rci = _environ_as_bool(
     "NEW_RELIC_SECURITY_DETECTION_DISABLE_RCI",
     default=False

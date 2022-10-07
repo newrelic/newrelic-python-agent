@@ -337,7 +337,6 @@ def _process_configuration(section):
     _process_setting(section, "security.customer_id", "getint", None)
     _process_setting(section, "security.log_level", "get", None)
     _process_setting(section, "security.sec_home_path", "get", None)
-    _process_setting(section, "security.sec_log_file_name", "get", None)
     _process_setting(section, "security.detection.disable_rci", "getboolean", None)
     _process_setting(section, "security.detection.disable_rxss", "getboolean", None)
     _process_setting(section, "security.detection.disable_deserialization", "getboolean", None)
@@ -3110,24 +3109,27 @@ def _setup_security_module():
     """Initiates k2 security module and adds a
     callback to agent startup to propagate NR config
     """
-    if _settings.security.force_complete_disable:
-        return
-    # run security module
-    from k2_python_agent import AgentConfig, ModuleLoadAgent
-    from functools import partial as Partial
+    try:
+        if _settings.security.force_complete_disable:
+            return
+        # run security module
+        from k2_python_agent import AgentConfig, ModuleLoadAgent
+        from functools import partial as Partial
 
-    config =_generate_security_module_config()
-    policy = _generate_security_policy()
+        config =_generate_security_module_config()
+        policy = _generate_security_policy()
 
-    security_module_agent = ModuleLoadAgent(config)
-    security_module_agent.initialise()
+        security_module_agent = ModuleLoadAgent(config)
+        security_module_agent.initialise()
 
-    security_module_agent.set_policy(policy)
-    if not _settings.security.enable:
-        security_module_agent.disable()
-    # create a callback to reinitialise the security module
-    callback = Partial(_update_security_module, security_module_agent)
-    newrelic.core.agent.Agent.run_on_startup(callback)
+        security_module_agent.set_policy(policy)
+        if not _settings.security.enable:
+            security_module_agent.disable()
+        # create a callback to reinitialise the security module
+        callback = Partial(_update_security_module, security_module_agent)
+        newrelic.core.agent.Agent.run_on_startup(callback)
+    except Exception as k2error:
+        _logger.error("K2 Startup failed with error %s", k2error)
 
 
 def initialize(

@@ -105,33 +105,30 @@ def test_coroutine_siblings(event_loop):
     # the case if child was a child of child since child is terminal)
 
     @function_trace("child", terminal=True)
-    @asyncio.coroutine
-    def child(wait, event=None):
+    async def child(wait, event=None):
         if event:
             event.set()
-        yield from wait.wait()
+        await wait.wait()
 
-    @asyncio.coroutine
-    def middle():
+    async def middle():
         wait = asyncio.Event()
         started = asyncio.Event()
 
         child_0 = asyncio.ensure_future(child(wait, started))
 
         # Wait for the first child to start
-        yield from started.wait()
+        await started.wait()
 
         child_1 = asyncio.ensure_future(child(wait))
 
         # Allow children to complete
         wait.set()
-        yield from child_1
-        yield from child_0
+        await child_1
+        await child_0
 
     @function_trace("parent")
-    @asyncio.coroutine
-    def parent():
-        yield from asyncio.ensure_future(middle())
+    async def parent():
+        await asyncio.ensure_future(middle())
 
     event_loop.run_until_complete(parent())
 
@@ -465,15 +462,13 @@ def test_trace_outlives_transaction(event_loop):
     running, finish = asyncio.Event(), asyncio.Event()
 
     @function_trace(name="coro")
-    @asyncio.coroutine
-    def _coro():
+    async def _coro():
         running.set()
-        yield from finish.wait()
+        await finish.wait()
 
-    @asyncio.coroutine
-    def parent():
+    async def parent():
         task.append(asyncio.ensure_future(_coro()))
-        yield from running.wait()
+        await running.wait()
 
     @validate_transaction_metrics(
         "test_trace_outlives_transaction",

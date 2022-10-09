@@ -3128,6 +3128,11 @@ def _setup_security_module():
         # create a callback to reinitialise the security module
         callback = Partial(_update_security_module, security_module_agent)
         newrelic.core.agent.Agent.run_on_startup(callback)
+
+        # set transaction id catcher
+        security_module_agent.set_transaction_id_catcher(
+            lambda *args: trace_cache.trace_cache().current_transaction()._transaction_id
+        )
     except Exception as k2error:
         _logger.error("K2 Startup failed with error %s", k2error)
 

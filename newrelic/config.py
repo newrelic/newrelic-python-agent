@@ -3079,6 +3079,15 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
+def _get_transaction_metadata_for_security_module():
+    trace = trace_cache.trace_cache().current_trace()
+    transaction = trace and trace.transaction and trace.transaction
+    metadata = trace and trace._get_trace_linking_metadata()
+    transaction_id = transaction._transaction_id
+    metadata['transaction_id'] = transaction_id
+    return metadata
+
+
 def _generate_security_policy():
     return dict(_settings.security.policy)
 
@@ -3130,8 +3139,8 @@ def _setup_security_module():
         newrelic.core.agent.Agent.run_on_startup(callback)
 
         # set transaction id catcher
-        security_module_agent.set_transaction_id_catcher(
-            lambda *args: trace_cache.trace_cache().current_transaction()._transaction_id
+        security_module_agent.set_metadata_catcher(
+            _get_transaction_metadata_for_security_module
         )
     except Exception as k2error:
         _logger.error("K2 Startup failed with error %s", k2error)

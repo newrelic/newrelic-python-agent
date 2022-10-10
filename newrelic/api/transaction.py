@@ -1611,6 +1611,8 @@ class Transaction(object):
 
         if type(node) is newrelic.core.database_node.DatabaseNode:
             settings = self._settings
+            if not settings:
+                return
             if not settings.collect_traces:
                 return
             if not settings.slow_sql.enabled and not settings.transaction_tracer.explain_enabled:

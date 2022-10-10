@@ -30,6 +30,7 @@ from newrelic.api.database_trace import DatabaseTrace
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace, function_trace
+from newrelic.api.graphql_trace import GraphQLOperationTrace, GraphQLResolverTrace
 from newrelic.api.memcache_trace import MemcacheTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.solr_trace import SolrTrace
@@ -120,6 +121,8 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
         (DatastoreTrace, ("db_product", "db_target", "db_operation")),
         (ExternalTrace, ("lib", "url")),
         (FunctionTrace, ("name",)),
+        (GraphQLOperationTrace, ()),
+        (GraphQLResolverTrace, ()),
         (MemcacheTrace, ("command",)),
         (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
         (SolrTrace, ("lib", "command")),
@@ -613,6 +616,8 @@ _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
         (DatastoreTrace, ("db_product", "db_target", "db_operation")),
         (ExternalTrace, ("lib", "url")),
         (FunctionTrace, ("name",)),
+        (GraphQLOperationTrace, ()),
+        (GraphQLResolverTrace, ()),
         (MemcacheTrace, ("command",)),
         (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
         (SolrTrace, ("lib", "command")),
@@ -662,6 +667,8 @@ def test_span_event_error_attributes_notice_error(trace_type, args):
         (DatastoreTrace, ("db_product", "db_target", "db_operation")),
         (ExternalTrace, ("lib", "url")),
         (FunctionTrace, ("name",)),
+        (GraphQLOperationTrace, ()),
+        (GraphQLResolverTrace, ()),
         (MemcacheTrace, ("command",)),
         (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
         (SolrTrace, ("lib", "command")),
@@ -705,6 +712,8 @@ def test_span_event_error_attributes_observed(trace_type, args):
         (DatastoreTrace, ("db_product", "db_target", "db_operation")),
         (ExternalTrace, ("lib", "url")),
         (FunctionTrace, ("name",)),
+        (GraphQLOperationTrace, ()),
+        (GraphQLResolverTrace, ()),
         (MemcacheTrace, ("command",)),
         (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
         (SolrTrace, ("lib", "command")),

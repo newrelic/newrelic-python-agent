@@ -54,12 +54,13 @@ except ImportError:
     def as_promise(f):
         return f
 
+
 if six.PY3:
     from newrelic.hooks.framework_graphql_py3 import (
         nr_coro_execute_name_wrapper,
+        nr_coro_graphql_impl_wrapper,
         nr_coro_resolver_error_wrapper,
         nr_coro_resolver_wrapper,
-        nr_coro_graphql_impl_wrapper,
     )
 
 _logger = logging.getLogger(__name__)
@@ -202,7 +203,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
             # Operation trace sets transaction name
             trace.set_transaction_name(priority=14)
         return value
-    
+
     if is_promise(result) and result.is_pending and graphql_version() < (3, 0):
         return result.then(set_name)
     elif isawaitable(result) and not is_promise(result):
@@ -390,8 +391,9 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
         sync_start_time = time.time()
         result = wrapped(*args, **kwargs)
-        
+
         if is_promise(result) and result.is_pending and graphql_version() < (3, 0):
+
             @functools.wraps(wrapped)
             def nr_promise_resolver_error_wrapper(v):
                 with trace:
@@ -401,6 +403,7 @@ def wrap_resolver(wrapped, instance, args, kwargs):
                         except Exception:
                             transaction.set_transaction_name(name, "GraphQL", priority=15)
                             raise
+
             return as_promise(nr_promise_resolver_error_wrapper)
         elif isawaitable(result) and not is_promise(result):
             # Grab any async resolvers and wrap with traces
@@ -482,6 +485,13 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     else:
         field_path = field_path.key
 
+    # This is to catch the specific case of the user loading/reloading
+    # a GraphiQL page after running the program (which in turn will
+    # result in the field_path being a __schema, an introspection field)
+    if field_path in GRAPHQL_INTROSPECTION_FIELDS:
+        ignore_transaction()
+        return wrapped(*args, **kwargs)
+
     trace = GraphQLResolverTrace(
         field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path
     )
@@ -497,11 +507,13 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
             raise
 
     if is_promise(result) and result.is_pending and graphql_version() < (3, 0):
+
         @functools.wraps(wrapped)
         def nr_promise_resolver_wrapper(v):
             with trace:
                 with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
                     return result.get()
+
         return as_promise(nr_promise_resolver_wrapper)
     elif isawaitable(result) and not is_promise(result):
         # Asynchronous resolvers (returned coroutines from non-coroutine functions)
@@ -563,7 +575,7 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
         framework = schema._nr_framework
         trace.product = framework[0]
         transaction.add_framework_info(name=framework[0], version=framework[1])
-    
+
     # Trace must be manually started and stopped to ensure it exists prior to and during the entire duration of the query.
     # Otherwise subsequent instrumentation will not be able to find an operation trace and will have issues.
     trace.__enter__()

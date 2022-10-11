@@ -32,6 +32,10 @@ HEARTBEAT_RECEIVE = "MessageBroker/Kafka/Heartbeat/Receive"
 HEARTBEAT_SESSION_TIMEOUT = "MessageBroker/Kafka/Heartbeat/SessionTimeout"
 HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
 
+def confluent_kafka_version():
+    import confluent_kafka
+    return getattr(confluent_kafka, "__version__", None)
+
 
 def wrap_Producer_produce(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -55,6 +59,8 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
         args = args[1:]
     else:
         topic = kwargs.get("topic", None)
+
+    transaction.add_messagebroker_info("Confluent-Kafka", confluent_kafka_version())
 
     with MessageTrace(
         library="Kafka",

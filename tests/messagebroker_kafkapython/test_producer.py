@@ -28,6 +28,7 @@ from newrelic.packages import six
 
 
 def test_trace_metrics(topic, send_producer_message):
+    from kafka.version import __version__ as version
     scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
     unscoped_metrics = scoped_metrics
     txn_name = "test_producer:test_trace_metrics.<locals>.test" if six.PY3 else "test_producer:test"
@@ -36,6 +37,7 @@ def test_trace_metrics(topic, send_producer_message):
         txn_name,
         scoped_metrics=scoped_metrics,
         rollup_metrics=unscoped_metrics,
+        custom_metrics=[("Python/MessageBroker/Kafka-Python/%s" % version, 1)],
         background_task=True,
     )
     @background_task()

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import sys
-
+import kafka
 from kafka.serializer import Serializer
 
 from newrelic.api.application import application_instance
@@ -38,6 +38,9 @@ HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
 def _bind_send(topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None):
     return topic, value, key, headers, partition, timestamp_ms
 
+def kafka_python_version():
+    import kafka
+    return getattr(kafka, "__version__", None)
 
 def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -47,6 +50,8 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
 
     topic, value, key, headers, partition, timestamp_ms = _bind_send(*args, **kwargs)
     headers = list(headers) if headers else []
+
+    transaction.add_messagebroker_info("Kafka-Python", kafka_python_version())
 
     with MessageTrace(
         library="Kafka",

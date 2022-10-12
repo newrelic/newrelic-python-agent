@@ -333,8 +333,6 @@ def _process_configuration(section):
     _process_setting(section, "security.mode", "get", None)
     _process_setting(section, "security.validator_service_endpoint_url", "get", None)
     _process_setting(section, "security.resource_service_endpoint_url", "get", None)
-    _process_setting(section, "security.accessor_token", "get", None)
-    _process_setting(section, "security.customer_id", "getint", None)
     _process_setting(section, "security.log_level", "get", None)
     _process_setting(section, "security.sec_home_path", "get", None)
     _process_setting(section, "security.detection.disable_rci", "getboolean", None)
@@ -3079,16 +3077,19 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
-def _get_transaction_metadata_for_security_module():
+def _get_linking_metadata_for_security_module():
+    import newrelic.agent
+    context = newrelic.agent.get_linking_metadata()
+    return context
+
+
+def _get_trace_linking_metadata_for_security_module():
     trace = trace_cache.trace_cache().current_trace()
-    transaction = trace and trace.transaction and trace.transaction
-    metadata = trace and trace._get_trace_linking_metadata()
-    transaction_id = transaction._transaction_id
-    metadata['transaction_id'] = transaction_id
+    metadata = trace and trace._get_trace_linking_metadata() or {}
     return metadata
 
 
-def _generate_security_policy():
+def _generate_security_module_policy():
     return dict(_settings.security.policy)
 
 
@@ -3096,22 +3097,27 @@ def _generate_security_module_config():
     from k2_python_agent import AgentConfig
     config = AgentConfig()
     config.set_base_config(_settings.security)
-    # propogate app name and id
-    agent_instance = newrelic.core.agent.agent_instance()
-    application = agent_instance.application(_settings.app_name)
-    if application:
-        configuration = application.configuration
-        config.application_id = configuration.entity_guid
+    config.set_acessor_token(_settings.license_key)
     config.application_name = _settings.app_name
 
     return config
 
 
 def _update_security_module(agent):
+    """refreshes the security module with latest config and
+    linking metadata
+    """
     config = _generate_security_module_config()
-    agent.refresh_agent(config)
-    if _settings.security.enable:
-        agent.connect()
+    policy = _generate_security_module_policy()
+    metadata = _get_linking_metadata_for_security_module()
+    # propogate app name and id
+    agent_instance = newrelic.core.agent.agent_instance()
+    application = agent_instance.application(_settings.app_name)
+    if application:
+        configuration = application.configuration
+        metadata["agentRunId"] = configuration.agent_run_id
+
+    agent.refresh_agent(config, policy, metadata)
 
 
 def _setup_security_module():
@@ -3126,21 +3132,23 @@ def _setup_security_module():
         from functools import partial as Partial
 
         config =_generate_security_module_config()
-        policy = _generate_security_policy()
+        policy = _generate_security_module_policy()
 
         security_module_agent = ModuleLoadAgent(config)
         security_module_agent.initialise()
 
-        security_module_agent.set_policy(policy)
         if not _settings.security.enable:
             security_module_agent.disable()
+        else:
+            security_module_agent.connect()
+
         # create a callback to reinitialise the security module
         callback = Partial(_update_security_module, security_module_agent)
         newrelic.core.agent.Agent.run_on_startup(callback)
 
-        # set transaction id catcher
-        security_module_agent.set_metadata_catcher(
-            _get_transaction_metadata_for_security_module
+        # set trace_linking_metadata catcher
+        security_module_agent.set_linking_metadata_catcher(
+            _get_trace_linking_metadata_for_security_module
         )
     except Exception as k2error:
         _logger.error("K2 Startup failed with error %s", k2error)

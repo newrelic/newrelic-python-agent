@@ -877,14 +877,6 @@ _settings.security.resource_service_endpoint_url = os.environ.get(
     "NEW_RELIC_SECURITY_RESOURCE_SERVICE_ENDPOINT_URL",
     default=None
 )
-_settings.security.accessor_token = os.environ.get(
-    "NEW_RELIC_SECURITY_ACCESSOR_TOKEN",
-    default=None
-)
-_settings.security.customer_id = os.environ.get(
-    "NEW_RELIC_SECURITY_CUSTOMER_ID",
-    default=None
-)
 _settings.security.log_level = os.environ.get(
     "NEW_RELIC_SECURITY_LOG_LEVEL",
     default="INFO"

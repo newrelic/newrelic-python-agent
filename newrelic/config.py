@@ -3136,6 +3136,7 @@ def _setup_security_module():
 
         security_module_agent = ModuleLoadAgent(config)
         security_module_agent.initialise()
+        security_module_agent.set_policy_from_flat_dict(policy)
 
         if not _settings.security.enable:
             security_module_agent.disable()

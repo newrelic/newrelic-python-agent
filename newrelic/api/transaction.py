@@ -26,6 +26,7 @@ import weakref
 from collections import OrderedDict
 
 import newrelic.core.database_node
+import newrelic.core.error_node
 import newrelic.core.root_node
 import newrelic.core.transaction_node
 from newrelic.api.application import application_instance
@@ -60,7 +61,6 @@ from newrelic.core.attribute_filter import (
 )
 from newrelic.core.config import DEFAULT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
-from newrelic.core.error_node import ErrorNode
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.stack_trace import exception_stack
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
@@ -1558,7 +1558,7 @@ class Transaction(object):
             if error.type == fullname and error.message == message:
                 return
 
-        node = ErrorNode(
+        node = newrelic.core.error_node.ErrorNode(
             timestamp=time.time(),
             type=fullname,
             message=message,
@@ -1609,8 +1609,7 @@ class Transaction(object):
         node.node_count = self._trace_node_count
         self.total_time += node.exclusive
 
-        # if type(node) is newrelic.core.database_node.DatabaseNode:
-        if isinstance(newrelic.core.database_node.DatabaseNode, ErrorNode):
+        if type(node) is newrelic.core.database_node.DatabaseNode:
             settings = self._settings
             if not settings:
                 return
@@ -1676,7 +1675,7 @@ class Transaction(object):
     def add_custom_parameter(self, name, value):
         # Deprecation warning
         warnings.warn(
-            ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
+            ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
             DeprecationWarning,
         )
         return self.add_custom_attribute(name, value)
@@ -1684,7 +1683,7 @@ class Transaction(object):
     def add_custom_parameters(self, items):
         # Deprecation warning
         warnings.warn(
-            ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
+            ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
             DeprecationWarning,
         )
         return self.add_custom_attributes(items)
@@ -1780,7 +1779,7 @@ def add_custom_attributes(items):
 def add_custom_parameter(key, value):
     # Deprecation warning
     warnings.warn(
-        ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
+        ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
         DeprecationWarning,
     )
     return add_custom_attribute(key, value)
@@ -1789,7 +1788,7 @@ def add_custom_parameter(key, value):
 def add_custom_parameters(items):
     # Deprecation warning
     warnings.warn(
-        ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
+        ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
         DeprecationWarning,
     )
     return add_custom_attributes(items)

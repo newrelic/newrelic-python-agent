@@ -243,19 +243,19 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
         value = sanitize(value)
 
     except NameIsNotStringException:
-        _logger.debug("Attribute name must be a string. Dropping attribute: %r=%r", name, value)
+        _logger.debug("Attribute name must be a string. Dropping " "attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except NameTooLongException:
-        _logger.debug("Attribute name exceeds maximum length. Dropping attribute: %r=%r", name, value)
+        _logger.debug("Attribute name exceeds maximum length. Dropping " "attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except IntTooLargeException:
-        _logger.debug("Attribute value exceeds maximum integer value. Dropping attribute: %r=%r", name, value)
+        _logger.debug("Attribute value exceeds maximum integer value. " "Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except CastingFailureException:
-        _logger.debug("Attribute value cannot be cast to a string. Dropping attribute: %r=%r", name, value)
+        _logger.debug("Attribute value cannot be cast to a string. " "Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     else:
@@ -268,7 +268,7 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
             trunc_value = truncate(value, maxsize=max_length, ending=ending)
             if value != trunc_value:
                 _logger.debug(
-                    "Attribute value exceeds maximum length (%r bytes). Truncating value: %r=%r.",
+                    "Attribute value exceeds maximum length " "(%r bytes). Truncating value: %r=%r.",
                     max_length,
                     name,
                     trunc_value,
@@ -296,6 +296,8 @@ def sanitize(value):
         except Exception:
             raise CastingFailureException()
         else:
-            _logger.debug("Attribute value is of type: %r. Casting %r to string: %s", type(original), original, value)
+            _logger.debug(
+                "Attribute value is of type: %r. Casting %r to " "string: %s", type(original), original, value
+            )
 
     return value

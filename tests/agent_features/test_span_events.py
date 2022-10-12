@@ -413,11 +413,10 @@ def test_datastore_span_limits(kwarg_override, attribute_override):
 @pytest.mark.parametrize("span_events_enabled", (False, True))
 def test_collect_span_events_override(collect_span_events, span_events_enabled):
 
-    # if collect_span_events and span_events_enabled:
-    #     spans_expected = True
-    # else:
-    #     spans_expected = False
-    spans_expected = collect_span_events and span_events_enabled
+    if collect_span_events and span_events_enabled:
+        spans_expected = True
+    else:
+        spans_expected = False
 
     span_count = 2 if spans_expected else 0
 

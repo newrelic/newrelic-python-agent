@@ -34,7 +34,7 @@ class simple_app_v2_raw:
 
         if self.scope["path"] == "/exc":
             raise ValueError("whoopsies")
-        if self.scope["path"] == "/ignored":
+        elif self.scope["path"] == "/ignored":
             ignore_transaction()
 
         await send({"type": "http.response.start", "status": 200})
@@ -57,7 +57,7 @@ async def simple_app_v3_raw(scope, receive, send):
 
     if scope["path"] == "/exc":
         raise ValueError("whoopsies")
-    if scope["path"] == "/ignored":
+    elif scope["path"] == "/ignored":
         ignore_transaction()
 
     await send({"type": "http.response.start", "status": 200})

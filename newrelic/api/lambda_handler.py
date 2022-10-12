@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import functools
+import os
 import warnings
 from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.api.transaction import current_transaction
@@ -117,7 +118,7 @@ def _LambdaHandlerWrapper(wrapped, application=None, name=None,
         # this container.
 
         global COLD_START_RECORDED
-        if COLD_START_RECORDED is False:
+        if COLD_START_RECORDED is False and os.getenv('AWS_LAMBDA_INITIALIZATION_TYPE') == 'on-demand':
             transaction._add_agent_attribute('aws.lambda.coldStart', True)
             COLD_START_RECORDED = True
 

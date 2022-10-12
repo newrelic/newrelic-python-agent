@@ -203,7 +203,8 @@ def test_truncate_bytes():
 
 def test_truncate_unicode_snowman():
     # '\u2603' is 'SNOWMAN'
-    u = "snow\u2603"
+    # decode("unicode-escape") is used to get Py2 unicode
+    u = "snow\u2603".decode("unicode-escape") if six.PY2 else "snow\u2603"
     assert u.encode("utf-8") == b"snow\xe2\x98\x83"
     result = truncate(u, maxsize=5)
     assert isinstance(result, six.text_type)
@@ -212,7 +213,8 @@ def test_truncate_unicode_snowman():
 
 def test_truncate_combining_characters():
     # '\u0308' is 'COMBINING DIAERESIS' (AKA 'umlaut')
-    u = "Zoe\u0308"
+    # decode("unicode-escape") is used to get Py2 unicode
+    u = "Zoe\u0308".decode("unicode-escape") if six.PY2 else "Zoe\u0308"
     assert u.encode("utf-8") == b"Zoe\xcc\x88"
 
     # truncate will chop off 'COMBINING DIAERESIS', which leaves
@@ -238,7 +240,8 @@ def test_truncate_empty_bytes():
 
 
 def test_truncate_empty_unicode():
-    u = ""
+    # decode("unicode-escape") is used to get Py2 unicode
+    u = "".decode("unicode-escape") if six.PY2 else ""
     result = truncate(u, maxsize=5)
     assert isinstance(result, six.text_type)
     assert result == ""

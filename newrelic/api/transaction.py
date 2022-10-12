@@ -29,7 +29,6 @@ import newrelic.core.database_node
 import newrelic.core.error_node
 import newrelic.core.root_node
 import newrelic.core.transaction_node
-import newrelic.packages.six as six
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import TimeTrace, get_linking_metadata
 from newrelic.common.encoding_utils import (
@@ -71,6 +70,7 @@ from newrelic.core.trace_cache import (
     TraceCacheNoActiveTraceError,
     trace_cache,
 )
+from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -120,7 +120,7 @@ class Sentinel(TimeTrace):
             self.exited = True
 
     @staticmethod
-    def complete_trace():
+    def complete_trace():  # pylint: disable=arguments-differ
         pass
 
     @property
@@ -832,7 +832,7 @@ class Transaction(object):
 
         # Add in special CPU time value for UI to display CPU burn.
 
-        # XXX Disable cpu time value for CPU burn as was
+        # TODO: Disable cpu time value for CPU burn as was
         # previously reporting incorrect value and we need to
         # fix it, at least on Linux to report just the CPU time
         # for the executing thread.
@@ -1571,7 +1571,7 @@ class Transaction(object):
             source=source,
         )
 
-        # TODO Errors are recorded in time order. If
+        # TODO: Errors are recorded in time order. If
         # there are two exceptions of same type and
         # different message, the UI displays the first
         # one. In the PHP agent it was recording the

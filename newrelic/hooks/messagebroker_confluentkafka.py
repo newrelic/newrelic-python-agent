@@ -32,8 +32,10 @@ HEARTBEAT_RECEIVE = "MessageBroker/Kafka/Heartbeat/Receive"
 HEARTBEAT_SESSION_TIMEOUT = "MessageBroker/Kafka/Heartbeat/SessionTimeout"
 HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
 
+
 def confluent_kafka_version():
     import confluent_kafka
+
     return getattr(confluent_kafka, "__version__", None)
 
 

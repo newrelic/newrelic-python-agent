@@ -311,4 +311,4 @@ def instrument_sanic_response(module):
 
 def instrument_sanic_touchup_service(module):
     if hasattr(module, "TouchUp") and hasattr(module.TouchUp, "run"):
-        wrap_function_wrapper(module.TouchUp, "run", _nr_wrap_touchup_run)
+        wrap_function_wrapper(module, "TouchUp.run", _nr_wrap_touchup_run)

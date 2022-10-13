@@ -409,7 +409,7 @@ def instrument_pika_adapters(module):
     else:
         wrap_consume = _wrap_basic_consume_Channel
 
-    _wrap_Channel_consume_callback(module.blocking_connection, "BlockingChannel.basic_consume", wrap_consume)
+    _wrap_Channel_consume_callback(module, "blocking_connection.BlockingChannel.basic_consume", wrap_consume)
     wrap_function_wrapper(module, "blocking_connection.BlockingChannel.__init__", _nr_wrap_BlockingChannel___init__)
     wrap_object(module, "blocking_connection.BlockingChannel.consume", _ConsumeGeneratorWrapper)
 

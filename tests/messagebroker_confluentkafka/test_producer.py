@@ -66,6 +66,7 @@ def test_produce_arguments(topic, producer, client_type, serialize, headers):
 
 def test_trace_metrics(topic, send_producer_message):
     from confluent_kafka import __version__ as version
+
     scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
     unscoped_metrics = scoped_metrics
     txn_name = "test_producer:test_trace_metrics.<locals>.test" if six.PY3 else "test_producer:test"

@@ -26,6 +26,7 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_function_wrapper,
 )
+from newrelic.common.package_version_utils import get_package_version
 
 HEARTBEAT_POLL = "MessageBroker/Kafka/Heartbeat/Poll"
 HEARTBEAT_SENT = "MessageBroker/Kafka/Heartbeat/Sent"
@@ -38,9 +39,6 @@ HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
 def _bind_send(topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None):
     return topic, value, key, headers, partition, timestamp_ms
 
-def kafka_python_version():
-    import kafka
-    return getattr(kafka, "__version__", None)
 
 def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -51,7 +49,7 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
     topic, value, key, headers, partition, timestamp_ms = _bind_send(*args, **kwargs)
     headers = list(headers) if headers else []
 
-    transaction.add_messagebroker_info("Kafka-Python", kafka_python_version())
+    transaction.add_messagebroker_info("Kafka-Python", get_package_version("kafka-python"))
 
     with MessageTrace(
         library="Kafka",
@@ -117,6 +115,7 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
         message_count = 1
 
         transaction = current_transaction(active_only=False)
+
         if not transaction:
             transaction = MessageTransaction(
                 application=application_instance(),
@@ -148,6 +147,7 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             name = "Named/%s" % destination_name
             transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
             transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
+            transaction.add_messagebroker_info("Kafka-Python", get_package_version("kafka-python"))
 
     return record
 

@@ -24,7 +24,6 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 
-
 _logger = logging.getLogger(__name__)
 
 HEARTBEAT_POLL = "MessageBroker/Kafka/Heartbeat/Poll"

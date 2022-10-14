@@ -18,6 +18,6 @@ import sys
 def get_package_version(name):
     # importlib was introduced into the standard library starting in Python3.8.
     if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
-        return sys.modules["importlib"].metadata.version(name)
+        return sys.modules["importlib"].metadata.version(name)   # pylint disable=E1101
     elif "pkg_resources" in sys.modules:
         return sys.modules["pkg_resources"].get_distribution(name).version

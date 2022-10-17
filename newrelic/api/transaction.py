@@ -29,7 +29,6 @@ import newrelic.core.database_node
 import newrelic.core.error_node
 import newrelic.core.root_node
 import newrelic.core.transaction_node
-import newrelic.packages.six as six
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import TimeTrace, get_linking_metadata
 from newrelic.common.encoding_utils import (
@@ -71,6 +70,7 @@ from newrelic.core.trace_cache import (
     TraceCacheNoActiveTraceError,
     trace_cache,
 )
+from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -120,7 +120,7 @@ class Sentinel(TimeTrace):
             self.exited = True
 
     @staticmethod
-    def complete_trace():
+    def complete_trace():  # pylint: disable=arguments-differ
         pass
 
     @property
@@ -837,7 +837,7 @@ class Transaction(object):
 
         # Add in special CPU time value for UI to display CPU burn.
 
-        # XXX Disable cpu time value for CPU burn as was
+        # TODO: Disable cpu time value for CPU burn as was
         # previously reporting incorrect value and we need to
         # fix it, at least on Linux to report just the CPU time
         # for the executing thread.
@@ -1576,7 +1576,7 @@ class Transaction(object):
             source=source,
         )
 
-        # TODO Errors are recorded in time order. If
+        # TODO: Errors are recorded in time order. If
         # there are two exceptions of same type and
         # different message, the UI displays the first
         # one. In the PHP agent it was recording the
@@ -1648,12 +1648,12 @@ class Transaction(object):
 
         self._cpu_user_time_end = os.times()[0]
 
-    def add_custom_parameter(self, name, value):
+    def add_custom_attribute(self, name, value):
         if not self._settings:
             return False
 
         if self._settings.high_security:
-            _logger.debug("Cannot add custom parameter in High Security Mode.")
+            _logger.debug("Cannot add custom attribute in High Security Mode.")
             return False
 
         if len(self._custom_params) >= MAX_NUM_USER_ATTRIBUTES:
@@ -1668,14 +1668,30 @@ class Transaction(object):
             self._custom_params[key] = val
             return True
 
-    def add_custom_parameters(self, items):
+    def add_custom_attributes(self, items):
         result = True
 
         # items is a list of (name, value) tuples.
         for name, value in items:
-            result &= self.add_custom_parameter(name, value)
+            result &= self.add_custom_attribute(name, value)
 
         return result
+
+    def add_custom_parameter(self, name, value):
+        # Deprecation warning
+        warnings.warn(
+            ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
+            DeprecationWarning,
+        )
+        return self.add_custom_attribute(name, value)
+
+    def add_custom_parameters(self, items):
+        # Deprecation warning
+        warnings.warn(
+            ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
+            DeprecationWarning,
+        )
+        return self.add_custom_attributes(items)
 
     def add_framework_info(self, name, version=None):
         if name:
@@ -1753,20 +1769,38 @@ def capture_request_params(flag=True):
             transaction.capture_params = flag
 
 
-def add_custom_parameter(key, value):
+def add_custom_attribute(key, value):
     transaction = current_transaction()
     if transaction:
-        return transaction.add_custom_parameter(key, value)
+        return transaction.add_custom_attribute(key, value)
     else:
         return False
+
+
+def add_custom_attributes(items):
+    transaction = current_transaction()
+    if transaction:
+        return transaction.add_custom_attributes(items)
+    else:
+        return False
+
+
+def add_custom_parameter(key, value):
+    # Deprecation warning
+    warnings.warn(
+        ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
+        DeprecationWarning,
+    )
+    return add_custom_attribute(key, value)
 
 
 def add_custom_parameters(items):
-    transaction = current_transaction()
-    if transaction:
-        return transaction.add_custom_parameters(items)
-    else:
-        return False
+    # Deprecation warning
+    warnings.warn(
+        ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
+        DeprecationWarning,
+    )
+    return add_custom_attributes(items)
 
 
 def add_framework_info(name, version=None):

@@ -1788,7 +1788,7 @@ def add_custom_parameter(key, value):
 def add_custom_parameters(items):
     # Deprecation warning
     warnings.warn(
-        ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
+        ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
         DeprecationWarning,
     )
     return add_custom_attributes(items)

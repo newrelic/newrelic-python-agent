@@ -16,6 +16,7 @@
 
 """
 
+from inspect import isclass
 from newrelic.api.function_trace import (
     FunctionTrace,
     FunctionTraceWrapper,
@@ -54,6 +55,22 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
 
     name = getattr(wrapped, "_nr_view_func_name", callable_name(wrapped))
     view = getattr(wrapped, "view_class", wrapped)
+
+    try:
+        # Attempt to narrow down class based views to the correct method
+        from flask.views import MethodView
+        from flask import request
+
+        if isclass(view):
+            if issubclass(view, MethodView):
+                # For method based views, use the corresponding method if available
+                method = request.method.lower()
+                view = getattr(view, method, view)
+            else:
+                # For class based views, use the dispatch_request function if available
+                view = getattr(view, "dispatch_request", view)
+    except ImportError:
+        pass
 
     # Set priority=2 so this will take precedence over any error
     # handler which will be at priority=1.

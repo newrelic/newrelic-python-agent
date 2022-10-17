@@ -20,7 +20,9 @@ from testing_support.fixtures import (
     validate_transaction_errors,
     validate_transaction_metrics,
 )
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
 
 scoped_metrics = [
     ("Function/flask.app:Flask.wsgi_app", 1),

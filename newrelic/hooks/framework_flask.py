@@ -17,6 +17,7 @@
 """
 
 from inspect import isclass
+
 from newrelic.api.function_trace import (
     FunctionTrace,
     FunctionTraceWrapper,
@@ -58,8 +59,8 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
 
     try:
         # Attempt to narrow down class based views to the correct method
-        from flask.views import MethodView
         from flask import request
+        from flask.views import MethodView
 
         if isclass(view):
             if issubclass(view, MethodView):

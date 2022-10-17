@@ -186,6 +186,7 @@ class Transaction(object):
         self._loop_time = 0.0
 
         self._frameworks = set()
+        self._message_brokers = set()
 
         self._frozen_path = None
 
@@ -544,6 +545,10 @@ class Transaction(object):
         if self._frameworks:
             for framework, version in self._frameworks:
                 self.record_custom_metric("Python/Framework/%s/%s" % (framework, version), 1)
+
+        if self._message_brokers:
+            for message_broker, version in self._message_brokers:
+                self.record_custom_metric("Python/MessageBroker/%s/%s" % (message_broker, version), 1)
 
         if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the
@@ -1675,6 +1680,10 @@ class Transaction(object):
     def add_framework_info(self, name, version=None):
         if name:
             self._frameworks.add((name, version))
+
+    def add_messagebroker_info(self, name, version=None):
+        if name:
+            self._message_brokers.add((name, version))
 
     def dump(self, file):
         """Dumps details about the transaction to the file object."""

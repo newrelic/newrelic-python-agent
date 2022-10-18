@@ -36,7 +36,6 @@ from testing_support.util import get_open_port
 from newrelic.api.transaction import ignore_transaction
 from newrelic.common.object_names import callable_name
 
-
 HYPERCORN_VERSION = tuple(int(v) for v in pkg_resources.get_distribution("hypercorn").version.split("."))
 asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14, 1)
 wsgi_unsupported = HYPERCORN_VERSION < (0, 14, 1)

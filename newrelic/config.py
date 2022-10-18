@@ -2211,6 +2211,10 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "graphene_django.views", "newrelic.hooks.framework_graphene_django", "instrument_graphene_django_views"
+    )
+
+    _process_module_definition(
         "graphql.graphql",
         "newrelic.hooks.framework_graphql",
         "instrument_graphql",

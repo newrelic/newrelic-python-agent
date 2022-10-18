@@ -652,9 +652,9 @@ def instrument_graphql_validate(module):
 
 
 def instrument_graphql(module):
-    if hasattr(module, "graphql_impl"):
+    if hasattr(module, "graphql_impl"):  # for graphql 3
         wrap_function_wrapper(module, "graphql_impl", wrap_graphql_impl)
-    if hasattr(module, "execute_graphql"):
+    if hasattr(module, "execute_graphql"):  # for graphql 2
         wrap_function_wrapper(module, "execute_graphql", wrap_graphql_impl)
 
 

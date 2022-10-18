@@ -36,6 +36,7 @@ from testing_support.util import get_open_port
 from newrelic.api.transaction import ignore_transaction
 from newrelic.common.object_names import callable_name
 
+
 HYPERCORN_VERSION = tuple(int(v) for v in pkg_resources.get_distribution("hypercorn").version.split("."))
 asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14, 1)
 wsgi_unsupported = HYPERCORN_VERSION < (0, 14, 1)
@@ -128,7 +129,14 @@ def wait_for_port(port, retries=10):
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 def test_hypercorn_200(port, app):
-    @validate_transaction_metrics(callable_name(app))
+    hypercorn_version = pkg_resources.get_distribution("hypercorn").version
+
+    @validate_transaction_metrics(
+        callable_name(app),
+        custom_metrics=[
+            ("Python/Dispatcher/Hypercorn/%s" % hypercorn_version, 1),
+        ],
+    )
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():

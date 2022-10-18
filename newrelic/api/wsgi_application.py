@@ -510,7 +510,7 @@ class _WSGIApplicationMiddleware(object):
                 yield data
 
 
-def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None):
+def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None, dispatcher=None):
 
     # Python 2 does not allow rebinding nonlocal variables, so to fix this
     # framework must be stored in list so it can be edited by closure.
@@ -555,6 +555,9 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
 
             if framework:
                 transaction.add_framework_info(name=framework[0], version=framework[1])
+
+            if dispatcher:
+                transaction.add_dispatcher_info(name=dispatcher[0], version=dispatcher[1])
 
             # Also override the web transaction name to be the name of
             # the wrapped callable if not explicitly named, and we want
@@ -617,6 +620,9 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
 
         if framework:
             transaction.add_framework_info(name=framework[0], version=framework[1])
+
+        if dispatcher:
+            transaction.add_dispatcher_info(name=dispatcher[0], version=dispatcher[1])
 
         # Override the initial web transaction name to be the supplied
         # name, or the name of the wrapped callable if wanting to use

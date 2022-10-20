@@ -24,6 +24,9 @@ from newrelic.core.config import global_settings
 from newrelic.common.object_names import callable_name
 
 
+TEST_APPLICATION_PREFIX = "_test_application.create_app.<locals>" if six.PY3 else "_test_application"
+
+
 @pytest.fixture(params=["flask_restful", "flask_restplus", "flask_restx"])
 def application(request):
     from _test_application import get_test_application
@@ -53,7 +56,7 @@ _test_application_index_scoped_metrics = [
 ]
 
 
-@validate_code_level_metrics("_test_application.create_app.<locals>" if six.PY3 else "_test_application", "IndexResource")
+@validate_code_level_metrics(TEST_APPLICATION_PREFIX + ".IndexResource", "get")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_application:index',
         scoped_metrics=_test_application_index_scoped_metrics)
@@ -80,7 +83,7 @@ _test_application_raises_scoped_metrics = [
 def test_application_raises(exception, status_code, ignore_status_code,
         propagate_exceptions, application):
 
-    @validate_code_level_metrics("_test_application.create_app.<locals>" if six.PY3 else "_test_application", "ExceptionResource")
+    @validate_code_level_metrics(TEST_APPLICATION_PREFIX + ".ExceptionResource", "get")
     @validate_transaction_metrics('_test_application:exception',
             scoped_metrics=_test_application_raises_scoped_metrics)
     def _test():

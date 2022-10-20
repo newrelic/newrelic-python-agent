@@ -18,9 +18,6 @@ import sys
 import time
 
 from newrelic.api.application import application_instance
-from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import notice_error
-from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.html_insertion import insert_html_snippet, verify_body_exists
 from newrelic.api.time_trace import notice_error
@@ -80,12 +77,12 @@ class _WSGIApplicationIterable(object):
             self.response_trace = None
 
         try:
-            with FunctionTrace(name='Finalize', group='Python/WSGI'):
+            with FunctionTrace(name="Finalize", group="Python/WSGI"):
 
                 if isinstance(self.generator, _WSGIApplicationMiddleware):
                     self.generator.close()
 
-                elif hasattr(self.generator, 'close'):
+                elif hasattr(self.generator, "close"):
                     FunctionTraceWrapper(self.generator.close)()
 
         except:  # Catch all
@@ -437,7 +434,7 @@ class _WSGIApplicationMiddleware(object):
         # Call close() on the iterable as required by the
         # WSGI specification.
 
-        if hasattr(self.iterable, 'close'):
+        if hasattr(self.iterable, "close"):
             FunctionTraceWrapper(self.iterable.close)()
 
     def __iter__(self):
@@ -510,7 +507,7 @@ class _WSGIApplicationMiddleware(object):
                 yield data
 
 
-def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None):
+def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None, dispatcher=None):
 
     # Python 2 does not allow rebinding nonlocal variables, so to fix this
     # framework must be stored in list so it can be edited by closure.
@@ -555,6 +552,9 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
 
             if framework:
                 transaction.add_framework_info(name=framework[0], version=framework[1])
+
+            if dispatcher:
+                transaction.add_dispatcher_info(name=dispatcher[0], version=dispatcher[1])
 
             # Also override the web transaction name to be the name of
             # the wrapped callable if not explicitly named, and we want
@@ -618,6 +618,9 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
         if framework:
             transaction.add_framework_info(name=framework[0], version=framework[1])
 
+        if dispatcher:
+            transaction.add_dispatcher_info(name=dispatcher[0], version=dispatcher[1])
+
         # Override the initial web transaction name to be the supplied
         # name, or the name of the wrapped callable if wanting to use
         # the callable as the default. This will override the use of a
@@ -672,7 +675,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
             if "wsgi.input" in environ:
                 environ["wsgi.input"] = _WSGIInputWrapper(transaction, environ["wsgi.input"])
 
-            with FunctionTrace(name='Application', group='Python/WSGI'):
+            with FunctionTrace(name="Application", group="Python/WSGI"):
                 with FunctionTrace(name=callable_name(wrapped), source=wrapped):
                     if settings and settings.browser_monitoring.enabled and not transaction.autorum_disabled:
                         result = _WSGIApplicationMiddleware(wrapped, environ, _start_response, transaction)

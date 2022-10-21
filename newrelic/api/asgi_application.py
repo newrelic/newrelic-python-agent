@@ -382,7 +382,9 @@ def asgi_application(application=None, name=None, group=None, framework=None, di
     )
 
 
-def wrap_asgi_application(module, object_path, application=None, name=None, group=None, framework=None, dispatcher=None):
+def wrap_asgi_application(
+    module, object_path, application=None, name=None, group=None, framework=None, dispatcher=None
+):
     wrap_object(
         module,
         object_path,

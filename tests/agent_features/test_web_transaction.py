@@ -21,8 +21,10 @@ from newrelic.api.application import application_instance
 from newrelic.api.web_transaction import WebTransaction
 from testing_support.fixtures import (validate_transaction_metrics,
         validate_attributes)
-from testing_support.sample_applications import simple_app
+from testing_support.sample_applications import simple_app, simple_app_raw
 import newrelic.packages.six as six
+from newrelic.api.wsgi_application import wsgi_application
+
 application = webtest.TestApp(simple_app)
 
 
@@ -38,6 +40,27 @@ METRICS = (
     ('Python/WSGI/Output/Calls/yield', None),
     ('Python/WSGI/Output/Calls/write', None),
 )
+
+# Test for presence of framework and dispatcher info based on whether framework is specified
+@validate_transaction_metrics(name="test", custom_metrics=[("Python/Framework/framework/v1", 1), ("Python/Dispatcher/dispatcher/v1.0.0", 1)])
+def test_dispatcher_and_framework_metrics():
+    inner_wsgi_decorator = wsgi_application(name="test", framework=("framework", "v1"), dispatcher=("dispatcher", "v1.0.0"))
+    decorated_application = inner_wsgi_decorator(simple_app_raw)
+    
+    application = webtest.TestApp(decorated_application)
+    application.get("/")
+
+# Test for presence of framework and dispatcher info under existing transaction
+@validate_transaction_metrics(name="test", custom_metrics=[("Python/Framework/framework/v1", 1), ("Python/Dispatcher/dispatcher/v1.0.0", 1)])
+def test_double_wrapped_dispatcher_and_framework_metrics():
+    inner_wsgi_decorator = wsgi_application(name="test", framework=("framework", "v1"), dispatcher=("dispatcher", "v1.0.0"))
+    decorated_application = inner_wsgi_decorator(simple_app_raw)
+    
+    outer_wsgi_decorator = wsgi_application(name="double_wrapped")
+    double_decorated_application = outer_wsgi_decorator(decorated_application)
+    
+    application = webtest.TestApp(double_decorated_application)
+    application.get("/")
 
 
 # TODO: Add rollup_metrics=METRICS

@@ -680,35 +680,35 @@ def check_event_attributes(event_data, required_params=None, forgone_params=None
 #     return _validate_error_trace_attributes_outside_transaction
 
 
-def validate_error_event_attributes_outside_transaction(
-    required_params=None, forgone_params=None, exact_attrs=None, num_errors=None
-):
-    required_params = required_params or {}
-    forgone_params = forgone_params or {}
+# def validate_error_event_attributes_outside_transaction(
+#     required_params=None, forgone_params=None, exact_attrs=None, num_errors=None
+# ):
+#     required_params = required_params or {}
+#     forgone_params = forgone_params or {}
 
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
-    def _validate_error_event_attributes_outside_transaction(wrapped, instance, args, kwargs):
+#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
+#     def _validate_error_event_attributes_outside_transaction(wrapped, instance, args, kwargs):
 
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            event_data = list(instance.error_events)
+#         try:
+#             result = wrapped(*args, **kwargs)
+#         except:
+#             raise
+#         else:
+#             event_data = list(instance.error_events)
 
-            if num_errors is not None:
-                exc_message = (
-                    "Expected: %d, Got: %d. Verify StatsEngine is being reset before using this validator."
-                    % (num_errors, len(event_data))
-                )
-                assert num_errors == len(event_data), exc_message
+#             if num_errors is not None:
+#                 exc_message = (
+#                     "Expected: %d, Got: %d. Verify StatsEngine is being reset before using this validator."
+#                     % (num_errors, len(event_data))
+#                 )
+#                 assert num_errors == len(event_data), exc_message
 
-            for event in event_data:
-                check_event_attributes([event], required_params, forgone_params, exact_attrs=exact_attrs)
+#             for event in event_data:
+#                 check_event_attributes([event], required_params, forgone_params, exact_attrs=exact_attrs)
 
-        return result
+#         return result
 
-    return _validate_error_event_attributes_outside_transaction
+#     return _validate_error_event_attributes_outside_transaction
 
 
 def validate_request_params_omitted():

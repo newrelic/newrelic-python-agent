@@ -128,14 +128,16 @@ def simple_exceptional_app(environ, start_response):
     raise ValueError("Transaction had bad value")
 
 
-@wsgi_application()
-def simple_app(environ, start_response):
+def simple_app_raw(environ, start_response):
     status = "200 OK"
 
     _logger.info("Starting response")
     start_response(status, response_headers=[])
 
     return []
+
+
+simple_app = wsgi_application()(simple_app_raw)
 
 
 @wsgi_application()

@@ -371,20 +371,23 @@ def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
     return FunctionWrapper(wrapped, nr_asgi_wrapper)
 
 
-def asgi_application(application=None, name=None, group=None, framework=None):
+def asgi_application(application=None, name=None, group=None, framework=None, dispatcher=None):
     return functools.partial(
         ASGIApplicationWrapper,
         application=application,
         name=name,
         group=group,
         framework=framework,
+        dispatcher=dispatcher,
     )
 
 
-def wrap_asgi_application(module, object_path, application=None, name=None, group=None, framework=None):
+def wrap_asgi_application(
+    module, object_path, application=None, name=None, group=None, framework=None, dispatcher=None
+):
     wrap_object(
         module,
         object_path,
         ASGIApplicationWrapper,
-        (application, name, group, framework),
+        (application, name, group, framework, dispatcher),
     )

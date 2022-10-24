@@ -29,6 +29,7 @@ from testing_support.sample_asgi_applications import (
     AppWithCall,
     AppWithCallRaw,
     simple_app_v2_raw,
+    simple_app_v3,
 )
 from testing_support.util import get_open_port
 
@@ -46,6 +47,10 @@ skip_asgi_2_unsupported = pytest.mark.skipif(DAPHNE_VERSION >= (3, 0), reason="A
             marks=skip_asgi_2_unsupported,
         ),
         pytest.param(
+            simple_app_v3,
+            marks=skip_asgi_3_unsupported,
+        ),
+        pytest.param(
             AppWithCallRaw(),
             marks=skip_asgi_3_unsupported,
         ),
@@ -54,7 +59,7 @@ skip_asgi_2_unsupported = pytest.mark.skipif(DAPHNE_VERSION >= (3, 0), reason="A
             marks=skip_asgi_3_unsupported,
         ),
     ),
-    ids=("raw", "class_with_call", "class_with_call_double_wrapped"),
+    ids=("raw", "wrapped", "class_with_call", "class_with_call_double_wrapped"),
 )
 def app(request, server_and_port):
     app = request.param

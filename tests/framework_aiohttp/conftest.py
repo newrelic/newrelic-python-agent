@@ -76,8 +76,7 @@ class SimpleAiohttpApp(AioHTTPTestCase):
         if hasattr(self, "asyncTearDown"):
             asyncio.get_event_loop().run_until_complete(self.asyncTearDown())
 
-    @asyncio.coroutine
-    def _get_client(self, app_or_server):
+    async def _get_client(self, app_or_server):
         """Return a TestClient instance."""
         client_constructor_arg = app_or_server
 

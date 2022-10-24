@@ -35,6 +35,11 @@ runs:
 
     - uses: actions/setup-python@v3
       with:
+        python-version: "3.11-dev"
+        architecture: x64
+
+    - uses: actions/setup-python@v3
+      with:
         python-version: "2.7"
         architecture: x64
 

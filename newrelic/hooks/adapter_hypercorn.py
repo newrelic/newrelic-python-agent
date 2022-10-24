@@ -15,6 +15,7 @@
 from newrelic.api.asgi_application import ASGIApplicationWrapper
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 
 
 def bind_worker_serve(app, *args, **kwargs):
@@ -24,6 +25,7 @@ def bind_worker_serve(app, *args, **kwargs):
 async def wrap_worker_serve(wrapped, instance, args, kwargs):
     import hypercorn
 
+    dispatcher_details = ("Hypercorn", get_package_version("hypercorn"))
     wrapper_module = getattr(hypercorn, "app_wrappers", None)
     asgi_wrapper_class = getattr(wrapper_module, "ASGIWrapper", None)
     wsgi_wrapper_class = getattr(wrapper_module, "WSGIWrapper", None)
@@ -32,13 +34,14 @@ async def wrap_worker_serve(wrapped, instance, args, kwargs):
 
     # Hypercorn 0.14.1 introduced wrappers for ASGI and WSGI apps that need to be above our instrumentation.
     if asgi_wrapper_class is not None and isinstance(app, asgi_wrapper_class):
-        app.app = ASGIApplicationWrapper(app.app)
+        app.app = ASGIApplicationWrapper(app.app, dispatcher=dispatcher_details)
     elif wsgi_wrapper_class is not None and isinstance(app, wsgi_wrapper_class):
-        app.app = WSGIApplicationWrapper(app.app)
+        app.app = WSGIApplicationWrapper(app.app, dispatcher=dispatcher_details)
     else:
-        app = ASGIApplicationWrapper(app)
+        app = ASGIApplicationWrapper(app, dispatcher=dispatcher_details)
 
     app._nr_wrapped = True
+
     return await wrapped(app, *args, **kwargs)
 
 

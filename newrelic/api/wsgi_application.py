@@ -691,11 +691,18 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
     return FunctionWrapper(wrapped, _nr_wsgi_application_wrapper_)
 
 
-def wsgi_application(application=None, name=None, group=None, framework=None):
+def wsgi_application(application=None, name=None, group=None, framework=None, dispatcher=None):
     return functools.partial(
-        WSGIApplicationWrapper, application=application, name=name, group=group, framework=framework
+        WSGIApplicationWrapper,
+        application=application,
+        name=name,
+        group=group,
+        framework=framework,
+        dispatcher=dispatcher,
     )
 
 
-def wrap_wsgi_application(module, object_path, application=None, name=None, group=None, framework=None):
-    wrap_object(module, object_path, WSGIApplicationWrapper, (application, name, group, framework))
+def wrap_wsgi_application(
+    module, object_path, application=None, name=None, group=None, framework=None, dispatcher=None
+):
+    wrap_object(module, object_path, WSGIApplicationWrapper, (application, name, group, framework, dispatcher))

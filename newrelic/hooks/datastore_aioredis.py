@@ -27,9 +27,9 @@ from newrelic.common.async_wrapper import async_wrapper
 import aioredis
 
 try:
-    AIOREDIS_VERSION = tuple(int(x) for x in getattr(aioredis, "__version__").split("."))
+    AIOREDIS_VERSION = lambda: tuple(int(x) for x in getattr(aioredis, "__version__").split("."))
 except Exception:
-    AIOREDIS_VERSION = (0, 0, 0)
+    AIOREDIS_VERSION = lambda: (0, 0, 0)
 
 
 def _conn_attrs_to_dict(connection):
@@ -68,7 +68,7 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
         # Check for transaction and return early if found.
         # Method will return synchronously without executing,
         # it will be added to the command stack and run later.
-        if AIOREDIS_VERSION < (2,):
+        if AIOREDIS_VERSION() < (2,):
             # AioRedis v1 uses a RedisBuffer instead of a real connection for queueing up pipeline commands
             from aioredis.commands.transaction import _RedisBuffer
             if isinstance(instance._pool_or_conn, _RedisBuffer):

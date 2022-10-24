@@ -112,7 +112,12 @@ def server_and_port():
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 def test_daphne_200(port, app):
-    @validate_transaction_metrics(callable_name(app))
+    @validate_transaction_metrics(
+        callable_name(app),
+        custom_metrics=[
+            ("Python/Dispatcher/Daphne/%s" % daphne.__version__, 1),
+        ],
+    )
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():

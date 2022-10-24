@@ -23,6 +23,7 @@ import sys
 import sysconfig
 
 import newrelic
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.system_info import (
     logical_processor_count,
     physical_processor_count,
@@ -37,18 +38,6 @@ except ImportError:
 
 def environment_settings():
     """Returns an array of arrays of environment settings"""
-
-    # Find version resolver.
-
-    get_version = None
-    # importlib was introduced into the standard library starting in Python3.8.
-    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
-        get_version = sys.modules["importlib"].metadata.version
-    elif "pkg_resources" in sys.modules:
-
-        def get_version(name):  # pylint: disable=function-redefined
-            return sys.modules["pkg_resources"].get_distribution(name).version
-
     env = []
 
     # Agent information.
@@ -186,7 +175,7 @@ def environment_settings():
             dispatcher.append(("Dispatcher Version", hypercorn.__version__))
         else:
             try:
-                dispatcher.append(("Dispatcher Version", get_version("hypercorn")))
+                dispatcher.append(("Dispatcher Version", get_package_version("hypercorn")))
             except Exception:
                 pass
 
@@ -237,7 +226,7 @@ def environment_settings():
             continue
 
         try:
-            version = get_version(name)
+            version = get_package_version(name)
             plugins.append("%s (%s)" % (name, version))
         except Exception:
             plugins.append(name)

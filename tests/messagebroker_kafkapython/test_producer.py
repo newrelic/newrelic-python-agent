@@ -14,12 +14,14 @@
 
 import pytest
 from conftest import cache_kafka_producer_headers
-from testing_support.fixtures import (
-    validate_transaction_errors,
-    validate_transaction_metrics,
-)
 from testing_support.validators.validate_messagebroker_headers import (
     validate_messagebroker_headers,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task

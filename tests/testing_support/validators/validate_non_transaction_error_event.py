@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from time import time
+import time
 
 from testing_support.fixtures import core_application_stats_engine
 

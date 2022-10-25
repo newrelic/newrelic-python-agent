@@ -14,84 +14,94 @@
 
 import json
 import time
-from newrelic.api.transaction import current_transaction
-import grpc
 
-from sample_application_pb2 import Message
-from sample_application_pb2_grpc import (
-        SampleApplicationServicer as _SampleApplicationServicer)
+import grpc
+import sample_application_pb2_grpc
+
+from newrelic.api.transaction import current_transaction
+
+# This import format is to resolve a bug within protobuf 4
+# Issues for reference:
+# https://github.com/protocolbuffers/protobuf/issues/10075
+# https://github.com/protocolbuffers/protobuf/issues/10151
+# Within sample_application_pb2.py, the protobuf import can only
+# be done once before the DESCRIPTOR value is set to None
+# (in subsequent imports) instead of overriding/ignoring the imports.
+# This ensures that the imports happen once.
+Message = sample_application_pb2_grpc.sample__application__pb2.Message
+add_SampleApplicationServicer_to_server = sample_application_pb2_grpc.add_SampleApplicationServicer_to_server
+SampleApplicationStub = sample_application_pb2_grpc.SampleApplicationStub
 
 
 class Status(object):
     code = grpc.StatusCode.ABORTED
-    details = 'abort_with_status'
+    details = "abort_with_status"
     trailing_metadata = {}
 
 
-class SampleApplicationServicer(_SampleApplicationServicer):
-
+class SampleApplicationServicer(sample_application_pb2_grpc.SampleApplicationServicer):
     def DoUnaryUnary(self, request, context):
-        context.set_trailing_metadata([('content-type', 'text/plain')])
+        context.set_trailing_metadata([("content-type", "text/plain")])
         if request.timesout:
             while context.is_active():
                 time.sleep(0.1)
-        return Message(text='unary_unary: %s' % request.text)
+        return Message(text="unary_unary: %s" % request.text)
 
     def DoUnaryStream(self, request, context):
-        context.set_trailing_metadata([('content-type', 'text/plain')])
+        context.set_trailing_metadata([("content-type", "text/plain")])
         if request.timesout:
             while context.is_active():
                 time.sleep(0.1)
         for i in range(request.count):
-            yield Message(text='unary_stream: %s' % request.text)
+            yield Message(text="unary_stream: %s" % request.text)
 
     def DoStreamUnary(self, request_iter, context):
-        context.set_trailing_metadata([('content-type', 'text/plain')])
+        context.set_trailing_metadata([("content-type", "text/plain")])
         for request in request_iter:
             if request.timesout:
                 while context.is_active():
                     time.sleep(0.1)
-            return Message(text='stream_unary: %s' % request.text)
+            return Message(text="stream_unary: %s" % request.text)
 
     def DoStreamStream(self, request_iter, context):
-        context.set_trailing_metadata([('content-type', 'text/plain')])
+        context.set_trailing_metadata([("content-type", "text/plain")])
         for request in request_iter:
             if request.timesout:
                 while context.is_active():
                     time.sleep(0.1)
-            yield Message(text='stream_stream: %s' % request.text)
+            yield Message(text="stream_stream: %s" % request.text)
 
     def DoUnaryUnaryRaises(self, request, context):
-        raise AssertionError('unary_unary: %s' % request.text)
+        raise AssertionError("unary_unary: %s" % request.text)
 
     def DoUnaryStreamRaises(self, request, context):
-        raise AssertionError('unary_stream: %s' % request.text)
+        raise AssertionError("unary_stream: %s" % request.text)
 
     def DoStreamUnaryRaises(self, request_iter, context):
         for request in request_iter:
-            raise AssertionError('stream_unary: %s' % request.text)
+            raise AssertionError("stream_unary: %s" % request.text)
 
     def DoStreamStreamRaises(self, request_iter, context):
         for request in request_iter:
-            raise AssertionError('stream_stream: %s' % request.text)
+            raise AssertionError("stream_stream: %s" % request.text)
 
     def NoTxnUnaryUnaryRaises(self, request, context):
         current_transaction().ignore_transaction = True
-        raise AssertionError('unary_unary: %s' % request.text)
+        raise AssertionError("unary_unary: %s" % request.text)
 
     def NoTxnUnaryStreamRaises(self, request, context):
         current_transaction().ignore_transaction = True
-        raise AssertionError('unary_stream: %s' % request.text)
+        raise AssertionError("unary_stream: %s" % request.text)
 
     def NoTxnStreamUnaryRaises(self, request_iter, context):
         current_transaction().ignore_transaction = True
         for request in request_iter:
-            raise AssertionError('stream_unary: %s' % request.text)
+            raise AssertionError("stream_unary: %s" % request.text)
 
     def NoTxnStreamStreamRaises(self, request_iter, context):
         current_transaction().ignore_transaction = True
         for request in request_iter:
-            raise AssertionError('stream_stream: %s' % request.text)
+            raise AssertionError("stream_stream: %s" % request.text)
 
     def NoTxnUnaryUnary(self, request, context):
         current_transaction().ignore_transaction = True
@@ -110,16 +120,16 @@ class SampleApplicationServicer(_SampleApplicationServicer):
         return self.DoStreamStream(request_iter, context)
 
     def DoUnaryUnaryAbort(self, request, context):
-        context.abort(grpc.StatusCode.ABORTED, 'aborting')
+        context.abort(grpc.StatusCode.ABORTED, "aborting")
 
     def DoUnaryStreamAbort(self, request, context):
-        context.abort(grpc.StatusCode.ABORTED, 'aborting')
+        context.abort(grpc.StatusCode.ABORTED, "aborting")
 
     def DoStreamUnaryAbort(self, request_iter, context):
-        context.abort(grpc.StatusCode.ABORTED, 'aborting')
+        context.abort(grpc.StatusCode.ABORTED, "aborting")
 
     def DoStreamStreamAbort(self, request_iter, context):
-        context.abort(grpc.StatusCode.ABORTED, 'aborting')
+        context.abort(grpc.StatusCode.ABORTED, "aborting")
 
     def DoUnaryUnaryAbortWithStatus(self, request, context):
         context.abort_with_status(Status)

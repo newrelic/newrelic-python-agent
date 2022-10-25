@@ -174,8 +174,8 @@ def multi_fetch_handler(request):
     return web.Response(text=responses, content_type='text/html')
 
 
-def make_app(middlewares=None, loop=None):
-    app = web.Application(middlewares=middlewares, loop=loop)
+def make_app(middlewares=None):
+    app = web.Application(middlewares=middlewares)
     app.router.add_route('*', '/coro', index)
     app.router.add_route('*', '/class', HelloWorldView)
     app.router.add_route('*', '/error', error)

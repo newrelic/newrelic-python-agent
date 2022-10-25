@@ -17,18 +17,16 @@ connection pool that does not have a `connection_kwargs` attribute
 will not result in an error.
 """
 
-import asyncio
-import pytest
-import aioredis
-
-from conftest import event_loop, loop, AIOREDIS_VERSION
-
-from newrelic.api.background_task import background_task
-
-# from testing_support.fixture.event_loop import event_loop as loop
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics, override_application_settings
 from testing_support.db_settings import redis_settings
 from testing_support.util import instance_hostname
+
+# from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.validators.validate_transaction_metrics import (
+    override_application_settings,
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()[0]
 
@@ -43,7 +41,7 @@ class FakeConnectionPool(object):
         return self.connection
 
     async def release(self, connection):
-        self.connection.disconnect()
+        await self.connection.disconnect()
 
     async def execute(self, *args, **kwargs):
         return await self.connection.execute(*args, **kwargs)
@@ -105,18 +103,6 @@ async def exercise_redis(client):
         await client.execute("CLIENT", "LIST")
 
 
-if AIOREDIS_VERSION >= (2, 0):
-    clients = [
-        aioredis.Redis(host=DB_SETTINGS["host"], port=_port, db=0),
-        aioredis.StrictRedis(host=DB_SETTINGS["host"], port=_port, db=0),
-    ]
-else:
-    clients = [
-        event_loop.run_until_complete(aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], _port), db=0)),
-    ]
-
-
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_custom_conn_pool:test_fake_conn_pool_enable_instance",
@@ -125,7 +111,7 @@ else:
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_enable_instance(client, loop):
+def test_fake_conn_pool_enable_instance(client, loop, monkeypatch):
     # Get a real connection
     conn = getattr(client, "_pool_or_conn", None)
     if conn is None:
@@ -135,14 +121,13 @@ def test_fake_conn_pool_enable_instance(client, loop):
     # have the `connection_kwargs` attribute.
 
     fake_pool = FakeConnectionPool(conn)
-    client.connection_pool = fake_pool
-    client._pool_or_conn = fake_pool
+    monkeypatch.setattr(client, "connection_pool", fake_pool, raising=False)
+    monkeypatch.setattr(client, "_pool_or_conn", fake_pool, raising=False)
     assert not hasattr(client.connection_pool, "connection_kwargs")
 
     loop.run_until_complete(exercise_redis(client))
 
 
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
     "test_custom_conn_pool:test_fake_conn_pool_disable_instance",
@@ -151,15 +136,18 @@ def test_fake_conn_pool_enable_instance(client, loop):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_disable_instance(client, loop):
+def test_fake_conn_pool_disable_instance(client, loop, monkeypatch):
     # Get a real connection
-    conn = loop.run_until_complete(client.connection_pool.get_connection("GET"))
+    conn = getattr(client, "_pool_or_conn", None)
+    if conn is None:
+        conn = loop.run_until_complete(client.connection_pool.get_connection("GET"))
 
     # Replace the original connection pool with one that doesn't
     # have the `connection_kwargs` attribute.
 
     fake_pool = FakeConnectionPool(conn)
-    client.connection_pool = fake_pool
+    monkeypatch.setattr(client, "connection_pool", fake_pool, raising=False)
+    monkeypatch.setattr(client, "_pool_or_conn", fake_pool, raising=False)
     assert not hasattr(client.connection_pool, "connection_kwargs")
 
     loop.run_until_complete(exercise_redis(client))

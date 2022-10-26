@@ -28,18 +28,16 @@ skipif_aiohttp3 = pytest.mark.skipif(
 )
 
 
-@asyncio.coroutine
-def fetch(method, url):
+async def fetch(method, url):
     with aiohttp.ClientSession() as session:
         _method = getattr(session, method)
-        response = yield from asyncio.wait_for(_method(url), timeout=None)
+        response = await asyncio.wait_for(_method(url), timeout=None)
         response.raise_for_status()
-        yield from response.text()
+        await response.text()
 
 
 @background_task(name="fetch_multiple")
-@asyncio.coroutine
-def fetch_multiple(method, url):
+async def fetch_multiple(method, url):
     coros = [fetch(method, url) for _ in range(2)]
     return asyncio.gather(*coros, return_exceptions=True)
 
@@ -126,8 +124,7 @@ def test_client_throw_yield_from(event_loop, local_server_info, method, exc_expe
         pass
 
     @background_task(name="test_client_throw_yield_from")
-    @asyncio.coroutine
-    def self_driving_thrower():
+    async def self_driving_thrower():
         with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
 
@@ -159,8 +156,7 @@ def test_client_throw_yield_from(event_loop, local_server_info, method, exc_expe
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 def test_client_close_yield_from(event_loop, local_server_info, method, exc_expected):
     @background_task(name="test_client_close_yield_from")
-    @asyncio.coroutine
-    def self_driving_closer():
+    async def self_driving_closer():
         with aiohttp.ClientSession() as session:
             coro = session._request(method.upper(), local_server_info.url)
 
@@ -219,17 +215,15 @@ def test_create_task_yield_from(event_loop, local_server_info, method, exc_expec
     # `loop.create_task` returns a Task object which uses the coroutine's
     # `send` method, not `__next__`
 
-    @asyncio.coroutine
-    def fetch_task(loop):
+    async def fetch_task(loop):
         with aiohttp.ClientSession() as session:
             coro = getattr(session, method)
-            resp = yield from loop.create_task(coro(local_server_info.url))
+            resp = await loop.create_task(coro(local_server_info.url))
             resp.raise_for_status()
-            yield from resp.text()
+            await resp.text()
 
     @background_task(name="test_create_task_yield_from")
-    @asyncio.coroutine
-    def fetch_multiple(loop):
+    async def fetch_multiple(loop):
         coros = [fetch_task(loop) for _ in range(2)]
         return asyncio.gather(*coros, return_exceptions=True)
 

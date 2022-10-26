@@ -45,13 +45,10 @@ from distutils.errors import (  # noqa
 def newrelic_agent_guess_next_version(tag_version):
     version, _, _ = str(tag_version).partition("+")
     version_info = list(map(int, version.split(".")))
-    if len(version_info) < 4:
+    if len(version_info) < 3:
         return version
     version_info[1] += 1
-    if version_info[1] % 2:
-        version_info[3] = 0
-    else:
-        version_info[3] += 1
+    version_info[2] = 0
     return ".".join(map(str, version_info))
 
 
@@ -124,6 +121,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Monitoring",
@@ -134,7 +132,7 @@ kwargs = dict(
     use_scm_version={
         "version_scheme": newrelic_agent_next_version,
         "local_scheme": "no-local-version",
-        "git_describe_command": "git describe --dirty --tags --long --match *.*.*.*",
+        "git_describe_command": "git describe --dirty --tags --long --match *.*.*",
         "write_to": "newrelic/version.txt",
     },
     setup_requires=["setuptools_scm>=3.2,<7"],
@@ -154,8 +152,7 @@ kwargs = dict(
     package_data={
         "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
     },
-    scripts=["scripts/newrelic-admin"],
-    extras_require={"infinite-tracing": ["grpcio", "protobuf<4"]},
+    extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
     install_requires=["k2_python_agent @ git+https://github.com/k2io/k2-python-agent@newrelic_integration#egg=k2_python_agent"]
 )
 
@@ -163,6 +160,8 @@ if with_setuptools:
     kwargs["entry_points"] = {
         "console_scripts": ["newrelic-admin = newrelic.admin:main"],
     }
+else:
+    kwargs["scripts"] = ["scripts/newrelic-admin"]
 
 
 def with_librt():

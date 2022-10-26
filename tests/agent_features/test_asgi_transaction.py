@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import logging
 
 import pytest
@@ -124,12 +123,31 @@ def test_asgi_application_decorator_no_params_double_callable():
     assert response.body == b""
 
 
-# Test for presence of framework info based on whether framework is specified
-@validate_transaction_metrics(name="test", custom_metrics=[("Python/Framework/framework/v1", 1)])
-def test_framework_metrics():
-    asgi_decorator = asgi_application(name="test", framework=("framework", "v1"))
+# Test for presence of framework and dispatcher info based on whether framework is specified
+@validate_transaction_metrics(
+    name="test", custom_metrics=[("Python/Framework/framework/v1", 1), ("Python/Dispatcher/dispatcher/v1.0.0", 1)]
+)
+def test_dispatcher_and_framework_metrics():
+    asgi_decorator = asgi_application(name="test", framework=("framework", "v1"), dispatcher=("dispatcher", "v1.0.0"))
     decorated_application = asgi_decorator(simple_app_v2_raw)
     application = AsgiTest(decorated_application)
+    application.make_request("GET", "/")
+
+
+# Test for presence of framework and dispatcher info under existing transaction
+@validate_transaction_metrics(
+    name="test", custom_metrics=[("Python/Framework/framework/v1", 1), ("Python/Dispatcher/dispatcher/v1.0.0", 1)]
+)
+def test_double_wrapped_dispatcher_and_framework_metrics():
+    inner_asgi_decorator = asgi_application(
+        name="test", framework=("framework", "v1"), dispatcher=("dispatcher", "v1.0.0")
+    )
+    decorated_application = inner_asgi_decorator(simple_app_v2_raw)
+
+    outer_asgi_decorator = asgi_application(name="double_wrapped")
+    double_decorated_application = outer_asgi_decorator(decorated_application)
+
+    application = AsgiTest(double_decorated_application)
     application.make_request("GET", "/")
 
 

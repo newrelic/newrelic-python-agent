@@ -39,7 +39,7 @@ def fetch_app_id(app_name, client, headers):
         return
 
     for application in response_json["applications"]:
-        if application["name"] == app_name:
+        if application["name"].lower() == app_name.lower():
             return application["id"]
 
 

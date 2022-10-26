@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import asyncio
+
 import inspect
 import itertools
 
@@ -163,9 +163,8 @@ def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
 
 @function_wrapper
 def _nr_aiohttp_wrap_middleware_(wrapped, instance, args, kwargs):
-    @asyncio.coroutine
-    def _inner():
-        result = yield from wrapped(*args, **kwargs)
+    async def _inner():
+        result = await wrapped(*args, **kwargs)
         return function_trace()(result)
 
     return _inner()
@@ -221,10 +220,9 @@ def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
 
     if is_coroutine_callable(wrapped):
 
-        @asyncio.coroutine
-        def new_coro():
+        async def new_coro():
             try:
-                result = yield from wrapped(*args, **kwargs)
+                result = await wrapped(*args, **kwargs)
                 return result
             finally:
                 instance.headers = tmp
@@ -267,10 +265,9 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
     method, url = _bind_request(*args, **kwargs)
     trace = ExternalTrace("aiohttp", str(url), method)
 
-    @asyncio.coroutine
-    def _coro():
+    async def _coro():
         try:
-            response = yield from wrapped(*args, **kwargs)
+            response = await wrapped(*args, **kwargs)
 
             try:
                 trace.process_response_headers(response.headers.items())
@@ -332,14 +329,10 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
 
     coro = wrapped(*args, **kwargs)
 
-    if hasattr(coro, "__await__"):
-        coro = coro.__await__()
-
-    @asyncio.coroutine
-    def _coro(*_args, **_kwargs):
+    async def _coro(*_args, **_kwargs):
         transaction = current_transaction()
         if transaction is None:
-            response = yield from coro
+            response = await coro
             return response
 
         # Patch in should_ignore to all notice_error calls
@@ -352,7 +345,7 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
         import aiohttp.web as _web
 
         try:
-            response = yield from coro
+            response = await coro
         except _web.HTTPException as e:
             _nr_process_response(e, transaction)
             raise

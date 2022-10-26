@@ -31,5 +31,8 @@ PYTHON_PYLINT_CONFIG_FILE: pyproject.toml
 PYTHON_ISORT_CONFIG_FILE: pyproject.toml
 PYTHON_BANDIT_CONFIG_FILE: pyproject.toml
 PYTHON_BANDIT_FILTER_REGEX_EXCLUDE: "tests"
+PYTHON_BANDIT_PRE_COMMANDS:
+  - command: "pip install bandit[toml]"
+    cwd: "workspace"
 
 PYTHON_PYLINT_ARGUMENTS: "--fail-under=0 --fail-on=E"

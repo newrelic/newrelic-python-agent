@@ -15,8 +15,7 @@
 from newrelic.api.application import application_instance as __application
 from newrelic.api.application import application_settings as __application_settings
 from newrelic.api.application import register_application as __register_application
-
-# from newrelic.api.log import NewRelicContextFormatter
+from newrelic.api.log import NewRelicContextFormatter  # noqa
 from newrelic.api.time_trace import (
     add_custom_span_attribute as __add_custom_span_attribute,
 )

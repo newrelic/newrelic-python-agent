@@ -48,7 +48,7 @@ if BOTOCORE_VERSION < (1, 7, 41):
     EXPECTED_BUCKET_URL = "https://%s/%s" % (S3_URL, TEST_BUCKET)
     EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/hello_world"
 elif BOTOCORE_VERSION < (1, 28):
-    S3_URL = "s3.amazonaws.com"
+    S3_URL = "s3.us-west-2.amazonaws.com"
     EXPECTED_BUCKET_URL = "https://%s/%s" % (S3_URL, TEST_BUCKET)
     EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/hello_world"
 else:

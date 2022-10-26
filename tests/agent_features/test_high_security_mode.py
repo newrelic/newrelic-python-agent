@@ -44,7 +44,7 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import (
-    add_custom_parameter,
+    add_custom_attribute,
     capture_request_params,
     current_transaction,
     record_custom_event,
@@ -402,7 +402,7 @@ _test_transaction_settings_hsm_enabled = {
 @validate_custom_parameters(required_params=[("key", "value")])
 @background_task()
 def test_other_transaction_custom_parameters_hsm_disabled():
-    add_custom_parameter("key", "value")
+    add_custom_attribute("key", "value")
 
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
@@ -410,14 +410,14 @@ def test_other_transaction_custom_parameters_hsm_disabled():
 @background_task()
 def test_other_transaction_multiple_custom_parameters_hsm_disabled():
     transaction = current_transaction()
-    transaction.add_custom_parameters([("key-1", "value-1"), ("key-2", "value-2")])
+    transaction.add_custom_attributes([("key-1", "value-1"), ("key-2", "value-2")])
 
 
 @override_application_settings(_test_transaction_settings_hsm_enabled)
 @validate_custom_parameters(forgone_params=[("key", "value")])
 @background_task()
 def test_other_transaction_custom_parameters_hsm_enabled():
-    add_custom_parameter("key", "value")
+    add_custom_attribute("key", "value")
 
 
 @override_application_settings(_test_transaction_settings_hsm_enabled)
@@ -425,7 +425,7 @@ def test_other_transaction_custom_parameters_hsm_enabled():
 @background_task()
 def test_other_transaction_multiple_custom_parameters_hsm_enabled():
     transaction = current_transaction()
-    transaction.add_custom_parameters([("key-1", "value-1"), ("key-2", "value-2")])
+    transaction.add_custom_attributes([("key-1", "value-1"), ("key-2", "value-2")])
 
 
 class TestException(Exception):
@@ -440,7 +440,7 @@ _test_exception_name = "%s:%s" % (__name__, TestException.__name__)
 @validate_custom_parameters(required_params=[("key-1", "value-1")])
 @background_task()
 def test_other_transaction_error_parameters_hsm_disabled():
-    add_custom_parameter("key-1", "value-1")
+    add_custom_attribute("key-1", "value-1")
     try:
         raise TestException("test message")
     except Exception:
@@ -454,7 +454,7 @@ def test_other_transaction_error_parameters_hsm_disabled():
 @validate_custom_parameters(forgone_params=[("key-1", "value-1")])
 @background_task()
 def test_other_transaction_error_parameters_hsm_enabled():
-    add_custom_parameter("key-1", "value-1")
+    add_custom_attribute("key-1", "value-1")
     try:
         raise TestException("test message")
     except Exception:

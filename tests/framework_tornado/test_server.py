@@ -212,8 +212,7 @@ def test_nr_disabled(app):
     ),
 )
 def test_web_socket(uri, name, app):
-    import asyncio
-
+    # import asyncio
     from tornado.websocket import websocket_connect
 
     namespace, func_name = name.split(":")
@@ -226,9 +225,8 @@ def test_web_socket(uri, name, app):
     def _test():
         url = app.get_url(uri).replace("http", "ws")
 
-        @asyncio.coroutine
-        def _connect():
-            conn = yield from websocket_connect(url)
+        async def _connect():
+            conn = await websocket_connect(url)
             return conn
 
         @validate_transaction_metrics(
@@ -239,10 +237,9 @@ def test_web_socket(uri, name, app):
 
         @function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
         def call(call):
-            @asyncio.coroutine
-            def _call():
-                yield from conn.write_message("test")
-                resp = yield from conn.read_message()
+            async def _call():
+                await conn.write_message("test")
+                resp = await conn.read_message()
                 assert resp == "hello test"
 
             app.io_loop.run_sync(_call)

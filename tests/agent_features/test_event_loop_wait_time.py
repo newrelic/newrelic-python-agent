@@ -34,36 +34,33 @@ from newrelic.core.trace_cache import trace_cache
 
 
 @background_task(name="block")
-@asyncio.coroutine
-def block_loop(ready, done, blocking_transaction_active, times=1):
+async def block_loop(ready, done, blocking_transaction_active, times=1):
     for _ in range(times):
-        yield from ready.wait()
+        await ready.wait()
         ready.clear()
         time.sleep(0.1)
         done.set()
 
     if blocking_transaction_active:
-        yield from ready.wait()
+        await ready.wait()
 
 
 @function_trace(name="waiter")
-@asyncio.coroutine
-def waiter(ready, done, times=1):
+async def waiter(ready, done, times=1):
     for _ in range(times):
         ready.set()
-        yield from done.wait()
+        await done.wait()
         done.clear()
 
 
 @background_task(name="wait")
-@asyncio.coroutine
-def wait_for_loop(ready, done, times=1):
+async def wait_for_loop(ready, done, times=1):
     transaction = current_transaction()
     transaction._sampled = True
 
     # Run the waiter on another task so that the sentinel for wait appears
     # multiple times in the trace cache
-    yield from asyncio.ensure_future(waiter(ready, done, times))
+    await asyncio.ensure_future(waiter(ready, done, times))
 
     # Set the ready to terminate the block_loop if it's running
     ready.set()

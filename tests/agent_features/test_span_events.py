@@ -556,9 +556,9 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
 def test_span_user_attribute_overrides_transaction_attribute():
     transaction = current_transaction()
 
-    transaction.add_custom_parameter("foo", "a")
+    transaction.add_custom_attribute("foo", "a")
     add_custom_span_attribute("foo", "b")
-    transaction.add_custom_parameter("foo", "c")
+    transaction.add_custom_attribute("foo", "c")
 
 
 @override_application_settings({"attributes.include": "*"})
@@ -603,7 +603,7 @@ def test_span_custom_attribute_limit():
         transaction = current_transaction()
 
         for i in range(128):
-            transaction.add_custom_parameter("txn_attr%i" % i, "txnValue")
+            transaction.add_custom_attribute("txn_attr%i" % i, "txnValue")
             if i < 64:
                 add_custom_span_attribute("span_attr%i" % i, "spanValue")
 

@@ -14,36 +14,36 @@
 
 import json
 import os
-import pytest
 import sys
 import tempfile
 
+import pytest
 
 # NOTE: the test_utilization_settings_from_env_vars test mocks several of the
 # methods in newrelic.core.data_collector and does not put them back!
 from testing_support.mock_http_client import create_client_cls
-from newrelic.core.agent_protocol import AgentProtocol
-from newrelic.common.system_info import BootIdUtilization
-from newrelic.common.utilization import (CommonUtilization)
-from newrelic.common.object_wrapper import (function_wrapper)
+
 import newrelic.core.config
+from newrelic.common.object_wrapper import function_wrapper
+from newrelic.common.system_info import BootIdUtilization
+from newrelic.common.utilization import CommonUtilization
+from newrelic.core.agent_protocol import AgentProtocol
 
 try:
     # python 2.x
     reload
 except NameError:
     # python 3.x
-    from imp import reload
+    from importlib import reload
 
 INITIAL_ENV = os.environ
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.normpath(os.path.join(
-        CURRENT_DIR, 'fixtures', 'utilization', 'utilization_json.json'))
+FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization", "utilization_json.json"))
 
 
 def _load_tests():
-    with open(FIXTURE, 'r') as fh:
+    with open(FIXTURE, "r") as fh:
         js = fh.read()
     return json.loads(js)
 
@@ -51,24 +51,28 @@ def _load_tests():
 def _mock_logical_processor_count(cnt):
     def logical_processor_count():
         return cnt
+
     return logical_processor_count
 
 
 def _mock_total_physical_memory(mem):
     def total_physical_memory():
         return mem
+
     return total_physical_memory
 
 
 def _mock_gethostname(name):
     def gethostname(*args, **kwargs):
         return name
+
     return gethostname
 
 
 def _mock_getips(ip_addresses):
     def getips(*args, **kwargs):
         return ip_addresses
+
     return getips
 
 
@@ -100,26 +104,32 @@ class UpdatedSettings(object):
 
 
 def _get_response_body_for_test(test):
-    if test.get('input_aws_id'):
-        return json.dumps({
-            'instanceId': test.get('input_aws_id'),
-            'instanceType': test.get('input_aws_type'),
-            'availabilityZone': test.get('input_aws_zone'),
-        }).encode('utf8')
-    if test.get('input_azure_id'):
-        return json.dumps({
-            'location': test.get('input_azure_location'),
-            'name': test.get('input_azure_name'),
-            'vmId': test.get('input_azure_id'),
-            'vmSize': test.get('input_azure_size'),
-        }).encode('utf8')
-    if test.get('input_gcp_id'):
-        return json.dumps({
-            'id': test.get('input_gcp_id'),
-            'machineType': test.get('input_gcp_type'),
-            'name': test.get('input_gcp_name'),
-            'zone': test.get('input_gcp_zone'),
-        }).encode('utf8')
+    if test.get("input_aws_id"):
+        return json.dumps(
+            {
+                "instanceId": test.get("input_aws_id"),
+                "instanceType": test.get("input_aws_type"),
+                "availabilityZone": test.get("input_aws_zone"),
+            }
+        ).encode("utf8")
+    if test.get("input_azure_id"):
+        return json.dumps(
+            {
+                "location": test.get("input_azure_location"),
+                "name": test.get("input_azure_name"),
+                "vmId": test.get("input_azure_id"),
+                "vmSize": test.get("input_azure_size"),
+            }
+        ).encode("utf8")
+    if test.get("input_gcp_id"):
+        return json.dumps(
+            {
+                "id": test.get("input_gcp_id"),
+                "machineType": test.get("input_gcp_type"),
+                "name": test.get("input_gcp_name"),
+                "zone": test.get("input_gcp_zone"),
+            }
+        ).encode("utf8")
 
 
 def patch_boot_id_file(test):
@@ -128,16 +138,16 @@ def patch_boot_id_file(test):
         boot_id_file = None
         initial_sys_platform = sys.platform
 
-        if test.get('input_boot_id'):
+        if test.get("input_boot_id"):
             boot_id_file = tempfile.NamedTemporaryFile()
-            boot_id_file.write(test.get('input_boot_id'))
+            boot_id_file.write(test.get("input_boot_id"))
             boot_id_file.seek(0)
             BootIdUtilization.METADATA_URL = boot_id_file.name
-            sys.platform = 'linux-mock-testing'  # ensure boot_id is gathered
+            sys.platform = "linux-mock-testing"  # ensure boot_id is gathered
         else:
             # do not gather boot_id at all, this will ensure there is nothing
             # extra in the gathered utilizations data
-            sys.platform = 'not-linux'
+            sys.platform = "not-linux"
 
         try:
             return wrapped(*args, **kwargs)
@@ -153,38 +163,36 @@ def patch_system_info(test, monkeypatch):
     def _patch_system_info(wrapped, instance, args, kwargs):
         sys_info = newrelic.common.system_info
 
-        monkeypatch.setattr(sys_info, "logical_processor_count",
-                            _mock_logical_processor_count(
-                                test.get('input_logical_processors')))
-        monkeypatch.setattr(sys_info, "total_physical_memory",
-                            _mock_total_physical_memory(
-                                test.get('input_total_ram_mib')))
-        monkeypatch.setattr(sys_info, "gethostname",
-                            _mock_gethostname(
-                                test.get('input_hostname')))
-        monkeypatch.setattr(sys_info, "getips",
-                            _mock_getips(
-                                test.get('input_ip_address')))
+        monkeypatch.setattr(
+            sys_info, "logical_processor_count", _mock_logical_processor_count(test.get("input_logical_processors"))
+        )
+        monkeypatch.setattr(
+            sys_info, "total_physical_memory", _mock_total_physical_memory(test.get("input_total_ram_mib"))
+        )
+        monkeypatch.setattr(sys_info, "gethostname", _mock_gethostname(test.get("input_hostname")))
+        monkeypatch.setattr(sys_info, "getips", _mock_getips(test.get("input_ip_address")))
 
         return wrapped(*args, **kwargs)
 
     return _patch_system_info
 
 
-@pytest.mark.parametrize('test', _load_tests())
+@pytest.mark.parametrize("test", _load_tests())
 def test_utilization_settings(test, monkeypatch):
 
-    env = test.get('input_environment_variables', {})
+    env = test.get("input_environment_variables", {})
 
-    if test.get('input_pcf_guid'):
-        env.update({
-            'CF_INSTANCE_GUID': test.get('input_pcf_guid'),
-            'CF_INSTANCE_IP': test.get('input_pcf_ip'),
-            'MEMORY_LIMIT': test.get('input_pcf_mem_limit'),
-        })
+    if test.get("input_pcf_guid"):
+        env.update(
+            {
+                "CF_INSTANCE_GUID": test.get("input_pcf_guid"),
+                "CF_INSTANCE_IP": test.get("input_pcf_ip"),
+                "MEMORY_LIMIT": test.get("input_pcf_mem_limit"),
+            }
+        )
 
     for key, val in env.items():
-        monkeypatch.setenv(key, val)
+        monkeypatch.setenv(key, str(val))
 
     @patch_boot_id_file(test)
     @patch_system_info(test, monkeypatch)
@@ -199,10 +207,9 @@ def test_utilization_settings(test, monkeypatch):
             # gathered utilization data
             monkeypatch.setattr(settings.utilization, "detect_docker", False)
 
-            local_config, = AgentProtocol._connect_payload(
-                    '', [], [], settings)
-            util_output = local_config['utilization']
-            expected_output = test['expected_output_json']
+            (local_config,) = AgentProtocol._connect_payload("", [], [], settings)
+            util_output = local_config["utilization"]
+            expected_output = test["expected_output_json"]
 
             # The agent does not record full_hostname and it's not required
             expected_output.pop("full_hostname")

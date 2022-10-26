@@ -254,7 +254,7 @@ class ASGIWebTransaction(WebTransaction):
         return await self._send(event)
 
 
-def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None):
+def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None, dispatcher=None):
     def nr_asgi_wrapper(wrapped, instance, args, kwargs):
         double_callable = asgiref_compatibility.is_double_callable(wrapped)
         if double_callable:
@@ -271,9 +271,7 @@ def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
             # Check to see if any transaction is present, even an inactive
             # one which has been marked to be ignored or which has been
             # stopped already.
-
             transaction = current_transaction(active_only=False)
-
             if transaction:
                 # If there is any active transaction we will return without
                 # applying a new ASGI application wrapper context. In the
@@ -289,6 +287,9 @@ def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
 
                 if framework:
                     transaction.add_framework_info(name=framework[0], version=framework[1])
+
+                if dispatcher:
+                    transaction.add_dispatcher_info(name=dispatcher[0], version=dispatcher[1])
 
                 # Also override the web transaction name to be the name of
                 # the wrapped callable if not explicitly named, and we want
@@ -322,6 +323,9 @@ def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
                 # reporting as supportability metrics.
                 if framework:
                     transaction.add_framework_info(name=framework[0], version=framework[1])
+
+                if dispatcher:
+                    transaction.add_dispatcher_info(name=dispatcher[0], version=dispatcher[1])
 
                 # Override the initial web transaction name to be the supplied
                 # name, or the name of the wrapped callable if wanting to use
@@ -367,20 +371,23 @@ def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
     return FunctionWrapper(wrapped, nr_asgi_wrapper)
 
 
-def asgi_application(application=None, name=None, group=None, framework=None):
+def asgi_application(application=None, name=None, group=None, framework=None, dispatcher=None):
     return functools.partial(
         ASGIApplicationWrapper,
         application=application,
         name=name,
         group=group,
         framework=framework,
+        dispatcher=dispatcher,
     )
 
 
-def wrap_asgi_application(module, object_path, application=None, name=None, group=None, framework=None):
+def wrap_asgi_application(
+    module, object_path, application=None, name=None, group=None, framework=None, dispatcher=None
+):
     wrap_object(
         module,
         object_path,
         ASGIApplicationWrapper,
-        (application, name, group, framework),
+        (application, name, group, framework, dispatcher),
     )

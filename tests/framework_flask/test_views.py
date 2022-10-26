@@ -16,9 +16,15 @@ from conftest import (  # pylint: disable=E0611
     async_handler_support,
     skip_if_not_async_handler_support,
 )
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 scoped_metrics = [
     ("Function/flask.app:Flask.wsgi_app", 1),
@@ -49,6 +55,7 @@ def target_application():
     return _test_application
 
 
+@validate_code_level_metrics("_test_views.TestView", "dispatch_request")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics("_test_views:test_view", scoped_metrics=scoped_metrics)
 def test_class_based_view():
@@ -58,6 +65,7 @@ def test_class_based_view():
 
 
 @skip_if_not_async_handler_support
+@validate_code_level_metrics("_test_views_async.TestAsyncView", "dispatch_request")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics("_test_views_async:test_async_view", scoped_metrics=scoped_metrics)
 def test_class_based_async_view():
@@ -66,6 +74,7 @@ def test_class_based_async_view():
     response.mustcontain("ASYNC VIEW RESPONSE")
 
 
+@validate_code_level_metrics("_test_views.TestMethodView", "get")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics("_test_views:test_methodview", scoped_metrics=scoped_metrics)
 def test_get_method_view():
@@ -74,6 +83,7 @@ def test_get_method_view():
     response.mustcontain("METHODVIEW GET RESPONSE")
 
 
+@validate_code_level_metrics("_test_views.TestMethodView", "post")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics("_test_views:test_methodview", scoped_metrics=scoped_metrics)
 def test_post_method_view():
@@ -83,6 +93,7 @@ def test_post_method_view():
 
 
 @skip_if_not_async_handler_support
+@validate_code_level_metrics("_test_views_async.TestAsyncMethodView", "get")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics("_test_views_async:test_async_methodview", scoped_metrics=scoped_metrics)
 def test_get_method_async_view():

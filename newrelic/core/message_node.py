@@ -51,6 +51,12 @@ class MessageNode(_MessageNode, GenericNodeMixin):
         yield TimeMetric(name=name, scope=root.path,
                 duration=self.duration, exclusive=self.exclusive)
 
+        # Now for the children, if the trace is not terminal.
+
+        for child in self.children:
+            for metric in child.time_metrics(stats, root, self):
+                yield metric
+
     def trace_node(self, stats, root, connections):
         name = root.string_table.cache(self.name)
 

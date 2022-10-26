@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import aioredis
-import asyncio
 import pytest
 
+from testing_support.db_settings import redis_settings
+
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (  # noqa: F401
     code_coverage_fixture,
     collector_agent_registration_fixture,
@@ -23,6 +25,10 @@ from testing_support.fixtures import (  # noqa: F401
 )
 
 AIOREDIS_VERSION = tuple(int(x) for x in aioredis.__version__.split(".")[:2])
+SKIPIF_AIOREDIS_V1 = pytest.mark.skipif(AIOREDIS_VERSION < (2,), reason="Unsupported aioredis version.")
+SKIPIF_AIOREDIS_V2 = pytest.mark.skipif(AIOREDIS_VERSION >= (2,), reason="Unsupported aioredis version.")
+DB_SETTINGS = redis_settings()[0]
+
 
 _coverage_source = [
     "newrelic.hooks.datastore_aioredis",
@@ -45,10 +51,19 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-event_loop = asyncio.get_event_loop()
-asyncio.set_event_loop(event_loop)
-
-
-@pytest.fixture()
-def loop():
-    yield event_loop
+@pytest.fixture(params=("Redis", "StrictRedis"))
+def client(request, loop):
+    if AIOREDIS_VERSION >= (2, 0):
+        if request.param == "Redis":
+            return aioredis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+        elif request.param == "StrictRedis":
+            return aioredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+        else:
+            raise NotImplementedError()
+    else:
+        if request.param == "Redis":
+            return loop.run_until_complete(aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], DB_SETTINGS["port"]), db=0))
+        elif request.param == "StrictRedis":
+            pytest.skip("StrictRedis not implemented.")
+        else:
+            raise NotImplementedError()

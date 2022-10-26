@@ -14,6 +14,7 @@
 
 import asyncio
 import functools
+import sys
 import time
 
 import pytest
@@ -68,6 +69,7 @@ def test_awaitable_timing(event_loop, trace, metric):
     assert full_metrics[metric_key].total_call_time >= 0.1
 
 
+@pytest.mark.skipif(sys.version_info >= (3, 11), reason="Asyncio decorator was removed in Python 3.11+.")
 @pytest.mark.parametrize(
     "trace,metric",
     [

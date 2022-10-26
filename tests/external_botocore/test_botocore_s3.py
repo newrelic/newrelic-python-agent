@@ -40,13 +40,12 @@ AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION = "us-east-1"
 
+TEST_BUCKET = "python-agent-test-%s" % uuid.uuid4()
 if BOTOCORE_VERSION >= (1, 28):
-    TEST_BUCKET = "python-agent-test-%s" % uuid.uuid4()
     S3_URL = "%s.s3.amazonaws.com" % TEST_BUCKET
     EXPECTED_BUCKET_URL = "https://%s/" % S3_URL
     EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "hello_world"
 else:
-    TEST_BUCKET = "python-agent-test-%s" % uuid.uuid4()
     S3_URL = "s3.amazonaws.com"
     EXPECTED_BUCKET_URL = "https://%s/%s" % (S3_URL, TEST_BUCKET)
     EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/hello_world"

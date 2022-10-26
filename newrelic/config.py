@@ -338,6 +338,7 @@ def _process_configuration(section):
     _process_setting(section, "security.detection.disable_rci", "getboolean", None)
     _process_setting(section, "security.detection.disable_rxss", "getboolean", None)
     _process_setting(section, "security.detection.disable_deserialization", "getboolean", None)
+    _process_setting(section, "security.policy.enforce", "getboolean", None)
     _process_setting(section, "security.policy.vulnerabilityScan.enabled", "getboolean", None)
     _process_setting(section, "security.policy.vulnerabilityScan.iastScan.enabled", "getboolean", None)
     _process_setting(section, "security.policy.vulnerabilityScan.iastScan.probing.interval", "getint", None)

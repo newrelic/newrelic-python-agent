@@ -898,6 +898,10 @@ _settings.security.detection.disable_deserialization = _environ_as_bool(
     default=False
 )
 
+_settings.security.policy.enforce = _environ_as_bool(
+    "NEW_RELIC_SECURITY_POLICY_ENFORCE",
+    default=False
+)
 _settings.security.policy.vulnerabilityScan.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_ENABLED",
     default=None

@@ -65,9 +65,6 @@ from newrelic.core.attribute_filter import (
 )
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
 from newrelic.core.database_utils import SQLConnections
-
-# from newrelic.core.internal_metrics import InternalTraceContext
-# from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import RetryDataForRequest
 from newrelic.packages import six
 

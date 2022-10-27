@@ -16,7 +16,6 @@ import os
 
 import django
 import pytest
-from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import (
     override_application_settings,
     override_generic_settings,
@@ -40,6 +39,11 @@ DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 if DJANGO_VERSION[0] < 3:
     pytest.skip("support for asgi added in django 3", allow_module_level=True)
 
+# It is important to import this test AFTER the pytest conditional
+# because ASGI is not supported in Django <3 or Python <3.  This
+# test cannot be imported before a check has been performed to make
+# sure this is not the case.
+from testing_support.asgi_testing import AsgiTest  # noqa
 
 scoped_metrics = [
     ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1),

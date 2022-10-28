@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.message_trace import message_trace
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.message_trace import message_trace
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def extract_sqs(*args, **kwargs):
-    queue_value = kwargs.get('QueueUrl', 'Unknown')
-    return queue_value.rsplit('/', 1)[-1]
+    queue_value = kwargs.get("QueueUrl", "Unknown")
+    return queue_value.rsplit("/", 1)[-1]
 
 
 def extract(argument_names, default=None):
@@ -41,42 +41,27 @@ def extract(argument_names, default=None):
 
 
 CUSTOM_TRACE_POINTS = {
-    ('sns', 'publish'): message_trace(
-            'SNS', 'Produce', 'Topic',
-            extract(('TopicArn', 'TargetArn'), 'PhoneNumber')),
-    ('dynamodb', 'put_item'): datastore_trace(
-            'DynamoDB', extract('TableName'), 'put_item'),
-    ('dynamodb', 'get_item'): datastore_trace(
-            'DynamoDB', extract('TableName'), 'get_item'),
-    ('dynamodb', 'update_item'): datastore_trace(
-            'DynamoDB', extract('TableName'), 'update_item'),
-    ('dynamodb', 'delete_item'): datastore_trace(
-            'DynamoDB', extract('TableName'), 'delete_item'),
-    ('dynamodb', 'create_table'): datastore_trace(
-            'DynamoDB', extract('TableName'), 'create_table'),
-    ('dynamodb', 'delete_table'): datastore_trace(
-            'DynamoDB', extract('TableName'), 'delete_table'),
-    ('dynamodb', 'query'): datastore_trace(
-            'DynamoDB', extract('TableName'), 'query'),
-    ('dynamodb', 'scan'): datastore_trace(
-            'DynamoDB', extract('TableName'), 'scan'),
-    ('sqs', 'send_message'): message_trace(
-            'SQS', 'Produce', 'Queue', extract_sqs),
-    ('sqs', 'send_message_batch'): message_trace(
-            'SQS', 'Produce', 'Queue', extract_sqs),
-    ('sqs', 'receive_message'): message_trace(
-            'SQS', 'Consume', 'Queue', extract_sqs),
+    ("sns", "publish"): message_trace("SNS", "Produce", "Topic", extract(("TopicArn", "TargetArn"), "PhoneNumber")),
+    ("dynamodb", "put_item"): datastore_trace("DynamoDB", extract("TableName"), "put_item"),
+    ("dynamodb", "get_item"): datastore_trace("DynamoDB", extract("TableName"), "get_item"),
+    ("dynamodb", "update_item"): datastore_trace("DynamoDB", extract("TableName"), "update_item"),
+    ("dynamodb", "delete_item"): datastore_trace("DynamoDB", extract("TableName"), "delete_item"),
+    ("dynamodb", "create_table"): datastore_trace("DynamoDB", extract("TableName"), "create_table"),
+    ("dynamodb", "delete_table"): datastore_trace("DynamoDB", extract("TableName"), "delete_table"),
+    ("dynamodb", "query"): datastore_trace("DynamoDB", extract("TableName"), "query"),
+    ("dynamodb", "scan"): datastore_trace("DynamoDB", extract("TableName"), "scan"),
+    ("sqs", "send_message"): message_trace("SQS", "Produce", "Queue", extract_sqs),
+    ("sqs", "send_message_batch"): message_trace("SQS", "Produce", "Queue", extract_sqs),
+    ("sqs", "receive_message"): message_trace("SQS", "Consume", "Queue", extract_sqs),
 }
 
 
-def bind__create_api_method(py_operation_name, operation_name, service_model,
-        *args, **kwargs):
+def bind__create_api_method(py_operation_name, operation_name, service_model, *args, **kwargs):
     return (py_operation_name, service_model)
 
 
 def _nr_clientcreator__create_api_method_(wrapped, instance, args, kwargs):
-    (py_operation_name, service_model) = \
-            bind__create_api_method(*args, **kwargs)
+    (py_operation_name, service_model) = bind__create_api_method(*args, **kwargs)
 
     service_name = service_model.service_name.lower()
     tracer = CUSTOM_TRACE_POINTS.get((service_name, py_operation_name))
@@ -95,30 +80,28 @@ def _bind_make_request_params(operation_model, request_dict, *args, **kwargs):
 
 def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     operation_model, request_dict = _bind_make_request_params(*args, **kwargs)
-    url = request_dict.get('url', '')
-    method = request_dict.get('method', None)
+    url = request_dict.get("url", "")
+    method = request_dict.get("method", None)
 
-    with ExternalTrace(library='botocore', url=url, method=method, source=wrapped) as trace:
+    with ExternalTrace(library="botocore", url=url, method=method, source=wrapped) as trace:
 
         try:
-            trace._add_agent_attribute('aws.operation', operation_model.name)
+            trace._add_agent_attribute("aws.operation", operation_model.name)
         except:
             pass
 
         result = wrapped(*args, **kwargs)
         try:
-            request_id = result[1]['ResponseMetadata']['RequestId']
-            trace._add_agent_attribute('aws.requestId', request_id)
+            request_id = result[1]["ResponseMetadata"]["RequestId"]
+            trace._add_agent_attribute("aws.requestId", request_id)
         except:
             pass
         return result
 
 
 def instrument_botocore_endpoint(module):
-    wrap_function_wrapper(module, 'Endpoint.make_request',
-            _nr_endpoint_make_request_)
+    wrap_function_wrapper(module, "Endpoint.make_request", _nr_endpoint_make_request_)
 
 
 def instrument_botocore_client(module):
-    wrap_function_wrapper(module, 'ClientCreator._create_api_method',
-            _nr_clientcreator__create_api_method_)
+    wrap_function_wrapper(module, "ClientCreator._create_api_method", _nr_clientcreator__create_api_method_)

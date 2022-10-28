@@ -43,9 +43,7 @@ def _dnsname_match(dn, hostname, max_wildcards=1):
         # than one wildcard per fragment.  A survey of established
         # policy among SSL implementations showed it to be a
         # reasonable choice.
-        raise CertificateError(
-            "too many wildcards in certificate DNS name: " + repr(dn)
-        )
+        raise CertificateError("too many wildcards in certificate DNS name: " + repr(dn))
 
     # speed up common case w/o wildcards
     if not wildcards:
@@ -77,7 +75,7 @@ def _dnsname_match(dn, hostname, max_wildcards=1):
 
 
 def _to_unicode(obj):
-    if isinstance(obj, str) and sys.version_info < (3,):
+    if isinstance(obj, str) and sys.version_info < 3:
         obj = unicode(obj, encoding="ascii", errors="strict")
     return obj
 
@@ -148,13 +146,8 @@ def match_hostname(cert, hostname):
                         return
                     dnsnames.append(value)
     if len(dnsnames) > 1:
-        raise CertificateError(
-            "hostname %r "
-            "doesn't match either of %s" % (hostname, ", ".join(map(repr, dnsnames)))
-        )
+        raise CertificateError("hostname %r " "doesn't match either of %s" % (hostname, ", ".join(map(repr, dnsnames))))
     elif len(dnsnames) == 1:
         raise CertificateError("hostname %r doesn't match %r" % (hostname, dnsnames[0]))
     else:
-        raise CertificateError(
-            "no appropriate commonName or subjectAltName fields were found"
-        )
+        raise CertificateError("no appropriate commonName or subjectAltName fields were found")

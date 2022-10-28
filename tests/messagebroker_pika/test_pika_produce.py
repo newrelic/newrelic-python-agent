@@ -22,7 +22,9 @@ from testing_support.fixtures import (
 from testing_support.validators.validate_messagebroker_headers import (
     validate_messagebroker_headers,
 )
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
@@ -46,7 +48,7 @@ DB_SETTINGS = rabbitmq_settings()[0]
 QUEUE = "test-pika-queue"
 CORRELATION_ID = "testingpika"
 REPLY_TO = "testing"
-HEADERS = {u"MYHEADER": u"pikatest"}
+HEADERS = {"MYHEADER": "pikatest"}
 
 _message_broker_tt_included_params = {
     "routing_key": QUEUE,

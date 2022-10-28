@@ -17,9 +17,7 @@ from newrelic.core.database_utils import SQLConnections
 
 
 def validate_transaction_slow_sql_count(num_slow_sql):
-    @transient_function_wrapper(
-        "newrelic.core.stats_engine", "StatsEngine.record_transaction"
-    )
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_transaction_slow_sql_count(wrapped, instance, args, kwargs):
         result = wrapped(*args, **kwargs)
         connections = SQLConnections()

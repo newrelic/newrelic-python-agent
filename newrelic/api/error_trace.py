@@ -38,10 +38,7 @@ class ErrorTrace(object):
 
         if ignore_errors:
             warnings.warn(
-                (
-                    "The ignore_errors argument is deprecated. Please use the "
-                    "new ignore argument instead."
-                ),
+                ("The ignore_errors argument is deprecated. Please use the " "new ignore argument instead."),
                 DeprecationWarning,
             )
 
@@ -63,9 +60,7 @@ class ErrorTrace(object):
         )
 
 
-def ErrorTraceWrapper(
-    wrapped, ignore_errors=[], ignore=None, expected=None, status_code=None
-):
+def ErrorTraceWrapper(wrapped, ignore_errors=[], ignore=None, expected=None, status_code=None):
     def wrapper(wrapped, instance, args, kwargs):
         parent = current_trace()
 
@@ -88,9 +83,7 @@ def error_trace(ignore_errors=[], ignore=None, expected=None, status_code=None):
     )
 
 
-def wrap_error_trace(
-    module, object_path, ignore_errors=[], ignore=None, expected=None, status_code=None
-):
+def wrap_error_trace(module, object_path, ignore_errors=[], ignore=None, expected=None, status_code=None):
     wrap_object(
         module,
         object_path,

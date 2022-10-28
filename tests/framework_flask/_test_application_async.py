@@ -14,13 +14,14 @@
 
 import webtest
 from _test_application import application
-
 from conftest import async_handler_support
 
 # Async handlers only supported in Flask >2.0.0
 if async_handler_support:
-    @application.route('/async')
+
+    @application.route("/async")
     async def async_page():
-        return 'ASYNC RESPONSE'
+        return "ASYNC RESPONSE"
+
 
 _test_application = webtest.TestApp(application)

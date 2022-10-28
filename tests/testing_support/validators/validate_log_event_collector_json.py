@@ -15,14 +15,15 @@
 import json
 
 from newrelic.common.encoding_utils import json_encode
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
+from newrelic.common.object_wrapper import (
+    transient_function_wrapper,  # , function_wrapper
+)
+
 
 def validate_log_event_collector_json(num_logs=1):
     """Validate the format, types and number of logs of the data we
     send to the collector for harvest.
     """
-
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_log_event_collector_json(wrapped, instance, args, kwargs):

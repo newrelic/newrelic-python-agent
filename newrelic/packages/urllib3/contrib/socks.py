@@ -108,8 +108,7 @@ class SOCKSConnection(HTTPConnection):
         except SocketTimeout:
             raise ConnectTimeoutError(
                 self,
-                "Connection to %s timed out. (connect timeout=%s)"
-                % (self.host, self.timeout),
+                "Connection to %s timed out. (connect timeout=%s)" % (self.host, self.timeout),
             )
 
         except socks.ProxyError as e:
@@ -120,22 +119,15 @@ class SOCKSConnection(HTTPConnection):
                 if isinstance(error, SocketTimeout):
                     raise ConnectTimeoutError(
                         self,
-                        "Connection to %s timed out. (connect timeout=%s)"
-                        % (self.host, self.timeout),
+                        "Connection to %s timed out. (connect timeout=%s)" % (self.host, self.timeout),
                     )
                 else:
-                    raise NewConnectionError(
-                        self, "Failed to establish a new connection: %s" % error
-                    )
+                    raise NewConnectionError(self, "Failed to establish a new connection: %s" % error)
             else:
-                raise NewConnectionError(
-                    self, "Failed to establish a new connection: %s" % e
-                )
+                raise NewConnectionError(self, "Failed to establish a new connection: %s" % e)
 
         except SocketError as e:  # Defensive: PySocks should catch all these.
-            raise NewConnectionError(
-                self, "Failed to establish a new connection: %s" % e
-            )
+            raise NewConnectionError(self, "Failed to establish a new connection: %s" % e)
 
         return conn
 
@@ -167,15 +159,7 @@ class SOCKSProxyManager(PoolManager):
         "https": SOCKSHTTPSConnectionPool,
     }
 
-    def __init__(
-        self,
-        proxy_url,
-        username=None,
-        password=None,
-        num_pools=10,
-        headers=None,
-        **connection_pool_kw
-    ):
+    def __init__(self, proxy_url, username=None, password=None, num_pools=10, headers=None, **connection_pool_kw):
         parsed = parse_url(proxy_url)
 
         if username is None and password is None and parsed.auth is not None:
@@ -209,8 +193,6 @@ class SOCKSProxyManager(PoolManager):
         }
         connection_pool_kw["_socks_options"] = socks_options
 
-        super(SOCKSProxyManager, self).__init__(
-            num_pools, headers, **connection_pool_kw
-        )
+        super(SOCKSProxyManager, self).__init__(num_pools, headers, **connection_pool_kw)
 
         self.pool_classes_by_scheme = SOCKSProxyManager.pool_classes_by_scheme

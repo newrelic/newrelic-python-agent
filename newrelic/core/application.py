@@ -538,12 +538,29 @@ class Application(object):
             internal_metric("Supportability/Python/Application/Registration/Attempts", connect_attempts)
 
             # Logging feature toggle supportability metrics
-            application_logging_metrics = configuration.application_logging.enabled and configuration.application_logging.metrics.enabled
-            application_logging_forwarding = configuration.application_logging.enabled and configuration.application_logging.forwarding.enabled
-            application_logging_local_decorating = configuration.application_logging.enabled and configuration.application_logging.local_decorating.enabled
-            internal_metric("Supportability/Logging/Forwarding/Python/%s" % ("enabled" if application_logging_forwarding else "disabled"), 1)
-            internal_metric("Supportability/Logging/LocalDecorating/Python/%s" % ("enabled" if application_logging_local_decorating else "disabled"), 1)
-            internal_metric("Supportability/Logging/Metrics/Python/%s" % ("enabled" if application_logging_metrics else "disabled"), 1)
+            application_logging_metrics = (
+                configuration.application_logging.enabled and configuration.application_logging.metrics.enabled
+            )
+            application_logging_forwarding = (
+                configuration.application_logging.enabled and configuration.application_logging.forwarding.enabled
+            )
+            application_logging_local_decorating = (
+                configuration.application_logging.enabled and configuration.application_logging.local_decorating.enabled
+            )
+            internal_metric(
+                "Supportability/Logging/Forwarding/Python/%s"
+                % ("enabled" if application_logging_forwarding else "disabled"),
+                1,
+            )
+            internal_metric(
+                "Supportability/Logging/LocalDecorating/Python/%s"
+                % ("enabled" if application_logging_local_decorating else "disabled"),
+                1,
+            )
+            internal_metric(
+                "Supportability/Logging/Metrics/Python/%s" % ("enabled" if application_logging_metrics else "disabled"),
+                1,
+            )
 
         self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
@@ -1309,7 +1326,13 @@ class Application(object):
 
                     # Send log events
 
-                    if configuration and configuration.application_logging and configuration.application_logging.enabled and configuration.application_logging.forwarding and configuration.application_logging.forwarding.enabled:
+                    if (
+                        configuration
+                        and configuration.application_logging
+                        and configuration.application_logging.enabled
+                        and configuration.application_logging.forwarding
+                        and configuration.application_logging.forwarding.enabled
+                    ):
 
                         logs = stats.log_events
 

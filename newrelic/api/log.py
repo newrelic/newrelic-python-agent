@@ -126,8 +126,8 @@ class NewRelicLogHandler(logging.Handler):
             "The contributed NewRelicLogHandler has been superseded by automatic instrumentation for "
             "logging in the standard lib. If for some reason you need to manually configure a handler, "
             "please use newrelic.api.log.NewRelicLogForwardingHandler to take advantage of all the "
-            "features included in application log forwarding such as proper batching.", 
-            DeprecationWarning
+            "features included in application log forwarding such as proper batching.",
+            DeprecationWarning,
         )
         super(NewRelicLogHandler, self).__init__(level=level)
         self.license_key = license_key or self.settings.license_key

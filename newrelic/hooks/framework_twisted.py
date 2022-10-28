@@ -15,21 +15,21 @@
 import logging
 import sys
 import weakref
+
 import UserList
 
 import newrelic.api.application
+import newrelic.api.error_trace
+import newrelic.api.function_trace
 import newrelic.api.object_wrapper
 import newrelic.api.transaction
 import newrelic.api.web_transaction
-import newrelic.api.function_trace
-import newrelic.api.error_trace
-
 from newrelic.api.time_trace import notice_error
 
 _logger = logging.getLogger(__name__)
 
-class RequestProcessWrapper(object):
 
+class RequestProcessWrapper(object):
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
@@ -41,7 +41,7 @@ class RequestProcessWrapper(object):
         self._nr_instance = instance
         self._nr_next_object = wrapped
 
-        if not hasattr(self, '_nr_last_object'):
+        if not hasattr(self, "_nr_last_object"):
             self._nr_last_object = wrapped
 
     def __get__(self, instance, klass):
@@ -73,12 +73,11 @@ class RequestProcessWrapper(object):
 
         environ = {}
 
-        environ['REQUEST_URI'] = self._nr_instance.path
+        environ["REQUEST_URI"] = self._nr_instance.path
 
         # Now start recording the actual web transaction.
 
-        transaction = newrelic.api.web_transaction.WSGIWebTransaction(
-                application, environ, source=self._nr_next_object)
+        transaction = newrelic.api.web_transaction.WSGIWebTransaction(application, environ, source=self._nr_next_object)
 
         if not transaction.enabled:
             return self._nr_next_object()
@@ -109,7 +108,9 @@ class RequestProcessWrapper(object):
             # it is not done yet and register deferred callbacks to
             # complete the request.
 
-            result = newrelic.api.function_trace.FunctionTraceWrapper(self._nr_next_object, name='Request/Process', group='Python/Twisted')
+            result = newrelic.api.function_trace.FunctionTraceWrapper(
+                self._nr_next_object, name="Request/Process", group="Python/Twisted"
+            )
 
             # In the case of a result having being returned or an
             # exception occuring, then finish() will have been called.
@@ -126,11 +127,9 @@ class RequestProcessWrapper(object):
                 self._nr_instance = None
 
             else:
-                self._nr_instance._nr_wait_function_trace = \
-                        newrelic.api.function_trace.FunctionTrace(
-                        name='Deferred/Wait',
-                        group='Python/Twisted',
-                        source=self._nr_next_object)
+                self._nr_instance._nr_wait_function_trace = newrelic.api.function_trace.FunctionTrace(
+                    name="Deferred/Wait", group="Python/Twisted", source=self._nr_next_object
+                )
 
                 self._nr_instance._nr_wait_function_trace.__enter__()
                 transaction.drop_transaction()
@@ -141,8 +140,7 @@ class RequestProcessWrapper(object):
             # unless our code here has an error or Twisted.Web is
             # broken.
 
-            _logger.exception('Unexpected exception raised by Twisted.Web '
-                    'Request.process() exception.')
+            _logger.exception("Unexpected exception raised by Twisted.Web " "Request.process() exception.")
 
             transaction.__exit__(*sys.exc_info())
             self._nr_instance._nr_transaction = None
@@ -152,8 +150,8 @@ class RequestProcessWrapper(object):
 
         return result
 
-class RequestFinishWrapper(object):
 
+class RequestFinishWrapper(object):
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
@@ -165,7 +163,7 @@ class RequestFinishWrapper(object):
         self._nr_instance = instance
         self._nr_next_object = wrapped
 
-        if not hasattr(self, '_nr_last_object'):
+        if not hasattr(self, "_nr_last_object"):
             self._nr_last_object = wrapped
 
     def __get__(self, instance, klass):
@@ -180,7 +178,7 @@ class RequestFinishWrapper(object):
         # Call finish() method straight away if request is not even
         # associated with a transaction.
 
-        if not hasattr(self._nr_instance, '_nr_transaction'):
+        if not hasattr(self._nr_instance, "_nr_transaction"):
             return self._nr_next_object()
 
         # Technically we should only be able to be called here without
@@ -192,16 +190,20 @@ class RequestFinishWrapper(object):
 
         if self._nr_instance._nr_wait_function_trace:
             if newrelic.api.transaction.current_transaction():
-                _logger.debug('The Twisted.Web request finish() method is '
-                        'being called while in wait state but there is '
-                        'already a current transaction.')
+                _logger.debug(
+                    "The Twisted.Web request finish() method is "
+                    "being called while in wait state but there is "
+                    "already a current transaction."
+                )
             else:
                 transaction.save_transaction()
 
         elif not newrelic.api.transaction.current_transaction():
-            _logger.debug('The Twisted.Web request finish() method is '
-                    'being called from request process() method or a '
-                    'deferred but there is not a current transaction.')
+            _logger.debug(
+                "The Twisted.Web request finish() method is "
+                "being called from request process() method or a "
+                "deferred but there is not a current transaction."
+            )
 
         # Except for case of being called when in wait state, we can't
         # actually exit the transaction at this point as may be called
@@ -222,7 +224,9 @@ class RequestFinishWrapper(object):
             # Most likely the finish() call would never fail anyway.
 
             try:
-                result = newrelic.api.function_trace.FunctionTraceWrapper(self._nr_next_object, name='Request/Finish', group='Python/Twisted')
+                result = newrelic.api.function_trace.FunctionTraceWrapper(
+                    self._nr_next_object, name="Request/Finish", group="Python/Twisted"
+                )
             except:  # Catch all
                 notice_error(sys.exc_info())
                 raise
@@ -240,11 +244,11 @@ class RequestFinishWrapper(object):
             # the transaction down below.
 
             try:
-                self._nr_instance._nr_wait_function_trace.__exit__(
-                        None, None, None)
+                self._nr_instance._nr_wait_function_trace.__exit__(None, None, None)
 
-                result = newrelic.api.function_trace.FunctionTraceWrapper(self._nr_next_object, name='Request/Finish', group='Python/Twisted')
-
+                result = newrelic.api.function_trace.FunctionTraceWrapper(
+                    self._nr_next_object, name="Request/Finish", group="Python/Twisted"
+                )
 
                 transaction.__exit__(None, None, None)
 
@@ -261,12 +265,14 @@ class RequestFinishWrapper(object):
             # This should be the case where finish() is being called in
             # the original render() function.
 
-            result = newrelic.api.function_trace.FunctionTraceWrapper(self._nr_next_object, name='Request/Finish', group='Python/Twisted')
+            result = newrelic.api.function_trace.FunctionTraceWrapper(
+                self._nr_next_object, name="Request/Finish", group="Python/Twisted"
+            )
 
         return result
 
-class ResourceRenderWrapper(object):
 
+class ResourceRenderWrapper(object):
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
@@ -278,7 +284,7 @@ class ResourceRenderWrapper(object):
         self._nr_instance = instance
         self._nr_next_object = wrapped
 
-        if not hasattr(self, '_nr_last_object'):
+        if not hasattr(self, "_nr_last_object"):
             self._nr_last_object = wrapped
 
     def __get__(self, instance, klass):
@@ -313,37 +319,39 @@ class ResourceRenderWrapper(object):
         # of the handler function augmented with the method type for the
         # request.
 
-        name = "%s.render_%s" % (
-                newrelic.api.object_wrapper.callable_name(
-                instance), request.method)
+        name = "%s.render_%s" % (newrelic.api.object_wrapper.callable_name(instance), request.method)
         transaction.set_transaction_name(name, priority=1)
 
         return newrelic.api.function_trace.FunctionTraceWrapper(self._nr_next_object, name)(*args)
 
 
 class DeferredUserList(UserList.UserList):
-
     def pop(self, i=-1):
         import twisted.internet.defer
+
         item = super(DeferredUserList, self).pop(i)
 
         item0 = item[0]
         item1 = item[1]
 
         if item0[0] != twisted.internet.defer._CONTINUE:
-            item0 = (newrelic.api.function_trace.FunctionTraceWrapper(
-                     item0[0], group='Python/Twisted/Callback'),
-                     item0[1], item0[2])
+            item0 = (
+                newrelic.api.function_trace.FunctionTraceWrapper(item0[0], group="Python/Twisted/Callback"),
+                item0[1],
+                item0[2],
+            )
 
         if item1[0] != twisted.internet.defer._CONTINUE:
-            item1 = (newrelic.api.function_trace.FunctionTraceWrapper(
-                     item1[0], group='Python/Twisted/Errback'),
-                     item1[1], item1[2])
+            item1 = (
+                newrelic.api.function_trace.FunctionTraceWrapper(item1[0], group="Python/Twisted/Errback"),
+                item1[1],
+                item1[2],
+            )
 
         return (item0, item1)
 
-class DeferredWrapper(object):
 
+class DeferredWrapper(object):
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
@@ -355,7 +363,7 @@ class DeferredWrapper(object):
         self._nr_instance = instance
         self._nr_next_object = wrapped
 
-        if not hasattr(self, '_nr_last_object'):
+        if not hasattr(self, "_nr_last_object"):
             self._nr_last_object = wrapped
 
     def __get__(self, instance, klass):
@@ -377,11 +385,10 @@ class DeferredWrapper(object):
             transaction = newrelic.api.transaction.current_transaction()
             if transaction:
                 self._nr_instance._nr_transaction = transaction
-                self._nr_instance.callbacks = DeferredUserList(
-                        self._nr_instance.callbacks)
+                self._nr_instance.callbacks = DeferredUserList(self._nr_instance.callbacks)
+
 
 class DeferredCallbacksWrapper(object):
-
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
@@ -393,7 +400,7 @@ class DeferredCallbacksWrapper(object):
         self._nr_instance = instance
         self._nr_next_object = wrapped
 
-        if not hasattr(self, '_nr_last_object'):
+        if not hasattr(self, "_nr_last_object"):
             self._nr_last_object = wrapped
 
     def __get__(self, instance, klass):
@@ -418,7 +425,7 @@ class DeferredCallbacksWrapper(object):
         # don't need to do anything and can simply call the callback and
         # return.
 
-        if not hasattr(self._nr_instance, '_nr_transaction'):
+        if not hasattr(self._nr_instance, "_nr_transaction"):
             return self._nr_next_object()
 
         transaction = self._nr_instance._nr_transaction
@@ -427,7 +434,7 @@ class DeferredCallbacksWrapper(object):
         # the transaction or it is no longer valid then simply call the
         # callback and return.
 
-        if not hasattr(transaction, '_nr_current_request'):
+        if not hasattr(transaction, "_nr_current_request"):
             return self._nr_next_object()
 
         request = transaction._nr_current_request()
@@ -455,14 +462,15 @@ class DeferredCallbacksWrapper(object):
                 request._nr_wait_function_trace = None
 
             else:
-                _logger.debug('Called a Twisted.Web deferred when we were '
-                        'not in a wait state.')
+                _logger.debug("Called a Twisted.Web deferred when we were " "not in a wait state.")
 
             # Call the deferred and capture any errors that may come
             # back from it.
 
             with newrelic.api.error_trace.ErrorTrace():
-                return newrelic.api.function_trace.FunctionTraceWrapper(self._nr_next_object, name='Deferred/Call', group='Python/Twisted')
+                return newrelic.api.function_trace.FunctionTraceWrapper(
+                    self._nr_next_object, name="Deferred/Call", group="Python/Twisted"
+                )
 
         finally:
             # If the request finish() method was called from the
@@ -480,19 +488,17 @@ class DeferredCallbacksWrapper(object):
                 # called multiple times for same request. It probably
                 # can be reregistered.
 
-                request._nr_wait_function_trace = \
-                        newrelic.api.function_trace.FunctionTrace(
-                        name='Deferred/Wait',
-                        group='Python/Twisted',
-                        source=self._nr_next_object)
+                request._nr_wait_function_trace = newrelic.api.function_trace.FunctionTrace(
+                    name="Deferred/Wait", group="Python/Twisted", source=self._nr_next_object
+                )
 
                 request._nr_wait_function_trace.__enter__()
                 transaction.drop_transaction()
 
             request._nr_is_deferred_callback = False
 
-class InlineGeneratorWrapper(object):
 
+class InlineGeneratorWrapper(object):
     def __init__(self, wrapped, generator):
         self._nr_wrapped = wrapped
         self._nr_generator = generator
@@ -502,11 +508,12 @@ class InlineGeneratorWrapper(object):
         iterable = iter(self._nr_generator)
         while 1:
             with newrelic.api.function_trace.FunctionTrace(
-                  name, group='Python/Twisted/Generator', source=self._nr_wrapped):
+                name, group="Python/Twisted/Generator", source=self._nr_wrapped
+            ):
                 yield next(iterable)
 
-class InlineCallbacksWrapper(object):
 
+class InlineCallbacksWrapper(object):
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
@@ -518,7 +525,7 @@ class InlineCallbacksWrapper(object):
         self._nr_instance = instance
         self._nr_next_object = wrapped
 
-        if not hasattr(self, '_nr_last_object'):
+        if not hasattr(self, "_nr_last_object"):
             self._nr_last_object = wrapped
 
     def __get__(self, instance, klass):
@@ -540,21 +547,24 @@ class InlineCallbacksWrapper(object):
 
         return iter(InlineGeneratorWrapper(self._nr_next_object, result))
 
+
 def instrument_twisted_web_server(module):
     module.Request.process = RequestProcessWrapper(module.Request.process)
+
 
 def instrument_twisted_web_http(module):
     module.Request.finish = RequestFinishWrapper(module.Request.finish)
 
+
 def instrument_twisted_web_resource(module):
     module.Resource.render = ResourceRenderWrapper(module.Resource.render)
 
+
 def instrument_twisted_internet_defer(module):
     module.Deferred.__init__ = DeferredWrapper(module.Deferred.__init__)
-    module.Deferred._runCallbacks = DeferredCallbacksWrapper(
-            module.Deferred._runCallbacks)
+    module.Deferred._runCallbacks = DeferredCallbacksWrapper(module.Deferred._runCallbacks)
 
-    #_inlineCallbacks = module.inlineCallbacks
-    #def inlineCallbacks(f):
+    # _inlineCallbacks = module.inlineCallbacks
+    # def inlineCallbacks(f):
     #    return _inlineCallbacks(InlineCallbacksWrapper(f))
-    #module.inlineCallbacks = inlineCallbacks
+    # module.inlineCallbacks = inlineCallbacks

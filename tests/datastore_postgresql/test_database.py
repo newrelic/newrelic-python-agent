@@ -13,15 +13,13 @@
 # limitations under the License.
 
 import postgresql.driver.dbapi20
-
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-
+from testing_support.db_settings import postgresql_settings
 from testing_support.validators.validate_database_trace_inputs import (
     validate_database_trace_inputs,
 )
-
-from testing_support.db_settings import postgresql_settings
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 
@@ -87,14 +85,10 @@ def test_execute_via_cursor():
 
         cursor.execute("""drop table if exists %s""" % DB_SETTINGS["table_name"])
 
-        cursor.execute(
-            """create table %s """ % DB_SETTINGS["table_name"]
-            + """(a integer, b real, c text)"""
-        )
+        cursor.execute("""create table %s """ % DB_SETTINGS["table_name"] + """(a integer, b real, c text)""")
 
         cursor.executemany(
-            """insert into %s """ % DB_SETTINGS["table_name"]
-            + """values (%s, %s, %s)""",
+            """insert into %s """ % DB_SETTINGS["table_name"] + """values (%s, %s, %s)""",
             [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
         )
 
@@ -104,8 +98,7 @@ def test_execute_via_cursor():
             pass
 
         cursor.execute(
-            """update %s """ % DB_SETTINGS["table_name"]
-            + """set a=%s, b=%s, c=%s where a=%s""",
+            """update %s """ % DB_SETTINGS["table_name"] + """set a=%s, b=%s, c=%s where a=%s""",
             (4, 4.0, "4.0", 1),
         )
 

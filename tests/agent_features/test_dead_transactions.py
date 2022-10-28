@@ -13,20 +13,20 @@
 # limitations under the License.
 
 import gc
-import pytest
-import newrelic.packages.six as six
 
-from newrelic.api.background_task import BackgroundTask
+import pytest
+
+import newrelic.packages.six as six
 from newrelic.api.application import application_instance
-from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
+from newrelic.api.background_task import BackgroundTask
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 @function_wrapper
 def capture_errors(wrapped, instance, args, kwargs):
     ERRORS = []
 
-    @transient_function_wrapper(
-            'newrelic.api.transaction', 'Transaction.__exit__')
+    @transient_function_wrapper("newrelic.api.transaction", "Transaction.__exit__")
     def capture_errors(wrapped, instance, args, kwargs):
         try:
             return wrapped(*args, **kwargs)
@@ -40,16 +40,17 @@ def capture_errors(wrapped, instance, args, kwargs):
     return result
 
 
-@pytest.mark.parametrize('circular', (True, False))
+@pytest.mark.parametrize("circular", (True, False))
 @capture_errors
 def test_dead_transaction_ends(circular):
     if circular and six.PY2:
-        pytest.skip("Circular references in py2 result in a memory leak. "
-                "There is no way to remove transactions from the weakref "
-                "cache in this case.")
+        pytest.skip(
+            "Circular references in py2 result in a memory leak. "
+            "There is no way to remove transactions from the weakref "
+            "cache in this case."
+        )
 
-    transaction = BackgroundTask(
-            application_instance(), "test_dead_transaction_ends")
+    transaction = BackgroundTask(application_instance(), "test_dead_transaction_ends")
     if circular:
         transaction._self = transaction
 

@@ -103,8 +103,7 @@ if hasattr(ssl, "PROTOCOL_TLSv1_2") and hasattr(OpenSSL.SSL, "TLSv1_2_METHOD"):
 _stdlib_to_openssl_verify = {
     ssl.CERT_NONE: OpenSSL.SSL.VERIFY_NONE,
     ssl.CERT_OPTIONAL: OpenSSL.SSL.VERIFY_PEER,
-    ssl.CERT_REQUIRED: OpenSSL.SSL.VERIFY_PEER
-    + OpenSSL.SSL.VERIFY_FAIL_IF_NO_PEER_CERT,
+    ssl.CERT_REQUIRED: OpenSSL.SSL.VERIFY_PEER + OpenSSL.SSL.VERIFY_FAIL_IF_NO_PEER_CERT,
 }
 _openssl_to_stdlib_verify = dict((v, k) for k, v in _stdlib_to_openssl_verify.items())
 
@@ -151,10 +150,7 @@ def _validate_dependencies_met():
     from cryptography.x509.extensions import Extensions
 
     if getattr(Extensions, "get_extension_for_class", None) is None:
-        raise ImportError(
-            "'cryptography' module missing required functionality.  "
-            "Try upgrading to v1.3.4 or newer."
-        )
+        raise ImportError("'cryptography' module missing required functionality.  " "Try upgrading to v1.3.4 or newer.")
 
     # pyOpenSSL 0.14 and above use cryptography for OpenSSL bindings. The _x509
     # attribute is only present on those versions.
@@ -162,10 +158,7 @@ def _validate_dependencies_met():
 
     x509 = X509()
     if getattr(x509, "_x509", None) is None:
-        raise ImportError(
-            "'pyOpenSSL' module missing required functionality. "
-            "Try upgrading to v0.14 or newer."
-        )
+        raise ImportError("'pyOpenSSL' module missing required functionality. " "Try upgrading to v0.14 or newer.")
 
 
 def _dnsname_to_stdlib(name):
@@ -191,7 +184,7 @@ def _dnsname_to_stdlib(name):
         import idna
 
         try:
-            for prefix in [u"*.", u"."]:
+            for prefix in ["*.", "."]:
                 if name.startswith(prefix):
                     name = name[len(prefix) :]
                     return prefix.encode("ascii") + idna.encode(name)
@@ -254,13 +247,9 @@ def get_subj_alt_name(peer_cert):
     # does with certificates, and so we need to attempt to do the same.
     # We also want to skip over names which cannot be idna encoded.
     names = [
-        ("DNS", name)
-        for name in map(_dnsname_to_stdlib, ext.get_values_for_type(x509.DNSName))
-        if name is not None
+        ("DNS", name) for name in map(_dnsname_to_stdlib, ext.get_values_for_type(x509.DNSName)) if name is not None
     ]
-    names.extend(
-        ("IP Address", str(name)) for name in ext.get_values_for_type(x509.IPAddress)
-    )
+    names.extend(("IP Address", str(name)) for name in ext.get_values_for_type(x509.IPAddress))
 
     return names
 
@@ -354,9 +343,7 @@ class WrappedSocket(object):
     def sendall(self, data):
         total_sent = 0
         while total_sent < len(data):
-            sent = self._send_until_done(
-                data[total_sent : total_sent + SSL_WRITE_BLOCKSIZE]
-            )
+            sent = self._send_until_done(data[total_sent : total_sent + SSL_WRITE_BLOCKSIZE])
             total_sent += sent
 
     def shutdown(self):
@@ -405,7 +392,6 @@ if _fileobject:  # Platform-specific: Python 2
     def makefile(self, mode, bufsize=-1):
         self._makefile_refs += 1
         return _fileobject(self, mode, bufsize, close=True)
-
 
 else:  # Platform-specific: Python 3
     makefile = backport_makefile

@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.packages import six
-from newrelic.api.background_task import background_task
 from testing_support.fixtures import reset_core_stats_engine
-from testing_support.validators.validate_custom_metrics_outside_transaction import validate_custom_metrics_outside_transaction
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_custom_metrics_outside_transaction import (
+    validate_custom_metrics_outside_transaction,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
+from newrelic.packages import six
+
 
 def exercise_logging(logger):
     logger.debug("A")
@@ -24,7 +30,7 @@ def exercise_logging(logger):
     logger.warning("C")
     logger.error("D")
     logger.critical("E")
-    
+
     assert len(logger.caplog.records) == 3
 
 
@@ -35,9 +41,11 @@ _test_logging_unscoped_metrics = [
     ("Logging/lines/CRITICAL", 1),
 ]
 
+
 @reset_core_stats_engine()
 def test_logging_metrics_inside_transaction(logger):
     txn_name = "test_metrics:test_logging_metrics_inside_transaction.<locals>.test" if six.PY3 else "test_metrics:test"
+
     @validate_transaction_metrics(
         txn_name,
         custom_metrics=_test_logging_unscoped_metrics,

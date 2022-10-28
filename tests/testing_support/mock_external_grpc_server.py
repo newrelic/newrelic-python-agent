@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from concurrent import futures
-import grpc
 import socket
+from concurrent import futures
 
+import grpc
 
 # This defines an external grpc server test apps can use for testing.
 #
@@ -31,7 +31,7 @@ class MockExternalgRPCServer(object):
     def __init__(self, port=None, *args, **kwargs):
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
         if port:
-            self.server.port = self.server.add_insecure_port('127.0.0.1:%s' % port)
+            self.server.port = self.server.add_insecure_port("127.0.0.1:%s" % port)
             self.port = port
         else:
             # If port not set, try to bind to a port until successful
@@ -43,7 +43,7 @@ class MockExternalgRPCServer(object):
                     # Obtain random open port
                     port = self.get_open_port()
                     # Attempt to bind to port
-                    self.server.port = self.server.add_insecure_port('127.0.0.1:%s' % port)
+                    self.server.port = self.server.add_insecure_port("127.0.0.1:%s" % port)
                     self.port = port
                 except OSError as exc:
                     # Reraise errors other than port already in use

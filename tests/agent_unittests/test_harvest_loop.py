@@ -798,7 +798,8 @@ def test_reset_synthetics_events():
 
 
 @pytest.mark.parametrize(
-    "allowlist_event", ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data")
+    "allowlist_event",
+    ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data"),
 )
 @override_generic_settings(
     settings,
@@ -850,7 +851,8 @@ def test_flexible_events_harvested(allowlist_event):
 
 
 @pytest.mark.parametrize(
-    "allowlist_event", ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data")
+    "allowlist_event",
+    ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data"),
 )
 @override_generic_settings(
     settings,

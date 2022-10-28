@@ -12,48 +12,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+import logging
 import sys
 import threading
-import logging
-import functools
-
-from newrelic.packages import six
 
 from newrelic.api.application import register_application
 from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.error_trace import wrap_error_trace
-from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
-        FunctionTraceWrapper)
+from newrelic.api.function_trace import (
+    FunctionTrace,
+    FunctionTraceWrapper,
+    wrap_function_trace,
+)
 from newrelic.api.html_insertion import insert_html_snippet
-from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
+from newrelic.api.transaction import current_transaction
 from newrelic.api.transaction_name import wrap_transaction_name
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
-
-from newrelic.common.object_wrapper import (FunctionWrapper, wrap_in_function,
-        wrap_post_function, wrap_function_wrapper, function_wrapper)
+from newrelic.common.coroutine import is_asyncio_coroutine, is_coroutine_function
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import (
+    FunctionWrapper,
+    function_wrapper,
+    wrap_function_wrapper,
+    wrap_in_function,
+    wrap_post_function,
+)
 from newrelic.config import extra_settings
 from newrelic.core.config import global_settings
-from newrelic.common.coroutine import is_coroutine_function, is_asyncio_coroutine
+from newrelic.packages import six
 
 if six.PY3:
     from newrelic.hooks.framework_django_py3 import (
-        _nr_wrapper_BaseHandler_get_response_async_,
         _nr_wrap_converted_middleware_async_,
+        _nr_wrapper_BaseHandler_get_response_async_,
     )
 
 _logger = logging.getLogger(__name__)
 
 _boolean_states = {
-       '1': True, 'yes': True, 'true': True, 'on': True,
-       '0': False, 'no': False, 'false': False, 'off': False
+    "1": True,
+    "yes": True,
+    "true": True,
+    "on": True,
+    "0": False,
+    "no": False,
+    "false": False,
+    "off": False,
 }
 
 
 def _setting_boolean(value):
     if value.lower() not in _boolean_states:
-        raise ValueError('Not a boolean: %s' % value)
+        raise ValueError("Not a boolean: %s" % value)
     return _boolean_states[value.lower()]
 
 
@@ -62,21 +74,20 @@ def _setting_set(value):
 
 
 _settings_types = {
-    'browser_monitoring.auto_instrument': _setting_boolean,
-    'instrumentation.templates.inclusion_tag': _setting_set,
-    'instrumentation.background_task.startup_timeout': float,
-    'instrumentation.scripts.django_admin': _setting_set,
+    "browser_monitoring.auto_instrument": _setting_boolean,
+    "instrumentation.templates.inclusion_tag": _setting_set,
+    "instrumentation.background_task.startup_timeout": float,
+    "instrumentation.scripts.django_admin": _setting_set,
 }
 
 _settings_defaults = {
-    'browser_monitoring.auto_instrument': True,
-    'instrumentation.templates.inclusion_tag': set(),
-    'instrumentation.background_task.startup_timeout': 10.0,
-    'instrumentation.scripts.django_admin': set(),
+    "browser_monitoring.auto_instrument": True,
+    "instrumentation.templates.inclusion_tag": set(),
+    "instrumentation.background_task.startup_timeout": 10.0,
+    "instrumentation.scripts.django_admin": set(),
 }
 
-django_settings = extra_settings('import-hook:django',
-        types=_settings_types, defaults=_settings_defaults)
+django_settings = extra_settings("import-hook:django", types=_settings_types, defaults=_settings_defaults)
 
 
 def should_add_browser_timing(response, transaction):
@@ -92,7 +103,7 @@ def should_add_browser_timing(response, transaction):
     # do RUM insertion, need to move to a WSGI middleware and
     # deal with how to update the content length.
 
-    if hasattr(response, 'streaming_content'):
+    if hasattr(response, "streaming_content"):
         return False
 
     # Need to be running within a valid web transaction.
@@ -121,21 +132,21 @@ def should_add_browser_timing(response, transaction):
     # a user may want to also perform insertion for
     # 'application/xhtml+xml'.
 
-    ctype = response.get('Content-Type', '').lower().split(';')[0]
+    ctype = response.get("Content-Type", "").lower().split(";")[0]
 
     if ctype not in transaction.settings.browser_monitoring.content_type:
         return False
 
     # Don't risk it if content encoding already set.
 
-    if response.has_header('Content-Encoding'):
+    if response.has_header("Content-Encoding"):
         return False
 
     # Don't risk it if content is actually within an attachment.
 
-    cdisposition = response.get('Content-Disposition', '').lower()
+    cdisposition = response.get("Content-Disposition", "").lower()
 
-    if cdisposition.split(';')[0].strip().lower() == 'attachment':
+    if cdisposition.split(";")[0].strip().lower() == "attachment":
         return False
 
     return True
@@ -143,6 +154,7 @@ def should_add_browser_timing(response, transaction):
 
 # Response middleware for automatically inserting RUM header and
 # footer into HTML response returned by application
+
 
 def browser_timing_insertion(response, transaction):
 
@@ -175,14 +187,15 @@ def browser_timing_insertion(response, transaction):
 
     if result is not None:
         if transaction.settings.debug.log_autorum_middleware:
-            _logger.debug('RUM insertion from Django middleware '
-                    'triggered. Bytes added was %r.',
-                    len(result) - len(response.content))
+            _logger.debug(
+                "RUM insertion from Django middleware " "triggered. Bytes added was %r.",
+                len(result) - len(response.content),
+            )
 
         response.content = result
 
-        if response.get('Content-Length', None):
-            response['Content-Length'] = str(len(response.content))
+        if response.get("Content-Length", None):
+            response["Content-Length"] = str(len(response.content))
 
     return response
 
@@ -192,18 +205,19 @@ def browser_timing_insertion(response, transaction):
 # 'newrelic' will be automatically inserted into set of tag
 # libraries when performing step to instrument the middleware.
 
+
 def newrelic_browser_timing_header():
     from django.utils.safestring import mark_safe
 
     transaction = current_transaction()
-    return transaction and mark_safe(transaction.browser_timing_header()) or ''
+    return transaction and mark_safe(transaction.browser_timing_header()) or ""
 
 
 def newrelic_browser_timing_footer():
     from django.utils.safestring import mark_safe
 
     transaction = current_transaction()
-    return transaction and mark_safe(transaction.browser_timing_footer()) or ''
+    return transaction and mark_safe(transaction.browser_timing_footer()) or ""
 
 
 # Addition of instrumentation for middleware. Can only do this
@@ -293,7 +307,7 @@ def wrap_view_middleware(middleware):
             def _wrapped(request, view_func, view_args, view_kwargs):
                 # This strips the view handler wrapper before call.
 
-                if hasattr(view_func, '_nr_last_object'):
+                if hasattr(view_func, "_nr_last_object"):
                     view_func = view_func._nr_last_object
 
                 return wrapped(request, view_func, view_args, view_kwargs)
@@ -370,37 +384,28 @@ def insert_and_wrap_middleware(handler, *args, **kwargs):
         # priority than that for view handler so view handler
         # name always takes precedence.
 
-        if hasattr(handler, '_request_middleware'):
-            handler._request_middleware = list(
-                    wrap_leading_middleware(
-                    handler._request_middleware))
+        if hasattr(handler, "_request_middleware"):
+            handler._request_middleware = list(wrap_leading_middleware(handler._request_middleware))
 
-        if hasattr(handler, '_view_middleware'):
-            handler._view_middleware = list(
-                    wrap_leading_middleware(
-                    handler._view_middleware))
+        if hasattr(handler, "_view_middleware"):
+            handler._view_middleware = list(wrap_leading_middleware(handler._view_middleware))
 
-        if hasattr(handler, '_template_response_middleware'):
+        if hasattr(handler, "_template_response_middleware"):
             handler._template_response_middleware = list(
-                  wrap_trailing_middleware(
-                  handler._template_response_middleware))
+                wrap_trailing_middleware(handler._template_response_middleware)
+            )
 
-        if hasattr(handler, '_response_middleware'):
-            handler._response_middleware = list(
-                    wrap_trailing_middleware(
-                    handler._response_middleware))
+        if hasattr(handler, "_response_middleware"):
+            handler._response_middleware = list(wrap_trailing_middleware(handler._response_middleware))
 
-        if hasattr(handler, '_exception_middleware'):
-            handler._exception_middleware = list(
-                    wrap_trailing_middleware(
-                    handler._exception_middleware))
+        if hasattr(handler, "_exception_middleware"):
+            handler._exception_middleware = list(wrap_trailing_middleware(handler._exception_middleware))
 
     finally:
         lock.release()
 
 
-def _nr_wrapper_GZipMiddleware_process_response_(wrapped, instance, args,
-        kwargs):
+def _nr_wrapper_GZipMiddleware_process_response_(wrapped, instance, args, kwargs):
 
     transaction = current_transaction()
 
@@ -433,14 +438,15 @@ def _nr_wrapper_BaseHandler_get_response_(wrapped, instance, args, kwargs):
 
     request = _bind_get_response(*args, **kwargs)
 
-    if hasattr(request, '_nr_exc_info'):
+    if hasattr(request, "_nr_exc_info"):
         notice_error(error=request._nr_exc_info, status_code=response.status_code)
-        delattr(request, '_nr_exc_info')
+        delattr(request, "_nr_exc_info")
 
     return response
 
 
 # Post import hooks for modules.
+
 
 def instrument_django_core_handlers_base(module):
 
@@ -448,21 +454,17 @@ def instrument_django_core_handlers_base(module):
     # BaseHandler to trigger insertion of browser timing
     # middleware and wrapping of middleware for timing etc.
 
-    wrap_post_function(module, 'BaseHandler.load_middleware',
-            insert_and_wrap_middleware)
+    wrap_post_function(module, "BaseHandler.load_middleware", insert_and_wrap_middleware)
 
-    if six.PY3 and hasattr(module.BaseHandler, 'get_response_async'):
-        wrap_function_wrapper(module, 'BaseHandler.get_response_async',
-                _nr_wrapper_BaseHandler_get_response_async_)
+    if six.PY3 and hasattr(module.BaseHandler, "get_response_async"):
+        wrap_function_wrapper(module, "BaseHandler.get_response_async", _nr_wrapper_BaseHandler_get_response_async_)
 
-    wrap_function_wrapper(module, 'BaseHandler.get_response',
-            _nr_wrapper_BaseHandler_get_response_)
+    wrap_function_wrapper(module, "BaseHandler.get_response", _nr_wrapper_BaseHandler_get_response_)
 
 
 def instrument_django_gzip_middleware(module):
 
-    wrap_function_wrapper(module, 'GZipMiddleware.process_response',
-            _nr_wrapper_GZipMiddleware_process_response_)
+    wrap_function_wrapper(module, "GZipMiddleware.process_response", _nr_wrapper_GZipMiddleware_process_response_)
 
 
 def wrap_handle_uncaught_exception(middleware):
@@ -506,10 +508,9 @@ def instrument_django_core_handlers_wsgi(module):
 
     import django
 
-    framework = ('Django', django.get_version())
+    framework = ("Django", django.get_version())
 
-    module.WSGIHandler.__call__ = WSGIApplicationWrapper(
-          module.WSGIHandler.__call__, framework=framework)
+    module.WSGIHandler.__call__ = WSGIApplicationWrapper(module.WSGIHandler.__call__, framework=framework)
 
     # Wrap handle_uncaught_exception() of WSGIHandler so that
     # can capture exception details of any exception which
@@ -519,10 +520,10 @@ def instrument_django_core_handlers_wsgi(module):
     # exception, so last chance to do this as exception will not
     # propagate up to the WSGI application.
 
-    if hasattr(module.WSGIHandler, 'handle_uncaught_exception'):
-        module.WSGIHandler.handle_uncaught_exception = (
-                wrap_handle_uncaught_exception(
-                module.WSGIHandler.handle_uncaught_exception))
+    if hasattr(module.WSGIHandler, "handle_uncaught_exception"):
+        module.WSGIHandler.handle_uncaught_exception = wrap_handle_uncaught_exception(
+            module.WSGIHandler.handle_uncaught_exception
+        )
 
 
 def wrap_view_handler(wrapped, priority=3):
@@ -532,7 +533,7 @@ def wrap_view_handler(wrapped, priority=3):
     # called recursively. We flag that view handler was wrapped
     # using the '_nr_django_view_handler' attribute.
 
-    if hasattr(wrapped, '_nr_django_view_handler'):
+    if hasattr(wrapped, "_nr_django_view_handler"):
         return wrapped
 
     if hasattr(wrapped, "view_class"):
@@ -584,7 +585,7 @@ def wrap_url_resolver(wrapped):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        if hasattr(transaction, '_nr_django_url_resolver'):
+        if hasattr(transaction, "_nr_django_url_resolver"):
             return wrapped(*args, **kwargs)
 
         # Tag the transaction so we know when we are in the top
@@ -602,8 +603,7 @@ def wrap_url_resolver(wrapped):
 
                 if type(result) is tuple:
                     callback, callback_args, callback_kwargs = result
-                    result = (wrap_view_handler(callback, priority=5),
-                            callback_args, callback_kwargs)
+                    result = (wrap_view_handler(callback, priority=5), callback_args, callback_kwargs)
                 else:
                     result.func = wrap_view_handler(result.func, priority=5)
 
@@ -636,8 +636,7 @@ def wrap_url_resolver_nnn(wrapped, priority=1):
                 return wrap_view_handler(result, priority=priority)
             else:
                 callback, param_dict = result
-                return (wrap_view_handler(callback, priority=priority),
-                        param_dict)
+                return (wrap_view_handler(callback, priority=priority), param_dict)
 
     return FunctionWrapper(wrapped, wrapper)
 
@@ -653,9 +652,10 @@ def wrap_url_reverse(wrapped):
 
     def wrapper(wrapped, instance, args, kwargs):
         def execute(viewname, *args, **kwargs):
-            if hasattr(viewname, '_nr_last_object'):
+            if hasattr(viewname, "_nr_last_object"):
                 viewname = viewname._nr_last_object
             return wrapped(viewname, *args, **kwargs)
+
         return execute(*args, **kwargs)
 
     return FunctionWrapper(wrapped, wrapper)
@@ -672,20 +672,19 @@ def instrument_django_core_urlresolvers(module):
     # lost. We thus intercept it here so can capture that
     # traceback which is otherwise lost.
 
-    wrap_error_trace(module, 'get_callable')
+    wrap_error_trace(module, "get_callable")
 
     # Wrap methods which resolves a request to a view handler.
     # This can be called against a resolver initialised against
     # a custom URL conf associated with a specific request, or a
     # resolver which uses the default URL conf.
 
-    if hasattr(module, 'RegexURLResolver'):
+    if hasattr(module, "RegexURLResolver"):
         urlresolver = module.RegexURLResolver
     else:
         urlresolver = module.URLResolver
 
-    urlresolver.resolve = wrap_url_resolver(
-            urlresolver.resolve)
+    urlresolver.resolve = wrap_url_resolver(urlresolver.resolve)
 
     # Wrap methods which resolve error handlers. For 403 and 404
     # we give these higher naming priority over any prior
@@ -695,26 +694,22 @@ def instrument_django_core_urlresolvers(module):
     # handler in place so error details identify the correct
     # transaction.
 
-    if hasattr(urlresolver, 'resolve403'):
-        urlresolver.resolve403 = wrap_url_resolver_nnn(
-                urlresolver.resolve403, priority=3)
+    if hasattr(urlresolver, "resolve403"):
+        urlresolver.resolve403 = wrap_url_resolver_nnn(urlresolver.resolve403, priority=3)
 
-    if hasattr(urlresolver, 'resolve404'):
-        urlresolver.resolve404 = wrap_url_resolver_nnn(
-                urlresolver.resolve404, priority=3)
+    if hasattr(urlresolver, "resolve404"):
+        urlresolver.resolve404 = wrap_url_resolver_nnn(urlresolver.resolve404, priority=3)
 
-    if hasattr(urlresolver, 'resolve500'):
-        urlresolver.resolve500 = wrap_url_resolver_nnn(
-                urlresolver.resolve500, priority=1)
+    if hasattr(urlresolver, "resolve500"):
+        urlresolver.resolve500 = wrap_url_resolver_nnn(urlresolver.resolve500, priority=1)
 
-    if hasattr(urlresolver, 'resolve_error_handler'):
-        urlresolver.resolve_error_handler = wrap_url_resolver_nnn(
-                urlresolver.resolve_error_handler, priority=1)
+    if hasattr(urlresolver, "resolve_error_handler"):
+        urlresolver.resolve_error_handler = wrap_url_resolver_nnn(urlresolver.resolve_error_handler, priority=1)
 
     # Wrap function for performing reverse URL lookup to strip any
     # instrumentation wrapper when view handler is passed in.
 
-    if hasattr(module, 'reverse'):
+    if hasattr(module, "reverse"):
         module.reverse = wrap_url_reverse(module.reverse)
 
 
@@ -723,7 +718,7 @@ def instrument_django_urls_base(module):
     # Wrap function for performing reverse URL lookup to strip any
     # instrumentation wrapper when view handler is passed in.
 
-    if hasattr(module, 'reverse'):
+    if hasattr(module, "reverse"):
         module.reverse = wrap_url_reverse(module.reverse)
 
 
@@ -742,17 +737,15 @@ def instrument_django_template(module):
     def template_name(template, *args):
         return template.name
 
-    if hasattr(module.Template, '_render'):
-        wrap_function_trace(module, 'Template._render',
-                name=template_name, group='Template/Render')
+    if hasattr(module.Template, "_render"):
+        wrap_function_trace(module, "Template._render", name=template_name, group="Template/Render")
     else:
-        wrap_function_trace(module, 'Template.render',
-                name=template_name, group='Template/Render')
+        wrap_function_trace(module, "Template.render", name=template_name, group="Template/Render")
 
     # Django 1.8 no longer has module.libraries. As automatic way is not
     # preferred we can just skip this now.
 
-    if not hasattr(module, 'libraries'):
+    if not hasattr(module, "libraries"):
         return
 
     # Register template tags used for manual insertion of RUM
@@ -766,12 +759,12 @@ def instrument_django_template(module):
     library.simple_tag(newrelic_browser_timing_header)
     library.simple_tag(newrelic_browser_timing_footer)
 
-    module.libraries['django.templatetags.newrelic'] = library
+    module.libraries["django.templatetags.newrelic"] = library
 
 
 def wrap_template_block(wrapped):
     def wrapper(wrapped, instance, args, kwargs):
-        return FunctionTraceWrapper(wrapped, name=instance.name, group='Template/Block')(*args, **kwargs)
+        return FunctionTraceWrapper(wrapped, name=instance.name, group="Template/Block")(*args, **kwargs)
 
     return FunctionWrapper(wrapped, wrapper)
 
@@ -812,11 +805,15 @@ def instrument_django_core_servers_basehttp(module):
     # instrumentation of the wsgiref module or some other means.
 
     def wrap_wsgi_application_entry_point(server, application, **kwargs):
-        return ((server, WSGIApplicationWrapper(application,
-            framework='Django'),), kwargs)
+        return (
+            (
+                server,
+                WSGIApplicationWrapper(application, framework="Django"),
+            ),
+            kwargs,
+        )
 
-    if (not hasattr(module, 'simple_server') and
-            hasattr(module.ServerHandler, 'run')):
+    if not hasattr(module, "simple_server") and hasattr(module.ServerHandler, "run"):
 
         # Patch the server to make it work properly.
 
@@ -833,11 +830,10 @@ def instrument_django_core_servers_basehttp(module):
         def close(self):
             if self.result is not None:
                 try:
-                    self.request_handler.log_request(
-                            self.status.split(' ', 1)[0], self.bytes_sent)
+                    self.request_handler.log_request(self.status.split(" ", 1)[0], self.bytes_sent)
                 finally:
                     try:
-                        if hasattr(self.result, 'close'):
+                        if hasattr(self.result, "close"):
                             self.result.close()
                     finally:
                         self.result = None
@@ -855,17 +851,16 @@ def instrument_django_core_servers_basehttp(module):
 
         # Now wrap it with our instrumentation.
 
-        wrap_in_function(module, 'ServerHandler.run',
-                wrap_wsgi_application_entry_point)
+        wrap_in_function(module, "ServerHandler.run", wrap_wsgi_application_entry_point)
 
 
 def instrument_django_contrib_staticfiles_views(module):
-    if not hasattr(module.serve, '_nr_django_view_handler'):
+    if not hasattr(module.serve, "_nr_django_view_handler"):
         module.serve = wrap_view_handler(module.serve, priority=3)
 
 
 def instrument_django_contrib_staticfiles_handlers(module):
-    wrap_transaction_name(module, 'StaticFilesHandler.serve')
+    wrap_transaction_name(module, "StaticFilesHandler.serve")
 
 
 def instrument_django_views_debug(module):
@@ -878,10 +873,8 @@ def instrument_django_views_debug(module):
     # from a middleware or view handler in place so error
     # details identify the correct transaction.
 
-    module.technical_404_response = wrap_view_handler(
-            module.technical_404_response, priority=3)
-    module.technical_500_response = wrap_view_handler(
-            module.technical_500_response, priority=1)
+    module.technical_404_response = wrap_view_handler(module.technical_404_response, priority=3)
+    module.technical_500_response = wrap_view_handler(module.technical_500_response, priority=1)
 
 
 def resolve_view_handler(view, request):
@@ -890,8 +883,7 @@ def resolve_view_handler(view, request):
     # duplicate the lookup mechanism.
 
     if request.method.lower() in view.http_method_names:
-        handler = getattr(view, request.method.lower(),
-                view.http_method_not_allowed)
+        handler = getattr(view, request.method.lower(), view.http_method_not_allowed)
     else:
         handler = view.http_method_not_allowed
 
@@ -936,7 +928,7 @@ def wrap_view_dispatch(wrapped):
 
         priority = 4
 
-        if transaction.group == 'Function':
+        if transaction.group == "Function":
             if transaction.name == callable_name(view):
                 priority = 5
 
@@ -953,22 +945,22 @@ def instrument_django_views_generic_base(module):
 
 
 def instrument_django_http_multipartparser(module):
-    wrap_function_trace(module, 'MultiPartParser.parse')
+    wrap_function_trace(module, "MultiPartParser.parse")
 
 
 def instrument_django_core_mail(module):
-    wrap_function_trace(module, 'mail_admins')
-    wrap_function_trace(module, 'mail_managers')
-    wrap_function_trace(module, 'send_mail')
+    wrap_function_trace(module, "mail_admins")
+    wrap_function_trace(module, "mail_managers")
+    wrap_function_trace(module, "send_mail")
 
 
 def instrument_django_core_mail_message(module):
-    wrap_function_trace(module, 'EmailMessage.send')
+    wrap_function_trace(module, "EmailMessage.send")
 
 
 def _nr_wrapper_BaseCommand___init___(wrapped, instance, args, kwargs):
     instance.handle = FunctionTraceWrapper(instance.handle)
-    if hasattr(instance, 'handle_noargs'):
+    if hasattr(instance, "handle_noargs"):
         instance.handle_noargs = FunctionTraceWrapper(instance.handle_noargs)
     return wrapped(*args, **kwargs)
 
@@ -982,29 +974,25 @@ def _nr_wrapper_BaseCommand_run_from_argv_(wrapped, instance, args, kwargs):
     subcommand = _argv[1]
 
     commands = django_settings.instrumentation.scripts.django_admin
-    startup_timeout = \
-            django_settings.instrumentation.background_task.startup_timeout
+    startup_timeout = django_settings.instrumentation.background_task.startup_timeout
 
     if subcommand not in commands:
         return wrapped(*args, **kwargs)
 
     application = register_application(timeout=startup_timeout)
 
-    return BackgroundTaskWrapper(wrapped, application, subcommand, 'Django')(*args, **kwargs)
+    return BackgroundTaskWrapper(wrapped, application, subcommand, "Django")(*args, **kwargs)
 
 
 def instrument_django_core_management_base(module):
-    wrap_function_wrapper(module, 'BaseCommand.__init__',
-            _nr_wrapper_BaseCommand___init___)
-    wrap_function_wrapper(module, 'BaseCommand.run_from_argv',
-            _nr_wrapper_BaseCommand_run_from_argv_)
+    wrap_function_wrapper(module, "BaseCommand.__init__", _nr_wrapper_BaseCommand___init___)
+    wrap_function_wrapper(module, "BaseCommand.run_from_argv", _nr_wrapper_BaseCommand_run_from_argv_)
 
 
 @function_wrapper
-def _nr_wrapper_django_inclusion_tag_wrapper_(wrapped, instance,
-        args, kwargs):
+def _nr_wrapper_django_inclusion_tag_wrapper_(wrapped, instance, args, kwargs):
 
-    name = hasattr(wrapped, '__name__') and wrapped.__name__
+    name = hasattr(wrapped, "__name__") and wrapped.__name__
 
     if name is None:
         return wrapped(*args, **kwargs)
@@ -1013,16 +1001,14 @@ def _nr_wrapper_django_inclusion_tag_wrapper_(wrapped, instance,
 
     tags = django_settings.instrumentation.templates.inclusion_tag
 
-    if '*' not in tags and name not in tags and qualname not in tags:
+    if "*" not in tags and name not in tags and qualname not in tags:
         return wrapped(*args, **kwargs)
 
-    return FunctionTraceWrapper(wrapped, name=name, group='Template/Tag')(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name, group="Template/Tag")(*args, **kwargs)
 
 
 @function_wrapper
-def _nr_wrapper_django_inclusion_tag_decorator_(wrapped, instance,
-        args, kwargs):
-
+def _nr_wrapper_django_inclusion_tag_decorator_(wrapped, instance, args, kwargs):
     def _bind_params(func, *args, **kwargs):
         return func, args, kwargs
 
@@ -1033,63 +1019,56 @@ def _nr_wrapper_django_inclusion_tag_decorator_(wrapped, instance,
     return wrapped(func, *_args, **_kwargs)
 
 
-def _nr_wrapper_django_template_base_Library_inclusion_tag_(wrapped,
-        instance, args, kwargs):
+def _nr_wrapper_django_template_base_Library_inclusion_tag_(wrapped, instance, args, kwargs):
 
-    return _nr_wrapper_django_inclusion_tag_decorator_(
-            wrapped(*args, **kwargs))
+    return _nr_wrapper_django_inclusion_tag_decorator_(wrapped(*args, **kwargs))
 
 
 @function_wrapper
-def _nr_wrapper_django_template_base_InclusionNode_render_(wrapped,
-        instance, args, kwargs):
+def _nr_wrapper_django_template_base_InclusionNode_render_(wrapped, instance, args, kwargs):
 
     if wrapped.__self__ is None:
         return wrapped(*args, **kwargs)
 
-    file_name = getattr(wrapped.__self__, '_nr_file_name', None)
+    file_name = getattr(wrapped.__self__, "_nr_file_name", None)
 
     if file_name is None:
         return wrapped(*args, **kwargs)
 
     name = wrapped.__self__._nr_file_name
 
-    return FunctionTraceWrapper(wrapped, name=name, group='Template/Include')(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name, group="Template/Include")(*args, **kwargs)
 
 
-def _nr_wrapper_django_template_base_generic_tag_compiler_(wrapped, instance,
-        args, kwargs):
+def _nr_wrapper_django_template_base_generic_tag_compiler_(wrapped, instance, args, kwargs):
 
     if wrapped.__code__.co_argcount > 6:
         # Django > 1.3.
 
-        def _bind_params(parser, token, params, varargs, varkw, defaults,
-                name, takes_context, node_class, *args, **kwargs):
+        def _bind_params(
+            parser, token, params, varargs, varkw, defaults, name, takes_context, node_class, *args, **kwargs
+        ):
             return node_class
+
     else:
         # Django <= 1.3.
 
-        def _bind_params(params, defaults, name, node_class, parser, token,
-                *args, **kwargs):
+        def _bind_params(params, defaults, name, node_class, parser, token, *args, **kwargs):
             return node_class
 
     node_class = _bind_params(*args, **kwargs)
 
-    if node_class.__name__ == 'InclusionNode':
+    if node_class.__name__ == "InclusionNode":
         result = wrapped(*args, **kwargs)
 
-        result.render = (
-                _nr_wrapper_django_template_base_InclusionNode_render_(
-                result.render))
+        result.render = _nr_wrapper_django_template_base_InclusionNode_render_(result.render)
 
         return result
 
     return wrapped(*args, **kwargs)
 
 
-def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance,
-        args, kwargs):
-
+def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance, args, kwargs):
     def _bind_params(name=None, compile_function=None, *args, **kwargs):
         return compile_function
 
@@ -1105,14 +1084,16 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance,
         # Django >= 1.4 uses functools.partial
 
         if isinstance(compile_function, functools.partial):
-            node_class = compile_function.keywords.get('node_class')
+            node_class = compile_function.keywords.get("node_class")
 
         # Django < 1.4 uses their home-grown "curry" function,
         # not functools.partial.
 
-        if (hasattr(compile_function, 'func_closure') and
-                hasattr(compile_function, '__name__') and
-                compile_function.__name__ == '_curried'):
+        if (
+            hasattr(compile_function, "func_closure")
+            and hasattr(compile_function, "__name__")
+            and compile_function.__name__ == "_curried"
+        ):
 
             # compile_function here is generic_tag_compiler(), which has been
             # curried. To get node_class, we first get the function obj, args,
@@ -1121,19 +1102,20 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance,
             # is not consistent from platform to platform, so we need to map
             # them to the variables in compile_function.__code__.co_freevars.
 
-            cells = dict(zip(compile_function.__code__.co_freevars,
-                    (c.cell_contents for c in compile_function.func_closure)))
+            cells = dict(
+                zip(compile_function.__code__.co_freevars, (c.cell_contents for c in compile_function.func_closure))
+            )
 
             # node_class is the 4th arg passed to generic_tag_compiler()
 
-            if 'args' in cells and len(cells['args']) > 3:
-                node_class = cells['args'][3]
+            if "args" in cells and len(cells["args"]) > 3:
+                node_class = cells["args"][3]
 
         return node_class
 
     node_class = _get_node_class(compile_function)
 
-    if node_class is None or node_class.__name__ != 'InclusionNode':
+    if node_class is None or node_class.__name__ != "InclusionNode":
         return wrapped(*args, **kwargs)
 
     # Climb stack to find the file_name of the include template.
@@ -1146,9 +1128,8 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance,
     for i in range(1, stack_levels + 1):
         frame = sys._getframe(i)
 
-        if ('generic_tag_compiler' in frame.f_code.co_names and
-                'file_name' in frame.f_code.co_freevars):
-            file_name = frame.f_locals.get('file_name')
+        if "generic_tag_compiler" in frame.f_code.co_names and "file_name" in frame.f_code.co_freevars:
+            file_name = frame.f_locals.get("file_name")
 
     if file_name is None:
         return wrapped(*args, **kwargs)
@@ -1167,22 +1148,22 @@ def instrument_django_template_base(module):
 
     settings = global_settings()
 
-    if 'django.instrumentation.inclusion-tags.r1' in settings.feature_flag:
+    if "django.instrumentation.inclusion-tags.r1" in settings.feature_flag:
 
-        if hasattr(module, 'generic_tag_compiler'):
-            wrap_function_wrapper(module, 'generic_tag_compiler',
-                    _nr_wrapper_django_template_base_generic_tag_compiler_)
+        if hasattr(module, "generic_tag_compiler"):
+            wrap_function_wrapper(
+                module, "generic_tag_compiler", _nr_wrapper_django_template_base_generic_tag_compiler_
+            )
 
-        if hasattr(module, 'Library'):
-            wrap_function_wrapper(module, 'Library.tag',
-                    _nr_wrapper_django_template_base_Library_tag_)
+        if hasattr(module, "Library"):
+            wrap_function_wrapper(module, "Library.tag", _nr_wrapper_django_template_base_Library_tag_)
 
-            wrap_function_wrapper(module, 'Library.inclusion_tag',
-                _nr_wrapper_django_template_base_Library_inclusion_tag_)
+            wrap_function_wrapper(
+                module, "Library.inclusion_tag", _nr_wrapper_django_template_base_Library_inclusion_tag_
+            )
 
 
 def _nr_wrap_converted_middleware_(middleware, name):
-
     @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -1197,9 +1178,7 @@ def _nr_wrap_converted_middleware_(middleware, name):
     return _wrapper(middleware)
 
 
-def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args,
-        kwargs):
-
+def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args, kwargs):
     def _bind_params(original_middleware, *args, **kwargs):
         return original_middleware
 
@@ -1214,21 +1193,19 @@ def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args,
 
 def instrument_django_core_handlers_exception(module):
 
-    if hasattr(module, 'convert_exception_to_response'):
-        wrap_function_wrapper(module, 'convert_exception_to_response',
-                _nr_wrapper_convert_exception_to_response_)
+    if hasattr(module, "convert_exception_to_response"):
+        wrap_function_wrapper(module, "convert_exception_to_response", _nr_wrapper_convert_exception_to_response_)
 
-    if hasattr(module, 'handle_uncaught_exception'):
-        module.handle_uncaught_exception = (
-                wrap_handle_uncaught_exception(
-                module.handle_uncaught_exception))
+    if hasattr(module, "handle_uncaught_exception"):
+        module.handle_uncaught_exception = wrap_handle_uncaught_exception(module.handle_uncaught_exception)
 
 
 def instrument_django_core_handlers_asgi(module):
     import django
 
-    framework = ('Django', django.get_version())
+    framework = ("Django", django.get_version())
 
-    if hasattr(module, 'ASGIHandler'):
+    if hasattr(module, "ASGIHandler"):
         from newrelic.api.asgi_application import wrap_asgi_application
-        wrap_asgi_application(module, 'ASGIHandler.__call__', framework=framework)
+
+        wrap_asgi_application(module, "ASGIHandler.__call__", framework=framework)

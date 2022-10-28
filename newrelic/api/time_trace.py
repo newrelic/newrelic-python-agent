@@ -630,8 +630,9 @@ def get_service_linking_metadata(application=None, settings=None):
     if not settings:
         if application is None:
             from newrelic.api.application import application_instance
+
             application = application_instance(activate=False)
-        
+
         if application is not None:
             settings = application.settings
 

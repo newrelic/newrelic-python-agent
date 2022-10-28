@@ -14,14 +14,19 @@
 
 import logging
 
+from testing_support.fixtures import reset_core_stats_engine
+from testing_support.validators.validate_log_event_count import validate_log_event_count
+from testing_support.validators.validate_log_event_count_outside_transaction import (
+    validate_log_event_count_outside_transaction,
+)
+from testing_support.validators.validate_log_events import validate_log_events
+from testing_support.validators.validate_log_events_outside_transaction import (
+    validate_log_events_outside_transaction,
+)
+
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from testing_support.fixtures import reset_core_stats_engine
-from testing_support.validators.validate_log_event_count import validate_log_event_count
-from testing_support.validators.validate_log_event_count_outside_transaction import validate_log_event_count_outside_transaction
-from testing_support.validators.validate_log_events import validate_log_events
-from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
 
 
 def set_trace_ids():
@@ -32,6 +37,7 @@ def set_trace_ids():
     if trace:
         trace.guid = "abcdefgh"
 
+
 def exercise_logging(logger):
     set_trace_ids()
 
@@ -40,15 +46,21 @@ def exercise_logging(logger):
     logger.warning("C")
     logger.error("D")
     logger.critical("E")
-    
+
     assert len(logger.caplog.records) == 3
+
 
 def update_all(events, attrs):
     for event in events:
         event.update(attrs)
 
 
-_common_attributes_service_linking = {"timestamp": None, "hostname": None, "entity.name": "Python Agent Test (logger_logging)", "entity.guid": None}
+_common_attributes_service_linking = {
+    "timestamp": None,
+    "hostname": None,
+    "entity.name": "Python Agent Test (logger_logging)",
+    "entity.guid": None,
+}
 _common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh12345678"}
 _common_attributes_trace_linking.update(_common_attributes_service_linking)
 

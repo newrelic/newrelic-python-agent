@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 def run():
     pass
+
 
 class A(object):
     def run():
         pass
+
 
 class B(object):
     def run():

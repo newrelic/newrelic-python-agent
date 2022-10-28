@@ -18,10 +18,10 @@ except ImportError:
     import urllib.parse as urlparse
 
 import newrelic.packages.six as six
-
 from newrelic.api.external_trace import ExternalTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
+
 
 def _nr_wrapper_factory(bind_params_fn, library):
     # Wrapper functions will be similar for monkeypatching the different
@@ -51,8 +51,10 @@ def _nr_wrapper_factory(bind_params_fn, library):
 
     return _nr_wrapper
 
+
 def bind_params_urlretrieve(url, *args, **kwargs):
     return url
+
 
 def bind_params_open(fullurl, *args, **kwargs):
 
@@ -61,27 +63,23 @@ def bind_params_open(fullurl, *args, **kwargs):
     else:
         return fullurl.get_full_url()
 
+
 def instrument(module):
 
-    if hasattr(module, 'urlretrieve'):
+    if hasattr(module, "urlretrieve"):
 
-        _nr_wrapper_urlretrieve_ = _nr_wrapper_factory(
-                bind_params_urlretrieve, 'urllib')
+        _nr_wrapper_urlretrieve_ = _nr_wrapper_factory(bind_params_urlretrieve, "urllib")
 
-        wrap_function_wrapper(module, 'urlretrieve', _nr_wrapper_urlretrieve_)
+        wrap_function_wrapper(module, "urlretrieve", _nr_wrapper_urlretrieve_)
 
-    if hasattr(module, 'URLopener'):
+    if hasattr(module, "URLopener"):
 
-        _nr_wrapper_url_opener_open_ = _nr_wrapper_factory(
-                bind_params_open, 'urllib')
+        _nr_wrapper_url_opener_open_ = _nr_wrapper_factory(bind_params_open, "urllib")
 
-        wrap_function_wrapper(module, 'URLopener.open',
-                _nr_wrapper_url_opener_open_)
+        wrap_function_wrapper(module, "URLopener.open", _nr_wrapper_url_opener_open_)
 
-    if hasattr(module, 'OpenerDirector'):
+    if hasattr(module, "OpenerDirector"):
 
-        _nr_wrapper_opener_director_open_ = _nr_wrapper_factory(
-                bind_params_open, 'urllib2')
+        _nr_wrapper_opener_director_open_ = _nr_wrapper_factory(bind_params_open, "urllib2")
 
-        wrap_function_wrapper(module, 'OpenerDirector.open',
-                _nr_wrapper_opener_director_open_)
+        wrap_function_wrapper(module, "OpenerDirector.open", _nr_wrapper_opener_director_open_)

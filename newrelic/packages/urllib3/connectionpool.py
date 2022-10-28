@@ -232,11 +232,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         )
 
         conn = self.ConnectionCls(
-            host=self.host,
-            port=self.port,
-            timeout=self.timeout.connect_timeout,
-            strict=self.strict,
-            **self.conn_kw
+            host=self.host, port=self.port, timeout=self.timeout.connect_timeout, strict=self.strict, **self.conn_kw
         )
         return conn
 
@@ -333,30 +329,20 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         """Is the error actually a timeout? Will raise a ReadTimeout or pass"""
 
         if isinstance(err, SocketTimeout):
-            raise ReadTimeoutError(
-                self, url, "Read timed out. (read timeout=%s)" % timeout_value
-            )
+            raise ReadTimeoutError(self, url, "Read timed out. (read timeout=%s)" % timeout_value)
 
         # See the above comment about EAGAIN in Python 3. In Python 2 we have
         # to specifically catch it and throw the timeout error
         if hasattr(err, "errno") and err.errno in _blocking_errnos:
-            raise ReadTimeoutError(
-                self, url, "Read timed out. (read timeout=%s)" % timeout_value
-            )
+            raise ReadTimeoutError(self, url, "Read timed out. (read timeout=%s)" % timeout_value)
 
         # Catch possible read timeouts thrown as SSL errors. If not the
         # case, rethrow the original. We need to do this because of:
         # http://bugs.python.org/issue10272
-        if "timed out" in str(err) or "did not complete (read)" in str(
-            err
-        ):  # Python < 2.7.4
-            raise ReadTimeoutError(
-                self, url, "Read timed out. (read timeout=%s)" % timeout_value
-            )
+        if "timed out" in str(err) or "did not complete (read)" in str(err):  # Python < 2.7.4
+            raise ReadTimeoutError(self, url, "Read timed out. (read timeout=%s)" % timeout_value)
 
-    def _make_request(
-        self, conn, method, url, timeout=_Default, chunked=False, **httplib_request_kw
-    ):
+    def _make_request(self, conn, method, url, timeout=_Default, chunked=False, **httplib_request_kw):
         """
         Perform a request on a given urllib connection object taken from our
         pool.
@@ -421,9 +407,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             # the exception and assuming all BadStatusLine exceptions are read
             # timeouts, check for a zero timeout before making the request.
             if read_timeout == 0:
-                raise ReadTimeoutError(
-                    self, url, "Read timed out. (read timeout=%s)" % read_timeout
-                )
+                raise ReadTimeoutError(self, url, "Read timed out. (read timeout=%s)" % read_timeout)
             if read_timeout is Timeout.DEFAULT_TIMEOUT:
                 conn.sock.settimeout(socket.getdefaulttimeout())
             else:  # None or a value
@@ -659,9 +643,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         # [1] <https://github.com/urllib3/urllib3/issues/651>
         release_this_conn = release_conn
 
-        http_tunnel_required = connection_requires_http_tunnel(
-            self.proxy, self.proxy_config, destination_scheme
-        )
+        http_tunnel_required = connection_requires_http_tunnel(self.proxy, self.proxy_config, destination_scheme)
 
         # Merge the proxy headers. Only done when not using HTTP CONNECT. We
         # have to copy the headers dict so we can safely change it without those
@@ -689,9 +671,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
 
             conn.timeout = timeout_obj.connect_timeout
 
-            is_new_proxy_conn = self.proxy is not None and not getattr(
-                conn, "sock", None
-            )
+            is_new_proxy_conn = self.proxy is not None and not getattr(conn, "sock", None)
             if is_new_proxy_conn and http_tunnel_required:
                 self._prepare_proxy(conn)
 
@@ -717,11 +697,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
 
             # Import httplib's response into our own wrapper object
             response = self.ResponseCls.from_httplib(
-                httplib_response,
-                pool=self,
-                connection=response_conn,
-                retries=retries,
-                **response_kw
+                httplib_response, pool=self, connection=response_conn, retries=retries, **response_kw
             )
 
             # Everything went great!
@@ -752,9 +728,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             elif isinstance(e, (SocketError, HTTPException)):
                 e = ProtocolError("Connection aborted.", e)
 
-            retries = retries.increment(
-                method, url, error=e, _pool=self, _stacktrace=sys.exc_info()[2]
-            )
+            retries = retries.increment(method, url, error=e, _pool=self, _stacktrace=sys.exc_info()[2])
             retries.sleep()
 
             # Keep track of the error for the retry warning.
@@ -777,9 +751,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
 
         if not conn:
             # Try again
-            log.warning(
-                "Retrying (%r) after connection broken by '%r': %s", retries, err, url
-            )
+            log.warning("Retrying (%r) after connection broken by '%r': %s", retries, err, url)
             return self.urlopen(
                 method,
                 url,
@@ -904,18 +876,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
     ):
 
         HTTPConnectionPool.__init__(
-            self,
-            host,
-            port,
-            strict,
-            timeout,
-            maxsize,
-            block,
-            headers,
-            retries,
-            _proxy,
-            _proxy_headers,
-            **conn_kw
+            self, host, port, strict, timeout, maxsize, block, headers, retries, _proxy, _proxy_headers, **conn_kw
         )
 
         self.key_file = key_file
@@ -976,9 +937,7 @@ class HTTPSConnectionPool(HTTPConnectionPool):
         )
 
         if not self.ConnectionCls or self.ConnectionCls is DummyConnection:
-            raise SSLError(
-                "Can't connect to HTTPS URL because the SSL module is not available."
-            )
+            raise SSLError("Can't connect to HTTPS URL because the SSL module is not available.")
 
         actual_host = self.host
         actual_port = self.port

@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import newrelic.api.error_trace
+import newrelic.api.function_trace
+import newrelic.api.import_hook
+import newrelic.api.object_wrapper
 import newrelic.api.transaction
 import newrelic.api.transaction_name
-import newrelic.api.function_trace
-import newrelic.api.error_trace
-import newrelic.api.object_wrapper
-import newrelic.api.import_hook
-
 from newrelic.api.time_trace import notice_error
 
+
 def name_controller(self, environ, start_response):
-    action = environ['pylons.routes_dict']['action']
+    action = environ["pylons.routes_dict"]["action"]
     return "%s.%s" % (newrelic.api.object_wrapper.callable_name(self), action)
+
 
 class capture_error(object):
     def __init__(self, wrapped):
@@ -43,7 +44,7 @@ class capture_error(object):
     def __call__(self, *args, **kwargs):
         current_transaction = newrelic.api.transaction.current_transaction()
         if current_transaction:
-            webob_exc = newrelic.api.import_hook.import_module('webob.exc')
+            webob_exc = newrelic.api.import_hook.import_module("webob.exc")
             try:
                 return self.__wrapped(*args, **kwargs)
             except webob_exc.HTTPException:
@@ -57,28 +58,26 @@ class capture_error(object):
     def __getattr__(self, name):
         return getattr(self.__wrapped, name)
 
+
 def instrument(module):
 
-    if module.__name__ == 'pylons.wsgiapp':
-        newrelic.api.error_trace.wrap_error_trace(module, 'PylonsApp.__call__')
+    if module.__name__ == "pylons.wsgiapp":
+        newrelic.api.error_trace.wrap_error_trace(module, "PylonsApp.__call__")
 
-    elif module.__name__ == 'pylons.controllers.core':
-        newrelic.api.transaction_name.wrap_transaction_name(
-                module, 'WSGIController.__call__', name_controller)
-        newrelic.api.function_trace.wrap_function_trace(
-                module, 'WSGIController.__call__')
+    elif module.__name__ == "pylons.controllers.core":
+        newrelic.api.transaction_name.wrap_transaction_name(module, "WSGIController.__call__", name_controller)
+        newrelic.api.function_trace.wrap_function_trace(module, "WSGIController.__call__")
 
         def name_WSGIController_perform_call(self, func, args):
             return newrelic.api.object_wrapper.callable_name(func)
 
         newrelic.api.function_trace.wrap_function_trace(
-                module, 'WSGIController._perform_call',
-                name_WSGIController_perform_call)
-        newrelic.api.object_wrapper.wrap_object(
-                module, 'WSGIController._perform_call', capture_error)
+            module, "WSGIController._perform_call", name_WSGIController_perform_call
+        )
+        newrelic.api.object_wrapper.wrap_object(module, "WSGIController._perform_call", capture_error)
 
-    elif module.__name__ == 'pylons.templating':
+    elif module.__name__ == "pylons.templating":
 
-        newrelic.api.function_trace.wrap_function_trace(module, 'render_genshi')
-        newrelic.api.function_trace.wrap_function_trace(module, 'render_mako')
-        newrelic.api.function_trace.wrap_function_trace(module, 'render_jinja2')
+        newrelic.api.function_trace.wrap_function_trace(module, "render_genshi")
+        newrelic.api.function_trace.wrap_function_trace(module, "render_mako")
+        newrelic.api.function_trace.wrap_function_trace(module, "render_jinja2")

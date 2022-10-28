@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import transient_function_wrapper
 from testing_support.fixtures import catch_background_exceptions
+
+from newrelic.common.object_wrapper import transient_function_wrapper
 
 
 def validate_custom_parameters(required_params=None, forgone_params=None):

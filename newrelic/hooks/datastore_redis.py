@@ -528,7 +528,15 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
 
     operation = _redis_operation_re.sub("_", operation)
 
-    with DatastoreTrace(product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db, source=wrapped):
+    with DatastoreTrace(
+        product="Redis",
+        target=None,
+        operation=operation,
+        host=host,
+        port_path_or_id=port_path_or_id,
+        database_name=db,
+        source=wrapped,
+    ):
         return wrapped(*args, **kwargs)
 
 
@@ -574,7 +582,7 @@ def instrument_redis_commands_bf_commands(module):
     _instrument_redis_commands_module(module, "CMSCommands")
     _instrument_redis_commands_module(module, "TDigestCommands")
     _instrument_redis_commands_module(module, "TOPKCommands")
-    
+
 
 def _instrument_redis_commands_module(module, class_name):
     for name in _redis_client_methods:

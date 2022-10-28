@@ -32,18 +32,14 @@ class SSLTransport:
         if not hasattr(ssl_context, "wrap_bio"):
             if six.PY2:
                 raise ProxySchemeUnsupported(
-                    "TLS in TLS requires SSLContext.wrap_bio() which isn't "
-                    "supported on Python 2"
+                    "TLS in TLS requires SSLContext.wrap_bio() which isn't " "supported on Python 2"
                 )
             else:
                 raise ProxySchemeUnsupported(
-                    "TLS in TLS requires SSLContext.wrap_bio() which isn't "
-                    "available on non-native SSLContext"
+                    "TLS in TLS requires SSLContext.wrap_bio() which isn't " "available on non-native SSLContext"
                 )
 
-    def __init__(
-        self, socket, ssl_context, server_hostname=None, suppress_ragged_eofs=True
-    ):
+    def __init__(self, socket, ssl_context, server_hostname=None, suppress_ragged_eofs=True):
         """
         Create an SSLTransport around socket using the provided ssl_context.
         """
@@ -53,9 +49,7 @@ class SSLTransport:
         self.suppress_ragged_eofs = suppress_ragged_eofs
         self.socket = socket
 
-        self.sslobj = ssl_context.wrap_bio(
-            self.incoming, self.outgoing, server_hostname=server_hostname
-        )
+        self.sslobj = ssl_context.wrap_bio(self.incoming, self.outgoing, server_hostname=server_hostname)
 
         # Perform initial handshake.
         self._ssl_io_loop(self.sslobj.do_handshake)
@@ -102,9 +96,7 @@ class SSLTransport:
         response = self._ssl_io_loop(self.sslobj.write, data)
         return response
 
-    def makefile(
-        self, mode="r", buffering=None, encoding=None, errors=None, newline=None
-    ):
+    def makefile(self, mode="r", buffering=None, encoding=None, errors=None, newline=None):
         """
         Python's httpclient uses makefile and buffered io when reading HTTP
         messages and we need to support it.

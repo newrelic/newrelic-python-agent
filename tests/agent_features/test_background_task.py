@@ -19,8 +19,8 @@ from newrelic.api.function_trace import FunctionTrace
 
 def test_nested_context_managers():
     app = application_instance()
-    outer = BackgroundTask(app, 'outer')
-    inner = BackgroundTask(app, 'inner')
+    outer = BackgroundTask(app, "outer")
+    inner = BackgroundTask(app, "inner")
     with outer:
         with inner:
             assert not inner.enabled

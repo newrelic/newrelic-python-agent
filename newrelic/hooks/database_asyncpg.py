@@ -94,9 +94,7 @@ class ProtocolProxy(ObjectProxy):
 
     async def prepare(self, stmt_name, query, *args, **kwargs):
         with DatabaseTrace(
-            "PREPARE {stmt_name} FROM '{query}'".format(
-                stmt_name=stmt_name, query=query
-            ),
+            "PREPARE {stmt_name} FROM '{query}'".format(stmt_name=stmt_name, query=query),
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
             source=self.__wrapped__.prepare,
@@ -131,9 +129,7 @@ def proxy_protocol(wrapped, instance, args, kwargs):
 def wrap_connect(wrapped, instance, args, kwargs):
     host = port = database_name = None
     if "addr" in kwargs:
-        host, port, database_name = PostgresApi._instance_info(
-            kwargs["addr"], None, kwargs.get("params")
-        )
+        host, port, database_name = PostgresApi._instance_info(kwargs["addr"], None, kwargs.get("params"))
 
     with DatastoreTrace(
         PostgresApi._nr_database_product,

@@ -342,10 +342,7 @@ class HTTPResponse(io.IOBase):
                 # all values are the same. Otherwise, the header is invalid.
                 lengths = set([int(val) for val in length.split(",")])
                 if len(lengths) > 1:
-                    raise InvalidHeader(
-                        "Content-Length contained multiple "
-                        "unmatching values (%s)" % length
-                    )
+                    raise InvalidHeader("Content-Length contained multiple " "unmatching values (%s)" % length)
                 length = lengths.pop()
             except ValueError:
                 length = None
@@ -377,11 +374,7 @@ class HTTPResponse(io.IOBase):
             if content_encoding in self.CONTENT_DECODERS:
                 self._decoder = _get_decoder(content_encoding)
             elif "," in content_encoding:
-                encodings = [
-                    e.strip()
-                    for e in content_encoding.split(",")
-                    if e.strip() in self.CONTENT_DECODERS
-                ]
+                encodings = [e.strip() for e in content_encoding.split(",") if e.strip() in self.CONTENT_DECODERS]
                 if len(encodings):
                     self._decoder = _get_decoder(content_encoding)
 
@@ -402,8 +395,7 @@ class HTTPResponse(io.IOBase):
         except self.DECODER_ERROR_CLASSES as e:
             content_encoding = self.headers.get("content-encoding", "").lower()
             raise DecodeError(
-                "Received response with content-encoding: %s, but "
-                "failed to decode it." % content_encoding,
+                "Received response with content-encoding: %s, but " "failed to decode it." % content_encoding,
                 e,
             )
         if flush_decoder:
@@ -517,9 +509,7 @@ class HTTPResponse(io.IOBase):
             else:
                 cache_content = False
                 data = self._fp.read(amt) if not fp_closed else b""
-                if (
-                    amt != 0 and not data
-                ):  # Platform-specific: Buggy versions of Python.
+                if amt != 0 and not data:  # Platform-specific: Buggy versions of Python.
                     # Close the connection when no data is returned
                     #
                     # This is redundant to what httplib/http.client _should_
@@ -552,7 +542,7 @@ class HTTPResponse(io.IOBase):
 
         return data
 
-    def stream(self, amt=2 ** 16, decode_content=None):
+    def stream(self, amt=2**16, decode_content=None):
         """
         A generator wrapper for the read() method. A call will block until
         ``amt`` bytes have been read from the connection or until the
@@ -651,17 +641,10 @@ class HTTPResponse(io.IOBase):
         elif hasattr(self._fp, "fileno"):
             return self._fp.fileno()
         else:
-            raise IOError(
-                "The file-like object this HTTPResponse is wrapped "
-                "around has no file descriptor"
-            )
+            raise IOError("The file-like object this HTTPResponse is wrapped " "around has no file descriptor")
 
     def flush(self):
-        if (
-            self._fp is not None
-            and hasattr(self._fp, "flush")
-            and not getattr(self._fp, "closed", False)
-        ):
+        if self._fp is not None and hasattr(self._fp, "flush") and not getattr(self._fp, "closed", False):
             return self._fp.flush()
 
     def readable(self):
@@ -739,10 +722,7 @@ class HTTPResponse(io.IOBase):
         self._init_decoder()
         # FIXME: Rewrite this method and make it a class with a better structured logic.
         if not self.chunked:
-            raise ResponseNotChunked(
-                "Response is not chunked. "
-                "Header 'transfer-encoding: chunked' is missing."
-            )
+            raise ResponseNotChunked("Response is not chunked. " "Header 'transfer-encoding: chunked' is missing.")
         if not self.supports_chunked_reads():
             raise BodyNotHttplibCompatible(
                 "Body should be http.client.HTTPResponse like. "
@@ -765,9 +745,7 @@ class HTTPResponse(io.IOBase):
                 if self.chunk_left == 0:
                     break
                 chunk = self._handle_chunk(amt)
-                decoded = self._decode(
-                    chunk, decode_content=decode_content, flush_decoder=False
-                )
+                decoded = self._decode(chunk, decode_content=decode_content, flush_decoder=False)
                 if decoded:
                     yield decoded
 

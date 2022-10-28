@@ -70,7 +70,7 @@ def test_newrelic_logger_no_error(log_buffer):
             "second": "baz",
         },
     }
-    _logger.info(u"Hello %s", u"World", extra=extra)
+    _logger.info("Hello %s", "World", extra=extra)
 
     log_buffer.seek(0)
     message = json.load(log_buffer)
@@ -88,24 +88,24 @@ def test_newrelic_logger_no_error(log_buffer):
     assert isinstance(line_number, int)
 
     expected = {
-        u"entity.name": u"Python Agent Test (agent_features)",
-        u"entity.type": u"SERVICE",
-        u"message": u"Hello World",
-        u"log.level": u"INFO",
-        u"logger.name": u"test_logs_in_context",
-        u"thread.name": u"MainThread",
-        u"process.name": u"MainProcess",
-        u"extra.string": u"foo",
-        u"extra.integer": 1,
-        u"extra.float": 1.23,
-        u"extra.null": None,
-        u"extra.array": [1, 2, 3],
-        u"extra.bool": True,
-        u"extra.non_serializable": u"set(['set'])" if six.PY2 else u"{'set'}",
-        u"extra.non_printable": u"<unprintable NonPrintableObject object>",
-        u"extra.object": {
-            u"first": u"bar",
-            u"second": u"baz",
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "Hello World",
+        "log.level": "INFO",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "extra.string": "foo",
+        "extra.integer": 1,
+        "extra.float": 1.23,
+        "extra.null": None,
+        "extra.array": [1, 2, 3],
+        "extra.bool": True,
+        "extra.non_serializable": "set(['set'])" if six.PY2 else "{'set'}",
+        "extra.non_printable": "<unprintable NonPrintableObject object>",
+        "extra.object": {
+            "first": "bar",
+            "second": "baz",
         },
     }
     expected_extra_txn_keys = (
@@ -119,7 +119,6 @@ def test_newrelic_logger_no_error(log_buffer):
     assert set(message.keys()) == set(expected_extra_txn_keys)
 
 
-
 class ExceptionForTest(ValueError):
     pass
 
@@ -129,7 +128,7 @@ def test_newrelic_logger_error_inside_transaction(log_buffer):
     try:
         raise ExceptionForTest
     except ExceptionForTest:
-        _logger.exception(u"oops")
+        _logger.exception("oops")
 
     log_buffer.seek(0)
     message = json.load(log_buffer)
@@ -147,16 +146,16 @@ def test_newrelic_logger_error_inside_transaction(log_buffer):
     assert isinstance(line_number, int)
 
     expected = {
-        u"entity.name": u"Python Agent Test (agent_features)",
-        u"entity.type": u"SERVICE",
-        u"message": u"oops",
-        u"log.level": u"ERROR",
-        u"logger.name": u"test_logs_in_context",
-        u"thread.name": u"MainThread",
-        u"process.name": u"MainProcess",
-        u"error.class": u"test_logs_in_context:ExceptionForTest",
-        u"error.message": u"",
-        u"error.expected": False,
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "oops",
+        "log.level": "ERROR",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "error.class": "test_logs_in_context:ExceptionForTest",
+        "error.message": "",
+        "error.expected": False,
     }
     expected_extra_txn_keys = (
         "trace.id",
@@ -175,7 +174,7 @@ def test_newrelic_logger_error_outside_transaction(log_buffer):
     try:
         raise ExceptionForTest
     except ExceptionForTest:
-        _logger.exception(u"oops")
+        _logger.exception("oops")
 
     log_buffer.seek(0)
     message = json.load(log_buffer)
@@ -193,15 +192,15 @@ def test_newrelic_logger_error_outside_transaction(log_buffer):
     assert isinstance(line_number, int)
 
     expected = {
-        u"entity.name": u"Python Agent Test (agent_features)",
-        u"entity.type": u"SERVICE",
-        u"message": u"oops",
-        u"log.level": u"ERROR",
-        u"logger.name": u"test_logs_in_context",
-        u"thread.name": u"MainThread",
-        u"process.name": u"MainProcess",
-        u"error.class": u"test_logs_in_context:ExceptionForTest",
-        u"error.message": u"",
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "oops",
+        "log.level": "ERROR",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "error.class": "test_logs_in_context:ExceptionForTest",
+        "error.message": "",
     }
     expected_extra_txn_keys = (
         "entity.guid",
@@ -214,14 +213,13 @@ def test_newrelic_logger_error_outside_transaction(log_buffer):
     assert set(message.keys()) == set(expected_extra_txn_keys)
 
 
-
 EXPECTED_KEYS_TXN = (
     "trace.id",
     "span.id",
     "entity.name",
     "entity.type",
     "entity.guid",
-        "hostname",
+    "hostname",
 )
 
 EXPECTED_KEYS_NO_TXN = EXPECTED_KEYS_TRACE_ENDED = (

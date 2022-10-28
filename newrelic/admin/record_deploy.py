@@ -101,9 +101,7 @@ def record_deploy(
         data = {"deployment": deployment}
         payload = encoding_utils.json_encode(data).encode("utf-8")
 
-        status_code, response = client.send_request(
-            "POST", path, headers=headers, payload=payload
-        )
+        status_code, response = client.send_request("POST", path, headers=headers, payload=payload)
 
         if status_code != 201:
             raise RuntimeError(
@@ -111,8 +109,7 @@ def record_deploy(
                 "for request made to https://%s:%d%s. The payload for the "
                 "request was %r. The response payload for the request was %r. "
                 "If this issue persists then please report this problem to New "
-                "Relic support for further investigation."
-                % (status_code, host, port, path, data, response)
+                "Relic support for further investigation." % (status_code, host, port, path, data, response)
             )
 
 
@@ -128,9 +125,7 @@ def record_deploy_cmd(args):
         usage("record-deploy")
         sys.exit(1)
 
-    def _args(
-        config_file, description, revision="Unknown", changelog=None, user=None, *args
-    ):
+    def _args(config_file, description, revision="Unknown", changelog=None, user=None, *args):
         return config_file, description, revision, changelog, user
 
     config_file, description, revision, changelog, user = _args(*args)

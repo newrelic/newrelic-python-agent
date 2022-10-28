@@ -16,21 +16,29 @@ import logging
 import re
 import time
 
-from newrelic.core.attribute import (check_name_is_string, check_name_length,
-        process_user_attribute, NameIsNotStringException, NameTooLongException,
-        MAX_NUM_USER_ATTRIBUTES)
-
+from newrelic.core.attribute import (
+    MAX_NUM_USER_ATTRIBUTES,
+    NameIsNotStringException,
+    NameTooLongException,
+    check_name_is_string,
+    check_name_length,
+    process_user_attribute,
+)
 
 _logger = logging.getLogger(__name__)
 
-EVENT_TYPE_VALID_CHARS_REGEX = re.compile(r'^[a-zA-Z0-9:_ ]+$')
+EVENT_TYPE_VALID_CHARS_REGEX = re.compile(r"^[a-zA-Z0-9:_ ]+$")
 
-class NameInvalidCharactersException(Exception): pass
+
+class NameInvalidCharactersException(Exception):
+    pass
+
 
 def check_event_type_valid_chars(name):
     regex = EVENT_TYPE_VALID_CHARS_REGEX
     if not regex.match(name):
         raise NameInvalidCharactersException()
+
 
 def process_event_type(name):
     """Perform all necessary validation on a potential event type.
@@ -55,22 +63,20 @@ def process_event_type(name):
         check_event_type_valid_chars(name)
 
     except NameIsNotStringException:
-        _logger.debug('Event type must be a string. Dropping '
-                'event: %r', name)
+        _logger.debug("Event type must be a string. Dropping " "event: %r", name)
         return FAILED_RESULT
 
     except NameTooLongException:
-        _logger.debug('Event type exceeds maximum length. Dropping '
-                'event: %r', name)
+        _logger.debug("Event type exceeds maximum length. Dropping " "event: %r", name)
         return FAILED_RESULT
 
     except NameInvalidCharactersException:
-        _logger.debug('Event type has invalid characters. Dropping '
-                'event: %r', name)
+        _logger.debug("Event type has invalid characters. Dropping " "event: %r", name)
         return FAILED_RESULT
 
     else:
         return name
+
 
 def create_custom_event(event_type, params):
     """Creates a valid custom event.
@@ -102,20 +108,25 @@ def create_custom_event(event_type, params):
             key, value = process_user_attribute(k, v)
             if key:
                 if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
-                    _logger.debug('Maximum number of attributes already '
-                            'added to event %r. Dropping attribute: %r=%r',
-                            name, key, value)
+                    _logger.debug(
+                        "Maximum number of attributes already " "added to event %r. Dropping attribute: %r=%r",
+                        name,
+                        key,
+                        value,
+                    )
                 else:
                     attributes[key] = value
     except Exception:
-        _logger.debug('Attributes failed to validate for unknown reason. '
-                'Check traceback for clues. Dropping event: %r.', name,
-                exc_info=True)
+        _logger.debug(
+            "Attributes failed to validate for unknown reason. " "Check traceback for clues. Dropping event: %r.",
+            name,
+            exc_info=True,
+        )
         return None
 
     intrinsics = {
-        'type': name,
-        'timestamp': int(1000.0 * time.time()),
+        "type": name,
+        "timestamp": int(1000.0 * time.time()),
     }
 
     event = [intrinsics, attributes]

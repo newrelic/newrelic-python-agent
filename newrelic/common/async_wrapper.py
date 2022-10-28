@@ -12,30 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import textwrap
 import functools
+import textwrap
+
 from newrelic.common.coroutine import (
-    is_coroutine_callable,
     is_asyncio_coroutine,
+    is_coroutine_callable,
     is_generator_function,
 )
 
 
 def evaluate_wrapper(wrapper_string, wrapped, trace):
-    values = {'wrapper': None, 'wrapped': wrapped,
-            'trace': trace, 'functools': functools}
+    values = {"wrapper": None, "wrapped": wrapped, "trace": trace, "functools": functools}
     exec(wrapper_string, values)
-    return values['wrapper']
+    return values["wrapper"]
 
 
 def coroutine_wrapper(wrapped, trace):
 
-    WRAPPER = textwrap.dedent("""
+    WRAPPER = textwrap.dedent(
+        """
     @functools.wraps(wrapped)
     async def wrapper(*args, **kwargs):
         with trace:
             return await wrapped(*args, **kwargs)
-    """)
+    """
+    )
 
     try:
         return evaluate_wrapper(WRAPPER, wrapped, trace)
@@ -44,7 +46,8 @@ def coroutine_wrapper(wrapped, trace):
 
 
 def awaitable_generator_wrapper(wrapped, trace):
-    WRAPPER = textwrap.dedent("""
+    WRAPPER = textwrap.dedent(
+        """
     import asyncio
 
     @functools.wraps(wrapped)
@@ -53,7 +56,8 @@ def awaitable_generator_wrapper(wrapped, trace):
         with trace:
             result = yield from wrapped(*args, **kwargs)
             return result
-    """)
+    """
+    )
 
     try:
         return evaluate_wrapper(WRAPPER, wrapped, trace)

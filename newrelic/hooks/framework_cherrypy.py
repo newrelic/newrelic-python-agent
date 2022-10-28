@@ -87,6 +87,7 @@ def handler_wrapper(wrapped, instance, args, kwargs):
 
     return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
+
 class ResourceProxy(ObjectProxy):
     def __getattr__(self, name):
         # Methods on the wrapped object corresponding to the HTTP

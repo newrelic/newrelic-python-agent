@@ -14,26 +14,25 @@
 
 import json
 import os
+
 import pytest
+from testing_support.validators.validate_internal_metrics import (
+    validate_internal_metrics,
+)
 
 from newrelic.common.utilization import PCFUtilization
 
-from testing_support.validators.validate_internal_metrics import validate_internal_metrics
-
-
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 INITIAL_ENV = os.environ
-FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
-    'utilization_vendor_specific', 'pcf.json'))
+FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization_vendor_specific", "pcf.json"))
 
-_parameters_list = ['testname', 'env_vars', 'expected_vendors_hash',
-        'expected_metrics']
+_parameters_list = ["testname", "env_vars", "expected_vendors_hash", "expected_metrics"]
 
-_parameters = ','.join(_parameters_list)
+_parameters = ",".join(_parameters_list)
 
 
 def _load_tests():
-    with open(FIXTURE, 'r') as fh:
+    with open(FIXTURE, "r") as fh:
         js = fh.read()
     return json.loads(js)
 
@@ -53,7 +52,7 @@ class Environ(object):
             if val is None:
                 continue
             elif not isinstance(val, str):
-                cleaned_env_dict[key] = val.encode('utf-8')
+                cleaned_env_dict[key] = val.encode("utf-8")
             else:
                 cleaned_env_dict[key] = val
         self.env_dict = cleaned_env_dict
@@ -67,13 +66,12 @@ class Environ(object):
 
 
 class MockResponse(object):
-
     def __init__(self, code, body):
         self.code = code
         self.text = body
 
     def raise_for_status(self):
-        assert str(self.code) == '200'
+        assert str(self.code) == "200"
 
     def json(self):
         return self.text
@@ -84,20 +82,18 @@ def test_pcf(testname, env_vars, expected_vendors_hash, expected_metrics):
 
     metrics = []
     if expected_metrics:
-        metrics = [(k, v.get('call_count')) for k, v in
-                expected_metrics.items()]
+        metrics = [(k, v.get("call_count")) for k, v in expected_metrics.items()]
 
     @validate_internal_metrics(metrics=metrics)
     def _test_pcf_data():
 
-        env_dict = dict([(key, val['response']) for key, val in
-            env_vars.items()])
+        env_dict = dict([(key, val["response"]) for key, val in env_vars.items()])
 
         with Environ(env_dict):
             data = PCFUtilization.detect()
 
         if data:
-            pcf_vendor_hash = {'pcf': data}
+            pcf_vendor_hash = {"pcf": data}
         else:
             pcf_vendor_hash = None
 

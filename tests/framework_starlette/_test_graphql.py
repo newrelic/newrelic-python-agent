@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from graphene import ObjectType, Schema, String
+from graphql.execution.executors.asyncio import AsyncioExecutor
 from starlette.applications import Starlette
+from starlette.graphql import GraphQLApp
 from starlette.routing import Route
 from testing_support.asgi_testing import AsgiTest
-
-from graphene import ObjectType, String, Schema
-from graphql.execution.executors.asyncio import AsyncioExecutor
-from starlette.graphql import GraphQLApp
 
 
 class Query(ObjectType):

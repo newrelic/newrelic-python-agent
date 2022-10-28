@@ -16,18 +16,20 @@
 
 """
 
+import functools
+import inspect
 import sys
 import types
-import inspect
-import functools
 
 from newrelic.packages import six
 
 if six.PY2:
     import exceptions
+
     _exceptions_module = exceptions
 elif six.PY3:
     import builtins
+
     _exceptions_module = builtins
 else:
     _exceptions_module = None
@@ -73,6 +75,7 @@ else:
 #   __self__:
 #     instance to which a method is bound, or None
 
+
 def _module_name(object):
     mname = None
 
@@ -81,14 +84,14 @@ def _module_name(object):
     # grab the module name from the class the descriptor was
     # being used in which is held in __objclass__.
 
-    if hasattr(object, '__objclass__'):
-        mname = getattr(object.__objclass__, '__module__', None)
+    if hasattr(object, "__objclass__"):
+        mname = getattr(object.__objclass__, "__module__", None)
 
     # The standard case is that we can just grab the __module__
     # attribute from the object.
 
     if mname is None:
-        mname = getattr(object, '__module__', None)
+        mname = getattr(object, "__module__", None)
 
     # An exception to that is builtins or any types which are
     # implemented in C code. For that we need to grab the module
@@ -98,12 +101,12 @@ def _module_name(object):
     # to which the method is bound.
 
     if mname is None:
-        self = getattr(object, '__self__', None)
-        if self is not None and hasattr(self, '__class__'):
-            mname = getattr(self.__class__, '__module__', None)
+        self = getattr(object, "__self__", None)
+        if self is not None and hasattr(self, "__class__"):
+            mname = getattr(self.__class__, "__module__", None)
 
-    if mname is None and hasattr(object, '__class__'):
-        mname = getattr(object.__class__, '__module__', None)
+    if mname is None and hasattr(object, "__class__"):
+        mname = getattr(object.__class__, "__module__", None)
 
     # Finally, if the module name isn't in sys.modules, we will
     # format it within '<>' to denote that it is a generated
@@ -111,14 +114,15 @@ def _module_name(object):
     # happens for example with namedtuple classes in Python 3.
 
     if mname and mname not in sys.modules:
-        mname = '<%s>' % mname
+        mname = "<%s>" % mname
 
     # If unable to derive the module name, fallback to unknown.
 
     if not mname:
-        mname = '<unknown>'
+        mname = "<unknown>"
 
     return mname
+
 
 def _object_context_py2(object):
 
@@ -137,9 +141,9 @@ def _object_context_py2(object):
         # type are strange so need to cope with both.
 
         if object.im_self is not None:
-            cname = getattr(object.im_self, '__name__', None)
+            cname = getattr(object.im_self, "__name__", None)
             if cname is None:
-                cname = getattr(object.im_self.__class__, '__name__')
+                cname = getattr(object.im_self.__class__, "__name__")
 
         else:
             cname = object.im_class.__name__
@@ -160,9 +164,9 @@ def _object_context_py2(object):
         # type are strange so need to cope with both.
 
         if object.__self__ is not None:
-            cname = getattr(object.__self__, '__name__', None)
+            cname = getattr(object.__self__, "__name__", None)
             if cname is None:
-                cname = getattr(object.__self__.__class__, '__name__')
+                cname = getattr(object.__self__.__class__, "__name__")
 
         fname = object.__name__
 
@@ -173,12 +177,12 @@ def _object_context_py2(object):
         # implemented as a class and don't use the class name
         # else it mucks things up.
 
-        fname = getattr(object, '__name__', None)
+        fname = getattr(object, "__name__", None)
 
         if fname is None:
             cname = object.__class__.__name__
 
-    elif hasattr(object, '__class__'):
+    elif hasattr(object, "__class__"):
         # Instances of new style classes. Instances of a class
         # don't normally have __name__. Where the object has a
         # __name__, assume it is likely going to be a decorator
@@ -187,12 +191,12 @@ def _object_context_py2(object):
         # it is a descriptor and has __objclass__, in which case
         # the class name from __objclass__ is used.
 
-        fname = getattr(object, '__name__', None)
+        fname = getattr(object, "__name__", None)
 
         if fname is not None:
-            if hasattr(object, '__objclass__'):
+            if hasattr(object, "__objclass__"):
                 cname = object.__objclass__.__name__
-            elif not hasattr(object, '__get__'):
+            elif not hasattr(object, "__get__"):
                 cname = object.__class__.__name__
         else:
             cname = object.__class__.__name__
@@ -200,14 +204,14 @@ def _object_context_py2(object):
     # Calculate the qualified path from the class name and the
     # function name.
 
-    path = ''
+    path = ""
 
     if cname:
         path = cname
 
     if fname:
         if path:
-            path += '.'
+            path += "."
         path += fname
 
     # Now calculate the name of the module object is defined in.
@@ -216,18 +220,19 @@ def _object_context_py2(object):
 
     if inspect.ismethod(object):
         if object.__self__ is not None:
-            cname = getattr(object.__self__, '__name__', None)
+            cname = getattr(object.__self__, "__name__", None)
             if cname is None:
-                owner = object.__self__.__class__   # bound method
+                owner = object.__self__.__class__  # bound method
             else:
-                owner = object.__self__             # class method
+                owner = object.__self__  # class method
 
         else:
-            owner = getattr(object, 'im_class', None)   # unbound method
+            owner = getattr(object, "im_class", None)  # unbound method
 
     mname = _module_name(owner or object)
 
     return (mname, path)
+
 
 def _object_context_py3(object):
 
@@ -238,14 +243,14 @@ def _object_context_py3(object):
         #
         # First, test for class methods.
 
-        cname = getattr(object.__self__, '__qualname__', None)
+        cname = getattr(object.__self__, "__qualname__", None)
 
         # If it's not a class method, it must be an instance method.
 
         if cname is None:
-            cname = getattr(object.__self__.__class__, '__qualname__')
+            cname = getattr(object.__self__.__class__, "__qualname__")
 
-        path = '%s.%s' % (cname, object.__name__)
+        path = "%s.%s" % (cname, object.__name__)
 
     else:
         # For functions, the __qualname__ attribute gives us the name.
@@ -253,15 +258,15 @@ def _object_context_py3(object):
         # the function is defined in, such as an outer function in the
         # case of a nested function.
 
-        path = getattr(object, '__qualname__', None)
+        path = getattr(object, "__qualname__", None)
 
         # If there is no __qualname__ it should mean it is a type
         # object of some sort. In this case we use the name from the
         # __class__. That also can be nested so need to use the
         # qualified name.
 
-        if path is None and hasattr(object, '__class__'):
-            path = getattr(object.__class__, '__qualname__')
+        if path is None and hasattr(object, "__class__"):
+            path = getattr(object.__class__, "__qualname__")
 
     # Now calculate the name of the module object is defined in.
 
@@ -269,15 +274,16 @@ def _object_context_py3(object):
 
     if inspect.ismethod(object):
         if object.__self__ is not None:
-            cname = getattr(object.__self__, '__name__', None)
+            cname = getattr(object.__self__, "__name__", None)
             if cname is None:
-                owner = object.__self__.__class__   # bound method
+                owner = object.__self__.__class__  # bound method
             else:
-                owner = object.__self__             # class method
+                owner = object.__self__  # class method
 
     mname = _module_name(owner or object)
 
     return (mname, path)
+
 
 def object_context(target):
     """Returns a tuple identifying the supplied object. This will be of
@@ -295,7 +301,7 @@ def object_context(target):
     # details for the target object and cached it against the
     # actual target object.
 
-    details = getattr(target, '_nr_object_path', None)
+    details = getattr(target, "_nr_object_path", None)
 
     # Disallow cache lookup for python 3 methods. In the case where the method
     # is defined on a parent class, the name of the parent class is incorrectly
@@ -314,10 +320,10 @@ def object_context(target):
     # original. For good measure, check that this wrapped object
     # didn't have the name details cached against it already.
 
-    source = getattr(target, '_nr_last_object', None)
+    source = getattr(target, "_nr_last_object", None)
 
     if source:
-        details = getattr(source, '_nr_object_path', None)
+        details = getattr(source, "_nr_object_path", None)
 
         if details and not _is_py3_method(source):
             return details
@@ -370,7 +376,8 @@ def object_context(target):
 
     return details
 
-def callable_name(object, separator=':'):
+
+def callable_name(object, separator=":"):
     """Returns a string name identifying the supplied object. This will be
     of the form 'module:object_path'.
 
@@ -389,6 +396,7 @@ def callable_name(object, separator=':'):
 
     return separator.join(object_context(object))
 
+
 def expand_builtin_exception_name(name):
 
     # Convert name to module:name format, if it's a builtin Exception.
@@ -404,8 +412,10 @@ def expand_builtin_exception_name(name):
 
     return name
 
+
 def _is_py3_method(target):
     return six.PY3 and inspect.ismethod(target)
+
 
 def parse_exc_info(exc_info):
     """Parse exc_info and return commonly used strings."""

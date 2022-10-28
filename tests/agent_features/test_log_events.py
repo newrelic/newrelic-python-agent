@@ -12,14 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from testing_support.fixtures import (
+    override_application_settings,
+    reset_core_stats_engine,
+)
+from testing_support.validators.validate_log_event_count import validate_log_event_count
+from testing_support.validators.validate_log_event_count_outside_transaction import (
+    validate_log_event_count_outside_transaction,
+)
+from testing_support.validators.validate_log_events import validate_log_events
+from testing_support.validators.validate_log_events_outside_transaction import (
+    validate_log_events_outside_transaction,
+)
+
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction, record_log_event, ignore_transaction
-from testing_support.fixtures import override_application_settings, reset_core_stats_engine
-from testing_support.validators.validate_log_event_count import validate_log_event_count
-from testing_support.validators.validate_log_event_count_outside_transaction import validate_log_event_count_outside_transaction
-from testing_support.validators.validate_log_events import validate_log_events
-from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
+from newrelic.api.transaction import (
+    current_transaction,
+    ignore_transaction,
+    record_log_event,
+)
 
 
 def set_trace_ids():
@@ -36,14 +48,21 @@ def exercise_record_log_event(message="A"):
 
     record_log_event(message, "ERROR")
 
+
 enable_log_forwarding = override_application_settings({"application_logging.forwarding.enabled": True})
 disable_log_forwarding = override_application_settings({"application_logging.forwarding.enabled": False})
 
-_common_attributes_service_linking = {"timestamp": None, "hostname": None, "entity.name": "Python Agent Test (agent_features)", "entity.guid": None}
+_common_attributes_service_linking = {
+    "timestamp": None,
+    "hostname": None,
+    "entity.name": "Python Agent Test (agent_features)",
+    "entity.guid": None,
+}
 _common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh12345678"}
 _common_attributes_trace_linking.update(_common_attributes_service_linking)
 _test_record_log_event_inside_transaction_events = [{"message": "A", "level": "ERROR"}]
 _test_record_log_event_inside_transaction_events[0].update(_common_attributes_trace_linking)
+
 
 @enable_log_forwarding
 def test_record_log_event_inside_transaction():
@@ -52,12 +71,13 @@ def test_record_log_event_inside_transaction():
     @background_task()
     def test():
         exercise_record_log_event()
-    
+
     test()
 
 
 _test_record_log_event_outside_transaction_events = [{"message": "A", "level": "ERROR"}]
 _test_record_log_event_outside_transaction_events[0].update(_common_attributes_service_linking)
+
 
 @enable_log_forwarding
 @reset_core_stats_engine()
@@ -73,6 +93,7 @@ def test_record_log_event_outside_transaction():
 _test_record_log_event_unknown_level_inside_transaction_events = [{"message": "A", "level": "UNKNOWN"}]
 _test_record_log_event_unknown_level_inside_transaction_events[0].update(_common_attributes_trace_linking)
 
+
 @enable_log_forwarding
 def test_record_log_event_unknown_level_inside_transaction():
     @validate_log_events(_test_record_log_event_unknown_level_inside_transaction_events)
@@ -81,12 +102,13 @@ def test_record_log_event_unknown_level_inside_transaction():
     def test():
         set_trace_ids()
         record_log_event("A")
-    
+
     test()
 
 
 _test_record_log_event_unknown_level_outside_transaction_events = [{"message": "A", "level": "UNKNOWN"}]
 _test_record_log_event_unknown_level_outside_transaction_events[0].update(_common_attributes_service_linking)
+
 
 @enable_log_forwarding
 @reset_core_stats_engine()
@@ -106,7 +128,7 @@ def test_record_log_event_empty_message_inside_transaction():
     @background_task()
     def test():
         exercise_record_log_event("")
-    
+
     test()
 
 
@@ -154,6 +176,7 @@ def test_ignored_transaction_logs_not_forwarded():
 _test_log_event_truncation_events = [{"message": "A" * 32768, "level": "ERROR"}]
 _test_log_event_truncation_events[0].update(_common_attributes_trace_linking)
 
+
 @enable_log_forwarding
 def test_log_event_truncation():
     @validate_log_events(_test_log_event_truncation_events)
@@ -171,7 +194,7 @@ def test_record_log_event_inside_transaction():
     @background_task()
     def test():
         exercise_record_log_event()
-    
+
     test()
 
 

@@ -13,11 +13,8 @@
 # limitations under the License.
 
 import webtest
-
-from testing_support.validators.validate_apdex_metrics import (
-        validate_apdex_metrics)
 from testing_support.sample_applications import simple_app
-
+from testing_support.validators.validate_apdex_metrics import validate_apdex_metrics
 
 normal_application = webtest.TestApp(simple_app)
 
@@ -27,10 +24,10 @@ normal_application = webtest.TestApp(simple_app)
 
 
 @validate_apdex_metrics(
-    name='',
-    group='Uri',
+    name="",
+    group="Uri",
     apdex_t_min=0.5,
     apdex_t_max=0.5,
 )
 def test_apdex():
-    normal_application.get('/')
+    normal_application.get("/")

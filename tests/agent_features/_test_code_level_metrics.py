@@ -13,11 +13,12 @@
 # limitations under the License.
 import functools
 
+
 def exercise_function():
     return
 
 
-class ExerciseClass():
+class ExerciseClass:
     def exercise_method(self):
         return
 
@@ -30,9 +31,10 @@ class ExerciseClass():
         return
 
 
-class ExerciseClassCallable():
+class ExerciseClassCallable:
     def __call__(self):
         return
+
 
 CLASS_INSTANCE = ExerciseClass()
 CLASS_INSTANCE_CALLABLE = ExerciseClassCallable()

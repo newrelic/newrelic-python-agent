@@ -63,7 +63,6 @@ try:
         sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
         return str(sig)
 
-
 except ImportError:
     from inspect import formatargspec
 

@@ -104,9 +104,7 @@ class AppEngineManager(RequestMethods):
         urlfetch_retries=True,
     ):
         if not urlfetch:
-            raise AppEnginePlatformError(
-                "URLFetch is not available in this environment."
-            )
+            raise AppEnginePlatformError("URLFetch is not available in this environment.")
 
         warnings.warn(
             "urllib3 is using URLFetch on Google App Engine sandbox instead "
@@ -160,8 +158,7 @@ class AppEngineManager(RequestMethods):
         except urlfetch.InvalidURLError as e:
             if "too large" in str(e):
                 raise AppEnginePlatformError(
-                    "URLFetch request too large, URLFetch only "
-                    "supports requests up to 10mb in size.",
+                    "URLFetch request too large, URLFetch only " "supports requests up to 10mb in size.",
                     e,
                 )
             raise ProtocolError(e)
@@ -173,8 +170,7 @@ class AppEngineManager(RequestMethods):
 
         except urlfetch.ResponseTooLargeError as e:
             raise AppEnginePlatformError(
-                "URLFetch response too large, URLFetch only supports"
-                "responses up to 32mb in size.",
+                "URLFetch response too large, URLFetch only supports" "responses up to 32mb in size.",
                 e,
             )
 
@@ -182,13 +178,9 @@ class AppEngineManager(RequestMethods):
             raise SSLError(e)
 
         except urlfetch.InvalidMethodError as e:
-            raise AppEnginePlatformError(
-                "URLFetch does not support method: %s" % method, e
-            )
+            raise AppEnginePlatformError("URLFetch does not support method: %s" % method, e)
 
-        http_response = self._urlfetch_response_to_http_response(
-            response, retries=retries, **response_kw
-        )
+        http_response = self._urlfetch_response_to_http_response(response, retries=retries, **response_kw)
 
         # Handle redirect?
         redirect_location = redirect and http_response.get_redirect_location()
@@ -201,9 +193,7 @@ class AppEngineManager(RequestMethods):
                     method = "GET"
 
                 try:
-                    retries = retries.increment(
-                        method, url, response=http_response, _pool=self
-                    )
+                    retries = retries.increment(method, url, response=http_response, _pool=self)
                 except MaxRetryError:
                     if retries.raise_on_redirect:
                         raise MaxRetryError(self, url, "too many redirects")

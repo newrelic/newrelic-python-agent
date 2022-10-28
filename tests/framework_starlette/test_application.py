@@ -17,13 +17,20 @@ import sys
 import pytest
 import starlette
 from testing_support.fixtures import override_ignore_status_codes
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.common.object_names import callable_name
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 starlette_version = tuple(int(x) for x in starlette.__version__.split("."))
+
 
 @pytest.fixture(scope="session")
 def target_application():
@@ -78,6 +85,7 @@ def test_application_non_async(target_application, app_name):
     response = app.get("/non_async")
     assert response.status == 200
 
+
 # Starting in Starlette v0.20.1, the ExceptionMiddleware class
 # has been moved to the starlette.middleware.exceptions from
 # starlette.exceptions
@@ -96,8 +104,10 @@ middleware_test = (
     ),
 )
 
+
 @pytest.mark.parametrize(
-    "app_name, transaction_name", middleware_test,
+    "app_name, transaction_name",
+    middleware_test,
 )
 def test_application_nonexistent_route(target_application, app_name, transaction_name):
     @validate_transaction_metrics(
@@ -272,9 +282,8 @@ middleware_test_exception = (
     ),
 )
 
-@pytest.mark.parametrize(
-    "app_name,scoped_metrics", middleware_test_exception
-)
+
+@pytest.mark.parametrize("app_name,scoped_metrics", middleware_test_exception)
 def test_starlette_http_exception(target_application, app_name, scoped_metrics):
     @validate_transaction_errors(errors=["starlette.exceptions:HTTPException"])
     @validate_transaction_metrics(

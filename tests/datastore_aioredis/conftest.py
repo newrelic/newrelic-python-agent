@@ -14,14 +14,13 @@
 
 import aioredis
 import pytest
-
 from testing_support.db_settings import redis_settings
 
-from testing_support.fixture.event_loop import event_loop as loop
-from testing_support.fixtures import (  # noqa: F401
+# from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixtures import collector_available_fixture  # noqa
+from testing_support.fixtures import (
     code_coverage_fixture,
     collector_agent_registration_fixture,
-    collector_available_fixture,
 )
 
 AIOREDIS_VERSION = tuple(int(x) for x in aioredis.__version__.split(".")[:2])
@@ -62,7 +61,9 @@ def client(request, loop):
             raise NotImplementedError()
     else:
         if request.param == "Redis":
-            return loop.run_until_complete(aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], DB_SETTINGS["port"]), db=0))
+            return loop.run_until_complete(
+                aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], DB_SETTINGS["port"]), db=0)
+            )
         elif request.param == "StrictRedis":
             pytest.skip("StrictRedis not implemented.")
         else:

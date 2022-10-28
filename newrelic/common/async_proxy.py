@@ -14,10 +14,13 @@
 
 import logging
 import time
-import newrelic.packages.six as six
 
-from newrelic.common.coroutine import (is_coroutine_callable,
-        is_asyncio_coroutine, is_generator_function)
+import newrelic.packages.six as six
+from newrelic.common.coroutine import (
+    is_asyncio_coroutine,
+    is_coroutine_callable,
+    is_generator_function,
+)
 from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.trace_cache import trace_cache
 
@@ -93,8 +96,7 @@ class TransactionContext(object):
                 CancelledError = GeneratorExit
 
         # case: coroutine completed or cancelled
-        if (exc is StopIteration or exc is GeneratorExit or
-                exc is CancelledError):
+        if exc is StopIteration or exc is GeneratorExit or exc is CancelledError:
             self.transaction.__exit__(None, None, None)
 
         # case: coroutine completed because of error
@@ -141,9 +143,12 @@ class GeneratorProxy(Coroutine):
         return self
 
     if six.PY2:
+
         def next(self):
             return self.send(None)
+
     else:
+
         def __next__(self):
             return self.send(None)
 

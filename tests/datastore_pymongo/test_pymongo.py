@@ -19,8 +19,13 @@ from testing_support.db_settings import mongodb_settings
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
 from newrelic.api.background_task import background_task
 from newrelic.packages import six
 

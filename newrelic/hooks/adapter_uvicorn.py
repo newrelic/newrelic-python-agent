@@ -30,11 +30,7 @@ def loaded_app(self):
 @loaded_app.setter
 def loaded_app(self, value):
     # Wrap only the first loaded app
-    if (
-        not getattr(self, "_nr_loaded_app", None)
-        and value
-        and getattr(self, "interface", "") != "wsgi"
-    ):
+    if not getattr(self, "_nr_loaded_app", None) and value and getattr(self, "interface", "") != "wsgi":
         value = ASGIApplicationWrapper(value)
     self._nr_loaded_app = value
 

@@ -13,65 +13,64 @@
 # limitations under the License.
 
 import pika
+from conftest import BODY, CORRELATION_ID, EXCHANGE, HEADERS, QUEUE, REPLY_TO
+from testing_support.db_settings import rabbitmq_settings
+from testing_support.fixtures import validate_tt_collector_json
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
-
-from conftest import QUEUE, EXCHANGE, CORRELATION_ID, REPLY_TO, HEADERS, BODY
-from testing_support.fixtures import validate_tt_collector_json
-from testing_support.db_settings import rabbitmq_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
 _message_broker_tt_params = {
-    'queue_name': QUEUE,
-    'routing_key': QUEUE,
-    'correlation_id': CORRELATION_ID,
-    'reply_to': REPLY_TO,
-    'headers': HEADERS.copy(),
+    "queue_name": QUEUE,
+    "routing_key": QUEUE,
+    "correlation_id": CORRELATION_ID,
+    "reply_to": REPLY_TO,
+    "headers": HEADERS.copy(),
 }
 
 _test_blocking_connection_consume_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown', None),
+    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
+    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown", None),
 ]
 
 
 @validate_transaction_metrics(
-        ('test_pika_blocking_connection_consume_generator:'
-                'test_blocking_connection_consume_break'),
-        scoped_metrics=_test_blocking_connection_consume_metrics,
-        rollup_metrics=_test_blocking_connection_consume_metrics,
-        background_task=True)
+    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_break"),
+    scoped_metrics=_test_blocking_connection_consume_metrics,
+    rollup_metrics=_test_blocking_connection_consume_metrics,
+    background_task=True,
+)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_break(producer):
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+    with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
         for method_frame, properties, body in channel.consume(QUEUE):
-            assert hasattr(method_frame, '_nr_start_time')
+            assert hasattr(method_frame, "_nr_start_time")
             assert body == BODY
             break
 
 
 @validate_transaction_metrics(
-        ('test_pika_blocking_connection_consume_generator:'
-                'test_blocking_connection_consume_connection_close'),
-        scoped_metrics=_test_blocking_connection_consume_metrics,
-        rollup_metrics=_test_blocking_connection_consume_metrics,
-        background_task=True)
+    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_connection_close"),
+    scoped_metrics=_test_blocking_connection_consume_metrics,
+    rollup_metrics=_test_blocking_connection_consume_metrics,
+    background_task=True,
+)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_connection_close(producer):
-    connection = pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host']))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"]))
     channel = connection.channel()
 
     try:
         for method_frame, properties, body in channel.consume(QUEUE):
-            assert hasattr(method_frame, '_nr_start_time')
+            assert hasattr(method_frame, "_nr_start_time")
             assert body == BODY
             channel.close()
             connection.close()
@@ -82,16 +81,15 @@ def test_blocking_connection_consume_connection_close(producer):
 
 
 @validate_transaction_metrics(
-        ('test_pika_blocking_connection_consume_generator:'
-                'test_blocking_connection_consume_timeout'),
-        scoped_metrics=_test_blocking_connection_consume_metrics,
-        rollup_metrics=_test_blocking_connection_consume_metrics,
-        background_task=True)
+    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_timeout"),
+    scoped_metrics=_test_blocking_connection_consume_metrics,
+    rollup_metrics=_test_blocking_connection_consume_metrics,
+    background_task=True,
+)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_timeout(producer):
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+    with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
         for result in channel.consume(QUEUE, inactivity_timeout=0.01):
@@ -99,7 +97,7 @@ def test_blocking_connection_consume_timeout(producer):
             if result and any(result):
                 method_frame, properties, body = result
                 channel.basic_ack(method_frame.delivery_tag)
-                assert hasattr(method_frame, '_nr_start_time')
+                assert hasattr(method_frame, "_nr_start_time")
                 assert body == BODY
             else:
                 # timeout hit!
@@ -107,16 +105,15 @@ def test_blocking_connection_consume_timeout(producer):
 
 
 @validate_transaction_metrics(
-        ('test_pika_blocking_connection_consume_generator:'
-                'test_blocking_connection_consume_exception_in_for_loop'),
-        scoped_metrics=_test_blocking_connection_consume_metrics,
-        rollup_metrics=_test_blocking_connection_consume_metrics,
-        background_task=True)
+    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_exception_in_for_loop"),
+    scoped_metrics=_test_blocking_connection_consume_metrics,
+    rollup_metrics=_test_blocking_connection_consume_metrics,
+    background_task=True,
+)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_exception_in_for_loop(producer):
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+    with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
         try:
@@ -128,29 +125,28 @@ def test_blocking_connection_consume_exception_in_for_loop(producer):
             # Expected error
             pass
         except Exception as e:
-            assert False, 'Wrong exception was raised: %s' % e
+            assert False, "Wrong exception was raised: %s" % e
         else:
-            assert False, 'No exception was raised!'
+            assert False, "No exception was raised!"
 
 
 _test_blocking_connection_consume_empty_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown', None),
+    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
+    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown", None),
 ]
 
 
 @validate_transaction_metrics(
-        ('test_pika_blocking_connection_consume_generator:'
-                'test_blocking_connection_consume_exception_in_generator'),
-        scoped_metrics=_test_blocking_connection_consume_empty_metrics,
-        rollup_metrics=_test_blocking_connection_consume_empty_metrics,
-        background_task=True)
+    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_exception_in_generator"),
+    scoped_metrics=_test_blocking_connection_consume_empty_metrics,
+    rollup_metrics=_test_blocking_connection_consume_empty_metrics,
+    background_task=True,
+)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_exception_in_generator():
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+    with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
         try:
@@ -161,29 +157,28 @@ def test_blocking_connection_consume_exception_in_generator():
             # Expected error
             pass
         except Exception as e:
-            assert False, 'Wrong exception was raised: %s' % e
+            assert False, "Wrong exception was raised: %s" % e
         else:
-            assert False, 'No exception was raised!'
+            assert False, "No exception was raised!"
 
 
 _test_blocking_connection_consume_many_metrics = [
-    ('MessageBroker/RabbitMQ/Exchange/Produce/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/%s' % EXCHANGE, None),
-    ('MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown', None),
+    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
+    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown", None),
 ]
 
 
 @validate_transaction_metrics(
-        ('test_pika_blocking_connection_consume_generator:'
-                'test_blocking_connection_consume_many'),
-        scoped_metrics=_test_blocking_connection_consume_many_metrics,
-        rollup_metrics=_test_blocking_connection_consume_many_metrics,
-        background_task=True)
+    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_many"),
+    scoped_metrics=_test_blocking_connection_consume_many_metrics,
+    rollup_metrics=_test_blocking_connection_consume_many_metrics,
+    background_task=True,
+)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_many(produce_five):
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+    with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
         consumed = 0
@@ -196,22 +191,21 @@ def test_blocking_connection_consume_many(produce_five):
 
 
 @validate_transaction_metrics(
-        ('test_pika_blocking_connection_consume_generator:'
-                'test_blocking_connection_consume_using_methods'),
-        scoped_metrics=_test_blocking_connection_consume_metrics,
-        rollup_metrics=_test_blocking_connection_consume_metrics,
-        background_task=True)
+    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_using_methods"),
+    scoped_metrics=_test_blocking_connection_consume_metrics,
+    rollup_metrics=_test_blocking_connection_consume_metrics,
+    background_task=True,
+)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_consume_using_methods(producer):
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+    with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
         consumer = channel.consume(QUEUE, inactivity_timeout=0.01)
 
         method, properties, body = next(consumer)
-        assert hasattr(method, '_nr_start_time')
+        assert hasattr(method, "_nr_start_time")
         assert body == BODY
 
         result = next(consumer)
@@ -224,28 +218,28 @@ def test_blocking_connection_consume_using_methods(producer):
             pass
         else:
             # this is not
-            assert False, 'No exception was raised!'
+            assert False, "No exception was raised!"
 
         result = consumer.close()
         assert result is None
 
 
 @validate_transaction_metrics(
-        'Named/%s' % EXCHANGE,
-        scoped_metrics=_test_blocking_connection_consume_metrics,
-        rollup_metrics=_test_blocking_connection_consume_metrics,
-        background_task=True,
-        group='Message/RabbitMQ/Exchange')
+    "Named/%s" % EXCHANGE,
+    scoped_metrics=_test_blocking_connection_consume_metrics,
+    rollup_metrics=_test_blocking_connection_consume_metrics,
+    background_task=True,
+    group="Message/RabbitMQ/Exchange",
+)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 def test_blocking_connection_consume_outside_txn(producer):
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+    with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
         consumer = channel.consume(QUEUE)
 
         try:
             for method_frame, properties, body in consumer:
-                assert hasattr(method_frame, '_nr_start_time')
+                assert hasattr(method_frame, "_nr_start_time")
                 assert body == BODY
                 break
         finally:
@@ -254,26 +248,24 @@ def test_blocking_connection_consume_outside_txn(producer):
 
 
 def test_blocking_connection_consume_many_outside_txn(produce_five):
-
     @validate_transaction_metrics(
-            'Named/%s' % EXCHANGE,
-            scoped_metrics=_test_blocking_connection_consume_metrics,
-            rollup_metrics=_test_blocking_connection_consume_metrics,
-            background_task=True,
-            group='Message/RabbitMQ/Exchange')
-    @validate_tt_collector_json(
-            message_broker_params=_message_broker_tt_params)
+        "Named/%s" % EXCHANGE,
+        scoped_metrics=_test_blocking_connection_consume_metrics,
+        rollup_metrics=_test_blocking_connection_consume_metrics,
+        background_task=True,
+        group="Message/RabbitMQ/Exchange",
+    )
+    @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
     def consume_it(consumer, up_next=None):
         if up_next is None:
             method_frame, properties, body = next(consumer)
         else:
             method_frame, properties, body = up_next
-        assert hasattr(method_frame, '_nr_start_time')
+        assert hasattr(method_frame, "_nr_start_time")
         assert body == BODY
         return next(consumer)
 
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+    with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
         consumer = channel.consume(QUEUE)
 
@@ -288,21 +280,21 @@ def test_blocking_connection_consume_many_outside_txn(produce_five):
 
 
 @validate_transaction_metrics(
-        'Named/%s' % EXCHANGE,
-        scoped_metrics=_test_blocking_connection_consume_metrics,
-        rollup_metrics=_test_blocking_connection_consume_metrics,
-        background_task=True,
-        group='Message/RabbitMQ/Exchange')
+    "Named/%s" % EXCHANGE,
+    scoped_metrics=_test_blocking_connection_consume_metrics,
+    rollup_metrics=_test_blocking_connection_consume_metrics,
+    background_task=True,
+    group="Message/RabbitMQ/Exchange",
+)
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 def test_blocking_connection_consume_using_methods_outside_txn(producer):
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+    with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
         consumer = channel.consume(QUEUE, inactivity_timeout=0.01)
 
         method, properties, body = next(consumer)
-        assert hasattr(method, '_nr_start_time')
+        assert hasattr(method, "_nr_start_time")
         assert body == BODY
 
         result = next(consumer)
@@ -315,22 +307,21 @@ def test_blocking_connection_consume_using_methods_outside_txn(producer):
             pass
         else:
             # this is not
-            assert False, 'No exception was raised!'
+            assert False, "No exception was raised!"
 
         result = consumer.close()
         assert result is None
 
 
 @validate_transaction_metrics(
-        ('test_pika_blocking_connection_consume_generator:'
-                'test_blocking_connection_consume_exception_on_creation'),
-        scoped_metrics=_test_blocking_connection_consume_empty_metrics,
-        rollup_metrics=_test_blocking_connection_consume_empty_metrics,
-        background_task=True)
+    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_exception_on_creation"),
+    scoped_metrics=_test_blocking_connection_consume_empty_metrics,
+    rollup_metrics=_test_blocking_connection_consume_empty_metrics,
+    background_task=True,
+)
 @background_task()
 def test_blocking_connection_consume_exception_on_creation():
-    with pika.BlockingConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host'])) as connection:
+    with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
         try:
@@ -340,4 +331,4 @@ def test_blocking_connection_consume_exception_on_creation():
             pass
         else:
             # this is not
-            assert False, 'TypeError was not raised'
+            assert False, "TypeError was not raised"

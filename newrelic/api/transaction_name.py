@@ -15,11 +15,11 @@
 import functools
 
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+
 
 def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
-
     def dynamic_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -68,11 +68,10 @@ def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
 
     return FunctionWrapper(wrapped, literal_wrapper)
 
-def transaction_name(name=None, group=None, priority=None):
-    return functools.partial(TransactionNameWrapper, name=name,
-            group=group, priority=priority)
 
-def wrap_transaction_name(module, object_path, name=None, group=None,
-                          priority=None):
-    return wrap_object(module, object_path, TransactionNameWrapper,
-            (name, group, priority))
+def transaction_name(name=None, group=None, priority=None):
+    return functools.partial(TransactionNameWrapper, name=name, group=group, priority=priority)
+
+
+def wrap_transaction_name(module, object_path, name=None, group=None, priority=None):
+    return wrap_object(module, object_path, TransactionNameWrapper, (name, group, priority))

@@ -18,7 +18,7 @@ import os
 import pwd
 
 from newrelic.admin import command, usage
-from newrelic.common import agent_http, certs, encoding_utils
+from newrelic.common import agent_http, encoding_utils
 from newrelic.config import initialize
 from newrelic.core.config import global_settings
 
@@ -125,6 +125,7 @@ def record_deploy_cmd(args):
         usage("record-deploy")
         sys.exit(1)
 
+    # pylint: disable=W1113
     def _args(config_file, description, revision="Unknown", changelog=None, user=None, *args):
         return config_file, description, revision, changelog, user
 

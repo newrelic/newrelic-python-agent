@@ -38,7 +38,7 @@ def local_config(args):
     if len(args) >= 2:
         log_file = args[1]
     else:
-        log_file = "/tmp/python-agent-test.log"
+        log_file = "/tmp/python-agent-test.log"  # nosec
 
     log_level = logging.DEBUG
 

@@ -34,13 +34,13 @@ def generate_config(args):
 
     config_file = os.path.join(package_root, "newrelic.ini")
 
-    content = open(config_file, "r").read()
+    content = open(config_file, "r").read()  # pylint: disable=W1514,R1732
 
     if len(args) >= 1:
         content = content.replace("*** REPLACE ME ***", args[0])
 
     if len(args) >= 2 and args[1] != "-":
-        output_file = open(args[1], "w")
+        output_file = open(args[1], "w")  # pylint: disable=W1514,R1732
         output_file.write(content)
         output_file.close()
     else:

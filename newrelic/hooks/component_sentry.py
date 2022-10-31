@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import wrap_function_wrapper, FunctionWrapper
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper
 
 # This is NOT a fully-featured instrumentation for the sentry SDK. Instead
 # this is a monkey-patch of the sentry SDK to work around a bug that causes

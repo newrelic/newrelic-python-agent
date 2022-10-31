@@ -2179,6 +2179,8 @@ def _process_module_builtin_defaults():
         "instrument_graphqlserver",
     )
 
+    _process_module_definition("sentry_sdk.integrations.asgi", "newrelic.hooks.component_sentry", "instrument_sentry_sdk_integrations_asgi")
+
     # _process_module_definition('web.application',
     #        'newrelic.hooks.framework_webpy')
     # _process_module_definition('web.template',

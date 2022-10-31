@@ -55,7 +55,7 @@ def usage(name):
 
 
 @command("help", "[command]", hidden=True)
-def help(args):
+def _help(args):
     if not args:
         print("Usage: newrelic-admin command [options]")
         print()

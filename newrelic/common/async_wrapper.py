@@ -24,7 +24,7 @@ from newrelic.common.coroutine import (
 
 def evaluate_wrapper(wrapper_string, wrapped, trace):
     values = {"wrapper": None, "wrapped": wrapped, "trace": trace, "functools": functools}
-    exec(wrapper_string, values)
+    exec(wrapper_string, values)  # nosec
     return values["wrapper"]
 
 

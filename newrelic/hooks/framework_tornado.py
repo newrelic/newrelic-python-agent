@@ -258,7 +258,7 @@ def create_client_wrapper(wrapped, trace):
             return response
     """
     )
-    exec(wrapper, values)
+    exec(wrapper, values)  # nosec
     return values["wrapper"]
 
 

@@ -44,17 +44,15 @@ def validate_total_time_value_greater_than(value, concurrent=False):
 
 
 @function_trace(name="child")
-@asyncio.coroutine
-def child():
-    yield from asyncio.sleep(0.1)
+async def child():
+    await asyncio.sleep(0.1)
 
 
 @background_task(name="parent")
-@asyncio.coroutine
-def parent(calls):
+async def parent(calls):
     coros = [child() for _ in range(calls)]
-    yield from asyncio.gather(*coros)
-    yield from asyncio.sleep(0.1)
+    await asyncio.gather(*coros)
+    await asyncio.sleep(0.1)
 
 
 @validate_total_time_value_greater_than(0.2)

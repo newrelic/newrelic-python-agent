@@ -29,6 +29,7 @@ from testing_support.sample_asgi_applications import (
     AppWithCall,
     AppWithCallRaw,
     simple_app_v2_raw,
+    simple_app_v3,
 )
 from testing_support.util import get_open_port
 
@@ -46,6 +47,10 @@ skip_asgi_2_unsupported = pytest.mark.skipif(DAPHNE_VERSION >= (3, 0), reason="A
             marks=skip_asgi_2_unsupported,
         ),
         pytest.param(
+            simple_app_v3,
+            marks=skip_asgi_3_unsupported,
+        ),
+        pytest.param(
             AppWithCallRaw(),
             marks=skip_asgi_3_unsupported,
         ),
@@ -54,7 +59,7 @@ skip_asgi_2_unsupported = pytest.mark.skipif(DAPHNE_VERSION >= (3, 0), reason="A
             marks=skip_asgi_3_unsupported,
         ),
     ),
-    ids=("raw", "class_with_call", "class_with_call_double_wrapped"),
+    ids=("raw", "wrapped", "class_with_call", "class_with_call_double_wrapped"),
 )
 def app(request, server_and_port):
     app = request.param
@@ -112,7 +117,12 @@ def server_and_port():
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 def test_daphne_200(port, app):
-    @validate_transaction_metrics(callable_name(app))
+    @validate_transaction_metrics(
+        callable_name(app),
+        custom_metrics=[
+            ("Python/Dispatcher/Daphne/%s" % daphne.__version__, 1),
+        ],
+    )
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():

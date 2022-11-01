@@ -128,7 +128,14 @@ def wait_for_port(port, retries=10):
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 def test_hypercorn_200(port, app):
-    @validate_transaction_metrics(callable_name(app))
+    hypercorn_version = pkg_resources.get_distribution("hypercorn").version
+
+    @validate_transaction_metrics(
+        callable_name(app),
+        custom_metrics=[
+            ("Python/Dispatcher/Hypercorn/%s" % hypercorn_version, 1),
+        ],
+    )
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():

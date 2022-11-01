@@ -60,6 +60,8 @@ def test_multiple_transactions(get_consumer_record, topic):
 
 
 def test_custom_metrics_on_existing_transaction(get_consumer_record, topic):
+    from kafka.version import __version__ as version
+
     transaction_name = (
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"
     )
@@ -69,6 +71,7 @@ def test_custom_metrics_on_existing_transaction(get_consumer_record, topic):
         custom_metrics=[
             ("Message/Kafka/Topic/Named/%s/Received/Bytes" % topic, 1),
             ("Message/Kafka/Topic/Named/%s/Received/Messages" % topic, 1),
+            ("Python/MessageBroker/Kafka-Python/%s" % version, 1),
         ],
         background_task=True,
     )

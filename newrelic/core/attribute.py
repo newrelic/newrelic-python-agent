@@ -13,20 +13,21 @@
 # limitations under the License.
 
 import logging
-
 from collections import namedtuple
 
+from newrelic.core.attribute_filter import (
+    DST_ALL,
+    DST_ERROR_COLLECTOR,
+    DST_SPAN_EVENTS,
+    DST_TRANSACTION_EVENTS,
+    DST_TRANSACTION_SEGMENTS,
+    DST_TRANSACTION_TRACER,
+)
 from newrelic.packages import six
-
-from newrelic.core.attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS, DST_SPAN_EVENTS,
-        DST_TRANSACTION_SEGMENTS)
-
 
 _logger = logging.getLogger(__name__)
 
-_Attribute = namedtuple('_Attribute',
-        ['name', 'value', 'destinations'])
+_Attribute = namedtuple("_Attribute", ["name", "value", "destinations"])
 
 # The following destinations are created here, never changed, and only
 # used in create_agent_attributes. It is placed at the module level here
@@ -34,61 +35,59 @@ _Attribute = namedtuple('_Attribute',
 
 # All agent attributes go to transaction traces and error traces by default.
 
-_DESTINATIONS = (DST_ERROR_COLLECTOR |
-                 DST_TRANSACTION_TRACER |
-                 DST_TRANSACTION_SEGMENTS)
-_DESTINATIONS_WITH_EVENTS = (_DESTINATIONS |
-                             DST_TRANSACTION_EVENTS |
-                             DST_SPAN_EVENTS)
+_DESTINATIONS = DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER | DST_TRANSACTION_SEGMENTS
+_DESTINATIONS_WITH_EVENTS = _DESTINATIONS | DST_TRANSACTION_EVENTS | DST_SPAN_EVENTS
 
 # The following subset goes to transaction events by default.
 
-_TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set((
-        'host.displayName',
-        'request.method',
-        'request.headers.contentType',
-        'request.headers.contentLength',
-        'request.uri',
-        'response.status',
-        'request.headers.accept',
-        'response.headers.contentLength',
-        'response.headers.contentType',
-        'request.headers.host',
-        'request.headers.userAgent',
-        'message.queueName',
-        'message.routingKey',
-        'http.url',
-        'http.statusCode',
-        'aws.requestId',
-        'aws.operation',
-        'aws.lambda.arn',
-        'aws.lambda.coldStart',
-        'aws.lambda.eventSource.arn',
+_TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
+    (
+        "host.displayName",
+        "request.method",
+        "request.headers.contentType",
+        "request.headers.contentLength",
+        "request.uri",
+        "response.status",
+        "request.headers.accept",
+        "response.headers.contentLength",
+        "response.headers.contentType",
+        "request.headers.host",
+        "request.headers.userAgent",
+        "message.queueName",
+        "message.routingKey",
+        "http.url",
+        "http.statusCode",
+        "aws.requestId",
+        "aws.operation",
+        "aws.lambda.arn",
+        "aws.lambda.coldStart",
+        "aws.lambda.eventSource.arn",
         "db.collection",
-        'db.instance',
-        'db.operation',
-        'db.statement',
-        'error.class',
-        'error.message',
-        'error.expected',
-        'peer.hostname',
-        'peer.address',
-        'graphql.field.name',
-        'graphql.field.parentType',
-        'graphql.field.path',
-        'graphql.field.returnType',
-        'graphql.operation.name',
-        'graphql.operation.type',
-        'graphql.operation.query',
+        "db.instance",
+        "db.operation",
+        "db.statement",
+        "error.class",
+        "error.message",
+        "error.expected",
+        "peer.hostname",
+        "peer.address",
+        "graphql.field.name",
+        "graphql.field.parentType",
+        "graphql.field.path",
+        "graphql.field.returnType",
+        "graphql.operation.name",
+        "graphql.operation.type",
+        "graphql.operation.query",
         "code.filepath",
         "code.function",
         "code.lineno",
         "code.namespace",
-))
+    )
+)
 
 MAX_NUM_USER_ATTRIBUTES = 128
 MAX_ATTRIBUTE_LENGTH = 255
-MAX_64_BIT_INT = 2 ** 63 - 1
+MAX_64_BIT_INT = 2**63 - 1
 MAX_LOG_MESSAGE_LENGTH = 32768
 
 
@@ -109,10 +108,8 @@ class CastingFailureException(Exception):
 
 
 class Attribute(_Attribute):
-
     def __repr__(self):
-        return "Attribute(name=%r, value=%r, destinations=%r)" % (
-                self.name, self.value, bin(self.destinations))
+        return "Attribute(name=%r, value=%r, destinations=%r)" % (self.name, self.value, bin(self.destinations))
 
 
 def create_attributes(attr_dict, destinations, attribute_filter):
@@ -142,8 +139,7 @@ def create_agent_attributes(attr_dict, attribute_filter):
     return attributes
 
 
-def resolve_user_attributes(
-            attr_dict, attribute_filter, target_destination, attr_class=dict):
+def resolve_user_attributes(attr_dict, attribute_filter, target_destination, attr_class=dict):
     u_attrs = attr_class()
 
     for attr_name, attr_value in attr_dict.items():
@@ -158,8 +154,7 @@ def resolve_user_attributes(
     return u_attrs
 
 
-def resolve_agent_attributes(
-            attr_dict, attribute_filter, target_destination, attr_class=dict):
+def resolve_agent_attributes(attr_dict, attribute_filter, target_destination, attr_class=dict):
     a_attrs = attr_class()
 
     for attr_name, attr_value in attr_dict.items():
@@ -182,10 +177,9 @@ def create_user_attributes(attr_dict, attribute_filter):
     return create_attributes(attr_dict, destinations, attribute_filter)
 
 
-def truncate(
-        text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding='utf-8', ending=None):
+def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding="utf-8", ending=None):
 
-    # Truncate text so that it's byte representation
+    # Truncate text so that its byte representation
     # is no longer than maxsize bytes.
 
     # If text is unicode (Python 2 or 3), return unicode.
@@ -198,21 +192,21 @@ def truncate(
         ending = ending and ending.encode(encoding)
 
     if ending and truncated != text:
-        truncated = truncated[:-len(ending)] + ending
+        truncated = truncated[: -len(ending)] + ending
 
     return truncated
 
 
-def _truncate_unicode(u, maxsize, encoding='utf-8'):
+def _truncate_unicode(u, maxsize, encoding="utf-8"):
     encoded = u.encode(encoding)[:maxsize]
-    return encoded.decode(encoding, 'ignore')
+    return encoded.decode(encoding, "ignore")
 
 
 def _truncate_bytes(s, maxsize):
     return s[:maxsize]
 
 
-def check_name_length(name, max_length=MAX_ATTRIBUTE_LENGTH, encoding='utf-8'):
+def check_name_length(name, max_length=MAX_ATTRIBUTE_LENGTH, encoding="utf-8"):
     trunc_name = truncate(name, max_length, encoding)
     if name != trunc_name:
         raise NameTooLongException()
@@ -228,8 +222,7 @@ def check_max_int(value, max_int=MAX_64_BIT_INT):
         raise IntTooLargeException()
 
 
-def process_user_attribute(
-        name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=None):
+def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=None):
 
     # Perform all necessary checks on a potential attribute.
     #
@@ -250,23 +243,19 @@ def process_user_attribute(
         value = sanitize(value)
 
     except NameIsNotStringException:
-        _logger.debug('Attribute name must be a string. Dropping '
-                'attribute: %r=%r', name, value)
+        _logger.debug("Attribute name must be a string. Dropping " "attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except NameTooLongException:
-        _logger.debug('Attribute name exceeds maximum length. Dropping '
-                'attribute: %r=%r', name, value)
+        _logger.debug("Attribute name exceeds maximum length. Dropping " "attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except IntTooLargeException:
-        _logger.debug('Attribute value exceeds maximum integer value. '
-                'Dropping attribute: %r=%r', name, value)
+        _logger.debug("Attribute value exceeds maximum integer value. " "Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except CastingFailureException:
-        _logger.debug('Attribute value cannot be cast to a string. '
-                'Dropping attribute: %r=%r', name, value)
+        _logger.debug("Attribute value cannot be cast to a string. " "Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     else:
@@ -278,9 +267,12 @@ def process_user_attribute(
         if isinstance(value, valid_types_text):
             trunc_value = truncate(value, maxsize=max_length, ending=ending)
             if value != trunc_value:
-                _logger.debug('Attribute value exceeds maximum length '
-                        '(%r bytes). Truncating value: %r=%r.',
-                        max_length, name, trunc_value)
+                _logger.debug(
+                    "Attribute value exceeds maximum length " "(%r bytes). Truncating value: %r=%r.",
+                    max_length,
+                    name,
+                    trunc_value,
+                )
 
             value = trunc_value
 
@@ -294,8 +286,7 @@ def sanitize(value):
     #
     # Raise CastingFailureException, if str(value) somehow fails.
 
-    valid_value_types = (six.text_type, six.binary_type, bool, float,
-            six.integer_types)
+    valid_value_types = (six.text_type, six.binary_type, bool, float, six.integer_types)
 
     if not isinstance(value, valid_value_types):
         original = value
@@ -305,7 +296,8 @@ def sanitize(value):
         except Exception:
             raise CastingFailureException()
         else:
-            _logger.debug('Attribute value is of type: %r. Casting %r to '
-                    'string: %s', type(original), original, value)
+            _logger.debug(
+                "Attribute value is of type: %r. Casting %r to " "string: %s", type(original), original, value
+            )
 
     return value

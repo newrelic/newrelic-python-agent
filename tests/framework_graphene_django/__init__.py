@@ -12,19 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    from django.conf.urls.defaults import path
-except ImportError:
-    try:
-        from django.conf.urls import path
-    except ImportError:
-        from django.urls import path
+import os
 
-from django.views.decorators.csrf import csrf_exempt
-from graphene_django.views import GraphQLView
-
-from ._target_schema_sync import target_schema
-
-urlpatterns = [
-    path("", csrf_exempt(GraphQLView.as_view(graphiql=True, schema=target_schema)), name="graphql"),
-]
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "framework_graphene_django.settings")

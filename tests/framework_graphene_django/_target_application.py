@@ -12,7 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import webtest
-from wsgi import application
 
-_target_application = webtest.TestApp(application)
+import json
+
+import webtest
+
+from .wsgi import application
+
+
+def check_response(query, success, response):
+    if isinstance(query, str) and "error" not in query:
+        assert success and "errors" not in response, response["errors"]
+        assert response["data"]
+    else:
+        assert "errors" in response, response
+
+
+def run_wsgi(app):
+    def _run_wsgi(query, middleware=None):
+        if not isinstance(query, str) or "error" in query:
+            expect_errors = True
+        else:
+            expect_errors = False
+
+        app.app.middleware = middleware
+
+        response = app.post(
+            "/", json.dumps({"query": query}), headers={"Content-Type": "application/json"}, expect_errors=expect_errors
+        )
+
+        body = json.loads(response.body.decode("utf-8"))
+        if expect_errors:
+            assert body["errors"]
+        else:
+            assert "errors" not in body or not body["errors"]
+
+        return body.get("data", {})
+
+    return _run_wsgi
+
+
+target_application = {
+    "wsgi-sync": run_wsgi(webtest.TestApp(application)),
+}

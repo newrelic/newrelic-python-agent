@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
-
 try:
     from django.core.wsgi import get_wsgi_application
 

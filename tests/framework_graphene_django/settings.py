@@ -21,48 +21,37 @@ DEBUG = True
 
 django_version = django.VERSION
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = "OMGsecrets"  # nosec: B105
+SECRET_KEY = "NotASecret"  # nosec: B105
 
 # List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    "django.template.loaders.filesystem.Loader",
-    "django.template.loaders.app_directories.Loader",
-)
-
-# middleware = (
-#     'django.middleware.common.CommonMiddleware',
-#     'django.contrib.sessions.middleware.SessionMiddleware',
-#     'django.middleware.csrf.CsrfViewMiddleware',
-#     'django.contrib.auth.middleware.AuthenticationMiddleware',
-#     'django.contrib.messages.middleware.MessageMiddleware',
-#     'django.middleware.gzip.GZipMiddleware',
-#     'middleware.ExceptionTo410Middleware',
+# TEMPLATE_LOADERS = (
+#     "django.template.loaders.filesystem.Loader",
+#     "django.template.loaders.app_directories.Loader",
 # )
-# if django_version[:2] >= (1, 10):
-#     MIDDLEWARE = middleware
-# else:
-#     MIDDLEWARE_CLASSES = middleware
 
-ROOT_URLCONF = "urls"
+ROOT_URLCONF = "framework_graphene_django.urls"
 
-TEMPLATE_DIRS = [os.path.join(BASE_DIR, "templates")]
+# TEMPLATE_DIRS = [os.path.join(BASE_DIR, "templates")]
 
 # For Django 1.10 compatibility because TEMPLATE_DIRS is deprecated
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": TEMPLATE_DIRS,
-    }
-]
+# TEMPLATES = [
+#     {
+#         # "BACKEND": "django.template.backends.django.DjangoTemplates",
+#         # "DIRS": TEMPLATE_DIRS,
+#         "DIRS": []
+#     }
+# ]
 
 INSTALLED_APPS = (
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "dummy_app",
-    "newrelic.extras.framework_graphene_django",
+    # "django.contrib.auth",
+    # "django.contrib.contenttypes",
+    # "django.contrib.sessions",
+    # "django.contrib.messagess",
+    # "django.contrib.staticfiles",
+    "graphene_django",
+    "framework_graphene_django",
 )
 
-GRAPHENE = {"SCHEMA": "schema.schema"}
+# GRAPHENE = {"SCHEMA": "_target_schema_sync.schema"}
 
 WSGI_APPLICATION = "wsgi.application"

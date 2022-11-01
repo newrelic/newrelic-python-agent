@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+# import os
 
 # import pytest
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
@@ -23,7 +23,7 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
 
 # from newrelic.packages import six
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+# os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
 _coverage_source = [
     "newrelic.hooks.framework_graphql",

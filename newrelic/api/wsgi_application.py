@@ -650,7 +650,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
 
         def _start_response(status, response_headers, *args):
 
-            additional_headers = transaction.process_response(status, response_headers, *args)
+            additional_headers = transaction.process_response(status, response_headers)
 
             _write = start_response(status, response_headers + additional_headers, *args)
 

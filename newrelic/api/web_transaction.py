@@ -799,7 +799,7 @@ class WSGIWebTransaction(WebTransaction):
 
         return super(WSGIWebTransaction, self)._update_agent_attributes()
 
-    def process_response(self, status, response_headers, *args):
+    def process_response(self, status, response_headers):
         """Processes response status and headers, extracting any
         details required and returning a set of additional headers
         to merge into that being returned for the web transaction.

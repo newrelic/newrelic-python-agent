@@ -31,7 +31,6 @@ class FunctionProfile(object):
 
     def __exit__(self, exc, value, tb):
         self.profile.disable()
-        pass
 
 
 class FunctionProfileSession(object):

@@ -88,7 +88,7 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None, params=Non
                     with FunctionTrace(_gname, _group, params=params, parent=parent):
                         try:
                             if exc is not None:
-                                yielded = generator.throw(*exc)
+                                yielded = generator.throw(*exc)  # pylint: disable=E1133
                                 exc = None
                             else:
                                 yielded = generator.send(value)

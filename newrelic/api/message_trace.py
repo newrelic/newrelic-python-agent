@@ -91,7 +91,10 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
         )
 
 
-def MessageTraceWrapper(wrapped, library, operation, destination_type, destination_name, params={}, terminal=True):
+def MessageTraceWrapper(wrapped, library, operation, destination_type, destination_name, params=None, terminal=True):
+    if params is None:
+        params = {}
+
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -153,7 +156,9 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type, destinati
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
 
 
-def message_trace(library, operation, destination_type, destination_name, params={}, terminal=True):
+def message_trace(library, operation, destination_type, destination_name, params=None, terminal=True):
+    if params is None:
+        params = {}
     return functools.partial(
         MessageTraceWrapper,
         library=library,
@@ -166,8 +171,10 @@ def message_trace(library, operation, destination_type, destination_name, params
 
 
 def wrap_message_trace(
-    module, object_path, library, operation, destination_type, destination_name, params={}, terminal=True
+    module, object_path, library, operation, destination_type, destination_name, params=None, terminal=True
 ):
+    if params is None:
+        params = {}
     wrap_object(
         module,
         object_path,

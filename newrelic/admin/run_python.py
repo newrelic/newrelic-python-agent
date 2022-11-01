@@ -14,7 +14,7 @@
 
 from __future__ import print_function
 
-from newrelic.admin import command, usage
+from newrelic.admin import command
 
 
 @command(
@@ -64,7 +64,6 @@ def run_python(args):
             log_message("%s = %r", name, os.environ.get(name))
 
     from newrelic import __file__ as root_directory
-    from newrelic import version
 
     root_directory = os.path.dirname(root_directory)
     boot_directory = os.path.join(root_directory, "bootstrap")
@@ -76,7 +75,7 @@ def run_python(args):
 
     if "PYTHONPATH" in os.environ:
         path = os.environ["PYTHONPATH"].split(os.path.pathsep)
-        if not boot_directory in path:
+        if boot_directory not in path:
             python_path = "%s%s%s" % (boot_directory, os.path.pathsep, os.environ["PYTHONPATH"])
 
     os.environ["PYTHONPATH"] = python_path
@@ -107,4 +106,4 @@ def run_python(args):
     log_message("python_exe_path = %r", python_exe_path)
     log_message("execl_arguments = %r", [python_exe_path, python_exe_path] + args)
 
-    os.execl(python_exe_path, python_exe_path, *args)
+    os.execl(python_exe_path, python_exe_path, *args)  # nosec

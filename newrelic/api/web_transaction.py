@@ -42,7 +42,7 @@ from newrelic.packages import six
 _logger = logging.getLogger(__name__)
 
 _js_agent_header_fragment = '<script type="text/javascript">%s</script>'
-_js_agent_footer_fragment = '<script type="text/javascript">' "window.NREUM||(NREUM={});NREUM.info=%s</script>"
+_js_agent_footer_fragment = '<script type="text/javascript">window.NREUM||(NREUM={});NREUM.info=%s</script>'
 
 # Seconds since epoch for Jan 1 2000
 JAN_1_2000 = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, 0))
@@ -413,7 +413,7 @@ class WebTransaction(Transaction):
 
             except UnicodeError:
                 if not WebTransaction.unicode_error_reported:
-                    _logger.error("ASCII encoding of js-agent-header failed.", header)
+                    _logger.error("ASCII encoding of js-agent-header %s failed.", header)
                     WebTransaction.unicode_error_reported = True
 
                 header = ""
@@ -514,7 +514,7 @@ class WebTransaction(Transaction):
 
         except UnicodeError:
             if not WebTransaction.unicode_error_reported:
-                _logger.error("ASCII encoding of js-agent-footer failed.", footer)
+                _logger.error("ASCII encoding of js-agent-footer %s failed.", footer)
                 WebTransaction.unicode_error_reported = True
 
             footer = ""

@@ -61,8 +61,6 @@ def _LambdaHandlerWrapper(wrapped, application=None, name=None, group=None):
         # actual application. Do this rather than check type so that
         # can easily mock it for testing.
 
-        # FIXME Should this allow for multiple apps if a string.
-
         if not hasattr(application, "activate"):
             target_application = application_instance(application)
 

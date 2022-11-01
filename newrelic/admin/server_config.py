@@ -41,7 +41,7 @@ def server_config(args):
     if len(args) >= 2:
         log_file = args[1]
     else:
-        log_file = "/tmp/python-agent-test.log"
+        log_file = "/tmp/python-agent-test.log"  # nosec
 
     log_level = logging.DEBUG
 
@@ -70,7 +70,7 @@ def server_config(args):
 
     if not _application.active:
         _logger.error(
-            "Unable to register application for test, " "connection could not be established within %s seconds.",
+            "Unable to register application for test, connection could not be established within %s seconds.",
             _timeout,
         )
         return

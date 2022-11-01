@@ -74,7 +74,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         else:
             _group = group
 
-        if type(application) != Application:
+        if not isinstance(application, Application):
             _application = application_instance(application)
         else:
             _application = application
@@ -99,7 +99,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
         proxy = async_proxy(wrapped)
 
-        if proxy:
+        if proxy:  # pylint: disable=W0125
             context_manager = TransactionContext(create_transaction)
             return proxy(wrapped(*args, **kwargs), context_manager)
 
@@ -110,7 +110,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         success = True
 
         try:
-            manager.__enter__()
+            manager.__enter__()  # pylint: disable=C2801
             try:
                 return wrapped(*args, **kwargs)
             except:

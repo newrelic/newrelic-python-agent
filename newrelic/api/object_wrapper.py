@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import sys
-
-# from newrelic.common.object_names import callable_name
-# from newrelic.common.object_wrapper import ObjectWrapper, wrap_object
+from newrelic.common.object_wrapper import (  # noqa: F401; pylint: disable=W0611
+    ObjectWrapper,
+    wrap_object,
+)
 
 # These have been moved. They are retained here until all references to
 # them are moved at which point will mark as deprecated to ensure users

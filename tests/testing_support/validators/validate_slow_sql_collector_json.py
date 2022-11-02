@@ -20,8 +20,13 @@ from newrelic.core.database_utils import SQLConnections
 from newrelic.packages import six
 
 
-def validate_slow_sql_collector_json(required_params=set(), forgone_params=set(), exact_params=None):
+def validate_slow_sql_collector_json(required_params=None, forgone_params=None, exact_params=None):
     """Check that slow_sql json output is in accordance with agent specs."""
+
+    if required_params is None:
+        required_params = set()
+    if forgone_params is None:
+        forgone_params = set()
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_slow_sql_collector_json(wrapped, instance, args, kwargs):

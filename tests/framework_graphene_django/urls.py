@@ -21,9 +21,8 @@ except ImportError:
         from django.urls import path
 
 from django.views.decorators.csrf import csrf_exempt
+from framework_graphene._target_schema_sync import target_schema
 from graphene_django.views import GraphQLView
-
-from ._target_schema_sync import target_schema
 
 urlpatterns = [
     path("", csrf_exempt(GraphQLView.as_view(graphiql=True, schema=target_schema)), name="graphql"),

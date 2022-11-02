@@ -15,6 +15,7 @@
 
 import json
 
+import pytest
 import webtest
 
 from .wsgi import application
@@ -35,7 +36,8 @@ def run_wsgi(app):
         else:
             expect_errors = False
 
-        app.app.middleware = middleware
+        if middleware is not None:
+            pytest.skip("Middleware not supported.")
 
         response = app.post(
             "/", json.dumps({"query": query}), headers={"Content-Type": "application/json"}, expect_errors=expect_errors

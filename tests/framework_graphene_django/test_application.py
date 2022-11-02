@@ -26,25 +26,18 @@ def target_application(request):
         return
 
     try:
-        import graphene_django
+        import graphene
 
-        version = graphene_django.__version__
+        version = graphene.__version__
     except Exception:
         import pkg_resources
 
-        version = pkg_resources.get_distribution("graphene_django").version
+        version = pkg_resources.get_distribution("graphene").version
 
     param = request.param.split("-")
-    is_background = param[0] not in {"wsgi", "asgi"}
+    is_background = False
     schema_type = param[1]
     extra_spans = 4 if param[0] == "wsgi" else 0
 
     assert version is not None
-    return "GrapheneDjango", version, target_application, is_background, schema_type, extra_spans
-
-
-# def test_no_harm(target_application):
-#     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
-#     r = target_application("{ hello }")
-#     breakpoint()
-#     pass
+    return "Graphene", version, target_application, is_background, schema_type, extra_spans

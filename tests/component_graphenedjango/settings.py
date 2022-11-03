@@ -23,11 +23,11 @@ django_version = django.VERSION
 
 SECRET_KEY = "NotASecret"  # nosec: B105
 
-ROOT_URLCONF = "framework_graphene_django.urls"
+ROOT_URLCONF = "component_graphenedjango.urls"
 
 INSTALLED_APPS = (
     "graphene_django",
-    "framework_graphene_django",
+    "component_graphenedjango",
 )
 
 MIDDLEWARE = []

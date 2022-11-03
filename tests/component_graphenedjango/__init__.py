@@ -14,4 +14,4 @@
 
 import os
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "framework_graphene_django.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "component_graphenedjango.settings")

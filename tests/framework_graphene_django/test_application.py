@@ -37,7 +37,7 @@ def target_application(request):
     param = request.param.split("-")
     is_background = False
     schema_type = param[1]
-    extra_spans = 4 if param[0] == "wsgi" else 0
+    extra_spans = 8 if param[0] == "wsgi" else 0
 
     assert version is not None
     return "Graphene", version, target_application, is_background, schema_type, extra_spans

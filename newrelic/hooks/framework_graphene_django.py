@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import sys
-
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.graphql_trace import GraphQLOperationTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
-
-# from newrelic.core.graphql_utils import graphql_statement
+from newrelic.core.graphql_utils import graphql_statement
 from newrelic.hooks.framework_graphene import (
     framework_details as graphene_framework_details,
 )
@@ -30,16 +27,7 @@ from newrelic.hooks.framework_graphql import (
 from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
 
 
-def graphene_django_version():
-    import graphene_django
-
-    try:
-        return tuple(int(x) for x in graphene_django.__version__.split("."))
-    except Exception:
-        return (0, 0, 0)
-
-
-def bind_execute(query, *args, **kwargs):
+def bind_execute_graphql_request(request, data, query, variables, operation_name, show_graphiql=False):
     return query
 
 
@@ -49,15 +37,10 @@ def wrap_execute_graphql_request(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    # Return early for versions where this wrapper is unnecessary
-    version = graphene_django_version()
-    if version >= (3,) or not version:
-        return wrapped(*args, **kwargs)
-
     try:
-        query = bind_execute(*args, **kwargs)
+        query = bind_execute_graphql_request(*args, **kwargs)
     except TypeError:
-        return wrapped(*args, **kwargs)
+        query = None
 
     framework = graphene_framework_details()
     transaction.add_framework_info(name=framework[0], version=framework[1])
@@ -70,8 +53,9 @@ def wrap_execute_graphql_request(wrapped, instance, args, kwargs):
 
     with GraphQLOperationTrace(source=wrapped) as trace:
         trace.product = "Graphene"
-        # breakpoint()
-        # trace.statement = graphql_statement(query)
+        if query:
+            trace.statement = graphql_statement(query)
+
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
 

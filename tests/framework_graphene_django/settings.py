@@ -17,41 +17,19 @@ import os
 import django
 
 BASE_DIR = os.path.dirname(__file__)
-DEBUG = True
+DEBUG = False
 
 django_version = django.VERSION
 
 SECRET_KEY = "NotASecret"  # nosec: B105
 
-# List of callables that know how to import templates from various sources.
-# TEMPLATE_LOADERS = (
-#     "django.template.loaders.filesystem.Loader",
-#     "django.template.loaders.app_directories.Loader",
-# )
-
 ROOT_URLCONF = "framework_graphene_django.urls"
 
-# TEMPLATE_DIRS = [os.path.join(BASE_DIR, "templates")]
-
-# For Django 1.10 compatibility because TEMPLATE_DIRS is deprecated
-# TEMPLATES = [
-#     {
-#         # "BACKEND": "django.template.backends.django.DjangoTemplates",
-#         # "DIRS": TEMPLATE_DIRS,
-#         "DIRS": []
-#     }
-# ]
-
 INSTALLED_APPS = (
-    # "django.contrib.auth",
-    # "django.contrib.contenttypes",
-    # "django.contrib.sessions",
-    # "django.contrib.messagess",
-    # "django.contrib.staticfiles",
     "graphene_django",
     "framework_graphene_django",
 )
 
-# GRAPHENE = {"SCHEMA": "_target_schema_sync.schema"}
+MIDDLEWARE = []
 
 WSGI_APPLICATION = "wsgi.application"

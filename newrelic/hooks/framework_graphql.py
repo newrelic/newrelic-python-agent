@@ -550,7 +550,15 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
+    # Inspect trace stack to see if there is an active GraphQLOperationTrace and return early if so
+    trace = current_trace()
+    while trace is not None:
+        if isinstance(trace, GraphQLOperationTrace):
+            return wrapped(*args, **kwargs)
+        trace = getattr(trace, "parent", None)
+
     transaction.add_framework_info(name="GraphQL", version=framework_version())
+
     if graphql_version() < (3, 0):
         bind_query = bind_execute_graphql_query
     else:

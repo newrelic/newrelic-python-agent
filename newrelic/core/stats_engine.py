@@ -1012,7 +1012,7 @@ class StatsEngine(object):
             self._log_events.merge(transaction.log_events, priority=transaction.priority)
 
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         settings = self.__settings
         if not (settings and settings.application_logging and settings.application_logging.enabled and settings.application_logging.forwarding and settings.application_logging.forwarding.enabled):
             return

@@ -1487,7 +1487,7 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         settings = self.settings
         if not (
             settings
@@ -1909,7 +1909,7 @@ def record_custom_event(event_type, params, application=None):
         application.record_custom_event(event_type, params)
 
 
-def record_log_event(message, level=None, timestamp=None, application=None, priority=None):
+def record_log_event(message, level=None, timestamp=None, attributes=None, application=None, priority=None):
     """Record a log event.
 
     Args:
@@ -1925,7 +1925,7 @@ def record_log_event(message, level=None, timestamp=None, application=None, prio
             application = application_instance(activate=False)
 
             if application and application.enabled:
-                application.record_log_event(message, level, timestamp, priority=priority)
+                application.record_log_event(message, level, timestamp, attributes=attributes, priority=priority)
             else:
                 _logger.debug(
                     "record_log_event has been called but no transaction or application was running. As a result, "
@@ -1936,7 +1936,7 @@ def record_log_event(message, level=None, timestamp=None, application=None, prio
                     timestamp,
                 )
     elif application.enabled:
-        application.record_log_event(message, level, timestamp, priority=priority)
+        application.record_log_event(message, level, timestamp, attributes=attributes, priority=priority)
 
 
 def accept_distributed_trace_payload(payload, transport_type="HTTP"):

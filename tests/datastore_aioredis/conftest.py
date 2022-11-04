@@ -15,8 +15,7 @@
 import aioredis
 import pytest
 from testing_support.db_settings import redis_settings
-
-# from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixture.event_loop import event_loop as loop  # noqa
 from testing_support.fixtures import collector_available_fixture  # noqa
 from testing_support.fixtures import (
     code_coverage_fixture,
@@ -51,7 +50,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 
 @pytest.fixture(params=("Redis", "StrictRedis"))
-def client(request, loop):
+def client(request, loop):  # noqa
     if AIOREDIS_VERSION >= (2, 0):
         if request.param == "Redis":
             return aioredis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)

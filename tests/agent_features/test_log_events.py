@@ -64,6 +64,9 @@ def exercise_record_log_event():
 enable_log_forwarding = override_application_settings(
     {"application_logging.forwarding.enabled": True, "application_logging.forwarding.context_data.enabled": True}
 )
+disable_log_attributes = override_application_settings(
+    {"application_logging.forwarding.enabled": True, "application_logging.forwarding.context_data.enabled": False}
+)
 disable_log_forwarding = override_application_settings({"application_logging.forwarding.enabled": False})
 
 _common_attributes_service_linking = {
@@ -103,6 +106,7 @@ _exercise_record_log_event_outside_transaction_events = [
     combine_dicts(_common_attributes_service_linking, log) for log in _exercise_record_log_event_events
 ]
 
+# Test Log Forwarding
 
 @enable_log_forwarding
 def test_record_log_event_inside_transaction():
@@ -137,7 +141,7 @@ def test_ignored_transaction_logs_not_forwarded():
     test()
 
 
-# Test Truncation
+# Test Message Truncation
 
 _test_log_event_truncation_events = [{"message": "A" * 32768}]
 
@@ -165,7 +169,6 @@ def test_log_event_truncation_outside_transaction():
 
 # Test Log Forwarding Settings
 
-
 @disable_log_forwarding
 def test_disabled_record_log_event_inside_transaction():
     @validate_log_event_count(0)
@@ -182,5 +185,28 @@ def test_disabled_record_log_event_outside_transaction():
     @validate_log_event_count_outside_transaction(0)
     def test():
         exercise_record_log_event()
+
+    test()
+
+# Test Log Attribute Settings
+
+@disable_log_attributes
+def test_attributes_disabled_inside_transaction():
+    @validate_log_events([{"message": "A"}], forgone_attrs=["context.key"])
+    @validate_log_event_count(1)
+    @background_task()
+    def test():
+        record_log_event("A", attributes={"key": "value"})
+
+    test()
+
+
+@disable_log_attributes
+@reset_core_stats_engine()
+def test_attributes_disabled_outside_transaction():
+    @validate_log_events_outside_transaction([{"message": "A"}], forgone_attrs=["context.key"])
+    @validate_log_event_count_outside_transaction(1)
+    def test():
+        record_log_event("A", attributes={"key": "value"})
 
     test()

@@ -1507,11 +1507,16 @@ class Transaction(object):
 
         message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
 
+        attrs = get_linking_metadata()
+        if attributes and (settings and settings.application_logging and settings.application_logging.forwarding and settings.application_logging.forwarding.context_data and settings.application_logging.forwarding.context_data.enabled):
+            # TODO add attibute filtering
+            attrs.update({"context." + k: v for k, v in six.iteritems(attributes)})
+            
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=get_linking_metadata(),
+            attributes=attrs,
         )
 
         self._log_events.add(event, priority=priority)

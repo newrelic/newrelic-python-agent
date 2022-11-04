@@ -28,7 +28,7 @@ except ImportError:
     from urllib.parse import quote
 
 
-DEFAULT_LOG_RECORD_KEYS = frozenset(vars(LogRecord("", 0, "", 0, "", (), None)))
+DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(LogRecord("", 0, "", 0, "", (), None))) | {"message"})
 
 
 def add_nr_linking_metadata(message):
@@ -53,7 +53,7 @@ def bind_callHandlers(record):
     return record
 
 
-def filter_record_attributes(record, settings):
+def filter_record_attributes(record):
     record_attrs = vars(record)
     if len(record_attrs) > len(DEFAULT_LOG_RECORD_KEYS):
         return {k: v for k, v in six.iteritems(vars(record)) if k not in DEFAULT_LOG_RECORD_KEYS}
@@ -90,7 +90,7 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             try:
                 message = record.getMessage()
-                attrs = filter_record_attributes(record, settings)
+                attrs = filter_record_attributes(record)
                 record_log_event(message=message, level=level_name, timestamp=int(record.created * 1000), attributes=attrs)
             except Exception:
                 pass

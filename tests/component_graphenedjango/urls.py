@@ -22,12 +22,12 @@ except ImportError:
 
 from graphene_django.views import GraphQLView
 
-
 graphql_view = GraphQLView.as_view(graphiql=True)
 
 urlpatterns = [
     path("", graphql_view, name="graphql"),
 ]
+
 
 def set_schema_and_middleware(schema=None, middleware=None):
     graphql_view.view_initkwargs.update({"schema": schema, "middleware": middleware})

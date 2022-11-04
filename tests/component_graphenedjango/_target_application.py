@@ -16,14 +16,13 @@
 import json
 
 import webtest
+from framework_graphene._target_schema_sync import target_schema as target_schema_sync
+from testing_support.asgi_testing import AsgiTest
 
 from .asgi import application as asgi_application
-from .wsgi import application as wsgi_application
 from .urls import set_schema_and_middleware
+from .wsgi import application as wsgi_application
 
-from framework_graphene._target_schema_sync import target_schema as target_schema_sync
-
-from testing_support.asgi_testing import AsgiTest
 
 def check_response(query, success, response):
     if isinstance(query, str) and "error" not in query:
@@ -52,6 +51,7 @@ def run_asgi(app, schema):
             assert "errors" not in body or not body["errors"], body["errors"]
 
         return body.get("data", {})
+
     return _run_asgi
 
 

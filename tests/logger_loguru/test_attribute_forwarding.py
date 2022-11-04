@@ -21,12 +21,11 @@ from testing_support.validators.validate_log_events_outside_transaction import v
 from testing_support.fixtures import override_application_settings
 
 
-_logger_attributes = {"str_attr": "Value", "int_attr": 1, "dict_attr": {"key": "value"}}
-_event_attributes = {"message": "A", "context.global_extra": "global_value", "context.str_attr": "Value", "context.int_attr": "1", "context.dict_attr": '{"key":"value"}'}
+_event_attributes = {"message": "A", "context.key": "value", "context.int_attr": "1", "context.dict_attr": '{"key":"value"}'}
 
 
 def exercise_logging(logger):
-    logger.bind(**_logger_attributes).error("A")
+    logger.bind(key="value").error("A")
     assert len(logger.caplog.records) == 1
 
 @override_application_settings({

@@ -22,12 +22,14 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 class ErrorTrace(object):
     def __init__(
         self,
-        ignore_errors=[],
+        ignore_errors=None,
         ignore=None,
         expected=None,
         status_code=None,
         parent=None,
     ):
+        if ignore_errors is None:
+            ignore_errors = []
         if parent is None:
             parent = current_trace()
 
@@ -38,10 +40,7 @@ class ErrorTrace(object):
 
         if ignore_errors:
             warnings.warn(
-                (
-                    "The ignore_errors argument is deprecated. Please use the "
-                    "new ignore argument instead."
-                ),
+                ("The ignore_errors argument is deprecated. Please use the new ignore argument instead."),
                 DeprecationWarning,
             )
 
@@ -63,9 +62,10 @@ class ErrorTrace(object):
         )
 
 
-def ErrorTraceWrapper(
-    wrapped, ignore_errors=[], ignore=None, expected=None, status_code=None
-):
+def ErrorTraceWrapper(wrapped, ignore_errors=None, ignore=None, expected=None, status_code=None):
+    if ignore_errors is None:
+        ignore_errors = []
+
     def wrapper(wrapped, instance, args, kwargs):
         parent = current_trace()
 
@@ -78,7 +78,9 @@ def ErrorTraceWrapper(
     return FunctionWrapper(wrapped, wrapper)
 
 
-def error_trace(ignore_errors=[], ignore=None, expected=None, status_code=None):
+def error_trace(ignore_errors=None, ignore=None, expected=None, status_code=None):
+    if ignore_errors is None:
+        ignore_errors = []
     return functools.partial(
         ErrorTraceWrapper,
         ignore_errors=ignore_errors,
@@ -88,9 +90,9 @@ def error_trace(ignore_errors=[], ignore=None, expected=None, status_code=None):
     )
 
 
-def wrap_error_trace(
-    module, object_path, ignore_errors=[], ignore=None, expected=None, status_code=None
-):
+def wrap_error_trace(module, object_path, ignore_errors=None, ignore=None, expected=None, status_code=None):
+    if ignore_errors is None:
+        ignore_errors = []
     wrap_object(
         module,
         object_path,

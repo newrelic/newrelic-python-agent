@@ -14,11 +14,10 @@
 
 import copy
 
-from newrelic.common.object_wrapper import (
-    function_wrapper,
-    transient_function_wrapper,
-)
 from testing_support.fixtures import catch_background_exceptions
+
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
+
 
 def validate_time_metrics_outside_transaction(time_metrics=None, index=-1):
     time_metrics = time_metrics or []

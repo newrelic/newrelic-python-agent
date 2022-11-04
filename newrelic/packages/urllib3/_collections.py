@@ -85,9 +85,7 @@ class RecentlyUsedContainer(MutableMapping):
             return len(self._container)
 
     def __iter__(self):
-        raise NotImplementedError(
-            "Iteration over this class is unlikely to be threadsafe."
-        )
+        raise NotImplementedError("Iteration over this class is unlikely to be threadsafe.")
 
     def clear(self):
         with self.lock:
@@ -168,9 +166,7 @@ class HTTPHeaderDict(MutableMapping):
             return False
         if not isinstance(other, type(self)):
             other = type(self)(other)
-        return dict((k.lower(), v) for k, v in self.itermerged()) == dict(
-            (k.lower(), v) for k, v in other.itermerged()
-        )
+        return dict((k.lower(), v) for k, v in self.itermerged()) == dict((k.lower(), v) for k, v in other.itermerged())
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -234,10 +230,7 @@ class HTTPHeaderDict(MutableMapping):
         with self.add instead of self.__setitem__
         """
         if len(args) > 1:
-            raise TypeError(
-                "extend() takes at most 1 positional "
-                "arguments ({0} given)".format(len(args))
-            )
+            raise TypeError("extend() takes at most 1 positional " "arguments ({0} given)".format(len(args)))
         other = args[0] if len(args) >= 1 else ()
 
         if isinstance(other, HTTPHeaderDict):
@@ -323,9 +316,7 @@ class HTTPHeaderDict(MutableMapping):
                     # We received a header line that starts with OWS as described
                     # in RFC-7230 S3.2.4. This indicates a multiline header, but
                     # there exists no previous header to which we can attach it.
-                    raise InvalidHeader(
-                        "Header continuation with no previous header: %s" % line
-                    )
+                    raise InvalidHeader("Header continuation with no previous header: %s" % line)
                 else:
                     key, value = headers[-1]
                     headers[-1] = (key, value + " " + line.strip())

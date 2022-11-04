@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import aredis
+import pytest
 
 from newrelic.hooks.datastore_redis import _conn_attrs_to_dict, _instance_info
 
@@ -45,6 +45,7 @@ def test_strict_redis_client_instance_info(args, kwargs, expected):
     r = aredis.StrictRedis(*args, **kwargs)
     conn_kwargs = r.connection_pool.connection_kwargs
     assert _instance_info(conn_kwargs) == expected
+
 
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_tests)
 def test_strict_redis_connection_instance_info(args, kwargs, expected):
@@ -79,7 +80,7 @@ if (3, 5, 3) >= REDIS_PY_VERSION >= (2, 7, 5):
 if REDIS_PY_VERSION >= (2, 10):
     _instance_info_from_url_tests.extend(
         [
-            (("rediss://localhost:6379/2/",), {}, ("localhost", "6379", "2")),          # rediss: Not a typo
+            (("rediss://localhost:6379/2/",), {}, ("localhost", "6379", "2")),  # rediss: Not a typo
             (("redis://localhost:6379",), {"host": "someotherhost"}, ("localhost", "6379", "0")),
             (("redis://localhost:6379/2",), {"db": 3}, ("localhost", "6379", "2")),
             (("redis://localhost:6379/2/?db=111",), {}, ("localhost", "6379", "111")),

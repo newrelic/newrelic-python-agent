@@ -19,15 +19,13 @@ make use of when doing monkey patching.
 
 """
 
-import sys
 import inspect
+import sys
 
 from newrelic.packages import six
-
-from newrelic.packages.wrapt import (ObjectProxy as _ObjectProxy,
-        FunctionWrapper as _FunctionWrapper,
-        BoundFunctionWrapper as _BoundFunctionWrapper)
-
+from newrelic.packages.wrapt import BoundFunctionWrapper as _BoundFunctionWrapper
+from newrelic.packages.wrapt import FunctionWrapper as _FunctionWrapper
+from newrelic.packages.wrapt import ObjectProxy as _ObjectProxy
 from newrelic.packages.wrapt.wrappers import _FunctionWrapperBase
 
 # We previously had our own pure Python implementation of the generic
@@ -48,24 +46,23 @@ from newrelic.packages.wrapt.wrappers import _FunctionWrapperBase
 
 
 class _ObjectWrapperBase(object):
-
     def __setattr__(self, name, value):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
+        if name.startswith("_nr_"):
+            name = name.replace("_nr_", "_self_", 1)
             setattr(self, name, value)
         else:
             _ObjectProxy.__setattr__(self, name, value)
 
     def __getattr__(self, name):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
+        if name.startswith("_nr_"):
+            name = name.replace("_nr_", "_self_", 1)
             return getattr(self, name)
         else:
             return _ObjectProxy.__getattr__(self, name)
 
     def __delattr__(self, name):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
+        if name.startswith("_nr_"):
+            name = name.replace("_nr_", "_self_", 1)
             delattr(self, name)
         else:
             _ObjectProxy.__delattr__(self, name)
@@ -79,8 +76,7 @@ class _ObjectWrapperBase(object):
         try:
             return self._self_last_object
         except AttributeError:
-            self._self_last_object = getattr(self.__wrapped__,
-                    '_nr_last_object', self.__wrapped__)
+            self._self_last_object = getattr(self.__wrapped__, "_nr_last_object", self.__wrapped__)
             return self._self_last_object
 
     @property
@@ -105,24 +101,23 @@ class FunctionWrapper(_ObjectWrapperBase, _FunctionWrapper):
 
 
 class ObjectProxy(_ObjectProxy):
-
     def __setattr__(self, name, value):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
+        if name.startswith("_nr_"):
+            name = name.replace("_nr_", "_self_", 1)
             setattr(self, name, value)
         else:
             _ObjectProxy.__setattr__(self, name, value)
 
     def __getattr__(self, name):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
+        if name.startswith("_nr_"):
+            name = name.replace("_nr_", "_self_", 1)
             return getattr(self, name)
         else:
             return _ObjectProxy.__getattr__(self, name)
 
     def __delattr__(self, name):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
+        if name.startswith("_nr_"):
+            name = name.replace("_nr_", "_self_", 1)
             delattr(self, name)
         else:
             _ObjectProxy.__delattr__(self, name)
@@ -136,15 +131,14 @@ class ObjectProxy(_ObjectProxy):
         try:
             return self._self_last_object
         except AttributeError:
-            self._self_last_object = getattr(self.__wrapped__,
-                    '_nr_last_object', self.__wrapped__)
+            self._self_last_object = getattr(self.__wrapped__, "_nr_last_object", self.__wrapped__)
             return self._self_last_object
 
 
 class CallableObjectProxy(ObjectProxy):
-
     def __call__(self, *args, **kwargs):
         return self.__wrapped__(*args, **kwargs)
+
 
 # The ObjectWrapper class needs to be deprecated and removed once all our
 # own code no longer uses it. It reaches down into what are wrapt internals
@@ -156,14 +150,13 @@ class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
 
     def __init__(self, wrapped, instance, wrapper):
         if isinstance(wrapped, classmethod):
-            binding = 'classmethod'
+            binding = "classmethod"
         elif isinstance(wrapped, staticmethod):
-            binding = 'staticmethod'
+            binding = "staticmethod"
         else:
-            binding = 'function'
+            binding = "function"
 
-        super(ObjectWrapper, self).__init__(wrapped, instance, wrapper,
-                binding=binding)
+        super(ObjectWrapper, self).__init__(wrapped, instance, wrapper, binding=binding)
 
 
 # Helper functions for performing monkey patching.
@@ -176,7 +169,7 @@ def resolve_path(module, name):
 
     parent = module
 
-    path = name.split('.')
+    path = name.split(".")
     attribute = path[0]
 
     original = getattr(parent, attribute)
@@ -220,6 +213,7 @@ def wrap_object(module, name, factory, args=(), kwargs={}):
     apply_patch(parent, attribute, wrapper)
     return wrapper
 
+
 # Function for apply a proxy object to an attribute of a class instance.
 # The wrapper works by defining an attribute of the same name on the
 # class which is a descriptor and which intercepts access to the
@@ -228,7 +222,6 @@ def wrap_object(module, name, factory, args=(), kwargs={}):
 
 
 class AttributeWrapper(object):
-
     def __init__(self, attribute, factory, args, kwargs):
         self.attribute = attribute
         self.factory = factory
@@ -247,11 +240,12 @@ class AttributeWrapper(object):
 
 
 def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
-    path, attribute = name.rsplit('.', 1)
+    path, attribute = name.rsplit(".", 1)
     parent = resolve_path(module, path)[2]
     wrapper = AttributeWrapper(attribute, factory, args, kwargs)
     apply_patch(parent, attribute, wrapper)
     return wrapper
+
 
 # Function for creating a decorator for applying to functions, as well as
 # short cut functions for applying wrapper functions via monkey patching.
@@ -267,6 +261,7 @@ def function_wrapper(wrapper):
         else:
             target_wrapper = wrapper.__get__(instance, type(instance))
         return FunctionWrapper(target_wrapped, target_wrapper)
+
     return FunctionWrapper(wrapper, _wrapper)
 
 
@@ -277,6 +272,7 @@ def wrap_function_wrapper(module, name, wrapper):
 def patch_function_wrapper(module, name):
     def _wrapper(wrapper):
         return wrap_object(module, name, FunctionWrapper, (wrapper,))
+
     return _wrapper
 
 
@@ -299,9 +295,13 @@ def transient_function_wrapper(module, name):
                     return wrapped(*args, **kwargs)
                 finally:
                     setattr(parent, attribute, original)
+
             return FunctionWrapper(target_wrapped, _execute)
+
         return FunctionWrapper(wrapper, _wrapper)
+
     return _decorator
+
 
 # Generic decorators for performing actions before and after a wrapped
 # function is called, or modifying the inbound arguments or return value.
@@ -315,6 +315,7 @@ def pre_function(function):
         else:
             function(*args, **kwargs)
         return wrapped(*args, **kwargs)
+
     return _wrapper
 
 
@@ -335,6 +336,7 @@ def post_function(function):
         else:
             function(*args, **kwargs)
         return result
+
     return _wrapper
 
 
@@ -382,6 +384,7 @@ def out_function(function):
     @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
         return function(wrapped(*args, **kwargs))
+
     return _wrapper
 
 

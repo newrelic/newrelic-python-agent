@@ -19,8 +19,21 @@ types of errors occur.
 """
 
 
-class NetworkInterfaceException(Exception): pass
-class ForceAgentRestart(NetworkInterfaceException): pass
-class ForceAgentDisconnect(NetworkInterfaceException): pass
-class DiscardDataForRequest(NetworkInterfaceException): pass
-class RetryDataForRequest(NetworkInterfaceException): pass
+class NetworkInterfaceException(Exception):
+    pass
+
+
+class ForceAgentRestart(NetworkInterfaceException):
+    pass
+
+
+class ForceAgentDisconnect(NetworkInterfaceException):
+    pass
+
+
+class DiscardDataForRequest(NetworkInterfaceException):
+    pass
+
+
+class RetryDataForRequest(NetworkInterfaceException):
+    pass

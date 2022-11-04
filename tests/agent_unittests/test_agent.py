@@ -13,13 +13,14 @@
 # limitations under the License.
 
 import pytest
+from testing_support.fixtures import override_generic_settings
+
 from newrelic.core.agent import Agent
 from newrelic.core.config import finalize_application_settings
-from testing_support.fixtures import override_generic_settings
 
 
 class FakeApplication(object):
-    name = 'Fake'
+    name = "Fake"
 
     def __init__(self, *args, **kwargs):
         self.harvest_flexible = 0
@@ -41,13 +42,15 @@ class FakeApplication(object):
 class FakeAgent(Agent):
     def __init__(self, *args, **kwargs):
         super(FakeAgent, self).__init__(*args, **kwargs)
-        self._applications = {'fake': FakeApplication()}
+        self._applications = {"fake": FakeApplication()}
 
 
-SETTINGS = finalize_application_settings({
-    'enabled': True,
-    'debug.disable_harvest_until_shutdown': False,
-})
+SETTINGS = finalize_application_settings(
+    {
+        "enabled": True,
+        "debug.disable_harvest_until_shutdown": False,
+    }
+)
 
 
 @pytest.fixture
@@ -59,7 +62,7 @@ def agent():
 
 
 _override_settings = {
-    'event_harvest_config.report_period_ms': 80.0 * 1000.0,
+    "event_harvest_config.report_period_ms": 80.0 * 1000.0,
 }
 
 
@@ -71,5 +74,5 @@ def test_agent_final_harvest(agent):
     agent.shutdown_agent(timeout=5)
     assert not agent._harvest_thread.is_alive()
 
-    assert agent._applications['fake'].harvest_flexible == 1
-    assert agent._applications['fake'].harvest_default == 1
+    assert agent._applications["fake"].harvest_flexible == 1
+    assert agent._applications["fake"].harvest_default == 1

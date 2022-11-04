@@ -40,10 +40,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 # setting points here.
 try:
     from django.core.wsgi import get_wsgi_application
+
     application = get_wsgi_application()
 
 except ImportError:
     import django.core.handlers.wsgi
+
     application = django.core.handlers.wsgi.WSGIHandler()
 
 # Apply WSGI middleware here.

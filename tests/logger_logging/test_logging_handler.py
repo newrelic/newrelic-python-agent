@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from conftest import logger as conf_logger
 import logging
+
 import pytest
+from conftest import logger as conf_logger
+from testing_support.fixtures import reset_core_stats_engine
+from testing_support.validators.validate_function_called import validate_function_called
+from testing_support.validators.validate_log_event_count import validate_log_event_count
+from testing_support.validators.validate_log_event_count_outside_transaction import (
+    validate_log_event_count_outside_transaction,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.log import NewRelicLogForwardingHandler
-from testing_support.fixtures import reset_core_stats_engine
-from testing_support.validators.validate_log_event_count import validate_log_event_count
-from testing_support.validators.validate_log_event_count_outside_transaction import validate_log_event_count_outside_transaction
-from testing_support.validators.validate_function_called import validate_function_called
-
-
 
 
 @pytest.fixture(scope="function")

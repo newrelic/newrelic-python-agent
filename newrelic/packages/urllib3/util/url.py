@@ -17,11 +17,7 @@ NORMALIZABLE_SCHEMES = ("http", "https", None)
 PERCENT_RE = re.compile(r"%[a-fA-F0-9]{2}")
 SCHEME_RE = re.compile(r"^(?:[a-zA-Z][a-zA-Z0-9+-]*:|/)")
 URI_RE = re.compile(
-    r"^(?:([a-zA-Z][a-zA-Z0-9+.-]*):)?"
-    r"(?://([^\\/?#]*))?"
-    r"([^?#]*)"
-    r"(?:\?([^#]*))?"
-    r"(?:#(.*))?$",
+    r"^(?:([a-zA-Z][a-zA-Z0-9+.-]*):)?" r"(?://([^\\/?#]*))?" r"([^?#]*)" r"(?:\?([^#]*))?" r"(?:#(.*))?$",
     re.UNICODE | re.DOTALL,
 )
 
@@ -70,9 +66,7 @@ _HOST_PORT_PAT = ("^(%s|%s|%s)(?::([0-9]{0,5}))?$") % (
 )
 _HOST_PORT_RE = re.compile(_HOST_PORT_PAT, re.UNICODE | re.DOTALL)
 
-UNRESERVED_CHARS = set(
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-~"
-)
+UNRESERVED_CHARS = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-~")
 SUB_DELIM_CHARS = set("!$&'()*+,;=")
 USERINFO_CHARS = UNRESERVED_CHARS | SUB_DELIM_CHARS | {":"}
 PATH_CHARS = USERINFO_CHARS | {"@", "/"}
@@ -102,9 +96,7 @@ class Url(namedtuple("Url", url_attrs)):
             path = "/" + path
         if scheme is not None:
             scheme = scheme.lower()
-        return super(Url, cls).__new__(
-            cls, scheme, auth, host, port, path, query, fragment
-        )
+        return super(Url, cls).__new__(cls, scheme, auth, host, port, path, query, fragment)
 
     @property
     def hostname(self):
@@ -148,23 +140,23 @@ class Url(namedtuple("Url", url_attrs)):
             'http://username:password@host.com:80/path?query#fragment'
         """
         scheme, auth, host, port, path, query, fragment = self
-        url = u""
+        url = ""
 
         # We use "is not None" we want things to happen with empty strings (or 0 port)
         if scheme is not None:
-            url += scheme + u"://"
+            url += scheme + "://"
         if auth is not None:
-            url += auth + u"@"
+            url += auth + "@"
         if host is not None:
             url += host
         if port is not None:
-            url += u":" + str(port)
+            url += ":" + str(port)
         if path is not None:
             url += path
         if query is not None:
-            url += u"?" + query
+            url += "?" + query
         if fragment is not None:
-            url += u"#" + fragment
+            url += "#" + fragment
 
         return url
 
@@ -219,9 +211,7 @@ def _encode_invalid_chars(component, allowed_chars, encoding="utf-8"):
     # Normalize existing percent-encoded bytes.
     # Try to see if the component we're encoding is already percent-encoded
     # so we can skip all '%' characters but still encode all others.
-    component, percent_encodings = PERCENT_RE.subn(
-        lambda match: match.group(0).upper(), component
-    )
+    component, percent_encodings = PERCENT_RE.subn(lambda match: match.group(0).upper(), component)
 
     uri_bytes = component.encode("utf-8", "surrogatepass")
     is_percent_encoded = percent_encodings == uri_bytes.count(b"%")
@@ -231,9 +221,7 @@ def _encode_invalid_chars(component, allowed_chars, encoding="utf-8"):
         # Will return a single character bytestring on both Python 2 & 3
         byte = uri_bytes[i : i + 1]
         byte_ord = ord(byte)
-        if (is_percent_encoded and byte == b"%") or (
-            byte_ord < 128 and byte.decode() in allowed_chars
-        ):
+        if (is_percent_encoded and byte == b"%") or (byte_ord < 128 and byte.decode() in allowed_chars):
             encoded_component += byte
             continue
         encoded_component.extend(b"%" + (hex(byte_ord)[2:].encode().zfill(2).upper()))
@@ -293,9 +281,7 @@ def _normalize_host(host, scheme):
                 else:
                     return host.lower()
             elif not IPV4_RE.match(host):
-                return six.ensure_str(
-                    b".".join([_idna_encode(label) for label in host.split(".")])
-                )
+                return six.ensure_str(b".".join([_idna_encode(label) for label in host.split(".")]))
     return host
 
 
@@ -311,9 +297,7 @@ def _idna_encode(name):
         try:
             return idna.encode(name.lower(), strict=True, std3_rules=True)
         except idna.IDNAError:
-            six.raise_from(
-                LocationParseError(u"Name '%s' is not a valid IDNA label" % name), None
-            )
+            six.raise_from(LocationParseError("Name '%s' is not a valid IDNA label" % name), None)
     return name.lower().encode("ascii")
 
 

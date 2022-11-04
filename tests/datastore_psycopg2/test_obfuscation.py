@@ -13,13 +13,12 @@
 # limitations under the License.
 
 import pytest
-
-from newrelic.api.background_task import background_task
-from newrelic.core.database_utils import SQLConnections
-
 from testing_support.validators.validate_database_node import validate_database_node
 from testing_support.validators.validate_sql_obfuscation import validate_sql_obfuscation
 from utils import DB_SETTINGS
+
+from newrelic.api.background_task import background_task
+from newrelic.core.database_utils import SQLConnections
 
 
 @pytest.fixture()
@@ -107,13 +106,11 @@ def any_length_explain_plan(node):
 
 _test_explain_plans = [
     (
-        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s"
-        % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
+        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s" % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
         no_explain_plan,
     ),
     (
-        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s;"
-        % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
+        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s;" % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
         no_explain_plan,
     ),
     ("SELECT (b, c) FROM  %s WHERE b=';'" % DB_SETTINGS["table_name"], no_explain_plan),
@@ -149,9 +146,7 @@ def test_explain_plans(sql, validator):
         try:
             cursor = connection.cursor()
             cursor.execute("drop table if exists %s" % DB_SETTINGS["table_name"])
-            cursor.execute(
-                "create table %s (b text, c text)" % DB_SETTINGS["table_name"]
-            )
+            cursor.execute("create table %s (b text, c text)" % DB_SETTINGS["table_name"])
 
             cursor.execute(sql)
 

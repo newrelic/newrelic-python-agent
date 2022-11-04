@@ -354,7 +354,8 @@ def test_coroutine_functions_outside_of_transaction(trace):
         for _ in range(2):
             yield "foo"
 
-    assert [_ for _ in coro()] == ["foo", "foo"]
+    # assert [_ for _ in coro()] == ["foo", "foo"]
+    assert list(coro()) == ["foo", "foo"]
 
 
 @validate_transaction_metrics(
@@ -443,7 +444,6 @@ def test_incomplete_coroutine(nr_transaction):
             # http://doc.pypy.org/en/latest/cpython_differences.html#differences-related-to-garbage-collection-strategies
             # https://bitbucket.org/pypy/pypy/issues/736
             del c
-            import gc
 
             gc.collect()
 

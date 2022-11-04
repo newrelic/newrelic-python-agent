@@ -14,19 +14,18 @@
 
 import pytest
 import redis
-
 from testing_support.db_settings import redis_settings
 
 DB_SETTINGS = redis_settings()[0]
 
-redis_client = redis.Redis(host=DB_SETTINGS['host'], port=DB_SETTINGS['port'], db=0)
-strict_redis_client = redis.StrictRedis(host=DB_SETTINGS['host'], port=DB_SETTINGS['port'], db=0)
+redis_client = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+strict_redis_client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
 
 
 IGNORED_METHODS = {
-    'MODULE_CALLBACKS',
-    'MODULE_VERSION',
-    'NAME',
+    "MODULE_CALLBACKS",
+    "MODULE_VERSION",
+    "NAME",
     "append_bucket_size",
     "append_capacity",
     "append_error",
@@ -84,7 +83,6 @@ IGNORED_METHODS = {
     "property_keys",
     "relationship_types",
     "version",
-
 }
 
 REDIS_MODULES = {

@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from testing_support.validators.validate_distributed_tracing_header import (
+    validate_distributed_tracing_header,
+)
+from testing_support.validators.validate_outbound_headers import (
+    validate_outbound_headers,
+)
+
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper
-from testing_support.validators.validate_distributed_tracing_header import \
-    validate_distributed_tracing_header
-from testing_support.validators.validate_outbound_headers import validate_outbound_headers
 
 
 @function_wrapper

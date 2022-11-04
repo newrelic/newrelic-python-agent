@@ -14,29 +14,28 @@
 
 import pytest
 import requests
-
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_span_events import (
-        validate_span_events)
 from testing_support.mock_external_http_server import MockExternalHTTPServer
+from testing_support.validators.validate_span_events import validate_span_events
+
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def server():
     with MockExternalHTTPServer() as _server:
         yield _server
 
 
-@pytest.mark.parametrize('path', ('', '/foo', '/' + 'a' * 256))
+@pytest.mark.parametrize("path", ("", "/foo", "/" + "a" * 256))
 def test_span_events(server, path):
     _settings = {
-        'distributed_tracing.enabled': True,
-        'span_events.enabled': True,
+        "distributed_tracing.enabled": True,
+        "span_events.enabled": True,
     }
 
-    uri = 'http://localhost:%d' % server.port
+    uri = "http://localhost:%d" % server.port
     if path:
         uri += path
 
@@ -44,27 +43,24 @@ def test_span_events(server, path):
     expected_uri = uri[:255]
 
     exact_intrinsics = {
-        'name': 'External/localhost:%d/requests/' % server.port,
-        'type': 'Span',
-        'sampled': True,
-        'priority': 0.5,
-
-        'category': 'http',
-        'span.kind': 'client',
-        'component': 'requests',
+        "name": "External/localhost:%d/requests/" % server.port,
+        "type": "Span",
+        "sampled": True,
+        "priority": 0.5,
+        "category": "http",
+        "span.kind": "client",
+        "component": "requests",
     }
     exact_agents = {
-        'http.url': expected_uri,
+        "http.url": expected_uri,
     }
-    expected_intrinsics = ('timestamp', 'duration', 'transactionId')
+    expected_intrinsics = ("timestamp", "duration", "transactionId")
 
     @override_application_settings(_settings)
     @validate_span_events(
-            count=1,
-            exact_intrinsics=exact_intrinsics,
-            exact_agents=exact_agents,
-            expected_intrinsics=expected_intrinsics)
-    @background_task(name='test_span_events')
+        count=1, exact_intrinsics=exact_intrinsics, exact_agents=exact_agents, expected_intrinsics=expected_intrinsics
+    )
+    @background_task(name="test_span_events")
     def _test():
         txn = current_transaction()
         txn._priority = 0.5

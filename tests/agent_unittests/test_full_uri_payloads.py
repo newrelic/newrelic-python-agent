@@ -12,21 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import os
 import time
 
-
+import pytest
 from testing_support.fixtures import collector_agent_registration_fixture
-from newrelic.core.agent_protocol import AgentProtocol
+
 from newrelic.common.agent_http import HttpClient
+from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.core.config import global_settings
 
 
 class FullUriClient(HttpClient):
-    def send_request(
-        self, method="POST", path="/agent_listener/invoke_raw_method", *args, **kwargs
-    ):
+    def send_request(self, method="POST", path="/agent_listener/invoke_raw_method", *args, **kwargs):
         path = "https://" + self._host + path
         return super(FullUriClient, self).send_request(method, path, *args, **kwargs)
 
@@ -79,9 +77,7 @@ def test_full_uri_payload(session, method, payload):
     redirect_host = session._protocol.client._host
     if method == "agent_command_results":
         payload[0] = session.configuration.agent_run_id
-    protocol = AgentProtocol(
-        session.configuration, redirect_host, client_cls=FullUriClient
-    )
+    protocol = AgentProtocol(session.configuration, redirect_host, client_cls=FullUriClient)
     # An exception will be raised here if there's a problem with the response
     protocol.send(method, payload)
 

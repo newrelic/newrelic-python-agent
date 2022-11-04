@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import validate_tt_collector_json, override_application_settings
-from testing_support.util import instance_hostname
 from testing_support.db_settings import redis_settings
+from testing_support.fixtures import (
+    override_application_settings,
+    validate_tt_collector_json,
+)
+from testing_support.util import instance_hostname
 
 from newrelic.api.background_task import background_task
 

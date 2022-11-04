@@ -11,9 +11,12 @@ from newrelic.hooks.framework_graphql import (
 )
 from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
 
+
 def framework_details():
     import graphql_server
+
     return ("GraphQLServer", getattr(graphql_server, "__version__", None))
+
 
 def bind_query(schema, params, *args, **kwargs):
     return getattr(params, "query", None)
@@ -45,5 +48,6 @@ def wrap_get_response(wrapped, instance, args, kwargs):
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             return wrapped(*args, **kwargs)
 
+
 def instrument_graphqlserver(module):
-    wrap_function_wrapper(module, "get_response", wrap_get_response)    
+    wrap_function_wrapper(module, "get_response", wrap_get_response)

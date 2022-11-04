@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 def validate_database_node(validator):
@@ -23,8 +22,7 @@ def validate_database_node(validator):
 
     nodes = []
 
-    @transient_function_wrapper('newrelic.core.database_node',
-            'DatabaseNode.__new__')
+    @transient_function_wrapper("newrelic.core.database_node", "DatabaseNode.__new__")
     def _validate_explain_plan(wrapped, instance, args, kwargs):
         node = wrapped(*args, **kwargs)
         nodes.append(node)

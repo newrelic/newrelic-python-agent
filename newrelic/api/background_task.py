@@ -17,13 +17,12 @@ import sys
 
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction
-from newrelic.common.async_proxy import async_proxy, TransactionContext
+from newrelic.common.async_proxy import TransactionContext, async_proxy
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
 class BackgroundTask(Transaction):
-
     def __init__(self, application, name, group=None, source=None):
 
         # Initialise the common transaction base class.
@@ -53,7 +52,6 @@ class BackgroundTask(Transaction):
 
 
 def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
-
     def wrapper(wrapped, instance, args, kwargs):
         if callable(name):
             if instance is not None:
@@ -76,7 +74,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         else:
             _group = group
 
-        if type(application) != Application:
+        if not isinstance(application, Application):
             _application = application_instance(application)
         else:
             _application = application
@@ -101,7 +99,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
         proxy = async_proxy(wrapped)
 
-        if proxy:
+        if proxy:  # pylint: disable=W0125
             context_manager = TransactionContext(create_transaction)
             return proxy(wrapped(*args, **kwargs), context_manager)
 
@@ -112,7 +110,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         success = True
 
         try:
-            manager.__enter__()
+            manager.__enter__()  # pylint: disable=C2801
             try:
                 return wrapped(*args, **kwargs)
             except:
@@ -135,11 +133,8 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
 
 def background_task(application=None, name=None, group=None):
-    return functools.partial(BackgroundTaskWrapper,
-            application=application, name=name, group=group)
+    return functools.partial(BackgroundTaskWrapper, application=application, name=name, group=group)
 
 
-def wrap_background_task(module, object_path, application=None,
-        name=None, group=None):
-    wrap_object(module, object_path, BackgroundTaskWrapper,
-            (application, name, group))
+def wrap_background_task(module, object_path, application=None, name=None, group=None):
+    wrap_object(module, object_path, BackgroundTaskWrapper, (application, name, group))

@@ -98,7 +98,7 @@ def wrap_from_resolver(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
     try:
-        field = bind_from_resolver(*args, **kwargs)    
+        field = bind_from_resolver(*args, **kwargs)
     except TypeError:
         pass
     else:

@@ -16,8 +16,10 @@ import json
 
 import pytest
 from testing_support.fixtures import dt_enabled
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 
 def get_starlette_version():

@@ -202,9 +202,7 @@ def assert_fingerprint(cert, fingerprint):
 
     if not _const_compare_digest(cert_digest, fingerprint_bytes):
         raise SSLError(
-            'Fingerprints did not match. Expected "{0}", got "{1}".'.format(
-                fingerprint, hexlify(cert_digest)
-            )
+            'Fingerprints did not match. Expected "{0}", got "{1}".'.format(fingerprint, hexlify(cert_digest))
         )
 
 
@@ -247,9 +245,7 @@ def resolve_ssl_version(candidate):
     return candidate
 
 
-def create_urllib3_context(
-    ssl_version=None, cert_reqs=None, options=None, ciphers=None
-):
+def create_urllib3_context(ssl_version=None, cert_reqs=None, options=None, ciphers=None):
     """All arguments have the same meaning as ``ssl_wrap_socket``.
 
     By default, this function does a lot of the same work that
@@ -323,9 +319,7 @@ def create_urllib3_context(
         context.post_handshake_auth = True
 
     def disable_check_hostname():
-        if (
-            getattr(context, "check_hostname", None) is not None
-        ):  # Platform-specific: Python 3.2
+        if getattr(context, "check_hostname", None) is not None:  # Platform-specific: Python 3.2
             # We do our own verification, including fingerprints and alternative
             # hostnames. So disable it here
             context.check_hostname = False
@@ -429,9 +423,7 @@ def ssl_wrap_socket(
     # extension should not be used according to RFC3546 Section 3.1
     use_sni_hostname = server_hostname and not is_ipaddress(server_hostname)
     # SecureTransport uses server_hostname in certificate verification.
-    send_sni = (use_sni_hostname and HAS_SNI) or (
-        IS_SECURETRANSPORT and server_hostname
-    )
+    send_sni = (use_sni_hostname and HAS_SNI) or (IS_SECURETRANSPORT and server_hostname)
     # Do not warn the user if server_hostname is an invalid SNI hostname.
     if not HAS_SNI and use_sni_hostname:
         warnings.warn(
@@ -446,9 +438,7 @@ def ssl_wrap_socket(
         )
 
     if send_sni:
-        ssl_sock = _ssl_wrap_socket_impl(
-            sock, context, tls_in_tls, server_hostname=server_hostname
-        )
+        ssl_sock = _ssl_wrap_socket_impl(sock, context, tls_in_tls, server_hostname=server_hostname)
     else:
         ssl_sock = _ssl_wrap_socket_impl(sock, context, tls_in_tls)
     return ssl_sock
@@ -482,9 +472,7 @@ def _ssl_wrap_socket_impl(sock, ssl_context, tls_in_tls, server_hostname=None):
     if tls_in_tls:
         if not SSLTransport:
             # Import error, ssl is not available.
-            raise ProxySchemeUnsupported(
-                "TLS in TLS requires support for the 'ssl' module"
-            )
+            raise ProxySchemeUnsupported("TLS in TLS requires support for the 'ssl' module")
 
         SSLTransport._validate_ssl_context_for_tls_in_tls(ssl_context)
         return SSLTransport(sock, ssl_context, server_hostname)

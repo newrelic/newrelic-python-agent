@@ -16,6 +16,7 @@ from django import template
 
 register = template.Library()
 
-@register.inclusion_tag('results.html')
+
+@register.inclusion_tag("results.html")
 def show_results():
-    return {'results' : 'Inclusion tag'}
+    return {"results": "Inclusion tag"}

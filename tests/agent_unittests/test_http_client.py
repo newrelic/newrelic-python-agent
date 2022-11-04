@@ -314,7 +314,7 @@ def test_http_payload_compression(server, client_cls, method, threshold):
         ]
         assert internal_metrics["Supportability/Python/Collector/Output/Bytes"][:2] == [
             2,
-            len(payload)*2,
+            len(payload) * 2,
         ]
 
         if threshold < 20:
@@ -324,8 +324,8 @@ def test_http_payload_compression(server, client_cls, method, threshold):
 
             # Verify the compressed payload length is recorded
             assert internal_metrics["Supportability/Python/Collector/method1/ZLIB/Bytes"][:2] == [1, payload_byte_len]
-            assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes"][:2] == [2, payload_byte_len*2]
-            
+            assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes"][:2] == [2, payload_byte_len * 2]
+
             assert len(internal_metrics) == 8
         else:
             # Verify no ZLIB compression metrics were sent

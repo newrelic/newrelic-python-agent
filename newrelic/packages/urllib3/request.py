@@ -41,19 +41,9 @@ class RequestMethods(object):
         self.headers = headers or {}
 
     def urlopen(
-        self,
-        method,
-        url,
-        body=None,
-        headers=None,
-        encode_multipart=True,
-        multipart_boundary=None,
-        **kw
+        self, method, url, body=None, headers=None, encode_multipart=True, multipart_boundary=None, **kw
     ):  # Abstract
-        raise NotImplementedError(
-            "Classes extending RequestMethods must implement "
-            "their own ``urlopen`` method."
-        )
+        raise NotImplementedError("Classes extending RequestMethods must implement " "their own ``urlopen`` method.")
 
     def request(self, method, url, fields=None, headers=None, **urlopen_kw):
         """
@@ -71,13 +61,9 @@ class RequestMethods(object):
         urlopen_kw["request_url"] = url
 
         if method in self._encode_url_methods:
-            return self.request_encode_url(
-                method, url, fields=fields, headers=headers, **urlopen_kw
-            )
+            return self.request_encode_url(method, url, fields=fields, headers=headers, **urlopen_kw)
         else:
-            return self.request_encode_body(
-                method, url, fields=fields, headers=headers, **urlopen_kw
-            )
+            return self.request_encode_body(method, url, fields=fields, headers=headers, **urlopen_kw)
 
     def request_encode_url(self, method, url, fields=None, headers=None, **urlopen_kw):
         """
@@ -96,14 +82,7 @@ class RequestMethods(object):
         return self.urlopen(method, url, **extra_kw)
 
     def request_encode_body(
-        self,
-        method,
-        url,
-        fields=None,
-        headers=None,
-        encode_multipart=True,
-        multipart_boundary=None,
-        **urlopen_kw
+        self, method, url, fields=None, headers=None, encode_multipart=True, multipart_boundary=None, **urlopen_kw
     ):
         """
         Make a request using :meth:`urlopen` with the ``fields`` encoded in
@@ -147,14 +126,10 @@ class RequestMethods(object):
 
         if fields:
             if "body" in urlopen_kw:
-                raise TypeError(
-                    "request got values for both 'fields' and 'body', can only specify one."
-                )
+                raise TypeError("request got values for both 'fields' and 'body', can only specify one.")
 
             if encode_multipart:
-                body, content_type = encode_multipart_formdata(
-                    fields, boundary=multipart_boundary
-                )
+                body, content_type = encode_multipart_formdata(fields, boundary=multipart_boundary)
             else:
                 body, content_type = (
                     urlencode(fields),

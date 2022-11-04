@@ -14,5 +14,8 @@
 
 # Use of these from this module will be deprecated.
 
-from newrelic.common.object_wrapper import (pre_function, PreFunctionWrapper,
-        wrap_pre_function)
+from newrelic.common.object_wrapper import (  # noqa: F401; pylint: disable=W0611
+    PreFunctionWrapper,
+    pre_function,
+    wrap_pre_function,
+)

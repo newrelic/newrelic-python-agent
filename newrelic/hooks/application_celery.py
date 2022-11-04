@@ -25,14 +25,13 @@ import functools
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.object_wrapper import ObjectWrapper, callable_name
 from newrelic.api.pre_function import wrap_pre_function
-from newrelic.api.object_wrapper import callable_name, ObjectWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.core.agent import shutdown_agent
 
 
 def CeleryTaskWrapper(wrapped, application=None, name=None):
-
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction(active_only=False)
 
@@ -61,7 +60,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
         # testing if need be.
 
         def _application():
-            if hasattr(application, 'activate'):
+            if hasattr(application, "activate"):
                 return application
             return application_instance(application)
 
@@ -86,8 +85,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
         #      running inside of an existing transaction, we want to create
         #      a new background transaction for it.
 
-        if transaction and (transaction.ignore_transaction or
-                transaction.stopped):
+        if transaction and (transaction.ignore_transaction or transaction.stopped):
             return wrapped(*args, **kwargs)
 
         elif transaction:
@@ -95,7 +93,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
                 return wrapped(*args, **kwargs)
 
         else:
-            with BackgroundTask(_application(), _name, 'Celery', source=instance):
+            with BackgroundTask(_application(), _name, "Celery", source=instance):
                 return wrapped(*args, **kwargs)
 
     # Start Hotfix v2.2.1.
@@ -139,7 +137,7 @@ def instrument_celery_app_task(module):
 
     # Triggered for both 'celery.app.task' and 'celery.task.base'.
 
-    if hasattr(module, 'BaseTask'):
+    if hasattr(module, "BaseTask"):
 
         # Need to add a wrapper for background task entry point.
 
@@ -159,15 +157,14 @@ def instrument_celery_app_task(module):
             return task.name
 
         if module.BaseTask.__module__ == module.__name__:
-            module.BaseTask.__call__ = CeleryTaskWrapper(
-                    module.BaseTask.__call__, name=task_name)
+            module.BaseTask.__call__ = CeleryTaskWrapper(module.BaseTask.__call__, name=task_name)
 
 
 def instrument_celery_execute_trace(module):
 
     # Triggered for 'celery.execute_trace'.
 
-    if hasattr(module, 'build_tracer'):
+    if hasattr(module, "build_tracer"):
 
         # Need to add a wrapper for background task entry point.
 
@@ -191,7 +188,7 @@ def instrument_celery_worker(module):
 
     # Triggered for 'celery.worker' and 'celery.concurrency.processes'.
 
-    if hasattr(module, 'process_initializer'):
+    if hasattr(module, "process_initializer"):
 
         # We try and force registration of default application after
         # fork of worker process rather than lazily on first request.
@@ -211,18 +208,15 @@ def instrument_celery_worker(module):
 
 
 def instrument_celery_loaders_base(module):
-
     def force_application_activation(*args, **kwargs):
         application_instance().activate()
 
-    wrap_pre_function(module, 'BaseLoader.init_worker',
-            force_application_activation)
+    wrap_pre_function(module, "BaseLoader.init_worker", force_application_activation)
 
 
 def instrument_billiard_pool(module):
-
     def force_agent_shutdown(*args, **kwargs):
         shutdown_agent()
 
-    if hasattr(module, 'Worker'):
-        wrap_pre_function(module, 'Worker._do_exit', force_agent_shutdown)
+    if hasattr(module, "Worker"):
+        wrap_pre_function(module, "Worker._do_exit", force_agent_shutdown)

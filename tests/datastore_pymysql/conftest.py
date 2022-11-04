@@ -13,28 +13,31 @@
 # limitations under the License.
 
 import pytest
-
-from testing_support.fixtures import (code_coverage_fixture,
-        collector_agent_registration_fixture, collector_available_fixture)
+from testing_support.fixtures import (
+    code_coverage_fixture,
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 _coverage_source = [
-    'newrelic.hooks.database_pymysql',
-    'newrelic.hooks.database_mysqldb',
-    'newrelic.hooks.database_dbapi2',
+    "newrelic.hooks.database_pymysql",
+    "newrelic.hooks.database_mysqldb",
+    "newrelic.hooks.database_dbapi2",
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.transaction_threshold': 0.0,
-    'transaction_tracer.stack_trace_threshold': 0.0,
-    'debug.log_data_collector_payloads': True,
-    'debug.record_transaction_failure': True,
-    'debug.log_explain_plan_queries': True
+    "transaction_tracer.explain_threshold": 0.0,
+    "transaction_tracer.transaction_threshold": 0.0,
+    "transaction_tracer.stack_trace_threshold": 0.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
+    "debug.log_explain_plan_queries": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (datastore_pymysql)',
-        default_settings=_default_settings,
-        linked_applications=['Python Agent Test (datastore)'])
+    app_name="Python Agent Test (datastore_pymysql)",
+    default_settings=_default_settings,
+    linked_applications=["Python Agent Test (datastore)"],
+)

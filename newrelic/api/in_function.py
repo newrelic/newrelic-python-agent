@@ -14,5 +14,8 @@
 
 # Use of these from this module will be deprecated.
 
-from newrelic.common.object_wrapper import (in_function, InFunctionWrapper,
-        wrap_in_function)
+from newrelic.common.object_wrapper import (  # noqa: F401; pylint: disable=W0611
+    InFunctionWrapper,
+    in_function,
+    wrap_in_function,
+)

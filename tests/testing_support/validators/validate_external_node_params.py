@@ -15,15 +15,19 @@
 from newrelic.common.object_wrapper import transient_function_wrapper
 
 
-def validate_external_node_params(params=[], forgone_params=[]):
+def validate_external_node_params(params=None, forgone_params=None):
     """
     Validate the parameters on the external node.
 
     params: a list of tuples
     forgone_params: a flat list
     """
-    @transient_function_wrapper('newrelic.api.external_trace',
-            'ExternalTrace.process_response_headers')
+    if params is None:
+        params = []
+    if forgone_params is None:
+        forgone_params = []
+
+    @transient_function_wrapper("newrelic.api.external_trace", "ExternalTrace.process_response_headers")
     def _validate_external_node_params(wrapped, instance, args, kwargs):
         result = wrapped(*args, **kwargs)
 

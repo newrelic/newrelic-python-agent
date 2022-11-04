@@ -13,8 +13,10 @@
 # limitations under the License.
 
 
-from newrelic.common.object_wrapper import function_wrapper
 from testing_support.fixtures import core_application_stats_engine
+
+from newrelic.common.object_wrapper import function_wrapper
+
 
 def validate_application_errors(errors=None, required_params=None, forgone_params=None):
     errors = errors or []

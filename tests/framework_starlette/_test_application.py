@@ -151,9 +151,7 @@ for app_name, flags in app_name_map.items():
 
     # Instantiate app
     if not middleware_on:
-        app = Starlette(
-            debug=debug, routes=routes, exception_handlers=exception_handlers
-        )
+        app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
     else:
         if Middleware:
             app = Starlette(
@@ -163,9 +161,7 @@ for app_name, flags in app_name_map.items():
                 exception_handlers=exception_handlers,
             )
         else:
-            app = Starlette(
-                debug=debug, routes=routes, exception_handlers=exception_handlers
-            )
+            app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
             # in earlier versions of starlette, middleware is not a legal argument on the Starlette application class
             # In order to keep the counts the same, we add the middleware twice using the add_middleware interface
             app.add_middleware(middleware_factory)

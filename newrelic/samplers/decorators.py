@@ -19,6 +19,7 @@ simplify their construction and attribution of properties.
 
 import functools
 
+
 def data_source_generator(name=None, **properties):
     """Decorator for applying to a simple data source which directly
     returns an iterable/generator with the metrics for each sample. The
@@ -31,12 +32,16 @@ def data_source_generator(name=None, **properties):
         def _properties(settings):
             def _factory(environ):
                 return func
+
             d = dict(properties)
-            d['name'] = name
-            d['factory'] = _factory
+            d["name"] = name
+            d["factory"] = _factory
             return d
+
         return _properties
+
     return _decorator
+
 
 def data_source_factory(name=None, **properties):
     """Decorator for applying to a data source defined as a factory. The
@@ -54,9 +59,12 @@ def data_source_factory(name=None, **properties):
         def _properties(settings):
             def _factory(environ):
                 return func(settings, environ)
+
             d = dict(properties)
-            d['name'] = name
-            d['factory'] = _factory
+            d["name"] = name
+            d["factory"] = _factory
             return d
+
         return _properties
+
     return _decorator

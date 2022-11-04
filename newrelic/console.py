@@ -63,7 +63,6 @@ try:
         sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
         return str(sig)
 
-
 except ImportError:
     from inspect import formatargspec
 
@@ -72,11 +71,10 @@ except ImportError:
         return formatargspec(args[1:], varargs, keywords, defaults)
 
 
-from newrelic.api.object_wrapper import ObjectWrapper
-from newrelic.api.transaction import Transaction
-from newrelic.core.agent import agent_instance
-from newrelic.core.config import flatten_settings, global_settings
-from newrelic.core.trace_cache import trace_cache
+from newrelic.api.object_wrapper import ObjectWrapper  # noqa: E402
+from newrelic.core.agent import agent_instance  # noqa: E402
+from newrelic.core.config import flatten_settings, global_settings  # noqa: E402
+from newrelic.core.trace_cache import trace_cache  # noqa: E402
 
 _trace_cache = trace_cache()
 
@@ -481,7 +479,7 @@ class ConnectionManager(object):
             pass
 
     def __thread_run(self):
-        if type(self.__listener_socket) == type(()):
+        if isinstance(self.__listener_socket, tuple):
             listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             listener.bind(self.__listener_socket)

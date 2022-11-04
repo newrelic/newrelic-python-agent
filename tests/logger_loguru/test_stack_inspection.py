@@ -13,20 +13,21 @@
 # limitations under the License.
 
 import pytest
-
 from conftest import CaplogHandler
-
-from newrelic.api.background_task import background_task
-from testing_support.fixtures import reset_core_stats_engine
+from testing_support.fixtures import (
+    override_application_settings,
+    reset_core_stats_engine,
+)
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_events import validate_log_events
-from testing_support.fixtures import override_application_settings
 
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(scope="function")
 def filepath_logger():
     import loguru
+
     _logger = loguru.logger
     caplog = CaplogHandler()
     handler_id = _logger.add(caplog, level="WARNING", format="{file}:{function} - {message}")
@@ -36,9 +37,11 @@ def filepath_logger():
     _logger.remove(handler_id)
 
 
-@override_application_settings({
-    "application_logging.local_decorating.enabled": False,
-})
+@override_application_settings(
+    {
+        "application_logging.local_decorating.enabled": False,
+    }
+)
 @reset_core_stats_engine()
 def test_filepath_inspection(filepath_logger):
     # Test for regression in stack inspection that caused log messages.

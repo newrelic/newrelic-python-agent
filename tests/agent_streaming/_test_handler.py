@@ -15,18 +15,18 @@
 from concurrent import futures
 
 import grpc
+
 from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span
 
 
 def record_span(request, context):
     metadata = dict(context.invocation_metadata())
-    assert 'agent_run_token' in metadata
-    assert 'license_key' in metadata
+    assert "agent_run_token" in metadata
+    assert "license_key" in metadata
 
     for span in request:
-        status_code = span.intrinsics.get('status_code', None)
-        status_code = status_code and getattr(
-            grpc.StatusCode, status_code.string_value)
+        status_code = span.intrinsics.get("status_code", None)
+        status_code = status_code and getattr(grpc.StatusCode, status_code.string_value)
         if status_code is grpc.StatusCode.OK:
             break
         elif status_code:

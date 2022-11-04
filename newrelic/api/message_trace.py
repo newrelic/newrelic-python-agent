@@ -91,7 +91,10 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
         )
 
 
-def MessageTraceWrapper(wrapped, library, operation, destination_type, destination_name, params={}, terminal=True):
+def MessageTraceWrapper(wrapped, library, operation, destination_type, destination_name, params=None, terminal=True):
+    if params is None:
+        params = {}
+
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -133,7 +136,16 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type, destinati
         else:
             _destination_name = destination_name
 
-        trace = MessageTrace(_library, _operation, _destination_type, _destination_name, params={}, terminal=terminal, parent=parent, source=wrapped)
+        trace = MessageTrace(
+            _library,
+            _operation,
+            _destination_type,
+            _destination_name,
+            params={},
+            terminal=terminal,
+            parent=parent,
+            source=wrapped,
+        )
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -144,7 +156,9 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type, destinati
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
 
 
-def message_trace(library, operation, destination_type, destination_name, params={}, terminal=True):
+def message_trace(library, operation, destination_type, destination_name, params=None, terminal=True):
+    if params is None:
+        params = {}
     return functools.partial(
         MessageTraceWrapper,
         library=library,
@@ -156,7 +170,14 @@ def message_trace(library, operation, destination_type, destination_name, params
     )
 
 
-def wrap_message_trace(module, object_path, library, operation, destination_type, destination_name, params={}, terminal=True):
+def wrap_message_trace(
+    module, object_path, library, operation, destination_type, destination_name, params=None, terminal=True
+):
+    if params is None:
+        params = {}
     wrap_object(
-        module, object_path, MessageTraceWrapper, (library, operation, destination_type, destination_name, params, terminal)
+        module,
+        object_path,
+        MessageTraceWrapper,
+        (library, operation, destination_type, destination_name, params, terminal),
     )

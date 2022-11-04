@@ -14,39 +14,43 @@
 
 import random
 import string
-import pytest
+
 import memcache
-
-from testing_support.fixtures import (code_coverage_fixture,
-        collector_agent_registration_fixture, collector_available_fixture)
-
+import pytest
 from testing_support.db_settings import memcached_settings
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    code_coverage_fixture,
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 _coverage_source = [
-    'newrelic.api.memcache_trace',
-    'newrelic.hooks.datastore_memcache',
+    "newrelic.api.memcache_trace",
+    "newrelic.hooks.datastore_memcache",
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.transaction_threshold': 0.0,
-    'transaction_tracer.stack_trace_threshold': 0.0,
-    'debug.log_data_collector_payloads': True,
-    'debug.record_transaction_failure': True
+    "transaction_tracer.explain_threshold": 0.0,
+    "transaction_tracer.transaction_threshold": 0.0,
+    "transaction_tracer.stack_trace_threshold": 0.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (datastore_memcache)',
-        default_settings=_default_settings,
-        linked_applications=['Python Agent Test (datastore)'])
+    app_name="Python Agent Test (datastore_memcache)",
+    default_settings=_default_settings,
+    linked_applications=["Python Agent Test (datastore)"],
+)
 
-@pytest.fixture(scope='session')
+
+@pytest.fixture(scope="session")
 def memcached_multi():
     """Generate keys that will go onto different servers"""
     DB_SETTINGS = memcached_settings()
-    db_servers = ['%s:%s' % (s['host'], s['port']) for s in DB_SETTINGS]
+    db_servers = ["%s:%s" % (s["host"], s["port"]) for s in DB_SETTINGS]
 
     clients = [memcache.Client([s]) for s in db_servers]
     client_all = memcache.Client(db_servers)
@@ -55,9 +59,8 @@ def memcached_multi():
     for try_num in range(10 * num_servers):
         multi_dict = {}
         for i in range(num_servers):
-            random_chars = (random.choice(string.ascii_uppercase)
-                    for _ in range(10))
-            key_candidate = ''.join(random_chars)
+            random_chars = (random.choice(string.ascii_uppercase) for _ in range(10))
+            key_candidate = "".join(random_chars)
             multi_dict[key_candidate] = key_candidate
 
         client_all.set_multi(multi_dict)

@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import logging
-import pytest
 
+import pytest
 from testing_support.fixtures import (
     code_coverage_fixture,
     collector_agent_registration_fixture,
@@ -51,6 +51,7 @@ class CaplogHandler(logging.StreamHandler):
     To prevent possible issues with pytest's monkey patching
     use a custom Caplog handler to capture all records
     """
+
     def __init__(self, *args, **kwargs):
         self.records = []
         super(CaplogHandler, self).__init__(*args, **kwargs)
@@ -62,6 +63,7 @@ class CaplogHandler(logging.StreamHandler):
 @pytest.fixture(scope="function")
 def logger():
     import loguru
+
     _logger = loguru.logger
     caplog = CaplogHandler()
     handler_id = _logger.add(caplog, level="WARNING", format="{message}")

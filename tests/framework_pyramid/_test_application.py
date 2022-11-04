@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pyramid.httpexceptions as exc
 import webtest
-
+from pyramid.config import Configurator
 from pyramid.response import Response
 from pyramid.view import view_config
-from pyramid.config import Configurator
-import pyramid.httpexceptions as exc
 
 
 @view_config(route_name="home")
@@ -88,11 +87,9 @@ except ImportError:
 else:
     service = cornice.Service(name="service", path="/service", description="Service")
 
-
     @service.get()
     def cornice_service_get_info(request):
         return {"Hello": "World"}
-
 
     @cornice.resource.resource(collection_path="/resource", path="/resource/{id}")
     class Resource(object):
@@ -106,11 +103,7 @@ else:
         def get(self):
             return self.request.matchdict["id"]
 
-
-    cornice_error = cornice.Service(
-        name="cornice_error", path="/cornice_error", description="Error"
-    )
-
+    cornice_error = cornice.Service(name="cornice_error", path="/cornice_error", description="Error")
 
     @cornice_error.get()
     def cornice_error_get_info(request):

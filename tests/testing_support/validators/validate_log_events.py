@@ -14,11 +14,11 @@
 
 import copy
 
+from testing_support.fixtures import catch_background_exceptions
+
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 from newrelic.packages import six
 
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
-from testing_support.fixtures import catch_background_exceptions
 
 def validate_log_events(events):
     @function_wrapper
@@ -41,12 +41,11 @@ def validate_log_events(events):
 
             return result
 
-
         _new_wrapper = _validate_log_events(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_called
         logs = copy.copy(recorded_logs)
-        
+
         record_called[:] = []
         recorded_logs[:] = []
 
@@ -59,7 +58,6 @@ def validate_log_events(events):
             assert matching_log_events == 1, _log_details(matching_log_events, logs, mismatches)
 
         return val
-
 
     def _check_log_attributes(expected, captured, mismatches):
         for key, value in six.iteritems(expected):

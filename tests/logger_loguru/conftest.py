@@ -62,10 +62,15 @@ class CaplogHandler(logging.StreamHandler):
 @pytest.fixture(scope="function")
 def logger():
     import loguru
+
     _logger = loguru.logger
+    _logger.configure(extra={"global_extra": "global_value"})
+
     caplog = CaplogHandler()
     handler_id = _logger.add(caplog, level="WARNING", format="{message}")
     _logger.caplog = caplog
+
     yield _logger
+
     del caplog.records[:]
     _logger.remove(handler_id)

@@ -269,6 +269,10 @@ class ApplicationLoggingForwardingSettings(Settings):
     pass
 
 
+class ApplicationLoggingForwardinContextDataSettings(Settings):
+    pass
+
+
 class ApplicationLoggingMetricsSettings(Settings):
     pass
 
@@ -357,6 +361,7 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 _settings = TopLevelSettings()
 _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
+_settings.application_logging.forwarding.context_data = ApplicationLoggingForwardinContextDataSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.attributes = AttributesSettings()

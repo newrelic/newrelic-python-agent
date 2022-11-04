@@ -536,6 +536,7 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
     _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.context_data.enabled", "getboolean", None)
     _process_setting(section, "application_logging.metrics.enabled", "getboolean", None)
     _process_setting(section, "application_logging.local_decorating.enabled", "getboolean", None)
 

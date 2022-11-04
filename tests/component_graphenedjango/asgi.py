@@ -12,22 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    from django.conf.urls.defaults import path
-except ImportError:
-    try:
-        from django.conf.urls import path
-    except ImportError:
-        from django.urls import path
-
-from graphene_django.views import GraphQLView
-
-
-graphql_view = GraphQLView.as_view(graphiql=True)
-
-urlpatterns = [
-    path("", graphql_view, name="graphql"),
-]
-
-def set_schema_and_middleware(schema=None, middleware=None):
-    graphql_view.view_initkwargs.update({"schema": schema, "middleware": middleware})
+from django.core.asgi import get_asgi_application
+application = get_asgi_application()

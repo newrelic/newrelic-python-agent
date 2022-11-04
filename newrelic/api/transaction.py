@@ -44,6 +44,7 @@ from newrelic.common.encoding_utils import (
     json_decode,
     json_encode,
     obfuscate,
+    safe_json_encode,
 )
 from newrelic.core.attribute import (
     MAX_LOG_MESSAGE_LENGTH,
@@ -1510,8 +1511,8 @@ class Transaction(object):
         attrs = get_linking_metadata()
         if attributes and (settings and settings.application_logging and settings.application_logging.forwarding and settings.application_logging.forwarding.context_data and settings.application_logging.forwarding.context_data.enabled):
             # TODO add attibute filtering
-            attrs.update({"context." + k: v for k, v in six.iteritems(attributes)})
-            
+            attrs.update({"context." + k: safe_json_encode(v, ignore_string_types=True) for k, v in six.iteritems(attributes)})
+
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
@@ -1925,7 +1926,7 @@ def record_log_event(message, level=None, timestamp=None, attributes=None, appli
     if application is None:
         transaction = current_transaction()
         if transaction:
-            transaction.record_log_event(message, level, timestamp)
+            transaction.record_log_event(message, level, timestamp, attributes=attributes)
         else:
             application = application_instance(activate=False)
 

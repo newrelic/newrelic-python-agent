@@ -821,7 +821,7 @@ _settings.application_logging.forwarding.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=True
 )
 _settings.application_logging.forwarding.context_data.enabled = _environ_as_bool(
-    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED", default=True
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED", default=False
 )
 _settings.application_logging.metrics.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED", default=True

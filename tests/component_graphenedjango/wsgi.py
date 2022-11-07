@@ -17,6 +17,7 @@ try:
 
     application = get_wsgi_application()
 
+# This exception is to account for any users using Django v1.4 or earlier
 except ImportError:
     import django.core.handlers.wsgi
 

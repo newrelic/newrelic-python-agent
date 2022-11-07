@@ -58,6 +58,7 @@ from newrelic.api.transaction import (
 from newrelic.api.transaction import record_custom_event as __record_custom_event
 from newrelic.api.transaction import record_custom_metric as __record_custom_metric
 from newrelic.api.transaction import record_custom_metrics as __record_custom_metrics
+from newrelic.api.transaction import record_log_event as __record_log_event
 from newrelic.api.transaction import set_background_task as __set_background_task
 from newrelic.api.transaction import set_transaction_name as __set_transaction_name
 from newrelic.api.transaction import suppress_apdex_metric as __suppress_apdex_metric
@@ -242,6 +243,7 @@ suppress_transaction_trace = __wrap_api_call(__suppress_transaction_trace, "supp
 record_custom_metric = __wrap_api_call(__record_custom_metric, "record_custom_metric")
 record_custom_metrics = __wrap_api_call(__record_custom_metrics, "record_custom_metrics")
 record_custom_event = __wrap_api_call(__record_custom_event, "record_custom_event")
+record_log_event = __wrap_api_call(__record_log_event, "record_log_event")
 accept_distributed_trace_payload = __wrap_api_call(
     __accept_distributed_trace_payload, "accept_distributed_trace_payload"
 )

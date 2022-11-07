@@ -267,7 +267,13 @@ def generate_path_hash(name, seed):
     if not isinstance(name, bytes):
         name = name.encode("UTF-8")
 
-    path_hash = rotated ^ int(hashlib.new("md5", name, usedforsecurity=False).hexdigest()[-8:], base=16)  # nosec
+    # usedforsecurity flag added in python 3.9
+    try:
+        path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)  # nosec
+    except:
+        hash_type = hashlib.new("md5", usedforsecurity=False)  # nosec
+        hash_type.update(name)
+        path_hash = rotated ^ int(hash_type.hexdigest()[-8:], base=16)
     return "%08x" % path_hash
 
 

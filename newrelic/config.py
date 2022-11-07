@@ -2164,11 +2164,6 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("flask_restful", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
     _process_module_definition(
-        "flask_restplus.api",
-        "newrelic.hooks.component_flask_rest",
-        "instrument_flask_rest",
-    )
-    _process_module_definition(
         "flask_restx.api",
         "newrelic.hooks.component_flask_rest",
         "instrument_flask_rest",

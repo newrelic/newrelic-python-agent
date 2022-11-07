@@ -24,6 +24,7 @@ from newrelic.hooks.logger_logging import add_nr_linking_metadata
 def bind_add_log_level(logger, method_name, event_dict):
     return logger, method_name, event_dict
 
+
 def wrap_add_log_level(wrapped, instance, args, kwargs):
     logger, method_name, event_dict = bind_add_log_level(*args, **kwargs)
     if method_name == "warn":
@@ -41,7 +42,7 @@ def wrap_add_log_level(wrapped, instance, args, kwargs):
     # Return early if application logging not enabled
     if settings and settings.application_logging and settings.application_logging.enabled:
         level_name = "UNKNOWN" if not method_name else (method_name or "UNKNOWN")
-        message = event_dict["event"]
+        message = event_dict["event"] #Structlog records are stored in an event dictionary where the log message key is "event"
 
         if settings.application_logging.metrics and settings.application_logging.metrics.enabled:
             if transaction:
@@ -55,7 +56,6 @@ def wrap_add_log_level(wrapped, instance, args, kwargs):
 
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             try:
-                #TODO: get timestamp
                 record_log_event(message, level_name, calendar.timegm(time.gmtime()))
             except Exception:
                 pass

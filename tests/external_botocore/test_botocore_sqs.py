@@ -36,7 +36,8 @@ if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
     moto.packages.responses.responses.re._pattern_type = re.Pattern
 
 url = "sqs.us-east-1.amazonaws.com"
-if get_package_version("botocore") < "1.29.0":
+botocore_version = tuple([int(n) for n in get_package_version("botocore").split(".")])
+if botocore_version < (1, 29, 0):
     url = "queue.amazonaws.com"
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"

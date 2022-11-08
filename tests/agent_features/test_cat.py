@@ -95,10 +95,10 @@ def test_cat_fips_compliance(monkeypatch, fips_enabled):
         raise ValueError()
 
     if fips_enabled:
-        # monkeypatch.setattr("hashlib.md5", md5_crash)
         import hashlib
 
-        monkeypatch.setattr(hashlib, "md5", md5_crash)
+        # Use hashlib.new instead of hashlib.md5
+        monkeypatch.setattr(hashlib, "new", md5_crash)
 
     # Generate and send request using actual transaction api instead of fixture.
     # Otherwise the proper code paths are not exercised.
@@ -106,4 +106,5 @@ def test_cat_fips_compliance(monkeypatch, fips_enabled):
         headers = tracer.generate_request_headers(tracer.transaction)
 
     expected = not fips_enabled  # Invert to make more human readable
+    # breakpoint()
     assert ("X-NewRelic-Transaction" in dict(headers)) == expected

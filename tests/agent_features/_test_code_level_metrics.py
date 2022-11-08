@@ -18,7 +18,7 @@ def exercise_function():
     return
 
 
-class ExerciseClass:
+class ExerciseClass:  # Keep parenthesis for PY2 compatibility
     def exercise_method(self):
         return
 
@@ -31,7 +31,7 @@ class ExerciseClass:
         return
 
 
-class ExerciseClassCallable:
+class ExerciseClassCallable:  # Keep parenthesis for PY2 compatibility
     def __call__(self):
         return
 
@@ -39,5 +39,10 @@ class ExerciseClassCallable:
 CLASS_INSTANCE = ExerciseClass()
 CLASS_INSTANCE_CALLABLE = ExerciseClassCallable()
 
-exercise_lambda = lambda: None
+exercise_lambda = lambda: None  # noqa: we explicitly want to test lambda functionality
 exercise_partial = functools.partial(exercise_function)
+
+
+# If anything above this line is modified (either by person or through
+# automatic Linter changes), make sure that the "lineno"
+# parameters in the "test_code_level_metrics.py" file match.

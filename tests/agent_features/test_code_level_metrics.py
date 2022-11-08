@@ -65,7 +65,7 @@ def merge_dicts(A, B):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_function",
-                "code.lineno": 16,
+                "code.lineno": 17,
                 "code.namespace": NAMESPACE,
             },
         ),
@@ -75,7 +75,7 @@ def merge_dicts(A, B):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_method",
-                "code.lineno": 21,
+                "code.lineno": 22,
                 "code.namespace": CLASS_NAMESPACE,
             },
         ),
@@ -85,7 +85,7 @@ def merge_dicts(A, B):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_static_method",
-                "code.lineno": 24,
+                "code.lineno": 25,
                 "code.namespace": FUZZY_NAMESPACE,
             },
         ),
@@ -95,7 +95,7 @@ def merge_dicts(A, B):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_class_method",
-                "code.lineno": 28,
+                "code.lineno": 29,
                 "code.namespace": CLASS_NAMESPACE,
             },
         ),
@@ -105,7 +105,7 @@ def merge_dicts(A, B):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "__call__",
-                "code.lineno": 34,
+                "code.lineno": 35,
                 "code.namespace": CALLABLE_CLASS_NAMESPACE,
             },
         ),
@@ -115,7 +115,7 @@ def merge_dicts(A, B):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "<lambda>",
-                "code.lineno": 40,
+                "code.lineno": 42,
                 "code.namespace": NAMESPACE,
             },
         ),
@@ -125,7 +125,7 @@ def merge_dicts(A, B):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "exercise_function",
-                "code.lineno": 16,
+                "code.lineno": 17,
                 "code.namespace": NAMESPACE,
             },
         ),
@@ -190,7 +190,7 @@ def test_code_level_metrics_callables(func, args, agents):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "ExerciseClassCallable",
-                "code.lineno": 33,
+                "code.lineno": 34,
                 "code.namespace": NAMESPACE,
             },
         ),
@@ -199,7 +199,7 @@ def test_code_level_metrics_callables(func, args, agents):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "ExerciseClass",
-                "code.lineno": 20,
+                "code.lineno": 21,
                 "code.namespace": NAMESPACE,
             },
         ),
@@ -208,7 +208,7 @@ def test_code_level_metrics_callables(func, args, agents):
             {
                 "code.filepath": FILE_PATH,
                 "code.function": "ExerciseClass",
-                "code.lineno": 20,
+                "code.lineno": 21,
                 "code.namespace": NAMESPACE,
             },
         ),

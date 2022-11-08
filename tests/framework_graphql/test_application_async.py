@@ -15,8 +15,7 @@
 import asyncio
 
 import pytest
-
-# from test_application import is_graphql_2
+from test_application import is_graphql_2  # noqa: fixture is used
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -43,7 +42,7 @@ def graphql_run_async():
 
 
 @dt_enabled
-def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
+def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):  # noqa
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [

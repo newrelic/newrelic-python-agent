@@ -75,8 +75,9 @@ def _dnsname_match(dn, hostname, max_wildcards=1):
 
 
 def _to_unicode(obj):
-    if isinstance(obj, str) and sys.version_info < 3:
-        obj = unicode(obj, encoding="ascii", errors="strict")
+    if isinstance(obj, str) and sys.version_info[0] < 3:
+        # unicode is str in PY3, but since this is for PY2, keep this
+        obj = unicode(obj, encoding="ascii", errors="strict")  # pylint: disable=undefined-variable # noqa: F821
     return obj
 
 
@@ -109,13 +110,13 @@ def match_hostname(cert, hostname):
     try:
         # Divergence from upstream: ipaddress can't handle byte str
         host_ip = ipaddress.ip_address(_to_unicode(hostname))
-    except ValueError:
-        # Not an IP address (common case)
-        host_ip = None
     except UnicodeError:
         # Divergence from upstream: Have to deal with ipaddress not taking
         # byte strings.  addresses should be all ascii, so we consider it not
         # an ipaddress in this case
+        host_ip = None
+    except ValueError:
+        # Not an IP address (common case)
         host_ip = None
     except AttributeError:
         # Divergence from upstream: Make ipaddress library optional
@@ -139,7 +140,7 @@ def match_hostname(cert, hostname):
         # in subjectAltName
         for sub in cert.get("subject", ()):
             for key, value in sub:
-                # XXX according to RFC 2818, the most specific Common Name
+                # According to RFC 2818, the (most specific) Common Name
                 # must be used.
                 if key == "commonName":
                     if _dnsname_match(value, hostname):
@@ -147,7 +148,6 @@ def match_hostname(cert, hostname):
                     dnsnames.append(value)
     if len(dnsnames) > 1:
         raise CertificateError("hostname %r " "doesn't match either of %s" % (hostname, ", ".join(map(repr, dnsnames))))
-    elif len(dnsnames) == 1:
+    if len(dnsnames) == 1:
         raise CertificateError("hostname %r doesn't match %r" % (hostname, dnsnames[0]))
-    else:
-        raise CertificateError("no appropriate commonName or subjectAltName fields were found")
+    raise CertificateError("no appropriate commonName or subjectAltName fields were found")

@@ -297,7 +297,8 @@ def connect_payload_asserts(
     with_kubernetes=True,
 ):
     payload_data = payload[0]
-    assert isinstance(payload_data["agent_version"], type(""))
+    payload_data_type = type("") if six.PY2 else type("")
+    assert isinstance(payload_data["agent_version"], payload_data_type)
     assert payload_data["app_name"] == PAYLOAD_APP_NAME
     assert payload_data["display_host"] == DISPLAY_NAME
     assert payload_data["environment"] == ENVIRONMENT

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # import pytest
-# from testing_support.fixture.event_loop import event_loop
+from testing_support.fixture.event_loop import event_loop  # noqa: This fixture is used
 from testing_support.fixtures import collector_available_fixture  # noqa
 from testing_support.fixtures import (
     code_coverage_fixture,

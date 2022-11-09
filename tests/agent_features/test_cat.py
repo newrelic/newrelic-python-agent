@@ -106,5 +106,4 @@ def test_cat_fips_compliance(monkeypatch, fips_enabled):
         headers = tracer.generate_request_headers(tracer.transaction)
 
     expected = not fips_enabled  # Invert to make more human readable
-    # breakpoint()
     assert ("X-NewRelic-Transaction" in dict(headers)) == expected

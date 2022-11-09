@@ -18,7 +18,7 @@ def exercise_function():
     return
 
 
-class ExerciseClass:  # Keep parenthesis for PY2 compatibility
+class ExerciseClass:
     def exercise_method(self):
         return
 
@@ -31,7 +31,7 @@ class ExerciseClass:  # Keep parenthesis for PY2 compatibility
         return
 
 
-class ExerciseClassCallable:  # Keep parenthesis for PY2 compatibility
+class ExerciseClassCallable:
     def __call__(self):
         return
 

@@ -36,8 +36,6 @@ from newrelic.core.trace_cache import trace_cache
 try:
     import uvloop
 
-    breakpoint()
-
     loop_policies = (None, uvloop.EventLoopPolicy())
 except ImportError:
     loop_policies = (None,)
@@ -116,7 +114,6 @@ async def _test(asyncio, schedule, nr_enabled=True):
 def test_context_propagation(event_loop, schedule, loop_policy):
     import asyncio
 
-    breakpoint()
     asyncio.set_event_loop_policy(loop_policy)
     exceptions = []
 

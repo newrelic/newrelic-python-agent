@@ -21,6 +21,6 @@ except Exception:
 
 # Import appropriate generated pb2 file for protobuf version
 if PROTOBUF_VERSION >= (4,):
-    from newrelic.core.infinite_tracing_v4_pb2 import *
+    from newrelic.core.infinite_tracing_v4_pb2 import *  # noqa # pylint: disable=unused-wildcard-import, wildcard-import
 else:
-    from newrelic.core.infinite_tracing_v3_pb2 import *
+    from newrelic.core.infinite_tracing_v3_pb2 import *  # noqa # pylint: disable=unused-wildcard-import, wildcard-import

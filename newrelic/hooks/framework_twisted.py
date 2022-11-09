@@ -24,6 +24,7 @@ import newrelic.api.function_trace
 import newrelic.api.object_wrapper
 import newrelic.api.transaction
 import newrelic.api.web_transaction
+import newrelic.common.object_names
 from newrelic.api.time_trace import notice_error
 
 _logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class RequestProcessWrapper(object):
         return self.__class__((instance, descriptor))
 
     def __call__(self):
-        assert self._nr_instance != None
+        assert self._nr_instance is not None
 
         transaction = newrelic.api.transaction.current_transaction()
 
@@ -140,7 +141,7 @@ class RequestProcessWrapper(object):
             # unless our code here has an error or Twisted.Web is
             # broken.
 
-            _logger.exception("Unexpected exception raised by Twisted.Web " "Request.process() exception.")
+            _logger.exception("Unexpected exception raised by Twisted.Web Request.process() exception.")
 
             transaction.__exit__(*sys.exc_info())
             self._nr_instance._nr_transaction = None
@@ -173,7 +174,7 @@ class RequestFinishWrapper(object):
         return self.__class__((instance, descriptor))
 
     def __call__(self):
-        assert self._nr_instance != None
+        assert self._nr_instance is not None
 
         # Call finish() method straight away if request is not even
         # associated with a transaction.
@@ -307,7 +308,7 @@ class ResourceRenderWrapper(object):
             instance = self._nr_instance
             request = args[-1]
 
-        assert instance != None
+        assert instance is not None
 
         transaction = newrelic.api.transaction.current_transaction()
 
@@ -319,7 +320,7 @@ class ResourceRenderWrapper(object):
         # of the handler function augmented with the method type for the
         # request.
 
-        name = "%s.render_%s" % (newrelic.api.object_wrapper.callable_name(instance), request.method)
+        name = "%s.render_%s" % (newrelic.common.object_names.callable_name(instance), request.method)
         transaction.set_transaction_name(name, priority=1)
 
         return newrelic.api.function_trace.FunctionTraceWrapper(self._nr_next_object, name)(*args)
@@ -334,14 +335,14 @@ class DeferredUserList(UserList.UserList):
         item0 = item[0]
         item1 = item[1]
 
-        if item0[0] != twisted.internet.defer._CONTINUE:
+        if item0[0] is not twisted.internet.defer._CONTINUE:
             item0 = (
                 newrelic.api.function_trace.FunctionTraceWrapper(item0[0], group="Python/Twisted/Callback"),
                 item0[1],
                 item0[2],
             )
 
-        if item1[0] != twisted.internet.defer._CONTINUE:
+        if item1[0] is not twisted.internet.defer._CONTINUE:
             item1 = (
                 newrelic.api.function_trace.FunctionTraceWrapper(item1[0], group="Python/Twisted/Errback"),
                 item1[1],
@@ -410,7 +411,7 @@ class DeferredCallbacksWrapper(object):
         return self.__class__((instance, descriptor))
 
     def __call__(self):
-        assert self._nr_instance != None
+        assert self._nr_instance is not None
 
         transaction = newrelic.api.transaction.current_transaction()
 
@@ -462,7 +463,7 @@ class DeferredCallbacksWrapper(object):
                 request._nr_wait_function_trace = None
 
             else:
-                _logger.debug("Called a Twisted.Web deferred when we were " "not in a wait state.")
+                _logger.debug("Called a Twisted.Web deferred when we were not in a wait state.")
 
             # Call the deferred and capture any errors that may come
             # back from it.
@@ -504,7 +505,7 @@ class InlineGeneratorWrapper(object):
         self._nr_generator = generator
 
     def __iter__(self):
-        name = newrelic.api.object_wrapper.callable_name(self._nr_wrapped)
+        name = newrelic.common.object_names.callable_name(self._nr_wrapped)
         iterable = iter(self._nr_generator)
         while 1:
             with newrelic.api.function_trace.FunctionTrace(

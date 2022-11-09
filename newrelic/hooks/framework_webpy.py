@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
+# import sys
 
 import newrelic.api.function_trace
 import newrelic.api.in_function
 import newrelic.api.out_function
 import newrelic.api.pre_function
 import newrelic.api.transaction
-import newrelic.packages.six as six
-from newrelic.api.object_wrapper import callable_name
 from newrelic.api.time_trace import notice_error
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
+from newrelic.common.object_names import callable_name
+from newrelic.packages import six
 
 
 def transaction_name_delegate(*args, **kwargs):

@@ -13,12 +13,11 @@
 # limitations under the License.
 
 import sys
-import types
 
 import newrelic.api.external_trace
 import newrelic.api.object_wrapper
 import newrelic.api.transaction
-import newrelic.packages.six as six
+from newrelic.packages import six
 
 
 class capture_external_trace(object):

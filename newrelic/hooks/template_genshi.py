@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import types
+# import types
 
 import newrelic.api.function_trace
 import newrelic.api.object_wrapper

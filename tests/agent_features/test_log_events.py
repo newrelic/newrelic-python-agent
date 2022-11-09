@@ -65,7 +65,7 @@ _test_record_log_event_inside_transaction_events[0].update(_common_attributes_tr
 
 
 @enable_log_forwarding
-def test_record_log_event_inside_transaction():
+def test_record_log_event_inside_transaction_enable_log_forwarding():
     @validate_log_events(_test_record_log_event_inside_transaction_events)
     @validate_log_event_count(1)
     @background_task()
@@ -81,7 +81,7 @@ _test_record_log_event_outside_transaction_events[0].update(_common_attributes_s
 
 @enable_log_forwarding
 @reset_core_stats_engine()
-def test_record_log_event_outside_transaction():
+def test_record_log_event_outside_transaction_enable_log_forwarding():
     @validate_log_events_outside_transaction(_test_record_log_event_outside_transaction_events)
     @validate_log_event_count_outside_transaction(1)
     def test():
@@ -189,7 +189,7 @@ def test_log_event_truncation():
 
 
 @disable_log_forwarding
-def test_record_log_event_inside_transaction():
+def test_record_log_event_inside_transaction_disable_log_forwarding():
     @validate_log_event_count(0)
     @background_task()
     def test():
@@ -200,7 +200,7 @@ def test_record_log_event_inside_transaction():
 
 @disable_log_forwarding
 @reset_core_stats_engine()
-def test_record_log_event_outside_transaction():
+def test_record_log_event_outside_transaction_disable_log_forwarding():
     @validate_log_event_count_outside_transaction(0)
     def test():
         exercise_record_log_event()

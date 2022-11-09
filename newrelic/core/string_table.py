@@ -19,7 +19,7 @@ class StringTable(object):
         self.__mapping = {}
 
     def cache(self, value):
-        if not value in self.__mapping:
+        if value not in self.__mapping:
             token = "`%d" % len(self.__values)
             self.__mapping[value] = token
             self.__values.append(value)

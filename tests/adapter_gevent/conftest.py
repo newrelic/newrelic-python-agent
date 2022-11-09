@@ -14,7 +14,7 @@
 
 import pytest
 import webtest
-from testing_support.fixtures import (
+from testing_support.fixtures import (  # noqa # pylint: disable=unused-import
     collector_agent_registration_fixture,
     collector_available_fixture,
 )

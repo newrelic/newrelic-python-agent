@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import os
-import random
+
+# import random
 import socket
 import time
+from urllib.request import urlopen
 
 import pytest
 from testing_support.fixtures import TerminatingPopen
@@ -23,9 +25,6 @@ from testing_support.util import get_open_port
 
 pytest.importorskip("aiohttp.wsgi")
 pytest.importorskip("gunicorn.workers.gaiohttp")
-from urllib.request import urlopen
-
-from testing_support.util import get_open_port
 
 
 @pytest.mark.parametrize("nr_enabled", [True, False])
@@ -69,7 +68,7 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
             else:
                 continue
 
-            with urlopen("http://127.0.0.1:%d" % PORT) as resp:
+            with urlopen("http://127.0.0.1:%d" % PORT) as resp:  # nosec
                 assert resp.getcode() == 200
                 assert resp.read() == b"PONG"
 

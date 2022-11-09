@@ -12,15 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import functools
-# import sys
 import threading
 import time
 
 import newrelic
-
-# import types
-
 
 _context = threading.local()
 
@@ -45,11 +40,12 @@ class InternalTrace(object):
 
 class InternalTraceWrapper(object):
     def __init__(self, wrapped, name):
-        if type(wrapped) == type(()):
+        # if type(wrapped) == type(()):
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
-        self.__instance = instance
+        self.__instance = instance  # pylint: disable=unused-private-member
         self.__wrapped = wrapped
         self.__name = name
 

@@ -14,25 +14,31 @@
 
 import aioredis
 
-from newrelic.api.datastore_trace import DatastoreTrace  # , DatastoreTraceWrapper
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-
-# from newrelic.common.async_wrapper import async_wrapper
-from newrelic.common.object_wrapper import (  # FunctionWrapper,
-    function_wrapper,
-    wrap_function_wrapper,
-)
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.hooks.datastore_redis import (
     _redis_client_methods,
     _redis_multipart_commands,
     _redis_operation_re,
 )
 
-try:
-    AIOREDIS_VERSION = lambda: tuple(int(x) for x in getattr(aioredis, "__version__").split("."))
-except Exception:
-    AIOREDIS_VERSION = lambda: (0, 0, 0)
+
+def aioredis_version():
+    try:
+        AIOREDIS_VERSION = tuple(map(int, aioredis.__version__.split(".")))
+    except:
+        AIOREDIS_VERSION = (0, 0, 0)
+    return AIOREDIS_VERSION
+
+
+# try:
+#     AIOREDIS_VERSION = lambda: tuple(int(x) for x in getattr(aioredis, "__version__").split("."))   # noqa
+# except Exception:
+#     AIOREDIS_VERSION = lambda: (0, 0, 0)    # noqa
+
+AIOREDIS_VERSION = aioredis_version
 
 
 def _conn_attrs_to_dict(connection):

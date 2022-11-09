@@ -13,16 +13,18 @@
 # limitations under the License.
 
 import os
-import random
+
+# import random
 import socket
 import time
+from urllib.request import urlopen
 
 import pytest
 from testing_support.fixtures import TerminatingPopen
 from testing_support.util import get_open_port
 
 aiohttp = pytest.importorskip("aiohttp")
-from urllib.request import urlopen
+
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
 
@@ -77,7 +79,7 @@ def test_aiohttp_app_factory(nr_enabled):
             else:
                 continue
 
-            with urlopen("http://127.0.0.1:%d" % PORT) as resp:
+            with urlopen("http://127.0.0.1:%d" % PORT) as resp:  # nosec
                 assert resp.getcode() == 200
                 assert resp.read() == b"PONG"
 

@@ -15,7 +15,6 @@
 import logging
 import time
 
-import newrelic.packages.six as six
 from newrelic.common.coroutine import (
     is_asyncio_coroutine,
     is_coroutine_callable,
@@ -23,6 +22,7 @@ from newrelic.common.coroutine import (
 )
 from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.trace_cache import trace_cache
+from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 

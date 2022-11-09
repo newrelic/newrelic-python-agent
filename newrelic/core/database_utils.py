@@ -21,9 +21,9 @@ import logging
 import re
 import weakref
 
-import newrelic.packages.six as six
 from newrelic.core.config import global_settings
 from newrelic.core.internal_metrics import internal_metric
+from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -42,7 +42,8 @@ _logger = logging.getLogger(__name__)
 _single_quotes_p = r"'(?:[^']|'')*?(?:\\'.*|'(?!'))"
 _double_quotes_p = r'"(?:[^"]|"")*?(?:\\".*|"(?!"))'
 _dollar_quotes_p = r"(\$(?!\d)[^$]*?\$).*?(?:\1|$)"
-_oracle_quotes_p = r"q'\[.*?(?:\]'|$)|q'\{.*?(?:\}'|$)|" r"q'\<.*?(?:\>'|$)|q'\(.*?(?:\)'|$)"
+# _oracle_quotes_p = r"q'\[.*?(?:\]'|$)|q'\{.*?(?:\}'|$)|" r"q'\<.*?(?:\>'|$)|q'\(.*?(?:\)'|$)"
+_oracle_quotes_p = r"q'\[.*?(?:\]'|$)|q'\{.*?(?:\}'|$)|q'\<.*?(?:\>'|$)|q'\(.*?(?:\)'|$)"
 _any_quotes_p = _single_quotes_p + "|" + _double_quotes_p
 _single_dollar_p = _single_quotes_p + "|" + _dollar_quotes_p
 _single_oracle_p = _single_quotes_p + "|" + _oracle_quotes_p
@@ -618,7 +619,7 @@ class SQLConnections(object):
 
                 if settings.debug.log_explain_plan_queries:
                     _logger.debug(
-                        "Drop database connection for %r as " "reached maximum of %r.",
+                        "Drop database connection for %r as reached maximum of %r.",
                         connection.database.client,
                         self.maximum,
                     )
@@ -677,10 +678,10 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params, sql
     if _could_be_multi_query(sql):
         if settings.debug.log_explain_plan_queries:
             _logger.debug(
-                "Skipping explain plan for %r on %r due to " "semicolons in the query string.", sql, database.client
+                "Skipping explain plan for %r on %r due to semicolons in the query string.", sql, database.client
             )
         else:
-            _logger.debug("Skipping explain plan on %s due to " "semicolons in the query string.", database.client)
+            _logger.debug("Skipping explain plan on %s due to semicolons in the query string.", database.client)
         return None
 
     query = "%s %s" % (database.explain_query, sql)

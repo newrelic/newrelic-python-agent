@@ -31,9 +31,9 @@ from _test_code_level_metrics import (
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 
-import newrelic.packages.six as six
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
+from newrelic.packages import six
 
 is_pypy = hasattr(sys, "pypy_version_info")
 

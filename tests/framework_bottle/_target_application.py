@@ -41,7 +41,7 @@ def error404_page(error):
 
 
 @route("/html_insertion")
-def index_page():
+def index_page_insertion():
     return (
         "<!DOCTYPE html><html><head>Some header</head>"
         "<body><h1>My First Heading</h1><p>My first paragraph.</p>"
@@ -53,7 +53,7 @@ if version >= (0, 9, 0):
     from bottle import auth_basic
 
     def auth_check(username, password):
-        return username == "user" and password == "password"
+        return username == "user" and password == "password"  # nosec
 
     @route("/auth")
     @auth_basic(auth_check)

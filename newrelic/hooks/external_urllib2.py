@@ -17,10 +17,10 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-import newrelic.packages.six as six
 from newrelic.api.external_trace import ExternalTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.packages import six
 
 
 def _nr_wrapper_opener_director_open_(wrapped, instance, args, kwargs):

@@ -21,10 +21,10 @@ import zlib
 from collections import defaultdict, deque
 
 import newrelic
-import newrelic.packages.six as six
 from newrelic.common.encoding_utils import json_encode
 from newrelic.core.config import global_settings
 from newrelic.core.trace_cache import trace_cache
+from newrelic.packages import six
 
 try:
     from sys import intern

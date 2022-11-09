@@ -16,12 +16,13 @@ import newrelic.api.function_trace
 import newrelic.api.in_function
 import newrelic.api.object_wrapper
 import newrelic.api.transaction
-import newrelic.packages.six as six
+import newrelic.common.object_names
+from newrelic.packages import six
 
 
 class MethodWrapper(object):
     def __init__(self, wrapped, priority=None):
-        self._nr_name = newrelic.api.object_wrapper.callable_name(wrapped)
+        self._nr_name = newrelic.common.object_names.callable_name(wrapped)
         self._nr_wrapped = wrapped
         self._nr_priority = priority
 

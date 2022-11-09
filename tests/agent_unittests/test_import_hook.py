@@ -14,9 +14,9 @@
 
 import pytest
 
-import newrelic.api.import_hook as import_hook
-import newrelic.packages.six as six
+from newrelic.api import import_hook
 from newrelic.config import _module_function_glob
+from newrelic.packages import six
 
 
 # a dummy hook just to be able to register hooks for modules

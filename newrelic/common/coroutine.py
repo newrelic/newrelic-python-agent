@@ -14,7 +14,7 @@
 
 import inspect
 
-import newrelic.packages.six as six
+from newrelic.packages import six
 
 if hasattr(inspect, "iscoroutinefunction"):
 

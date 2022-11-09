@@ -16,7 +16,7 @@ import falcon
 import webtest
 
 try:
-    from falcon import HTTPRouteNotFound
+    from falcon import HTTPRouteNotFound  # noqa # pylint: disable=W0611
 
     NOT_FOUND_ERROR_NAME = "falcon.errors:HTTPRouteNotFound"
 except ImportError:

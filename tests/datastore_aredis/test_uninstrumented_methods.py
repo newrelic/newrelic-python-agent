@@ -42,7 +42,7 @@ IGNORED_METHODS = {
 
 def test_uninstrumented_methods():
     methods = {m for m in dir(strict_redis_client) if not m[0] == "_"}
-    is_wrapped = lambda m: hasattr(getattr(strict_redis_client, m), "__wrapped__")
+    is_wrapped = lambda m: hasattr(getattr(strict_redis_client, m), "__wrapped__")  # noqa # pylint: disable=C3001
     uninstrumented = {m for m in methods - IGNORED_METHODS if not is_wrapped(m)}
 
     assert not uninstrumented, "Uninstrumented methods: %s" % sorted(uninstrumented)

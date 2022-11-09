@@ -18,7 +18,7 @@ import warnings
 import newrelic.api.import_hook
 import newrelic.core.agent
 import newrelic.core.config
-import newrelic.packages.six as six
+from newrelic.packages import six
 
 
 class Application(object):

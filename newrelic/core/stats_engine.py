@@ -30,7 +30,6 @@ import warnings
 import zlib
 from heapq import heapify, heapreplace
 
-import newrelic.packages.six as six
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.common.encoding_utils import json_encode
@@ -50,6 +49,7 @@ from newrelic.core.error_collector import TracedError
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
+from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -65,8 +65,8 @@ EVENT_HARVEST_METHODS = {
 }
 
 
-def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
-    return (count, total, total, min, max, sum_of_squares)
+def c2t(count=0, total=0.0, min_c2t=0.0, max_c2t=0.0, sum_of_squares=0.0):
+    return (count, total, total, min_c2t, max_c2t, sum_of_squares)
 
 
 class ApdexStats(list):
@@ -1051,7 +1051,7 @@ class StatsEngine(object):
 
         if priority is None:
             # Base priority for log events outside transactions is below those inside transactions
-            priority = random.random() - 1
+            priority = random.random() - 1  # nosec
 
         self._log_events.add(event, priority=priority)
 

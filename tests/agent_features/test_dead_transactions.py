@@ -16,10 +16,10 @@ import gc
 
 import pytest
 
-import newrelic.packages.six as six
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
+from newrelic.packages import six
 
 
 @function_wrapper

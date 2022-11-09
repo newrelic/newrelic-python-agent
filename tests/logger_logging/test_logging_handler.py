@@ -15,7 +15,7 @@
 import logging
 
 import pytest
-from conftest import logger as conf_logger
+from conftest import logger as conf_logger  # noqa # pylint: disable=W0611, E0611
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_function_called import validate_function_called
 from testing_support.validators.validate_log_event_count import validate_log_event_count
@@ -37,7 +37,7 @@ def uninstrument_logging():
 
 
 @pytest.fixture(scope="function")
-def logger(conf_logger, uninstrument_logging):
+def logger(conf_logger, uninstrument_logging):  # noqa
     handler = NewRelicLogForwardingHandler()
     conf_logger.addHandler(handler)
     yield conf_logger

@@ -210,14 +210,14 @@ def newrelic_browser_timing_header():
     from django.utils.safestring import mark_safe
 
     transaction = current_transaction()
-    return transaction and mark_safe(transaction.browser_timing_header()) or ""
+    return transaction and mark_safe(transaction.browser_timing_header()) or ""  # nosec
 
 
 def newrelic_browser_timing_footer():
     from django.utils.safestring import mark_safe
 
     transaction = current_transaction()
-    return transaction and mark_safe(transaction.browser_timing_footer()) or ""
+    return transaction and mark_safe(transaction.browser_timing_footer()) or ""  # nosec
 
 
 # Addition of instrumentation for middleware. Can only do this
@@ -601,7 +601,8 @@ def wrap_url_resolver(wrapped):
             with FunctionTrace(name=name, label=path, source=wrapped):
                 result = wrapped(path)
 
-                if type(result) is tuple:
+                # if type(result) is tuple:
+                if isinstance(result, tuple):
                     callback, callback_args, callback_kwargs = result
                     result = (wrap_view_handler(callback, priority=5), callback_args, callback_kwargs)
                 else:

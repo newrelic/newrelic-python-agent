@@ -170,8 +170,12 @@ def test_send(status_code):
     HttpClientRecorder.STATUS_CODE = status_code
     settings = finalize_application_settings(
         {
-            "request_headers_map": {"custom-header": "value"},
+            # We want to keep u"value" as is and black will format this
+            # into "value" so to preserve this, we turn black (linter) off
+            # fmt: off
+            "request_headers_map": {"custom-header": u"value"},     # pylint: disable=redundant-u-string-prefix
             "agent_run_id": "RUN_TOKEN",
+            # fmt: on
         }
     )
     protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
@@ -195,8 +199,13 @@ def test_send(status_code):
     }
 
     assert request.headers == {
+        # We want to keep u"value" as is and black will format this
+        # into "value" so to preserve this, we turn black (linter) off
+        # fmt: off
         "Content-Type": "application/json",
-        "custom-header": "value",
+        "custom-header": u"value",
+        # pylint: disable=redundant-u-string-prefix
+        # fmt: on
     }
 
     assert request.payload == b"[1,2,3]"
@@ -297,8 +306,10 @@ def connect_payload_asserts(
     with_kubernetes=True,
 ):
     payload_data = payload[0]
-    payload_data_type = type("") if six.PY2 else type("")
+    # unicode exists as a type for PY2
+    payload_data_type = unicode if six.PY2 else str  # pylint: disable=undefined-variable # noqa
     assert isinstance(payload_data["agent_version"], payload_data_type)
+    # assert isinstance(payload_data["agent_version"], type(""))
     assert payload_data["app_name"] == PAYLOAD_APP_NAME
     assert payload_data["display_host"] == DISPLAY_NAME
     assert payload_data["environment"] == ENVIRONMENT
@@ -394,7 +405,7 @@ def connect_payload_asserts(
     ],
 )
 def test_connect(with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_ip):
-    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, IP_ADDRESS
+    global AWS, AZURE, GCP, PCF, DOCKER, KUBERNETES, IP_ADDRESS  # BOOT_ID
     if not with_aws:
         AWS = Exception
     if not with_pcf:

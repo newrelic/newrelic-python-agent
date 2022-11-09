@@ -26,7 +26,10 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 
+# from newrelic.common.package_version_utils import get_package_version
+
 MOTO_VERSION = tuple(int(v) for v in moto.__version__.split(".")[:3])
+BOTOCORE_VERSION = tuple(int(_) for _ in botocore.__version__.split(".")[:3])
 
 # patch earlier versions of moto to support py37
 if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
@@ -34,8 +37,14 @@ if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
 
     moto.packages.responses.responses.re._pattern_type = re.Pattern
 
+url = "sqs.us-east-1.amazonaws.com"
+# botocore_version = tuple([int(n) for n in get_package_version("botocore").split(".")])
+# if botocore_version < (1, 29, 0):
+if BOTOCORE_VERSION < (1, 29, 0):
+    url = "queue.amazonaws.com"
+
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
-AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
+AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION = "us-east-1"
 
 TEST_QUEUE = "python-agent-test-%s" % uuid.uuid4()
@@ -43,7 +52,7 @@ TEST_QUEUE = "python-agent-test-%s" % uuid.uuid4()
 
 _sqs_scoped_metrics = [
     ("MessageBroker/SQS/Queue/Produce/Named/%s" % TEST_QUEUE, 2),
-    ("External/queue.amazonaws.com/botocore/POST", 3),
+    ("External/%s/botocore/POST" % url, 3),
 ]
 
 _sqs_rollup_metrics = [
@@ -51,8 +60,8 @@ _sqs_rollup_metrics = [
     ("MessageBroker/SQS/Queue/Consume/Named/%s" % TEST_QUEUE, 1),
     ("External/all", 3),
     ("External/allOther", 3),
-    ("External/queue.amazonaws.com/all", 3),
-    ("External/queue.amazonaws.com/botocore/POST", 3),
+    ("External/%s/all" % url, 3),
+    ("External/%s/botocore/POST" % url, 3),
 ]
 
 _sqs_scoped_metrics_malformed = [

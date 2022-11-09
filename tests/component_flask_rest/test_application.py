@@ -33,8 +33,17 @@ from newrelic.packages import six
 
 TEST_APPLICATION_PREFIX = "_test_application.create_app.<locals>" if six.PY3 else "_test_application"
 
+# This is necessary because flask_restx does not work in PY2.
+# flask_restx/fields.py contains this import:
+# from urllib.parse
+# and this does not exist in PY2.
+if six.PY2:
+    flask_rest_fixture = pytest.fixture(params=["flask_restful", "flask_restplus"])
+else:
+    flask_rest_fixture = pytest.fixture(params=["flask_restful", "flask_restplus", "flask_restx"])
 
-@pytest.fixture(params=["flask_restful", "flask_restplus", "flask_restx"])
+
+@flask_rest_fixture
 def application(request):
     from _test_application import get_test_application
 

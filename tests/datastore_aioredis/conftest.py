@@ -15,11 +15,13 @@
 import aioredis
 import pytest
 from testing_support.db_settings import redis_settings
-from testing_support.fixture.event_loop import event_loop as loop  # noqa
-from testing_support.fixtures import collector_available_fixture  # noqa
-from testing_support.fixtures import (
+from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
+    event_loop as loop,
+)
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,
+    collector_available_fixture,
 )
 
 AIOREDIS_VERSION = tuple(int(x) for x in aioredis.__version__.split(".")[:2])

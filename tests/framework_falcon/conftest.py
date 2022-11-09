@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import collector_available_fixture  # noqa
-from testing_support.fixtures import (
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,
+    collector_available_fixture,
 )
 
 _coverage_source = [
@@ -42,4 +42,4 @@ collector_agent_registration = collector_agent_registration_fixture(
 def app():
     from _target_application import _target_application
 
-    return _target_application
+    return _target_application  # pylint: disable=E0611

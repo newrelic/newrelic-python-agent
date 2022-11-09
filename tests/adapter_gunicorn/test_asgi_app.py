@@ -17,15 +17,13 @@ import os
 # import random
 import socket
 import time
+from urllib.request import urlopen
 
 import pytest
 from testing_support.fixtures import TerminatingPopen
 from testing_support.util import get_open_port
 
 pytest.importorskip("asyncio")
-from urllib.request import urlopen
-
-# from testing_support.util import get_open_port
 
 
 @pytest.mark.parametrize("nr_enabled", (True, False))

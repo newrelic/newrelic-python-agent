@@ -16,14 +16,14 @@ import gc
 
 import grpc
 import pytest
-from testing_support.fixtures import (  # noqa
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
-import newrelic.packages.six as six
+from newrelic.packages import six
 
 _coverage_source = [
     "newrelic.hooks.framework_grpc",

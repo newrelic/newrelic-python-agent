@@ -25,9 +25,10 @@ import functools
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.object_wrapper import ObjectWrapper, callable_name
 from newrelic.api.pre_function import wrap_pre_function
 from newrelic.api.transaction import current_transaction
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import ObjectWrapper
 from newrelic.core.agent import shutdown_agent
 
 

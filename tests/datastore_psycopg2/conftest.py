@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import pytest
+
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,

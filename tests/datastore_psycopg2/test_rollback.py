@@ -25,8 +25,6 @@ from utils import DB_SETTINGS
 
 from newrelic.api.background_task import background_task
 
-# import pytest
-
 # Settings
 
 _enable_instance_settings = {

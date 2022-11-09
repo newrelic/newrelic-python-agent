@@ -16,7 +16,9 @@ import json
 import os
 
 import pytest
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import (  # noqa: F401 # pylint: disable
+    override_application_settings,
+)
 
 from newrelic.config import _map_labels, _process_labels_setting
 from newrelic.core.config import global_settings

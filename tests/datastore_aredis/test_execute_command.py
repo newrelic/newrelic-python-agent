@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import pytest
+
 import aredis
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings

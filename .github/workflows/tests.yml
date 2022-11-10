@@ -435,12 +435,12 @@ jobs:
 
   kafka:
     env:
-      TOTAL_GROUPS: 2
+      TOTAL_GROUPS: 4
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2]
+        group-number: [1, 2, 3, 4]
 
     runs-on: ubuntu-latest
     timeout-minutes: 30

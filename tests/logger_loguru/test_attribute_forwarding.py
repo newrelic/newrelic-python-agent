@@ -21,7 +21,7 @@ from testing_support.validators.validate_log_events_outside_transaction import v
 from testing_support.fixtures import override_application_settings
 
 
-_event_attributes = {"message": "A", "context.key": "value", "context.int_attr": "1", "context.dict_attr": '{"key":"value"}'}
+_event_attributes = {"message": "A", "context.key": "value"}
 
 
 def exercise_logging(logger):

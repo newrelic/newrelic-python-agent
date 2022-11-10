@@ -30,14 +30,12 @@ from newrelic.packages import six
 TEST_APPLICATION_PREFIX = "_test_application.create_app.<locals>" if six.PY3 else "_test_application"
 
 
-@pytest.fixture(params=["flask_restful", "flask_restplus", "flask_restx"])
+@pytest.fixture(params=["flask_restful", "flask_restx"])
 def application(request):
     from _test_application import get_test_application
 
     if request.param == "flask_restful":
         import flask_restful as module
-    elif request.param == "flask_restplus":
-        import flask_restplus as module
     elif request.param == "flask_restx":
         import flask_restx as module
     else:

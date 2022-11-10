@@ -324,8 +324,7 @@ def _nr_Connection__init__wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument_elasticsearch_connection_base(module):
-    # wrap_function_wrapper(module, "Connection.__init__", _nr_Connection__init__wrapper)
-    wrap_function_wrapper(module.Connection, "__init__", _nr_Connection__init__wrapper)
+    wrap_function_wrapper(module, "Connection.__init__", _nr_Connection__init__wrapper)
 
 
 def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
@@ -354,5 +353,4 @@ def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument_elasticsearch_transport(module):
-    # wrap_function_wrapper(module, "Transport.get_connection", _nr_get_connection_wrapper)
-    wrap_function_wrapper(module.Transport, "get_connection", _nr_get_connection_wrapper)
+    wrap_function_wrapper(module, "Transport.get_connection", _nr_get_connection_wrapper)

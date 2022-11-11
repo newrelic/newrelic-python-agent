@@ -16,7 +16,8 @@ import asyncio
 
 import aiohttp
 import pytest
-from testing_support.fixtures import cat_enabled, validate_transaction_metrics
+from testing_support.fixtures import cat_enabled
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from yarl import URL
 
 from newrelic.api.background_task import background_task

@@ -18,8 +18,8 @@ import sys
 import time
 
 import pytest
-from testing_support.fixtures import (
-    capture_transaction_metrics,
+from testing_support.fixtures import capture_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 

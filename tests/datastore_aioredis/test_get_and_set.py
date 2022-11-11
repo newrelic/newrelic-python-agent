@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.background_task import background_task
-
-from testing_support.fixtures import validate_transaction_metrics, override_application_settings
+# from conftest import AIOREDIS_VERSION, event_loop, loop
 from testing_support.db_settings import redis_settings
+from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()[0]
 

@@ -22,8 +22,6 @@ import pytest
 from testing_support.fixtures import (
     override_application_settings,
     raise_background_exceptions,
-    validate_transaction_errors,
-    validate_transaction_metrics,
     wait_for_background_threads,
 )
 from testing_support.sample_asgi_applications import (
@@ -32,6 +30,12 @@ from testing_support.sample_asgi_applications import (
     simple_app_v2_raw,
 )
 from testing_support.util import get_open_port
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.transaction import ignore_transaction
 from newrelic.common.object_names import callable_name
@@ -115,7 +119,7 @@ def wait_for_port(port, retries=10):
     status = None
     for _ in range(retries):
         try:
-            status = urlopen("http://localhost:%d/ignored" % port, timeout=1).status
+            status = urlopen("http://localhost:%d/ignored" % port, timeout=1).status  # nosec
             assert status == 200
             return
         except Exception as e:
@@ -139,7 +143,7 @@ def test_hypercorn_200(port, app):
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():
-        return urlopen("http://localhost:%d" % port, timeout=10)
+        return urlopen("http://localhost:%d" % port, timeout=10)  # nosec
 
     assert response().status == 200
 
@@ -152,6 +156,6 @@ def test_hypercorn_500(port, app):
     @wait_for_background_threads()
     def _test():
         with pytest.raises(HTTPError):
-            urlopen("http://localhost:%d/exc" % port)
+            urlopen("http://localhost:%d/exc" % port)  # nosec
 
     _test()

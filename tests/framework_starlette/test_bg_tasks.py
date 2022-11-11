@@ -16,9 +16,11 @@ import sys
 
 import pytest
 from starlette import __version__
-from testing_support.fixtures import validate_transaction_metrics
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 starlette_version = tuple(int(x) for x in __version__.split("."))

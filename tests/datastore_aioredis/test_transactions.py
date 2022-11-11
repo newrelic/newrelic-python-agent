@@ -13,11 +13,12 @@
 # limitations under the License.
 
 import pytest
+from conftest import AIOREDIS_VERSION, SKIPIF_AIOREDIS_V1, SKIPIF_AIOREDIS_V2
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
 
 from newrelic.api.background_task import background_task
-from testing_support.fixtures import validate_transaction_errors
-
-from conftest import SKIPIF_AIOREDIS_V1, SKIPIF_AIOREDIS_V2, AIOREDIS_VERSION
 
 
 @background_task()
@@ -28,7 +29,7 @@ def test_pipelines_no_harm(client, in_transaction, loop):
             pipe = client.pipeline(transaction=in_transaction)
         else:
             pipe = client.pipeline()  # Transaction kwarg unsupported
-        
+
         pipe.set("TXN", 1)
         return await pipe.execute()
 
@@ -68,6 +69,7 @@ def test_multi_exec_no_harm(client, loop):
 @background_task()
 def test_pipeline_immediate_execution_no_harm(client, loop):
     key = "TXN_WATCH"
+
     async def exercise():
         await client.set(key, 1)
 
@@ -94,6 +96,7 @@ def test_pipeline_immediate_execution_no_harm(client, loop):
 @background_task()
 def test_transaction_immediate_execution_no_harm(client, loop):
     key = "TXN_WATCH"
+
     async def exercise():
         async def exercise_transaction(pipe):
             value = int(await pipe.get(key))
@@ -118,6 +121,7 @@ def test_transaction_immediate_execution_no_harm(client, loop):
 @background_task()
 def test_transaction_watch_error_no_harm(client, loop):
     key = "TXN_WATCH"
+
     async def exercise():
         async def exercise_transaction(pipe):
             value = int(await pipe.get(key))

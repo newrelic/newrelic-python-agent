@@ -20,7 +20,7 @@ import tempfile
 
 from newrelic.common.system_info import BootIdUtilization
 
-from testing_support.fixtures import validate_internal_metrics
+from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))

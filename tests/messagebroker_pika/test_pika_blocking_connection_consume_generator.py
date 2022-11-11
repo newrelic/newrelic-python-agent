@@ -17,9 +17,9 @@ import pika
 from newrelic.api.background_task import background_task
 
 from conftest import QUEUE, EXCHANGE, CORRELATION_ID, REPLY_TO, HEADERS, BODY
-from testing_support.fixtures import (validate_transaction_metrics,
-        validate_tt_collector_json)
+from testing_support.fixtures import validate_tt_collector_json
 from testing_support.db_settings import rabbitmq_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 DB_SETTINGS = rabbitmq_settings()[0]
 

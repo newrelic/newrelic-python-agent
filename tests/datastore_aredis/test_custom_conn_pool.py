@@ -19,6 +19,7 @@ will not result in an error.
 
 import aredis
 from testing_support.db_settings import redis_settings
+from testing_support.fixture.event_loop import event_loop as loop  # noqa
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import (
@@ -109,7 +110,7 @@ async def exercise_redis(client):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_enable_instance(loop):
+def test_fake_conn_pool_enable_instance(loop):  # noqa
     client = aredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
 
     # Get a real connection
@@ -134,7 +135,7 @@ def test_fake_conn_pool_enable_instance(loop):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_disable_instance(loop):
+def test_fake_conn_pool_disable_instance(loop):  # noqa
     client = aredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
 
     # Get a real connection

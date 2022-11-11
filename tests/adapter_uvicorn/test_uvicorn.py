@@ -116,7 +116,7 @@ def test_uvicorn_200(port, app):
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():
-        return urlopen("http://localhost:%d" % port)
+        return urlopen("http://localhost:%d" % port)  # nosec
 
     assert response().status == 200
 
@@ -129,7 +129,7 @@ def test_uvicorn_500(port, app):
     @wait_for_background_threads()
     def _test():
         try:
-            urlopen("http://localhost:%d/exc" % port)
+            urlopen("http://localhost:%d/exc" % port)  # nosec
         except HTTPError:
             pass
 

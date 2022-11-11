@@ -27,6 +27,6 @@ from newrelic.api.background_task import background_task
 )
 @background_task(name="test_render")
 def test_render():
-    template = Template("hello, ${name}!")
+    template = Template("hello, ${name}!")  # nosec
     result = template.render(name="NR")
     assert result == "hello, NR!"

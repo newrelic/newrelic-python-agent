@@ -94,7 +94,7 @@ def test_https_request_get(server, metrics):
     @background_task(name="test_requests:test_https_request_get")
     def _test():
         try:
-            requests.get("https://localhost:%d/" % server.port, verify=False)
+            requests.get("https://localhost:%d/" % server.port, verify=False)  # nosec
         except Exception:
             pass
 

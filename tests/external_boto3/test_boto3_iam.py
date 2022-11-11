@@ -37,7 +37,7 @@ if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
     moto.packages.responses.responses.re._pattern_type = re.Pattern
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
-AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
+AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 
 TEST_USER = "python-agent-test-%s" % uuid.uuid4()
 

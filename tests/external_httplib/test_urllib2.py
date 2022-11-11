@@ -62,7 +62,7 @@ def test_urlopen_http_request(server, metrics):
     )
     @background_task(name="test_urllib2:test_urlopen_http_request")
     def _test():
-        urllib2.urlopen("http://localhost:%d/" % server.port)
+        urllib2.urlopen("http://localhost:%d/" % server.port)  # nosec
 
     _test()
 
@@ -77,7 +77,7 @@ def test_urlopen_https_request(server, metrics):
     @background_task(name="test_urllib2:test_urlopen_https_request")
     def _test():
         try:
-            urllib2.urlopen("https://localhost:%d/" % server.port)
+            urllib2.urlopen("https://localhost:%d/" % server.port)  # nosec
         except Exception:
             pass
 
@@ -102,7 +102,7 @@ def test_urlopen_http_request_with_port(server):
     )
     @background_task(name="test_urllib2:test_urlopen_http_request_with_port")
     def _test():
-        urllib2.urlopen("http://localhost:%d/" % server.port)
+        urllib2.urlopen("http://localhost:%d/" % server.port)  # nosec
 
     _test()
 
@@ -126,14 +126,14 @@ _test_urlopen_file_request_rollup_metrics = [
 def test_urlopen_file_request():
     path = os.path.abspath(__file__)
     file_uri = "file://%s" % path
-    urllib2.urlopen(file_uri)
+    urllib2.urlopen(file_uri)  # nosec
 
 
 @background_task()
 @cache_outgoing_headers
 @validate_cross_process_headers
 def test_urlopen_cross_process_request(server):
-    urllib2.urlopen("http://localhost:%d/" % server.port)
+    urllib2.urlopen("http://localhost:%d/" % server.port)  # nosec
 
 
 @cat_enabled
@@ -166,6 +166,6 @@ def test_urlopen_cross_process_response(server):
     @validate_external_node_params(params=_test_urlopen_cross_process_response_external_node_params)
     @background_task(name="test_urllib2:test_urlopen_cross_process_response")
     def _test():
-        urllib2.urlopen("http://localhost:%d/" % server.port)
+        urllib2.urlopen("http://localhost:%d/" % server.port)  # nosec
 
     _test()

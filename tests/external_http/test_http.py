@@ -77,7 +77,7 @@ def test_http_https_request(server, metrics):
     )
     @background_task(name="test_http:test_http_https_request")
     def _test():
-        connection = httplib.HTTPSConnection("localhost", server.port)
+        connection = httplib.HTTPSConnection("localhost", server.port)  # nosec
         try:
             connection.request("GET", "/")
         except Exception:

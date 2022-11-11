@@ -106,7 +106,7 @@ def test_httplib_https_request(server):
     )
     @background_task(name="test_httplib:test_httplib_https_request")
     def _test():
-        connection = httplib.HTTPSConnection("localhost", server.port)
+        connection = httplib.HTTPSConnection("localhost", server.port)  # nosec
         # It doesn't matter that a SSL exception is raised here because the
         # agent still records this as an external request
         try:

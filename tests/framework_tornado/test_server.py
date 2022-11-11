@@ -212,6 +212,7 @@ def test_nr_disabled(app):
     ),
 )
 def test_web_socket(uri, name, app):
+    # import asyncio
     from tornado.websocket import websocket_connect
 
     namespace, func_name = name.split(":")

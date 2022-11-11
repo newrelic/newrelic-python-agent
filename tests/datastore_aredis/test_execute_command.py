@@ -15,6 +15,7 @@
 
 import aredis
 from testing_support.db_settings import redis_settings
+from testing_support.fixture.event_loop import event_loop as loop  # noqa
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import (
@@ -79,7 +80,7 @@ async def exercise_redis_single_arg(client):
     background_task=True,
 )
 @background_task()
-def test_strict_redis_execute_command_two_args_enable(loop):
+def test_strict_redis_execute_command_two_args_enable(loop):  # noqa
     r = aredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     loop.run_until_complete(exercise_redis_multi_args(r))
 
@@ -92,7 +93,7 @@ def test_strict_redis_execute_command_two_args_enable(loop):
     background_task=True,
 )
 @background_task()
-def test_strict_redis_execute_command_two_args_disabled(loop):
+def test_strict_redis_execute_command_two_args_disabled(loop):  # noqa
     r = aredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     loop.run_until_complete(exercise_redis_multi_args(r))
 
@@ -105,7 +106,7 @@ def test_strict_redis_execute_command_two_args_disabled(loop):
     background_task=True,
 )
 @background_task()
-def test_strict_redis_execute_command_as_one_arg_enable(loop):
+def test_strict_redis_execute_command_as_one_arg_enable(loop):  # noqa
     r = aredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     loop.run_until_complete(exercise_redis_single_arg(r))
 
@@ -118,6 +119,6 @@ def test_strict_redis_execute_command_as_one_arg_enable(loop):
     background_task=True,
 )
 @background_task()
-def test_strict_redis_execute_command_as_one_arg_disabled(loop):
+def test_strict_redis_execute_command_as_one_arg_disabled(loop):  # noqa
     r = aredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     loop.run_until_complete(exercise_redis_single_arg(r))

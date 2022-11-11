@@ -30,7 +30,7 @@ from newrelic.api.transaction import current_transaction
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
-ENCODING_KEY = "".join(random.choice(string.ascii_lowercase) for _ in range(40))
+ENCODING_KEY = "".join(random.choice(string.ascii_lowercase) for _ in range(40))  # nosec
 _override_settings = {
     "cross_process_id": "1#1",
     "encoding_key": ENCODING_KEY,

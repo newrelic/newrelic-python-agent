@@ -38,7 +38,7 @@ if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
 
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
-AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
+AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION = "us-east-1"
 
 TEST_TABLE = "python-agent-test-%s" % uuid.uuid4()

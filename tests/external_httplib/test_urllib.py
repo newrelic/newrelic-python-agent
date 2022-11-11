@@ -62,7 +62,7 @@ def test_urlopener_http_request(server, metrics):
     )
     @background_task(name="test_urllib:test_urlopener_http_request")
     def _test():
-        opener = urllib.URLopener()
+        opener = urllib.URLopener()  # nosec
         opener.open("http://localhost:%d/" % server.port)
 
     _test()
@@ -77,7 +77,7 @@ def test_urlopener_https_request(server, metrics):
     )
     @background_task(name="test_urllib:test_urlopener_https_request")
     def _test():
-        opener = urllib.URLopener()
+        opener = urllib.URLopener()  # nosec
         try:
             opener.open("https://localhost:%d/" % server.port)
         except Exception:
@@ -104,7 +104,7 @@ def test_urlopener_http_request_with_port(server):
     )
     @background_task(name="test_urllib:test_urlopener_http_request_with_port")
     def _test():
-        opener = urllib.URLopener()
+        opener = urllib.URLopener()  # nosec
         opener.open("http://localhost:%d/" % server.port)
 
     _test()
@@ -128,7 +128,7 @@ _test_urlopener_file_request_rollup_metrics = [
 @background_task()
 def test_urlopener_file_request():
     filename = os.path.join("file://", __file__)
-    opener = urllib.URLopener()
+    opener = urllib.URLopener()  # nosec
     opener.open(filename)
 
 
@@ -136,7 +136,7 @@ def test_urlopener_file_request():
 @cache_outgoing_headers
 @validate_cross_process_headers
 def test_urlopener_cross_process_request(server):
-    opener = urllib.URLopener()
+    opener = urllib.URLopener()  # nosec
     opener.open("http://localhost:%d/" % server.port)
 
 
@@ -170,7 +170,7 @@ def test_urlopener_cross_process_response(server):
     @validate_external_node_params(params=_test_urlopener_cross_process_response_external_node_params)
     @background_task(name="test_urllib:test_urlopener_cross_process_response")
     def _test():
-        opener = urllib.URLopener()
+        opener = urllib.URLopener()  # nosec
         opener.open("http://localhost:%d/" % server.port)
 
     _test()
@@ -185,7 +185,7 @@ def test_urlretrieve_http_request(server, metrics):
     )
     @background_task(name="test_urllib:test_urlretrieve_http_request")
     def _test():
-        urllib.urlretrieve("http://localhost:%d/" % server.port)
+        urllib.urlretrieve("http://localhost:%d/" % server.port)  # nosec
 
     _test()
 
@@ -200,7 +200,7 @@ def test_urlretrieve_https_request(server, metrics):
     @background_task(name="test_urllib:test_urlretrieve_https_request")
     def _test():
         try:
-            urllib.urlretrieve("https://localhost:%d/" % server.port)
+            urllib.urlretrieve("https://localhost:%d/" % server.port)  # nosec
         except Exception:
             pass
 
@@ -211,7 +211,7 @@ def test_urlretrieve_https_request(server, metrics):
 @cache_outgoing_headers
 @validate_cross_process_headers
 def test_urlretrieve_cross_process_request(server):
-    urllib.urlretrieve("http://localhost:%d/" % server.port)
+    urllib.urlretrieve("http://localhost:%d/" % server.port)  # nosec
 
 
 @cat_enabled
@@ -244,6 +244,6 @@ def test_urlretrieve_cross_process_response(server):
     @validate_external_node_params(params=_test_urlretrieve_cross_process_response_external_node_params)
     @background_task(name="test_urllib:test_urlretrieve_cross_process_response")
     def _test():
-        urllib.urlretrieve("http://localhost:%d/" % server.port)
+        urllib.urlretrieve("http://localhost:%d/" % server.port)  # nosec
 
     _test()

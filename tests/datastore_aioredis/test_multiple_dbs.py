@@ -14,7 +14,7 @@
 
 import aioredis
 import pytest
-from conftest import AIOREDIS_VERSION, event_loop, loop  # noqa
+from conftest import AIOREDIS_VERSION, loop  # noqa
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname

@@ -19,19 +19,21 @@ from testing_support.fixtures import (
     dt_enabled,
     function_not_called,
     override_application_settings,
-    validate_transaction_event_attributes,
-    validate_transaction_metrics,
     validate_tt_segment_params,
 )
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_event_attributes import (
+    validate_transaction_event_attributes,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import DatabaseTrace
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace, function_trace
-
-# from newrelic.api.graphql_trace import GraphQLOperationTrace, GraphQLResolverTrace
 from newrelic.api.memcache_trace import MemcacheTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.solr_trace import SolrTrace

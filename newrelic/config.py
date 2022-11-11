@@ -2163,11 +2163,6 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("flask_restful", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
     _process_module_definition(
-        "flask_restplus.api",
-        "newrelic.hooks.component_flask_rest",
-        "instrument_flask_rest",
-    )
-    _process_module_definition(
         "flask_restx.api",
         "newrelic.hooks.component_flask_rest",
         "instrument_flask_rest",
@@ -2177,6 +2172,10 @@ def _process_module_builtin_defaults():
         "graphql_server",
         "newrelic.hooks.component_graphqlserver",
         "instrument_graphqlserver",
+    )
+
+    _process_module_definition(
+        "sentry_sdk.integrations.asgi", "newrelic.hooks.component_sentry", "instrument_sentry_sdk_integrations_asgi"
     )
 
     # _process_module_definition('web.application',

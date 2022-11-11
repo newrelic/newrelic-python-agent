@@ -49,8 +49,6 @@ def application(request):
 
     if request.param == "flask_restful":
         import flask_restful as module
-    elif request.param == "flask_restplus":
-        import flask_restplus as module
     elif request.param == "flask_restx":
         import flask_restx as module
     else:

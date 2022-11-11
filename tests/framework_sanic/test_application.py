@@ -128,13 +128,11 @@ def test_inbound_distributed_trace(app):
     assert response.status == 200
 
 
-_params = ["error"]
-if not sanic_21:
-    _params.append("write_response_error")
+@pytest.mark.parametrize("endpoint", ["error", "write_response_error"])
+def test_recorded_error(app, endpoint, sanic_version):
+    if sanic_version >= (21, 0, 0) and endpoint == "write_response_error":
+        pytest.skip()
 
-
-@pytest.mark.parametrize("endpoint", _params)
-def test_recorded_error(app, endpoint):
     ERROR_METRICS = [
         ("Function/_target_application:%s" % endpoint, 1),
     ]
@@ -399,10 +397,7 @@ def test_blueprint_middleware(app):
     assert response.status == 200
 
 
-def test_unknown_route(app):
-    import sanic
-
-    sanic_version = [int(x) for x in sanic.__version__.split(".")]
+def test_unknown_route(app, sanic_version):
     _tx_name = (
         "_target_application:CustomRouter.get" if sanic_version[0] < 21 else "_target_application:request_middleware"
     )
@@ -415,10 +410,7 @@ def test_unknown_route(app):
     _test()
 
 
-def test_bad_method(app):
-    import sanic
-
-    sanic_version = [int(x) for x in sanic.__version__.split(".")]
+def test_bad_method(app, sanic_version):
     _tx_name = (
         "_target_application:CustomRouter.get" if sanic_version[0] < 21 else "_target_application:request_middleware"
     )
@@ -431,3 +423,8 @@ def test_bad_method(app):
         assert response.status == 405
 
     _test()
+
+
+@pytest.fixture
+def sanic_version():
+    return tuple(int(v) for v in sanic.__version__.split("."))

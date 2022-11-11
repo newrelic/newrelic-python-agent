@@ -52,6 +52,7 @@ except Exception:
 # reservoir. Error Events have a different default size.
 
 DEFAULT_RESERVOIR_SIZE = 1200
+CUSTOM_EVENT_RESERVOIR_SIZE = 3600
 ERROR_EVENT_RESERVOIR_SIZE = 100
 SPAN_EVENT_RESERVOIR_SIZE = 2000
 LOG_EVENT_RESERVOIR_SIZE = 10000
@@ -738,7 +739,7 @@ _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_
 )
 
 _settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_int(
-    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", CUSTOM_EVENT_RESERVOIR_SIZE
 )
 
 _settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(

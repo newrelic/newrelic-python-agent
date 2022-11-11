@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import aioredis
-from newrelic.api.background_task import background_task
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics, override_application_settings
-from conftest import event_loop, loop, AIOREDIS_VERSION
+import pytest
+from conftest import AIOREDIS_VERSION, event_loop, loop  # noqa
 from testing_support.db_settings import redis_settings
+from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()
 
@@ -100,30 +103,37 @@ if len(DB_SETTINGS) > 1:
         ]
     )
 
-    if AIOREDIS_VERSION >= (2, 0):
-        client_set = [
-            (
-                aioredis.Redis(host=DB_SETTINGS[0]["host"], port=DB_SETTINGS[0]["port"], db=0),
-                aioredis.Redis(host=DB_SETTINGS[1]["host"], port=DB_SETTINGS[1]["port"], db=0),
-            ),
-            (
-                aioredis.StrictRedis(host=DB_SETTINGS[0]["host"], port=DB_SETTINGS[0]["port"], db=0),
-                aioredis.StrictRedis(host=DB_SETTINGS[1]["host"], port=DB_SETTINGS[1]["port"], db=0),
-            ),
-        ]
-    else:
-        client_set = [
-            (
-                event_loop.run_until_complete(
-                    aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS[0]["host"], DB_SETTINGS[0]["port"]), db=0)
-                ),
-                event_loop.run_until_complete(
-                    aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS[1]["host"], DB_SETTINGS[1]["port"]), db=0)
-                ),
-            )
-        ]
-else:
-    client_set = []
+
+@pytest.fixture(params=("Redis", "StrictRedis"))
+def client_set(request, loop):  # noqa
+    if len(DB_SETTINGS) > 1:
+        if AIOREDIS_VERSION >= (2, 0):
+            if request.param == "Redis":
+                return (
+                    aioredis.Redis(host=DB_SETTINGS[0]["host"], port=DB_SETTINGS[0]["port"], db=0),
+                    aioredis.Redis(host=DB_SETTINGS[1]["host"], port=DB_SETTINGS[1]["port"], db=0),
+                )
+            elif request.param == "StrictRedis":
+                return (
+                    aioredis.StrictRedis(host=DB_SETTINGS[0]["host"], port=DB_SETTINGS[0]["port"], db=0),
+                    aioredis.StrictRedis(host=DB_SETTINGS[1]["host"], port=DB_SETTINGS[1]["port"], db=0),
+                )
+            else:
+                raise NotImplementedError()
+        else:
+            if request.param == "Redis":
+                return (
+                    loop.run_until_complete(
+                        aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS[0]["host"], DB_SETTINGS[0]["port"]), db=0)
+                    ),
+                    loop.run_until_complete(
+                        aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS[1]["host"], DB_SETTINGS[1]["port"]), db=0)
+                    ),
+                )
+            elif request.param == "StrictRedis":
+                pytest.skip("StrictRedis not implemented.")
+            else:
+                raise NotImplementedError()
 
 
 async def exercise_redis(client_1, client_2):
@@ -137,7 +147,6 @@ async def exercise_redis(client_1, client_2):
 
 
 @pytest.mark.skipif(len(DB_SETTINGS) < 2, reason="Env not configured with multiple databases")
-@pytest.mark.parametrize("client_set", client_set)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_multiple_dbs:test_multiple_datastores_enabled",
@@ -146,12 +155,11 @@ async def exercise_redis(client_1, client_2):
     background_task=True,
 )
 @background_task()
-def test_multiple_datastores_enabled(client_set, loop):
+def test_multiple_datastores_enabled(client_set, loop):  # noqa
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
 
 @pytest.mark.skipif(len(DB_SETTINGS) < 2, reason="Env not configured with multiple databases")
-@pytest.mark.parametrize("client_set", client_set)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
     "test_multiple_dbs:test_multiple_datastores_disabled",
@@ -160,12 +168,11 @@ def test_multiple_datastores_enabled(client_set, loop):
     background_task=True,
 )
 @background_task()
-def test_multiple_datastores_disabled(client_set, loop):
+def test_multiple_datastores_disabled(client_set, loop):  # noqa
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
 
 @pytest.mark.skipif(len(DB_SETTINGS) < 2, reason="Env not configured with multiple databases")
-@pytest.mark.parametrize("client_set", client_set)
 @validate_transaction_metrics(
     "test_multiple_dbs:test_concurrent_calls",
     scoped_metrics=_concurrent_scoped_metrics,
@@ -174,7 +181,7 @@ def test_multiple_datastores_disabled(client_set, loop):
 )
 @override_application_settings(_enable_instance_settings)
 @background_task()
-def test_concurrent_calls(client_set, loop):
+def test_concurrent_calls(client_set, loop):  # noqa
     # Concurrent calls made with original instrumenation taken from synchonous Redis
     # instrumentation had a bug where datastore info on concurrent calls to multiple instances
     # would result in all instances reporting as the host/port of the final call made.

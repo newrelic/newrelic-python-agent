@@ -13,18 +13,19 @@
 # limitations under the License.
 
 import asyncio
-import os
 
 import aiohttp
 import pytest
 from testing_support.external_fixtures import create_incoming_headers
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_cross_process_headers import (
     validate_cross_process_headers,
 )
 from testing_support.validators.validate_external_node_params import (
     validate_external_node_params,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
@@ -39,8 +40,7 @@ else:
     _expected_error_class = aiohttp.client_exceptions.ClientResponseError
 
 
-@asyncio.coroutine
-def fetch(url, headers=None, raise_for_status=False, connector=None):
+async def fetch(url, headers=None, raise_for_status=False, connector=None):
 
     kwargs = {}
     if version_info >= (2, 0):
@@ -51,13 +51,13 @@ def fetch(url, headers=None, raise_for_status=False, connector=None):
     headers = {}
 
     try:
-        response = yield from request
+        response = await request
         if raise_for_status and version_info < (2, 0):
             response.raise_for_status()
     except _expected_error_class:
         return headers
 
-    response_text = yield from response.text()
+    response_text = await response.text()
     for header in response_text.split("\n"):
         if not header:
             continue
@@ -67,7 +67,7 @@ def fetch(url, headers=None, raise_for_status=False, connector=None):
             continue
         headers[h.strip()] = v.strip()
     f = session.close()
-    yield from asyncio.ensure_future(f)
+    await asyncio.ensure_future(f)
     return headers
 
 
@@ -76,9 +76,8 @@ def fetch(url, headers=None, raise_for_status=False, connector=None):
 @pytest.mark.parametrize("span_events", (True, False))
 def test_outbound_cross_process_headers(event_loop, cat_enabled, distributed_tracing, span_events, mock_header_server):
     @background_task(name="test_outbound_cross_process_headers")
-    @asyncio.coroutine
-    def _test():
-        headers = yield from fetch("http://127.0.0.1:%d" % mock_header_server.port)
+    async def _test():
+        headers = await fetch("http://127.0.0.1:%d" % mock_header_server.port)
 
         transaction = current_transaction()
         transaction._test_request_headers = headers
@@ -142,15 +141,14 @@ def test_outbound_cross_process_headers_no_txn(event_loop, mock_header_server):
 
 def test_outbound_cross_process_headers_exception(event_loop, mock_header_server):
     @background_task(name="test_outbound_cross_process_headers_exception")
-    @asyncio.coroutine
-    def test():
+    async def test():
         # corrupt the transaction object to force an error
         transaction = current_transaction()
         guid = transaction.guid
         delattr(transaction, "guid")
 
         try:
-            headers = yield from fetch("http://127.0.0.1:%d" % mock_header_server.port)
+            headers = await fetch("http://127.0.0.1:%d" % mock_header_server.port)
 
             assert not headers.get(ExternalTrace.cat_id_key)
             assert not headers.get(ExternalTrace.cat_transaction_key)
@@ -161,10 +159,9 @@ def test_outbound_cross_process_headers_exception(event_loop, mock_header_server
 
 
 class PoorResolvingConnector(aiohttp.TCPConnector):
-    @asyncio.coroutine
-    def _resolve_host(self, host, port, *args, **kwargs):
+    async def _resolve_host(self, host, port, *args, **kwargs):
         res = [{"hostname": host, "host": host, "port": 1234, "family": self._family, "proto": 0, "flags": 0}]
-        hosts = yield from super(PoorResolvingConnector, self)._resolve_host(host, port, *args, **kwargs)
+        hosts = await super(PoorResolvingConnector, self)._resolve_host(host, port, *args, **kwargs)
         for hinfo in hosts:
             res.append(hinfo)
         return res

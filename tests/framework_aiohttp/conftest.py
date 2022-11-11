@@ -19,8 +19,10 @@ import pytest
 from _target_application import make_app
 from aiohttp.test_utils import AioHTTPTestCase
 from aiohttp.test_utils import TestClient as _TestClient
-from testing_support.fixture.event_loop import event_loop
-from testing_support.fixtures import (
+from testing_support.fixture.event_loop import (  # noqa: F401 pylint: disable=W0611
+    event_loop,
+)
+from testing_support.fixtures import (  # noqa: F401 pylint: disable=W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -62,13 +64,19 @@ class SimpleAiohttpApp(AioHTTPTestCase):
 
     def setUp(self):
         super(SimpleAiohttpApp, self).setUp()
+        if hasattr(self, "asyncSetUp"):
+            asyncio.get_event_loop().run_until_complete(self.asyncSetUp())
         asyncio.set_event_loop(self.loop)
 
     def get_app(self, *args, **kwargs):
-        return make_app(self.middleware, loop=self.loop)
+        return make_app(self.middleware)
 
-    @asyncio.coroutine
-    def _get_client(self, app_or_server):
+    def tearDown(self):
+        super(SimpleAiohttpApp, self).tearDown()
+        if hasattr(self, "asyncTearDown"):
+            asyncio.get_event_loop().run_until_complete(self.asyncTearDown())
+
+    async def _get_client(self, app_or_server):
         """Return a TestClient instance."""
         client_constructor_arg = app_or_server
 
@@ -79,10 +87,7 @@ class SimpleAiohttpApp(AioHTTPTestCase):
             test_server = self.server_cls(app_or_server, scheme=scheme, host=host, **server_kwargs)
             client_constructor_arg = test_server
 
-        try:
-            return _TestClient(client_constructor_arg, loop=self.loop)
-        except TypeError:
-            return _TestClient(client_constructor_arg)
+        return _TestClient(client_constructor_arg)
 
     get_client = _get_client
 

@@ -13,13 +13,17 @@
 # limitations under the License.
 
 import pytest
-import aioredis
-from newrelic.api.background_task import background_task
 
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics, override_application_settings
-from conftest import event_loop, loop, AIOREDIS_VERSION
+# import aioredis
+from conftest import AIOREDIS_VERSION, event_loop, loop  # noqa
 from testing_support.db_settings import redis_settings
+from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()[0]
 
@@ -70,19 +74,7 @@ async def exercise_redis_single_arg(client):
     await client.execute_command("CLIENT LIST")
 
 
-if AIOREDIS_VERSION >= (2, 0):
-    clients = [
-        aioredis.Redis(host=DB_SETTINGS["host"], port=_port, db=0),
-        aioredis.StrictRedis(host=DB_SETTINGS["host"], port=_port, db=0),
-    ]
-else:
-    clients = [
-        event_loop.run_until_complete(aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], _port), db=0)),
-    ]
-
-
 @SKIP_IF_AIOREDIS_V1
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_execute_command:test_redis_execute_command_as_one_arg_enable",
@@ -91,12 +83,11 @@ else:
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_enable(client, loop):
+def test_redis_execute_command_as_one_arg_enable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_single_arg(client))
 
 
 @SKIP_IF_AIOREDIS_V1
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
     "test_execute_command:test_redis_execute_command_as_one_arg_disable",
@@ -105,11 +96,10 @@ def test_redis_execute_command_as_one_arg_enable(client, loop):
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_disable(client, loop):
+def test_redis_execute_command_as_one_arg_disable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_single_arg(client))
 
 
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_execute_command:test_redis_execute_command_as_two_args_enable",
@@ -118,11 +108,10 @@ def test_redis_execute_command_as_one_arg_disable(client, loop):
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_two_args_enable(client, loop):
+def test_redis_execute_command_as_two_args_enable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_multi_args(client))
 
 
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
     "test_execute_command:test_redis_execute_command_as_two_args_disable",
@@ -131,5 +120,5 @@ def test_redis_execute_command_as_two_args_enable(client, loop):
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_two_args_disable(client, loop):
+def test_redis_execute_command_as_two_args_disable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_multi_args(client))

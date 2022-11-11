@@ -2163,11 +2163,6 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("flask_restful", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
     _process_module_definition(
-        "flask_restplus.api",
-        "newrelic.hooks.component_flask_rest",
-        "instrument_flask_rest",
-    )
-    _process_module_definition(
         "flask_restx.api",
         "newrelic.hooks.component_flask_rest",
         "instrument_flask_rest",
@@ -2177,6 +2172,10 @@ def _process_module_builtin_defaults():
         "graphql_server",
         "newrelic.hooks.component_graphqlserver",
         "instrument_graphqlserver",
+    )
+
+    _process_module_definition(
+        "sentry_sdk.integrations.asgi", "newrelic.hooks.component_sentry", "instrument_sentry_sdk_integrations_asgi"
     )
 
     # _process_module_definition('web.application',
@@ -2305,6 +2304,43 @@ def _process_module_builtin_defaults():
         "cherrypy._cptree",
         "newrelic.hooks.framework_cherrypy",
         "instrument_cherrypy__cptree",
+    )
+
+    _process_module_definition(
+        "confluent_kafka.cimpl",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_cimpl",
+    )
+    _process_module_definition(
+        "confluent_kafka.serializing_producer",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_serializing_producer",
+    )
+    _process_module_definition(
+        "confluent_kafka.deserializing_consumer",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_deserializing_consumer",
+    )
+
+    _process_module_definition(
+        "kafka.consumer.group",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_consumer_group",
+    )
+    _process_module_definition(
+        "kafka.producer.kafka",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_producer",
+    )
+    _process_module_definition(
+        "kafka.coordinator.heartbeat",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_heartbeat",
+    )
+    _process_module_definition(
+        "kafka.consumer.group",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_consumer_group",
     )
 
     _process_module_definition(
@@ -2539,6 +2575,14 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition("uvicorn.config", "newrelic.hooks.adapter_uvicorn", "instrument_uvicorn_config")
+
+    _process_module_definition(
+        "hypercorn.asyncio.run", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_asyncio_run"
+    )
+    _process_module_definition(
+        "hypercorn.trio.run", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_trio_run"
+    )
+    _process_module_definition("hypercorn.utils", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_utils")
 
     _process_module_definition("daphne.server", "newrelic.hooks.adapter_daphne", "instrument_daphne_server")
 

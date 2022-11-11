@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import aioredis
-import pytest
-from conftest import AIOREDIS_VERSION, event_loop
+# import aioredis
+# import pytest
+# from conftest import AIOREDIS_VERSION, event_loop
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
@@ -75,18 +75,6 @@ _database_only_forgone = {
     "port_path_or_id": "VALUE NOT USED",
 }
 
-if AIOREDIS_VERSION >= (2, 0):
-    clients = [
-        aioredis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0),
-        aioredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0),
-    ]
-else:
-    clients = [
-        event_loop.run_until_complete(
-            aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], DB_SETTINGS["port"]), db=0)
-        ),
-    ]
-
 
 async def exercise_redis(client):
     await client.set("key", "value")
@@ -98,7 +86,6 @@ async def exercise_redis(client):
         await client.execute("CLIENT", "LIST")
 
 
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_enable_instance_settings)
 @validate_tt_collector_json(datastore_params=_enabled_required, datastore_forgone_params=_enabled_forgone)
 @background_task()
@@ -106,7 +93,6 @@ def test_trace_node_datastore_params_enable_instance(client, loop):
     loop.run_until_complete(exercise_redis(client))
 
 
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_disable_instance_settings)
 @validate_tt_collector_json(datastore_params=_disabled_required, datastore_forgone_params=_disabled_forgone)
 @background_task()
@@ -114,7 +100,6 @@ def test_trace_node_datastore_params_disable_instance(client, loop):
     loop.run_until_complete(exercise_redis(client))
 
 
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_instance_only_settings)
 @validate_tt_collector_json(datastore_params=_instance_only_required, datastore_forgone_params=_instance_only_forgone)
 @background_task()
@@ -122,7 +107,6 @@ def test_trace_node_datastore_params_instance_only(client, loop):
     loop.run_until_complete(exercise_redis(client))
 
 
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_database_only_settings)
 @validate_tt_collector_json(datastore_params=_database_only_required, datastore_forgone_params=_database_only_forgone)
 @background_task()

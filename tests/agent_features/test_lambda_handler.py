@@ -24,7 +24,7 @@ from testing_support.validators.validate_transaction_trace_attributes import (
     validate_transaction_trace_attributes,
 )
 
-import newrelic.api.lambda_handler as lambda_handler
+from newrelic.api import lambda_handler
 
 
 # NOTE: this fixture will force all tests in this file to assume that a cold

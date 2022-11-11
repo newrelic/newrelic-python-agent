@@ -75,7 +75,7 @@ async def wait_for_loop(ready, done, times=1):
     ),
 )
 def test_record_event_loop_wait(event_loop, blocking_transaction_active, event_loop_visibility_enabled):
-    import asyncio
+    # import asyncio
 
     metric_count = 2 if event_loop_visibility_enabled else None
     execute_attributes = {"intrinsic": ("eventLoopTime",), "agent": (), "user": ()}
@@ -184,7 +184,7 @@ def test_blocking_task_on_different_loop():
 
 
 def test_record_event_loop_wait_on_different_task(event_loop):
-    import asyncio
+    # import asyncio
 
     async def recorder(ready, wait):
         ready.set()

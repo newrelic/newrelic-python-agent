@@ -16,11 +16,7 @@ import logging
 
 import pytest
 from testing_support.asgi_testing import AsgiTest
-from testing_support.fixtures import (
-    override_application_settings,
-    validate_transaction_errors,
-    validate_transaction_metrics,
-)
+from testing_support.fixtures import override_application_settings
 from testing_support.sample_asgi_applications import (
     AppWithDescriptor,
     simple_app_v2,
@@ -28,6 +24,12 @@ from testing_support.sample_asgi_applications import (
     simple_app_v2_raw,
     simple_app_v3,
     simple_app_v3_raw,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.api.asgi_application import ASGIApplicationWrapper, asgi_application

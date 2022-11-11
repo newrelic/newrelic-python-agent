@@ -17,10 +17,8 @@ import socket
 import sys
 
 import pytest
-from testing_support.fixtures import (
-    override_application_settings,
-    validate_transaction_metrics,
-)
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer,
     MockExternalHTTPServer,

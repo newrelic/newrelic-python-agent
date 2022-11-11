@@ -23,8 +23,8 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.encoding_utils import DistributedTracePayload
 
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import (override_application_settings,
-        validate_transaction_metrics)
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 DB_SETTINGS = rabbitmq_settings()[0]
 

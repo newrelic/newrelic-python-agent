@@ -15,8 +15,8 @@
 import sqlite3
 from pyelasticsearch import ElasticSearch
 
-from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.db_settings import elasticsearch_settings
 from testing_support.validators.validate_database_duration import validate_database_duration
 

@@ -14,8 +14,8 @@
 
 import pytest
 
-from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 def target_application():
     # We need to delay Flask application creation because of ordering

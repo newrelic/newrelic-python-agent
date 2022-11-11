@@ -21,8 +21,6 @@ import pytest
 from testing_support.fixtures import (
     override_application_settings,
     raise_background_exceptions,
-    validate_transaction_errors,
-    validate_transaction_metrics,
     wait_for_background_threads,
 )
 from testing_support.sample_asgi_applications import (
@@ -32,6 +30,12 @@ from testing_support.sample_asgi_applications import (
     simple_app_v3,
 )
 from testing_support.util import get_open_port
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.common.object_names import callable_name
 
@@ -126,7 +130,7 @@ def test_daphne_200(port, app):
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():
-        return urlopen("http://localhost:%d" % port, timeout=10)
+        return urlopen("http://localhost:%d" % port, timeout=10)  # nosec
 
     assert response().status == 200
 
@@ -139,7 +143,7 @@ def test_daphne_500(port, app):
     @wait_for_background_threads()
     def _test():
         try:
-            urlopen("http://localhost:%d/exc" % port)
+            urlopen("http://localhost:%d/exc" % port)  # nosec
         except HTTPError:
             pass
 

@@ -19,10 +19,9 @@ from newrelic.network.exceptions import ForceAgentDisconnect
 
 from testing_support.fixtures import (
     override_generic_settings,
-    validate_internal_metrics,
     failing_endpoint
 )
-
+from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
 
 SETTINGS = global_settings()

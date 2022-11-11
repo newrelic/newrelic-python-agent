@@ -19,6 +19,8 @@ from testing_support.fixtures import (
     make_cross_agent_headers,
     override_application_settings,
     validate_analytics_catmap_data,
+)
+from testing_support.validators.validate_transaction_event_attributes import (
     validate_transaction_event_attributes,
 )
 
@@ -35,7 +37,7 @@ test_uris = [
 
 def record_aiohttp1_raw_headers(raw_headers):
     try:
-        import aiohttp.protocol  # noqa
+        import aiohttp.protocol  # noqa: F401
     except ImportError:
 
         def pass_through(function):

@@ -18,14 +18,18 @@ from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
     validate_error_event_attributes_outside_transaction,
-    validate_transaction_errors,
-    validate_transaction_metrics,
 )
 from testing_support.validators.validate_distributed_trace_accepted import (
     validate_distributed_trace_accepted,
 )
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task

@@ -18,11 +18,8 @@ from newrelic.packages import six
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
-from testing_support.fixtures import (
-    override_application_settings,
-    validate_transaction_metrics,
-)
-
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 def basic_logging(logger):
     logger.warning("C")

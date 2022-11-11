@@ -24,9 +24,10 @@ from newrelic.api.transaction import end_of_transaction
 
 from conftest import QUEUE, EXCHANGE, CORRELATION_ID, REPLY_TO, HEADERS, BODY
 from testing_support.fixtures import (capture_transaction_metrics,
-        validate_transaction_metrics, validate_tt_collector_json)
+        validate_tt_collector_json)
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.db_settings import rabbitmq_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 DB_SETTINGS = rabbitmq_settings()[0]
 

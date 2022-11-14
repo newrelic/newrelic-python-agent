@@ -37,14 +37,8 @@ def get_package_version(name):
         for attr in VERSION_ATTRS:
             try:
                 version = getattr(module, attr, None)
-                version = tuple(version) if version else None  # cast potential lists into tuples
-                import pdb
-
-                pdb.set_trace()
+                version = tuple(version) if isinstance(version, list) else version  # cast potential lists into tuples
                 if version not in NULL_VERSIONS:
-                    import pdb
-
-                    pdb.set_trace()
                     return version
             except Exception:
                 pass
@@ -68,9 +62,6 @@ def get_package_version(name):
 
     version = _get_package_version(name)
 
-    import pdb
-
-    pdb.set_trace()
     # Coerce iterables into a string
     if isinstance(version, (tuple, list)):
         version = ".".join(str(v) for v in version)

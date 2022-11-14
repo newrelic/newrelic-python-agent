@@ -12,12 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# To use:
-# Input: name of library as a string.
-# example:
-#   get_package_version("botocore")
-# Output: version of library as a string
-
 import sys
 
 # Need to account for 4 possible variations of version declaration specified in (rejected) PEP 396
@@ -26,6 +20,17 @@ NULL_VERSIONS = frozenset((None, "", "0", "0.0", "0.0.0", "0.0.0.0", (0,), (0, 0
 
 
 def get_package_version(name):
+    """Gets the version of the library.
+    :param name: The name of library.
+    :type name: str
+    :return: The version of the library. Returns None if can't determine version.
+    :type return: str or None
+
+    Usage::
+        >>> get_package_version("botocore")
+                "1.1.0"
+    """
+
     def _get_package_version(name):
         module = sys.modules.get(name, None)
         version = None

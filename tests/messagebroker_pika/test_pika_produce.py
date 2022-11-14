@@ -17,12 +17,12 @@ import pytest
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (
     override_application_settings,
-    validate_transaction_metrics,
     validate_tt_collector_json,
 )
 from testing_support.validators.validate_messagebroker_headers import (
     validate_messagebroker_headers,
 )
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction

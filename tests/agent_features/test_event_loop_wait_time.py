@@ -18,9 +18,13 @@ import time
 import pytest
 from testing_support.fixtures import (
     override_application_settings,
-    validate_transaction_event_attributes,
-    validate_transaction_metrics,
     validate_transaction_trace_attributes,
+)
+from testing_support.validators.validate_transaction_event_attributes import (
+    validate_transaction_event_attributes,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task

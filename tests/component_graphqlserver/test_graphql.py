@@ -15,11 +15,9 @@
 import importlib
 
 import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    validate_transaction_errors,
-    validate_transaction_metrics,
-)
+from testing_support.fixtures import dt_enabled
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,

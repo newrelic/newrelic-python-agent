@@ -21,9 +21,11 @@ from testing_support.fixtures import (
     validate_agent_attribute_types,
     validate_attributes,
     validate_attributes_complete,
-    validate_custom_parameters,
 )
 from testing_support.sample_applications import fully_featured_app
+from testing_support.validators.validate_custom_parameters import (
+    validate_custom_parameters,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute, add_custom_attributes

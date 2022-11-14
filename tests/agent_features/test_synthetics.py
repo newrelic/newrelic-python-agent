@@ -19,10 +19,10 @@ from testing_support.fixtures import (
     cat_enabled,
     make_synthetics_header,
     override_application_settings,
-    validate_synthetics_event,
     validate_synthetics_transaction_trace,
 )
 
+from testing_support.validators.validate_synthetics_event import validate_synthetics_event
 from newrelic.api.web_transaction import web_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import deobfuscate, json_decode

@@ -17,8 +17,8 @@ import os
 import pytest
 
 from newrelic.api.lambda_handler import lambda_handler
-from testing_support.fixtures import (override_application_settings,
-        validate_transaction_event_attributes)
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIXTURE_DIR = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures'))

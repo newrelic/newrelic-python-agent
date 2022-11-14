@@ -47,7 +47,7 @@ def patched_pytest_module(monkeypatch):
         ("version", "1.2.3.4", "1.2.3.4"),
         ("__version__", "1.3.5rc2", "1.3.5rc2"),
         ("__version_tuple__", (3, 5, 8), "3.5.8"),
-        ("version_tuple", (3, 1, "0b2"), "3.1.0b2"),
+        ("version_tuple", [3, 1, "0b2"], "3.1.0b2"),
     ),
 )
 def test_get_package_version(attr, value, expected_value):

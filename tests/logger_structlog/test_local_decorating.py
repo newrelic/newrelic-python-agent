@@ -31,7 +31,7 @@ def set_trace_ids():
     if trace:
         trace.guid = "abcdefgh"
 
-def exercise_logging(logger, capsys):
+def exercise_logging(logger, structlog_caplog):
     set_trace_ids()
 
     logger.warning("C")
@@ -50,23 +50,21 @@ def get_metadata_string(log_message, is_txn):
 
 
 @reset_core_stats_engine()
-def test_local_log_decoration_inside_transaction(logger, capsys):
+def test_local_log_decoration_inside_transaction(logger, structlog_caplog):
     @validate_log_event_count(1)
     @background_task()
     def test():
-        exercise_logging(logger, capsys)
-        output = capsys.readouterr()[0]
-        assert get_metadata_string('C', True) in output
+        exercise_logging(logger, structlog_caplog)
+        assert get_metadata_string('C', True) in structlog_caplog[0]
 
     test()
 
 
 @reset_core_stats_engine()
-def test_local_log_decoration_outside_transaction(logger, capsys):
+def test_local_log_decoration_outside_transaction(logger, structlog_caplog):
     @validate_log_event_count_outside_transaction(1)
     def test():
-        exercise_logging(logger, capsys)
-        output = capsys.readouterr()[0]
-        assert get_metadata_string('C', False) in output
+        exercise_logging(logger, structlog_caplog)
+        assert get_metadata_string('C', False) in structlog_caplog[0]
 
     test()

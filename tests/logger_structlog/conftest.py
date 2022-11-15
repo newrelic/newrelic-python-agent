@@ -14,6 +14,7 @@
 
 import logging
 import pytest
+from structlog import DropEvent, PrintLogger
 
 from testing_support.fixtures import (
     code_coverage_fixture,
@@ -46,9 +47,43 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
+class StructLogCapLog(PrintLogger):
+    def __init__(self, caplog):
+        self.caplog = caplog if caplog is not None else []
+
+    def msg(self, event, **kwargs):
+        self.caplog.append(event)
+        return
+
+    log = debug = info = warn = warning = msg
+    fatal = failure = err = error = critical = exception = msg
+
+    def __repr__(self):
+        return "<StructLogCapLog %s>" % str(id(self))
+
+    __str__ = __repr__
+
+def drop_event_processor(logger, method_name, event_dict):
+    if method_name == "info":
+        raise DropEvent
+    else:
+        return event_dict
+
 @pytest.fixture(scope="function")
-def logger():
+def structlog_caplog():
+    yield list()
+
+
+@pytest.fixture(scope="function")
+def logger(structlog_caplog):
     import structlog
+    structlog.configure(processors=[], logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog))
     _logger = structlog.get_logger()
     yield _logger
 
+@pytest.fixture(scope="function")
+def filtering_logger(structlog_caplog):
+    import structlog
+    structlog.configure(processors=[drop_event_processor], logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog))
+    _filtering_logger = structlog.get_logger()
+    yield _filtering_logger

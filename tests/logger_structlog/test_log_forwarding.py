@@ -18,7 +18,7 @@ import pytest
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from testing_support.fixtures import reset_core_stats_engine
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import \
     validate_log_event_count_outside_transaction
@@ -35,16 +35,18 @@ def set_trace_ids():
         trace.guid = "abcdefgh"
 
 
-def exercise_logging(logger, capsys):
+def exercise_logging(logger, structlog_caplog):
     set_trace_ids()
 
     logger.msg("Cat", a=42)
     logger.error("Dog")
     logger.critical("Elephant")
-    output = capsys.readouterr()
-    assert "Cat" in output[0]
-    assert "Dog" in output[0]
-    assert "Elephant" in output[0]
+
+    assert len(structlog_caplog) == 3
+
+    assert "Cat" in structlog_caplog[0]
+    assert "Dog" in structlog_caplog[1]
+    assert "Elephant" in structlog_caplog[2]
 
 
 _common_attributes_service_linking = {"timestamp": None, "hostname": None,
@@ -60,12 +62,13 @@ _test_logging_inside_transaction_events = [
 
 
 @reset_core_stats_engine()
-def test_logging_inside_transaction(logger, capsys):
+@override_application_settings({"application_logging.local_decorating.enabled": False})
+def test_logging_inside_transaction(logger, structlog_caplog):
     @validate_log_events(_test_logging_inside_transaction_events)
     @validate_log_event_count(3)
     @background_task()
     def test():
-        exercise_logging(logger, capsys)
+        exercise_logging(logger, structlog_caplog)
 
     test()
 
@@ -78,23 +81,12 @@ _test_logging_outside_transaction_events = [
 
 
 @reset_core_stats_engine()
-def test_logging_outside_transaction(logger, capsys):
+@override_application_settings({"application_logging.local_decorating.enabled": False})
+def test_logging_outside_transaction(logger, structlog_caplog):
     @validate_log_events_outside_transaction(_test_logging_outside_transaction_events)
     @validate_log_event_count_outside_transaction(3)
     def test():
-        exercise_logging(logger, capsys)
+        exercise_logging(logger, structlog_caplog)
 
     test()
 
-
-@reset_core_stats_engine()
-def test_logging_newrelic_logs_not_forwarded(logger, capsys):
-    @validate_log_event_count(0)
-    @background_task()
-    def test():
-        nr_logger = logging.getLogger("newrelic")
-        nr_logger.warning("A")
-        output = capsys.readouterr()[1]
-        assert "warning" not in output
-
-    test()

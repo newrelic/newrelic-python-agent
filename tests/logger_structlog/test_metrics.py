@@ -21,11 +21,22 @@ from testing_support.fixtures import (
 )
 
 
-def exercise_logging(logger, capsys):
+def exercise_logging(logger, structlog_caplog):
     logger.msg("Cat", a=42)
     logger.error("Dog")
     logger.critical("Elephant")
 
+    assert len(structlog_caplog) == 3
+
+    assert "Cat" in structlog_caplog[0]
+    assert "Dog" in structlog_caplog[1]
+    assert "Elephant" in structlog_caplog[2]
+
+
+def exercise_filtering_logging(filtering_logger, structlog_caplog):
+    filtering_logger.msg("Cat", a=42)
+    filtering_logger.error("Dog")
+    filtering_logger.critical("Elephant")
 
 
 _test_logging_unscoped_metrics = [
@@ -36,7 +47,7 @@ _test_logging_unscoped_metrics = [
 ]
 
 @reset_core_stats_engine()
-def test_logging_metrics_inside_transaction(logger, capsys):
+def test_logging_metrics_inside_transaction(logger, structlog_caplog):
     txn_name = "test_metrics:test_logging_metrics_inside_transaction.<locals>.test" if six.PY3 else "test_metrics:test"
     @validate_transaction_metrics(
         txn_name,
@@ -45,15 +56,36 @@ def test_logging_metrics_inside_transaction(logger, capsys):
     )
     @background_task()
     def test():
-        exercise_logging(logger, capsys)
+        exercise_logging(logger, structlog_caplog)
+
+    test()
+
+_test_logging_unscoped_filtering_metrics = [
+    ("Logging/lines", 2),
+    ("Logging/lines/ERROR", 1),
+    ("Logging/lines/CRITICAL", 1),
+]
+
+@reset_core_stats_engine()
+def test_filtering_logging_metrics_inside_transaction(filtering_logger, structlog_caplog):
+    txn_name = "test_metrics:test_filtering_logging_metrics_inside_transaction.<locals>.test" if six.PY3 else "test_metrics:test"
+    @validate_transaction_metrics(
+        txn_name,
+        custom_metrics=_test_logging_unscoped_filtering_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        exercise_filtering_logging(filtering_logger, structlog_caplog)
 
     test()
 
 
+
 @reset_core_stats_engine()
-def test_logging_metrics_outside_transaction(logger, capsys):
+def test_logging_metrics_outside_transaction(logger, structlog_caplog):
     @validate_custom_metrics_outside_transaction(_test_logging_unscoped_metrics)
     def test():
-        exercise_logging(logger, capsys)
+        exercise_logging(logger, structlog_caplog)
 
     test()

@@ -14,10 +14,57 @@
 
 import sys
 
+# Need to account for 4 possible variations of version declaration specified in (rejected) PEP 396
+VERSION_ATTRS = ("__version__", "version", "__version_tuple__", "version_tuple")  # nosec
+NULL_VERSIONS = frozenset((None, "", "0", "0.0", "0.0.0", "0.0.0.0", (0,), (0, 0), (0, 0, 0), (0, 0, 0, 0)))  # nosec
+
 
 def get_package_version(name):
-    # importlib was introduced into the standard library starting in Python3.8.
-    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
-        return sys.modules["importlib"].metadata.version(name)  # pylint: disable=E1101
-    elif "pkg_resources" in sys.modules:
-        return sys.modules["pkg_resources"].get_distribution(name).version
+    """Gets the version of the library.
+    :param name: The name of library.
+    :type name: str
+    :return: The version of the library. Returns None if can't determine version.
+    :type return: str or None
+
+    Usage::
+        >>> get_package_version("botocore")
+                "1.1.0"
+    """
+
+    def _get_package_version(name):
+        module = sys.modules.get(name, None)
+        version = None
+        for attr in VERSION_ATTRS:
+            try:
+                version = getattr(module, attr, None)
+                # Cast any version specified as a list into a tuple.
+                version = tuple(version) if isinstance(version, list) else version
+                if version not in NULL_VERSIONS:
+                    return version
+            except Exception:
+                pass
+
+        # importlib was introduced into the standard library starting in Python3.8.
+        if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
+            try:
+                version = sys.modules["importlib"].metadata.version(name)  # pylint: disable=E1101
+                if version not in NULL_VERSIONS:
+                    return version
+            except Exception:
+                pass
+
+        if "pkg_resources" in sys.modules:
+            try:
+                version = sys.modules["pkg_resources"].get_distribution(name).version
+                if version not in NULL_VERSIONS:
+                    return version
+            except Exception:
+                pass
+
+    version = _get_package_version(name)
+
+    # Coerce iterables into a string
+    if isinstance(version, tuple):
+        version = ".".join(str(v) for v in version)
+
+    return version

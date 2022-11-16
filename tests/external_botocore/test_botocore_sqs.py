@@ -18,11 +18,11 @@ import uuid
 import botocore.session
 import moto
 import pytest
-from testing_support.fixtures import (
-    override_application_settings,
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version
@@ -41,7 +41,7 @@ if botocore_version < (1, 29, 0):
     url = "queue.amazonaws.com"
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
-AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
+AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION = "us-east-1"
 
 TEST_QUEUE = "python-agent-test-%s" % uuid.uuid4()

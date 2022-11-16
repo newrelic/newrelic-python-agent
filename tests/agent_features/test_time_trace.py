@@ -15,7 +15,9 @@
 import logging
 
 import pytest
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import DatabaseTrace

@@ -18,11 +18,12 @@ import sys
 import time
 
 import pytest
-from testing_support.fixtures import (
-    capture_transaction_metrics,
+from testing_support.fixtures import capture_transaction_metrics, validate_tt_parenting
+from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
-    validate_tt_parenting,
 )
 
 from newrelic.api.background_task import background_task

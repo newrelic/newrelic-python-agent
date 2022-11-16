@@ -18,7 +18,7 @@ import pytest
 
 from newrelic.common.utilization import AWSUtilization
 from testing_support.mock_http_client import create_client_cls
-from testing_support.fixtures import validate_internal_metrics
+from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))

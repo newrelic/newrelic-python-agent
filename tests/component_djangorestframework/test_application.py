@@ -18,9 +18,11 @@ import webtest
 from newrelic.packages import six
 from newrelic.core.config import global_settings
 
-from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_generic_settings,
+from testing_support.fixtures import (
+    override_generic_settings,
     function_not_called)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 import django
 

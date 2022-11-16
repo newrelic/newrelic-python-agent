@@ -17,8 +17,8 @@ import pytest
 from elasticsearch import Elasticsearch
 from elasticsearch.connection_pool import RoundRobinSelector
 
-from testing_support.fixtures import (validate_transaction_metrics,
-    override_application_settings)
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.db_settings import elasticsearch_settings
 from testing_support.util import instance_hostname
 

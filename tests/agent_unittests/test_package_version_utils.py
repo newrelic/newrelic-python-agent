@@ -14,8 +14,6 @@
 
 import sys
 
-# Empty module for running tests against
-import _test_package_version_utils as module
 import pytest
 from testing_support.validators.validate_function_called import validate_function_called
 
@@ -51,11 +49,12 @@ def patched_pytest_module(monkeypatch):
     ),
 )
 def test_get_package_version(attr, value, expected_value):
-    setattr(module, attr, value)
-    version = get_package_version(module.__name__)
-    delattr(module, attr)
-
+    # There is no file/module here, so we monkeypatch
+    # pytest instead for our purposes
+    setattr(pytest, attr, value)
+    version = get_package_version("pytest")
     assert version == expected_value
+    delattr(pytest, attr)
 
 
 @SKIP_IF_NOT_IMPORTLIB_METADATA

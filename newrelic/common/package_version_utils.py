@@ -37,7 +37,8 @@ def get_package_version(name):
         for attr in VERSION_ATTRS:
             try:
                 version = getattr(module, attr, None)
-                version = tuple(version) if isinstance(version, list) else version  # cast potential lists into tuples
+                # Cast any version specified as a list into a tuple.
+                version = tuple(version) if isinstance(version, list) else version
                 if version not in NULL_VERSIONS:
                     return version
             except Exception:
@@ -63,7 +64,7 @@ def get_package_version(name):
     version = _get_package_version(name)
 
     # Coerce iterables into a string
-    if isinstance(version, (tuple, list)):
+    if isinstance(version, tuple):
         version = ".".join(str(v) for v in version)
 
     return version

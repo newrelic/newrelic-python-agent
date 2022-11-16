@@ -29,13 +29,18 @@ def wrap_model_method(method_name):
         if getattr(instance, "_nr_wrapped_%s" % method_name, False):
             return wrapped(*args, **kwargs)
 
-        # Set the _nr_wrapped attribute to denote that this method has now been wrapped.
+        # Set the _nr_wrapped attribute to denote that this method is being wrapped.
         setattr(instance, "_nr_wrapped_%s" % method_name, True)
 
         # MLModel/Sklearn/Named/<class name>.<method name>
         func_name = wrapped.__name__
         name = "%s.%s" % (wrapped.__self__.__class__.__name__, func_name)
-        return FunctionTraceWrapper(wrapped, name=name, group="MLModel/Sklearn/Named")(*args, **kwargs)
+        return_val = FunctionTraceWrapper(wrapped, name=name, group="MLModel/Sklearn/Named")(*args, **kwargs)
+
+        # Set the _nr_wrapped attribute to denote that this method is no longer wrapped.
+        setattr(instance, "_nr_wrapped_%s" % method_name, False)
+
+        return return_val
 
     return _wrap_method
 

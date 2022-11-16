@@ -197,7 +197,7 @@ class TraceCache(object):
         debug = global_settings().debug
 
         if debug.enable_coroutine_profiling:
-            for thread_id, trace in list(self._cache.items()):
+            for thread_id, trace in self._cache.copy().items():
                 transaction = trace.transaction
                 if transaction and transaction._greenlet is not None:
                     gr = transaction._greenlet()
@@ -359,7 +359,7 @@ class TraceCache(object):
         task = getattr(transaction.root_span, "_task", None)
         loop = get_event_loop(task)
 
-        for trace in list(self._cache.values()):
+        for trace in self._cache.copy().values():
             if trace in seen:
                 continue
 

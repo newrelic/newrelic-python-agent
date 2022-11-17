@@ -55,8 +55,9 @@ def bind_callHandlers(record):
 
 def filter_record_attributes(record):
     record_attrs = vars(record)
-    if len(record_attrs) > len(DEFAULT_LOG_RECORD_KEYS):
-        return {k: v for k, v in six.iteritems(vars(record)) if k not in DEFAULT_LOG_RECORD_KEYS}
+    custom_attr_keys = set(record_attrs.keys()) - DEFAULT_LOG_RECORD_KEYS
+    if custom_attr_keys:
+        return {k: record_attrs[k] for k in custom_attr_keys if k not in DEFAULT_LOG_RECORD_KEYS}
     else:
         return None
 

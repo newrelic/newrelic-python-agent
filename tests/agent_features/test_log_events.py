@@ -24,9 +24,16 @@ from testing_support.validators.validate_log_events import validate_log_events
 from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
 
 
+class NonPrintableObject(object):
+    def __str__(self):
+        raise RuntimeError("Unable to print object.")
+    
+    __repr__ = __str__
+
+
 class NonSerializableObject(object):
-    def __str__(self) -> str:
-        raise RuntimeError()
+    def __str__(self):
+        return "<%s object>" % self.__class__.__name__
 
     __repr__ = __str__
 
@@ -83,7 +90,8 @@ _serialized_attributes = {
     "bytes_attr": b"value",
     "int_attr": 1,
     "dict_attr": {"key": "value"},
-    "obj_attr": NonSerializableObject(),
+    "non_serializable_attr": NonSerializableObject(),
+    "non_printable_attr": NonPrintableObject(),
 }
 
 _exercise_record_log_event_events = [
@@ -96,7 +104,8 @@ _exercise_record_log_event_events = [
         "context.bytes_attr": b"value",
         "context.int_attr": "1",
         "context.dict_attr": '{"key":"value"}',
-        "context.obj_attr": "<unprintable NonSerializableObject object>",
+        "context.non_serializable_attr": "<NonSerializableObject object>",
+        "context.non_printable_attr": "<unprintable NonPrintableObject object>",
     },
 ]
 _exercise_record_log_event_inside_transaction_events = [

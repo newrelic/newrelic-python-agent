@@ -50,9 +50,15 @@ def log_buffer(caplog):
 class NonPrintableObject(object):
     def __str__(self):
         raise RuntimeError("Unable to print object.")
+    
+    __repr__ = __str__
 
-    def __repr__(self):
-        raise RuntimeError("Unable to print object.")
+
+class NonSerializableObject(object):
+    def __str__(self):
+        return "<%s object>" % self.__class__.__name__
+
+    __repr__ = __str__
 
 
 def test_newrelic_logger_no_error(log_buffer):
@@ -63,7 +69,8 @@ def test_newrelic_logger_no_error(log_buffer):
         "null": None,
         "array": [1, 2, 3],
         "bool": True,
-        "non_serializable": {"set"},
+        "set": {"set"},
+        "non_serializable": NonSerializableObject(),
         "non_printable": NonPrintableObject(),
         "object": {
             "first": "bar",
@@ -101,7 +108,8 @@ def test_newrelic_logger_no_error(log_buffer):
         u"extra.null": None,
         u"extra.array": [1, 2, 3],
         u"extra.bool": True,
-        u"extra.non_serializable": u"set(['set'])" if six.PY2 else u"{'set'}",
+        u"extra.set": u'["set"]',
+        u"extra.non_serializable": u"<NonSerializableObject object>",
         u"extra.non_printable": u"<unprintable NonPrintableObject object>",
         u"extra.object": {
             u"first": u"bar",

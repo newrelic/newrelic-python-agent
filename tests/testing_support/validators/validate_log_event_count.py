@@ -47,7 +47,7 @@ def validate_log_event_count(count=1):
         record_called[:] = []
         recorded_logs[:] = []
 
-        assert count == len(logs), len(logs)
+        assert count == len(logs), "Expected %d, Got %d" % (count, len(logs))
 
         return val
 

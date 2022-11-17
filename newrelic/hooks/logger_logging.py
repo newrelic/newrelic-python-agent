@@ -12,16 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from logging import Formatter, LogRecord
+
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.config import global_settings
+from newrelic.packages import six
 
 try:
     from urllib import quote
 except ImportError:
     from urllib.parse import quote
+
+
+DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(LogRecord("", 0, "", 0, "", (), None))) | {"message"})
 
 
 def add_nr_linking_metadata(message):
@@ -44,6 +50,15 @@ def wrap_getMessage(wrapped, instance, args, kwargs):
 
 def bind_callHandlers(record):
     return record
+
+
+def filter_record_attributes(record):
+    record_attrs = vars(record)
+    custom_attr_keys = set(record_attrs.keys()) - DEFAULT_LOG_RECORD_KEYS
+    if custom_attr_keys:
+        return {k: record_attrs[k] for k in custom_attr_keys if k not in DEFAULT_LOG_RECORD_KEYS}
+    else:
+        return None
 
 
 def wrap_callHandlers(wrapped, instance, args, kwargs):
@@ -75,7 +90,8 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             try:
                 message = record.getMessage()
-                record_log_event(message, level_name, int(record.created * 1000))
+                attrs = filter_record_attributes(record)
+                record_log_event(message=message, level=level_name, timestamp=int(record.created * 1000), attributes=attrs)
             except Exception:
                 pass
 

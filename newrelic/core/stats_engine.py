@@ -34,7 +34,7 @@ from heapq import heapify, heapreplace
 import newrelic.packages.six as six
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import get_linking_metadata
-from newrelic.common.encoding_utils import json_encode
+from newrelic.common.encoding_utils import json_encode, safe_json_encode
 from newrelic.common.metric_utils import create_metric_identity
 from newrelic.common.object_names import parse_exc_info
 from newrelic.common.streaming_utils import StreamBuffer
@@ -1218,7 +1218,8 @@ class StatsEngine(object):
         ):
             self._log_events.merge(transaction.log_events, priority=transaction.priority)
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         settings = self.__settings
         if not (
             settings
@@ -1238,11 +1239,16 @@ class StatsEngine(object):
 
         message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
 
+        attrs = get_linking_metadata()
+        if attributes and (settings and settings.application_logging and settings.application_logging.forwarding and settings.application_logging.forwarding.context_data and settings.application_logging.forwarding.context_data.enabled):
+            # TODO add attibute filtering
+            attrs.update({"context." + k: safe_json_encode(v, ignore_string_types=True) for k, v in six.iteritems(attributes)})
+
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=get_linking_metadata(),
+            attributes=attrs, 
         )
 
         if priority is None:

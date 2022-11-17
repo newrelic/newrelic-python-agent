@@ -59,8 +59,10 @@ def _nr_log_forwarder(message_instance):
                     application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
 
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
+            attrs = dict(record.get("extra", {}))
+
             try:
-                record_log_event(message, level_name, int(record["time"].timestamp()))
+                record_log_event(message, level_name, int(record["time"].timestamp()), attributes=attrs)
             except Exception:
                 pass
 

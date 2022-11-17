@@ -162,9 +162,9 @@ class Application(object):
         if self.active:
             self._agent.record_transaction(self._name, data)
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         if self.active:
-            self._agent.record_log_event(self._name, message, level, timestamp, priority=priority)
+            self._agent.record_log_event(self._name, message, level, timestamp, attributes=attributes, priority=priority)
 
     def normalize_name(self, name, rule_type="url"):
         if self.active:

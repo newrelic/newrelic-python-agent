@@ -20,7 +20,10 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 from testing_support.fixtures import catch_background_exceptions
 
-def validate_log_events(events):
+def validate_log_events(events=None, forgone_attrs=None):
+    events = events or [{}]  # Empty event allows assertions based on only forgone attrs to still run and validate
+    forgone_attrs = forgone_attrs or []
+
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
 
@@ -54,14 +57,14 @@ def validate_log_events(events):
             matching_log_events = 0
             mismatches = []
             for captured in logs:
-                if _check_log_attributes(expected, captured, mismatches):
+                if _check_log_attributes(expected, forgone_attrs, captured, mismatches):
                     matching_log_events += 1
             assert matching_log_events == 1, _log_details(matching_log_events, logs, mismatches)
 
         return val
 
 
-    def _check_log_attributes(expected, captured, mismatches):
+    def _check_log_attributes(expected, forgone_attrs, captured, mismatches):
         for key, value in six.iteritems(expected):
             if hasattr(captured, key):
                 captured_value = getattr(captured, key, None)
@@ -75,6 +78,14 @@ def validate_log_events(events):
                 if value != captured_value:
                     mismatches.append("key: %s, value:<%s><%s>" % (key, value, captured_value))
                     return False
+
+        for key in forgone_attrs:
+            if hasattr(captured, key):
+                mismatches.append("forgone_key: %s, value:<%s>" % (key, getattr(captured, key, None)))
+                return False
+            elif key in captured.attributes:
+                mismatches.append("forgone_key: %s, value:<%s>" % (key, captured.attributes[key]))
+                return False
 
         return True
 

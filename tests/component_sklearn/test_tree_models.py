@@ -22,6 +22,9 @@ from newrelic.packages import six
 
 
 def test_model_methods_wrapped_in_function_trace(tree_model_name, run_tree_model):
+    # Note: in the following expected metrics, predict and predict_proba are called by
+    # score and predict_log_proba so they are expected to be called twice instead of
+    # once like the rest of the methods.
     expected_scoped_metrics = {
         "ExtraTreeRegressor": [
             ("MLModel/Sklearn/Named/ExtraTreeRegressor.fit", 1),
@@ -66,6 +69,9 @@ def test_model_methods_wrapped_in_function_trace(tree_model_name, run_tree_model
 
 
 def test_multiple_calls_to_model_methods(tree_model_name, run_tree_model):
+    # Note: in the following expected metrics, predict and predict_proba are called by
+    # score and predict_log_proba so they are expected to be called twice as often as
+    # the other methods.
     expected_scoped_metrics = {
         "ExtraTreeRegressor": [
             ("MLModel/Sklearn/Named/ExtraTreeRegressor.fit", 1),
@@ -94,7 +100,7 @@ def test_multiple_calls_to_model_methods(tree_model_name, run_tree_model):
     }
     expected_transaction_name = "test_tree_models:_test"
     if six.PY3:
-        expected_transaction_name = "test_tree_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
+        expected_transaction_name = "test_tree_models:test_multiple_calls_to_model_methods.<locals>._test"
 
     @validate_transaction_metrics(
         expected_transaction_name,

@@ -2806,6 +2806,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_tree_models",
     )
+    _process_module_definition(
+        "sklearn.metrics",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_metrics",
+    )
 
     _process_module_definition(
         "rest_framework.views",

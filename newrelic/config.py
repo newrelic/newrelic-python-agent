@@ -2793,13 +2793,19 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "sklearn.tree._classes",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_tree_models",
+        "instrument_sklearn_models",
     )
     # In scikit-learn < 0.21 the model classes are in tree.py instead of _classes.py.
     _process_module_definition(
         "sklearn.tree.tree",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_tree_models",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._bagging",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
     )
 
     _process_module_definition(

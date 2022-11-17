@@ -22,8 +22,10 @@ from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common import agent_http
 from newrelic.common.object_names import parse_exc_info
+from newrelic.common.encoding_utils import safe_json_encode
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error
+from newrelic.packages import six
 
 
 def format_exc_info(exc_info):
@@ -43,7 +45,7 @@ def format_exc_info(exc_info):
 
 
 class NewRelicContextFormatter(Formatter):
-    DEFAULT_LOG_RECORD_KEYS = frozenset(vars(LogRecord("", 0, "", 0, "", (), None)))
+    DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(LogRecord("", 0, "", 0, "", (), None))) | {"message"})
 
     def __init__(self, *args, **kwargs):
         super(NewRelicContextFormatter, self).__init__()
@@ -76,17 +78,12 @@ class NewRelicContextFormatter(Formatter):
         return output
 
     def format(self, record):
-        def safe_str(object, *args, **kwargs):
-            """Convert object to str, catching any errors raised."""
-            try:
-                return str(object, *args, **kwargs)
-            except:
-                return "<unprintable %s object>" % type(object).__name__
-
-        return json.dumps(self.log_record_to_dict(record), default=safe_str, separators=(",", ":"))
+        return json.dumps(self.log_record_to_dict(record), default=safe_json_encode, separators=(",", ":"))
 
 
 class NewRelicLogForwardingHandler(logging.Handler):
+    DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(LogRecord("", 0, "", 0, "", (), None))) | {"message"})
+
     def emit(self, record):
         try:
             # Avoid getting local log decorated message
@@ -95,9 +92,19 @@ class NewRelicLogForwardingHandler(logging.Handler):
             else:
                 message = record.getMessage()
 
-            record_log_event(message, record.levelname, int(record.created * 1000))
+            attrs = self.filter_record_attributes(record)
+            record_log_event(message, record.levelname, int(record.created * 1000), attributes=attrs)
         except Exception:
             self.handleError(record)
+
+    @classmethod
+    def filter_record_attributes(cls, record):
+        record_attrs = vars(record)
+        DEFAULT_LOG_RECORD_KEYS = cls.DEFAULT_LOG_RECORD_KEYS
+        if len(record_attrs) > len(DEFAULT_LOG_RECORD_KEYS):
+            return {k: v for k, v in six.iteritems(vars(record)) if k not in DEFAULT_LOG_RECORD_KEYS}
+        else:
+            return None
 
 
 class NewRelicLogHandler(logging.Handler):

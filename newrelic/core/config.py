@@ -269,6 +269,10 @@ class ApplicationLoggingForwardingSettings(Settings):
     pass
 
 
+class ApplicationLoggingForwardingContextDataSettings(Settings):
+    pass
+
+
 class ApplicationLoggingMetricsSettings(Settings):
     pass
 
@@ -357,6 +361,7 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 _settings = TopLevelSettings()
 _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
+_settings.application_logging.forwarding.context_data = ApplicationLoggingForwardingContextDataSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.attributes = AttributesSettings()
@@ -814,6 +819,9 @@ _settings.code_level_metrics.enabled = True
 _settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_LOGGING_ENABLED", default=True)
 _settings.application_logging.forwarding.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=True
+)
+_settings.application_logging.forwarding.context_data.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED", default=False
 )
 _settings.application_logging.metrics.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED", default=True

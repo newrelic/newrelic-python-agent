@@ -31,7 +31,7 @@ def set_trace_ids():
     if trace:
         trace.guid = "abcdefgh"
 
-def exercise_logging(logger, structlog_caplog):
+def exercise_logging(logger):
     set_trace_ids()
 
     logger.warning("C")
@@ -54,7 +54,7 @@ def test_local_log_decoration_inside_transaction(logger, structlog_caplog):
     @validate_log_event_count(1)
     @background_task()
     def test():
-        exercise_logging(logger, structlog_caplog)
+        exercise_logging(logger)
         assert get_metadata_string('C', True) in structlog_caplog[0]
 
     test()
@@ -64,7 +64,7 @@ def test_local_log_decoration_inside_transaction(logger, structlog_caplog):
 def test_local_log_decoration_outside_transaction(logger, structlog_caplog):
     @validate_log_event_count_outside_transaction(1)
     def test():
-        exercise_logging(logger, structlog_caplog)
+        exercise_logging(logger)
         assert get_metadata_string('C', False) in structlog_caplog[0]
 
     test()

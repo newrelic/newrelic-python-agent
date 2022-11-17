@@ -70,8 +70,7 @@ def wrap__process_event(wrapped, instance, args, kwargs):
 
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             try:
-                #record_log_event(original_message, level_name, attributes=event_kw)
-                record_log_event(original_message, level_name)
+                record_log_event(original_message, level_name, attributes=event_kw)
 
             except Exception:
                 pass

@@ -13,15 +13,14 @@
 # limitations under the License.
 
 from newrelic.api.background_task import background_task
-from testing_support.fixtures import reset_core_stats_engine
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import validate_log_event_count_outside_transaction
 from testing_support.validators.validate_log_events import validate_log_events
 from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
-from testing_support.fixtures import override_application_settings
 
 
-_event_attributes = {"message": "A", "context.key": "value", "context.int_attr": "1", "context.dict_attr": '{"key":"value"}'}
+_event_attributes = {"message": "A", "context.key": "value"}
 
 
 def exercise_logging(logger, structlog_caplog):

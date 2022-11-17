@@ -15,10 +15,9 @@
 from newrelic.packages import six
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import reset_core_stats_engine
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_custom_metrics_outside_transaction import validate_custom_metrics_outside_transaction
-from testing_support.fixtures import (
-    validate_transaction_metrics,
-)
+
 
 
 def exercise_logging(logger, structlog_caplog):
@@ -37,6 +36,12 @@ def exercise_filtering_logging(filtering_logger, structlog_caplog):
     filtering_logger.msg("Cat", a=42)
     filtering_logger.error("Dog")
     filtering_logger.critical("Elephant")
+
+    assert len(structlog_caplog) == 2
+
+    assert "Cat" not in structlog_caplog[0]
+    assert "Dog" in structlog_caplog[0]
+    assert "Elephant" in structlog_caplog[1]
 
 
 _test_logging_unscoped_metrics = [
@@ -79,7 +84,6 @@ def test_filtering_logging_metrics_inside_transaction(filtering_logger, structlo
         exercise_filtering_logging(filtering_logger, structlog_caplog)
 
     test()
-
 
 
 @reset_core_stats_engine()

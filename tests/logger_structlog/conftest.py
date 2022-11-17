@@ -81,6 +81,7 @@ def logger(structlog_caplog):
     _logger = structlog.get_logger()
     yield _logger
 
+
 @pytest.fixture(scope="function")
 def filtering_logger(structlog_caplog):
     import structlog

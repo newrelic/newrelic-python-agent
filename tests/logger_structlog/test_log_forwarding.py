@@ -49,6 +49,19 @@ def exercise_logging(logger, structlog_caplog):
     assert "Elephant" in structlog_caplog[2]
 
 
+def exercise_filtering_logging(filtering_logger, structlog_caplog):
+    set_trace_ids()
+
+    filtering_logger.msg("Cat", a=42)
+    filtering_logger.error("Dog")
+    filtering_logger.critical("Elephant")
+
+    assert len(structlog_caplog) == 2
+
+    assert "Cat" not in structlog_caplog[0]
+    assert "Dog" in structlog_caplog[0]
+    assert "Elephant" in structlog_caplog[1]
+
 _common_attributes_service_linking = {"timestamp": None, "hostname": None,
                                       "entity.name": "Python Agent Test (logger_structlog)", "entity.guid": None}
 _common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh12345678",
@@ -73,6 +86,24 @@ def test_logging_inside_transaction(logger, structlog_caplog):
     test()
 
 
+_test_logging_filtering_inside_transaction_events = [
+    {"message": "Dog", "level": "ERROR", **_common_attributes_trace_linking},
+    {"message": "Elephant", "level": "CRITICAL", **_common_attributes_trace_linking},
+]
+
+
+@reset_core_stats_engine()
+@override_application_settings({"application_logging.local_decorating.enabled": False})
+def test_logging_filtering_inside_transaction(filtering_logger, structlog_caplog):
+    @validate_log_events(_test_logging_filtering_inside_transaction_events)
+    @validate_log_event_count(2)
+    @background_task()
+    def test():
+        exercise_filtering_logging(filtering_logger, structlog_caplog)
+
+    test()
+
+
 _test_logging_outside_transaction_events = [
     {"message": "Cat", "level": "INFO", **_common_attributes_service_linking},
     {"message": "Dog", "level": "ERROR", **_common_attributes_service_linking},
@@ -90,3 +121,19 @@ def test_logging_outside_transaction(logger, structlog_caplog):
 
     test()
 
+
+_test_logging_filtering_outside_transaction_events = [
+    {"message": "Dog", "level": "ERROR", **_common_attributes_service_linking},
+    {"message": "Elephant", "level": "CRITICAL", **_common_attributes_service_linking},
+]
+
+
+@reset_core_stats_engine()
+@override_application_settings({"application_logging.local_decorating.enabled": False})
+def test_logging_filtering_outside_transaction(filtering_logger, structlog_caplog):
+    @validate_log_events_outside_transaction(_test_logging_filtering_outside_transaction_events)
+    @validate_log_event_count_outside_transaction(2)
+    def test():
+        exercise_filtering_logging(filtering_logger, structlog_caplog)
+
+    test()

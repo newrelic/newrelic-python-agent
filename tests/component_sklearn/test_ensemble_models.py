@@ -150,9 +150,9 @@ def run_ensemble_model(ensemble_model_name):
         clf = getattr(sklearn.ensemble, ensemble_model_name)(random_state=0)
         model = clf.fit(x_train, y_train)
 
-        # model.staged_predict(x_train)
-        # model.staged_predict_proba(x_train)
-        # labels = model.predict(x_test)
+        model.staged_predict(x_train)
+        model.staged_predict_proba(x_train)
+        model.predict(x_test)
 
         # Only classifier models have proba methods.
         classifier_models = (

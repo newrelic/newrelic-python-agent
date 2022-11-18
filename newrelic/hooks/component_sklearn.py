@@ -75,10 +75,6 @@ def wrap_ensemble_model_init(wrapped, instance, args, kwargs):
     return return_val
 
 
-# def _nr_instrument_tree_model(module, model_class):
-#     wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_tree_model_init)
-
-
 def instrument_sklearn_models(module):
     tree_model_classes = (
         "DecisionTreeClassifier",
@@ -88,7 +84,8 @@ def instrument_sklearn_models(module):
     )
     ensemble_model_classes = (
         "AdaBoostClassifier",
-        "AdaBoostRegressor" "BaggingClassifier",
+        "AdaBoostRegressor",
+        "BaggingClassifier",
         "BaggingRegressor",
         "ExtraTreesClassifier",
         "ExtraTreesRegressor",

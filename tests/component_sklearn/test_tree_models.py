@@ -133,7 +133,7 @@ def tree_model_name(request):
 @pytest.fixture
 def run_tree_model(tree_model_name):
     def _run():
-        import sklearn.tree
+        import sklearn
 
         x_train = [[0, 0], [1, 1]]
         y_train = [0, 1]

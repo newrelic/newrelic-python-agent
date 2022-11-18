@@ -2809,6 +2809,48 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.ensemble._forest",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._iforest",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._weight_boosting",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._gb",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._voting",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._stacking",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._hist_gradient_boosting.gradient_boosting",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",

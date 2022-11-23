@@ -45,29 +45,10 @@ def wrap_model_method(method_name):
     return _wrap_method
 
 
-def wrap_tree_model_init(wrapped, instance, args, kwargs):
+def wrap_model_init(wrapped, instance, args, kwargs):
     return_val = wrapped(*args, **kwargs)
 
     methods_to_wrap = ("predict", "fit", "fit_predict", "predict_log_proba", "predict_proba", "transform", "score")
-    for method_name in methods_to_wrap:
-        if hasattr(instance, method_name):
-            setattr(instance, method_name, wrap_model_method(method_name)(getattr(instance, method_name)))
-
-    return return_val
-
-
-def wrap_ensemble_model_init(wrapped, instance, args, kwargs):
-    return_val = wrapped(*args, **kwargs)
-
-    methods_to_wrap = (
-        "predict",
-        "predict_proba",
-        "predict_log_proba",
-        "fit",
-        "fit_predict",
-        "staged_predict",
-        "staged_predict_proba",
-    )
     for method_name in methods_to_wrap:
         if hasattr(instance, method_name):
             setattr(instance, method_name, wrap_model_method(method_name)(getattr(instance, method_name)))
@@ -95,13 +76,15 @@ def instrument_sklearn_models(module):
         "HistGradientBoostingRegressor",
         "IsolationForest",
         "RandomForestClassifier",
+        "RandomForestRegressor",
         "StackingClassifier",
+        "StackingRegressor",
         "VotingClassifier",
         "VotingRegressor",
     )
     for model_class in tree_model_classes:
         if hasattr(module, model_class):
-            wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_tree_model_init)
+            wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_model_init)
     for model_class in ensemble_model_classes:
         if hasattr(module, model_class):
-            wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_ensemble_model_init)
+            wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_model_init)

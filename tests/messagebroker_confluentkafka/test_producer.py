@@ -36,34 +36,62 @@ from newrelic.packages import six
 )
 @background_task()
 def test_produce_arguments(topic, producer, client_type, serialize, headers):
-    callback_called = threading.Event()
+    callback1_called = threading.Event()
+    callback2_called = threading.Event()
 
-    def producer_callback(err, msg):
-        callback_called.set()
+    def producer_callback1(err, msg):
+        callback1_called.set()
+
+    def producer_callback2(err, msg):
+        callback2_called.set()
 
     if client_type == "cimpl":
+        # Keyword Args
         producer.produce(
-            topic,
+            topic=topic,
             value=serialize({"foo": 1}),
             key=serialize("my-key"),
-            callback=producer_callback,
             partition=1,
+            callback=producer_callback2,
             timestamp=1,
             headers=headers,
         )
-    else:
+        # Positional Args
         producer.produce(
             topic,
+            serialize({"foo": 1}),
+            serialize("my-key"),
+            1,
+            producer_callback1,
+            None,
+            1,
+            headers,
+        )
+    else:
+        # Keyword Args
+        producer.produce(
+            topic=topic,
             value=serialize({"foo": 1}),
             key=serialize("my-key"),
             partition=1,
-            on_delivery=producer_callback,
+            on_delivery=producer_callback2,
             timestamp=1,
             headers=headers,
+        )
+        # Positional Args
+        producer.produce(
+            topic,
+            serialize("my-key"),
+            serialize({"foo": 1}),
+            1,
+            producer_callback1,
+            1,
+            headers,
         )
     producer.flush()
 
-    assert callback_called.wait(5), "Callback never called."
+    assert callback1_called.wait(5), "Callback never called."
+    assert callback2_called.wait(5), "Callback never called."
 
 
 def test_trace_metrics(topic, send_producer_message):

@@ -171,22 +171,23 @@ def run_ensemble_model(ensemble_model_name):
         from sklearn.datasets import load_iris
         from sklearn.model_selection import train_test_split
 
+        # This works better with StackingClassifier and StackingRegressor models
         X, y = load_iris(return_X_y=True)
         x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
 
-        if ensemble_model_name in ["StackingClassifier"]:
+        if ensemble_model_name == "StackingClassifier":
             clf = getattr(sklearn.ensemble, ensemble_model_name)(
                 estimators=[("rf", RandomForestClassifier())], final_estimator=RandomForestClassifier()
             )
-        elif ensemble_model_name in ["VotingClassifier"]:
+        elif ensemble_model_name == "VotingClassifier":
             clf = getattr(sklearn.ensemble, ensemble_model_name)(
                 estimators=[("rf", RandomForestClassifier())], voting="soft"
             )
-        elif ensemble_model_name in ["StackingRegressor"]:
+        elif ensemble_model_name == "StackingRegressor":
             clf = getattr(sklearn.ensemble, ensemble_model_name)(
                 estimators=[("rf", RandomForestRegressor())], final_estimator=RandomForestRegressor()
             )
-        elif ensemble_model_name in ["VotingRegressor"]:
+        elif ensemble_model_name == "VotingRegressor":
             clf = getattr(sklearn.ensemble, ensemble_model_name)([("rf", RandomForestRegressor())])
         else:
             clf = getattr(sklearn.ensemble, ensemble_model_name)(random_state=0)

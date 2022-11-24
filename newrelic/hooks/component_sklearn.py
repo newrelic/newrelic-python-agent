@@ -57,11 +57,20 @@ def wrap_model_init(wrapped, instance, args, kwargs):
 
 
 def instrument_sklearn_models(module):
-    tree_model_classes = (
-        "DecisionTreeClassifier",
-        "DecisionTreeRegressor",
-        "ExtraTreeClassifier",
-        "ExtraTreeRegressor",
+    cluster_model_classes = (
+        "AffinityPropagation",
+        "AgglomerativeClustering",
+        "Birch",
+        "BisectingKMeans",
+        "DBSCAN",
+        "FeatureAgglomeration",
+        "KMeans",
+        "MeanShift",
+        "MiniBatchKMeans",
+        "OPTICS",
+        "SpectralBiclustering",
+        "SpectralCoclustering",
+        "SpectralClustering",
     )
     ensemble_model_classes = (
         "AdaBoostClassifier",
@@ -82,9 +91,19 @@ def instrument_sklearn_models(module):
         "VotingClassifier",
         "VotingRegressor",
     )
+    tree_model_classes = (
+        "DecisionTreeClassifier",
+        "DecisionTreeRegressor",
+        "ExtraTreeClassifier",
+        "ExtraTreeRegressor",
+    )
+
     for model_class in tree_model_classes:
         if hasattr(module, model_class):
             wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_model_init)
     for model_class in ensemble_model_classes:
+        if hasattr(module, model_class):
+            wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_model_init)
+    for model_class in cluster_model_classes:
         if hasattr(module, model_class):
             wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_model_init)

@@ -2851,6 +2851,72 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.cluster._affinity_propagation",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._agglomerative",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._birch",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._bisect_k_means",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._dbscan",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._feature_agglomeration",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._kmeans",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._mean_shift",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._optics",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._spectral",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._bicluster",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",

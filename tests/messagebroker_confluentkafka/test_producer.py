@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import threading
 
 import pytest
@@ -38,6 +39,7 @@ from newrelic.packages import six
 def test_produce_arguments(topic, producer, client_type, serialize, headers):
     callback1_called = threading.Event()
     callback2_called = threading.Event()
+    ts = int(time.time())
 
     def producer_callback1(err, msg):
         callback1_called.set()
@@ -51,9 +53,9 @@ def test_produce_arguments(topic, producer, client_type, serialize, headers):
             topic=topic,
             value=serialize({"foo": 1}),
             key=serialize("my-key"),
-            partition=1,
+            partition=0,
             callback=producer_callback2,
-            timestamp=1,
+            timestamp=ts,
             headers=headers,
         )
         # Positional Args
@@ -61,10 +63,10 @@ def test_produce_arguments(topic, producer, client_type, serialize, headers):
             topic,
             serialize({"foo": 1}),
             serialize("my-key"),
-            1,
+            0,
             producer_callback1,
             None,
-            1,
+            ts,
             headers,
         )
     else:
@@ -73,9 +75,9 @@ def test_produce_arguments(topic, producer, client_type, serialize, headers):
             topic=topic,
             value=serialize({"foo": 1}),
             key=serialize("my-key"),
-            partition=1,
+            partition=0,
             on_delivery=producer_callback2,
-            timestamp=1,
+            timestamp=ts,
             headers=headers,
         )
         # Positional Args
@@ -83,9 +85,9 @@ def test_produce_arguments(topic, producer, client_type, serialize, headers):
             topic,
             serialize("my-key"),
             serialize({"foo": 1}),
-            1,
+            0,
             producer_callback1,
-            1,
+            ts,
             headers,
         )
     producer.flush()

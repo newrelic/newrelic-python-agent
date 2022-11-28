@@ -19,8 +19,8 @@ except ImportError:
 
 from collections import namedtuple
 
-import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
+from newrelic.core import attribute
 from newrelic.core.metric import TimeMetric
 from newrelic.core.node_mixin import GenericNodeMixin
 
@@ -44,10 +44,13 @@ _ExternalNode = namedtuple(
 
 
 class ExternalNode(_ExternalNode, GenericNodeMixin):
+    cross_process_id = None
+    external_txn_name = None
+
     @property
     def details(self):
         if hasattr(self, "_details"):
-            return self._details
+            return self._details  # pylint: disable=E0203 (previous line checks for this)
 
         try:
             self._details = urlparse.urlparse(self.url or "")
@@ -69,7 +72,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
     @property
     def http_url(self):
         if hasattr(self, "_http_url"):
-            return self._http_url
+            return self._http_url  # pylint: disable=E0203 (previous line checks for this)
 
         _, url_attr = attribute.process_user_attribute("http.url", self.url_with_path)
 

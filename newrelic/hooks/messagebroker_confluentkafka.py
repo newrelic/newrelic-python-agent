@@ -55,7 +55,7 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
         topic = args[0]
         args = args[1:]
     else:
-        topic = kwargs.get("topic", None)
+        topic = kwargs.pop("topic", None)
 
     transaction.add_messagebroker_info("Confluent-Kafka", get_package_version("confluent-kafka"))
 

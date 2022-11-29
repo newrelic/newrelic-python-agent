@@ -82,9 +82,56 @@ def instrument_sklearn_models(module):
         "VotingClassifier",
         "VotingRegressor",
     )
+    linear_model_classes = (
+        "ARDRegression",
+        "BayesianRidge",
+        "ElasticNet",
+        "ElasticNetCV",
+        "Hinge",
+        "Huber",
+        "HuberRegressor",
+        "Lars",
+        "LarsCV",
+        "Lasso",
+        "LassoCV",
+        "LassoLars",
+        "LassoLarsCV",
+        "LassoLarsIC",
+        "LinearRegression",
+        "Log",
+        "LogisticRegression",
+        "LogisticRegressionCV",
+        "ModifiedHuber",
+        "MultiTaskElasticNet",
+        "MultiTaskElasticNetCV",
+        "MultiTaskLasso",
+        "MultiTaskLassoCV",
+        "OrthogonalMatchingPursuit",
+        "OrthogonalMatchingPursuitCV",
+        "PassiveAggressiveClassifier",
+        "PassiveAggressiveRegressor",
+        "Perceptron",
+        "QuantileRegressor",
+        "Ridge",
+        "RidgeCV",
+        "RidgeClassifier",
+        "RidgeClassifierCV",
+        "SGDClassifier",
+        "SGDRegressor",
+        "SGDOneClassSVM",
+        "SquaredLoss",
+        "TheilSenRegressor",
+        "RANSACRegressor",
+        "PoissonRegressor",
+        "GammaRegressor",
+        "TweedieRegressor",
+    )
     for model_class in tree_model_classes:
         if hasattr(module, model_class):
             wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_model_init)
     for model_class in ensemble_model_classes:
+        if hasattr(module, model_class):
+            wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_model_init)
+    for model_class in linear_model_classes:
         if hasattr(module, model_class):
             wrap_function_wrapper(module, "%s.%s" % (model_class, "__init__"), wrap_model_init)

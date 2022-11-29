@@ -97,10 +97,13 @@ class TraceCache(object):
     greenlet = cached_module("greenlet")
 
     def __init__(self):
+        self._cache_lock = threading.Lock()
         self._cache = weakref.WeakValueDictionary()
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), str(dict(self._cache.items())))
+        with self._cache_lock:
+            cache = str(dict(self._cache.items()))
+        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), cache)
 
     def current_thread_id(self):
         """Returns the thread ID for the caller.
@@ -135,10 +138,12 @@ class TraceCache(object):
     def task_start(self, task):
         trace = self.current_trace()
         if trace:
-            self._cache[id(task)] = trace
+            with self._cache_lock:
+                self._cache[id(task)] = trace
 
     def task_stop(self, task):
-        self._cache.pop(id(task), None)
+        with self._cache_lock:
+            self._cache.pop(id(task), None)
 
     def current_transaction(self):
         """Return the transaction object if one exists for the currently
@@ -197,7 +202,9 @@ class TraceCache(object):
         debug = global_settings().debug
 
         if debug.enable_coroutine_profiling:
-            for thread_id, trace in list(self._cache.items()):
+            with self._cache_lock:
+                cache = list(self._cache.items())
+            for thread_id, trace in cache:
                 transaction = trace.transaction
                 if transaction and transaction._greenlet is not None:
                     gr = transaction._greenlet()
@@ -221,11 +228,13 @@ class TraceCache(object):
 
         task = current_task(self.asyncio)
         if task is not None and id(trace._task) != id(task):
-            self._cache.pop(thread_id, None)
+            with self._cache_lock:
+                self._cache.pop(thread_id, None)
             return None
 
         if trace.root and trace.root.exited:
-            self._cache.pop(thread_id, None)
+            with self._cache_lock:
+                self._cache.pop(thread_id, None)
             return None
 
         return trace
@@ -240,20 +249,21 @@ class TraceCache(object):
 
         thread_id = trace.thread_id
 
-        if thread_id in self._cache:
-            cache_root = self._cache[thread_id].root
-            if cache_root and cache_root is not trace.root and not cache_root.exited:
-                # Cached trace exists and has a valid root still
-                _logger.error(
-                    "Runtime instrumentation error. Attempt to "
-                    "save a trace from an inactive transaction. "
-                    "Report this issue to New Relic support.\n%s",
-                    "".join(traceback.format_stack()[:-1]),
-                )
+        with self._cache_lock:
+            if thread_id in self._cache:
+                cache_root = self._cache[thread_id].root
+                if cache_root and cache_root is not trace.root and not cache_root.exited:
+                    # Cached trace exists and has a valid root still
+                    _logger.error(
+                        "Runtime instrumentation error. Attempt to "
+                        "save a trace from an inactive transaction. "
+                        "Report this issue to New Relic support.\n%s",
+                        "".join(traceback.format_stack()[:-1]),
+                    )
 
-                raise TraceCacheActiveTraceError("transaction already active")
+                    raise TraceCacheActiveTraceError("transaction already active")
 
-        self._cache[thread_id] = trace
+            self._cache[thread_id] = trace
 
         # We judge whether we are actually running in a coroutine by
         # seeing if the current thread ID is actually listed in the set
@@ -284,7 +294,8 @@ class TraceCache(object):
 
         thread_id = trace.thread_id
         parent = trace.parent
-        self._cache[thread_id] = parent
+        with self._cache_lock:
+            self._cache[thread_id] = parent
 
     def complete_root(self, root):
         """Completes a trace specified by the given root
@@ -316,24 +327,25 @@ class TraceCache(object):
 
         thread_id = root.thread_id
 
-        if thread_id not in self._cache:
-            thread_id = self.current_thread_id()
+        with self._cache_lock:
             if thread_id not in self._cache:
-                raise TraceCacheNoActiveTraceError("no active trace")
+                thread_id = self.current_thread_id()
+                if thread_id not in self._cache:
+                    raise TraceCacheNoActiveTraceError("no active trace")
 
-        current = self._cache.get(thread_id)
+            current = self._cache.get(thread_id)
 
-        if root is not current:
-            _logger.error(
-                "Runtime instrumentation error. Attempt to "
-                "drop the root when it is not the current "
-                "trace. Report this issue to New Relic support.\n%s",
-                "".join(traceback.format_stack()[:-1]),
-            )
+            if root is not current:
+                _logger.error(
+                    "Runtime instrumentation error. Attempt to "
+                    "drop the root when it is not the current "
+                    "trace. Report this issue to New Relic support.\n%s",
+                    "".join(traceback.format_stack()[:-1]),
+                )
 
-            raise RuntimeError("not the current trace")
+                raise RuntimeError("not the current trace")
 
-        del self._cache[thread_id]
+            del self._cache[thread_id]
         root._greenlet = None
 
     def record_event_loop_wait(self, start_time, end_time):
@@ -359,7 +371,9 @@ class TraceCache(object):
         task = getattr(transaction.root_span, "_task", None)
         loop = get_event_loop(task)
 
-        for trace in list(self._cache.values()):
+        with self._cache_lock:
+            cache = list(self._cache.values())
+        for trace in cache:
             if trace in seen:
                 continue
 

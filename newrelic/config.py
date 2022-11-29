@@ -2886,11 +2886,11 @@ def _process_module_builtin_defaults():
         "instrument_sklearn_models",
     )
 
-    _process_module_definition(
-        "sklearn.linear_model._sgd_fast",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
-    )
+    # _process_module_definition(
+    #     "sklearn.linear_model._sgd_fast",
+    #     "newrelic.hooks.component_sklearn",
+    #     "instrument_sklearn_models",
+    # )
 
     _process_module_definition(
         "sklearn.linear_model._stochastic_gradient",

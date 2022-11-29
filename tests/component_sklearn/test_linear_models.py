@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import pytest
-
-# from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -44,16 +42,6 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
             ("MLModel/Sklearn/Named/ElasticNetCV.fit", 1),
             ("MLModel/Sklearn/Named/ElasticNetCV.predict", 2),
             ("MLModel/Sklearn/Named/ElasticNetCV.score", 1),
-        ],
-        "Hinge": [
-            ("MLModel/Sklearn/Named/Hinge.fit", 1),
-            ("MLModel/Sklearn/Named/Hinge.predict", 2),
-            ("MLModel/Sklearn/Named/Hinge.score", 1),
-        ],
-        "Huber": [
-            ("MLModel/Sklearn/Named/Huber.fit", 1),
-            ("MLModel/Sklearn/Named/Huber.predict", 2),
-            ("MLModel/Sklearn/Named/Huber.score", 1),
         ],
         "HuberRegressor": [
             ("MLModel/Sklearn/Named/HuberRegressor.fit", 1),
@@ -100,11 +88,6 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
             ("MLModel/Sklearn/Named/LinearRegression.predict", 2),
             ("MLModel/Sklearn/Named/LinearRegression.score", 1),
         ],
-        "Log": [
-            ("MLModel/Sklearn/Named/Log.fit", 1),
-            ("MLModel/Sklearn/Named/Log.predict", 2),
-            ("MLModel/Sklearn/Named/Log.score", 1),
-        ],
         "LogisticRegression": [
             ("MLModel/Sklearn/Named/LogisticRegression.fit", 1),
             ("MLModel/Sklearn/Named/LogisticRegression.predict", 2),
@@ -114,11 +97,6 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
             ("MLModel/Sklearn/Named/LogisticRegressionCV.fit", 1),
             ("MLModel/Sklearn/Named/LogisticRegressionCV.predict", 2),
             ("MLModel/Sklearn/Named/LogisticRegressionCV.score", 1),
-        ],
-        "ModifiedHuber": [
-            ("MLModel/Sklearn/Named/ModifiedHuber.fit", 1),
-            ("MLModel/Sklearn/Named/ModifiedHuber.predict", 2),
-            ("MLModel/Sklearn/Named/ModifiedHuber.score", 1),
         ],
         "MultiTaskElasticNet": [
             ("MLModel/Sklearn/Named/MultiTaskElasticNet.fit", 1),
@@ -202,13 +180,7 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
         ],
         "SGDOneClassSVM": [
             ("MLModel/Sklearn/Named/SGDOneClassSVM.fit", 1),
-            ("MLModel/Sklearn/Named/SGDOneClassSVM.predict", 2),
-            ("MLModel/Sklearn/Named/SGDOneClassSVM.score", 1),
-        ],
-        "SquaredLoss": [
-            ("MLModel/Sklearn/Named/SquaredLoss.fit", 1),
-            ("MLModel/Sklearn/Named/SquaredLoss.predict", 2),
-            ("MLModel/Sklearn/Named/SquaredLoss.score", 1),
+            ("MLModel/Sklearn/Named/SGDOneClassSVM.predict", 1),
         ],
         "TheilSenRegressor": [
             ("MLModel/Sklearn/Named/TheilSenRegressor.fit", 1),
@@ -217,22 +189,22 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
         ],
         "RANSACRegressor": [
             ("MLModel/Sklearn/Named/RANSACRegressor.fit", 1),
-            ("MLModel/Sklearn/Named/RANSACRegressor.predict", 2),
+            ("MLModel/Sklearn/Named/RANSACRegressor.predict", 1),
             ("MLModel/Sklearn/Named/RANSACRegressor.score", 1),
         ],
         "PoissonRegressor": [
             ("MLModel/Sklearn/Named/PoissonRegressor.fit", 1),
-            ("MLModel/Sklearn/Named/PoissonRegressor.predict", 2),
+            ("MLModel/Sklearn/Named/PoissonRegressor.predict", 1),
             ("MLModel/Sklearn/Named/PoissonRegressor.score", 1),
         ],
         "GammaRegressor": [
             ("MLModel/Sklearn/Named/GammaRegressor.fit", 1),
-            ("MLModel/Sklearn/Named/GammaRegressor.predict", 2),
+            ("MLModel/Sklearn/Named/GammaRegressor.predict", 1),
             ("MLModel/Sklearn/Named/GammaRegressor.score", 1),
         ],
         "TweedieRegressor": [
             ("MLModel/Sklearn/Named/TweedieRegressor.fit", 1),
-            ("MLModel/Sklearn/Named/TweedieRegressor.predict", 2),
+            ("MLModel/Sklearn/Named/TweedieRegressor.predict", 1),
             ("MLModel/Sklearn/Named/TweedieRegressor.score", 1),
         ],
     }
@@ -256,47 +228,42 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
 @pytest.fixture(
     params=[
         "ARDRegression",
-        # "BayesianRidge",
-        # "ElasticNet",
-        # "ElasticNetCV",
-        # "Hinge",
-        # "Huber",
-        # "HuberRegressor",
-        # "Lars",
-        # "LarsCV",
-        # "Lasso",
-        # "LassoCV",
-        # "LassoLars",
-        # "LassoLarsCV",
-        # "LassoLarsIC",
-        # "LinearRegression",
-        # "Log",
-        # "LogisticRegression",
-        # "LogisticRegressionCV",
-        # "ModifiedHuber",
-        # "MultiTaskElasticNet",
-        # "MultiTaskElasticNetCV",
-        # "MultiTaskLasso",
-        # "MultiTaskLassoCV",
-        # "OrthogonalMatchingPursuit",
-        # "OrthogonalMatchingPursuitCV",
-        # "PassiveAggressiveClassifier",
-        # "PassiveAggressiveRegressor",
-        # "Perceptron",
-        # "QuantileRegressor",
-        # "Ridge",
-        # "RidgeCV",
-        # "RidgeClassifier",
-        # "RidgeClassifierCV",
-        # "SGDClassifier",
-        # "SGDRegressor",
-        # "SGDOneClassSVM",
-        # "SquaredLoss",
-        # "TheilSenRegressor",
-        # "RANSACRegressor",
-        # "PoissonRegressor",
-        # "GammaRegressor",
-        # "TweedieRegressor",
+        "BayesianRidge",
+        "ElasticNet",
+        "ElasticNetCV",
+        "HuberRegressor",
+        "Lars",
+        "LarsCV",
+        "Lasso",
+        "LassoCV",
+        "LassoLars",
+        "LassoLarsCV",
+        "LassoLarsIC",
+        "LinearRegression",
+        "LogisticRegression",
+        "LogisticRegressionCV",
+        "MultiTaskElasticNet",
+        "MultiTaskElasticNetCV",
+        "MultiTaskLasso",
+        "MultiTaskLassoCV",
+        "OrthogonalMatchingPursuit",
+        "OrthogonalMatchingPursuitCV",
+        "PassiveAggressiveClassifier",
+        "PassiveAggressiveRegressor",
+        "Perceptron",
+        "QuantileRegressor",
+        "Ridge",
+        "RidgeCV",
+        "RidgeClassifier",
+        "RidgeClassifierCV",
+        "SGDClassifier",
+        "SGDRegressor",
+        "SGDOneClassSVM",
+        "TheilSenRegressor",
+        "RANSACRegressor",
+        "PoissonRegressor",
+        "GammaRegressor",
+        "TweedieRegressor",
     ]
 )
 def linear_model_name(request):
@@ -310,39 +277,30 @@ def run_linear_model(linear_model_name):
         from sklearn.datasets import load_iris
         from sklearn.model_selection import train_test_split
 
-        # This works better with StackingClassifier and StackingRegressor models
         X, y = load_iris(return_X_y=True)
         x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
 
-        # if linear_model_name == "StackingClassifier":
-        #     clf = getattr(sklearn.linear_model, linear_model_name)(
-        #         estimators=[("rf", RandomForestClassifier())], final_estimator=RandomForestClassifier()
-        #     )
-        # elif linear_model_name == "VotingClassifier":
-        #     clf = getattr(sklearn.linear_model, linear_model_name)(
-        #         estimators=[("rf", RandomForestClassifier())], voting="soft"
-        #     )
-        # elif linear_model_name == "StackingRegressor":
-        #     clf = getattr(sklearn.linear_model, linear_model_name)(
-        #         estimators=[("rf", RandomForestRegressor())], final_estimator=RandomForestRegressor()
-        #     )
-        # elif linear_model_name == "VotingRegressor":
-        #     clf = getattr(sklearn.linear_model, linear_model_name)([("rf", RandomForestRegressor())])
-        # else:
-        # clf = getattr(sklearn.linear_model, linear_model_name)(random_state=0)
+        if linear_model_name == "GammaRegressor":
+            x_train = [[1, 2], [2, 3], [3, 4], [4, 3]]
+            y_train = [19, 26, 33, 30]
+            x_test = [[1, 2], [2, 3], [3, 4], [4, 3]]
+            y_test = [19, 26, 33, 30]
+        elif linear_model_name in [
+            "MultiTaskElasticNet",
+            "MultiTaskElasticNetCV",
+            "MultiTaskLasso",
+            "MultiTaskLassoCV",
+        ]:
+            y_train = x_train
+            y_test = x_test
 
         clf = getattr(sklearn.linear_model, linear_model_name)()
-        # clf = linear_model.ARDRegression()
 
         model = clf.fit(x_train, y_train)
         model.predict(x_test)
 
         if hasattr(model, "score"):
             model.score(x_test, y_test)
-        if hasattr(model, "predict_log_proba"):
-            model.predict_log_proba(x_test)
-        if hasattr(model, "predict_proba"):
-            model.predict_proba(x_test)
 
         return model
 

@@ -51,9 +51,11 @@ def test_model_methods_wrapped_in_function_trace(tree_model_name, run_tree_model
             ("MLModel/Sklearn/Named/DecisionTreeRegressor.score", 1),
         ],
     }
-    expected_transaction_name = "test_tree_models:_test"
-    if six.PY3:
-        expected_transaction_name = "test_tree_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
+    expected_transaction_name = (
+        "test_tree_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
+        if six.PY3
+        else "test_tree_models:_test"
+    )
 
     @validate_transaction_metrics(
         expected_transaction_name,

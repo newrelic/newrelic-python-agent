@@ -52,6 +52,12 @@ def _nr_instrument_model(module, model_class):
             wrap_function_wrapper(module, "%s.%s" % (model_class, method_name), wrap_method)
 
 
+def _instrument_sklearn_models(module, model_classes):
+    for model_cls in model_classes:
+        if hasattr(module, model_cls):
+            _nr_instrument_model(module, model_cls)
+
+
 def instrument_sklearn_tree_models(module):
     model_classes = (
         "DecisionTreeClassifier",
@@ -59,6 +65,4 @@ def instrument_sklearn_tree_models(module):
         "ExtraTreeClassifier",
         "ExtraTreeRegressor",
     )
-    for model_cls in model_classes:
-        if hasattr(module, model_cls):
-            _nr_instrument_model(module, model_cls)
+    _instrument_sklearn_models(module, model_classes)

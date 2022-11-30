@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import uuid
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
@@ -44,6 +45,16 @@ def wrap_method(wrapped, instance, args, kwargs):
 
     return return_val
 
+def bind_predict(x, check_input=True):
+    return x, check_input
+
+def wrap_predict(wrapped, instance, args, kwargs):
+    data_set, check_input = bind_predict(*args, **kwargs)
+    inference_id = uuid.uuid4()
+
+
+    return wrapped(*args, **kwargs)
+
 
 def _nr_instrument_model(module, model_class):
     methods_to_wrap = ("predict", "fit", "fit_predict", "predict_log_proba", "predict_proba", "transform", "score")
@@ -53,6 +64,9 @@ def _nr_instrument_model(module, model_class):
 
 
 def instrument_sklearn_tree_models(module):
+    if hasattr(module.BaseDecisionTree, "predict"):
+        wrap_function_wrapper(module, "BaseDecisionTree.predict", wrap_predict)
+
     model_classes = (
         "DecisionTreeClassifier",
         "DecisionTreeRegressor",
@@ -62,3 +76,4 @@ def instrument_sklearn_tree_models(module):
     for model_cls in model_classes:
         if hasattr(module, model_cls):
             _nr_instrument_model(module, model_cls)
+

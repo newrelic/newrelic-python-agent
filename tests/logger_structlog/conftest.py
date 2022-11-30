@@ -15,7 +15,8 @@
 import logging
 import pytest
 from structlog import DropEvent, PrintLogger
-
+from newrelic.api.time_trace import current_trace
+from newrelic.api.transaction import current_transaction
 from testing_support.fixtures import (
     code_coverage_fixture,
     collector_agent_registration_fixture,
@@ -63,15 +64,28 @@ class StructLogCapLog(PrintLogger):
 
     __str__ = __repr__
 
+
+@pytest.fixture
+def set_trace_ids():
+    def _set():
+        txn = current_transaction()
+        if txn:
+            txn._trace_id = "abcdefgh12345678"
+        trace = current_trace()
+        if trace:
+            trace.guid = "abcdefgh"
+    return _set
+
 def drop_event_processor(logger, method_name, event_dict):
     if method_name == "info":
         raise DropEvent
     else:
         return event_dict
 
+
 @pytest.fixture(scope="function")
 def structlog_caplog():
-    yield list()
+    return list()
 
 
 @pytest.fixture(scope="function")
@@ -79,7 +93,7 @@ def logger(structlog_caplog):
     import structlog
     structlog.configure(processors=[], logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog))
     _logger = structlog.get_logger()
-    yield _logger
+    return _logger
 
 
 @pytest.fixture(scope="function")
@@ -87,4 +101,50 @@ def filtering_logger(structlog_caplog):
     import structlog
     structlog.configure(processors=[drop_event_processor], logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog))
     _filtering_logger = structlog.get_logger()
-    yield _filtering_logger
+    return _filtering_logger
+
+
+@pytest.fixture
+def exercise_logging_multiple_lines(set_trace_ids, logger, structlog_caplog):
+    def _exercise():
+        set_trace_ids()
+
+        logger.msg("Cat", a=42)
+        logger.error("Dog")
+        logger.critical("Elephant")
+
+        assert len(structlog_caplog) == 3
+
+        assert "Cat" in structlog_caplog[0]
+        assert "Dog" in structlog_caplog[1]
+        assert "Elephant" in structlog_caplog[2]
+
+    return _exercise
+
+
+@pytest.fixture
+def exercise_filtering_logging_multiple_lines(set_trace_ids, filtering_logger, structlog_caplog):
+    def _exercise():
+        set_trace_ids()
+
+        filtering_logger.msg("Cat", a=42)
+        filtering_logger.error("Dog")
+        filtering_logger.critical("Elephant")
+
+        assert len(structlog_caplog) == 2
+
+        assert "Cat" not in structlog_caplog[0]
+        assert "Dog" in structlog_caplog[0]
+        assert "Elephant" in structlog_caplog[1]
+
+    return _exercise
+
+
+@pytest.fixture
+def exercise_logging_single_line(set_trace_ids, logger, structlog_caplog):
+    def _exercise():
+        set_trace_ids()
+        logger.error("A", key="value")
+        assert len(structlog_caplog) == 1
+
+    return _exercise

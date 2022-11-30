@@ -16,25 +16,9 @@ import platform
 
 from newrelic.api.application import application_settings
 from newrelic.api.background_task import background_task
-from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import validate_log_event_count_outside_transaction
-
-
-def set_trace_ids():
-    txn = current_transaction()
-    if txn:
-        txn._trace_id = "abcdefgh12345678"
-    trace = current_trace()
-    if trace:
-        trace.guid = "abcdefgh"
-
-def exercise_logging(logger):
-    set_trace_ids()
-
-    logger.warning("C")
 
 
 def get_metadata_string(log_message, is_txn):
@@ -50,21 +34,21 @@ def get_metadata_string(log_message, is_txn):
 
 
 @reset_core_stats_engine()
-def test_local_log_decoration_inside_transaction(logger, structlog_caplog):
+def test_local_log_decoration_inside_transaction(exercise_logging_single_line, structlog_caplog):
     @validate_log_event_count(1)
     @background_task()
     def test():
-        exercise_logging(logger)
-        assert get_metadata_string('C', True) in structlog_caplog[0]
+        exercise_logging_single_line()
+        assert get_metadata_string('A', True) in structlog_caplog[0]
 
     test()
 
 
 @reset_core_stats_engine()
-def test_local_log_decoration_outside_transaction(logger, structlog_caplog):
+def test_local_log_decoration_outside_transaction(exercise_logging_single_line, structlog_caplog):
     @validate_log_event_count_outside_transaction(1)
     def test():
-        exercise_logging(logger)
-        assert get_metadata_string('C', False) in structlog_caplog[0]
+        exercise_logging_single_line()
+        assert get_metadata_string('A', False) in structlog_caplog[0]
 
     test()

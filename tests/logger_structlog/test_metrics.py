@@ -19,31 +19,6 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from testing_support.validators.validate_custom_metrics_outside_transaction import validate_custom_metrics_outside_transaction
 
 
-
-def exercise_logging(logger, structlog_caplog):
-    logger.msg("Cat", a=42)
-    logger.error("Dog")
-    logger.critical("Elephant")
-
-    assert len(structlog_caplog) == 3
-
-    assert "Cat" in structlog_caplog[0]
-    assert "Dog" in structlog_caplog[1]
-    assert "Elephant" in structlog_caplog[2]
-
-
-def exercise_filtering_logging(filtering_logger, structlog_caplog):
-    filtering_logger.msg("Cat", a=42)
-    filtering_logger.error("Dog")
-    filtering_logger.critical("Elephant")
-
-    assert len(structlog_caplog) == 2
-
-    assert "Cat" not in structlog_caplog[0]
-    assert "Dog" in structlog_caplog[0]
-    assert "Elephant" in structlog_caplog[1]
-
-
 _test_logging_unscoped_metrics = [
     ("Logging/lines", 3),
     ("Logging/lines/INFO", 1),
@@ -51,8 +26,9 @@ _test_logging_unscoped_metrics = [
     ("Logging/lines/CRITICAL", 1),
 ]
 
+
 @reset_core_stats_engine()
-def test_logging_metrics_inside_transaction(logger, structlog_caplog):
+def test_logging_metrics_inside_transaction(exercise_logging_multiple_lines):
     txn_name = "test_metrics:test_logging_metrics_inside_transaction.<locals>.test" if six.PY3 else "test_metrics:test"
     @validate_transaction_metrics(
         txn_name,
@@ -61,9 +37,19 @@ def test_logging_metrics_inside_transaction(logger, structlog_caplog):
     )
     @background_task()
     def test():
-        exercise_logging(logger, structlog_caplog)
+        exercise_logging_multiple_lines()
 
     test()
+
+
+@reset_core_stats_engine()
+def test_logging_metrics_outside_transaction(exercise_logging_multiple_lines):
+    @validate_custom_metrics_outside_transaction(_test_logging_unscoped_metrics)
+    def test():
+        exercise_logging_multiple_lines()
+
+    test()
+
 
 _test_logging_unscoped_filtering_metrics = [
     ("Logging/lines", 2),
@@ -71,8 +57,9 @@ _test_logging_unscoped_filtering_metrics = [
     ("Logging/lines/CRITICAL", 1),
 ]
 
+
 @reset_core_stats_engine()
-def test_filtering_logging_metrics_inside_transaction(filtering_logger, structlog_caplog):
+def test_filtering_logging_metrics_inside_transaction(exercise_filtering_logging_multiple_lines):
     txn_name = "test_metrics:test_filtering_logging_metrics_inside_transaction.<locals>.test" if six.PY3 else "test_metrics:test"
     @validate_transaction_metrics(
         txn_name,
@@ -81,15 +68,6 @@ def test_filtering_logging_metrics_inside_transaction(filtering_logger, structlo
     )
     @background_task()
     def test():
-        exercise_filtering_logging(filtering_logger, structlog_caplog)
-
-    test()
-
-
-@reset_core_stats_engine()
-def test_logging_metrics_outside_transaction(logger, structlog_caplog):
-    @validate_custom_metrics_outside_transaction(_test_logging_unscoped_metrics)
-    def test():
-        exercise_logging(logger, structlog_caplog)
+        exercise_filtering_logging_multiple_lines()
 
     test()

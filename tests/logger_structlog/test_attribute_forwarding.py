@@ -23,19 +23,15 @@ from testing_support.validators.validate_log_events_outside_transaction import v
 _event_attributes = {"message": "A", "context.key": "value"}
 
 
-def exercise_logging(logger, structlog_caplog):
-    logger.error("A", key="value")
-    assert len(structlog_caplog) == 1
-
 @override_application_settings({
     "application_logging.forwarding.context_data.enabled": True,
 })
-def test_attributes_inside_transaction(logger, structlog_caplog):
+def test_attributes_inside_transaction(exercise_logging_single_line):
     @validate_log_events([_event_attributes])
     @validate_log_event_count(1)
     @background_task()
     def test():
-        exercise_logging(logger, structlog_caplog)
+        exercise_logging_single_line()
 
     test()
 
@@ -44,10 +40,10 @@ def test_attributes_inside_transaction(logger, structlog_caplog):
 @override_application_settings({
     "application_logging.forwarding.context_data.enabled": True,
 })
-def test_attributes_outside_transaction(logger, structlog_caplog):
+def test_attributes_outside_transaction(exercise_logging_single_line):
     @validate_log_events_outside_transaction([_event_attributes])
     @validate_log_event_count_outside_transaction(1)
     def test():
-        exercise_logging(logger, structlog_caplog)
+        exercise_logging_single_line()
 
     test()

@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import threading
+
+import pytest
 
 from newrelic.core.trace_cache import TraceCache
 
@@ -29,7 +30,7 @@ def trace_cache():
 
 def test_trace_cache_methods(trace_cache):
     """Test MutableMapping methods functional for trace_cache"""
-    obj = DummyTrace()  # weakref compatible object 
+    obj = DummyTrace()  # weakref compatible object
 
     trace_cache[1] = obj
     assert 1 in trace_cache
@@ -52,15 +53,15 @@ def test_trace_cache_methods(trace_cache):
 def test_concurrent_iteration(trace_cache):
     """
     Test for exceptions related to trace_cache changing size during iteration.
-    
-    The WeakValueDictionary used internally is particularly prone to this, as iterating 
+
+    The WeakValueDictionary used internally is particularly prone to this, as iterating
     on it in any way other than indirectly through WeakValueDictionary.valuerefs()
     will cause RuntimeErrors due to the unguarded iteration on a dictionary internally.
     """
     tc_size = 20
     obj_refs = [DummyTrace() for _ in range(tc_size)]
     shutdown = threading.Event()
-    
+
     def _iterate_trace_cache():
         while True:
             if shutdown.is_set():
@@ -71,7 +72,7 @@ def test_concurrent_iteration(trace_cache):
                 pass
             for v in trace_cache.keys():
                 pass
-    
+
     def _change_weakref_dict_size():
         """
         Cause RuntimeErrors when iterating on the trace_cache by:
@@ -94,7 +95,7 @@ def test_concurrent_iteration(trace_cache):
             # Replace every 3rd obj ref causing the WeakValueDictionary to drop it.
             for i, _ in enumerate(obj_refs[::3]):
                 obj_refs[i] = DummyTrace()
-    
+
     t1 = threading.Thread(target=_change_weakref_dict_size)
     t2 = threading.Thread(target=_iterate_trace_cache)
     t1.daemon = True
@@ -107,7 +108,7 @@ def test_concurrent_iteration(trace_cache):
     assert t1.is_alive(), "Thread exited with exception."
     assert t2.is_alive(), "Thread exited with exception."
     shutdown.set()
-    
+
     # Ensure threads shutdown with a timeout to prevent hangs
     t1.join(timeout=1)
     t2.join(timeout=1)

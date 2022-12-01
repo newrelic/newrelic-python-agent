@@ -400,7 +400,9 @@ class TraceCache(MutableMapping):
     def items(self):
         for wr in self._cache.valuerefs():
             value = wr()  # Dereferenced value is potentially no longer live.
-            if value is not None:  # weakref is None means weakref has been garbage collected and is no longer live. Ignore.
+            if (
+                value is not None
+            ):  # weakref is None means weakref has been garbage collected and is no longer live. Ignore.
                 yield wr.key, value  # wr.key is the original dict key
 
     def keys(self):
@@ -411,7 +413,9 @@ class TraceCache(MutableMapping):
         """Safely iterates on self._cache.values() indirectly using"""
         for wr in self._cache.valuerefs():
             value = wr()  # Dereferenced value is potentially no longer live.
-            if value is not None:  # weakref is None means weakref has been garbage collected and is no longer live. Ignore.
+            if (
+                value is not None
+            ):  # weakref is None means weakref has been garbage collected and is no longer live. Ignore.
                 yield value
 
     def __getitem__(self, key):
@@ -422,10 +426,10 @@ class TraceCache(MutableMapping):
 
     def __delitem__(self, key):
         self._cache.__delitem__(key)
-    
+
     def __iter__(self):
         yield from self.keys()
-    
+
     def __len__(self):
         return self._cache.__len__()
 

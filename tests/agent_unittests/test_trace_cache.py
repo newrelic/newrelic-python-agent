@@ -35,6 +35,8 @@ def test_trace_cache_methods(trace_cache):
     trace_cache[1] = obj
     assert 1 in trace_cache
     assert bool(trace_cache)
+    assert list(trace_cache)
+
     del trace_cache[1]
     assert 1 not in trace_cache
     assert not bool(trace_cache)

@@ -428,7 +428,7 @@ class TraceCache(MutableMapping):
         self._cache.__delitem__(key)
 
     def __iter__(self):
-        yield from self.keys()
+        return self.keys()
 
     def __len__(self):
         return self._cache.__len__()

@@ -27,28 +27,28 @@ def test_model_methods_wrapped_in_function_trace(tree_model_name, run_tree_model
     # once like the rest of the methods.
     expected_scoped_metrics = {
         "ExtraTreeRegressor": [
-            ("MLModel/Sklearn/Named/ExtraTreeRegressor.fit", 1),
-            ("MLModel/Sklearn/Named/ExtraTreeRegressor.predict", 2),
-            ("MLModel/Sklearn/Named/ExtraTreeRegressor.score", 1),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeRegressor.predict", 2),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeRegressor.score", 1),
         ],
         "DecisionTreeClassifier": [
-            ("MLModel/Sklearn/Named/DecisionTreeClassifier.fit", 1),
-            ("MLModel/Sklearn/Named/DecisionTreeClassifier.predict", 2),
-            ("MLModel/Sklearn/Named/DecisionTreeClassifier.score", 1),
-            ("MLModel/Sklearn/Named/DecisionTreeClassifier.predict_log_proba", 1),
-            ("MLModel/Sklearn/Named/DecisionTreeClassifier.predict_proba", 2),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeClassifier.fit", 1),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeClassifier.predict", 2),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeClassifier.score", 1),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeClassifier.predict_log_proba", 1),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeClassifier.predict_proba", 2),
         ],
         "ExtraTreeClassifier": [
-            ("MLModel/Sklearn/Named/ExtraTreeClassifier.fit", 1),
-            ("MLModel/Sklearn/Named/ExtraTreeClassifier.predict", 2),
-            ("MLModel/Sklearn/Named/ExtraTreeClassifier.score", 1),
-            ("MLModel/Sklearn/Named/ExtraTreeClassifier.predict_log_proba", 1),
-            ("MLModel/Sklearn/Named/ExtraTreeClassifier.predict_proba", 2),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeClassifier.fit", 1),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeClassifier.predict", 2),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeClassifier.score", 1),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeClassifier.predict_log_proba", 1),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeClassifier.predict_proba", 2),
         ],
         "DecisionTreeRegressor": [
-            ("MLModel/Sklearn/Named/DecisionTreeRegressor.fit", 1),
-            ("MLModel/Sklearn/Named/DecisionTreeRegressor.predict", 2),
-            ("MLModel/Sklearn/Named/DecisionTreeRegressor.score", 1),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeRegressor.predict", 2),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeRegressor.score", 1),
         ],
     }
     expected_transaction_name = (
@@ -76,28 +76,28 @@ def test_multiple_calls_to_model_methods(tree_model_name, run_tree_model):
     # the other methods.
     expected_scoped_metrics = {
         "ExtraTreeRegressor": [
-            ("MLModel/Sklearn/Named/ExtraTreeRegressor.fit", 1),
-            ("MLModel/Sklearn/Named/ExtraTreeRegressor.predict", 4),
-            ("MLModel/Sklearn/Named/ExtraTreeRegressor.score", 2),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeRegressor.predict", 4),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeRegressor.score", 2),
         ],
         "DecisionTreeClassifier": [
-            ("MLModel/Sklearn/Named/DecisionTreeClassifier.fit", 1),
-            ("MLModel/Sklearn/Named/DecisionTreeClassifier.predict", 4),
-            ("MLModel/Sklearn/Named/DecisionTreeClassifier.score", 2),
-            ("MLModel/Sklearn/Named/DecisionTreeClassifier.predict_log_proba", 2),
-            ("MLModel/Sklearn/Named/DecisionTreeClassifier.predict_proba", 4),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeClassifier.fit", 1),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeClassifier.predict", 4),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeClassifier.score", 2),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeClassifier.predict_log_proba", 2),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeClassifier.predict_proba", 4),
         ],
         "ExtraTreeClassifier": [
-            ("MLModel/Sklearn/Named/ExtraTreeClassifier.fit", 1),
-            ("MLModel/Sklearn/Named/ExtraTreeClassifier.predict", 4),
-            ("MLModel/Sklearn/Named/ExtraTreeClassifier.score", 2),
-            ("MLModel/Sklearn/Named/ExtraTreeClassifier.predict_log_proba", 2),
-            ("MLModel/Sklearn/Named/ExtraTreeClassifier.predict_proba", 4),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeClassifier.fit", 1),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeClassifier.predict", 4),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeClassifier.score", 2),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeClassifier.predict_log_proba", 2),
+            ("Function/MLModel/Sklearn/Named/ExtraTreeClassifier.predict_proba", 4),
         ],
         "DecisionTreeRegressor": [
-            ("MLModel/Sklearn/Named/DecisionTreeRegressor.fit", 1),
-            ("MLModel/Sklearn/Named/DecisionTreeRegressor.predict", 4),
-            ("MLModel/Sklearn/Named/DecisionTreeRegressor.score", 2),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeRegressor.predict", 4),
+            ("Function/MLModel/Sklearn/Named/DecisionTreeRegressor.score", 2),
         ],
     }
     expected_transaction_name = "test_tree_models:_test"

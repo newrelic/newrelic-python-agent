@@ -13,43 +13,51 @@
 # limitations under the License.
 
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
+METHODS_TO_WRAP = ("predict", "fit", "fit_predict", "predict_log_proba", "predict_proba", "transform", "score")
 
-def wrap_method(wrapped, instance, args, kwargs):
-    # If there is no transaction, do not wrap anything.
-    if not current_transaction():
-        return wrapped(*args, **kwargs)
 
-    method_name = wrapped.__name__
+def _wrap_method_trace(module, _class, method, name=None, group=None):
+    def _nr_wrapper_method(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+        trace = current_trace()
 
-    # If the method has already been wrapped do not wrap it again. This happens
-    # when one model inherits from another and they both implement the method.
-    if getattr(instance, "_nr_wrapped_%s" % method_name, False):
-        return wrapped(*args, **kwargs)
+        if transaction is None:
+            return wrapped(*args, **kwargs)
 
-    # Set the _nr_wrapped attribute to denote that this method is being wrapped.
-    setattr(instance, "_nr_wrapped_%s" % method_name, True)
+        wrapped_attr_name = "_nr_wrapped_%s" % method
 
-    # MLModel/Sklearn/Named/<class name>.<method name>
-    func_name = wrapped.__name__
-    model_name = wrapped.__self__.__class__.__name__
-    name = "%s.%s" % (model_name, func_name)
-    with FunctionTrace(name=name, group="MLModel/Sklearn/Named", source=wrapped):
-        return_val = wrapped(*args, **kwargs)
+        # If the method has already been wrapped do not wrap it again. This happens
+        # when one class inherits from another and they both implement the method.
+        if getattr(trace, wrapped_attr_name, False):
+            return wrapped(*args, **kwargs)
 
-    # Set the _nr_wrapped attribute to denote that this method is no longer wrapped.
-    setattr(instance, "_nr_wrapped_%s" % method_name, False)
+        trace = FunctionTrace(name=name, group=group, source=wrapped)
 
-    return return_val
+        try:
+            # Set the _nr_wrapped attribute to denote that this method is being wrapped.
+            setattr(trace, wrapped_attr_name, True)
+
+            with trace:
+                return_val = wrapped(*args, **kwargs)
+        finally:
+            # Set the _nr_wrapped attribute to denote that this method is no longer wrapped.
+            setattr(trace, wrapped_attr_name, False)
+
+        return return_val
+
+    wrap_function_wrapper(module, "%s.%s" % (_class, method), _nr_wrapper_method)
 
 
 def _nr_instrument_model(module, model_class):
-    methods_to_wrap = ("predict", "fit", "fit_predict", "predict_log_proba", "predict_proba", "transform", "score")
-    for method_name in methods_to_wrap:
+    for method_name in METHODS_TO_WRAP:
         if hasattr(getattr(module, model_class), method_name):
-            wrap_function_wrapper(module, "%s.%s" % (model_class, method_name), wrap_method)
+            # Function/MLModel/Sklearn/Named/<class name>.<method name>
+            name = "MLModel/Sklearn/Named/%s.%s" % (model_class, method_name)
+            _wrap_method_trace(module, model_class, method_name, name=name)
 
 
 def _instrument_sklearn_models(module, model_classes):

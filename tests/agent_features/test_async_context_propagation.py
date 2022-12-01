@@ -131,7 +131,7 @@ def test_context_propagation(event_loop, schedule, set_loop):
     # The agent should have removed all traces from the cache since
     # run_until_complete has terminated (all callbacks scheduled inside the
     # task have run)
-    assert not trace_cache()._cache
+    assert not trace_cache()
 
     # Assert that no exceptions have occurred
     assert not exceptions, exceptions
@@ -286,7 +286,7 @@ def test_transaction_exit_trace_cache(event_loop, fg):
 
     # The agent should have removed all traces from the cache since
     # run_until_complete has terminated
-    assert not trace_cache()._cache
+    assert not trace_cache()
 
     # Assert that no exceptions have occurred
     assert not exceptions, exceptions

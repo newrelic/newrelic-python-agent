@@ -105,7 +105,7 @@ class TraceCache(MutableMapping):
         self._cache = weakref.WeakValueDictionary()
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), str(dict(self._cache.items())))
+        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), str(dict(self.items())))
 
     def current_thread_id(self):
         """Returns the thread ID for the caller.
@@ -140,10 +140,10 @@ class TraceCache(MutableMapping):
     def task_start(self, task):
         trace = self.current_trace()
         if trace:
-            self._cache[id(task)] = trace
+            self[id(task)] = trace
 
     def task_stop(self, task):
-        self._cache.pop(id(task), None)
+        self.pop(id(task), None)
 
     def current_transaction(self):
         """Return the transaction object if one exists for the currently
@@ -151,11 +151,11 @@ class TraceCache(MutableMapping):
 
         """
 
-        trace = self._cache.get(self.current_thread_id())
+        trace = self.get(self.current_thread_id())
         return trace and trace.transaction
 
     def current_trace(self):
-        return self._cache.get(self.current_thread_id())
+        return self.get(self.current_thread_id())
 
     def active_threads(self):
         """Returns an iterator over all current stack frames for all
@@ -174,7 +174,7 @@ class TraceCache(MutableMapping):
         # First yield up those for real Python threads.
 
         for thread_id, frame in sys._current_frames().items():
-            trace = self._cache.get(thread_id)
+            trace = self.get(thread_id)
             transaction = trace and trace.transaction
             if transaction is not None:
                 if transaction.background_task:
@@ -202,7 +202,7 @@ class TraceCache(MutableMapping):
         debug = global_settings().debug
 
         if debug.enable_coroutine_profiling:
-            for thread_id, trace in list(self._cache.items()):
+            for thread_id, trace in self.items():
                 transaction = trace.transaction
                 if transaction and transaction._greenlet is not None:
                     gr = transaction._greenlet()
@@ -217,7 +217,7 @@ class TraceCache(MutableMapping):
         trace in the cache is from a different task (for asyncio). Returns the
         current trace after the cache is updated."""
         thread_id = self.current_thread_id()
-        trace = self._cache.get(thread_id)
+        trace = self.get(thread_id)
         if not trace:
             return None
 
@@ -226,11 +226,11 @@ class TraceCache(MutableMapping):
 
         task = current_task(self.asyncio)
         if task is not None and id(trace._task) != id(task):
-            self._cache.pop(thread_id, None)
+            self.pop(thread_id, None)
             return None
 
         if trace.root and trace.root.exited:
-            self._cache.pop(thread_id, None)
+            self.pop(thread_id, None)
             return None
 
         return trace
@@ -245,8 +245,8 @@ class TraceCache(MutableMapping):
 
         thread_id = trace.thread_id
 
-        if thread_id in self._cache:
-            cache_root = self._cache[thread_id].root
+        if thread_id in self:
+            cache_root = self[thread_id].root
             if cache_root and cache_root is not trace.root and not cache_root.exited:
                 # Cached trace exists and has a valid root still
                 _logger.error(
@@ -258,7 +258,7 @@ class TraceCache(MutableMapping):
 
                 raise TraceCacheActiveTraceError("transaction already active")
 
-        self._cache[thread_id] = trace
+        self[thread_id] = trace
 
         # We judge whether we are actually running in a coroutine by
         # seeing if the current thread ID is actually listed in the set
@@ -289,7 +289,7 @@ class TraceCache(MutableMapping):
 
         thread_id = trace.thread_id
         parent = trace.parent
-        self._cache[thread_id] = parent
+        self[thread_id] = parent
 
     def complete_root(self, root):
         """Completes a trace specified by the given root
@@ -306,7 +306,7 @@ class TraceCache(MutableMapping):
                 to_complete = []
 
                 for task_id in task_ids:
-                    entry = self._cache.get(task_id)
+                    entry = self.get(task_id)
 
                     if entry and entry is not root and entry.root is root:
                         to_complete.append(entry)
@@ -321,12 +321,12 @@ class TraceCache(MutableMapping):
 
         thread_id = root.thread_id
 
-        if thread_id not in self._cache:
+        if thread_id not in self:
             thread_id = self.current_thread_id()
-            if thread_id not in self._cache:
+            if thread_id not in self:
                 raise TraceCacheNoActiveTraceError("no active trace")
 
-        current = self._cache.get(thread_id)
+        current = self.get(thread_id)
 
         if root is not current:
             _logger.error(
@@ -338,7 +338,7 @@ class TraceCache(MutableMapping):
 
             raise RuntimeError("not the current trace")
 
-        del self._cache[thread_id]
+        del self[thread_id]
         root._greenlet = None
 
     def record_event_loop_wait(self, start_time, end_time):
@@ -364,7 +364,7 @@ class TraceCache(MutableMapping):
         task = getattr(transaction.root_span, "_task", None)
         loop = get_event_loop(task)
 
-        for trace in list(self._cache.values()):
+        for trace in self.values():
             if trace in seen:
                 continue
 

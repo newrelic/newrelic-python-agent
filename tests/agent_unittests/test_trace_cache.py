@@ -52,19 +52,9 @@ def test_trace_cache_methods(trace_cache):
     assert len(list(trace_cache.values())) == 1
 
 
-def test_concurrent_iteration(trace_cache):
-    """
-    Test for exceptions related to trace_cache changing size during iteration.
-
-    The WeakValueDictionary used internally is particularly prone to this, as iterating
-    on it in any way other than indirectly through WeakValueDictionary.valuerefs()
-    will cause RuntimeErrors due to the unguarded iteration on a dictionary internally.
-    """
-    tc_size = 20
-    obj_refs = [DummyTrace() for _ in range(tc_size)]
-    shutdown = threading.Event()
-
-    def _iterate_trace_cache():
+@pytest.fixture(scope="session")
+def iterate_trace_cache():
+    def _iterate_trace_cache(shutdown):
         while True:
             if shutdown.is_set():
                 return
@@ -75,7 +65,12 @@ def test_concurrent_iteration(trace_cache):
             for v in trace_cache.keys():
                 pass
 
-    def _change_weakref_dict_size():
+    return _iterate_trace_cache
+
+
+@pytest.fixture(scope="session")
+def change_weakref_dict_size():
+    def _change_weakref_dict_size(shutdown):
         """
         Cause RuntimeErrors when iterating on the trace_cache by:
           - Repeatedly pop and add batches of keys to cause size changes.
@@ -98,8 +93,23 @@ def test_concurrent_iteration(trace_cache):
             for i, _ in enumerate(obj_refs[::3]):
                 obj_refs[i] = DummyTrace()
 
-    t1 = threading.Thread(target=_change_weakref_dict_size)
-    t2 = threading.Thread(target=_iterate_trace_cache)
+    return _change_weakref_dict_size
+
+
+def test_concurrent_iteration(trace_cache, iterate_trace_cache, change_weakref_dict_size):
+    """
+    Test for exceptions related to trace_cache changing size during iteration.
+
+    The WeakValueDictionary used internally is particularly prone to this, as iterating
+    on it in any way other than indirectly through WeakValueDictionary.valuerefs()
+    will cause RuntimeErrors due to the unguarded iteration on a dictionary internally.
+    """
+    tc_size = 20
+    obj_refs = [DummyTrace() for _ in range(tc_size)]
+    shutdown = threading.Event()
+
+    t1 = threading.Thread(target=change_weakref_dict_size, args=(shutdown,))
+    t2 = threading.Thread(target=iterate_trace_cache, args=(shutdown,))
     t1.daemon = True
     t2.daemon = True
     t1.start()

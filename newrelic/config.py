@@ -2809,7 +2809,19 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.ensemble.bagging",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
         "sklearn.ensemble._forest",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.forest",
         "newrelic.hooks.component_sklearn",
         "instrument_sklearn_models",
     )
@@ -2821,7 +2833,19 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.ensemble.iforest",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
         "sklearn.ensemble._weight_boosting",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.weight_boosting",
         "newrelic.hooks.component_sklearn",
         "instrument_sklearn_models",
     )
@@ -2833,7 +2857,19 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.ensemble.gradient_boosting",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
         "sklearn.ensemble._voting",
+        "newrelic.hooks.component_sklearn",
+        "instrument_sklearn_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.voting_classifier",
         "newrelic.hooks.component_sklearn",
         "instrument_sklearn_models",
     )

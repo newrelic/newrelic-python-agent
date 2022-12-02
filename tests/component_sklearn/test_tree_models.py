@@ -100,9 +100,9 @@ def test_multiple_calls_to_model_methods(tree_model_name, run_tree_model):
             ("Function/MLModel/Sklearn/Named/DecisionTreeRegressor.score", 2),
         ],
     }
-    expected_transaction_name = "test_tree_models:_test"
-    if six.PY3:
-        expected_transaction_name = "test_tree_models:test_multiple_calls_to_model_methods.<locals>._test"
+    expected_transaction_name = (
+        "test_tree_models:test_multiple_calls_to_model_methods.<locals>._test" if six.PY3 else "test_tree_models:_test"
+    )
 
     @validate_transaction_metrics(
         expected_transaction_name,

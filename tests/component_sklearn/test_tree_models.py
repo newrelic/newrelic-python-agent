@@ -147,9 +147,10 @@ def run_tree_model(tree_model_name):
 
         labels = model.predict(x_test)
         model.score(x_test, y_test)
-        # Only classifier models have proba methods.
-        if tree_model_name in ("DecisionTreeClassifier", "ExtraTreeClassifier"):
+        # Some models don't have these methods.
+        if hasattr(model, "predict_log_proba"):
             model.predict_log_proba(x_test)
+        if hasattr(model, "predict_proba"):
             model.predict_proba(x_test)
         return model
 

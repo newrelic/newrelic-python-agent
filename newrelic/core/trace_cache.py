@@ -398,6 +398,10 @@ class TraceCache(MutableMapping):
     # MutableMapping methods
 
     def items(self):
+        """
+        Safely iterates on self._cache.items() indirectly using a list of value references
+        to avoid RuntimeErrors from size changes during iteration.
+        """
         for wr in self._cache.valuerefs():
             value = wr()  # Dereferenced value is potentially no longer live.
             if (
@@ -406,11 +410,22 @@ class TraceCache(MutableMapping):
                 yield wr.key, value  # wr.key is the original dict key
 
     def keys(self):
+        """
+        Iterates on self._cache.keys() indirectly using a list of value references
+        to avoid RuntimeErrors from size changes during iteration.
+
+        NOTE: Returned keys are keys to weak references which may at any point be garbage collected.
+        It is only safe to retrieve values from the trace cache using trace_cache.get(key, None).
+        Retrieving values using trace_cache[key] can cause a KeyError if the item has been garbage collected.
+        """
         for wr in self._cache.valuerefs():
             yield wr.key  # wr.key is the original dict key
 
     def values(self):
-        """Safely iterates on self._cache.values() indirectly using"""
+        """
+        Safely iterates on self._cache.values() indirectly using a list of value references
+        to avoid RuntimeErrors from size changes during iteration.
+        """
         for wr in self._cache.valuerefs():
             value = wr()  # Dereferenced value is potentially no longer live.
             if (

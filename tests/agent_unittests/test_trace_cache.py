@@ -52,8 +52,8 @@ def test_trace_cache_methods(trace_cache):
     assert len(list(trace_cache.values())) == 1
 
 
-@pytest.fixture(scope="session")
-def iterate_trace_cache():
+@pytest.fixture(scope="function")
+def iterate_trace_cache(trace_cache):
     def _iterate_trace_cache(shutdown):
         while True:
             if shutdown.is_set():
@@ -68,8 +68,8 @@ def iterate_trace_cache():
     return _iterate_trace_cache
 
 
-@pytest.fixture(scope="session")
-def change_weakref_dict_size():
+@pytest.fixture(scope="function")
+def change_weakref_dict_size(trace_cache):
     def _change_weakref_dict_size(shutdown):
         """
         Cause RuntimeErrors when iterating on the trace_cache by:
@@ -96,7 +96,7 @@ def change_weakref_dict_size():
     return _change_weakref_dict_size
 
 
-def test_concurrent_iteration(trace_cache, iterate_trace_cache, change_weakref_dict_size):
+def test_concurrent_iteration(iterate_trace_cache, change_weakref_dict_size):
     """
     Test for exceptions related to trace_cache changing size during iteration.
 

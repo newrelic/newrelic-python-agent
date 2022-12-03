@@ -16,6 +16,12 @@
 		// "ghcr.io/devcontainers/features/aws-cli:1": {},
 		// "ghcr.io/devcontainers/features/github-cli:1": {}
 	},
+	"containerEnv": {
+		"NEW_RELIC_HOST": "${localEnv:NEW_RELIC_HOST}",
+		"NEW_RELIC_LICENSE_KEY": "${localEnv:NEW_RELIC_LICENSE_KEY}",
+		"NEW_RELIC_INSERT_KEY": "${localEnv:NEW_RELIC_INSERT_KEY}",
+		"NEW_RELIC_DEVELOPER_MODE": "${localEnv:NEW_RELIC_DEVELOPER_MODE}"
+	},
 	"customizations": {
 		"vscode": {
 			"settings": {},

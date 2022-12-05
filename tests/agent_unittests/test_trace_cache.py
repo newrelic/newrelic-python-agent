@@ -18,7 +18,6 @@ import pytest
 
 from newrelic.core.trace_cache import TraceCache
 
-
 _test_concurrent_iteration_tc_size = 20
 
 

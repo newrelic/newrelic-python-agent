@@ -2791,6 +2791,18 @@ def _process_module_builtin_defaults():
     _process_module_definition("tastypie.api", "newrelic.hooks.component_tastypie", "instrument_tastypie_api")
 
     _process_module_definition(
+        "sklearn.tree._classes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_tree_models",
+    )
+    # In scikit-learn < 0.21 the model classes are in tree.py instead of _classes.py.
+    _process_module_definition(
+        "sklearn.tree.tree",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_tree_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",

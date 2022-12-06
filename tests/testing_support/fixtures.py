@@ -1483,34 +1483,40 @@ def code_coverage_fixture(source=None):
     if source is None:
         source = ["newrelic"]
 
+    github_actions = bool(os.environ.get("GITHUB_ACTIONS", None))
+    tox_env_directory = os.environ.get("TOX_ENVDIR", None)
+
+    if tox_env_directory:
+        data_file = os.path.join(tox_env_directory, ".coverage")
+        data_suffix = os.path.split(tox_env_directory)[-1]
+        coverage_directory = os.path.join(tox_env_directory, "htmlcov")
+        xml_report = os.path.join(tox_env_directory, "coverage.xml")
+    else:
+        data_file = ".coverage"
+        data_suffix = None
+        coverage_directory = "htmlcov"
+        xml_report = "coverage.xml"
+
+
     @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:
             return
 
-        if os.environ.get("GITHUB_ACTIONS") is not None:
-            return
-
         from coverage import coverage
 
-        env_directory = os.environ.get("TOX_ENVDIR", None)
+        cov = coverage(source=source, data_file=data_file, data_suffix=data_suffix, branch=True)
+        cov.start()
 
-        if env_directory is not None:
-            coverage_directory = os.path.join(env_directory, "htmlcov")
-            xml_report = os.path.join(env_directory, "coverage.xml")
-        else:
-            coverage_directory = "htmlcov"
-            xml_report = "coverage.xml"
+        yield
 
-        def finalize():
-            cov.stop()
+        # At exit, stop coverage and save to data file
+        cov.stop()
+        cov.save()
+        if not github_actions:
+            # Run html and xml reports locally
             cov.html_report(directory=coverage_directory)
             cov.xml_report(outfile=xml_report)
-
-        request.addfinalizer(finalize)
-
-        cov = coverage(source=source, branch=True)
-        cov.start()
 
     return _code_coverage_fixture
 

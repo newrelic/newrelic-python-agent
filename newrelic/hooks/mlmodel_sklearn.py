@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
@@ -37,45 +38,54 @@ def _wrap_predict_return_type(data, model_name):
     """
     import numpy as np
 
-    if isinstance(data, np.ndarray):
+    try:
+        # Numpy NDArrays require special implementation to subclass.
+        if isinstance(data, np.ndarray):
 
-        class NRNumpyNDArray(np.ndarray):
-            _nr_wrapped_model_name = model_name
-
-            def __array_wrap__(self, obj):
-                if obj.shape == ():
-                    return obj[()]  # if ufunc output is scalar, return it
-                else:
-                    return np.ndarray.__array_wrap__(self, obj)
-
-        return data.view(NRNumpyNDArray)
-
-    if isinstance(data, (bool)):
-        if PY2:
-            class NRBoolType():
+            class NRNumpyNDArray(np.ndarray):
                 _nr_wrapped_model_name = model_name
-                def __init__(self, value):
-                    self.value = value
 
-                def __nonzero__(self):
-                    return bool(self.value)
-        else:
-            class NRBoolType():
-                _nr_wrapped_model_name = model_name
-                def __init__(self, value):
-                    self.value = value
+                def __array_wrap__(self, obj):
+                    if obj.shape == ():
+                        return obj[()]  # if ufunc output is scalar, return it
+                    else:
+                        return np.ndarray.__array_wrap__(self, obj)
 
-                def  __bool__(self):
-                    return bool(self.value)
+            return data.view(NRNumpyNDArray)
 
-        return NRBoolType(data)
+        # Booleans are singletons and require special implementation to subclass.
+        if isinstance(data, (bool)):
+            if PY2:
 
-    if isinstance(data, (str, int, float, list)):
+                class NRBoolType:
+                    _nr_wrapped_model_name = model_name
 
+                    def __init__(self, value):
+                        self.value = value
+
+                    def __nonzero__(self):
+                        return bool(self.value)
+
+            else:
+
+                class NRBoolType:
+                    _nr_wrapped_model_name = model_name
+
+                    def __init__(self, value):
+                        self.value = value
+
+                    def __bool__(self):
+                        return bool(self.value)
+
+            return NRBoolType(data)
+
+        # Attempt to subclass the type directly.
         class NRWrapType(type(data)):
             _nr_wrapped_model_name = model_name
 
         return NRWrapType(data)
+    except:  # Squash any exceptions resulting from attempted wrap typing.
+        pass
     return data
 
 

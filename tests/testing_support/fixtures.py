@@ -1497,7 +1497,6 @@ def code_coverage_fixture(source=None):
         coverage_directory = "htmlcov"
         xml_report = "coverage.xml"
 
-
     @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:

@@ -26,7 +26,7 @@ on:
 
 jobs:
   # Aggregate job that provides a single check for all tests passing
-  tests: 
+  tests:
     runs-on: ubuntu-20.04
     needs:
       - python
@@ -52,8 +52,8 @@ jobs:
   coverage:
     runs-on: ubuntu-20.04
     needs:
-     - tests
-    
+      - tests
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4

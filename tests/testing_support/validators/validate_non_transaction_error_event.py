@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
+from time import time
 
 from testing_support.fixtures import core_application_stats_engine
 
@@ -54,7 +54,7 @@ def validate_non_transaction_error_event(required_intrinsics=None, num_errors=1,
                 assert intrinsics["error.class"] == required_intrinsics["error.class"]
                 assert intrinsics["error.message"].startswith(required_intrinsics["error.message"])
                 assert intrinsics["error.expected"] == required_intrinsics["error.expected"]
-                now = time.time()
+                now = time()
                 assert isinstance(intrinsics["timestamp"], int)
                 assert intrinsics["timestamp"] <= 1000.0 * now
 

@@ -18,10 +18,9 @@ will not result in an error.
 """
 
 from testing_support.db_settings import redis_settings
+from testing_support.fixture.event_loop import event_loop as loop  # noqa
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-
-# from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -111,7 +110,7 @@ async def exercise_redis(client):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_enable_instance(client, loop, monkeypatch):
+def test_fake_conn_pool_enable_instance(client, loop, monkeypatch):  # noqa
     # Get a real connection
     conn = getattr(client, "_pool_or_conn", None)
     if conn is None:
@@ -136,7 +135,7 @@ def test_fake_conn_pool_enable_instance(client, loop, monkeypatch):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_disable_instance(client, loop, monkeypatch):
+def test_fake_conn_pool_disable_instance(client, loop, monkeypatch):  # noqa
     # Get a real connection
     conn = getattr(client, "_pool_or_conn", None)
     if conn is None:

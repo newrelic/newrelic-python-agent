@@ -18,7 +18,7 @@ import pytest
 
 from newrelic.core.trace_cache import TraceCache
 
-_test_concurrent_iteration_tc_size = 20
+_TEST_CONCURRENT_ITERATION_TC_SIZE = 20
 
 
 class DummyTrace(object):
@@ -80,7 +80,7 @@ def change_weakref_dict_size(trace_cache):
             causing the weakref dict to delete them and forcing further size changes.
         """
 
-        dict_size_change = _test_concurrent_iteration_tc_size // 2  # Remove up to half of items
+        dict_size_change = _TEST_CONCURRENT_ITERATION_TC_SIZE // 2  # Remove up to half of items
         while True:
             if shutdown.is_set():
                 return
@@ -106,7 +106,7 @@ def test_concurrent_iteration(iterate_trace_cache, change_weakref_dict_size):
     on it in any way other than indirectly through WeakValueDictionary.valuerefs()
     will cause RuntimeErrors due to the unguarded iteration on a dictionary internally.
     """
-    obj_refs = [DummyTrace() for _ in range(_test_concurrent_iteration_tc_size)]
+    obj_refs = [DummyTrace() for _ in range(_TEST_CONCURRENT_ITERATION_TC_SIZE)]
     shutdown = threading.Event()
 
     t1 = threading.Thread(target=change_weakref_dict_size, args=(shutdown, obj_refs))

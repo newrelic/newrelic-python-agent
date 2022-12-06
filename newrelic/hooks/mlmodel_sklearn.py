@@ -56,6 +56,7 @@ def _wrap_predict_return_type(data, model_name):
         # Booleans are singletons and require special implementation to subclass.
         if isinstance(data, (bool)):
             if PY2:
+
                 class NRBoolType:
                     _nr_wrapped_model_name = model_name
 

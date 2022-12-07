@@ -12,20 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import sqlite3
-import newrelic.packages.six as six
-import pytest
+import sys
 
-from testing_support.fixtures import override_application_settings, dt_enabled
+import pytest
+from _test_code_level_metrics import (
+    CLASS_INSTANCE,
+    CLASS_INSTANCE_CALLABLE,
+    TYPE_CONSTRUCTOR_CALLABLE_CLASS_INSTANCE,
+    TYPE_CONSTRUCTOR_CLASS_INSTANCE,
+    ExerciseClass,
+    ExerciseClassCallable,
+    ExerciseTypeConstructor,
+    ExerciseTypeConstructorCallable,
+)
+from _test_code_level_metrics import __file__ as FILE_PATH
+from _test_code_level_metrics import (
+    exercise_function,
+    exercise_lambda,
+    exercise_partial,
+)
+from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 
+import newrelic.packages.six as six
 from newrelic.api.background_task import background_task
-from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
-
-from _test_code_level_metrics import *
-from _test_code_level_metrics import __file__ as FILE_PATH
-
+from newrelic.api.function_trace import FunctionTrace
 
 is_pypy = hasattr(sys, "pypy_version_info")
 

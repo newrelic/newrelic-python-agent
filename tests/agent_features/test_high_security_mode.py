@@ -217,7 +217,10 @@ def test_local_config_file_override_hsm_disabled(settings):
     assert settings.custom_insights_events.enabled == original_custom_events
     assert settings.message_tracer.segment_parameters_enabled == original_message_segment_params_enabled
     assert settings.application_logging.forwarding.enabled == original_application_logging_forwarding_enabled
-    assert settings.machine_learning.inference_event_value.enabled == original_machine_learning_inference_event_value_enabled
+    assert (
+        settings.machine_learning.inference_event_value.enabled
+        == original_machine_learning_inference_event_value_enabled
+    )
 
 
 @parameterize_hsm_local_config(_hsm_local_config_file_settings_enabled)

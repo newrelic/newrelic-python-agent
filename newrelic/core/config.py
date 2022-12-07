@@ -121,6 +121,14 @@ class GCRuntimeMetricsSettings(Settings):
     enabled = False
 
 
+class MachineLearningSettings(Settings):
+    pass
+
+
+class MachineLearningInferenceEventValueSettings(Settings):
+    pass
+
+
 class CodeLevelMetricsSettings(Settings):
     pass
 
@@ -359,6 +367,8 @@ _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
+_settings.machine_learning = MachineLearningSettings()
+_settings.machine_learning.inference_event_value = MachineLearningInferenceEventValueSettings()
 _settings.attributes = AttributesSettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
 _settings.code_level_metrics = CodeLevelMetricsSettings()
@@ -820,6 +830,9 @@ _settings.application_logging.metrics.enabled = _environ_as_bool(
 )
 _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
+)
+_settings.machine_learning.inference_event_value.enabled = _environ_as_bool(
+    "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=True
 )
 
 

@@ -2163,6 +2163,11 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("flask_restful", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
     _process_module_definition(
+        "flask_restplus.api",
+        "newrelic.hooks.component_flask_rest",
+        "instrument_flask_rest",
+    )
+    _process_module_definition(
         "flask_restx.api",
         "newrelic.hooks.component_flask_rest",
         "instrument_flask_rest",
@@ -2792,128 +2797,164 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "sklearn.tree._classes",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_tree_models",
     )
     # In scikit-learn < 0.21 the model classes are in tree.py instead of _classes.py.
     _process_module_definition(
         "sklearn.tree.tree",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_tree_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._bagging",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.bagging",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._forest",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.forest",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._iforest",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.iforest",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._weight_boosting",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.weight_boosting",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._gb",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.gradient_boosting",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._voting",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.voting_classifier",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._stacking",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._hist_gradient_boosting.gradient_boosting",
-        "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._affinity_propagation",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._agglomerative",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._birch",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._bisect_k_means",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._dbscan",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._feature_agglomeration",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._kmeans",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._mean_shift",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._optics",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._spectral",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(
         "sklearn.cluster._bicluster",
         "newrelic.hooks.component_sklearn",
-        "instrument_sklearn_models",
+        "instrument_sklearn_cluster_models",
     )
 
     _process_module_definition(

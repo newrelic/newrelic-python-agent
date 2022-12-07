@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 22.6.0
+    hooks:
+      - id: black
+        language_version: python3
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        args: ["--skip", "migrations", "--profile", "black"]
+  - repo: https://github.com/PyCQA/flake8
+    rev: 5.0.4
+    hooks:
+      - id: flake8
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.4
+    hooks:
+      - id: bandit
+        args: ["-x", "./tests", "--skip", "B101,B110,B404,B608"]
+  - repo: https://github.com/PyCQA/pylint
+    rev: v2.15.5
+    hooks:
+      - id: pylint
+        args: ["--fail-under=0", "--fail-on=E"]

@@ -19,7 +19,7 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
 )
 
 _coverage_source = [
-    "newrelic.hooks.component_sklearn",
+    "newrelic.hooks.mlmodel_sklearn",
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
@@ -32,7 +32,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
 }
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (component_sklearn)",
+    app_name="Python Agent Test (mlmodel_sklearn)",
     default_settings=_default_settings,
-    linked_applications=["Python Agent Test (component_sklearn)"],
+    linked_applications=["Python Agent Test (mlmodel_sklearn)"],
 )

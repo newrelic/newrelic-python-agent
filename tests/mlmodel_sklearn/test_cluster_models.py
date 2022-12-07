@@ -13,20 +13,16 @@
 # limitations under the License.
 
 import pytest
-from sklearn import __version__
+from sklearn import __version__  # noqa: this is needed for get_package_version
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
-
-# from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
 
-# SKLEARN_VERSION = get_package_version("sklearn")    # Does not work on PY3+
-
-
-SKLEARN_VERSION = __version__
+SKLEARN_VERSION = get_package_version("sklearn")
 
 SKLEARN_BELOW_v1_0 = SKLEARN_VERSION < "1.0"
 SKLEARN_v1_0_TO_v1_1 = SKLEARN_VERSION >= "1.0" and SKLEARN_VERSION < "1.1"
@@ -51,6 +47,7 @@ def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster
                 1 if SKLEARN_v1_1_AND_ABOVE or SKLEARN_v1_0_TO_v1_1 else 3,
             ),
             ("Function/MLModel/Sklearn/Named/Birch.fit_predict", 1),
+            ("Function/MLModel/Sklearn/Named/Birch.transform", 1),
         ],
         "DBSCAN": [
             ("Function/MLModel/Sklearn/Named/DBSCAN.fit", 2),
@@ -58,11 +55,13 @@ def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster
         ],
         "FeatureAgglomeration": [
             ("Function/MLModel/Sklearn/Named/FeatureAgglomeration.fit", 1),
+            ("Function/MLModel/Sklearn/Named/FeatureAgglomeration.transform", 1),
         ],
         "KMeans": [
             ("Function/MLModel/Sklearn/Named/KMeans.fit", 2),
             ("Function/MLModel/Sklearn/Named/KMeans.predict", 1),
             ("Function/MLModel/Sklearn/Named/KMeans.fit_predict", 1),
+            ("Function/MLModel/Sklearn/Named/KMeans.transform", 1),
         ],
         "MeanShift": [
             ("Function/MLModel/Sklearn/Named/MeanShift.fit", 2),
@@ -159,6 +158,8 @@ def run_cluster_model(cluster_model_name):
             model.predict_log_proba(x_test)
         if hasattr(model, "predict_proba"):
             model.predict_proba(x_test)
+        if hasattr(model, "transform"):
+            model.transform(x_test)
 
         return model
 

@@ -62,9 +62,13 @@ def merge_dicts(A, B):
     return d
 
 
-def extract(obj):
-    with FunctionTrace("_test", source=obj):
-        pass
+@pytest.fixture
+def extract():
+    def _extract(obj):
+        with FunctionTrace("_test", source=obj):
+            pass
+
+    return _extract
 
 
 _TEST_BASIC_CALLABLES = {
@@ -127,7 +131,7 @@ _TEST_BASIC_CALLABLES = {
     "func,args,agents",
     [pytest.param(*args, id=id_) for id_, args in six.iteritems(_TEST_BASIC_CALLABLES)],
 )
-def test_code_level_metrics_basic_callables(func, args, agents):
+def test_code_level_metrics_basic_callables(func, args, agents, extract):
     @override_application_settings(
         {
             "code_level_metrics.enabled": True,
@@ -204,7 +208,7 @@ _TEST_METHODS = {
     "func,args,agents",
     [pytest.param(*args, id=id_) for id_, args in six.iteritems(_TEST_METHODS)],
 )
-def test_code_level_metrics_methods(func, args, agents):
+def test_code_level_metrics_methods(func, args, agents, extract):
     @override_application_settings(
         {
             "code_level_metrics.enabled": True,
@@ -281,7 +285,7 @@ _TEST_TYPE_CONSTRUCTOR_METHODS = {
     "func,args,agents",
     [pytest.param(*args, id=id_) for id_, args in six.iteritems(_TEST_TYPE_CONSTRUCTOR_METHODS)],
 )
-def test_code_level_metrics_type_constructor_methods(func, args, agents):
+def test_code_level_metrics_type_constructor_methods(func, args, agents, extract):
     @override_application_settings(
         {
             "code_level_metrics.enabled": True,
@@ -350,7 +354,7 @@ _TEST_OBJECTS = {
     "obj,agents",
     [pytest.param(*args, id=id_) for id_, args in six.iteritems(_TEST_OBJECTS)],
 )
-def test_code_level_metrics_objects(obj, agents):
+def test_code_level_metrics_objects(obj, agents, extract):
     @override_application_settings(
         {
             "code_level_metrics.enabled": True,

@@ -28,6 +28,11 @@ try:
 except ImportError:
     import _thread as thread
 
+try:
+    from collections.abc import MutableMapping
+except ImportError:
+    from collections import MutableMapping
+
 from newrelic.core.config import global_settings
 from newrelic.core.loop_node import LoopNode
 
@@ -92,7 +97,7 @@ class TraceCacheActiveTraceError(RuntimeError):
     pass
 
 
-class TraceCache(object):
+class TraceCache(MutableMapping):
     asyncio = cached_module("asyncio")
     greenlet = cached_module("greenlet")
 
@@ -100,7 +105,7 @@ class TraceCache(object):
         self._cache = weakref.WeakValueDictionary()
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), str(dict(self._cache.items())))
+        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), str(dict(self.items())))
 
     def current_thread_id(self):
         """Returns the thread ID for the caller.
@@ -135,10 +140,10 @@ class TraceCache(object):
     def task_start(self, task):
         trace = self.current_trace()
         if trace:
-            self._cache[id(task)] = trace
+            self[id(task)] = trace
 
     def task_stop(self, task):
-        self._cache.pop(id(task), None)
+        self.pop(id(task), None)
 
     def current_transaction(self):
         """Return the transaction object if one exists for the currently
@@ -146,11 +151,11 @@ class TraceCache(object):
 
         """
 
-        trace = self._cache.get(self.current_thread_id())
+        trace = self.get(self.current_thread_id())
         return trace and trace.transaction
 
     def current_trace(self):
-        return self._cache.get(self.current_thread_id())
+        return self.get(self.current_thread_id())
 
     def active_threads(self):
         """Returns an iterator over all current stack frames for all
@@ -169,7 +174,7 @@ class TraceCache(object):
         # First yield up those for real Python threads.
 
         for thread_id, frame in sys._current_frames().items():
-            trace = self._cache.get(thread_id)
+            trace = self.get(thread_id)
             transaction = trace and trace.transaction
             if transaction is not None:
                 if transaction.background_task:
@@ -197,7 +202,7 @@ class TraceCache(object):
         debug = global_settings().debug
 
         if debug.enable_coroutine_profiling:
-            for thread_id, trace in list(self._cache.items()):
+            for thread_id, trace in self.items():
                 transaction = trace.transaction
                 if transaction and transaction._greenlet is not None:
                     gr = transaction._greenlet()
@@ -212,7 +217,7 @@ class TraceCache(object):
         trace in the cache is from a different task (for asyncio). Returns the
         current trace after the cache is updated."""
         thread_id = self.current_thread_id()
-        trace = self._cache.get(thread_id)
+        trace = self.get(thread_id)
         if not trace:
             return None
 
@@ -221,11 +226,11 @@ class TraceCache(object):
 
         task = current_task(self.asyncio)
         if task is not None and id(trace._task) != id(task):
-            self._cache.pop(thread_id, None)
+            self.pop(thread_id, None)
             return None
 
         if trace.root and trace.root.exited:
-            self._cache.pop(thread_id, None)
+            self.pop(thread_id, None)
             return None
 
         return trace
@@ -240,8 +245,8 @@ class TraceCache(object):
 
         thread_id = trace.thread_id
 
-        if thread_id in self._cache:
-            cache_root = self._cache[thread_id].root
+        if thread_id in self:
+            cache_root = self[thread_id].root
             if cache_root and cache_root is not trace.root and not cache_root.exited:
                 # Cached trace exists and has a valid root still
                 _logger.error(
@@ -253,7 +258,7 @@ class TraceCache(object):
 
                 raise TraceCacheActiveTraceError("transaction already active")
 
-        self._cache[thread_id] = trace
+        self[thread_id] = trace
 
         # We judge whether we are actually running in a coroutine by
         # seeing if the current thread ID is actually listed in the set
@@ -284,7 +289,7 @@ class TraceCache(object):
 
         thread_id = trace.thread_id
         parent = trace.parent
-        self._cache[thread_id] = parent
+        self[thread_id] = parent
 
     def complete_root(self, root):
         """Completes a trace specified by the given root
@@ -301,7 +306,7 @@ class TraceCache(object):
                 to_complete = []
 
                 for task_id in task_ids:
-                    entry = self._cache.get(task_id)
+                    entry = self.get(task_id)
 
                     if entry and entry is not root and entry.root is root:
                         to_complete.append(entry)
@@ -316,12 +321,12 @@ class TraceCache(object):
 
         thread_id = root.thread_id
 
-        if thread_id not in self._cache:
+        if thread_id not in self:
             thread_id = self.current_thread_id()
-            if thread_id not in self._cache:
+            if thread_id not in self:
                 raise TraceCacheNoActiveTraceError("no active trace")
 
-        current = self._cache.get(thread_id)
+        current = self.get(thread_id)
 
         if root is not current:
             _logger.error(
@@ -333,7 +338,7 @@ class TraceCache(object):
 
             raise RuntimeError("not the current trace")
 
-        del self._cache[thread_id]
+        del self[thread_id]
         root._greenlet = None
 
     def record_event_loop_wait(self, start_time, end_time):
@@ -359,7 +364,7 @@ class TraceCache(object):
         task = getattr(transaction.root_span, "_task", None)
         loop = get_event_loop(task)
 
-        for trace in list(self._cache.values()):
+        for trace in self.values():
             if trace in seen:
                 continue
 
@@ -389,6 +394,62 @@ class TraceCache(object):
             transaction._process_node(node)
             root.increment_child_count()
             root.add_child(node)
+
+    # MutableMapping methods
+
+    def items(self):
+        """
+        Safely iterates on self._cache.items() indirectly using a list of value references
+        to avoid RuntimeErrors from size changes during iteration.
+        """
+        for wr in self._cache.valuerefs():
+            value = wr()  # Dereferenced value is potentially no longer live.
+            if (
+                value is not None
+            ):  # weakref is None means weakref has been garbage collected and is no longer live. Ignore.
+                yield wr.key, value  # wr.key is the original dict key
+
+    def keys(self):
+        """
+        Iterates on self._cache.keys() indirectly using a list of value references
+        to avoid RuntimeErrors from size changes during iteration.
+
+        NOTE: Returned keys are keys to weak references which may at any point be garbage collected.
+        It is only safe to retrieve values from the trace cache using trace_cache.get(key, None).
+        Retrieving values using trace_cache[key] can cause a KeyError if the item has been garbage collected.
+        """
+        for wr in self._cache.valuerefs():
+            yield wr.key  # wr.key is the original dict key
+
+    def values(self):
+        """
+        Safely iterates on self._cache.values() indirectly using a list of value references
+        to avoid RuntimeErrors from size changes during iteration.
+        """
+        for wr in self._cache.valuerefs():
+            value = wr()  # Dereferenced value is potentially no longer live.
+            if (
+                value is not None
+            ):  # weakref is None means weakref has been garbage collected and is no longer live. Ignore.
+                yield value
+
+    def __getitem__(self, key):
+        return self._cache.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        self._cache.__setitem__(key, value)
+
+    def __delitem__(self, key):
+        self._cache.__delitem__(key)
+
+    def __iter__(self):
+        return self.keys()
+
+    def __len__(self):
+        return self._cache.__len__()
+
+    def __bool__(self):
+        return bool(self._cache.__len__())
 
 
 _trace_cache = TraceCache()

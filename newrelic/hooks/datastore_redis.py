@@ -55,6 +55,7 @@ _redis_client_methods = {
     "bgsave",
     "bitcount",
     "bitfield",
+    "bitfield_ro",
     "bitop_and",
     "bitop_not",
     "bitop_or",

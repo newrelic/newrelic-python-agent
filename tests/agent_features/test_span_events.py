@@ -34,7 +34,6 @@ from newrelic.api.database_trace import DatabaseTrace
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace, function_trace
-from newrelic.api.graphql_trace import GraphQLOperationTrace, GraphQLResolverTrace
 from newrelic.api.memcache_trace import MemcacheTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.solr_trace import SolrTrace
@@ -125,8 +124,6 @@ def test_span_events(dt_enabled, span_events_enabled, txn_sampled):
         (DatastoreTrace, ("db_product", "db_target", "db_operation")),
         (ExternalTrace, ("lib", "url")),
         (FunctionTrace, ("name",)),
-        (GraphQLOperationTrace, ()),
-        (GraphQLResolverTrace, ()),
         (MemcacheTrace, ("command",)),
         (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
         (SolrTrace, ("lib", "command")),
@@ -416,11 +413,11 @@ def test_datastore_span_limits(kwarg_override, attribute_override):
 @pytest.mark.parametrize("collect_span_events", (False, True))
 @pytest.mark.parametrize("span_events_enabled", (False, True))
 def test_collect_span_events_override(collect_span_events, span_events_enabled):
-
-    if collect_span_events and span_events_enabled:
-        spans_expected = True
-    else:
-        spans_expected = False
+    spans_expected = collect_span_events and span_events_enabled
+    # if collect_span_events and span_events_enabled:
+    #     spans_expected = True
+    # else:
+    #     spans_expected = False
 
     span_count = 2 if spans_expected else 0
 
@@ -556,9 +553,9 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
 def test_span_user_attribute_overrides_transaction_attribute():
     transaction = current_transaction()
 
-    transaction.add_custom_attribute("foo", "a")
+    transaction.add_custom_parameter("foo", "a")
     add_custom_span_attribute("foo", "b")
-    transaction.add_custom_attribute("foo", "c")
+    transaction.add_custom_parameter("foo", "c")
 
 
 @override_application_settings({"attributes.include": "*"})
@@ -603,7 +600,7 @@ def test_span_custom_attribute_limit():
         transaction = current_transaction()
 
         for i in range(128):
-            transaction.add_custom_attribute("txn_attr%i" % i, "txnValue")
+            transaction.add_custom_parameter("txn_attr%i" % i, "txnValue")
             if i < 64:
                 add_custom_span_attribute("span_attr%i" % i, "spanValue")
 
@@ -620,8 +617,6 @@ _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
         (DatastoreTrace, ("db_product", "db_target", "db_operation")),
         (ExternalTrace, ("lib", "url")),
         (FunctionTrace, ("name",)),
-        (GraphQLOperationTrace, ()),
-        (GraphQLResolverTrace, ()),
         (MemcacheTrace, ("command",)),
         (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
         (SolrTrace, ("lib", "command")),
@@ -671,8 +666,6 @@ def test_span_event_error_attributes_notice_error(trace_type, args):
         (DatastoreTrace, ("db_product", "db_target", "db_operation")),
         (ExternalTrace, ("lib", "url")),
         (FunctionTrace, ("name",)),
-        (GraphQLOperationTrace, ()),
-        (GraphQLResolverTrace, ()),
         (MemcacheTrace, ("command",)),
         (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
         (SolrTrace, ("lib", "command")),
@@ -716,8 +709,6 @@ def test_span_event_error_attributes_observed(trace_type, args):
         (DatastoreTrace, ("db_product", "db_target", "db_operation")),
         (ExternalTrace, ("lib", "url")),
         (FunctionTrace, ("name",)),
-        (GraphQLOperationTrace, ()),
-        (GraphQLResolverTrace, ()),
         (MemcacheTrace, ("command",)),
         (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
         (SolrTrace, ("lib", "command")),
@@ -732,9 +723,9 @@ def test_span_event_notice_error_overrides_observed(trace_type, args):
         with trace_type(*args):
             try:
                 raise ERROR
-            except:
+            except Exception:
                 notice_error()
-                raise ValueError
+                raise ValueError  # pylint: disable
     except ValueError:
         pass
 

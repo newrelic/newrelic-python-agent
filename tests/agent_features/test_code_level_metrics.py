@@ -248,7 +248,8 @@ _TEST_TYPE_CONSTRUCTOR_METHODS = {
             "code.filepath": FILE_PATH,
             "code.function": "<lambda>",
             "code.lineno": 61,
-            "code.namespace": NAMESPACE,
+            # Lambdas behave strangely in type constructors on Python 2 and use the class namespace.
+            "code.namespace": NAMESPACE if six.PY3 else TYPE_CONSTRUCTOR_NAMESPACE,
         },
     ),
     "call_method": (

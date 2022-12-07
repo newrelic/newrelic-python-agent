@@ -46,7 +46,7 @@ class ContextOf(object):
         elif trace is not None:
             self.trace = trace
         elif trace_cache_id is not None:
-            self.trace = self.trace_cache._cache.get(trace_cache_id, None)
+            self.trace = self.trace_cache.get(trace_cache_id, None)
             if self.trace is None:
                 log_propagation_failure("No trace with id %d." % trace_cache_id)
         elif hasattr(request, "_nr_trace") and request._nr_trace is not None:
@@ -60,11 +60,11 @@ class ContextOf(object):
             self.thread_id = self.trace_cache.current_thread_id()
 
             # Save previous cache contents
-            self.restore = self.trace_cache._cache.get(self.thread_id, None)
+            self.restore = self.trace_cache.get(self.thread_id, None)
             self.should_restore = True
 
             # Set context in trace cache
-            self.trace_cache._cache[self.thread_id] = self.trace
+            self.trace_cache[self.thread_id] = self.trace
 
         return self
 
@@ -72,10 +72,10 @@ class ContextOf(object):
         if self.should_restore:
             if self.restore is not None:
                 # Restore previous contents
-                self.trace_cache._cache[self.thread_id] = self.restore
+                self.trace_cache[self.thread_id] = self.restore
             else:
                 # Remove entry from cache
-                self.trace_cache._cache.pop(self.thread_id)
+                self.trace_cache.pop(self.thread_id)
 
 
 def context_wrapper(func, trace=None, request=None, trace_cache_id=None, strict=True):

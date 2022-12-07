@@ -140,7 +140,7 @@ def test_record_event_loop_wait(event_loop, blocking_transaction_active, event_l
 def test_record_event_loop_wait_outside_task():
     # Insert a random trace into the trace cache
     trace = FunctionTrace(name="testing")
-    trace_cache()._cache[0] = trace
+    trace_cache()[0] = trace
 
     @background_task(name="test_record_event_loop_wait_outside_task")
     def _test():

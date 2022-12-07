@@ -32,6 +32,8 @@ is_pypy = hasattr(sys, "pypy_version_info")
 NAMESPACE = "_test_code_level_metrics"
 CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClass"))
 CALLABLE_CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClassCallable"))
+TYPE_CONSTRUCTOR_NAMESPACE = ".".join((NAMESPACE, "ExerciseTypeConstructor"))
+TYPE_CONSTRUCTOR_CALLABLE_NAMESPACE = ".".join((NAMESPACE, "ExerciseTypeConstructorCallable"))
 FUZZY_NAMESPACE = CLASS_NAMESPACE if six.PY3 else NAMESPACE
 if FILE_PATH.endswith(".pyc"):
     FILE_PATH = FILE_PATH[:-1]
@@ -208,7 +210,82 @@ def test_code_level_metrics_methods(func, args, agents):
     _test()
 
 
+_TEST_TYPE_CONSTRUCTOR_METHODS = {
+    "method": (
+        TYPE_CONSTRUCTOR_CLASS_INSTANCE.exercise_method,
+        (),
+        {
+            "code.filepath": FILE_PATH,
+            "code.function": "exercise_method",
+            "code.lineno": 39,
+            "code.namespace": TYPE_CONSTRUCTOR_NAMESPACE,
+        },
+    ),
+    "static_method": (
+        TYPE_CONSTRUCTOR_CLASS_INSTANCE.exercise_static_method,
+        (),
+        {
+            "code.filepath": FILE_PATH,
+            "code.function": "exercise_static_method",
+            "code.lineno": 43,
+            "code.namespace": NAMESPACE,
+        },
+    ),
+    "class_method": (
+        ExerciseTypeConstructor.exercise_class_method,
+        (),
+        {
+            "code.filepath": FILE_PATH,
+            "code.function": "exercise_class_method",
+            "code.lineno": 48,
+            "code.namespace": TYPE_CONSTRUCTOR_NAMESPACE,
+        },
+    ),
+    "lambda_method": (
+        ExerciseTypeConstructor.exercise_lambda,
+        (),
+        {
+            "code.filepath": FILE_PATH,
+            "code.function": "<lambda>",
+            "code.lineno": 61,
+            "code.namespace": NAMESPACE,
+        },
+    ),
+    "call_method": (
+        TYPE_CONSTRUCTOR_CALLABLE_CLASS_INSTANCE,
+        (),
+        {
+            "code.filepath": FILE_PATH,
+            "code.function": "__call__",
+            "code.lineno": 53,
+            "code.namespace": TYPE_CONSTRUCTOR_CALLABLE_NAMESPACE,
+        },
+    ),
+}
+
+
 @pytest.mark.parametrize(
+    "func,args,agents",
+    [pytest.param(*args, id=id_) for id_, args in six.iteritems(_TEST_TYPE_CONSTRUCTOR_METHODS)],
+)
+def test_code_level_metrics_type_constructor_methods(func, args, agents):
+    @override_application_settings(
+        {
+            "code_level_metrics.enabled": True,
+        }
+    )
+    @dt_enabled
+    @validate_span_events(
+        count=1,
+        exact_agents=agents,
+    )
+    @background_task()
+    def _test():
+        extract(func)
+
+    _test()
+
+
 _TEST_OBJECTS = {
     "class": (
         ExerciseClass,

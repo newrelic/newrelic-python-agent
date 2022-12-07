@@ -13,15 +13,20 @@
 # limitations under the License.
 
 import pytest
+from sklearn import __version__
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
+
+# from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
 
-SKLEARN_VERSION = get_package_version("sklearn")
+# SKLEARN_VERSION = get_package_version("sklearn")    # Does not work on PY3+
+
+
+SKLEARN_VERSION = __version__
 
 SKLEARN_BELOW_v1_0 = SKLEARN_VERSION < "1.0"
 SKLEARN_v1_0_TO_v1_1 = SKLEARN_VERSION >= "1.0" and SKLEARN_VERSION < "1.1"
@@ -41,7 +46,10 @@ def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster
         ],
         "Birch": [
             ("Function/MLModel/Sklearn/Named/Birch.fit", 2),
-            ("Function/MLModel/Sklearn/Named/Birch.predict", 3),
+            (
+                "Function/MLModel/Sklearn/Named/Birch.predict",
+                1 if SKLEARN_v1_1_AND_ABOVE or SKLEARN_v1_0_TO_v1_1 else 3,
+            ),
             ("Function/MLModel/Sklearn/Named/Birch.fit_predict", 1),
         ],
         "DBSCAN": [
@@ -108,13 +116,11 @@ class_params = [
     "AffinityPropagation",
     "AgglomerativeClustering",
     "Birch",
-    # "BisectingKMeans",
     "DBSCAN",
     "FeatureAgglomeration",
     "KMeans",
     "MeanShift",
     "MiniBatchKMeans",
-    # "OPTICS",
     "SpectralBiclustering",
     "SpectralCoclustering",
     "SpectralClustering",

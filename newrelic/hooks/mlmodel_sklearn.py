@@ -47,7 +47,6 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
             # Set the _nr_wrapped attribute to denote that this method is no longer wrapped.
             setattr(trace, wrapped_attr_name, False)
 
-        # breakpoint()
         return return_val
 
     wrap_function_wrapper(module, "%s.%s" % (_class, method), _nr_wrapper_method)
@@ -57,7 +56,6 @@ def _nr_instrument_model(module, model_class):
     for method_name in METHODS_TO_WRAP:
         if hasattr(getattr(module, model_class), method_name):
             # Function/MLModel/Sklearn/Named/<class name>.<method name>
-            # breakpoint()
             name = "MLModel/Sklearn/Named/%s.%s" % (model_class, method_name)
             _wrap_method_trace(module, model_class, method_name, name=name)
 
@@ -65,7 +63,6 @@ def _nr_instrument_model(module, model_class):
 def _instrument_sklearn_models(module, model_classes):
     for model_cls in model_classes:
         if hasattr(module, model_cls):
-            # breakpoint()
             _nr_instrument_model(module, model_cls)
 
 
@@ -99,5 +96,4 @@ def instrument_sklearn_ensemble_models(module):
         "VotingClassifier",
         "VotingRegressor",
     )
-    # breakpoint()
     _instrument_sklearn_models(module, model_classes)

@@ -2922,7 +2922,7 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.linear_model._least_angle",
+        "sklearn.linear_model.least_angle",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_linear_models",
     )

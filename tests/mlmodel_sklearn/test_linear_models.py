@@ -170,20 +170,6 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
             ("Function/MLModel/Sklearn/Named/RidgeClassifierCV.predict", 2),
             ("Function/MLModel/Sklearn/Named/RidgeClassifierCV.score", 1),
         ],
-        "SGDClassifier": [
-            ("Function/MLModel/Sklearn/Named/SGDClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/SGDClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/SGDClassifier.score", 1),
-        ],
-        "SGDRegressor": [
-            ("Function/MLModel/Sklearn/Named/SGDRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/SGDRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/SGDRegressor.score", 1),
-        ],
-        "SGDOneClassSVM": [
-            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.fit", 1),
-            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.predict", 1),
-        ],
         "TheilSenRegressor": [
             ("Function/MLModel/Sklearn/Named/TheilSenRegressor.fit", 1),
             ("Function/MLModel/Sklearn/Named/TheilSenRegressor.predict", 2),
@@ -215,6 +201,20 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
             ("Function/MLModel/Sklearn/Named/QuantileRegressor.fit", 1),
             ("Function/MLModel/Sklearn/Named/QuantileRegressor.predict", 2),
             ("Function/MLModel/Sklearn/Named/QuantileRegressor.score", 1),
+        ]
+        expected_scoped_metrics["SGDClassifier"] = [
+            ("Function/MLModel/Sklearn/Named/SGDClassifier.fit", 1),
+            ("Function/MLModel/Sklearn/Named/SGDClassifier.predict", 2),
+            ("Function/MLModel/Sklearn/Named/SGDClassifier.score", 1),
+        ]
+        expected_scoped_metrics["SGDRegressor"] = [
+            ("Function/MLModel/Sklearn/Named/SGDRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/SGDRegressor.predict", 2),
+            ("Function/MLModel/Sklearn/Named/SGDRegressor.score", 1),
+        ]
+        expected_scoped_metrics["SGDOneClassSVM"] = [
+            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.fit", 1),
+            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.predict", 1),
         ]
 
     expected_transaction_name = "test_linear_models:_test"
@@ -259,19 +259,12 @@ class_params = [
     "PassiveAggressiveClassifier",
     "PassiveAggressiveRegressor",
     "Perceptron",
-    # "QuantileRegressor",
     "Ridge",
     "RidgeCV",
     "RidgeClassifier",
     "RidgeClassifierCV",
-    "SGDClassifier",
-    "SGDRegressor",
-    "SGDOneClassSVM",
     "TheilSenRegressor",
     "RANSACRegressor",
-    # "PoissonRegressor",
-    # "GammaRegressor",
-    # "TweedieRegressor",
 ]
 if SKLEARN_v1_1_AND_ABOVE:
     class_params.extend(
@@ -280,6 +273,9 @@ if SKLEARN_v1_1_AND_ABOVE:
             "GammaRegressor",
             "TweedieRegressor",
             "QuantileRegressor",
+            "SGDClassifier",
+            "SGDRegressor",
+            "SGDOneClassSVM",
         )
     )
 

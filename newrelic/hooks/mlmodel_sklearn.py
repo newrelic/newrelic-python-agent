@@ -32,7 +32,7 @@ METRIC_SCORERS = (
 PY2 = sys.version_info[0] == 2
 
 
-class NumpyReturnTypeProxy(ObjectProxy):
+class PredictReturnTypeProxy(ObjectProxy):
     def __init__(self, wrapped, model_name):
         super(ObjectProxy, self).__init__(wrapped)
         self._nr_model_name = model_name
@@ -68,7 +68,7 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         # If this is the predict method, wrap the return type in an nr type with
         # _nr_wrapped attrs that will attach model info to the data.
         if method == "predict":
-            return NumpyReturnTypeProxy(return_val, model_name=_class)
+            return PredictReturnTypeProxy(return_val, model_name=_class)
         return return_val
 
     wrap_function_wrapper(module, "%s.%s" % (_class, method), _nr_wrapper_method)

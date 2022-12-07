@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import uuid
-
+import numpy as np
+from newrelic.api.application import application_instance
+from newrelic.api.transaction import current_transaction
+from newrelic.core.config import global_settings
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -45,13 +48,30 @@ def wrap_method(wrapped, instance, args, kwargs):
 
     return return_val
 
+
 def bind_predict(x, check_input=True):
     return x, check_input
+
 
 def wrap_predict(wrapped, instance, args, kwargs):
     data_set, check_input = bind_predict(*args, **kwargs)
     inference_id = uuid.uuid4()
+    model_name = instance.__class__.__name__
 
+    #transaction = current_transaction()
+
+    #if transaction:
+    #    settings = transaction.settings
+    #else:
+    #    settings = global_settings()
+
+    #if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
+     #   if transaction:
+     #       transaction.record_custom_event("ML Model Feature Event", {"inference_id": inference_id, "model_name": model_name,})
+     #   else:
+     #       application = application_instance(activate=False)
+     #       if application and application.enabled:
+     #           transaction.record_custom_event("ML Model Feature Event", {"inference_id": inference_id, "model_name": model_name, })
 
     return wrapped(*args, **kwargs)
 

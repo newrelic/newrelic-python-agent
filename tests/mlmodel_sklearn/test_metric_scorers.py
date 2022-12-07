@@ -17,7 +17,7 @@ import pytest
 from testing_support.fixtures import validate_attributes
 
 from newrelic.api.background_task import background_task
-from newrelic.hooks.mlmodel_sklearn import NumpyReturnTypeProxy
+from newrelic.hooks.mlmodel_sklearn import PredictReturnTypeProxy
 
 
 @pytest.mark.parametrize(
@@ -91,8 +91,8 @@ def test_metric_scorer_attributes_unknown_model(metric_scorer_name):
 
 
 @pytest.mark.parametrize("data", (np.array([0, 1]), "foo", 1, 1.0, True, [0, 1], {"foo": "bar"}, (0, 1), np.str_("F")))
-def test_NumpyReturnTypeProxy(data):
-    wrapped_data = NumpyReturnTypeProxy(data, "ModelName")
+def test_PredictReturnTypeProxy(data):
+    wrapped_data = PredictReturnTypeProxy(data, "ModelName")
 
     assert wrapped_data._nr_model_name == "ModelName"
 

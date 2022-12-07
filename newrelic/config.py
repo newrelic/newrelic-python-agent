@@ -2898,13 +2898,37 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.linear_model.base",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
         "sklearn.linear_model._bayes",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_linear_models",
     )
 
     _process_module_definition(
+        "sklearn.linear_model.bayes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
         "sklearn.linear_model._least_angle",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._least_angle",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.coordinate_descent",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_linear_models",
     )
@@ -2927,14 +2951,20 @@ def _process_module_builtin_defaults():
         "instrument_sklearn_linear_models",
     )
 
-    # _process_module_definition(
-    #     "sklearn.linear_model._sgd_fast",
-    #     "newrelic.hooks.mlmodel_sklearn",
-    #     "instrument_sklearn_models",
-    # )
+    _process_module_definition(
+        "sklearn.linear_model.huber",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
 
     _process_module_definition(
         "sklearn.linear_model._stochastic_gradient",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.stochastic_gradient",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_linear_models",
     )
@@ -2946,7 +2976,19 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.linear_model.ridge",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
         "sklearn.linear_model._logistic",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.logistic",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_linear_models",
     )
@@ -2958,19 +3000,31 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.linear_model._passive_aggressive",
+        "sklearn.linear_model.omp",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_linear_models",
     )
 
     _process_module_definition(
         "sklearn.linear_model._passive_aggressive",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.passive_aggressive",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_linear_models",
     )
 
     _process_module_definition(
         "sklearn.linear_model._perceptron",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.perceptron",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_linear_models",
     )
@@ -2988,7 +3042,19 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.linear_model.ransac",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
         "sklearn.linear_model._theil_sen",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.theil_sen",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_linear_models",
     )

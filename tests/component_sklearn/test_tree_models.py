@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pandas
 import pytest
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
@@ -129,26 +130,51 @@ def test_multiple_calls_to_model_methods(tree_model_name, run_tree_model):
 def tree_model_name(request):
     return request.param
 
+integer_data_set = ([[0, 0], [1, 1]], [0, 1], [[2.0, 2.0], [2.0, 1.0]], [1, 1])
+pandas_df_set = (pandas.DataFrame({"col1": [0, 0], "col2": [1, 1]}), pandas.DataFrame({"label": [0, 1]}), pandas.DataFrame({"col1": [2.0, 2.0], "col2": [2.0, 1.0]}), pandas.DataFrame({"label": [0, 1]}))
+
+@pytest.fixture(params=[integer_data_set, pandas_df_set])
+def data_trains(request):
+    return request.param
+
+
+#@pytest.fixture
+#def run_tree_model(tree_model_name, data_trains):
+#    def _run():
+#        import sklearn.tree
+
+#        x_train = [[0, 0], [1, 1]]
+#        y_train = [0, 1]
+#        x_test = [[2.0, 2.0], [2.0, 1.0]]
+#        y_test = [1, 1]
+#        clf = getattr(sklearn.tree, tree_model_name)(random_state=0)
+#        model = clf.fit(x_train, y_train)
+
+#        labels = model.predict(x_test)
+#        model.score(x_test, y_test)
+#        # Only classifier models have proba methods.
+#        if tree_model_name in ("DecisionTreeClassifier", "ExtraTreeClassifier"):
+#            model.predict_log_proba(x_test)
+#            model.predict_proba(x_test)
+#        return model
+
+#    return _run
+
 
 @pytest.fixture
-def run_tree_model(tree_model_name):
+def run_tree_model(tree_model_name, data_trains):
     def _run():
         import sklearn.tree
 
-        x_train = [[0, 0], [1, 1]]
-        y_train = [0, 1]
-        x_test = [[2.0, 2.0], [2.0, 1.0]]
-        y_test = [1, 1]
-
         clf = getattr(sklearn.tree, tree_model_name)(random_state=0)
-        model = clf.fit(x_train, y_train)
+        model = clf.fit(data_trains[0], data_trains[1])
 
-        labels = model.predict(x_test)
-        model.score(x_test, y_test)
+        labels = model.predict(data_trains[2])
+        model.score(data_trains[2], data_trains[3])
         # Only classifier models have proba methods.
         if tree_model_name in ("DecisionTreeClassifier", "ExtraTreeClassifier"):
-            model.predict_log_proba(x_test)
-            model.predict_proba(x_test)
+            model.predict_log_proba(data_trains[2])
+            model.predict_proba(data_trains[2])
         return model
 
     return _run

@@ -326,7 +326,7 @@ _TEST_OBJECTS = {
         {
             "code.filepath": FILE_PATH,
             "code.function": "ExerciseClass",
-            "code.lineno": 20,
+            "code.lineno": 21,
             "code.namespace": NAMESPACE,
         },
     ),

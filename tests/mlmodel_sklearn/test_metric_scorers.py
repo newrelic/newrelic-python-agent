@@ -20,10 +20,6 @@ from newrelic.api.background_task import background_task
 from newrelic.hooks.mlmodel_sklearn import NumpyReturnTypeProxy
 
 
-def _example_function():
-    return True
-
-
 def test_metric_scorer_attributes(metric_scorer_name, run_metric_scorer):
     @validate_attributes("agent", ["DecisionTreeClassifier.%s" % metric_scorer_name])
     @background_task()

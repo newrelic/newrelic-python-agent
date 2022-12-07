@@ -2892,6 +2892,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.calibration",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_calibration_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",

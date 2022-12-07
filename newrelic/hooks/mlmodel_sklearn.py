@@ -97,3 +97,11 @@ def instrument_sklearn_ensemble_models(module):
         "VotingRegressor",
     )
     _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_calibration_models(module):
+    model_classes = (
+        "CalibratedClassififerCV",
+        # "CalibrationDisplay"
+    )
+    _instrument_sklearn_models(module, model_classes)

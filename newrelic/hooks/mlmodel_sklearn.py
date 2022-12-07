@@ -17,7 +17,7 @@ import sys
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper, ObjectProxy
+from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 
 METHODS_TO_WRAP = ("predict", "fit", "fit_predict", "predict_log_proba", "predict_proba", "transform", "score")
 METRIC_SCORERS = (

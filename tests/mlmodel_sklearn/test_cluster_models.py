@@ -18,7 +18,14 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
+
+SKLEARN_VERSION = get_package_version("sklearn")
+
+SKLEARN_BELOW_v1_0 = SKLEARN_VERSION < "1.0"
+SKLEARN_v1_0_TO_v1_1 = SKLEARN_VERSION >= "1.0" and SKLEARN_VERSION < "1.1"
+SKLEARN_v1_1_AND_ABOVE = SKLEARN_VERSION >= "1.1"
 
 
 def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster_model):
@@ -34,13 +41,8 @@ def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster
         ],
         "Birch": [
             ("Function/MLModel/Sklearn/Named/Birch.fit", 2),
-            ("Function/MLModel/Sklearn/Named/Birch.predict", 1),
+            ("Function/MLModel/Sklearn/Named/Birch.predict", 3),
             ("Function/MLModel/Sklearn/Named/Birch.fit_predict", 1),
-        ],
-        "BisectingKMeans": [
-            ("Function/MLModel/Sklearn/Named/BisectingKMeans.fit", 2),
-            ("Function/MLModel/Sklearn/Named/BisectingKMeans.predict", 1),
-            ("Function/MLModel/Sklearn/Named/BisectingKMeans.fit_predict", 1),
         ],
         "DBSCAN": [
             ("Function/MLModel/Sklearn/Named/DBSCAN.fit", 2),
@@ -64,10 +66,6 @@ def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster
             ("Function/MLModel/Sklearn/Named/MiniBatchKMeans.predict", 1),
             ("Function/MLModel/Sklearn/Named/MiniBatchKMeans.fit_predict", 1),
         ],
-        "OPTICS": [
-            ("Function/MLModel/Sklearn/Named/OPTICS.fit", 2),
-            ("Function/MLModel/Sklearn/Named/OPTICS.fit_predict", 1),
-        ],
         "SpectralBiclustering": [
             ("Function/MLModel/Sklearn/Named/SpectralBiclustering.fit", 1),
         ],
@@ -79,6 +77,16 @@ def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster
             ("Function/MLModel/Sklearn/Named/SpectralClustering.fit_predict", 1),
         ],
     }
+    if SKLEARN_v1_1_AND_ABOVE:
+        expected_scoped_metrics["BisectingKMeans"] = [
+            ("Function/MLModel/Sklearn/Named/BisectingKMeans.fit", 2),
+            ("Function/MLModel/Sklearn/Named/BisectingKMeans.predict", 1),
+            ("Function/MLModel/Sklearn/Named/BisectingKMeans.fit_predict", 1),
+        ]
+        expected_scoped_metrics["OPTICS"] = [
+            ("Function/MLModel/Sklearn/Named/OPTICS.fit", 2),
+            ("Function/MLModel/Sklearn/Named/OPTICS.fit_predict", 1),
+        ]
     expected_transaction_name = "test_cluster_models:_test"
     if six.PY3:
         expected_transaction_name = "test_cluster_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
@@ -96,23 +104,26 @@ def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster
     _test()
 
 
-@pytest.fixture(
-    params=[
-        "AffinityPropagation",
-        "AgglomerativeClustering",
-        "Birch",
-        "BisectingKMeans",
-        "DBSCAN",
-        "FeatureAgglomeration",
-        "KMeans",
-        "MeanShift",
-        "MiniBatchKMeans",
-        "OPTICS",
-        "SpectralBiclustering",
-        "SpectralCoclustering",
-        "SpectralClustering",
-    ]
-)
+class_params = [
+    "AffinityPropagation",
+    "AgglomerativeClustering",
+    "Birch",
+    # "BisectingKMeans",
+    "DBSCAN",
+    "FeatureAgglomeration",
+    "KMeans",
+    "MeanShift",
+    "MiniBatchKMeans",
+    # "OPTICS",
+    "SpectralBiclustering",
+    "SpectralCoclustering",
+    "SpectralClustering",
+]
+if SKLEARN_v1_1_AND_ABOVE:
+    class_params.extend(("BisectingKMeans", "OPTICS"))
+
+
+@pytest.fixture(params=class_params)
 def cluster_model_name(request):
     return request.param
 

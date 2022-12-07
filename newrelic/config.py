@@ -541,6 +541,7 @@ def _process_configuration(section):
 
     _process_setting(section, "machine_learning.inference_event_value.enabled", "getboolean", None)
 
+
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration
 # and instrumentation errors should raise an exception or not.
@@ -2797,13 +2798,13 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "sklearn.tree._classes",
-        "newrelic.hooks.component_sklearn",
+        "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_tree_models",
     )
     # In scikit-learn < 0.21 the model classes are in tree.py instead of _classes.py.
     _process_module_definition(
         "sklearn.tree.tree",
-        "newrelic.hooks.component_sklearn",
+        "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_tree_models",
     )
 

@@ -17,7 +17,7 @@ import pytest
 from testing_support.fixtures import validate_attributes
 
 from newrelic.api.background_task import background_task
-from newrelic.hooks.mlmodel_sklearn import _wrap_predict_return_type
+from newrelic.hooks.mlmodel_sklearn import NumpyReturnTypeProxy
 
 
 @pytest.mark.parametrize(
@@ -91,20 +91,10 @@ def test_metric_scorer_attributes_unknown_model(metric_scorer_name):
 
 
 @pytest.mark.parametrize("data", (np.array([0, 1]), "foo", 1, 1.0, True, [0, 1], {"foo": "bar"}, (0, 1), np.str_("F")))
-def test__wrap_predict_return_type(data):
-    wrapped_data = _wrap_predict_return_type(data, "ModelName")
+def test_NumpyReturnTypeProxy(data):
+    wrapped_data = NumpyReturnTypeProxy(data, "ModelName")
 
-    assert wrapped_data._nr_wrapped_model_name == "ModelName"
-
-
-def test_no_harm__wrap_predict_return_type():
-    # Functions are not subclassable.
-    def unsubclassable():
-        pass
-
-    wrapped_data = _wrap_predict_return_type(unsubclassable, "ModelName")
-
-    assert not hasattr(wrapped_data, "_nr_wrapped_model_name")
+    assert wrapped_data._nr_model_name == "ModelName"
 
 
 @pytest.fixture

@@ -17,7 +17,7 @@ import sys
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 
 METHODS_TO_WRAP = ("predict", "fit", "fit_predict", "predict_log_proba", "predict_proba", "transform", "score")
 METRIC_SCORERS = (
@@ -32,61 +32,10 @@ METRIC_SCORERS = (
 PY2 = sys.version_info[0] == 2
 
 
-def _wrap_predict_return_type(data, model_name):
-    """
-    Returns a new NR custom type with model info attached to it as attrs.
-    """
-    import numpy as np
-
-    try:
-        # Numpy NDArrays require special implementation to subclass.
-        if isinstance(data, np.ndarray):
-
-            class NRNumpyNDArray(np.ndarray):
-                _nr_wrapped_model_name = model_name
-
-                def __array_wrap__(self, obj):
-                    if obj.shape == ():
-                        return obj[()]  # if ufunc output is scalar, return it
-                    else:
-                        return np.ndarray.__array_wrap__(self, obj)
-
-            return data.view(NRNumpyNDArray)
-
-        # Booleans are singletons and require special implementation to subclass.
-        if isinstance(data, (bool)):
-            if PY2:
-
-                class NRBoolType:
-                    _nr_wrapped_model_name = model_name
-
-                    def __init__(self, value):
-                        self.value = value
-
-                    def __nonzero__(self):
-                        return bool(self.value)
-
-            else:
-
-                class NRBoolType:
-                    _nr_wrapped_model_name = model_name
-
-                    def __init__(self, value):
-                        self.value = value
-
-                    def __bool__(self):
-                        return bool(self.value)
-
-            return NRBoolType(data)
-
-        # Attempt to subclass the type directly.
-        class NRWrapType(type(data)):
-            _nr_wrapped_model_name = model_name
-
-        return NRWrapType(data)
-    except:  # Squash any exceptions resulting from attempted wrap typing.
-        pass
-    return data
+class NumpyReturnTypeProxy(ObjectProxy):
+    def __init__(self, wrapped, model_name):
+        super(ObjectProxy, self).__init__(wrapped)
+        self._nr_model_name = model_name
 
 
 def _wrap_method_trace(module, _class, method, name=None, group=None):
@@ -119,7 +68,7 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         # If this is the predict method, wrap the return type in an nr type with
         # _nr_wrapped attrs that will attach model info to the data.
         if method == "predict":
-            return _wrap_predict_return_type(return_val, model_name=_class)
+            return NumpyReturnTypeProxy(return_val, model_name=_class)
         return return_val
 
     wrap_function_wrapper(module, "%s.%s" % (_class, method), _nr_wrapper_method)
@@ -153,8 +102,8 @@ def wrap_metric_scorer(wrapped, instance, args, kwargs):
 
     y_true, y_pred, args, kwargs = _bind_scorer(*args, **kwargs)
     model_name = "Unknown"
-    if hasattr(y_pred, "_nr_wrapped_model_name"):
-        model_name = y_pred._nr_wrapped_model_name
+    if hasattr(y_pred, "_nr_model_name"):
+        model_name = y_pred._nr_model_name
     # Attribute values must be int, float, str, or boolean. If it's not one of these
     # types and an iterable add the values as separate attributes.
     if not isinstance(score, (str, int, float, bool)):

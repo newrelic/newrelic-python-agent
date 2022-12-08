@@ -1500,6 +1500,7 @@ def code_coverage_fixture(source=None):
     @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:
+            yield None
             return
 
         from coverage import coverage

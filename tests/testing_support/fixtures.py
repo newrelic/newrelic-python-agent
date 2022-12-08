@@ -1507,7 +1507,7 @@ def code_coverage_fixture(source=None):
         cov = coverage(source=source, data_file=data_file, data_suffix=data_suffix, branch=True)
         cov.start()
 
-        yield
+        yield cov
 
         # At exit, stop coverage and save to data file
         cov.stop()

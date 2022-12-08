@@ -54,7 +54,7 @@ jobs:
 
   # Combine and upload coverage data
   coverage:
-    if: success() | failure()  # Does not run on cancelled workflows
+    if: success() || failure()  # Does not run on cancelled workflows
     runs-on: ubuntu-20.04
     needs:
       - tests

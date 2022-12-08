@@ -69,7 +69,8 @@ jobs:
       - name: Combine Coverage
         run: |
           pip install coverage
-          coverage combine ./**/.coverage.*
+          find . -name ".coverage.*" -exec mv {} ./ \;
+          coverage combine
           coverage xml
 
       - name: Upload Coverage to Codecov

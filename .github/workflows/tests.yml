@@ -30,19 +30,19 @@ jobs:
     runs-on: ubuntu-20.04
     needs:
       - python
-      - elasticsearchserver01
-      - elasticsearchserver07
-      - gearman
-      - grpc
-      - kafka
-      - libcurl
-      - memcached
-      - mongodb
-      - mysql
-      - postgres
-      - rabbitmq
-      - redis
-      - solr
+      # - elasticsearchserver01
+      # - elasticsearchserver07
+      # - gearman
+      # - grpc
+      # - kafka
+      # - libcurl
+      # - memcached
+      # - mongodb
+      # - mysql
+      # - postgres
+      # - rabbitmq
+      # - redis
+      # - solr
 
     steps:
       - name: Success
@@ -63,6 +63,8 @@ jobs:
 
       - name: Download Coverage Artifacts
         uses: actions/download-artifact@v3
+        with:
+          path: ./
 
       - name: Combine Coverage
         run: |

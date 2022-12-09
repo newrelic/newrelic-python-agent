@@ -25,7 +25,11 @@
 	"customizations": {
 		"vscode": {
 			"settings": {},
-			"extensions": []
+			"extensions": [
+				"ms-python.python",
+				"ms-vsliveshare.vsliveshare",
+				"eamodio.gitlens"
+			]
 		}
 	}
 }

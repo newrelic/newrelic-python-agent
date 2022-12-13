@@ -125,6 +125,70 @@ def instrument_sklearn_tree_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_ensemble_bagging_models(module):
+    model_classes = (
+        "BaggingClassifier",
+        "BaggingRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_forest_models(module):
+    model_classes = (
+        "ExtraTreesClassifier",
+        "ExtraTreesRegressor",
+        "RandomForestClassifier",
+        "RandomForestRegressor",
+        "RandomTreesEmbedding",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_iforest_models(module):
+    model_classes = ("IsolationForest",)
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_weight_boosting_models(module):
+    model_classes = (
+        "AdaBoostClassifier",
+        "AdaBoostRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_gradient_boosting_models(module):
+    model_classes = (
+        "GradientBoostingClassifier",
+        "GradientBoostingRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_voting_models(module):
+    model_classes = (
+        "VotingClassifier",
+        "VotingRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_stacking_models(module):
+    module_classes = (
+        "StackingClassifier",
+        "StackingRegressor",
+    )
+    _instrument_sklearn_models(module, module_classes)
+
+
+def instrument_sklearn_ensemble_hist_models(module):
+    model_classes = (
+        "HistGradientBoostingClassifier",
+        "HistGradientBoostingRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_metrics(module):
     for scorer in METRIC_SCORERS:
         if hasattr(module, scorer):

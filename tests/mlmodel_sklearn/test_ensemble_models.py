@@ -22,11 +22,7 @@ from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
 
-SKLEARN_VERSION = get_package_version("sklearn")
-
-SKLEARN_BELOW_v1_0 = SKLEARN_VERSION < "1.0"
-SKLEARN_v1_1_AND_ABOVE = SKLEARN_VERSION >= "1.1"
-SKLEARN_BELOW_v1_1 = SKLEARN_VERSION < "1.1"
+SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
 
 
 @pytest.mark.parametrize(
@@ -145,7 +141,7 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(ensemble_model_name,
     _test()
 
 
-@pytest.mark.skipif(SKLEARN_BELOW_v1_0 or SKLEARN_v1_1_AND_ABOVE, reason="Requires sklearn >= 1.0 and < 1.1")
+@pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0) or SKLEARN_VERSION >= (1, 1, 0), reason="Requires 1.0 <= sklearn < 1.1")
 @pytest.mark.parametrize(
     "ensemble_model_name",
     [
@@ -201,7 +197,7 @@ def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(ensemble_
     _test()
 
 
-@pytest.mark.skipif(SKLEARN_BELOW_v1_1, reason="Requires sklearn >= 1.1")
+@pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn >= 1.1")
 @pytest.mark.parametrize(
     "ensemble_model_name",
     [
@@ -279,8 +275,10 @@ def run_ensemble_model():
         elif ensemble_model_name == "VotingClassifier":
             kwargs = {
                 "estimators": [("rf", RandomForestClassifier())],
-                "voting": "soft",
-            }  # "hard" if SKLEARN_BELOW_v1_1 else
+                "voting": "hard",
+            }
+            if SKLEARN_VERSION < (1, 1, 0):
+                kwargs["voting"] = "soft"
         elif ensemble_model_name in ("VotingRegressor", "StackingRegressor"):
             kwargs = {"estimators": [("rf", RandomForestRegressor())]}
         clf = getattr(sklearn.ensemble, ensemble_model_name)(**kwargs)

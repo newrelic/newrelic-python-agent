@@ -67,13 +67,13 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
             setattr(trace, wrapped_attr_name, False)
 
         # If this is the fit method, increment the training_step counter.
-        if method == "fit":
+        if method in ("fit", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", -1)
             setattr(instance, "_nr_wrapped_training_step", training_step + 1)
 
         # If this is the predict method, wrap the return type in an nr type with
         # _nr_wrapped attrs that will attach model info to the data.
-        if method == "predict":
+        if method in ("predict", "fit_predict"):
             return PredictReturnTypeProxy(
                 return_val, model_name=_class, training_step=instance._nr_wrapped_training_step
             )

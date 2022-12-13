@@ -2816,85 +2816,85 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "sklearn.ensemble._bagging",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_bagging_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble.bagging",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_bagging_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._forest",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_forest_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble.forest",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_forest_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._iforest",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_iforest_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble.iforest",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_iforest_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._weight_boosting",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_weight_boosting_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble.weight_boosting",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_weight_boosting_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._gb",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_gradient_boosting_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble.gradient_boosting",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_gradient_boosting_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._voting",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_voting_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble.voting_classifier",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_voting_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._stacking",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_stacking_models",
     )
 
     _process_module_definition(
         "sklearn.ensemble._hist_gradient_boosting.gradient_boosting",
         "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_models",
+        "instrument_sklearn_ensemble_hist_models",
     )
 
     _process_module_definition(

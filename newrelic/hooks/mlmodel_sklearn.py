@@ -76,24 +76,88 @@ def instrument_sklearn_tree_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
-def instrument_sklearn_ensemble_models(module):
+def instrument_sklearn_ensemble_bagging_models(module):
+    model_classes = (
+        "BaggingClassifier",
+        "BaggingRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_forest_models(module):
+    model_classes = (
+        "ExtraTreesClassifier",
+        "ExtraTreesRegressor",
+        "RandomForestClassifier",
+        "RandomForestRegressor",
+        "RandomTreesEmbedding",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_iforest_models(module):
+    model_classes = ("IsolationForest",)
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_weight_boosting_models(module):
     model_classes = (
         "AdaBoostClassifier",
         "AdaBoostRegressor",
-        "BaggingClassifier",
-        "BaggingRegressor",
-        "ExtraTreesClassifier",
-        "ExtraTreesRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_gradient_boosting_models(module):
+    model_classes = (
         "GradientBoostingClassifier",
         "GradientBoostingRegressor",
-        "HistGradientBoostingClassifier",
-        "HistGradientBoostingRegressor",
-        "IsolationForest",
-        "RandomForestClassifier",
-        "RandomForestRegressor",
-        "StackingClassifier",
-        "StackingRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_voting_models(module):
+    model_classes = (
         "VotingClassifier",
         "VotingRegressor",
     )
     _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_ensemble_stacking_models(module):
+    module_classes = (
+        "StackingClassifier",
+        "StackingRegressor",
+    )
+    _instrument_sklearn_models(module, module_classes)
+
+
+def instrument_sklearn_ensemble_hist_models(module):
+    model_classes = (
+        "HistGradientBoostingClassifier",
+        "HistGradientBoostingRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+# def instrument_sklearn_ensemble_models(module):
+#     model_classes = (
+#         "AdaBoostClassifier",
+#         "AdaBoostRegressor",
+#         "BaggingClassifier",
+#         "BaggingRegressor",
+#         "ExtraTreesClassifier",
+#         "ExtraTreesRegressor",
+#         "GradientBoostingClassifier",
+#         "GradientBoostingRegressor",
+#         "HistGradientBoostingClassifier",
+#         "HistGradientBoostingRegressor",
+#         "IsolationForest",
+#         "RandomForestClassifier",
+#         "RandomForestRegressor",
+#         "StackingClassifier",
+#         "StackingRegressor",
+#         "VotingClassifier",
+#         "VotingRegressor",
+#     )
+#     _instrument_sklearn_models(module, model_classes)

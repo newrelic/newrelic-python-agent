@@ -120,12 +120,10 @@ def wrap_metric_scorer(wrapped, instance, args, kwargs):
     if not isinstance(score, (str, int, float, bool)):
         if hasattr(score, "__iter__"):
             for i, s in enumerate(score):
-                # ModelName/TrainingStep/<training_step>/accuracy_score[<score_result_index>]
                 transaction._add_agent_attribute(
                     "%s/TrainingStep/%s/%s[%s]" % (model_name, training_step, wrapped.__name__, i), s
                 )
     else:
-        # ModelName/TrainingStep/<training_step>/accuracy_score
         transaction._add_agent_attribute("%s/TrainingStep/%s/%s" % (model_name, training_step, wrapped.__name__), score)
     return score
 

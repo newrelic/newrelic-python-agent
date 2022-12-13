@@ -14,6 +14,7 @@
 
 import pytest
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -275,11 +276,11 @@ def run_ensemble_model():
         elif ensemble_model_name == "VotingClassifier":
             kwargs = {
                 "estimators": [("rf", RandomForestClassifier())],
-                "voting": "hard",
+                "voting": "soft",
             }
-            if SKLEARN_VERSION < (1, 1, 0):
-                kwargs["voting"] = "soft"
-        elif ensemble_model_name in ("VotingRegressor", "StackingRegressor"):
+        elif ensemble_model_name == "VotingRegressor":
+            kwargs = {"estimators": [("rf", RandomForestRegressor()), ("lr", LinearRegression())]}
+        elif ensemble_model_name == "StackingRegressor":
             kwargs = {"estimators": [("rf", RandomForestRegressor())]}
         clf = getattr(sklearn.ensemble, ensemble_model_name)(**kwargs)
 

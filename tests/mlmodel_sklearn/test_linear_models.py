@@ -21,14 +21,52 @@ from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
 
-SKLEARN_VERSION = get_package_version("sklearn")
-
-SKLEARN_BELOW_v1_0 = SKLEARN_VERSION < "1.0"
-SKLEARN_v1_0_TO_v1_1 = SKLEARN_VERSION >= "1.0" and SKLEARN_VERSION < "1.1"
-SKLEARN_v1_1_AND_ABOVE = SKLEARN_VERSION >= "1.1"
+SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
 
 
-def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_model):
+# SKLEARN_VERSION = get_package_version("sklearn")
+
+# SKLEARN_BELOW_v1_0 = SKLEARN_VERSION < "1.0"
+# SKLEARN_v1_0_TO_v1_1 = SKLEARN_VERSION >= "1.0" and SKLEARN_VERSION < "1.1"
+# SKLEARN_v1_1_AND_ABOVE = SKLEARN_VERSION >= "1.1"
+
+
+@pytest.mark.parametrize(
+    "linear_model_name",
+    [
+        "ARDRegression",
+        "BayesianRidge",
+        "ElasticNet",
+        "ElasticNetCV",
+        "HuberRegressor",
+        "Lars",
+        "LarsCV",
+        "Lasso",
+        "LassoCV",
+        "LassoLars",
+        "LassoLarsCV",
+        "LassoLarsIC",
+        "LinearRegression",
+        "LogisticRegression",
+        "LogisticRegressionCV",
+        "MultiTaskElasticNet",
+        "MultiTaskElasticNetCV",
+        "MultiTaskLasso",
+        "MultiTaskLassoCV",
+        "OrthogonalMatchingPursuit",
+        "OrthogonalMatchingPursuitCV",
+        "PassiveAggressiveClassifier",
+        "PassiveAggressiveRegressor",
+        "Perceptron",
+        "Ridge",
+        "RidgeCV",
+        "RidgeClassifier",
+        "RidgeClassifierCV",
+        "TheilSenRegressor",
+        "RANSACRegressor",
+    ],
+)
+def test_below_v1_1_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_model):
     expected_scoped_metrics = {
         "ARDRegression": [
             ("Function/MLModel/Sklearn/Named/ARDRegression.fit", 1),
@@ -181,45 +219,11 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
             ("Function/MLModel/Sklearn/Named/RANSACRegressor.score", 1),
         ],
     }
-    if SKLEARN_v1_1_AND_ABOVE:
-        expected_scoped_metrics["PoissonRegressor"] = [
-            ("Function/MLModel/Sklearn/Named/PoissonRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/PoissonRegressor.predict", 1),
-            ("Function/MLModel/Sklearn/Named/PoissonRegressor.score", 1),
-        ]
-        expected_scoped_metrics["GammaRegressor"] = [
-            ("Function/MLModel/Sklearn/Named/GammaRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/GammaRegressor.predict", 1),
-            ("Function/MLModel/Sklearn/Named/GammaRegressor.score", 1),
-        ]
-        expected_scoped_metrics["TweedieRegressor"] = [
-            ("Function/MLModel/Sklearn/Named/TweedieRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/TweedieRegressor.predict", 1),
-            ("Function/MLModel/Sklearn/Named/TweedieRegressor.score", 1),
-        ]
-        expected_scoped_metrics["QuantileRegressor"] = [
-            ("Function/MLModel/Sklearn/Named/QuantileRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/QuantileRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/QuantileRegressor.score", 1),
-        ]
-        expected_scoped_metrics["SGDClassifier"] = [
-            ("Function/MLModel/Sklearn/Named/SGDClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/SGDClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/SGDClassifier.score", 1),
-        ]
-        expected_scoped_metrics["SGDRegressor"] = [
-            ("Function/MLModel/Sklearn/Named/SGDRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/SGDRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/SGDRegressor.score", 1),
-        ]
-        expected_scoped_metrics["SGDOneClassSVM"] = [
-            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.fit", 1),
-            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.predict", 1),
-        ]
-
     expected_transaction_name = "test_linear_models:_test"
     if six.PY3:
-        expected_transaction_name = "test_linear_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
+        expected_transaction_name = (
+            "test_linear_models:test_below_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
+        )
 
     @validate_transaction_metrics(
         expected_transaction_name,
@@ -229,65 +233,88 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
     )
     @background_task()
     def _test():
-        run_linear_model()
+        run_linear_model(linear_model_name)
 
     _test()
 
 
-class_params = [
-    "ARDRegression",
-    "BayesianRidge",
-    "ElasticNet",
-    "ElasticNetCV",
-    "HuberRegressor",
-    "Lars",
-    "LarsCV",
-    "Lasso",
-    "LassoCV",
-    "LassoLars",
-    "LassoLarsCV",
-    "LassoLarsIC",
-    "LinearRegression",
-    "LogisticRegression",
-    "LogisticRegressionCV",
-    "MultiTaskElasticNet",
-    "MultiTaskElasticNetCV",
-    "MultiTaskLasso",
-    "MultiTaskLassoCV",
-    "OrthogonalMatchingPursuit",
-    "OrthogonalMatchingPursuitCV",
-    "PassiveAggressiveClassifier",
-    "PassiveAggressiveRegressor",
-    "Perceptron",
-    "Ridge",
-    "RidgeCV",
-    "RidgeClassifier",
-    "RidgeClassifierCV",
-    "TheilSenRegressor",
-    "RANSACRegressor",
-]
-if SKLEARN_v1_1_AND_ABOVE:
-    class_params.extend(
-        (
-            "PoissonRegressor",
-            "GammaRegressor",
-            "TweedieRegressor",
-            "QuantileRegressor",
-            "SGDClassifier",
-            "SGDRegressor",
-            "SGDOneClassSVM",
+@pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn >= v1.1")
+@pytest.mark.parametrize(
+    "linear_model_name",
+    [
+        "PoissonRegressor",
+        "GammaRegressor",
+        "TweedieRegressor",
+        "QuantileRegressor",
+        "SGDClassifier",
+        "SGDRegressor",
+        "SGDOneClassSVM",
+    ],
+)
+def test_above_v1_1_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_model):
+    expected_scoped_metrics = {
+        "PoissonRegressor": [
+            ("Function/MLModel/Sklearn/Named/PoissonRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/PoissonRegressor.predict", 1),
+            ("Function/MLModel/Sklearn/Named/PoissonRegressor.score", 1),
+        ],
+        "GammaRegressor": [
+            ("Function/MLModel/Sklearn/Named/GammaRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/GammaRegressor.predict", 1),
+            ("Function/MLModel/Sklearn/Named/GammaRegressor.score", 1),
+        ],
+        "TweedieRegressor": [
+            ("Function/MLModel/Sklearn/Named/TweedieRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/TweedieRegressor.predict", 1),
+            ("Function/MLModel/Sklearn/Named/TweedieRegressor.score", 1),
+        ],
+        "QuantileRegressor": [
+            ("Function/MLModel/Sklearn/Named/QuantileRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/QuantileRegressor.predict", 2),
+            ("Function/MLModel/Sklearn/Named/QuantileRegressor.score", 1),
+        ],
+        "SGDClassifier": [
+            ("Function/MLModel/Sklearn/Named/SGDClassifier.fit", 1),
+            ("Function/MLModel/Sklearn/Named/SGDClassifier.predict", 2),
+            ("Function/MLModel/Sklearn/Named/SGDClassifier.score", 1),
+        ],
+        "SGDRegressor": [
+            ("Function/MLModel/Sklearn/Named/SGDRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/SGDRegressor.predict", 2),
+            ("Function/MLModel/Sklearn/Named/SGDRegressor.score", 1),
+        ],
+        "SGDOneClassSVM": [
+            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.fit", 1),
+            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.predict", 1),
+        ],
+    }
+    expected_transaction_name = "test_linear_models:_test"
+    if six.PY3:
+        expected_transaction_name = (
+            "test_linear_models:test_above_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
         )
+
+    @validate_transaction_metrics(
+        expected_transaction_name,
+        scoped_metrics=expected_scoped_metrics[linear_model_name],
+        rollup_metrics=expected_scoped_metrics[linear_model_name],
+        background_task=True,
     )
+    @background_task()
+    def _test():
+        run_linear_model(linear_model_name)
+
+    _test()
 
 
-@pytest.fixture(params=class_params)
-def linear_model_name(request):
-    return request.param
+# @pytest.fixture(params=class_params)
+# def linear_model_name(request):
+#     return request.param
 
 
 @pytest.fixture
-def run_linear_model(linear_model_name):
-    def _run():
+def run_linear_model():
+    def _run(linear_model_name):
         import sklearn.linear_model
         from sklearn.datasets import load_iris
         from sklearn.model_selection import train_test_split

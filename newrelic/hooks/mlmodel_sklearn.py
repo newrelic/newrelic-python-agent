@@ -190,11 +190,7 @@ def instrument_sklearn_ensemble_hist_models(module):
 
 
 def instrument_sklearn_calibration_models(module):
-    model_classes = (
-        "CalibratedClassifierCV",
-        # "CalibrationDisplay"
-    )
-    # breakpoint()
+    model_classes = ("CalibratedClassifierCV",)
     _instrument_sklearn_models(module, model_classes)
 
 

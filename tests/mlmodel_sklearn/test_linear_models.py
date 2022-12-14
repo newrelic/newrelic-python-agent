@@ -24,13 +24,6 @@ from newrelic.packages import six
 SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
 
 
-# SKLEARN_VERSION = get_package_version("sklearn")
-
-# SKLEARN_BELOW_v1_0 = SKLEARN_VERSION < "1.0"
-# SKLEARN_v1_0_TO_v1_1 = SKLEARN_VERSION >= "1.0" and SKLEARN_VERSION < "1.1"
-# SKLEARN_v1_1_AND_ABOVE = SKLEARN_VERSION >= "1.1"
-
-
 @pytest.mark.parametrize(
     "linear_model_name",
     [

@@ -192,18 +192,36 @@ def instrument_sklearn_ensemble_hist_models(module):
 def instrument_sklearn_cluster_models(module):
     model_classes = (
         "AffinityPropagation",
-        "AgglomerativeClustering",
         "Birch",
-        "BisectingKMeans",
         "DBSCAN",
-        "FeatureAgglomeration",
-        "KMeans",
         "MeanShift",
-        "MiniBatchKMeans",
         "OPTICS",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_cluster_agglomerative_models(module):
+    model_classes = (
+        "AgglomerativeClustering",
+        "FeatureAgglomeration",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_cluster_clustering_models(module):
+    model_classes = (
         "SpectralBiclustering",
         "SpectralCoclustering",
         "SpectralClustering",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_cluster_kmeans_models(module):
+    model_classes = (
+        "BisectingKMeans",
+        "KMeans",
+        "MiniBatchKMeans",
     )
     _instrument_sklearn_models(module, model_classes)
 

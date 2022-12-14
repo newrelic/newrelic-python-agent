@@ -189,45 +189,99 @@ def instrument_sklearn_ensemble_hist_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
-def instrument_sklearn_linear_models(module):
+def instrument_sklearn_linear_coordinate_descent_models(module):
     model_classes = (
-        "ARDRegression",
-        "BayesianRidge",
-        "ElasticNet",
-        "ElasticNetCV",
-        "HuberRegressor",
-        "Lars",
-        "LarsCV",
         "Lasso",
         "LassoCV",
+        "ElasticNet",
+        "ElasticNetCV",
+        "MultiTaskLasso",
+        "MultiTaskLassoCV",
+        "MultiTaskElasticNet",
+        "MultiTaskElasticNetCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_least_angle_models(module):
+    model_classes = (
+        "Lars",
+        "LarsCV",
         "LassoLars",
         "LassoLarsCV",
         "LassoLarsIC",
-        "LinearRegression",
-        "LogisticRegression",
-        "LogisticRegressionCV",
-        "MultiTaskElasticNet",
-        "MultiTaskElasticNetCV",
-        "MultiTaskLasso",
-        "MultiTaskLassoCV",
-        "OrthogonalMatchingPursuit",
-        "OrthogonalMatchingPursuitCV",
-        "PassiveAggressiveClassifier",
-        "PassiveAggressiveRegressor",
-        "Perceptron",
-        "QuantileRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_GLM_models(module):
+    model_classes = (
+        "PoissonRegressor",
+        "GammaRegressor",
+        "TweedieRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_stochastic_gradient_models(module):
+    model_classes = (
+        "SGDClassifier",
+        "SGDRegressor",
+        "SGDOneClassSVM",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_ridge_models(module):
+    model_classes = (
         "Ridge",
         "RidgeCV",
         "RidgeClassifier",
         "RidgeClassifierCV",
-        "SGDClassifier",
-        "SGDRegressor",
-        "SGDOneClassSVM",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_logistic_models(module):
+    model_classes = (
+        "LogisticRegression",
+        "LogisticRegressionCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_OMP_models(module):
+    model_classes = (
+        "OrthogonalMatchingPursuit",
+        "OrthogonalMatchingPursuitCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_passive_aggressive_models(module):
+    model_classes = (
+        "PassiveAggressiveClassifier",
+        "PassiveAggressiveRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_bayes_models(module):
+    model_classes = (
+        "ARDRegression",
+        "BayesianRidge",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_models(module):
+    model_classes = (
+        "HuberRegressor",
+        "LinearRegression",
+        "Perceptron",
+        "QuantileRegressor",
         "TheilSenRegressor",
         "RANSACRegressor",
-        "PoissonRegressor",
-        "GammaRegressor",
-        "TweedieRegressor",
     )
     _instrument_sklearn_models(module, model_classes)
 

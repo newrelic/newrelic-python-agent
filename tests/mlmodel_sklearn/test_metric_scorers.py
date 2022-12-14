@@ -53,7 +53,7 @@ def test_metric_scorer_attributes(metric_scorer_name, run_metric_scorer):
         "r2_score",
     ),
 )
-def test_metric_scorer_training_steps_attributes(metric_scorer_name, run_training_metric_scorer):
+def test_metric_scorer_training_steps_attributes(metric_scorer_name, run_metric_scorer):
     @validate_attributes(
         "agent",
         [
@@ -63,7 +63,7 @@ def test_metric_scorer_training_steps_attributes(metric_scorer_name, run_trainin
     )
     @background_task()
     def _test():
-        run_training_metric_scorer(metric_scorer_name)
+        run_metric_scorer(metric_scorer_name, training_steps=[0, 1])
 
     _test()
 
@@ -127,7 +127,7 @@ def test_PredictReturnTypeProxy(data):
 
 @pytest.fixture
 def run_metric_scorer():
-    def _run(metric_scorer_name, metric_scorer_kwargs=None):
+    def _run(metric_scorer_name, metric_scorer_kwargs=None, training_steps=None):
         from sklearn import metrics, tree
 
         x_train = [[0, 0], [1, 1]]
@@ -135,30 +135,13 @@ def run_metric_scorer():
         x_test = [[2.0, 2.0], [0, 0.5]]
         y_test = [1, 0]
 
-        clf = tree.DecisionTreeClassifier(random_state=0)
-        model = clf.fit(x_train, y_train)
-
-        labels = model.predict(x_test)
-
-        metric_scorer_kwargs = metric_scorer_kwargs or {}
-        return getattr(metrics, metric_scorer_name)(y_test, labels, **metric_scorer_kwargs)
-
-    return _run
-
-
-@pytest.fixture
-def run_training_metric_scorer():
-    def _run(metric_scorer_name, metric_scorer_kwargs=None):
-        from sklearn import metrics, tree
-
-        x_train = [[0, 0], [1, 1]]
-        y_train = [0, 1]
-        x_test = [[2.0, 2.0], [0, 0.5]]
-        y_test = [1, 0]
+        if not training_steps:
+            training_steps = [0]
 
         clf = tree.DecisionTreeClassifier(random_state=0)
-        for step in [0, 1]:
+        for step in training_steps:
             model = clf.fit(x_train, y_train)
+
             labels = model.predict(x_test)
 
             metric_scorer_kwargs = metric_scorer_kwargs or {}

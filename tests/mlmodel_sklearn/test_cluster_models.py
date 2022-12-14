@@ -22,14 +22,26 @@ from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
 
-SKLEARN_VERSION = get_package_version("sklearn")
-
-SKLEARN_BELOW_v1_0 = SKLEARN_VERSION < "1.0"
-SKLEARN_v1_0_TO_v1_1 = SKLEARN_VERSION >= "1.0" and SKLEARN_VERSION < "1.1"
-SKLEARN_v1_1_AND_ABOVE = SKLEARN_VERSION >= "1.1"
+SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
 
 
-def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster_model):
+@pytest.mark.parametrize(
+    "cluster_model_name",
+    [
+        "AffinityPropagation",
+        "AgglomerativeClustering",
+        "Birch",
+        "DBSCAN",
+        "FeatureAgglomeration",
+        "KMeans",
+        "MeanShift",
+        "MiniBatchKMeans",
+        "SpectralBiclustering",
+        "SpectralCoclustering",
+        "SpectralClustering",
+    ],
+)
+def test_below_v1_1_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster_model):
     expected_scoped_metrics = {
         "AffinityPropagation": [
             ("Function/MLModel/Sklearn/Named/AffinityPropagation.fit", 2),
@@ -44,7 +56,7 @@ def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster
             ("Function/MLModel/Sklearn/Named/Birch.fit", 2),
             (
                 "Function/MLModel/Sklearn/Named/Birch.predict",
-                1 if SKLEARN_v1_1_AND_ABOVE or SKLEARN_v1_0_TO_v1_1 else 3,
+                1 if SKLEARN_VERSION >= (1, 0, 0) else 3,
             ),
             ("Function/MLModel/Sklearn/Named/Birch.fit_predict", 1),
             ("Function/MLModel/Sklearn/Named/Birch.transform", 1),
@@ -84,19 +96,11 @@ def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster
             ("Function/MLModel/Sklearn/Named/SpectralClustering.fit_predict", 1),
         ],
     }
-    if SKLEARN_v1_1_AND_ABOVE:
-        expected_scoped_metrics["BisectingKMeans"] = [
-            ("Function/MLModel/Sklearn/Named/BisectingKMeans.fit", 2),
-            ("Function/MLModel/Sklearn/Named/BisectingKMeans.predict", 1),
-            ("Function/MLModel/Sklearn/Named/BisectingKMeans.fit_predict", 1),
-        ]
-        expected_scoped_metrics["OPTICS"] = [
-            ("Function/MLModel/Sklearn/Named/OPTICS.fit", 2),
-            ("Function/MLModel/Sklearn/Named/OPTICS.fit_predict", 1),
-        ]
     expected_transaction_name = "test_cluster_models:_test"
     if six.PY3:
-        expected_transaction_name = "test_cluster_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
+        expected_transaction_name = (
+            "test_cluster_models:test_below_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
+        )
 
     @validate_transaction_metrics(
         expected_transaction_name,
@@ -106,41 +110,57 @@ def test_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster
     )
     @background_task()
     def _test():
-        run_cluster_model()
+        run_cluster_model(cluster_model_name)
 
     _test()
 
 
-class_params = [
-    "AffinityPropagation",
-    "AgglomerativeClustering",
-    "Birch",
-    "DBSCAN",
-    "FeatureAgglomeration",
-    "KMeans",
-    "MeanShift",
-    "MiniBatchKMeans",
-    "SpectralBiclustering",
-    "SpectralCoclustering",
-    "SpectralClustering",
-]
-if SKLEARN_v1_1_AND_ABOVE:
-    class_params.extend(("BisectingKMeans", "OPTICS"))
+@pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn > 1.1")
+@pytest.mark.parametrize(
+    "cluster_model_name",
+    [
+        "BisectingKMeans",
+        "OPTICS",
+    ],
+)
+def test_above_v1_1_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster_model):
+    expected_scoped_metrics = {
+        "BisectingKMeans": [
+            ("Function/MLModel/Sklearn/Named/BisectingKMeans.fit", 2),
+            ("Function/MLModel/Sklearn/Named/BisectingKMeans.predict", 1),
+            ("Function/MLModel/Sklearn/Named/BisectingKMeans.fit_predict", 1),
+        ],
+        "OPTICS": [
+            ("Function/MLModel/Sklearn/Named/OPTICS.fit", 2),
+            ("Function/MLModel/Sklearn/Named/OPTICS.fit_predict", 1),
+        ],
+    }
+    expected_transaction_name = "test_cluster_models:_test"
+    if six.PY3:
+        expected_transaction_name = (
+            "test_cluster_models:test_above_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
+        )
 
+    @validate_transaction_metrics(
+        expected_transaction_name,
+        scoped_metrics=expected_scoped_metrics[cluster_model_name],
+        rollup_metrics=expected_scoped_metrics[cluster_model_name],
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        run_cluster_model(cluster_model_name)
 
-@pytest.fixture(params=class_params)
-def cluster_model_name(request):
-    return request.param
+    _test()
 
 
 @pytest.fixture
-def run_cluster_model(cluster_model_name):
-    def _run():
+def run_cluster_model():
+    def _run(cluster_model_name):
         import sklearn.cluster
         from sklearn.datasets import load_iris
         from sklearn.model_selection import train_test_split
 
-        # This works better with StackingClassifier and StackingRegressor models
         X, y = load_iris(return_X_y=True)
         x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
 

@@ -2903,6 +2903,18 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.cross_decomposition._pls",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cross_decomposition_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cross_decomposition.pls_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cross_decomposition_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",

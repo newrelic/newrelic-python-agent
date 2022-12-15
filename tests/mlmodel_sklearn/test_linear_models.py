@@ -300,11 +300,6 @@ def test_above_v1_1_model_methods_wrapped_in_function_trace(linear_model_name, r
     _test()
 
 
-# @pytest.fixture(params=class_params)
-# def linear_model_name(request):
-#     return request.param
-
-
 @pytest.fixture
 def run_linear_model():
     def _run(linear_model_name):

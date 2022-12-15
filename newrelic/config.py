@@ -2819,6 +2819,18 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.compose._column_transformer",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_compose_models",
+    )
+
+    _process_module_definition(
+        "sklearn.compose._target",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_compose_models",
+    )
+
+    _process_module_definition(
         "sklearn.ensemble._bagging",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_ensemble_bagging_models",

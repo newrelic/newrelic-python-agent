@@ -2819,6 +2819,66 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.covariance._empirical_covariance",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance.empirical_covariance_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance.shrunk_covariance_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_shrunk_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance._shrunk_covariance",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_shrunk_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance.robust_covariance_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance._robust_covariance",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance.graph_lasso_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_graph_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance._graph_lasso",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_graph_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance.elliptic_envelope",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance._elliptic_envelope",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
         "sklearn.ensemble._bagging",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_ensemble_bagging_models",

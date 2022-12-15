@@ -189,6 +189,32 @@ def instrument_sklearn_ensemble_hist_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_covariance_shrunk_models(module):
+    model_classes = (
+        "ShrunkCovariance",
+        "LedoitWolf",
+        "OAS",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_covariance_graph_models(module):
+    model_classes = (
+        "GraphicalLasso",
+        "GraphicalLassoCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_covariance_models(module):
+    model_classes = (
+        "EmpiricalCovariance",
+        "MinCovDet",
+        "EllipticEnvelope",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_metrics(module):
     for scorer in METRIC_SCORERS:
         if hasattr(module, scorer):

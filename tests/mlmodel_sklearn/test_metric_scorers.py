@@ -33,10 +33,37 @@ from newrelic.hooks.mlmodel_sklearn import PredictReturnTypeProxy
     ),
 )
 def test_metric_scorer_attributes(metric_scorer_name, run_metric_scorer):
-    @validate_attributes("agent", ["DecisionTreeClassifier.%s" % metric_scorer_name])
+    @validate_attributes("agent", ["DecisionTreeClassifier/TrainingStep/0/%s" % metric_scorer_name])
     @background_task()
     def _test():
         run_metric_scorer(metric_scorer_name)
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "metric_scorer_name",
+    (
+        "accuracy_score",
+        "balanced_accuracy_score",
+        "f1_score",
+        "precision_score",
+        "recall_score",
+        "roc_auc_score",
+        "r2_score",
+    ),
+)
+def test_metric_scorer_training_steps_attributes(metric_scorer_name, run_metric_scorer):
+    @validate_attributes(
+        "agent",
+        [
+            "DecisionTreeClassifier/TrainingStep/0/%s" % metric_scorer_name,
+            "DecisionTreeClassifier/TrainingStep/1/%s" % metric_scorer_name,
+        ],
+    )
+    @background_task()
+    def _test():
+        run_metric_scorer(metric_scorer_name, training_steps=[0, 1])
 
     _test()
 
@@ -53,8 +80,8 @@ def test_metric_scorer_iterable_score_attributes(metric_scorer_name, kwargs, run
     @validate_attributes(
         "agent",
         [
-            "DecisionTreeClassifier.%s[0]" % metric_scorer_name,
-            "DecisionTreeClassifier.%s[1]" % metric_scorer_name,
+            "DecisionTreeClassifier/TrainingStep/0/%s[0]" % metric_scorer_name,
+            "DecisionTreeClassifier/TrainingStep/0/%s[1]" % metric_scorer_name,
         ],
     )
     @background_task()
@@ -77,7 +104,7 @@ def test_metric_scorer_iterable_score_attributes(metric_scorer_name, kwargs, run
     ],
 )
 def test_metric_scorer_attributes_unknown_model(metric_scorer_name):
-    @validate_attributes("agent", ["Unknown.%s" % metric_scorer_name])
+    @validate_attributes("agent", ["Unknown/TrainingStep/Unknown/%s" % metric_scorer_name])
     @background_task()
     def _test():
         from sklearn import metrics
@@ -92,14 +119,15 @@ def test_metric_scorer_attributes_unknown_model(metric_scorer_name):
 
 @pytest.mark.parametrize("data", (np.array([0, 1]), "foo", 1, 1.0, True, [0, 1], {"foo": "bar"}, (0, 1), np.str_("F")))
 def test_PredictReturnTypeProxy(data):
-    wrapped_data = PredictReturnTypeProxy(data, "ModelName")
+    wrapped_data = PredictReturnTypeProxy(data, "ModelName", 0)
 
     assert wrapped_data._nr_model_name == "ModelName"
+    assert wrapped_data._nr_training_step == 0
 
 
 @pytest.fixture
 def run_metric_scorer():
-    def _run(metric_scorer_name, metric_scorer_kwargs=None):
+    def _run(metric_scorer_name, metric_scorer_kwargs=None, training_steps=None):
         from sklearn import metrics, tree
 
         x_train = [[0, 0], [1, 1]]
@@ -107,12 +135,16 @@ def run_metric_scorer():
         x_test = [[2.0, 2.0], [0, 0.5]]
         y_test = [1, 0]
 
+        if not training_steps:
+            training_steps = [0]
+
         clf = tree.DecisionTreeClassifier(random_state=0)
-        model = clf.fit(x_train, y_train)
+        for step in training_steps:
+            model = clf.fit(x_train, y_train)
 
-        labels = model.predict(x_test)
+            labels = model.predict(x_test)
 
-        metric_scorer_kwargs = metric_scorer_kwargs or {}
-        return getattr(metrics, metric_scorer_name)(y_test, labels, **metric_scorer_kwargs)
+            metric_scorer_kwargs = metric_scorer_kwargs or {}
+            getattr(metrics, metric_scorer_name)(y_test, labels, **metric_scorer_kwargs)
 
     return _run

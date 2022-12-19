@@ -201,6 +201,23 @@ def instrument_sklearn_ensemble_hist_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_feature_selection_rfe_models(module):
+    model_classes = (
+        "RFE",
+        "RFECV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_feature_selection_models(module):
+    model_classes = (
+        "VarianceThreshold",
+        "SelectFromModel",
+        "SequentialFeatureSelector",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_metrics(module):
     for scorer in METRIC_SCORERS:
         if hasattr(module, scorer):

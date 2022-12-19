@@ -2903,6 +2903,30 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.gaussian_process._gpc",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_gaussian_process_models",
+    )
+
+    _process_module_definition(
+        "sklearn.gaussian_process.gpc",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_gaussian_process_models",
+    )
+
+    _process_module_definition(
+        "sklearn.gaussian_process._gpr",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_gaussian_process_models",
+    )
+
+    _process_module_definition(
+        "sklearn.gaussian_process.gpr",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_gaussian_process_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",

@@ -215,6 +215,17 @@ def instrument_sklearn_linear_coordinate_descent_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_cluster_models(module):
+    model_classes = (
+        "AffinityPropagation",
+        "Birch",
+        "DBSCAN",
+        "MeanShift",
+        "OPTICS",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_linear_least_angle_models(module):
     model_classes = (
         "Lars",
@@ -226,11 +237,28 @@ def instrument_sklearn_linear_least_angle_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_cluster_agglomerative_models(module):
+    model_classes = (
+        "AgglomerativeClustering",
+        "FeatureAgglomeration",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_linear_GLM_models(module):
     model_classes = (
         "PoissonRegressor",
         "GammaRegressor",
         "TweedieRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_cluster_clustering_models(module):
+    model_classes = (
+        "SpectralBiclustering",
+        "SpectralCoclustering",
+        "SpectralClustering",
     )
     _instrument_sklearn_models(module, model_classes)
 
@@ -294,6 +322,15 @@ def instrument_sklearn_linear_models(module):
         "QuantileRegressor",
         "TheilSenRegressor",
         "RANSACRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_cluster_kmeans_models(module):
+    model_classes = (
+        "BisectingKMeans",
+        "KMeans",
+        "MiniBatchKMeans",
     )
     _instrument_sklearn_models(module, model_classes)
 

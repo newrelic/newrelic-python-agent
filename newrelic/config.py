@@ -3071,6 +3071,120 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.cluster._affinity_propagation",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.affinity_propagation_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._agglomerative",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_agglomerative_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.hierarchical",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_agglomerative_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._birch",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.birch",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._bisect_k_means",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_kmeans_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._dbscan",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.dbscan_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._feature_agglomeration",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._kmeans",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_kmeans_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.k_means_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_kmeans_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._mean_shift",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.mean_shift_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._optics",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._spectral",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_clustering_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.spectral",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_clustering_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._bicluster",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_clustering_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.bicluster",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_clustering_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",

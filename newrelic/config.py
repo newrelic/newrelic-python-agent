@@ -2903,6 +2903,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.kernel_ridge",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_kernel_ridge_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",

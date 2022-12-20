@@ -70,7 +70,7 @@ def run_gaussian_process_model():
         X, y = load_iris(return_X_y=True)
         x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
 
-        clf = getattr(sklearn.gaussian_process, gaussian_process_model_name)({"random_state": 0})
+        clf = getattr(sklearn.gaussian_process, gaussian_process_model_name)(random_state=0)
 
         model = clf.fit(x_train, y_train)
         if hasattr(model, "predict"):

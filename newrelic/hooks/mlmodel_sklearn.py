@@ -215,6 +215,11 @@ def instrument_sklearn_linear_coordinate_descent_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_calibration_models(module):
+    model_classes = ("CalibratedClassifierCV",)
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_cluster_models(module):
     model_classes = (
         "AffinityPropagation",

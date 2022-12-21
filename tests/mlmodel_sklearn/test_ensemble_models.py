@@ -15,6 +15,7 @@
 import pytest
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -281,8 +282,9 @@ def run_ensemble_model():
         elif ensemble_model_name == "VotingRegressor":
             kwargs = {
                 "estimators": [
-                    ("rf", RandomForestRegressor(n_estimators=10, random_state=1)),
+                    ("rf", RandomForestRegressor()),
                     ("lr", LinearRegression()),
+                    ("nr", KNeighborsRegressor()),
                 ]
             }
         elif ensemble_model_name == "StackingRegressor":
@@ -291,7 +293,7 @@ def run_ensemble_model():
 
         model = clf.fit(x_train, y_train)
         if hasattr(model, "predict"):
-            model.predict(x_test)
+            model.predict(x_train)
         if hasattr(model, "score"):
             model.score(x_test, y_test)
         if hasattr(model, "predict_log_proba"):

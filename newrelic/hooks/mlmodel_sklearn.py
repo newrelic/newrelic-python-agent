@@ -206,6 +206,48 @@ def instrument_sklearn_kernel_ridge_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_calibration_models(module):
+    model_classes = ("CalibratedClassifierCV",)
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_cluster_models(module):
+    model_classes = (
+        "AffinityPropagation",
+        "Birch",
+        "DBSCAN",
+        "MeanShift",
+        "OPTICS",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_cluster_agglomerative_models(module):
+    model_classes = (
+        "AgglomerativeClustering",
+        "FeatureAgglomeration",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_cluster_clustering_models(module):
+    model_classes = (
+        "SpectralBiclustering",
+        "SpectralCoclustering",
+        "SpectralClustering",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_cluster_kmeans_models(module):
+    model_classes = (
+        "BisectingKMeans",
+        "KMeans",
+        "MiniBatchKMeans",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_metrics(module):
     for scorer in METRIC_SCORERS:
         if hasattr(module, scorer):

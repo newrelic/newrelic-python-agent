@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+from sklearn.ensemble import AdaBoostClassifier
 
 # from sklearn.model_selection import RandomForestClassifier, RandomForestRegressor
 # from sklearn.linear_model import LinearRegression
@@ -42,7 +43,7 @@ def test_model_methods_wrapped_in_function_trace(model_selection_model_name, run
             ("Function/MLModel/Sklearn/Named/GridSearchCV.predict_log_proba", 1),
             ("Function/MLModel/Sklearn/Named/GridSearchCV.predict_proba", 1),
             ("Function/MLModel/Sklearn/Named/GridSearchCV.score", 1),
-            ("Function/MLModel/Sklearn/Named/GridSearchCV.transform", 1),
+            # ("Function/MLModel/Sklearn/Named/GridSearchCV.transform", 1),
         ],
         "RandomizedSearchCV": [
             ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.fit", 1),
@@ -50,7 +51,7 @@ def test_model_methods_wrapped_in_function_trace(model_selection_model_name, run
             ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.predict_log_proba", 1),
             ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.predict_proba", 1),
             ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.score", 1),
-            ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.transform", 1),
+            # ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.transform", 1),
         ],
     }
 
@@ -203,7 +204,8 @@ def run_model_selection_model():
         X, y = load_iris(return_X_y=True)
         x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
 
-        kwargs = {"estimator": 0, "param_distributions": 0}
+        parameters = {"kernel": ("linear", "rbf"), "C": [1, 10]}
+        kwargs = {"estimator": AdaBoostClassifier(), "param_grid": parameters}
         # if ensemble_model_name == "StackingClassifier":
         #     kwargs = {"estimators": [("rf", RandomForestClassifier())], "final_estimator": RandomForestClassifier()}
         # elif ensemble_model_name == "VotingClassifier":

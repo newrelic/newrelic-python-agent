@@ -3017,6 +3017,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.naive_bayes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_naive_bayes_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",

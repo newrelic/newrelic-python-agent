@@ -3154,6 +3154,7 @@ def _update_security_module(agent):
     if application:
         configuration = application.configuration
         metadata["agentRunId"] = configuration.agent_run_id
+        metadata["accountId"] = configuration.account_id
 
     agent.refresh_agent(config, policy, metadata)
 

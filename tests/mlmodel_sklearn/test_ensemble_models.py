@@ -279,7 +279,7 @@ def run_ensemble_model():
                 "voting": "soft",
             }
         elif ensemble_model_name == "VotingRegressor":
-            kwargs = {"estimators": [("lr", LinearRegression())]}
+            kwargs = {"estimators": [("rf", RandomForestRegressor()), ("lr", LinearRegression())]}
         elif ensemble_model_name == "StackingRegressor":
             kwargs = {"estimators": [("rf", RandomForestRegressor())]}
         clf = getattr(sklearn.ensemble, ensemble_model_name)(**kwargs)

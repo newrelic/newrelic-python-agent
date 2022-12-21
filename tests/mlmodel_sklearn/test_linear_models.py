@@ -59,7 +59,7 @@ SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
         "RANSACRegressor",
     ],
 )
-def test_below_v1_1_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_model):
+def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_model):
     expected_scoped_metrics = {
         "ARDRegression": [
             ("Function/MLModel/Sklearn/Named/ARDRegression.fit", 1),
@@ -214,9 +214,7 @@ def test_below_v1_1_model_methods_wrapped_in_function_trace(linear_model_name, r
     }
     expected_transaction_name = "test_linear_models:_test"
     if six.PY3:
-        expected_transaction_name = (
-            "test_linear_models:test_below_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
-        )
+        expected_transaction_name = "test_linear_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
 
     @validate_transaction_metrics(
         expected_transaction_name,

@@ -67,15 +67,19 @@ def run_compose_model():
         import numpy as np
         import sklearn.compose
 
-        X = [[0.0, 1.0, 2.0, 2.0], [1.0, 1.0, 0.0, 1.0]]
-        y = None
-        kwargs = {
-            "transformers": [("norm1", Normalizer(norm="l1"), [0, 1]), ("norm2", Normalizer(norm="l1"), slice(2, 4))]
-        }
         if compose_model_name == "TransformedTargetRegressor":
             kwargs = {"regressor": LinearRegression()}
             X = np.arange(4).reshape(-1, 1)
             y = np.exp(2 * X).ravel()
+        else:
+            X = [[0.0, 1.0, 2.0, 2.0], [1.0, 1.0, 0.0, 1.0]]
+            y = None
+            kwargs = {
+                "transformers": [
+                    ("norm1", Normalizer(norm="l1"), [0, 1]),
+                    ("norm2", Normalizer(norm="l1"), slice(2, 4)),
+                ]
+            }
 
         clf = getattr(sklearn.compose, compose_model_name)(**kwargs)
 

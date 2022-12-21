@@ -30,102 +30,32 @@ SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
 @pytest.mark.parametrize(
     "model_selection_model_name",
     [
-        "AdaBoostClassifier",
-        "AdaBoostRegressor",
-        "BaggingClassifier",
-        "BaggingRegressor",
-        "ExtraTreesClassifier",
-        "ExtraTreesRegressor",
-        "GradientBoostingClassifier",
-        "GradientBoostingRegressor",
-        "IsolationForest",
-        "RandomForestClassifier",
-        "RandomForestRegressor",
-        "RandomTreesEmbedding",
-        "VotingClassifier",
+        "GridSearchCV",
+        "RandomizedSearchCV",
     ],
 )
-def test_below_v1_0_model_methods_wrapped_in_function_trace(model_selection_model_name, run_model_selection_model):
+def test_model_methods_wrapped_in_function_trace(model_selection_model_name, run_model_selection_model):
     expected_scoped_metrics = {
-        "AdaBoostClassifier": [
-            ("Function/MLModel/Sklearn/Named/AdaBoostClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/AdaBoostClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/AdaBoostClassifier.predict_log_proba", 1),
-            ("Function/MLModel/Sklearn/Named/AdaBoostClassifier.predict_proba", 2),
-            ("Function/MLModel/Sklearn/Named/AdaBoostClassifier.score", 1),
+        "GridSearchCV": [
+            ("Function/MLModel/Sklearn/Named/GridSearchCV.fit", 1),
+            ("Function/MLModel/Sklearn/Named/GridSearchCV.predict", 1),
+            ("Function/MLModel/Sklearn/Named/GridSearchCV.predict_log_proba", 1),
+            ("Function/MLModel/Sklearn/Named/GridSearchCV.predict_proba", 1),
+            ("Function/MLModel/Sklearn/Named/GridSearchCV.score", 1),
+            ("Function/MLModel/Sklearn/Named/GridSearchCV.transform", 1),
         ],
-        "AdaBoostRegressor": [
-            ("Function/MLModel/Sklearn/Named/AdaBoostRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/AdaBoostRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/AdaBoostRegressor.score", 1),
-        ],
-        "BaggingClassifier": [
-            ("Function/MLModel/Sklearn/Named/BaggingClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/BaggingClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/BaggingClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/BaggingClassifier.predict_log_proba", 1),
-            ("Function/MLModel/Sklearn/Named/BaggingClassifier.predict_proba", 3),
-        ],
-        "BaggingRegressor": [
-            ("Function/MLModel/Sklearn/Named/BaggingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/BaggingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/BaggingRegressor.score", 1),
-        ],
-        "ExtraTreesClassifier": [
-            ("Function/MLModel/Sklearn/Named/ExtraTreesClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/ExtraTreesClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/ExtraTreesClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/ExtraTreesClassifier.predict_log_proba", 1),
-            ("Function/MLModel/Sklearn/Named/ExtraTreesClassifier.predict_proba", 4),
-        ],
-        "ExtraTreesRegressor": [
-            ("Function/MLModel/Sklearn/Named/ExtraTreesRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/ExtraTreesRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/ExtraTreesRegressor.score", 1),
-        ],
-        "GradientBoostingClassifier": [
-            ("Function/MLModel/Sklearn/Named/GradientBoostingClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/GradientBoostingClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/GradientBoostingClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/GradientBoostingClassifier.predict_log_proba", 1),
-            ("Function/MLModel/Sklearn/Named/GradientBoostingClassifier.predict_proba", 2),
-        ],
-        "GradientBoostingRegressor": [
-            ("Function/MLModel/Sklearn/Named/GradientBoostingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/GradientBoostingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/GradientBoostingRegressor.score", 1),
-        ],
-        "IsolationForest": [
-            ("Function/MLModel/Sklearn/Named/IsolationForest.fit", 1),
-            ("Function/MLModel/Sklearn/Named/IsolationForest.predict", 1),
-        ],
-        "RandomForestClassifier": [
-            ("Function/MLModel/Sklearn/Named/RandomForestClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/RandomForestClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/RandomForestClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/RandomForestClassifier.predict_log_proba", 1),
-            ("Function/MLModel/Sklearn/Named/RandomForestClassifier.predict_proba", 4),
-        ],
-        "RandomForestRegressor": [
-            ("Function/MLModel/Sklearn/Named/RandomForestRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/RandomForestRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/RandomForestRegressor.score", 1),
-        ],
-        "RandomTreesEmbedding": [
-            ("Function/MLModel/Sklearn/Named/RandomTreesEmbedding.fit", 1),
-            ("Function/MLModel/Sklearn/Named/RandomTreesEmbedding.transform", 1),
-        ],
-        "VotingClassifier": [
-            ("Function/MLModel/Sklearn/Named/VotingClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/VotingClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/VotingClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/VotingClassifier.transform", 1),
-            ("Function/MLModel/Sklearn/Named/VotingClassifier.predict_proba", 3),
+        "RandomizedSearchCV": [
+            ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.fit", 1),
+            ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.predict", 1),
+            ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.predict_log_proba", 1),
+            ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.predict_proba", 1),
+            ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.score", 1),
+            ("Function/MLModel/Sklearn/Named/RandomizedSearchCV.transform", 1),
         ],
     }
 
     expected_transaction_name = (
-        "test_model_selection_models:test_below_v1_0_model_methods_wrapped_in_function_trace.<locals>._test"
+        "test_model_selection_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
         if six.PY3
         else "test_model_selection_models:_test"
     )
@@ -143,124 +73,124 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(model_selection_mode
     _test()
 
 
-@pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0) or SKLEARN_VERSION >= (1, 1, 0), reason="Requires 1.0 <= sklearn < 1.1")
-@pytest.mark.parametrize(
-    "model_selection_model_name",
-    [
-        "HistGradientBoostingClassifier",
-        "HistGradientBoostingRegressor",
-        "StackingClassifier",
-        "StackingRegressor",
-        "VotingRegressor",
-    ],
-)
-def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(
-    model_selection_model_name, run_model_selection_model
-):
-    expected_scoped_metrics = {
-        "HistGradientBoostingClassifier": [
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict_proba", 3),
-        ],
-        "HistGradientBoostingRegressor": [
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.score", 1),
-        ],
-        "StackingClassifier": [
-            ("Function/MLModel/Sklearn/Named/StackingClassifier.fit", 1),
-        ],
-        "StackingRegressor": [
-            ("Function/MLModel/Sklearn/Named/StackingRegressor.fit", 1),
-        ],
-        "VotingRegressor": [
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.score", 1),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.transform", 1),
-        ],
-    }
-    expected_transaction_name = (
-        "test_model_selection_models:test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_model_selection_models:_test"
-    )
+# @pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0) or SKLEARN_VERSION >= (1, 1, 0), reason="Requires 1.0 <= sklearn < 1.1")
+# @pytest.mark.parametrize(
+#     "model_selection_model_name",
+#     [
+#         "HistGradientBoostingClassifier",
+#         "HistGradientBoostingRegressor",
+#         "StackingClassifier",
+#         "StackingRegressor",
+#         "VotingRegressor",
+#     ],
+# )
+# def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(
+#     model_selection_model_name, run_model_selection_model
+# ):
+#     expected_scoped_metrics = {
+#         "HistGradientBoostingClassifier": [
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict", 2),
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.score", 1),
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict_proba", 3),
+#         ],
+#         "HistGradientBoostingRegressor": [
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.fit", 1),
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.predict", 2),
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.score", 1),
+#         ],
+#         "StackingClassifier": [
+#             ("Function/MLModel/Sklearn/Named/StackingClassifier.fit", 1),
+#         ],
+#         "StackingRegressor": [
+#             ("Function/MLModel/Sklearn/Named/StackingRegressor.fit", 1),
+#         ],
+#         "VotingRegressor": [
+#             ("Function/MLModel/Sklearn/Named/VotingRegressor.fit", 1),
+#             ("Function/MLModel/Sklearn/Named/VotingRegressor.predict", 2),
+#             ("Function/MLModel/Sklearn/Named/VotingRegressor.score", 1),
+#             ("Function/MLModel/Sklearn/Named/VotingRegressor.transform", 1),
+#         ],
+#     }
+#     expected_transaction_name = (
+#         "test_model_selection_models:test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
+#         if six.PY3
+#         else "test_model_selection_models:_test"
+#     )
 
-    @validate_transaction_metrics(
-        expected_transaction_name,
-        scoped_metrics=expected_scoped_metrics[model_selection_model_name],
-        rollup_metrics=expected_scoped_metrics[model_selection_model_name],
-        background_task=True,
-    )
-    @background_task()
-    def _test():
-        run_model_selection_model(model_selection_model_name)
+#     @validate_transaction_metrics(
+#         expected_transaction_name,
+#         scoped_metrics=expected_scoped_metrics[model_selection_model_name],
+#         rollup_metrics=expected_scoped_metrics[model_selection_model_name],
+#         background_task=True,
+#     )
+#     @background_task()
+#     def _test():
+#         run_model_selection_model(model_selection_model_name)
 
-    _test()
+#     _test()
 
 
-@pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn >= 1.1")
-@pytest.mark.parametrize(
-    "model_selection_model_name",
-    [
-        "HistGradientBoostingClassifier",
-        "HistGradientBoostingRegressor",
-        "StackingClassifier",
-        "StackingRegressor",
-        "VotingRegressor",
-    ],
-)
-def test_above_v1_1_model_methods_wrapped_in_function_trace(model_selection_model_name, run_model_selection_model):
-    expected_scoped_metrics = {
-        "StackingClassifier": [
-            ("Function/MLModel/Sklearn/Named/StackingClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/StackingClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/StackingClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/StackingClassifier.predict_proba", 1),
-            ("Function/MLModel/Sklearn/Named/StackingClassifier.transform", 4),
-        ],
-        "StackingRegressor": [
-            ("Function/MLModel/Sklearn/Named/StackingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/StackingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/StackingRegressor.score", 1),
-        ],
-        "VotingRegressor": [
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.score", 1),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.transform", 1),
-        ],
-        "HistGradientBoostingClassifier": [
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict_proba", 3),
-        ],
-        "HistGradientBoostingRegressor": [
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.score", 1),
-        ],
-    }
-    expected_transaction_name = (
-        "test_model_selection_models:test_above_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_model_selection_models:_test"
-    )
+# @pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn >= 1.1")
+# @pytest.mark.parametrize(
+#     "model_selection_model_name",
+#     [
+#         "HistGradientBoostingClassifier",
+#         "HistGradientBoostingRegressor",
+#         "StackingClassifier",
+#         "StackingRegressor",
+#         "VotingRegressor",
+#     ],
+# )
+# def test_above_v1_1_model_methods_wrapped_in_function_trace(model_selection_model_name, run_model_selection_model):
+#     expected_scoped_metrics = {
+#         "StackingClassifier": [
+#             ("Function/MLModel/Sklearn/Named/StackingClassifier.fit", 1),
+#             ("Function/MLModel/Sklearn/Named/StackingClassifier.predict", 2),
+#             ("Function/MLModel/Sklearn/Named/StackingClassifier.score", 1),
+#             ("Function/MLModel/Sklearn/Named/StackingClassifier.predict_proba", 1),
+#             ("Function/MLModel/Sklearn/Named/StackingClassifier.transform", 4),
+#         ],
+#         "StackingRegressor": [
+#             ("Function/MLModel/Sklearn/Named/StackingRegressor.fit", 1),
+#             ("Function/MLModel/Sklearn/Named/StackingRegressor.predict", 2),
+#             ("Function/MLModel/Sklearn/Named/StackingRegressor.score", 1),
+#         ],
+#         "VotingRegressor": [
+#             ("Function/MLModel/Sklearn/Named/VotingRegressor.fit", 1),
+#             ("Function/MLModel/Sklearn/Named/VotingRegressor.predict", 2),
+#             ("Function/MLModel/Sklearn/Named/VotingRegressor.score", 1),
+#             ("Function/MLModel/Sklearn/Named/VotingRegressor.transform", 1),
+#         ],
+#         "HistGradientBoostingClassifier": [
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict", 2),
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.score", 1),
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict_proba", 3),
+#         ],
+#         "HistGradientBoostingRegressor": [
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.fit", 1),
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.predict", 2),
+#             ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.score", 1),
+#         ],
+#     }
+#     expected_transaction_name = (
+#         "test_model_selection_models:test_above_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
+#         if six.PY3
+#         else "test_model_selection_models:_test"
+#     )
 
-    @validate_transaction_metrics(
-        expected_transaction_name,
-        scoped_metrics=expected_scoped_metrics[model_selection_model_name],
-        rollup_metrics=expected_scoped_metrics[model_selection_model_name],
-        background_task=True,
-    )
-    @background_task()
-    def _test():
-        run_model_selection_model(model_selection_model_name)
+#     @validate_transaction_metrics(
+#         expected_transaction_name,
+#         scoped_metrics=expected_scoped_metrics[model_selection_model_name],
+#         rollup_metrics=expected_scoped_metrics[model_selection_model_name],
+#         background_task=True,
+#     )
+#     @background_task()
+#     def _test():
+#         run_model_selection_model(model_selection_model_name)
 
-    _test()
+#     _test()
 
 
 @pytest.fixture
@@ -273,7 +203,7 @@ def run_model_selection_model():
         X, y = load_iris(return_X_y=True)
         x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
 
-        kwargs = {"random_state": 0}
+        kwargs = {"estimator": 0, "param_distributions": 0}
         # if ensemble_model_name == "StackingClassifier":
         #     kwargs = {"estimators": [("rf", RandomForestClassifier())], "final_estimator": RandomForestClassifier()}
         # elif ensemble_model_name == "VotingClassifier":

@@ -3047,6 +3047,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.model_selection._search",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_model_selection_models",
+    )
+
+    _process_module_definition(
         "sklearn.mixture._bayesian_mixture",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_mixture_models",

@@ -3132,8 +3132,8 @@ def _generate_security_module_policy():
 
 
 def _generate_security_module_config():
-    from k2_python_agent import AgentConfig
-    config = AgentConfig()
+    from newrelic_security.agent.models.agent_config import NRSecurityAgentConfig
+    config = NRSecurityAgentConfig()
     config.set_base_config(_settings.security)
     config.set_acessor_token(_settings.license_key)
     config.application_name = _settings.app_name
@@ -3167,13 +3167,13 @@ def _setup_security_module():
         if _settings.security.force_complete_disable:
             return
         # run security module
-        from k2_python_agent import AgentConfig, ModuleLoadAgent
+        from newrelic_security.agent.nr_security_agent import NRSecurityAgent
         from functools import partial as Partial
 
         config =_generate_security_module_config()
         policy = _generate_security_module_policy()
 
-        security_module_agent = ModuleLoadAgent(config)
+        security_module_agent = NRSecurityAgent(config)
         security_module_agent.initialise()
         security_module_agent.set_policy_from_flat_dict(policy)
 
@@ -3191,6 +3191,8 @@ def _setup_security_module():
             _get_trace_linking_metadata_for_security_module
         )
     except Exception as k2error:
+        import traceback
+        traceback.print_tb(k2error.__traceback__)
         _logger.error("K2 Startup failed with error %s", k2error)
 
 

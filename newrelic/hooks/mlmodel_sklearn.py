@@ -252,6 +252,18 @@ def instrument_sklearn_neural_network_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_neighbors_KRadius_models(module):
+    model_classes = (
+        "KNeighborsClassifier",
+        "RadiusNeighborsClassifier",
+        "KNeighborsTransformer",
+        "RadiusNeighborsTransformer",
+        "KNeighborsRegressor",
+        "RadiusNeighborsRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_svm_models(module):
     model_classes = (
         "LinearSVC",
@@ -278,6 +290,17 @@ def instrument_sklearn_pipeline_models(module):
     model_classes = (
         "Pipeline",
         "FeatureUnion",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_neighbors_models(module):
+    model_classes = (
+        "KernelDensity",
+        "LocalOutlierFactor",
+        "NeighborhoodComponentsAnalysis",
+        "NearestCentroid",
+        "NearestNeighbors",
     )
     _instrument_sklearn_models(module, model_classes)
 

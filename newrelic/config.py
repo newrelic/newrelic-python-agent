@@ -3083,6 +3083,90 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.neighbors._classification",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_KRadius_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.classification",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_KRadius_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._graph",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_KRadius_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._kde",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.kde",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._lof",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.lof",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._nca",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._nearest_centroid",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.nearest_centroid",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._regression",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_KRadius_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.regression",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_KRadius_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._unsupervised",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.unsupervised",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",

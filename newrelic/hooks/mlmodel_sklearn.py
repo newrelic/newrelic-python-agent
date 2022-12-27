@@ -13,10 +13,13 @@
 # limitations under the License.
 
 import sys
+import uuid
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
+from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
+from newrelic.core.config import global_settings
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 
 METHODS_TO_WRAP = ("predict", "fit", "fit_predict", "predict_log_proba", "predict_proba", "transform", "score")
@@ -68,10 +71,67 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         # If this is the predict method, wrap the return type in an nr type with
         # _nr_wrapped attrs that will attach model info to the data.
         if method == "predict":
+            wrap_predict(_class, wrapped, instance, args, kwargs)
             return PredictReturnTypeProxy(return_val, model_name=_class)
         return return_val
 
     wrap_function_wrapper(module, "%s.%s" % (_class, method), _nr_wrapper_method)
+
+
+def find_type_category(value):
+    value_type = None
+    python_type = str(type(value))
+    if "int" in python_type or "float" in python_type:
+        value_type = "numerical"
+    elif "bool" in python_type:
+        value_type = "bool"
+    elif "str" in python_type:
+        value_type = "str"
+    return value_type
+
+
+def record_feature_event(inference_id, model_name, model_version, feature_name, value, value_type):
+    transaction = current_transaction()
+
+    if transaction:
+        settings = transaction.settings
+    else:
+        settings = global_settings()
+
+    if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
+        if transaction:
+            transaction.record_custom_event("ML Model Feature Event", {"inference_id": inference_id, "model_name": model_name, "model_version": model_version, "feature_name": feature_name, "type": value_type, "value": value,})
+        else:
+            application = application_instance(activate=False)
+            if application and application.enabled:
+                transaction.record_custom_event("ML Model Feature Event", {"inference_id": inference_id, "model_name": model_name, "model_version": model_version, "type": value_type, "value": value,})
+
+
+def bind_predict(X, check_input=True):
+    return X, check_input
+
+
+def wrap_predict(_class, wrapped, instance, args, kwargs):
+    data_set, check_input = bind_predict(*args, **kwargs)
+    inference_id = uuid.uuid4()
+    model_name = getattr(instance, "_nr_wrapped_name", _class)
+    model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
+
+    #Pandas Dataframe
+    pd = sys.modules.get("pandas", None)
+    if pd and isinstance(data_set, pd.DataFrame):
+        for (colname, colval) in data_set.iteritems():
+            for value in colval.values:
+                value_type = data_set[colname].dtype.name
+                if value_type == "category":
+                    value_type = "categorical"
+                else:
+                    value_type = find_type_category(value)
+                record_feature_event(inference_id, model_name, model_version, colname, value, value_type)
+    else:
+        for feature in data_set:
+            for value in feature:
+                record_feature_event(inference_id, model_name, model_version, None, value, find_type_category(value))
 
 
 def _nr_instrument_model(module, model_class):

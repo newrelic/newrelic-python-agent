@@ -58,9 +58,9 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
     @property
     def name(self):
         field_name = self.field_name or "<unknown>"
-        product = self.product
-
-        name = 'GraphQL/resolve/%s/%s' % (product, field_name)
+        field_path = self.field_path or ""
+        product = self.product or "GraphQL"
+        name = "/".join(('GraphQL/resolve', product, *field_path.split("."), field_name))
 
         return name
 

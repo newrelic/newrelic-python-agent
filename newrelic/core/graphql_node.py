@@ -26,7 +26,7 @@ _GraphQLOperationNode = namedtuple('_GraphQLNode',
     'agent_attributes', 'user_attributes', 'product'])
 
 _GraphQLResolverNode = namedtuple('_GraphQLNode',
-    ['field_name', 'children', 'start_time', 'end_time', 'duration', 
+    ['field_name', 'field_path', 'children', 'start_time', 'end_time', 'duration', 
     'exclusive', 'guid', 'agent_attributes', 'user_attributes', 'product'])
 
 class GraphQLNodeMixin(GenericNodeMixin):
@@ -57,10 +57,10 @@ class GraphQLNodeMixin(GenericNodeMixin):
 class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
     @property
     def name(self):
-        field_name = self.field_name or "<unknown>"
-        field_path = self.field_path or ""
+        field_path = self.field_path or self.field_name or "<unknown>"
         product = self.product or "GraphQL"
-        name = "/".join(('GraphQL/resolve', product, *field_path.split("."), field_name))
+
+        name = 'GraphQL/resolve/%s/%s' % (product, field_path)
 
         return name
 
@@ -69,12 +69,9 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
         database node as well as all the child nodes.
         """
 
-        field_name = self.field_name or "<unknown>"
-        product = self.product
-
         # Determine the scoped metric
 
-        field_resolver_metric_name = 'GraphQL/resolve/%s/%s' % (product, field_name)
+        field_resolver_metric_name = self.name
 
         yield TimeMetric(name=field_resolver_metric_name, scope=root.path, duration=self.duration,
                          exclusive=self.exclusive)

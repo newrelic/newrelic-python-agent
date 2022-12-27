@@ -140,6 +140,41 @@ def test_basic(target_application):
     _test()
 
 
+def test_resolver_trace(target_application):
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    type_annotation = "!" if framework == "Strawberry" else ""
+
+    _test_scoped_metrics = [
+        ("GraphQL/resolve/%s/library" % framework, 1),
+        ("GraphQL/resolve/%s/library.book" % framework, 1),
+        ("GraphQL/resolve/%s/library.book.author" % framework, 2),
+        ("GraphQL/resolve/%s/library.book.author.first_name" % framework, 2),
+        ("GraphQL/operation/%s/query/<anonymous>/library.book.author.first_name" % framework, 1),
+    ]
+    _expected_resolver_attributes = {
+        "graphql.field.name": "first_name",
+        "graphql.field.parentType": "Author",
+        "graphql.field.path": "library.book.author.first_name",
+        "graphql.field.returnType": "String%s" % type_annotation,
+    }
+
+    @validate_span_events(count=2, exact_agents=_expected_resolver_attributes)
+    @validate_transaction_metrics(
+        "query/<anonymous>/library.book.author.first_name",
+        "GraphQL",
+        scoped_metrics=_test_scoped_metrics,
+        rollup_metrics=_test_scoped_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
+    )
+    @conditional_decorator(background_task(), is_bg)
+    def _test():
+        response = target_application("{ library(index: 0) { book { author { first_name }} } }")
+        expected = repr([{'author': {'first_name': 'New'}}, {'author': {'first_name': 'Leslie'}}])
+        assert repr(response["library"]["book"]) == expected
+
+    _test()
+
+
 @dt_enabled
 def test_query_and_mutation(target_application, is_graphql_2):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application

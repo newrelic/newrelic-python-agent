@@ -477,10 +477,21 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     field_name = field_asts[0].name.value
     field_def = parent_type.fields.get(field_name)
     field_return_type = str(field_def.type) if field_def else "<unknown>"
-    if isinstance(field_path, list):
-        field_path = field_path[0]
-    else:
-        field_path = field_path.key
+
+    # Attempt to unpack field path
+    try:
+        if isinstance(field_path, list):
+            field_path = field_path[0]
+        else:
+            path = [field_path.key]
+            field_path = getattr(field_path, "prev", None)
+            while field_path is not None:
+                if field_path.typename is not None:
+                    path.insert(0, field_path.key)
+                field_path = getattr(field_path, "prev", None)
+            field_path = ".".join(path)
+    except Exception:
+        field_path = field_name
 
     trace = GraphQLResolverTrace(
         field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path

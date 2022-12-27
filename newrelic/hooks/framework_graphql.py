@@ -481,7 +481,21 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     # Attempt to unpack field path
     try:
         if isinstance(field_path, list):
-            field_path = field_path[0]
+            from graphql.type.definition import GraphQLList
+
+            exe_context = args[0]
+            type_map = exe_context.schema.get_type_map()
+            path = []
+            current_type = type_map["Query"]
+            for item in field_path:
+                if isinstance(current_type, GraphQLList):
+                    current_type = current_type.of_type
+
+                item_def = current_type.fields.get(item, None)
+                if item_def is not None:
+                    path.append(item)
+                    current_type = item_def.type
+            field_path = ".".join(path)
         else:
             path = [field_path.key]
             field_path = getattr(field_path, "prev", None)

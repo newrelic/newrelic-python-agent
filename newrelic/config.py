@@ -2903,6 +2903,30 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.neural_network._multilayer_perceptron",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neural_network_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neural_network.multilayer_perceptron",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neural_network_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neural_network._rbm",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neural_network_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neural_network.rbm",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neural_network_models",
+    )
+
+    _process_module_definition(
         "sklearn.calibration",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_calibration_models",

@@ -93,6 +93,9 @@ Library = GraphQLObjectType(
 
 Storage = GraphQLList(GraphQLString)
 
+item_type_resolver = lambda x, _: "Book" if "isbn" in x else "Magazine"
+Item = GraphQLUnionType("Item", (Book, Magazine), resolve_type=item_type_resolver)
+
 
 async def resolve_hello(root, info):
     return "Hello!"
@@ -114,7 +117,8 @@ try:
         args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
     )
     search_field = GraphQLField(
-        GraphQLList(GraphQLUnionType("Item", (Book, Magazine), resolve_type=resolve_search)),
+        GraphQLList(Item), 
+        resolver=resolve_search,
         args={"contains": GraphQLArgument(GraphQLNonNull(GraphQLString))},
     )
     echo_field = GraphQLField(
@@ -142,7 +146,8 @@ except TypeError:
         args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
     )
     search_field = GraphQLField(
-        GraphQLList(GraphQLUnionType("Item", (Book, Magazine), resolve_type=resolve_search)),
+        GraphQLList(Item), 
+        resolve=resolve_search,
         args={"contains": GraphQLArgument(GraphQLNonNull(GraphQLString))},
     )
     echo_field = GraphQLField(

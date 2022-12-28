@@ -140,8 +140,7 @@ def test_basic(target_application):
     _test()
 
 
-@pytest.mark.parametrize("query", ("{ library(index: 0) { book { author { first_name }} } }", "{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { author { first_name } }"), ids=("standard", "fragments"))
-def test_resolver_trace(target_application, query):
+def test_resolver_trace(target_application):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     type_annotation = "!" if framework == "Strawberry" else ""
 
@@ -169,34 +168,53 @@ def test_resolver_trace(target_application, query):
     )
     @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = target_application(query)
+        response = target_application("{ library(index: 0) { book { author { first_name }} } }")
         expected = [{'author': {'first_name': 'New'}}, {'author': {'first_name': 'Leslie'}}]
         assert response["library"]["book"] == expected
 
     _test()
 
 
-def test_resolver_trace_path_fragments(target_application):
+@pytest.mark.parametrize("query,metric_stubs", [
+    ("{ library(index: 0) { book { author { first_name }} } }", [
+        ("library", 1),
+        ("library.book", 1),
+        ("library.book.author", 2),
+        ("library.book.author.first_name", 2),
+        ("query/<anonymous>/library.book.author.first_name", 1),
+    ]),
+    ("{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { author { first_name } }", [
+        ("library", 1),
+        ("library.book", 1),
+        ("library.book.author", 2),
+        ("library.book.author.first_name", 2),
+        ("query/<anonymous>/library.book.author.first_name", 1),
+    ]),
+    ('{ search(contains: "A") { __typename ... on Book { author { first_name } } } }', [
+        ("search", 1),
+        ("search.__typename", 2),
+        ("search<Book>.author", 2),
+        ("search<Book>.author.first_name", 2),
+        ("query/<anonymous>/search<Book>.author.first_name", 1),
+    ]),
+    ('{ search(contains: "A") { __typename ... on Book { author { first_name } } ... on Magazine { author { first_name } } } }', [
+        ("search", 1),
+        ("search.__typename", 2),
+        ("search<Book>.author", 2),
+        ("search<Book>.author.first_name", 2),
+        ("query/<anonymous>/search<Book>.author.first_name", 1),
+    ]),
+], ids=["standard", "named_fragment", "inline_fragment", "multi_inline_fragment"])
+def test_resolver_trace_paths(target_application, query, metric_stubs):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     type_annotation = "!" if framework == "Strawberry" else ""
 
-    _test_scoped_metrics = [
-        ("GraphQL/resolve/%s/search" % framework, 1),
-        ("GraphQL/resolve/%s/search.__typename" % framework, 2),
-        ("GraphQL/resolve/%s/search<Book>.author" % framework, 2),
-        ("GraphQL/resolve/%s/search<Book>.author.first_name" % framework, 2),
-        ("GraphQL/operation/%s/query/<anonymous>/search<Book>.author.first_name" % framework, 1),
-    ]
-    _expected_resolver_attributes = {
-        "graphql.field.name": "first_name",
-        "graphql.field.parentType": "Author",
-        "graphql.field.path": "search<Book>.author.first_name",
-        "graphql.field.returnType": "String%s" % type_annotation,
-    }
+    txn_name = metric_stubs[-1][0]
+    _test_scoped_metrics = [("GraphQL/resolve/%s/%s" % (framework, m[0]), m[1]) for m in metric_stubs[:-1]]
+    _test_scoped_metrics.append(("GraphQL/operation/%s/%s" % (framework, metric_stubs[-1][0]), metric_stubs[-1][1]))
 
-    @validate_span_events(count=2, exact_agents=_expected_resolver_attributes)
     @validate_transaction_metrics(
-        "query/<anonymous>/search<Book>.author.first_name",
+        txn_name,
         "GraphQL",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_scoped_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
@@ -204,9 +222,8 @@ def test_resolver_trace_path_fragments(target_application):
     )
     @conditional_decorator(background_task(), is_bg)
     def _test():
-        response = target_application('{ search(contains: "A") { __typename ... on Book { author { first_name } } } }')
-        expected = {'search': [{'__typename': 'Book', 'author': {'first_name': 'New'}}, {'__typename': 'Book', 'author': {'first_name': 'Bob'}}]}
-        assert response == expected, response
+        response = target_application(query)
+        assert response
 
     _test()
 

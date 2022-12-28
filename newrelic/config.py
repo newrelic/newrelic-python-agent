@@ -3155,7 +3155,7 @@ def _update_security_module(agent):
         configuration = application.configuration
         metadata["agentRunId"] = configuration.agent_run_id
         metadata["accountId"] = configuration.account_id
-
+    print("REFRESH AGENT!!!!")
     agent.refresh_agent(config, policy, metadata)
 
 
@@ -3179,8 +3179,6 @@ def _setup_security_module():
 
         if not _settings.security.enable:
             security_module_agent.disable()
-        else:
-            security_module_agent.connect()
 
         # create a callback to reinitialise the security module
         callback = Partial(_update_security_module, security_module_agent)

@@ -452,11 +452,11 @@ def wrap_parse(wrapped, instance, args, kwargs):
 
 
 def bind_resolve_field_v3(parent_type, source, field_nodes, path):
-    return parent_type, field_nodes, path
+    return None, parent_type, source, field_nodes, None, path
 
 
 def bind_resolve_field_v2(exe_context, parent_type, source, field_asts, parent_info, field_path):
-    return parent_type, field_asts, field_path
+    return exe_context, parent_type, source, field_asts, parent_info, field_path
 
 
 def wrap_resolve_field(wrapped, instance, args, kwargs):
@@ -470,7 +470,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
         bind_resolve_field = bind_resolve_field_v3
 
     try:
-        parent_type, field_asts, field_path = bind_resolve_field(*args, **kwargs)
+        execution_context, parent_type, source, field_asts, parent_info, field_path = bind_resolve_field(*args, **kwargs)
     except TypeError:
         return wrapped(*args, **kwargs)
 
@@ -481,20 +481,43 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     # Attempt to unpack field path
     try:
         if isinstance(field_path, list):
-            from graphql.type.definition import GraphQLList
+            execution_context = execution_context or instance
+            operation = getattr(parent_info, "operation", None)
 
-            exe_context = args[0]
-            type_map = exe_context.schema.get_type_map()
-            path = []
-            current_type = type_map["Query"]
-            for item in field_path:
-                if isinstance(current_type, GraphQLList):
-                    current_type = current_type.of_type
+            if getattr(operation, "selection_set", None) is None:
+                path = field_path
+            else:
+                fields = operation.selection_set.selections
+                fragments = execution_context.fragments
 
-                item_def = current_type.fields.get(item, None)
-                if item_def is not None:
-                    path.append(item)
-                    current_type = item_def.type
+                path = []
+
+                field_path = deque(field_path)
+                while field_path:
+                    item = field_path.popleft()
+                    if isinstance(item, int):
+                        # Ignore list indexes
+                        continue
+
+                    field_dict = {f.name.value: f for f in fields if not is_fragment(f)}
+                    field_def = field_dict.get(item, None)
+                    if field_def is not None:
+                        path.append(item)
+                        fields = getattr(getattr(field_def, "selection_set", None), "selections", []) 
+                    elif item.startswith("__"):
+                        # Instrospection field
+                        path.append(item)
+                        break
+                    else:
+                        field_fragments = [f for f in fields if is_named_fragment(f)]
+                        if len(field_fragments) == 1:
+                            current_fragment = field_fragments[0]
+                            path[-1] += "<%s>" % current_fragment.type_condition.name.value
+                            fields = current_fragment.selection_set.selections
+                            field_path.appendleft(item)  # Process item again
+                        else:
+                            raise ValueError()
+
             field_path = ".".join(path)
         else:
             path = [field_path.key]
@@ -507,6 +530,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     except Exception:
         field_path = field_name
 
+    # Set up resolver trace
     trace = GraphQLResolverTrace(
         field_name, field_parent_type=parent_type.name, field_return_type=field_return_type, field_path=field_path
     )

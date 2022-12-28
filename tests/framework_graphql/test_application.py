@@ -182,11 +182,10 @@ def test_resolver_trace_path_fragments(target_application):
 
     _test_scoped_metrics = [
         ("GraphQL/resolve/%s/search" % framework, 1),
-        ("GraphQL/resolve/%s/search<Book>" % framework, 1),
-        ("GraphQL/resolve/%s/search.__typename" % framework, 1),
+        ("GraphQL/resolve/%s/search.__typename" % framework, 2),
         ("GraphQL/resolve/%s/search<Book>.author" % framework, 2),
         ("GraphQL/resolve/%s/search<Book>.author.first_name" % framework, 2),
-        ("GraphQL/operation/%s/query/<anonymous>/library.book.author.first_name" % framework, 1),
+        ("GraphQL/operation/%s/query/<anonymous>/search<Book>.author.first_name" % framework, 1),
     ]
     _expected_resolver_attributes = {
         "graphql.field.name": "first_name",

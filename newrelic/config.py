@@ -3023,6 +3023,24 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.semi_supervised._label_propagation",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_semi_supervised_models",
+    )
+
+    _process_module_definition(
+        "sklearn.semi_supervised._self_training",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_semi_supervised_models",
+    )
+
+    _process_module_definition(
+        "sklearn.semi_supervised.label_propagation",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_semi_supervised_models",
+    )
+
+    _process_module_definition(
         "sklearn.svm._classes",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_svm_models",

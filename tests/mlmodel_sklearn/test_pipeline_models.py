@@ -39,8 +39,6 @@ def test_model_methods_wrapped_in_function_trace(pipeline_model_name, run_pipeli
         "Pipeline": [
             ("Function/MLModel/Sklearn/Named/Pipeline.fit", 1),
             ("Function/MLModel/Sklearn/Named/Pipeline.predict", 1),
-            # ("Function/MLModel/Sklearn/Named/Pipeline.predict_log_proba", 1),
-            # ("Function/MLModel/Sklearn/Named/Pipeline.predict_proba", 2),
             ("Function/MLModel/Sklearn/Named/Pipeline.score", 1),
         ],
         "FeatureUnion": [

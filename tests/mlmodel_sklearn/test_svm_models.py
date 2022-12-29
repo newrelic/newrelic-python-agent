@@ -103,12 +103,7 @@ def run_svm_model():
         clf = getattr(sklearn.svm, svm_model_name)(**kwargs)
 
         model = clf.fit(x_train, y_train)
-        if hasattr(model, "predict"):
-            model.predict(x_test)
-        if hasattr(model, "predict_log_proba"):
-            model.predict_log_proba(x_test)
-        if hasattr(model, "predict_proba"):
-            model.predict_proba(x_test)
+        model.predict(x_test)
 
         return model
 

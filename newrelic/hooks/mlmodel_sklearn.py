@@ -18,9 +18,7 @@ import uuid
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
-from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
-from newrelic.core.config import global_settings
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.core.config import global_settings
 

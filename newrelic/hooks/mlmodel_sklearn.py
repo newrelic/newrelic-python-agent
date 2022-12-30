@@ -78,6 +78,7 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         # _nr_wrapped attrs that will attach model info to the data.
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
+            wrap_predict(_class, wrapped, instance, args, kwargs)
             return PredictReturnTypeProxy(return_val, model_name=_class, training_step=training_step)
         return return_val
 

@@ -1479,6 +1479,31 @@ def override_ignore_status_codes(status_codes):
     return _override_ignore_status_codes
 
 
+def override_expected_status_codes(status_codes):
+    @function_wrapper
+    def _override_expected_status_codes(wrapped, instance, args, kwargs):
+        # Updates can be made to expected status codes in server
+        # side configs. Changes will be applied to application
+        # settings so we first check there and if they don't
+        # exist, we default to global settings
+
+        application = application_instance()
+        settings = application and application.settings
+
+        if not settings:
+            settings = global_settings()
+
+        original = settings.error_collector.expected_status_codes
+
+        try:
+            settings.error_collector.expected_status_codes = status_codes
+            return wrapped(*args, **kwargs)
+        finally:
+            settings.error_collector.expected_status_codes = original
+
+    return _override_expected_status_codes
+
+
 def code_coverage_fixture(source=None):
     if source is None:
         source = ["newrelic"]

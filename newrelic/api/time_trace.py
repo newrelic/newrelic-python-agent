@@ -327,6 +327,10 @@ class TimeTrace(object):
         if is_expected is None and callable(expected):
             is_expected = expected(exc, value, tb)
 
+        # Callable on transaction
+        if is_expected is None and hasattr(transaction, "_is_expected"):
+            is_expected = transaction._is_expected(exc, value, tb)
+
         # List of class names
         if is_expected is None and expected is not None and not callable(expected):
             # Do not set is_expected to False
@@ -631,7 +635,7 @@ def get_service_linking_metadata(application=None, settings=None):
         if application is None:
             from newrelic.api.application import application_instance
             application = application_instance(activate=False)
-        
+
         if application is not None:
             settings = application.settings
 

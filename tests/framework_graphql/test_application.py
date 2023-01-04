@@ -174,37 +174,33 @@ def test_resolver_trace(target_application):
         ("library.book", 1),
         ("library.book.author", 2),
         ("library.book.author.first_name", 2),
-        ("query/<anonymous>/library.book.author.first_name", 1),
     ]),
     ("{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { author { first_name } }", [
         ("library", 1),
         ("library.book", 1),
         ("library.book.author", 2),
         ("library.book.author.first_name", 2),
-        ("query/<anonymous>/library.book.author.first_name", 1),
     ]),
     ('{ search(contains: "A") { __typename ... on Book { author { first_name } } } }', [
         ("search", 1),
         ("search.__typename", 2),
         ("search<Book>.author", 2),
         ("search<Book>.author.first_name", 2),
-        ("query/<anonymous>/search<Book>.author.first_name", 1),
     ]),
-    ('{ search(contains: "A") { __typename ... on Book { author { first_name } } ... on Magazine { author { first_name } } } }', [
+    ('{ search(contains: "A") { __typename ... on Book { author { first_name } } ... on Magazine { name } } }', [
         ("search", 1),
         ("search.__typename", 2),
         ("search<Book>.author", 2),
         ("search<Book>.author.first_name", 2),
-        ("query/<anonymous>/search<Book>.author.first_name", 1),
     ]),
 ], ids=["standard", "named_fragment", "inline_fragment", "multi_inline_fragment"])
 def test_resolver_trace_paths(target_application, query, metric_stubs):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     type_annotation = "!" if framework == "Strawberry" else ""
 
-    txn_name = metric_stubs[-1][0]
-    _test_scoped_metrics = [("GraphQL/resolve/%s/%s" % (framework, m[0]), m[1]) for m in metric_stubs[:-1]]
-    _test_scoped_metrics.append(("GraphQL/operation/%s/%s" % (framework, metric_stubs[-1][0]), metric_stubs[-1][1]))
+    txn_name = "query/<anonymous>/%s" % metric_stubs[-1][0]
+    _test_scoped_metrics = [("GraphQL/resolve/%s/%s" % (framework, m[0]), m[1]) for m in metric_stubs]
+    _test_scoped_metrics.append(("GraphQL/operation/%s/query/<anonymous>/%s" % (framework, metric_stubs[-1][0]), 1))
 
     @validate_transaction_metrics(
         txn_name,

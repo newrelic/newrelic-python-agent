@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import OrderedDict
+
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
     validate_transaction_errors,
     validate_transaction_metrics,
 )
-from testing_support.util import conditional_decorator
+from testing_support.util import conditional_decorator, pytest_parametrize_from_dict
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
@@ -167,36 +169,76 @@ def test_resolver_trace(target_application):
 
     _test()
 
+_test_resolver_trace_paths_queries = OrderedDict([
+    ("basic", ("{ hello }", [
+        ("hello", 1),
+    ])),
+    ("field_error", ("{ error }", [
+        ("error", 1),
+    ])),
+    ("arguments", ('{ echo(echo: "test") }', [
+        ("echo", 1),
+    ])),
+    ("aliases", ('{ TestEcho: echo(echo: "test") }', [
+        ("echo", 1),
+    ])),
+    ("complex", ("{ library(index: 0) { branch, book { branch, author { first_name }} } }", [
+        ("library", 1),
+        ("library.branch", 1),
+        ("library.book", 1),
+        ("library.book.branch", 2),
+        ("library.book.author", 2),
+        ("library.book.author.first_name", 2),
+    ])),
+    ("named_fragment", ("{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { author { first_name } }", [
+        ("library", 1),
+        ("library.book", 1),
+        ("library.book.author", 2),
+        ("library.book.author.first_name", 2),
+    ])),
+    ("multiple_named_fragments", ("{ library(index: 0) { book { ...BookFragment } magazine { ...MagazineFragment } } } fragment BookFragment on Book { author { first_name } } fragment MagazineFragment on Magazine { name }", [
+        ("library", 1),
+        ("library.book", 1),
+        ("library.book.author", 2),
+        ("library.book.author.first_name", 2),
+        ("library.magazine", 1),
+        ("library.magazine.name", 2),
+    ])),
+    ("inline_fragment_filtering", ('{ search(contains: "A") { __typename ... on Book { author { first_name } } } }', [
+        ("search", 1),
+        ("search.__typename", 2),
+        ("search<Book>.author", 2),
+        ("search<Book>.author.first_name", 2),
+    ])),
+    ("multiple_inline_fragment_filtering", ('{ search(contains: "A") { __typename ... on Book { author { first_name } } ... on Magazine { name } } }', [
+        ("search", 1),
+        ("search.__typename", 2),
+        ("search<Book>.author", 2),
+        ("search<Book>.author.first_name", 2),
+        ("search<Magazine>.name", 2),
+    ])),
+    ("named_fragment_filtering", ('{ search(contains: "A") { __typename BookFragment } } fragment BookFragment on Book { author { first_name } }', [
+        ("search", 1),
+        ("search.__typename", 2),
+        ("search<Book>.author", 2),
+        ("search<Book>.author.first_name", 2),
+    ])),
+    ("multiple_named_fragment_filtering", ('{ search(contains: "A") { __typename BookFragment MagazineFragment } } fragment BookFragment on Book { author { first_name } } fragment MagazineFragment on Magazine { name }', [
+        ("search", 1),
+        ("search.__typename", 2),
+        ("search<Book>.author", 2),
+        ("search<Book>.author.first_name", 2),
+        ("search<Magazine>.name", 2),
+    ])),
+    ("multiple_root_selections", ('{ hello echo(echo: "test") }', [
+        ("hello", 1),
+        ("echo", 1),
+    ])),
+])
 
-@pytest.mark.parametrize("query,metric_stubs", [
-    ("{ library(index: 0) { book { author { first_name }} } }", [
-        ("library", 1),
-        ("library.book", 1),
-        ("library.book.author", 2),
-        ("library.book.author.first_name", 2),
-    ]),
-    ("{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { author { first_name } }", [
-        ("library", 1),
-        ("library.book", 1),
-        ("library.book.author", 2),
-        ("library.book.author.first_name", 2),
-    ]),
-    ('{ search(contains: "A") { __typename ... on Book { author { first_name } } } }', [
-        ("search", 1),
-        ("search.__typename", 2),
-        ("search<Book>.author", 2),
-        ("search<Book>.author.first_name", 2),
-    ]),
-    ('{ search(contains: "A") { __typename ... on Book { author { first_name } } ... on Magazine { name } } }', [
-        ("search", 1),
-        ("search.__typename", 2),
-        ("search<Book>.author", 2),
-        ("search<Book>.author.first_name", 2),
-    ]),
-], ids=["standard", "named_fragment", "inline_fragment", "multi_inline_fragment"])
+@pytest_parametrize_from_dict("query,metric_stubs", _test_resolver_trace_paths_queries)
 def test_resolver_trace_paths(target_application, query, metric_stubs):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
-    type_annotation = "!" if framework == "Strawberry" else ""
 
     txn_name = "query/<anonymous>/%s" % metric_stubs[-1][0]
     _test_scoped_metrics = [("GraphQL/resolve/%s/%s" % (framework, m[0]), m[1]) for m in metric_stubs]

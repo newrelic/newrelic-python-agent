@@ -18,6 +18,7 @@ from testing_support.fixtures import (
     validate_transaction_errors,
     validate_transaction_metrics,
 )
+from testing_support.util import conditional_decorator
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
@@ -30,14 +31,6 @@ from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
-
-def conditional_decorator(decorator, condition):
-    def _conditional_decorator(func):
-        if not condition:
-            return func
-        return decorator(func)
-
-    return _conditional_decorator
 
 
 @pytest.fixture(scope="session")

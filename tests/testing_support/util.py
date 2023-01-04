@@ -41,3 +41,12 @@ def get_open_port():
     port = s.getsockname()[1]
     s.close()
     return port
+
+
+def conditional_decorator(decorator, condition):
+    def _conditional_decorator(func):
+        if not condition:
+            return func
+        return decorator(func)
+
+    return _conditional_decorator

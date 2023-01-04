@@ -14,6 +14,8 @@
 
 import re
 import socket
+import pytest
+from newrelic.packages import six
 
 def _to_int(version_str):
     m = re.match(r'\d+', version_str)
@@ -50,3 +52,8 @@ def conditional_decorator(decorator, condition):
         return decorator(func)
 
     return _conditional_decorator
+
+
+def pytest_parametrize_from_dict(argnames, argvalues, *args, **kwargs):
+    pytest_params = [pytest.param(*values, id=key) for key, values in six.iteritems(argvalues)]
+    return pytest.mark.parametrize(argnames, pytest_params, *args, **kwargs)

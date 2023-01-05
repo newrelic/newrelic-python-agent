@@ -36,11 +36,15 @@ def add_nr_linking_metadata(message):
 
     try:
         # See if the message is in JSON format
-        json.loads(message)
-        nr_linking_str = "{|".join(("NR-LINKING", entity_guid, hostname, trace_id, span_id, entity_name)) + "}"
+        nr_linking_str = ""
+        nr_linking_value = "|".join((entity_guid, hostname, trace_id, span_id, entity_name)) + "|"
+        edited_message = json.loads(message)
+        edited_message["NR-LINKING"] = nr_linking_value
+        message = json.dumps(edited_message)
     except ValueError:
-        nr_linking_str = "|".join(("NR-LINKING", entity_guid, hostname, trace_id, span_id, entity_name))
-    return "%s %s|" % (message, nr_linking_str)
+        # Previous functionality of adding NR Linking Metadata
+        nr_linking_str = " " + "|".join(("NR-LINKING", entity_guid, hostname, trace_id, span_id, entity_name)) + "|"
+    return "%s%s" % (message, nr_linking_str)
 
 
 @function_wrapper
@@ -88,7 +92,6 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
 
         if settings.application_logging.local_decorating and settings.application_logging.local_decorating.enabled:
             record._nr_original_message = record.getMessage
-            # We do not want adding of Metadata in non-JSON formatting here
             record.getMessage = wrap_getMessage(record.getMessage)
 
     return wrapped(*args, **kwargs)

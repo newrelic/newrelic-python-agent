@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import platform
 
 from testing_support.fixtures import reset_core_stats_engine
@@ -65,7 +66,16 @@ def get_metadata_string(log_message, is_txn):
         metadata_string = "".join(
             ("NR-LINKING|", entity_guid, "|", host, "|||Python%20Agent%20Test%20%28logger_logging%29|")
         )
-    formatted_string = log_message + " " + metadata_string
+
+    # Check to see if log_message is JSON formatted
+    # If so, insert key/value as the following:
+    # {...{"NR-LINKING":"[entity.guid]|[hostname]|[trace.id]|[span.id]|[entity.name]|"}}
+    try:
+        dict_log_message = json.loads(log_message)
+        dict_log_message["NR-LINKING"] = metadata_string[11:]  # Shave off the "NR-LINKING"
+        formatted_string = json.dumps(dict_log_message)
+    except:
+        formatted_string = log_message + " " + metadata_string
     return formatted_string
 
 
@@ -86,8 +96,7 @@ def test_local_log_decoration_inside_transaction_with_json(logger):
     @background_task()
     def test():
         exercise_logging_json(logger)
-        # breakpoint()
-        # See what is in logger.caplog.records
+        breakpoint()
         assert logger.caplog.records[0] == get_metadata_string('{"first_name": "Hugh", "last_name": "Man"}', True)
 
     test()

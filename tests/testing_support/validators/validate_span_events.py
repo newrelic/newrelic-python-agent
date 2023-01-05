@@ -82,7 +82,7 @@ def validate_span_events(
         captured_events = recorded_span_events.pop(index)
 
         mismatches = []
-        matching_span_events = 0
+        matching_span_events = []
         for captured_event in captured_events:
             if Span and isinstance(captured_event, Span):
                 intrinsics = captured_event.intrinsics
@@ -102,19 +102,20 @@ def validate_span_events(
             user_attr_ok = _check_span_attributes(user_attrs, exact_users, expected_users, unexpected_users, mismatches)
 
             if intrinsics_ok and agent_attr_ok and user_attr_ok:
-                matching_span_events += 1
+                matching_span_events.append(captured_event)
 
         def _span_details():
             details = [
-                "matching_span_events=%d" % matching_span_events,
+                "matching_span_event_count=%d" % len(matching_span_events),
                 "count=%d" % count,
                 "mismatches=%s" % mismatches,
+                "matches=%s" % matching_span_events,
                 "captured_events=%s" % captured_events,
             ]
 
             return "\n".join(details)
 
-        assert matching_span_events == count, _span_details()
+        assert len(matching_span_events) == count, _span_details()
 
         return val
 

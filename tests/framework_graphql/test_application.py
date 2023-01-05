@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import OrderedDict
+
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
     validate_transaction_errors,
     validate_transaction_metrics,
 )
+from testing_support.util import conditional_decorator, pytest_parametrize_from_dict
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
@@ -30,14 +33,6 @@ from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
-
-def conditional_decorator(decorator, condition):
-    def _conditional_decorator(func):
-        if not condition:
-            return func
-        return decorator(func)
-
-    return _conditional_decorator
 
 
 @pytest.fixture(scope="session")
@@ -136,6 +131,129 @@ def test_basic(target_application):
     def _test():
         response = target_application("{ hello }")
         assert response["hello"] == "Hello!"
+
+    _test()
+
+
+def test_resolver_trace(target_application):
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    type_annotation = "!" if framework == "Strawberry" else ""
+
+    _test_scoped_metrics = [
+        ("GraphQL/resolve/%s/library" % framework, 1),
+        ("GraphQL/resolve/%s/library.book" % framework, 1),
+        ("GraphQL/resolve/%s/library.book.author" % framework, 2),
+        ("GraphQL/resolve/%s/library.book.author.first_name" % framework, 2),
+        ("GraphQL/operation/%s/query/<anonymous>/library.book.author.first_name" % framework, 1),
+    ]
+    _expected_resolver_attributes = {
+        "graphql.field.name": "first_name",
+        "graphql.field.parentType": "Author",
+        "graphql.field.path": "library.book.author.first_name",
+        "graphql.field.returnType": "String%s" % type_annotation,
+    }
+
+    @validate_span_events(count=2, exact_agents=_expected_resolver_attributes)
+    @validate_transaction_metrics(
+        "query/<anonymous>/library.book.author.first_name",
+        "GraphQL",
+        scoped_metrics=_test_scoped_metrics,
+        rollup_metrics=_test_scoped_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
+    )
+    @conditional_decorator(background_task(), is_bg)
+    def _test():
+        response = target_application("{ library(index: 0) { book { author { first_name }} } }")
+        expected = [{'author': {'first_name': 'New'}}, {'author': {'first_name': 'Leslie'}}]
+        assert response["library"]["book"] == expected
+
+    _test()
+
+_test_resolver_trace_paths_queries = OrderedDict([
+    ("basic", ("{ hello }", "query/<anonymous>/hello", [
+        ("hello", 1),
+    ])),
+    ("field_error", ("{ error }", "framework_{framework}._target_schema_{schema}:resolve_error", [
+        ("error", 1),
+    ])),
+    ("arguments", ('{ echo(echo: "test") }', "query/<anonymous>/echo", [
+        ("echo", 1),
+    ])),
+    # ("aliases", ('{ TestEcho: echo(echo: "test") }', "query/<anonymous>/echo", [
+    #     ("echo", 1),
+    # ])),
+    ("complex", ("{ library(index: 0) { branch, book { branch, author { first_name }} } }", "query/<anonymous>/library", [
+        ("library", 1),
+        ("library.branch", 1),
+        ("library.book", 1),
+        ("library.book.branch", 2),
+        ("library.book.author", 2),
+        ("library.book.author.first_name", 2),
+    ])),
+    ("named_fragment", ("{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { author { first_name } }", "query/<anonymous>/library.book.author.first_name", [
+        ("library", 1),
+        ("library.book", 1),
+        ("library.book.author", 2),
+        ("library.book.author.first_name", 2),
+    ])),
+    ("multiple_named_fragments", ("{ library(index: 0) { ...BookFragment ...MagazineFragment } } fragment BookFragment on Library { book { author { first_name } } } fragment MagazineFragment on Library { magazine { name } }", "query/<anonymous>/library", [
+        ("library", 1),
+        ("library.book", 1),
+        ("library.book.author", 2),
+        ("library.book.author.first_name", 2),
+        ("library.magazine", 1),
+        ("library.magazine.name", 2),
+    ])),
+    ("inline_fragment_filtering", ('{ search(contains: "A") { __typename ... on Book { author { first_name } } } }', "query/<anonymous>/search<Book>.author.first_name", [
+        ("search", 1),
+        ("search.__typename", 2),
+        ("search<Book>.author", 2),
+        ("search<Book>.author.first_name", 2),
+    ])),
+    ("multiple_inline_fragment_filtering", ('{ search(contains: "e") { __typename ... on Book { author { first_name } } ... on Magazine { name } } }', "query/<anonymous>/search", [
+        ("search", 1),
+        ("search.__typename", 6),
+        ("search<Book>.author", 3),
+        ("search<Book>.author.first_name", 3),
+        ("search<Magazine>.name", 3),
+    ])),
+    ("named_fragment_filtering", ('{ search(contains: "A") { __typename ...BookFragment } } fragment BookFragment on Book { author { first_name } }', "query/<anonymous>/search<Book>.author.first_name", [
+        ("search", 1),
+        ("search.__typename", 2),
+        ("search<Book>.author", 2),
+        ("search<Book>.author.first_name", 2),
+    ])),
+    ("multiple_named_fragment_filtering", ('{ search(contains: "e") { __typename ...BookFragment ...MagazineFragment } } fragment BookFragment on Book { author { first_name } } fragment MagazineFragment on Magazine { name }', "query/<anonymous>/search", [
+        ("search", 1),
+        ("search.__typename", 6),
+        ("search<Book>.author", 3),
+        ("search<Book>.author.first_name", 3),
+        ("search<Magazine>.name", 3),
+    ])),
+    ("multiple_root_selections", ('{ hello echo(echo: "test") }', "query/<anonymous>/", [
+        ("hello", 1),
+        ("echo", 1),
+    ])),
+])
+
+@pytest_parametrize_from_dict("query,transaction_name,metric_stubs", _test_resolver_trace_paths_queries)
+def test_resolver_trace_paths(target_application, query, transaction_name, metric_stubs):
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+
+    transaction_name = transaction_name.format(framework=framework.lower(), schema=schema_type)
+    _test_scoped_metrics = [("GraphQL/resolve/%s/%s" % (framework, m[0]), m[1]) for m in metric_stubs]
+
+    @validate_transaction_metrics(
+        transaction_name,
+        "GraphQL",
+        scoped_metrics=_test_scoped_metrics,
+        rollup_metrics=_test_scoped_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
+        background_task=is_bg,
+    )
+    @conditional_decorator(background_task(), is_bg)
+    def _test():
+        response = target_application(query)
+        assert response
 
     _test()
 
@@ -544,11 +662,15 @@ _test_queries = [
         "{ library(index: 0) { book { ...MyFragment } magazine { ...MagFragment } } } fragment MyFragment on Book { author { first_name } } fragment MagFragment on Magazine { name }",
         "/library",
     ),
+    (
+        '{ search(contains: "A") { __typename ...BookFragment } } fragment BookFragment on Book { author { first_name } }',
+        "/search<Book>.author.first_name",
+    ),  # Named fragment filtering
 ]
 
 
 @dt_enabled
-@pytest.mark.parametrize("query,expected_path", _test_queries)
+@pytest.mark.parametrize("query,expected_path", _test_queries, ids=(i for i, _ in enumerate(_test_queries)))
 def test_deepest_unique_path(target_application, query, expected_path):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     if expected_path == "/error":

@@ -182,6 +182,7 @@ class GraphQLResolverTrace(TimeTrace):
     def create_node(self):
         return GraphQLResolverNode(
             field_name=self.field_name,
+            field_path=self.field_path,
             children=self.children,
             start_time=self.start_time,
             end_time=self.end_time,

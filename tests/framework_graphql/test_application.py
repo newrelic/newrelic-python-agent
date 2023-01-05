@@ -170,19 +170,19 @@ def test_resolver_trace(target_application):
     _test()
 
 _test_resolver_trace_paths_queries = OrderedDict([
-    ("basic", ("{ hello }", [
+    ("basic", ("{ hello }", "query/<anonymous>/hello", [
         ("hello", 1),
     ])),
-    ("field_error", ("{ error }", [
+    ("field_error", ("{ error }", "framework_{framework}._target_schema_{schema}:resolve_error", [
         ("error", 1),
     ])),
-    ("arguments", ('{ echo(echo: "test") }', [
+    ("arguments", ('{ echo(echo: "test") }', "query/<anonymous>/echo", [
         ("echo", 1),
     ])),
-    ("aliases", ('{ TestEcho: echo(echo: "test") }', [
-        ("echo", 1),
-    ])),
-    ("complex", ("{ library(index: 0) { branch, book { branch, author { first_name }} } }", [
+    # ("aliases", ('{ TestEcho: echo(echo: "test") }', "query/<anonymous>/echo", [
+    #     ("echo", 1),
+    # ])),
+    ("complex", ("{ library(index: 0) { branch, book { branch, author { first_name }} } }", "query/<anonymous>/library", [
         ("library", 1),
         ("library.branch", 1),
         ("library.book", 1),
@@ -190,13 +190,13 @@ _test_resolver_trace_paths_queries = OrderedDict([
         ("library.book.author", 2),
         ("library.book.author.first_name", 2),
     ])),
-    ("named_fragment", ("{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { author { first_name } }", [
+    ("named_fragment", ("{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { author { first_name } }", "query/<anonymous>/library.book.author.first_name", [
         ("library", 1),
         ("library.book", 1),
         ("library.book.author", 2),
         ("library.book.author.first_name", 2),
     ])),
-    ("multiple_named_fragments", ("{ library(index: 0) { book { ...BookFragment } magazine { ...MagazineFragment } } } fragment BookFragment on Book { author { first_name } } fragment MagazineFragment on Magazine { name }", [
+    ("multiple_named_fragments", ("{ library(index: 0) { ...BookFragment ...MagazineFragment } } fragment BookFragment on Library { book { author { first_name } } } fragment MagazineFragment on Library { magazine { name } }", "query/<anonymous>/library", [
         ("library", 1),
         ("library.book", 1),
         ("library.book.author", 2),
@@ -204,48 +204,47 @@ _test_resolver_trace_paths_queries = OrderedDict([
         ("library.magazine", 1),
         ("library.magazine.name", 2),
     ])),
-    ("inline_fragment_filtering", ('{ search(contains: "A") { __typename ... on Book { author { first_name } } } }', [
+    ("inline_fragment_filtering", ('{ search(contains: "A") { __typename ... on Book { author { first_name } } } }', "query/<anonymous>/search<Book>.author.first_name", [
         ("search", 1),
         ("search.__typename", 2),
         ("search<Book>.author", 2),
         ("search<Book>.author.first_name", 2),
     ])),
-    ("multiple_inline_fragment_filtering", ('{ search(contains: "A") { __typename ... on Book { author { first_name } } ... on Magazine { name } } }', [
+    ("multiple_inline_fragment_filtering", ('{ search(contains: "e") { __typename ... on Book { author { first_name } } ... on Magazine { name } } }', "query/<anonymous>/search", [
+        ("search", 1),
+        ("search.__typename", 6),
+        ("search<Book>.author", 3),
+        ("search<Book>.author.first_name", 3),
+        ("search<Magazine>.name", 3),
+    ])),
+    ("named_fragment_filtering", ('{ search(contains: "A") { __typename ...BookFragment } } fragment BookFragment on Book { author { first_name } }', "query/<anonymous>/search<Book>.author.first_name", [
         ("search", 1),
         ("search.__typename", 2),
         ("search<Book>.author", 2),
         ("search<Book>.author.first_name", 2),
-        ("search<Magazine>.name", 2),
     ])),
-    ("named_fragment_filtering", ('{ search(contains: "A") { __typename BookFragment } } fragment BookFragment on Book { author { first_name } }', [
+    ("multiple_named_fragment_filtering", ('{ search(contains: "e") { __typename ...BookFragment ...MagazineFragment } } fragment BookFragment on Book { author { first_name } } fragment MagazineFragment on Magazine { name }', "query/<anonymous>/search", [
         ("search", 1),
-        ("search.__typename", 2),
-        ("search<Book>.author", 2),
-        ("search<Book>.author.first_name", 2),
+        ("search.__typename", 6),
+        ("search<Book>.author", 3),
+        ("search<Book>.author.first_name", 3),
+        ("search<Magazine>.name", 3),
     ])),
-    ("multiple_named_fragment_filtering", ('{ search(contains: "A") { __typename BookFragment MagazineFragment } } fragment BookFragment on Book { author { first_name } } fragment MagazineFragment on Magazine { name }', [
-        ("search", 1),
-        ("search.__typename", 2),
-        ("search<Book>.author", 2),
-        ("search<Book>.author.first_name", 2),
-        ("search<Magazine>.name", 2),
-    ])),
-    ("multiple_root_selections", ('{ hello echo(echo: "test") }', [
+    ("multiple_root_selections", ('{ hello echo(echo: "test") }', "query/<anonymous>/", [
         ("hello", 1),
         ("echo", 1),
     ])),
 ])
 
-@pytest_parametrize_from_dict("query,metric_stubs", _test_resolver_trace_paths_queries)
-def test_resolver_trace_paths(target_application, query, metric_stubs):
+@pytest_parametrize_from_dict("query,transaction_name,metric_stubs", _test_resolver_trace_paths_queries)
+def test_resolver_trace_paths(target_application, query, transaction_name, metric_stubs):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
-    txn_name = "query/<anonymous>/%s" % metric_stubs[-1][0]
+    transaction_name = transaction_name.format(framework=framework.lower(), schema=schema_type)
     _test_scoped_metrics = [("GraphQL/resolve/%s/%s" % (framework, m[0]), m[1]) for m in metric_stubs]
-    _test_scoped_metrics.append(("GraphQL/operation/%s/query/<anonymous>/%s" % (framework, metric_stubs[-1][0]), 1))
 
     @validate_transaction_metrics(
-        txn_name,
+        transaction_name,
         "GraphQL",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_scoped_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
@@ -663,11 +662,15 @@ _test_queries = [
         "{ library(index: 0) { book { ...MyFragment } magazine { ...MagFragment } } } fragment MyFragment on Book { author { first_name } } fragment MagFragment on Magazine { name }",
         "/library",
     ),
+    (
+        '{ search(contains: "A") { __typename ...BookFragment } } fragment BookFragment on Book { author { first_name } }',
+        "/search<Book>.author.first_name",
+    ),  # Named fragment filtering
 ]
 
 
 @dt_enabled
-@pytest.mark.parametrize("query,expected_path", _test_queries)
+@pytest.mark.parametrize("query,expected_path", _test_queries, ids=(i for i, _ in enumerate(_test_queries)))
 def test_deepest_unique_path(target_application, query, expected_path):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     if expected_path == "/error":

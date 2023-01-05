@@ -145,7 +145,7 @@ Library = GraphQLObjectType(
 
 Storage = GraphQLList(GraphQLString)
 
-item_type_resolver = lambda x, _: "Book" if "isbn" in x else "Magazine"
+item_type_resolver = lambda x, *_: "Book" if "isbn" in x else "Magazine"
 Item = GraphQLUnionType("Item", (Book, Magazine), resolve_type=item_type_resolver)
 
 

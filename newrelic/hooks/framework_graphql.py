@@ -66,7 +66,8 @@ _logger = logging.getLogger(__name__)
 
 
 GRAPHQL_IGNORED_FIELDS = frozenset(("id", "__typename"))
-GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type"))
+GRAPHQL_IGNORED_TRANSACTION_FIELDS = frozenset(("__schema", "__type"))
+GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type", "__typekind", "__field", "__inputvalue", "__enumvalue", "__directive", "__typename"))
 VERSION = None
 
 
@@ -188,7 +189,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
         fields = operation.selection_set.selections
         # Ignore transactions for introspection queries
         for field in fields:
-            if get_node_value(field, "name") in GRAPHQL_INTROSPECTION_FIELDS:
+            if get_node_value(field, "name") in GRAPHQL_IGNORED_TRANSACTION_FIELDS:
                 ignore_transaction()
 
         fragments = execution_context.fragments
@@ -232,12 +233,13 @@ def is_fragment_spread_node(field):
 def is_fragment(field):
     # Resolve version specific imports
     try:
-        from graphql.language.ast import FragmentSpread, InlineFragment
+        from graphql.language.ast import FragmentSpread, InlineFragment, FragmentDefinition
     except ImportError:
         from graphql import FragmentSpreadNode as FragmentSpread
         from graphql import InlineFragmentNode as InlineFragment
+        from graphql import FragmentDefinitionNode as FragmentDefinition
 
-    _fragment_types = (InlineFragment, FragmentSpread)
+    _fragment_types = (InlineFragment, FragmentSpread, FragmentDefinition)
 
     return isinstance(field, _fragment_types)
 
@@ -256,6 +258,40 @@ def is_named_fragment(field):
     )
 
 
+def lookup_fields_for_fragments(fields, fragments):
+    fragment_spreads = []
+    true_fields = {}
+
+    fields = deque(fields)
+    while fields:
+        field = fields.popleft()
+        if is_fragment_spread_node(field):
+            fragment_def = fragments[get_node_value(field, "name")]
+            selections = getattr(getattr(fragment_def, "selection_set", None), "selections", [])
+            fragment_spreads.append(selections)
+        elif is_named_fragment(field):
+            selections = getattr(getattr(field, "selection_set", None), "selections", [])
+            subfields = lookup_fields_for_fragments(selections, fragments)
+            for subfield in subfields:
+                # Add inline fragment as all subfields within it to properly parse out subtype name later
+                true_fields[subfield] = field
+        
+        if not is_fragment(field):
+            true_fields[get_node_value(field, "name")] = field
+        else:
+            # Add fragment subfields and properly parse out subtype name later
+            if is_fragment_spread_node(field):
+                fragment_def = fragments[get_node_value(field, "name")]
+            elif is_named_fragment(field):
+                fragment_def = field
+            selections = getattr(getattr(fragment_def, "selection_set", None), "selections", [])
+            subfields = lookup_fields_for_fragments(selections, fragments)
+            for subfield in subfields:
+                true_fields[subfield] = fragment_def
+
+    return true_fields
+
+
 def filter_ignored_fields(fields):
     filtered_fields = [f for f in fields if get_node_value(f, "name") not in GRAPHQL_IGNORED_FIELDS]
     return filtered_fields
@@ -272,22 +308,29 @@ def traverse_deepest_unique_path(fields, fragments):
         fragment_selection_set = []
 
         if is_named_fragment(field):
-            name = get_node_value(field.type_condition, "name")
-            if name:
-                deepest_path.append("%s<%s>" % (deepest_path.pop(), name))
+            fragment_type_name = get_node_value(field.type_condition, "name")
+            if fragment_type_name:
+                deepest_path[-1] += "<%s>" % fragment_type_name
 
-        elif is_fragment(field):
+        elif is_fragment_spread_node(field):
             if len(list(fragments.values())) != 1:
                 return deepest_path
 
             # list(fragments.values())[0] 's index is OK because the previous line
             # ensures that there is only one field in the list
-            full_fragment_selection_set = list(fragments.values())[0].selection_set.selections
+            fragment_def = list(fragments.values())[0]
+            full_fragment_selection_set = fragment_def.selection_set.selections
             fragment_selection_set = filter_ignored_fields(full_fragment_selection_set)
 
             if len(fragment_selection_set) != 1:
                 return deepest_path
             else:
+                # Add subtype in angle brackets
+                fragment_type_name = get_node_value(fragment_def.type_condition, "name")
+                if fragment_type_name:
+                    deepest_path[-1] += "<%s>" % fragment_type_name
+
+                # Add subfield
                 fragment_field_name = get_node_value(fragment_selection_set[0], "name")
                 deepest_path.append(fragment_field_name)
 
@@ -483,50 +526,60 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
         if isinstance(field_path, list):
             execution_context = execution_context or instance
             operation = getattr(parent_info, "operation", None)
-
-            if getattr(operation, "selection_set", None) is None:
-                path = field_path
-            else:
-                fields = operation.selection_set.selections
-                fragments = execution_context.fragments
-
-                path = []
-
-                field_path = deque(field_path)
-                while field_path:
-                    item = field_path.popleft()
-                    if isinstance(item, int):
-                        # Ignore list indexes
-                        continue
-
-                    field_dict = {f.name.value: f for f in fields if not is_fragment(f)}
-                    field_def = field_dict.get(item, None)
-                    if field_def is not None:
-                        path.append(item)
-                        fields = getattr(getattr(field_def, "selection_set", None), "selections", []) 
-                    elif item.startswith("__"):
-                        # Instrospection field
-                        path.append(item)
-                        break
-                    else:
-                        field_fragments = [f for f in fields if is_named_fragment(f)]
-                        if len(field_fragments) == 1:
-                            current_fragment = field_fragments[0]
-                            path[-1] += "<%s>" % current_fragment.type_condition.name.value
-                            fields = current_fragment.selection_set.selections
-                            field_path.appendleft(item)  # Process item again
-                        else:
-                            raise ValueError()
-
-            field_path = ".".join(path)
         else:
-            path = [field_path.key]
-            field_path = getattr(field_path, "prev", None)
-            while field_path is not None:
-                if field_path.typename is not None:
-                    path.insert(0, field_path.key)
-                field_path = getattr(field_path, "prev", None)
-            field_path = ".".join(path)
+            execution_context = instance
+            operation = execution_context.operation
+
+        if getattr(operation, "selection_set", None) is None:
+            discovered_path = field_path
+        else:
+            fields = operation.selection_set.selections
+            fragments = execution_context.fragments
+
+            discovered_path = []
+
+            # Turn field path into deque for iteration
+            if hasattr(field_path, "prev"):
+                _field_path = field_path
+                field_path_queue = deque()
+                while _field_path is not None:
+                    # Walk field path
+                    field_path_queue.appendleft(_field_path)
+                    _field_path = _field_path.prev
+            else:
+                field_path_queue = deque(field_path)
+            
+            while field_path_queue:
+                item_ref = field_path_queue.popleft()
+                # Unpack Graphql v3 paths
+                item_typename = getattr(item_ref, "typename", None)
+                item = getattr(item_ref, "key", item_ref)
+
+                if isinstance(item, int):
+                    # Ignore list indexes
+                    continue
+                
+                field_dict = lookup_fields_for_fragments(fields, fragments)
+                field_def = field_dict.get(item, None)
+
+                if is_fragment(field_def):
+                    type_condition = getattr(field_def, "type_condition", None)
+                    if type_condition is not None:
+                        fragment_type_name = get_node_value(field_def.type_condition, "name")
+                        discovered_path[-1] += "<%s>" % fragment_type_name
+                    fields = getattr(getattr(field_def, "selection_set", None), "selections", []) 
+                    field_path_queue.appendleft(item)
+                elif field_def is not None:
+                    discovered_path.append(item)
+                    fields = getattr(getattr(field_def, "selection_set", None), "selections", []) 
+                elif item in GRAPHQL_INTROSPECTION_FIELDS:
+                    # Instrospection field
+                    discovered_path.append(item)
+                    fields = []
+                else:
+                    raise RuntimeError("Unable to parse path from field definitions.")
+
+        field_path = ".".join(discovered_path)
     except Exception:
         field_path = field_name
 

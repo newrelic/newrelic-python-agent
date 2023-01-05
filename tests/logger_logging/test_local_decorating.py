@@ -96,7 +96,6 @@ def test_local_log_decoration_inside_transaction_with_json(logger):
     @background_task()
     def test():
         exercise_logging_json(logger)
-        breakpoint()
         assert logger.caplog.records[0] == get_metadata_string('{"first_name": "Hugh", "last_name": "Man"}', True)
 
     test()

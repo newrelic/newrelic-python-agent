@@ -249,6 +249,7 @@ def instrument_sklearn_neural_network_models(module):
         "MLPClassifier",
         "MLPRegressor",
     )
+    _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_svm_models(module):

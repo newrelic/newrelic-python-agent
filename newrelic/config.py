@@ -3047,6 +3047,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.pipeline",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_pipeline_models",
+    )
+
+    _process_module_definition(
         "sklearn.semi_supervised._label_propagation",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_semi_supervised_models",

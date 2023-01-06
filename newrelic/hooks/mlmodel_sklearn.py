@@ -273,6 +273,14 @@ def instrument_sklearn_semi_supervised_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_pipeline_models(module):
+    model_classes = (
+        "Pipeline",
+        "FeatureUnion",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_metrics(module):
     for scorer in METRIC_SCORERS:
         if hasattr(module, scorer):

@@ -243,6 +243,15 @@ def instrument_sklearn_cluster_kmeans_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_neural_network_models(module):
+    model_classes = (
+        "BernoulliRBM",
+        "MLPClassifier",
+        "MLPRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_svm_models(module):
     model_classes = (
         "LinearSVC",

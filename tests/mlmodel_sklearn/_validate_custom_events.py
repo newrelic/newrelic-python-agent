@@ -72,7 +72,6 @@ def validate_custom_events(events):
         def _validate(expected, captured):
             for key, value in six.iteritems(expected):
                 if key in captured:
-
                     captured_value = captured[key]
                 else:
                     mismatches.append("key: %s, value:<%s><%s>" % (key, value, getattr(captured, key, None)))

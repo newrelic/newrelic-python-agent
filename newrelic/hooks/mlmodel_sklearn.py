@@ -78,7 +78,7 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         # _nr_wrapped attrs that will attach model info to the data.
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
-            wrap_predict(_class, wrapped, instance, args, kwargs)
+            wrap_predict(transaction, _class, wrapped, instance, args, kwargs)
             return PredictReturnTypeProxy(return_val, model_name=_class, training_step=training_step)
         return return_val
 
@@ -88,57 +88,49 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
 def find_type_category(value):
     value_type = None
     python_type = str(type(value))
-    if "int" in python_type or "float" in python_type:
+    if "int" in python_type or "float" in python_type or "complex" in python_type:
         value_type = "numerical"
     elif "bool" in python_type:
         value_type = "bool"
-    elif "str" in python_type:
+    elif "str" in python_type or "unicode" in python_type:
         value_type = "str"
     return value_type
 
 
-def record_feature_event(inference_id, model_name, model_version, feature_name, value, value_type):
-    transaction = current_transaction()
-
-    if transaction:
-        settings = transaction.settings
-    else:
-        settings = global_settings()
-
-    if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
-        if transaction:
-            transaction.record_custom_event("ML Model Feature Event", {"inference_id": inference_id, "model_name": model_name, "model_version": model_version, "feature_name": feature_name, "type": value_type, "value": value,})
-        else:
-            application = application_instance(activate=False)
-            if application and application.enabled:
-                transaction.record_custom_event("ML Model Feature Event", {"inference_id": inference_id, "model_name": model_name, "model_version": model_version, "type": value_type, "value": value,})
+def bind_predict(X, *args, **kwargs):
+    return X
 
 
-def bind_predict(X, check_input=True):
-    return X, check_input
-
-
-def wrap_predict(_class, wrapped, instance, args, kwargs):
-    data_set, check_input = bind_predict(*args, **kwargs)
+def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
+    data_set = bind_predict(*args, **kwargs)
     inference_id = uuid.uuid4()
     model_name = getattr(instance, "_nr_wrapped_name", _class)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
 
-    #Pandas Dataframe
-    pd = sys.modules.get("pandas", None)
-    if pd and isinstance(data_set, pd.DataFrame):
-        for (colname, colval) in data_set.iteritems():
-            for value in colval.values:
-                value_type = data_set[colname].dtype.name
-                if value_type == "category":
-                    value_type = "categorical"
-                else:
-                    value_type = find_type_category(value)
-                record_feature_event(inference_id, model_name, model_version, colname, value, value_type)
-    else:
-        for feature in data_set:
-            for value in feature:
-                record_feature_event(inference_id, model_name, model_version, None, value, find_type_category(value))
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
+        #Pandas Dataframe
+        pd = sys.modules.get("pandas", None)
+        if pd and isinstance(data_set, pd.DataFrame):
+            for (colname, colval) in data_set.iteritems():
+                for value in colval.values:
+                    value_type = data_set[colname].dtype.name
+                    if value_type == "category":
+                        value_type = "categorical"
+                    else:
+                        value_type = find_type_category(value)
+                    transaction.record_custom_event("ML Model Feature Event",
+                                                    {"inference_id": inference_id, "model_name": model_name,
+                                                     "model_version": model_version, "feature_name": colname,
+                                                     "type": value_type, "value": str(value),})
+        else:
+            for feature in data_set:
+                for col_index, value in enumerate(feature):
+                    transaction.record_custom_event("ML Model Feature Event",
+                                                    {"inference_id": inference_id, "model_name": model_name,
+                                                     "model_version": model_version, "feature_name": str(col_index),
+                                                     "type": find_type_category(value), "value": str(value),})
+
 
 
 def _nr_instrument_model(module, model_class):

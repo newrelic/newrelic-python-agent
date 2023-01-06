@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pandas
-import pytest
+import six
 import numpy as np
 
 from testing_support.fixtures import (reset_core_stats_engine,
@@ -26,15 +26,15 @@ from _validate_custom_events import validate_custom_events
 
 
 pandas_df_recorded_custom_events = [
-    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': 'col1', 'type': "categorical", 'value': 2.0}},
-    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': 'col1', 'type': "categorical", 'value': 3.0}},
-    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': 'col2', 'type': "categorical", 'value': 4.0}},
-    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': 'col2', 'type': "categorical", 'value': 1.0}},
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': 'col1', 'type': "categorical", 'value': '2.0'}},
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': 'col1', 'type': "categorical", 'value': '3.0'}},
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': 'col2', 'type': "categorical", 'value': '4.0'}},
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': 'col2', 'type': "categorical", 'value': '1.0'}},
 ]
 
 
 @reset_core_stats_engine()
-def test_pandas_df_feature_event():
+def test_pandas_df_categorical_feature_event():
     @validate_custom_events(pandas_df_recorded_custom_events)
     @validate_custom_event_count(count=4)
     @background_task()
@@ -65,11 +65,36 @@ def test_pandas_df_bool_feature_event():
     @background_task()
     def _test():
         import sklearn.tree
-
+        dtype_name = 'bool' if six.PY2 else 'boolean'
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
-        model = clf.fit(pandas.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype='boolean'), pandas.DataFrame({"label": [True, False]}))
+        model = clf.fit(pandas.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name), pandas.DataFrame({"label": [True, False]}, dtype=dtype_name))
 
-        labels = model.predict(pandas.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype='boolean'))
+        labels = model.predict(pandas.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name))
+        return model
+
+    _test()
+
+
+pandas_df_float_recorded_custom_events = [
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeRegressor', "model_version": '0.0.0', 'feature_name': 'col1', 'type': "numerical", 'value': '100.0'}},
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeRegressor', "model_version": '0.0.0', 'feature_name': 'col1', 'type': "numerical", 'value': '200.0'}},
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeRegressor', "model_version": '0.0.0', 'feature_name': 'col2', 'type': "numerical", 'value': '300.0'}},
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeRegressor', "model_version": '0.0.0', 'feature_name': 'col2', 'type': "numerical", 'value': '400.0'}},
+]
+
+
+@reset_core_stats_engine()
+def test_pandas_df_float_feature_event():
+    @validate_custom_events(pandas_df_float_recorded_custom_events)
+    @validate_custom_event_count(count=4)
+    @background_task()
+    def _test():
+        import sklearn.tree
+
+        clf = getattr(sklearn.tree, "DecisionTreeRegressor")(random_state=0)
+        model = clf.fit(pandas.DataFrame({"col1": [120.0, 254.0], "col2": [236.9, 234.5]}, dtype='float64'), pandas.DataFrame({"label": [345.6, 456.7]}, dtype="float64"))
+
+        labels = model.predict(pandas.DataFrame({"col1": [100.0, 200.0], "col2": [300.0, 400.0]}, dtype='float64'))
         return model
 
     _test()
@@ -77,10 +102,10 @@ def test_pandas_df_bool_feature_event():
 
 
 int_list_recorded_custom_events = [
-    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': None, 'type': "numerical", 'value': 1}},
-    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': None, 'type': "numerical", 'value': 2}},
-    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': None, 'type': "numerical", 'value': 3}},
-    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': None, 'type': "numerical", 'value': 4}},
+    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': '0', 'type': "numerical", 'value': '1'}},
+    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': '1', 'type': "numerical", 'value': '2'}},
+    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': '0', 'type': "numerical", 'value': '3'}},
+    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': '1', 'type': "numerical", 'value': '4'}},
 ]
 
 
@@ -102,11 +127,12 @@ def test_int_list():
 
 
 numpy_int_recorded_custom_events = [
-    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': None, 'type': "numerical", 'value': '11'}},
-    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': None, 'type': "numerical", 'value': '10'}},
-    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': None, 'type': "numerical", 'value': '12'}},
-    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': None, 'type': "numerical", 'value': '13'}},
+    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': '0', 'type': "numerical", 'value': '12'}},
+    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': '1', 'type': "numerical", 'value': '13'}},
+    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': '0', 'type': "numerical", 'value': '14'}},
+    {"users": {"inference_id": None, 'model_name': 'ExtraTreeRegressor', "model_version": '0.0.0', 'feature_name': '1', 'type': "numerical", 'value': '15'}},
 ]
+
 
 @reset_core_stats_engine()
 def test_numpy_int_array():
@@ -115,11 +141,41 @@ def test_numpy_int_array():
     @background_task()
     def _test():
         import sklearn.tree
+        x_train = np.array([[10, 10], [11, 11]], dtype="int")
+        y_train = np.array([10, 11], dtype="int")
+        x_test = np.array([[12, 13], [14, 15]], dtype="int")
 
         clf = getattr(sklearn.tree, "ExtraTreeRegressor")(random_state=0)
-        model = clf.fit(np.array([[10, 10], [11, 11]]), np.array([10, 11]))
+        model = clf.fit(x_train, y_train)
 
-        labels = model.predict(np.array([[11, 10], [12, 13]]))
+        labels = model.predict(x_test)
+        return model
+
+    _test()
+
+
+numpy_str_recorded_custom_events = [
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': '0', 'type': 'str', 'value': '20'}},
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': '1', 'type': "str", 'value': '21'}},
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': '0', 'type': "str", 'value': '22'}},
+    {"users": {"inference_id": None, 'model_name': 'DecisionTreeClassifier', "model_version": '0.0.0', 'feature_name': '1', 'type': "str", 'value': '23'}},
+]
+
+
+@reset_core_stats_engine()
+def test_numpy_str_array():
+    @validate_custom_events(numpy_str_recorded_custom_events)
+    @validate_custom_event_count(count=4)
+    @background_task()
+    def _test():
+        import sklearn.tree
+        x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
+        y_train = np.array([20, 21], dtype="<U4")
+        x_test = np.array([[20, 21], [22, 23]], dtype="<U4")
+        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+        model = clf.fit(x_train, y_train)
+
+        labels = model.predict(x_test)
         return model
 
     _test()

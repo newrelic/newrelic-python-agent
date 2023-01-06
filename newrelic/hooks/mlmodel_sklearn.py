@@ -254,6 +254,14 @@ def instrument_sklearn_naive_bayes_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_model_selection_models(module):
+    model_classes = (
+        "GridSearchCV",
+        "RandomizedSearchCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_mixture_models(module):
     model_classes = (
         "GaussianMixture",

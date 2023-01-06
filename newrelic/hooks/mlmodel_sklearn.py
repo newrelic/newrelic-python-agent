@@ -249,6 +249,27 @@ def instrument_sklearn_neural_network_models(module):
         "MLPClassifier",
         "MLPRegressor",
     )
+
+
+def instrument_sklearn_svm_models(module):
+    model_classes = (
+        "LinearSVC",
+        "LinearSVR",
+        "SVC",
+        "NuSVC",
+        "SVR",
+        "NuSVR",
+        "OneClassSVM",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_semi_supervised_models(module):
+    model_classes = (
+        "LabelPropagation",
+        "LabelSpreading",
+        "SelfTrainingClassifier",
+    )
     _instrument_sklearn_models(module, model_classes)
 
 

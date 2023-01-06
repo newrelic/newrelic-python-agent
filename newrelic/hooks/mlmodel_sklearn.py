@@ -17,10 +17,9 @@ import uuid
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
-from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
-from newrelic.core.config import global_settings
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
+from newrelic.core.config import global_settings
 
 METHODS_TO_WRAP = ("predict", "fit", "fit_predict", "predict_log_proba", "predict_proba", "transform", "score")
 METRIC_SCORERS = (
@@ -109,7 +108,7 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
-        #Pandas Dataframe
+        # Pandas Dataframe
         pd = sys.modules.get("pandas", None)
         if pd and isinstance(data_set, pd.DataFrame):
             for (colname, colval) in data_set.iteritems():
@@ -119,17 +118,31 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
                         value_type = "categorical"
                     else:
                         value_type = find_type_category(value)
-                    transaction.record_custom_event("ML Model Feature Event",
-                                                    {"inference_id": inference_id, "model_name": model_name,
-                                                     "model_version": model_version, "feature_name": colname,
-                                                     "type": value_type, "value": str(value),})
+                    transaction.record_custom_event(
+                        "ML Model Feature Event",
+                        {
+                            "inference_id": inference_id,
+                            "model_name": model_name,
+                            "model_version": model_version,
+                            "feature_name": colname,
+                            "type": value_type,
+                            "value": str(value),
+                        },
+                    )
         else:
             for feature in data_set:
                 for col_index, value in enumerate(feature):
-                    transaction.record_custom_event("ML Model Feature Event",
-                                                    {"inference_id": inference_id, "model_name": model_name,
-                                                     "model_version": model_version, "feature_name": str(col_index),
-                                                     "type": find_type_category(value), "value": str(value),})
+                    transaction.record_custom_event(
+                        "ML Model Feature Event",
+                        {
+                            "inference_id": inference_id,
+                            "model_name": model_name,
+                            "model_version": model_version,
+                            "feature_name": str(col_index),
+                            "type": find_type_category(value),
+                            "value": str(value),
+                        },
+                    )
 
 
 def _nr_instrument_model(module, model_class):

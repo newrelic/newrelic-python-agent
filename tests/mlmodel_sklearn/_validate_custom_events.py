@@ -17,7 +17,7 @@ import copy
 from newrelic.packages import six
 
 from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
+                                            function_wrapper)
 from testing_support.fixtures import catch_background_exceptions
 
 
@@ -43,12 +43,11 @@ def validate_custom_events(events):
 
             return result
 
-
         _new_wrapper = _validate_custom_events(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_called
         custom_events = copy.copy(recorded_events)
-        
+
         record_called[:] = []
         recorded_events[:] = []
         for expected in events:
@@ -61,7 +60,6 @@ def validate_custom_events(events):
 
         return val
 
-
     def _check_custom_event_attributes(expected, captured, mismatches):
         assert len(captured) == 2  # [intrinsic, user attributes]
         expected_intrinsics = expected.get("intrinsics", {})
@@ -72,6 +70,7 @@ def validate_custom_events(events):
         def _validate(expected, captured):
             for key, value in six.iteritems(expected):
                 if key in captured:
+
                     captured_value = captured[key]
                 else:
                     mismatches.append("key: %s, value:<%s><%s>" % (key, value, getattr(captured, key, None)))
@@ -85,7 +84,6 @@ def validate_custom_events(events):
             return True
 
         return _validate(expected_intrinsics, intrinsics) and _validate(expected_users, users)
-
 
     def _custom_event_details(matching_custom_events, captured, mismatches):
         details = [

@@ -132,7 +132,6 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
                                                      "type": find_type_category(value), "value": str(value),})
 
 
-
 def _nr_instrument_model(module, model_class):
     for method_name in METHODS_TO_WRAP:
         if hasattr(getattr(module, model_class), method_name):

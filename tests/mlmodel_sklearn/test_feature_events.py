@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pandas
-import six
+import sys
 import numpy as np
 
 from testing_support.fixtures import (reset_core_stats_engine,
@@ -65,7 +65,7 @@ def test_pandas_df_bool_feature_event():
     @background_task()
     def _test():
         import sklearn.tree
-        dtype_name = 'bool' if six.PY2 else 'boolean'
+        dtype_name = 'bool' if sys.version_info < (3, 8) else 'boolean'
         x_train = pandas.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name)
         y_train = pandas.DataFrame({"label": [True, False]}, dtype=dtype_name)
         x_test = pandas.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name)

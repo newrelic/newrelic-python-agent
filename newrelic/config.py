@@ -3047,6 +3047,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.multioutput",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_multioutput_models",
+    )
+
+    _process_module_definition(
         "sklearn.naive_bayes",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_naive_bayes_models",

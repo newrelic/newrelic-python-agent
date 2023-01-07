@@ -243,6 +243,17 @@ def instrument_sklearn_cluster_kmeans_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_naive_bayes_models(module):
+    model_classes = (
+        "GaussianNB",
+        "MultinomialNB",
+        "ComplementNB",
+        "BernoulliNB",
+        "CategoricalNB",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_model_selection_models(module):
     model_classes = (
         "GridSearchCV",

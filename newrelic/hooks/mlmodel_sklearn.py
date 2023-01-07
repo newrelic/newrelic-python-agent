@@ -243,6 +243,15 @@ def instrument_sklearn_cluster_kmeans_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_multiclass_models(module):
+    model_classes = (
+        "OneVsRestClassifier",
+        "OneVsOneClassifier",
+        "OutputCodeClassifier",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_multioutput_models(module):
     model_classes = (
         "MultiOutputEstimator",

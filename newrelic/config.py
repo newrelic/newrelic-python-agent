@@ -3215,6 +3215,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.multiclass",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_multiclass_models",
+    )
+
+    _process_module_definition(
         "sklearn.multioutput",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_multioutput_models",

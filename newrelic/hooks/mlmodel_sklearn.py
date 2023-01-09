@@ -265,6 +265,14 @@ def instrument_sklearn_ensemble_hist_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_gaussian_process_models(module):
+    model_classes = (
+        "GaussianProcessClassifier",
+        "GaussianProcessRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_dummy_models(module):
     model_classes = (
         "DummyClassifier",

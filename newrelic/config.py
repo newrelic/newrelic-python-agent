@@ -2927,6 +2927,54 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.dummy",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_dummy_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection._rfe",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_rfe_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection.rfe",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_rfe_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection._variance_threshold",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection.variance_threshold",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection._from_model",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection.from_model",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection._sequential",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_models",
+    )
+
+    _process_module_definition(
         "sklearn.kernel_ridge",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_kernel_ridge_models",

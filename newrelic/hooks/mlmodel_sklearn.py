@@ -209,6 +209,11 @@ def instrument_sklearn_compose_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_kernel_ridge_models(module):
+    model_classes = ("KernelRidge",)
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_calibration_models(module):
     model_classes = ("CalibratedClassifierCV",)
     _instrument_sklearn_models(module, model_classes)

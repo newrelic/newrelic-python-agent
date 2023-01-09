@@ -2915,6 +2915,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.kernel_ridge",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_kernel_ridge_models",
+    )
+
+    _process_module_definition(
         "sklearn.neural_network._multilayer_perceptron",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_neural_network_models",

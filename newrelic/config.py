@@ -2903,6 +2903,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.discriminant_analysis",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_discriminant_analysis_models",
+    )
+
+    _process_module_definition(
         "sklearn.gaussian_process._gpc",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_gaussian_process_models",

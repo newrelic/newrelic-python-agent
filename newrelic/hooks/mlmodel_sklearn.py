@@ -209,6 +209,11 @@ def instrument_sklearn_feature_selection_rfe_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_kernel_ridge_models(module):
+    model_classes = ("KernelRidge",)
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_calibration_models(module):
     model_classes = ("CalibratedClassifierCV",)
     _instrument_sklearn_models(module, model_classes)
@@ -260,6 +265,73 @@ def instrument_sklearn_cluster_kmeans_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_multiclass_models(module):
+    model_classes = (
+        "OneVsRestClassifier",
+        "OneVsOneClassifier",
+        "OutputCodeClassifier",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_multioutput_models(module):
+    model_classes = (
+        "MultiOutputEstimator",
+        "MultiOutputClassifier",
+        "ClassifierChain",
+        "RegressorChain",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_naive_bayes_models(module):
+    model_classes = (
+        "GaussianNB",
+        "MultinomialNB",
+        "ComplementNB",
+        "BernoulliNB",
+        "CategoricalNB",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_model_selection_models(module):
+    model_classes = (
+        "GridSearchCV",
+        "RandomizedSearchCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_mixture_models(module):
+    model_classes = (
+        "GaussianMixture",
+        "BayesianGaussianMixture",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_neural_network_models(module):
+    model_classes = (
+        "BernoulliRBM",
+        "MLPClassifier",
+        "MLPRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_neighbors_KRadius_models(module):
+    model_classes = (
+        "KNeighborsClassifier",
+        "RadiusNeighborsClassifier",
+        "KNeighborsTransformer",
+        "RadiusNeighborsTransformer",
+        "KNeighborsRegressor",
+        "RadiusNeighborsRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_svm_models(module):
     model_classes = (
         "LinearSVC",
@@ -286,6 +358,17 @@ def instrument_sklearn_pipeline_models(module):
     model_classes = (
         "Pipeline",
         "FeatureUnion",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_neighbors_models(module):
+    model_classes = (
+        "KernelDensity",
+        "LocalOutlierFactor",
+        "NeighborhoodComponentsAnalysis",
+        "NearestCentroid",
+        "NearestNeighbors",
     )
     _instrument_sklearn_models(module, model_classes)
 

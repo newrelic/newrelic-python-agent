@@ -265,6 +265,14 @@ def instrument_sklearn_ensemble_hist_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_dummy_models(module):
+    model_classes = (
+        "DummyClassifier",
+        "DummyRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_feature_selection_rfe_models(module):
     model_classes = (
         "RFE",

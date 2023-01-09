@@ -265,6 +265,14 @@ def instrument_sklearn_ensemble_hist_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_feature_selection_rfe_models(module):
+    model_classes = (
+        "RFE",
+        "RFECV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_kernel_ridge_models(module):
     model_classes = ("KernelRidge",)
     _instrument_sklearn_models(module, model_classes)
@@ -282,6 +290,15 @@ def instrument_sklearn_cluster_models(module):
         "DBSCAN",
         "MeanShift",
         "OPTICS",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_feature_selection_models(module):
+    model_classes = (
+        "VarianceThreshold",
+        "SelectFromModel",
+        "SequentialFeatureSelector",
     )
     _instrument_sklearn_models(module, model_classes)
 

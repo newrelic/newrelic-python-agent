@@ -17,10 +17,9 @@ import uuid
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
-from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
-from newrelic.core.config import global_settings
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
+from newrelic.core.config import global_settings
 
 METHODS_TO_WRAP = ("predict", "fit", "fit_predict", "predict_log_proba", "predict_proba", "transform", "score")
 METRIC_SCORERS = (
@@ -109,7 +108,7 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
-        #Pandas Dataframe
+        # Pandas Dataframe
         pd = sys.modules.get("pandas", None)
         if pd and isinstance(data_set, pd.DataFrame):
             for (colname, colval) in data_set.iteritems():
@@ -119,17 +118,31 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
                         value_type = "categorical"
                     else:
                         value_type = find_type_category(value)
-                    transaction.record_custom_event("ML Model Feature Event",
-                                                    {"inference_id": inference_id, "model_name": model_name,
-                                                     "model_version": model_version, "feature_name": colname,
-                                                     "type": value_type, "value": str(value),})
+                    transaction.record_custom_event(
+                        "ML Model Feature Event",
+                        {
+                            "inference_id": inference_id,
+                            "model_name": model_name,
+                            "model_version": model_version,
+                            "feature_name": colname,
+                            "type": value_type,
+                            "value": str(value),
+                        },
+                    )
         else:
             for feature in data_set:
                 for col_index, value in enumerate(feature):
-                    transaction.record_custom_event("ML Model Feature Event",
-                                                    {"inference_id": inference_id, "model_name": model_name,
-                                                     "model_version": model_version, "feature_name": str(col_index),
-                                                     "type": find_type_category(value), "value": str(value),})
+                    transaction.record_custom_event(
+                        "ML Model Feature Event",
+                        {
+                            "inference_id": inference_id,
+                            "model_name": model_name,
+                            "model_version": model_version,
+                            "feature_name": str(col_index),
+                            "type": find_type_category(value),
+                            "value": str(value),
+                        },
+                    )
 
 
 def _nr_instrument_model(module, model_class):
@@ -252,6 +265,11 @@ def instrument_sklearn_ensemble_hist_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_kernel_ridge_models(module):
+    model_classes = ("KernelRidge",)
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_calibration_models(module):
     model_classes = ("CalibratedClassifierCV",)
     _instrument_sklearn_models(module, model_classes)
@@ -290,6 +308,114 @@ def instrument_sklearn_cluster_kmeans_models(module):
         "BisectingKMeans",
         "KMeans",
         "MiniBatchKMeans",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_multiclass_models(module):
+    model_classes = (
+        "OneVsRestClassifier",
+        "OneVsOneClassifier",
+        "OutputCodeClassifier",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_multioutput_models(module):
+    model_classes = (
+        "MultiOutputEstimator",
+        "MultiOutputClassifier",
+        "ClassifierChain",
+        "RegressorChain",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_naive_bayes_models(module):
+    model_classes = (
+        "GaussianNB",
+        "MultinomialNB",
+        "ComplementNB",
+        "BernoulliNB",
+        "CategoricalNB",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_model_selection_models(module):
+    model_classes = (
+        "GridSearchCV",
+        "RandomizedSearchCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_mixture_models(module):
+    model_classes = (
+        "GaussianMixture",
+        "BayesianGaussianMixture",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_neural_network_models(module):
+    model_classes = (
+        "BernoulliRBM",
+        "MLPClassifier",
+        "MLPRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_neighbors_KRadius_models(module):
+    model_classes = (
+        "KNeighborsClassifier",
+        "RadiusNeighborsClassifier",
+        "KNeighborsTransformer",
+        "RadiusNeighborsTransformer",
+        "KNeighborsRegressor",
+        "RadiusNeighborsRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_svm_models(module):
+    model_classes = (
+        "LinearSVC",
+        "LinearSVR",
+        "SVC",
+        "NuSVC",
+        "SVR",
+        "NuSVR",
+        "OneClassSVM",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_semi_supervised_models(module):
+    model_classes = (
+        "LabelPropagation",
+        "LabelSpreading",
+        "SelfTrainingClassifier",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_pipeline_models(module):
+    model_classes = (
+        "Pipeline",
+        "FeatureUnion",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_neighbors_models(module):
+    model_classes = (
+        "KernelDensity",
+        "LocalOutlierFactor",
+        "NeighborhoodComponentsAnalysis",
+        "NearestCentroid",
+        "NearestNeighbors",
     )
     _instrument_sklearn_models(module, model_classes)
 

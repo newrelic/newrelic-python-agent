@@ -265,6 +265,14 @@ def instrument_sklearn_ensemble_hist_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_cross_decomposition_models(module):
+    model_classes = (
+        "PLSRegression",
+        "PLSSVD",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_discriminant_analysis_models(module):
     model_classes = (
         "LinearDiscriminantAnalysis",

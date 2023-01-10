@@ -273,6 +273,72 @@ def instrument_sklearn_compose_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_covariance_shrunk_models(module):
+    model_classes = (
+        "ShrunkCovariance",
+        "LedoitWolf",
+        "OAS",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_cross_decomposition_models(module):
+    model_classes = (
+        "PLSRegression",
+        "PLSSVD",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_covariance_graph_models(module):
+    model_classes = (
+        "GraphicalLasso",
+        "GraphicalLassoCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_discriminant_analysis_models(module):
+    model_classes = (
+        "LinearDiscriminantAnalysis",
+        "QuadraticDiscriminantAnalysis",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_covariance_models(module):
+    model_classes = (
+        "EmpiricalCovariance",
+        "MinCovDet",
+        "EllipticEnvelope",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_gaussian_process_models(module):
+    model_classes = (
+        "GaussianProcessClassifier",
+        "GaussianProcessRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_dummy_models(module):
+    model_classes = (
+        "DummyClassifier",
+        "DummyRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_feature_selection_rfe_models(module):
+    model_classes = (
+        "RFE",
+        "RFECV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_kernel_ridge_models(module):
     model_classes = ("KernelRidge",)
     _instrument_sklearn_models(module, model_classes)
@@ -290,6 +356,15 @@ def instrument_sklearn_cluster_models(module):
         "DBSCAN",
         "MeanShift",
         "OPTICS",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_feature_selection_models(module):
+    model_classes = (
+        "VarianceThreshold",
+        "SelectFromModel",
+        "SequentialFeatureSelector",
     )
     _instrument_sklearn_models(module, model_classes)
 

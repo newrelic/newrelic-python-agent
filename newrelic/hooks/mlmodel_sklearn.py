@@ -265,6 +265,15 @@ def instrument_sklearn_ensemble_hist_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_covariance_shrunk_models(module):
+    model_classes = (
+        "ShrunkCovariance",
+        "LedoitWolf",
+        "OAS",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_cross_decomposition_models(module):
     model_classes = (
         "PLSRegression",
@@ -273,10 +282,27 @@ def instrument_sklearn_cross_decomposition_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_covariance_graph_models(module):
+    model_classes = (
+        "GraphicalLasso",
+        "GraphicalLassoCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_discriminant_analysis_models(module):
     model_classes = (
         "LinearDiscriminantAnalysis",
         "QuadraticDiscriminantAnalysis",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_covariance_models(module):
+    model_classes = (
+        "EmpiricalCovariance",
+        "MinCovDet",
+        "EllipticEnvelope",
     )
     _instrument_sklearn_models(module, model_classes)
 

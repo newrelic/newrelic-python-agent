@@ -119,7 +119,6 @@ def test_multiple_calls_to_model_methods(tree_model_name, run_tree_model):
 
         model.predict(x_test)
         model.score(x_test, y_test)
-
         # Some models don't have these methods.
         if hasattr(model, "predict_log_proba"):
             model.predict_log_proba(x_test)

@@ -14,7 +14,6 @@
 
 import pytest
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.linear_model import LinearRegression
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -206,6 +205,7 @@ def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(ensemble_
         "HistGradientBoostingRegressor",
         "StackingClassifier",
         "StackingRegressor",
+        "VotingRegressor",
     ],
 )
 def test_above_v1_1_model_methods_wrapped_in_function_trace(ensemble_model_name, run_ensemble_model):
@@ -221,6 +221,12 @@ def test_above_v1_1_model_methods_wrapped_in_function_trace(ensemble_model_name,
             ("Function/MLModel/Sklearn/Named/StackingRegressor.fit", 1),
             ("Function/MLModel/Sklearn/Named/StackingRegressor.predict", 2),
             ("Function/MLModel/Sklearn/Named/StackingRegressor.score", 1),
+        ],
+        "VotingRegressor": [
+            ("Function/MLModel/Sklearn/Named/VotingRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/VotingRegressor.predict", 2),
+            ("Function/MLModel/Sklearn/Named/VotingRegressor.score", 1),
+            ("Function/MLModel/Sklearn/Named/VotingRegressor.transform", 1),
         ],
         "HistGradientBoostingClassifier": [
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),
@@ -272,7 +278,9 @@ def run_ensemble_model():
                 "voting": "soft",
             }
         elif ensemble_model_name == "VotingRegressor":
-            kwargs = {"estimators": [("lr", LinearRegression())]}
+            x_train = x_test = [[1, 1]]
+            y_train = y_test = [0]
+            kwargs = {"estimators": [("rf", RandomForestRegressor())]}
         elif ensemble_model_name == "StackingRegressor":
             kwargs = {"estimators": [("rf", RandomForestRegressor())]}
         clf = getattr(sklearn.ensemble, ensemble_model_name)(**kwargs)

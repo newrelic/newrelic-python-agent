@@ -2819,6 +2819,18 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.compose._column_transformer",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_compose_models",
+    )
+
+    _process_module_definition(
+        "sklearn.compose._target",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_compose_models",
+    )
+
+    _process_module_definition(
         "sklearn.covariance._empirical_covariance",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_covariance_models",

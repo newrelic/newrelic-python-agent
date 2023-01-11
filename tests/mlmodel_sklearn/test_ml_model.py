@@ -127,3 +127,33 @@ def test_wrapper_attrs_custom_model_pandas_df():
 
     _test()
 
+
+pandas_df_recorded_builtin_events = [
+    {"users": {"inference_id": None, 'model_name': 'MyDecisionTreeClassifier', "model_version": '1.5.0b1', 'feature_name': "feature1", 'type': "numerical", 'value': '6.5'}},
+    {"users": {"inference_id": None, 'model_name': 'MyDecisionTreeClassifier', "model_version": '1.5.0b1', 'feature_name': "feature1", 'type': "numerical", 'value': '3.4'}},
+    {"users": {"inference_id": None, 'model_name': 'MyDecisionTreeClassifier', "model_version": '1.5.0b1', 'feature_name': "feature2", 'type': "numerical", 'value': '2.9'}},
+    {"users": {"inference_id": None, 'model_name': 'MyDecisionTreeClassifier', "model_version": '1.5.0b1', 'feature_name': "feature2", 'type': "numerical", 'value': '7.5'}},
+]
+
+
+@reset_core_stats_engine()
+def test_wrapper_attrs_builtin_model():
+    @validate_custom_event_count(count=4)
+    @validate_custom_events(pandas_df_recorded_builtin_events)
+    @background_task()
+    def _test():
+        import sklearn.tree
+        x_train = pandas.DataFrame({"col1": [0, 0], "col2": [1, 1]}, dtype='int')
+        y_train = pandas.DataFrame({"label": [0, 1]}, dtype='int')
+        x_test = pandas.DataFrame({"col1": [6.5, 3.4], "col2": [2.9, 7.5]}, dtype='int')
+
+        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+
+        model = clf.fit(x_train, y_train)
+        wrap_mlmodel(model, name="MyDecisionTreeClassifier", version="1.5.0b1", feature_names=["feature1", "feature2"])
+        labels = model.predict(x_test)
+
+        return model
+
+    _test()
+

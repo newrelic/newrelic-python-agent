@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import sys
 import uuid
 
@@ -32,7 +33,7 @@ METRIC_SCORERS = (
     "r2_score",
 )
 PY2 = sys.version_info[0] == 2
-
+_logger = logging.getLogger(__name__)
 
 class PredictReturnTypeProxy(ObjectProxy):
     def __init__(self, wrapped, model_name, training_step):
@@ -105,12 +106,21 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
     inference_id = uuid.uuid4()
     model_name = getattr(instance, "_nr_wrapped_name", _class)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
-
+    feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
     settings = transaction.settings if transaction.settings is not None else global_settings()
+
     if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
         # Pandas Dataframe
         pd = sys.modules.get("pandas", None)
         if pd and isinstance(data_set, pd.DataFrame):
+
+            # Map dataset column names to user defined feature names
+            if feature_names and data_set.columns.tolist():
+                if len(feature_names) != len(data_set.columns.tolist()):
+                    _logger.warning("The number of feature names passed to the ml_model wrapper function is not equal to the number of columns in the data set. Please supply the correct number of feature names.")
+                else:
+                    column_name_mapping = dict(zip(data_set.columns.tolist(), feature_names))
+
             for (colname, colval) in data_set.iteritems():
                 for value in colval.values:
                     value_type = data_set[colname].dtype.name
@@ -118,13 +128,14 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
                         value_type = "categorical"
                     else:
                         value_type = find_type_category(value)
+                    feature_name = column_name_mapping[colname] if column_name_mapping[colname] else colname
                     transaction.record_custom_event(
                         "ML Model Feature Event",
                         {
                             "inference_id": inference_id,
                             "model_name": model_name,
                             "model_version": model_version,
-                            "feature_name": colname,
+                            "feature_name": feature_name,
                             "type": value_type,
                             "value": str(value),
                         },

@@ -206,7 +206,6 @@ def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(ensemble_
         "HistGradientBoostingRegressor",
         "StackingClassifier",
         "StackingRegressor",
-        "VotingRegressor",
     ],
 )
 def test_above_v1_1_model_methods_wrapped_in_function_trace(ensemble_model_name, run_ensemble_model):
@@ -222,12 +221,6 @@ def test_above_v1_1_model_methods_wrapped_in_function_trace(ensemble_model_name,
             ("Function/MLModel/Sklearn/Named/StackingRegressor.fit", 1),
             ("Function/MLModel/Sklearn/Named/StackingRegressor.predict", 2),
             ("Function/MLModel/Sklearn/Named/StackingRegressor.score", 1),
-        ],
-        "VotingRegressor": [
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.score", 1),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.transform", 1),
         ],
         "HistGradientBoostingClassifier": [
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),

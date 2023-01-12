@@ -113,7 +113,7 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
         # Pandas Dataframe
         pd = sys.modules.get("pandas", None)
         if pd and isinstance(data_set, pd.DataFrame):
-
+            column_name_mapping = {}
             # Map dataset column names to user defined feature names
             if feature_names and data_set.columns.tolist():
                 if len(feature_names) != len(data_set.columns.tolist()):
@@ -128,7 +128,7 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
                         value_type = "categorical"
                     else:
                         value_type = find_type_category(value)
-                    feature_name = column_name_mapping[colname] if column_name_mapping[colname] else colname
+                    feature_name = column_name_mapping[colname] if colname in column_name_mapping else colname
                     transaction.record_custom_event(
                         "ML Model Feature Event",
                         {

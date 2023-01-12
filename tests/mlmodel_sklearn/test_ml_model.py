@@ -74,10 +74,10 @@ class CustomTestModel(BaseDecisionTree):
 
 
 int_list_recorded_custom_events = [
-    {"users": {"inference_id": None, 'model_name': 'MyCustomModel', "model_version": '1.2.3', 'feature_name': None, 'type': "numerical", 'value': 1.0}},
-    {"users": {"inference_id": None, 'model_name': 'MyCustomModel', "model_version": '1.2.3', 'feature_name': None, 'type': "numerical", 'value': 2.0}},
-    {"users": {"inference_id": None, 'model_name': 'MyCustomModel', "model_version": '1.2.3', 'feature_name': None, 'type': "numerical", 'value': 3.0}},
-    {"users": {"inference_id": None, 'model_name': 'MyCustomModel', "model_version": '1.2.3', 'feature_name': None, 'type': "numerical", 'value': 4.0}},
+    {"users": {"inference_id": None, 'model_name': 'MyCustomModel', "model_version": '1.2.3', 'feature_name': None, 'type': "numerical", 'value': '1.0'}},
+    {"users": {"inference_id": None, 'model_name': 'MyCustomModel', "model_version": '1.2.3', 'feature_name': None, 'type': "numerical", 'value': '2.0'}},
+    {"users": {"inference_id": None, 'model_name': 'MyCustomModel', "model_version": '1.2.3', 'feature_name': None, 'type': "numerical", 'value': '3.0'}},
+    {"users": {"inference_id": None, 'model_name': 'MyCustomModel', "model_version": '1.2.3', 'feature_name': None, 'type': "numerical", 'value': '4.0'}},
 ]
 
 
@@ -102,10 +102,10 @@ def test_wrapper_attrs_custom_model_int_list():
 
 
 pandas_df_recorded_custom_events = [
-    {"users": {"inference_id": None, 'model_name': 'PandasTestModel', "model_version": '1.5.0b1', 'feature_name': "feature1", 'type': "categorical", 'value': 5.0}},
-    {"users": {"inference_id": None, 'model_name': 'PandasTestModel', "model_version": '1.5.0b1', 'feature_name': "feature1", 'type': "categorical", 'value': 6.0}},
-    {"users": {"inference_id": None, 'model_name': 'PandasTestModel', "model_version": '1.5.0b1', 'feature_name': "feature2", 'type': "categorical", 'value': 7.0}},
-    {"users": {"inference_id": None, 'model_name': 'PandasTestModel', "model_version": '1.5.0b1', 'feature_name': "feature2", 'type': "categorical", 'value': 8.0}},
+    {"users": {"inference_id": None, 'model_name': 'PandasTestModel', "model_version": '1.5.0b1', 'feature_name': "feature1", 'type': "categorical", 'value': '5.0'}},
+    {"users": {"inference_id": None, 'model_name': 'PandasTestModel', "model_version": '1.5.0b1', 'feature_name': "feature1", 'type': "categorical", 'value': '6.0'}},
+    {"users": {"inference_id": None, 'model_name': 'PandasTestModel', "model_version": '1.5.0b1', 'feature_name': "feature2", 'type': "categorical", 'value': '7.0'}},
+    {"users": {"inference_id": None, 'model_name': 'PandasTestModel', "model_version": '1.5.0b1', 'feature_name': "feature2", 'type': "categorical", 'value': '8.0'}},
 ]
 
 

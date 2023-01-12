@@ -150,7 +150,6 @@ _elasticsearch_client_methods = (
 
 def instrument_elasticsearch_client(module):
     for name, arg_extractor in _elasticsearch_client_methods:
-        # wrap_elasticsearch_client_method(module, "Elasticsearch.%s" % name, arg_extractor)
         wrap_elasticsearch_client_method(module.Elasticsearch, name, arg_extractor)
 
 
@@ -200,7 +199,6 @@ _elasticsearch_client_indices_methods = (
 def instrument_elasticsearch_client_indices(module):
     for name, arg_extractor in _elasticsearch_client_indices_methods:
         wrap_elasticsearch_client_method(module.IndicesClient, name, arg_extractor, "indices")
-        # wrap_elasticsearch_client_method(module, "IndicesClient.%s" % name, arg_extractor, "indices")
 
 
 _elasticsearch_client_cat_methods = (
@@ -224,7 +222,6 @@ _elasticsearch_client_cat_methods = (
 
 def instrument_elasticsearch_client_cat(module):
     for name, arg_extractor in _elasticsearch_client_cat_methods:
-        # wrap_elasticsearch_client_method(module, "CatClient.%s" % name, arg_extractor, "cat")
         wrap_elasticsearch_client_method(module.CatClient, name, arg_extractor, "cat")
 
 
@@ -241,7 +238,6 @@ _elasticsearch_client_cluster_methods = (
 
 def instrument_elasticsearch_client_cluster(module):
     for name, arg_extractor in _elasticsearch_client_cluster_methods:
-        # wrap_elasticsearch_client_method(module, "ClusterClient.%s" % name, arg_extractor, "cluster")
         wrap_elasticsearch_client_method(module.ClusterClient, name, arg_extractor, "cluster")
 
 
@@ -255,7 +251,6 @@ _elasticsearch_client_nodes_methods = (
 
 def instrument_elasticsearch_client_nodes(module):
     for name, arg_extractor in _elasticsearch_client_nodes_methods:
-        # wrap_elasticsearch_client_method(module, "NodesClient.%s" % name, arg_extractor, "nodes")
         wrap_elasticsearch_client_method(module.NodesClient, name, arg_extractor, "nodes")
 
 
@@ -274,7 +269,6 @@ _elasticsearch_client_snapshot_methods = (
 
 def instrument_elasticsearch_client_snapshot(module):
     for name, arg_extractor in _elasticsearch_client_snapshot_methods:
-        # wrap_elasticsearch_client_method(module, "SnapshotClient.%s" % name, arg_extractor, "snapshot")
         wrap_elasticsearch_client_method(module.SnapshotClient, name, arg_extractor, "snapshot")
 
 
@@ -287,7 +281,6 @@ _elasticsearch_client_tasks_methods = (
 
 def instrument_elasticsearch_client_tasks(module):
     for name, arg_extractor in _elasticsearch_client_tasks_methods:
-        # wrap_elasticsearch_client_method(module, "TasksClient.%s" % name, arg_extractor, "tasks")
         wrap_elasticsearch_client_method(module.TasksClient, name, arg_extractor, "tasks")
 
 
@@ -301,7 +294,6 @@ _elasticsearch_client_ingest_methods = (
 
 def instrument_elasticsearch_client_ingest(module):
     for name, arg_extractor in _elasticsearch_client_ingest_methods:
-        # wrap_elasticsearch_client_method(module, "IngestClient.%s" % name, arg_extractor, "ingest")
         wrap_elasticsearch_client_method(module.IngestClient, name, arg_extractor, "ingest")
 
 

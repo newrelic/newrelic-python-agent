@@ -2975,6 +2975,174 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "sklearn.linear_model._base",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.base",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._bayes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_bayes_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.bayes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_bayes_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._least_angle",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_least_angle_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.least_angle",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_least_angle_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.coordinate_descent",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_coordinate_descent_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._coordinate_descent",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_coordinate_descent_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._glm",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_GLM_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._huber",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.huber",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._stochastic_gradient",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_stochastic_gradient_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.stochastic_gradient",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_stochastic_gradient_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._ridge",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_ridge_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.ridge",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_ridge_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._logistic",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_logistic_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.logistic",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_logistic_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._omp",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_OMP_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.omp",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_OMP_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._passive_aggressive",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_passive_aggressive_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.passive_aggressive",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_passive_aggressive_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._perceptron",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.perceptron",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._quantile",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._ransac",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.ransac",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._theil_sen",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.theil_sen",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
         "sklearn.cross_decomposition._pls",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_cross_decomposition_models",

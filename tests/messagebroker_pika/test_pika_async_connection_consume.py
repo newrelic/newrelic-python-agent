@@ -36,13 +36,15 @@ from testing_support.fixtures import (
     capture_transaction_metrics,
     function_not_called,
     override_application_settings,
-    validate_tt_collector_json,
 )
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
+)
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
 )
 
 from newrelic.api.background_task import background_task

@@ -33,18 +33,18 @@ class Application(object):
         if name is None:
             name = newrelic.core.config.global_settings().app_name
 
-        # Ensure we grab a reference to the agent before grabbing
-        # the lock, else startup callback on agent initialisation
-        # could deadlock as it tries to create a application when
-        # we already have the lock held.
-
-        agent = newrelic.core.agent.agent_instance()
-
         # Try first without lock. If we find it we can return.
 
         instance = Application._instances.get(name, None)
 
         if not instance and activate:
+            # Ensure we grab a reference to the agent before grabbing
+            # the lock, else startup callback on agent initialisation
+            # could deadlock as it tries to create a application when
+            # we already have the lock held.
+
+            agent = newrelic.core.agent.agent_instance()
+
             with Application._lock:
                 # Now try again with lock so that only one gets
                 # to create and add it.

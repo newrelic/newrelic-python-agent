@@ -38,14 +38,17 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.application import application_instance
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import Transaction
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
 
-sanic_21 = int(sanic.__version__.split(".", 1)[0]) >= 21
+SANIC_VERSION = tuple(map(int, get_package_version("sanic").split(".")))
 
+sanic_21 = SANIC_VERSION >= (21,)
+sanic_v19_to_v22_12 = SANIC_VERSION >= (19,) and SANIC_VERSION < (22, 12)
 
 BASE_METRICS = [
     ("Function/_target_application:index", 1),
-    ("Function/_target_application:request_middleware", 1 if int(sanic.__version__.split(".", 1)[0]) > 18 else 2),
+    ("Function/_target_application:request_middleware", 1 if sanic_v19_to_v22_12 else 2),
 ]
 FRAMEWORK_METRICS = [
     ("Python/Framework/Sanic/%s" % sanic.__version__, 1),

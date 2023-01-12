@@ -15,10 +15,12 @@
 import psycopg2
 from testing_support.fixtures import (
     override_application_settings,
-    validate_tt_collector_json,
     validate_tt_parenting,
 )
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 from utils import DB_SETTINGS
 
 from newrelic.api.background_task import background_task

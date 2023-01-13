@@ -64,7 +64,7 @@ def _extract_args_metric_index(metric=None, index=None, *args, **kwargs):
     return _index_name(index)
 
 
-def wrap_elasticsearch_client_method(owner, name, arg_extractor, prefix=None):
+def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extractor, prefix=None):
     def _nr_wrapper_Elasticsearch_method_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -83,9 +83,9 @@ def wrap_elasticsearch_client_method(owner, name, arg_extractor, prefix=None):
             index = arg_extractor(*args, **kwargs)
 
         if prefix:
-            operation = "%s.%s" % (prefix, name)
+            operation = "%s.%s" % (prefix, method_name)
         else:
-            operation = name
+            operation = method_name
 
         transaction._nr_datastore_instance_info = (None, None, None)
 
@@ -102,8 +102,7 @@ def wrap_elasticsearch_client_method(owner, name, arg_extractor, prefix=None):
 
             return result
 
-    if hasattr(owner, name):
-        wrap_function_wrapper(owner, name, _nr_wrapper_Elasticsearch_method_)
+    wrap_function_wrapper(module, "%s.%s" % (class_name, method_name), _nr_wrapper_Elasticsearch_method_)
 
 
 _elasticsearch_client_methods = (
@@ -149,8 +148,9 @@ _elasticsearch_client_methods = (
 
 
 def instrument_elasticsearch_client(module):
-    for name, arg_extractor in _elasticsearch_client_methods:
-        wrap_elasticsearch_client_method(module.Elasticsearch, name, arg_extractor)
+    for method_name, arg_extractor in _elasticsearch_client_methods:
+        if hasattr(getattr(module, "Elasticsearch"), method_name):
+            wrap_elasticsearch_client_method(module, "Elasticsearch", method_name, arg_extractor)
 
 
 _elasticsearch_client_indices_methods = (
@@ -197,8 +197,9 @@ _elasticsearch_client_indices_methods = (
 
 
 def instrument_elasticsearch_client_indices(module):
-    for name, arg_extractor in _elasticsearch_client_indices_methods:
-        wrap_elasticsearch_client_method(module.IndicesClient, name, arg_extractor, "indices")
+    for method_name, arg_extractor in _elasticsearch_client_indices_methods:
+        if hasattr(getattr(module, "IndicesClient"), method_name):
+            wrap_elasticsearch_client_method(module, "IndicesClient", method_name, arg_extractor, "indices")
 
 
 _elasticsearch_client_cat_methods = (
@@ -221,8 +222,9 @@ _elasticsearch_client_cat_methods = (
 
 
 def instrument_elasticsearch_client_cat(module):
-    for name, arg_extractor in _elasticsearch_client_cat_methods:
-        wrap_elasticsearch_client_method(module.CatClient, name, arg_extractor, "cat")
+    for method_name, arg_extractor in _elasticsearch_client_cat_methods:
+        if hasattr(getattr(module, "CatClient"), method_name):
+            wrap_elasticsearch_client_method(module, "CatClient", method_name, arg_extractor, "cat")
 
 
 _elasticsearch_client_cluster_methods = (
@@ -237,8 +239,9 @@ _elasticsearch_client_cluster_methods = (
 
 
 def instrument_elasticsearch_client_cluster(module):
-    for name, arg_extractor in _elasticsearch_client_cluster_methods:
-        wrap_elasticsearch_client_method(module.ClusterClient, name, arg_extractor, "cluster")
+    for method_name, arg_extractor in _elasticsearch_client_cluster_methods:
+        if hasattr(getattr(module, "ClusterClient"), method_name):
+            wrap_elasticsearch_client_method(module, "ClusterClient", method_name, arg_extractor, "cluster")
 
 
 _elasticsearch_client_nodes_methods = (
@@ -250,8 +253,9 @@ _elasticsearch_client_nodes_methods = (
 
 
 def instrument_elasticsearch_client_nodes(module):
-    for name, arg_extractor in _elasticsearch_client_nodes_methods:
-        wrap_elasticsearch_client_method(module.NodesClient, name, arg_extractor, "nodes")
+    for method_name, arg_extractor in _elasticsearch_client_nodes_methods:
+        if hasattr(getattr(module, "NodesClient"), method_name):
+            wrap_elasticsearch_client_method(module, "NodesClient", method_name, arg_extractor, "nodes")
 
 
 _elasticsearch_client_snapshot_methods = (
@@ -268,8 +272,9 @@ _elasticsearch_client_snapshot_methods = (
 
 
 def instrument_elasticsearch_client_snapshot(module):
-    for name, arg_extractor in _elasticsearch_client_snapshot_methods:
-        wrap_elasticsearch_client_method(module.SnapshotClient, name, arg_extractor, "snapshot")
+    for method_name, arg_extractor in _elasticsearch_client_snapshot_methods:
+        if hasattr(getattr(module, "SnapshotClient"), method_name):
+            wrap_elasticsearch_client_method(module, "SnapshotClient", method_name, arg_extractor, "snapshot")
 
 
 _elasticsearch_client_tasks_methods = (
@@ -280,8 +285,9 @@ _elasticsearch_client_tasks_methods = (
 
 
 def instrument_elasticsearch_client_tasks(module):
-    for name, arg_extractor in _elasticsearch_client_tasks_methods:
-        wrap_elasticsearch_client_method(module.TasksClient, name, arg_extractor, "tasks")
+    for method_name, arg_extractor in _elasticsearch_client_tasks_methods:
+        if hasattr(getattr(module, "TasksClient"), method_name):
+            wrap_elasticsearch_client_method(module, "TasksClient", method_name, arg_extractor, "tasks")
 
 
 _elasticsearch_client_ingest_methods = (
@@ -293,8 +299,9 @@ _elasticsearch_client_ingest_methods = (
 
 
 def instrument_elasticsearch_client_ingest(module):
-    for name, arg_extractor in _elasticsearch_client_ingest_methods:
-        wrap_elasticsearch_client_method(module.IngestClient, name, arg_extractor, "ingest")
+    for method_name, arg_extractor in _elasticsearch_client_ingest_methods:
+        if hasattr(getattr(module, "IngestClient"), method_name):
+            wrap_elasticsearch_client_method(module, "IngestClient", method_name, arg_extractor, "ingest")
 
 
 #

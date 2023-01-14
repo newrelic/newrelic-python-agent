@@ -2665,46 +2665,118 @@ def _process_module_builtin_defaults():
         "aioredis.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
     )
 
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client",
     )
+
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.cat",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_cat",
     )
+
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.cat",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_cat",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.cluster",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_cluster",
     )
+
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.cluster",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_cluster",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.indices",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_indices",
     )
+
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.indices",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_indices",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.nodes",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_nodes",
     )
+
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.nodes",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_nodes",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.snapshot",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_snapshot",
     )
+
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.snapshot",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_snapshot",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.tasks",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_tasks",
     )
+
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.tasks",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_tasks",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.ingest",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_ingest",
     )
+
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.ingest",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_ingest",
+    )
+
     _process_module_definition(
         "elasticsearch.connection.base",
         "newrelic.hooks.datastore_elasticsearch",

@@ -31,6 +31,7 @@ jobs:
       - python
       - elasticsearchserver01
       - elasticsearchserver07
+      - elasticsearchserver08
       - gearman
       - grpc
       - kafka
@@ -599,7 +600,7 @@ jobs:
     timeout-minutes: 30
 
     services:
-      es01:
+      es07:
         image: elasticsearch:7.13.2
         env:
           "discovery.type": "single-node"
@@ -630,6 +631,52 @@ jobs:
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
+
+  elasticsearchserver08:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
+
+    services:
+      es08:
+        image: elasticsearch:8.5.0
+        env:
+          "discovery.type": "single-node"
+        ports:
+          - 8080:9200
+          - 8081:9200
+        # Set health checks to wait until elasticsearch has started
+        options: >-
+          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
 
   gearman:
     env:

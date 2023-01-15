@@ -304,6 +304,7 @@ _elasticsearch_client_indices_methods = (
     ("simulate_template", None),
     ("split", _extract_args_index),
     ("stats", _extract_args_index),
+    ("status", _extract_args_index),
     ("unfreeze", _extract_args_index),
     ("update_aliases", None),
     ("validate_query", _extract_args_index),

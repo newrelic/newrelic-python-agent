@@ -18,21 +18,21 @@ Do you have questions or are you experiencing unexpected behaviors after
 modifying this Open Source Software? Please engage with the “Build on
 New Relic” space in the `Explorers
 Hub <https://discuss.newrelic.com/c/build-on-new-relic/Open-Source-Agents-SDKs>`__,
-New Relic’s Forum. Posts are publicly viewable by anyone, please do not
+New Relic's Forum. Posts are publicly viewable by anyone, please do not
 include PII or sensitive information in your forum post.
 
 Contributor License Agreement (“CLA”)
 -------------------------------------
 
-We’d love to get your contributions to improve the Python Agent! Keep in mind that when you submit your Pull Request, you'll need to sign the CLA via the click-through using CLA-Assistant. You only have to sign the CLA one time per project. If you'd like to execute our corporate CLA, or if you have any questions, please drop us an email at opensource@newrelic.com.
+We'd love to get your contributions to improve the Python Agent! Keep in mind that when you submit your Pull Request, you'll need to sign the CLA via the click-through using CLA-Assistant. You only have to sign the CLA one time per project. If you'd like to execute our corporate CLA, or if you have any questions, please drop us an email at opensource@newrelic.com.
 
-For more information about CLAs, please check out Alex Russell’s excellent post,
+For more information about CLAs, please check out Alex Russell's excellent post,
 `Why Do I Need to Sign This? <https://infrequently.org/2008/06/why-do-i-need-to-sign-this/>`__.
 
 Feature Requests
 ----------------
 
-Feature requests should be submitted in the `Issue tracker <../../issues>`__, with a description of the expected behavior & use case, where they’ll remain closed until sufficient interest, `e.g. :+1: reactions <https://help.github.com/articles/about-discussions-in-issues-and-pull-requests/>`__, has been `shown by the community <../../issues?q=label%3A%22votes+needed%22+sort%3Areactions-%2B1-desc>`__. Before submitting an Issue, please search for similar ones in the
+Feature requests should be submitted in the `Issue tracker <../../issues>`__, with a description of the expected behavior & use case, where they'll remain closed until sufficient interest, `e.g. :+1: reactions <https://help.github.com/articles/about-discussions-in-issues-and-pull-requests/>`__, has been `shown by the community <../../issues?q=label%3A%22votes+needed%22+sort%3Areactions-%2B1-desc>`__. Before submitting an Issue, please search for similar ones in the
 `closed issues <../../issues?q=is%3Aissue+is%3Aclosed+label%3Aenhancement>`__.
 
 Filing Issues & Bug Reports
@@ -56,7 +56,7 @@ and engaging with the security community are important means to achieve
 our security goals.
 
 If you believe you have found a security vulnerability in this project
-or any of New Relic’s products or websites, we welcome and greatly
+or any of New Relic's products or websites, we welcome and greatly
 appreciate you reporting it to New Relic through
 `HackerOne <https://hackerone.com/newrelic>`__.
 
@@ -120,7 +120,7 @@ same Apache 2.0 license as we use for this project in general.
 
 Minimally, the `test suite <#testing-guidelines>`__ must pass for us to
 accept a PR. Ideally, we would love it if you also added appropriate
-tests if you’re implementing a feature!
+tests if you're implementing a feature!
 
 Please note that integration tests will be run internally before contributions are accepted.
 

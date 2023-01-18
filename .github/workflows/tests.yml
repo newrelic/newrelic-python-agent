@@ -601,7 +601,7 @@ jobs:
 
     services:
       es07:
-        image: elasticsearch:7.13.2
+        image: elasticsearch:7.17.8
         env:
           "discovery.type": "single-node"
         ports:
@@ -646,8 +646,9 @@ jobs:
 
     services:
       es08:
-        image: elasticsearch:8.5.0
+        image: elasticsearch:8.6.0
         env:
+          "xpack.security.enabled": "false"
           "discovery.type": "single-node"
         ports:
           - 8080:9200

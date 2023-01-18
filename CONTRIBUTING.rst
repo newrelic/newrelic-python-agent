@@ -119,17 +119,11 @@ documentation to help reduce the setup burden on new contributors.
 Prerequisites:
 ==============
 
-#. Install `Docker <https://www.docker.com/>`__ for you local operating
-   system.
-
-#. Install Either:
-      -  `VS Code <https://code.visualstudio.com/>`__ onto your local
-         system (recommended).
-
-      -  The `Dev Container CLI
-         <https://github.com/devcontainers/cli>`__ in your terminal.
-         (Requires a local copy of `npm
-         <https://docs.npmjs.com/downloading-and-installing-node-js-and-npm>`__.)
+1. Install `Docker <https://www.docker.com/>`__ for you local operating system.
+2. Login to the `GitHub Container Registry <https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic>`__ through Docker.
+3. Install Either:
+    * `VS Code <https://code.visualstudio.com/>`__ onto your local system (recommended).
+    * The `Dev Container CLI <https://github.com/devcontainers/cli>`__ in your terminal. (Requires a local copy of `npm <https://docs.npmjs.com/downloading-and-installing-node-js-and-npm>`__.)
 
 Steps for VS Code:
 ==================

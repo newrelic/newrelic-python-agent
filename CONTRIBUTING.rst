@@ -70,12 +70,12 @@ Source Software, we cannot provide support for your specific
 environment.
 
 Developing Inside a Container
------------------------
+-----------------------------
 
 To avoid the issues involved with setting up a local environment, consider 
 using our prebuilt development container to easily create an environment
 on demand with a wide selection of Python versions installed. This also
-comes with the `tox` tool (See Testing Guidelines) and a few packages 
+comes with the `tox <https://github.com/tox-dev/tox>`__ tool (See Testing Guidelines) and a few packages 
 preinstalled. 
 
 While we cannot provide direct support in setting up your environment
@@ -83,32 +83,36 @@ to work with this container, we develop it in the open and provide this
 documentation to help reduce the setup burden on new contributors.
 
 Prerequisites:
+^^^^^^^^^^^^^^
 
-1. Install [Docker](https://www.docker.com/) for you local operating system.
+1. Install `Docker <https://www.docker.com/>`__ for you local operating system.
 2. Install Either:
-    1. [VS Code](https://code.visualstudio.com/) onto your local system (recommended).
-    2. The [Dev Container CLI](https://github.com/devcontainers/cli) in your terminal. (Requires a local copy of [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).)
+    * `VS Code <https://code.visualstudio.com/>`__ onto your local system (recommended).
+    * The `Dev Container CLI <https://github.com/devcontainers/cli>`__ in your terminal. (Requires a local copy of `npm <https://docs.npmjs.com/downloading-and-installing-node-js-and-npm>`__.)
 
 Steps for VS Code:
+^^^^^^^^^^^^^^^^^^
 
 1. Ensure Docker is running.
-2. Install the [VS Code Extension for Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) into VS Code.
+2. Install the `VS Code Extension for Dev Containers <https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers>`__ into VS Code.
 3. In VS Code, open the command pallette (Ctrl-Shift-P on Windows/Linux or Cmd-Shift-P on Mac) and search for and run "Dev Containers: Rebuild and Reopen in Container".
 4. Wait for the container to build and start. This may take a long time to pull the first time the container is run, subsequent runs should be faster thanks to caching.
 5. To update your container, open the command pallette and run "Dev Containers: Rebuild Without Cache and Reopen in Container".
 
 Steps for Command Line Editor Users (vim, etc.):
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Ensure Docker is running.
-2. From the root of this repository, run `devcontainer up --workspace-folder=.` to start the container. The running container ID will be displayed, which is useful for subsequent steps.
-3. To gain shell access to the container, run `docker exec -it <container-id> /bin/bash`. Alternative shells include `zsh` and `fish`.
-4. Navigate to the `/workspaces` folder to find your source code.
-5. To stop the container, run `exit` on any open shells and then run `docker stop <container-id>`. `docker ps` may be helpful for finding the ID if you've lost it.
+2. From the root of this repository, run :code:`devcontainer up --workspace-folder=.` to start the container. The running container ID will be displayed, which is useful for subsequent steps.
+3. To gain shell access to the container, run :code:`docker exec -it <container-id> /bin/bash`. Alternative shells include :code:`zsh` and :code:`fish`.
+4. Navigate to the :code:`/workspaces` folder to find your source code.
+5. To stop the container, run :code:`exit` on any open shells and then run :code:`docker stop <container-id>`. :code:`docker ps` may be helpful for finding the ID if you've lost it.
 
 Personalizing Your Container:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. If you use a dotfiles repository (such as [chezmoi](https://www.chezmoi.io/)), you can configure your container to clone and install your dotfiles using [VS Code dotfile settings](https://code.visualstudio.com/docs/devcontainers/containers#_personalizing-with-dotfile-repositories).
-2. To install extra packages and features, you can edit your local copy of the .devcontainer/devcontainer.json file to use specific [Dev Container Features](https://containers.dev/features). A few common needs are already included but commented out.
+1. If you use a dotfiles repository (such as `chezmoi <https://www.chezmoi.io/>`__), you can configure your container to clone and install your dotfiles using `VS Code dotfile settings <https://code.visualstudio.com/docs/devcontainers/containers#_personalizing-with-dotfile-repositories>`__.
+2. To install extra packages and features, you can edit your local copy of the .devcontainer/devcontainer.json file to use specific `Dev Container Features <https://containers.dev/features>`__. A few common needs are already included but commented out.
 
 Pull Request Guidelines
 -----------------------
@@ -139,7 +143,7 @@ testing. The repository uses tests in
 
 You can run these tests by entering the `tests/ <tests/>`__ directory and then entering the directory of the tests you want to run. Then, run the following command:
 
-tox -c tox.ini -e [test environment] 
+:code:`tox -c tox.ini -e [test environment]`
 
 Slack
 -----

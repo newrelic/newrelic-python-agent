@@ -1,0 +1,35 @@
+// For format details, see https://containers.dev/implementors/json_reference/.
+{
+	"name": "pyenv",
+	"build":{
+		// To target other architectures, change the --platform directive in the Dockerfile.
+		"dockerfile": "Dockerfile",
+		"args": {
+			"IMAGE": "ghcr.io/newrelic-experimental/pyenv-devcontainer:latest"
+		}
+	},
+	"remoteUser": "vscode",
+	"runArgs": ["--network=host"],
+	"features": {
+	// Available Features: https://containers.dev/features
+		// "ghcr.io/devcontainers/features/docker-from-docker:1": {"moby": false},
+		// "ghcr.io/devcontainers/features/aws-cli:1": {},
+		// "ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+	"containerEnv": {
+		"NEW_RELIC_HOST": "${localEnv:NEW_RELIC_HOST}",
+		"NEW_RELIC_LICENSE_KEY": "${localEnv:NEW_RELIC_LICENSE_KEY}",
+		"NEW_RELIC_INSERT_KEY": "${localEnv:NEW_RELIC_INSERT_KEY}",
+		"NEW_RELIC_DEVELOPER_MODE": "${localEnv:NEW_RELIC_DEVELOPER_MODE}"
+	},
+	"customizations": {
+		"vscode": {
+			"settings": {},
+			"extensions": [
+				"ms-python.python",
+				"ms-vsliveshare.vsliveshare",
+				"eamodio.gitlens"
+			]
+		}
+	}
+}

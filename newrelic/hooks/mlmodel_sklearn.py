@@ -97,63 +97,67 @@ def find_type_category(value):
     return value_type
 
 
+def _get_feature_column_names(user_provided_feature_names, features):
+    import numpy as np
+
+    num_feature_columns = np.array(features).shape[1]
+    # If the user provided feature names are the correct size, return the user provided feature
+    # names.
+    if user_provided_feature_names and len(user_provided_feature_names) == num_feature_columns:
+        return user_provided_feature_names
+    # If the user provided feature names aren't the correct size, log a warning and do not use the user provided feature names.
+    if user_provided_feature_names:
+        _logger.warning("The number of feature names passed to the ml_model wrapper function is not equal to the number of columns in the data set. Please supply the correct number of feature names.")
+    # If the user doesn't provide the feature names or they were provided but the size was incorrect and the features are a pandas data frame, return the column names from the pandas data frame.
+    pd = sys.modules.get("pandas", None)
+    if pd and isinstance(features, pd.DataFrame):
+        return features.columns
+    # If the user doesn't provide the feature names or they were provided but the size was incorrect and the features are not a pandas data frame, return the column indexes as the feature names.
+    return np.array(range(num_feature_columns))
+
+
 def bind_predict(X, *args, **kwargs):
     return X
 
 
 def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
+    import numpy as np
+
     data_set = bind_predict(*args, **kwargs)
     inference_id = uuid.uuid4()
     model_name = getattr(instance, "_nr_wrapped_name", _class)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
-    feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
+    user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
-        # Pandas Dataframe
+        final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
+        checked_value_type = None
         pd = sys.modules.get("pandas", None)
         if pd and isinstance(data_set, pd.DataFrame):
-            column_name_mapping = {}
-            # Map dataset column names to user defined feature names
-            if feature_names and data_set.columns.tolist():
-                if len(feature_names) != len(data_set.columns.tolist()):
-                    _logger.warning("The number of feature names passed to the ml_model wrapper function is not equal to the number of columns in the data set. Please supply the correct number of feature names.")
-                else:
-                    column_name_mapping = dict(zip(data_set.columns.tolist(), feature_names))
-
             for (colname, colval) in data_set.iteritems():
                 for value in colval.values:
                     value_type = data_set[colname].dtype.name
                     if value_type == "category":
-                        value_type = "categorical"
-                    else:
-                        value_type = find_type_category(value)
-                    feature_name = column_name_mapping[colname] if colname in column_name_mapping else colname
-                    transaction.record_custom_event(
-                        "ML Model Feature Event",
-                        {
-                            "inference_id": inference_id,
-                            "model_name": model_name,
-                            "model_version": model_version,
-                            "feature_name": feature_name,
-                            "type": value_type,
-                            "value": str(value),
-                        },
-                    )
-        else:
-            for feature in data_set:
-                for col_index, value in enumerate(feature):
-                    transaction.record_custom_event(
-                        "ML Model Feature Event",
-                        {
-                            "inference_id": inference_id,
-                            "model_name": model_name,
-                            "model_version": model_version,
-                            "feature_name": str(col_index),
-                            "type": find_type_category(value),
-                            "value": str(value),
-                        },
-                    )
+                        checked_value_type = "categorical"
+
+        np_casted_data_set = np.array(data_set)
+
+        for feature in np_casted_data_set:
+            for col_index, value in enumerate(feature):
+                value_type = find_type_category(value) if not checked_value_type else checked_value_type
+ 
+                transaction.record_custom_event(
+                    "ML Model Feature Event",
+                    {
+                        "inference_id": inference_id,
+                        "model_name": model_name,
+                        "model_version": model_version,
+                        "feature_name": str(final_feature_names[col_index]),
+                        "type": value_type,
+                        "value": str(value),
+                    },
+                )
 
 
 def _nr_instrument_model(module, model_class):

@@ -564,8 +564,10 @@ def _nr_perform_request_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument_elasticsearch_transport(module):
-    wrap_function_wrapper(module, "Transport.get_connection", _nr_get_connection_wrapper)
+    if hasattr(module, "Transport") and hasattr(module.Transport, "get_connection"):
+        wrap_function_wrapper(module, "Transport.get_connection", _nr_get_connection_wrapper)
 
 
 def instrument_elastic_transport__transport(module):
-    wrap_function_wrapper(module, "Transport.perform_request", _nr_perform_request_wrapper)
+    if hasattr(module, "Transport") and hasattr(module.Transport, "perform_request"):
+        wrap_function_wrapper(module, "Transport.perform_request", _nr_perform_request_wrapper)

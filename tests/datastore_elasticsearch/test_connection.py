@@ -12,11 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 try:
     from elasticsearch.connection.base import Connection
-except:
-    # Fill in
-    import elastic_transport  # noqa for now.  This will be used
+    is_v8 = False
+except ImportError:
+    from elastic_transport._node._base import BaseNode as Connection
+    from elastic_transport._models import NodeConfig
+    is_v8 = True
+
+SKIP_IF_V7 = pytest.mark.skipif(not is_v8, reason="Skipping v8 tests.")
+SKIP_IF_V8 = pytest.mark.skipif(is_v8, reason="Skipping v7 tests.")
 
 
 def test_connection_default():
@@ -24,16 +31,25 @@ def test_connection_default():
     assert conn._nr_host_port == ("localhost", "9200")
 
 
+@SKIP_IF_V8
 def test_connection_host_arg():
     conn = Connection("the_host")
     assert conn._nr_host_port == ("the_host", "9200")
 
 
+@SKIP_IF_V8
 def test_connection_args():
     conn = Connection("the_host", 9999)
     assert conn._nr_host_port == ("the_host", "9999")
 
 
+@SKIP_IF_V8
 def test_connection_kwargs():
     conn = Connection(host="foo", port=8888)
+    assert conn._nr_host_port == ("foo", "8888")
+
+
+@SKIP_IF_V7
+def test_connection_config():
+    conn = Connection(NodeConfig(host="foo", port=8888))
     assert conn._nr_host_port == ("foo", "8888")

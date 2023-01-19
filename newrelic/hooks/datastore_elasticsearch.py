@@ -14,7 +14,7 @@
 
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
 from newrelic.packages import six
 
 # An index name can be a string, None or a sequence. In the case of None
@@ -529,7 +529,7 @@ def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
         if tracer_settings.instance_reporting.enabled:
             host, port_path_or_id = conn._nr_host_port
             instance_info = (host, port_path_or_id, None)
-    except:
+    except Exception:
         instance_info = ("unknown", "unknown", None)
 
     transaction._nr_datastore_instance_info = instance_info
@@ -537,5 +537,24 @@ def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
     return conn
 
 
+def _nr_perform_request_wrapper(wrapped, instance, args, kwargs):
+    """Read instance info from Connection and stash on Transaction."""
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    if hasattr(instance.node_pool.get, "_nr_wrapped"):
+        instance.node_pool.get = function_wrapper(_nr_get_connection_wrapper)(instance.node_pool.get)
+        instance.node_pool.get._nr_wrapped = True
+    
+    return wrapped(*args, **kwargs)
+
+
 def instrument_elasticsearch_transport(module):
     wrap_function_wrapper(module, "Transport.get_connection", _nr_get_connection_wrapper)
+
+
+def instrument_elastic_transport__transport(module):
+    wrap_function_wrapper(module, "Transport.perform_request", _nr_perform_request_wrapper)

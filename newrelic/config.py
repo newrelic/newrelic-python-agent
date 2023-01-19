@@ -2777,11 +2777,20 @@ def _process_module_builtin_defaults():
         "instrument_elasticsearch_client_ingest",
     )
 
+    # v7 and below
     _process_module_definition(
         "elasticsearch.connection.base",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_connection_base",
     )
+
+    # v8 and above
+    _process_module_definition(
+        "elastic_transport._node._base",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elastic_transport__node__base",
+    )
+
     _process_module_definition(
         "elasticsearch.transport",
         "newrelic.hooks.datastore_elasticsearch",

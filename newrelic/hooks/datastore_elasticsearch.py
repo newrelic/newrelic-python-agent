@@ -512,6 +512,17 @@ def instrument_elasticsearch_connection_base(module):
     wrap_function_wrapper(module, "Connection.__init__", _nr_Connection__init__wrapper)
 
 
+def BaseNode__init__wrapper(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    instance._nr_host_port = (instance.host, str(instance.port))
+    return result
+
+
+def instrument_elastic_transport__node__base(module):
+    if hasattr(module, "BaseNode"):
+        wrap_function_wrapper(module, "BaseNode.__init__", BaseNode__init__wrapper)
+
+
 def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
     """Read instance info from Connection and stash on Transaction."""
 

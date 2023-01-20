@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import platform
 
 from testing_support.fixtures import reset_core_stats_engine
@@ -48,44 +47,21 @@ def exercise_logging_json(logger):
     logger.warning('{"first_name": "Hugh", "last_name": "Man"}')
 
 
-def get_metadata_string(log_message, is_txn):
-    host = platform.uname()[1]
-    assert host
-    entity_guid = application_settings().entity_guid
-    if is_txn:
-        metadata_string = "".join(
-            (
-                "NR-LINKING|",
-                entity_guid,
-                "|",
-                host,
-                "|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28logger_logging%29|",
-            )
-        )
-    else:
-        metadata_string = "".join(
-            ("NR-LINKING|", entity_guid, "|", host, "|||Python%20Agent%20Test%20%28logger_logging%29|")
-        )
-
-    # Check to see if log_message is JSON formatted
-    # If so, insert key/value as the following:
-    # {...{"NR-LINKING":"[entity.guid]|[hostname]|[trace.id]|[span.id]|[entity.name]|"}}
-    try:
-        dict_log_message = json.loads(log_message)
-        dict_log_message["NR-LINKING"] = metadata_string[11:]  # Shave off the "NR-LINKING"
-        formatted_string = json.dumps(dict_log_message)
-    except:
-        formatted_string = log_message + " " + metadata_string
-    return formatted_string
-
-
 @reset_core_stats_engine()
 def test_local_log_decoration_inside_transaction(logger):
     @validate_log_event_count(1)
     @background_task()
     def test():
+        host = platform.uname()[1]
+        assert host
+        entity_guid = application_settings().entity_guid
+        entity_name = "Python%20Agent%20Test%20%28logger_logging%29"
         exercise_logging(logger)
-        assert logger.caplog.records[0] == get_metadata_string("C", True)
+        assert logger.caplog.records[0] == "C NR-LINKING|%s|%s|abcdefgh12345678|abcdefgh|%s|" % (
+            entity_guid,
+            host,
+            entity_name,
+        )
 
     test()
 
@@ -95,8 +71,18 @@ def test_local_log_decoration_inside_transaction_with_json(logger):
     @validate_log_event_count(1)
     @background_task()
     def test():
+        host = platform.uname()[1]
+        assert host
+        entity_guid = application_settings().entity_guid
+        entity_name = "Python%20Agent%20Test%20%28logger_logging%29"
         exercise_logging_json(logger)
-        assert logger.caplog.records[0] == get_metadata_string('{"first_name": "Hugh", "last_name": "Man"}', True)
+        assert logger.caplog.records[
+            0
+        ] == '{"first_name": "Hugh", "last_name": "Man", "NR-LINKING": "%s|%s|abcdefgh12345678|abcdefgh|%s|"}' % (
+            entity_guid,
+            host,
+            entity_name,
+        )
 
     test()
 
@@ -105,7 +91,29 @@ def test_local_log_decoration_inside_transaction_with_json(logger):
 def test_local_log_decoration_outside_transaction(logger):
     @validate_log_event_count_outside_transaction(1)
     def test():
+        host = platform.uname()[1]
+        assert host
+        entity_guid = application_settings().entity_guid
+        entity_name = "Python%20Agent%20Test%20%28logger_logging%29"
         exercise_logging(logger)
-        assert logger.caplog.records[0] == get_metadata_string("C", False)
+        assert logger.caplog.records[0] == "C NR-LINKING|%s|%s|||%s|" % (entity_guid, host, entity_name)
+
+    test()
+
+
+@reset_core_stats_engine()
+def test_local_log_decoration_outside_transaction_with_json(logger):
+    @validate_log_event_count_outside_transaction(1)
+    def test():
+        host = platform.uname()[1]
+        assert host
+        entity_guid = application_settings().entity_guid
+        entity_name = "Python%20Agent%20Test%20%28logger_logging%29"
+        exercise_logging_json(logger)
+        assert logger.caplog.records[0] == '{"first_name": "Hugh", "last_name": "Man", "NR-LINKING": "%s|%s|||%s|"}' % (
+            entity_guid,
+            host,
+            entity_name,
+        )
 
     test()

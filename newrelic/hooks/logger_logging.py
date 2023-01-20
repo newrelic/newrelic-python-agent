@@ -36,7 +36,6 @@ def add_nr_linking_metadata(message):
 
     try:
         # See if the message is in JSON format
-        # nr_linking_str = ""
         nr_linking_value = "|".join((entity_guid, hostname, trace_id, span_id, entity_name)) + "|"
         edited_message = json.loads(message)
         edited_message["NR-LINKING"] = nr_linking_value

@@ -14,13 +14,14 @@
 
 import asyncio
 import functools
+import sys
 import time
 
 import pytest
-from testing_support.fixtures import (
-    capture_transaction_metrics,
+from testing_support.fixtures import capture_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import database_trace
@@ -68,6 +69,7 @@ def test_awaitable_timing(event_loop, trace, metric):
     assert full_metrics[metric_key].total_call_time >= 0.1
 
 
+@pytest.mark.skipif(sys.version_info >= (3, 11), reason="Asyncio decorator was removed in Python 3.11+.")
 @pytest.mark.parametrize(
     "trace,metric",
     [

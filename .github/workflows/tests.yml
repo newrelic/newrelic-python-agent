@@ -26,21 +26,22 @@ on:
 
 jobs:
   tests: # Aggregate job that provides a single check for workflow success
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs:
       - python
-      - grpc
-      - libcurl
-      - postgres
-      - mysql
-      - redis
-      - solr
-      - memcached
-      - rabbitmq
-      - mongodb
       - elasticsearchserver01
       - elasticsearchserver07
       - gearman
+      - grpc
+      - kafka
+      - libcurl
+      - memcached
+      - mongodb
+      - mysql
+      - postgres
+      - rabbitmq
+      - redis
+      - solr
 
     steps:
       - name: Success
@@ -77,7 +78,7 @@ jobs:
             20,
           ]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     steps:
@@ -107,7 +108,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     steps:
@@ -137,7 +138,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     steps:
@@ -173,7 +174,7 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     services:
@@ -218,7 +219,7 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     services:
@@ -266,7 +267,7 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     services:
@@ -309,7 +310,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     services:
@@ -354,7 +355,7 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     services:
@@ -397,7 +398,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     services:
@@ -432,6 +433,71 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
+  kafka:
+    env:
+      TOTAL_GROUPS: 4
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1, 2, 3, 4]
+
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
+
+    services:
+      zookeeper:
+        image: bitnami/zookeeper:3.7
+        env:
+          ALLOW_ANONYMOUS_LOGIN: yes
+
+        ports:
+          - 2181:2181
+
+      kafka:
+        image: bitnami/kafka:3.2
+        ports:
+          - 8080:8080
+          - 8081:8081
+        env:
+          ALLOW_PLAINTEXT_LISTENER: yes
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+          KAFKA_CFG_LISTENERS: L1://:8080,L2://:8081
+          KAFKA_CFG_ADVERTISED_LISTENERS: L1://127.0.0.1:8080,L2://kafka:8081,
+          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT
+          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L2
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
+
+      # Special case packages
+      - name: Install librdkafka-dev
+        run: |
+          # Use lsb-release to find the codename of Ubuntu to use to install the correct library name
+          sudo apt-get update
+          sudo ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+          sudo apt-get install -y wget gnupg2 software-properties-common
+          sudo wget -qO - https://packages.confluent.io/deb/7.2/archive.key | sudo apt-key add -
+          sudo add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
+          sudo apt-get update
+          sudo apt-get install -y librdkafka-dev/$(lsb_release -c | cut -f 2)
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }}
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
   mongodb:
     env:
       TOTAL_GROUPS: 1
@@ -441,7 +507,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     services:
@@ -484,7 +550,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     services:
@@ -529,7 +595,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     services:
@@ -574,7 +640,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 30
 
     services:

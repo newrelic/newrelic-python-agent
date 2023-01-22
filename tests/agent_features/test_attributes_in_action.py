@@ -47,7 +47,7 @@ from testing_support.validators.validate_transaction_trace_attributes import (
 from newrelic.api.application import application_instance as application
 from newrelic.api.message_transaction import message_transaction
 from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import add_custom_parameter
+from newrelic.api.transaction import add_custom_attribute
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_names import callable_name
 
@@ -146,8 +146,8 @@ def normal_wsgi_application(environ, start_response):
     output = "<html><head>header</head><body><p>RESPONSE</p></body></html>"
     output = output.encode("UTF-8")
 
-    add_custom_parameter(USER_ATTRS[0], "test_value")
-    add_custom_parameter(USER_ATTRS[1], "test_value")
+    add_custom_attribute(USER_ATTRS[0], "test_value")
+    add_custom_attribute(USER_ATTRS[1], "test_value")
 
     response_headers = [("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(len(output)))]
     start_response(status, response_headers)

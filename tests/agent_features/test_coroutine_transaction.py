@@ -20,7 +20,10 @@ from testing_support.fixtures import (
     capture_transaction_metrics,
     override_generic_settings,
 )
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
 from newrelic.api.message_transaction import message_transaction
@@ -38,8 +41,7 @@ settings = global_settings()
 
 def coroutine_test(event_loop, transaction, nr_enabled=True, does_hang=False, call_exit=False, runtime_error=False):
     @transaction
-    @asyncio.coroutine
-    def task():
+    async def task():
         txn = current_transaction()
 
         if not nr_enabled:
@@ -54,15 +56,15 @@ def coroutine_test(event_loop, transaction, nr_enabled=True, does_hang=False, ca
 
         try:
             if does_hang:
-                yield from loop.create_future()
+                await loop.create_future()  # noqa
             else:
-                yield from asyncio.sleep(0.0)
+                await asyncio.sleep(0.0)
                 if nr_enabled and txn.enabled:
                     # Validate loop time is recorded after suspend
                     assert txn._loop_time > 0.0
         except GeneratorExit:
             if runtime_error:
-                yield from asyncio.sleep(0.0)
+                await asyncio.sleep(0.0)
 
     return task
 
@@ -159,11 +161,10 @@ def test_async_coroutine_throw_cancel(event_loop, num_coroutines, create_test_ta
 
     tasks = [create_test_task(event_loop, transaction) for _ in range(num_coroutines)]
 
-    @asyncio.coroutine
-    def task_c():
+    async def task_c():
         futures = [asyncio.ensure_future(t()) for t in tasks]
 
-        yield from asyncio.sleep(0.0)
+        await asyncio.sleep(0.0)
 
         [f.cancel() for f in futures]
 
@@ -194,8 +195,7 @@ def test_async_coroutine_throw_error(event_loop, num_coroutines, create_test_tas
 
     tasks = [create_test_task(event_loop, transaction) for _ in range(num_coroutines)]
 
-    @asyncio.coroutine
-    def task_c():
+    async def task_c():
         coros = [t() for t in tasks]
 
         for coro in coros:
@@ -231,14 +231,13 @@ def test_async_coroutine_close(event_loop, num_coroutines, create_test_task, tra
 
     tasks = [create_test_task(event_loop, transaction) for _ in range(num_coroutines)]
 
-    @asyncio.coroutine
-    def task_c():
+    async def task_c():
         coros = [t() for t in tasks]
 
         if start_coroutines:
             [asyncio.ensure_future(coro) for coro in coros]
 
-            yield from asyncio.sleep(0.0)
+            await asyncio.sleep(0.0)
 
         [coro.close() for coro in coros]
 
@@ -272,13 +271,12 @@ def test_async_coroutine_close_raises_error(event_loop, num_coroutines, create_t
 
     tasks = [create_test_task(event_loop, transaction, runtime_error=True) for _ in range(num_coroutines)]
 
-    @asyncio.coroutine
-    def task_c():
+    async def task_c():
         coros = [t() for t in tasks]
 
         [c.send(None) for c in coros]
 
-        yield from asyncio.sleep(0.0)
+        await asyncio.sleep(0.0)
 
         for coro in coros:
             with pytest.raises(RuntimeError):
@@ -312,24 +310,21 @@ def test_deferred_async_background_task(event_loop, transaction, metric, argumen
     args, kwargs = arguments("deferred")
 
     @transaction(*args, **kwargs)
-    @asyncio.coroutine
-    def child_task():
-        yield from asyncio.sleep(0)
+    async def child_task():
+        await asyncio.sleep(0)
 
     main_metric = (metric % "main", "")
 
     args, kwargs = arguments("main")
 
     @transaction(*args, **kwargs)
-    @asyncio.coroutine
-    def parent_task():
-        yield from asyncio.sleep(0)
+    async def parent_task():
+        await asyncio.sleep(0)
         return event_loop.create_task(child_task())
 
-    @asyncio.coroutine
-    def test_runner():
-        child = yield from parent_task()
-        yield from child
+    async def test_runner():
+        child = await parent_task()
+        await child
 
     metrics = []
 
@@ -361,18 +356,16 @@ def test_child_transaction_when_parent_is_running(event_loop, transaction, metri
     args, kwargs = arguments("deferred")
 
     @transaction(*args, **kwargs)
-    @asyncio.coroutine
-    def child_task():
-        yield from asyncio.sleep(0)
+    async def child_task():
+        await asyncio.sleep(0)
 
     main_metric = (metric % "main", "")
 
     args, kwargs = arguments("main")
 
     @transaction(*args, **kwargs)
-    @asyncio.coroutine
-    def parent_task():
-        yield from event_loop.create_task(child_task())
+    async def parent_task():
+        await event_loop.create_task(child_task())
 
     metrics = []
 
@@ -404,9 +397,8 @@ def test_nested_coroutine_inside_sync(event_loop, transaction, metric, arguments
     args, kwargs = arguments("child")
 
     @transaction(*args, **kwargs)
-    @asyncio.coroutine
-    def child_task():
-        yield from asyncio.sleep(0)
+    async def child_task():
+        await asyncio.sleep(0)
 
     main_metric = (metric % "main", "")
     args, kwargs = arguments("main")
@@ -442,22 +434,20 @@ def test_nested_coroutine_task_already_active(event_loop, transaction, metric, a
     args, kwargs = arguments("deferred")
 
     @transaction(*args, **kwargs)
-    @asyncio.coroutine
-    def child_task():
-        yield from asyncio.sleep(0)
+    async def child_task():
+        await asyncio.sleep(0)
 
     @function_trace()
-    def child_trace():
-        yield from child_task()
+    async def child_trace():
+        await child_task()
 
     main_metric = (metric % "main", "")
 
     args, kwargs = arguments("main")
 
     @transaction(*args, **kwargs)
-    @asyncio.coroutine
-    def parent_task():
-        yield from event_loop.create_task(child_trace())
+    async def parent_task():
+        await event_loop.create_task(child_trace())
 
     metrics = []
 

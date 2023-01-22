@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import add_custom_parameter, current_transaction
 from newrelic.api.asgi_application import ASGIApplicationWrapper
+from newrelic.api.time_trace import notice_error
+from newrelic.api.transaction import (
+    add_custom_attribute,
+    current_transaction,
+    ignore_transaction,
+)
 
 
 class simple_app_v2_raw:
@@ -22,17 +26,21 @@ class simple_app_v2_raw:
         self.scope = scope
 
     async def __call__(self, receive, send):
+        if self.scope["type"] == "lifespan":
+            return await handle_lifespan(self.scope, receive, send)
+
         if self.scope["type"] != "http":
             raise ValueError("unsupported")
 
         if self.scope["path"] == "/exc":
             raise ValueError("whoopsies")
+        elif self.scope["path"] == "/ignored":
+            ignore_transaction()
+
         await send({"type": "http.response.start", "status": 200})
         await send({"type": "http.response.body"})
 
-        txn = current_transaction()
-
-        assert txn is None
+        assert current_transaction() is None
 
 
 class simple_app_v2_init_exc(simple_app_v2_raw):
@@ -41,19 +49,21 @@ class simple_app_v2_init_exc(simple_app_v2_raw):
 
 
 async def simple_app_v3_raw(scope, receive, send):
+    if scope["type"] == "lifespan":
+        return await handle_lifespan(scope, receive, send)
+
     if scope["type"] != "http":
         raise ValueError("unsupported")
 
     if scope["path"] == "/exc":
         raise ValueError("whoopsies")
+    elif scope["path"] == "/ignored":
+        ignore_transaction()
 
     await send({"type": "http.response.start", "status": 200})
     await send({"type": "http.response.body"})
 
-    txn = current_transaction()
-
-    assert txn is None
-
+    assert current_transaction() is None
 
 
 class AppWithDescriptor:
@@ -91,8 +101,8 @@ simple_app_v3 = ASGIApplicationWrapper(simple_app_v3_raw)
 @ASGIApplicationWrapper
 async def normal_asgi_application(scope, receive, send):
     output = b"<html><head>header</head><body><p>RESPONSE</p></body></html>"
-    add_custom_parameter("puppies", "test_value")
-    add_custom_parameter("sunshine", "test_value")
+    add_custom_attribute("puppies", "test_value")
+    add_custom_attribute("sunshine", "test_value")
 
     response_headers = [
         (b"content-type", b"text/html; charset=utf-8"),
@@ -104,7 +114,20 @@ async def normal_asgi_application(scope, receive, send):
     except ValueError:
         notice_error(attributes={"ohnoes": "param-value"})
 
-    await send(
-        {"type": "http.response.start", "status": 200, "headers": response_headers}
-    )
+    await send({"type": "http.response.start", "status": 200, "headers": response_headers})
     await send({"type": "http.response.body", "body": output})
+
+
+async def handle_lifespan(scope, receive, send):
+    """Handle lifespan protocol with no-ops to allow more compatibility."""
+    while True:
+        txn = current_transaction()
+        if txn:
+            txn.ignore_transaction = True
+
+        message = await receive()
+        if message["type"] == "lifespan.startup":
+            await send({"type": "lifespan.startup.complete"})
+        elif message["type"] == "lifespan.shutdown":
+            await send({"type": "lifespan.shutdown.complete"})
+            return

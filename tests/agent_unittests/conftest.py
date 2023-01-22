@@ -44,7 +44,7 @@ try:
     reload
 except NameError:
     # python 3.x
-    from imp import reload  # pylint: disable=W0402
+    from importlib import reload
 
 
 class FakeProtos(object):

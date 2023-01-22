@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import time
-import tornado.ioloop
-import tornado.web
+
 import tornado.gen
 import tornado.httpclient
-import tornado.websocket
 import tornado.httputil
+import tornado.ioloop
+import tornado.web
+import tornado.websocket
 from tornado.routing import PathMatches
 
 
@@ -36,16 +37,15 @@ class BadGetStatusHandler(tornado.web.RequestHandler):
 
 class ProcessCatHeadersHandler(tornado.web.RequestHandler):
     def __init__(self, application, request, response_code=200, **kwargs):
-        super(ProcessCatHeadersHandler, self).__init__(application, request,
-                **kwargs)
+        super(ProcessCatHeadersHandler, self).__init__(application, request, **kwargs)
         self.response_code = response_code
 
     def get(self, client_cross_process_id, txn_header, flush=None):
         import newrelic.api.transaction as _transaction
+
         txn = _transaction.current_transaction()
         if txn:
-            txn._process_incoming_cat_headers(client_cross_process_id,
-                    txn_header)
+            txn._process_incoming_cat_headers(client_cross_process_id, txn_header)
 
         if self.response_code != 200:
             self.set_status(self.response_code)
@@ -53,7 +53,7 @@ class ProcessCatHeadersHandler(tornado.web.RequestHandler):
 
         self.write("Hello, world")
 
-        if flush == 'flush':
+        if flush == "flush":
             # Force a flush prior to calling finish
             # This causes the headers to get written immediately. The tests
             # which hit this endpoint will check that the response has been
@@ -61,17 +61,17 @@ class ProcessCatHeadersHandler(tornado.web.RequestHandler):
             self.flush()
 
             # change the headers to garbage
-            self.set_header('Content-Type', 'garbage')
+            self.set_header("Content-Type", "garbage")
 
 
 class EchoHeaderHandler(tornado.web.RequestHandler):
     def get(self):
-        response = str(self.request.headers.__dict__).encode('utf-8')
+        response = str(self.request.headers.__dict__).encode("utf-8")
         self.write(response)
 
 
 class SimpleHandler(tornado.web.RequestHandler):
-    options = {'your_command': 'options'}
+    options = {"your_command": "options"}
 
     def get(self):
         self.write("Hello, world")
@@ -111,7 +111,7 @@ class CoroThrowHandler(tornado.web.RequestHandler):
 
     @tornado.gen.coroutine
     def throw_exception(self):
-        raise ValueError('Throwing exception.')
+        raise ValueError("Throwing exception.")
 
 
 class CoroHandler(tornado.web.RequestHandler):
@@ -165,7 +165,7 @@ class MultiTraceHandler(tornado.web.RequestHandler):
     def trace(self):
         from newrelic.api.function_trace import FunctionTrace
 
-        with FunctionTrace(name='trace', terminal=True):
+        with FunctionTrace(name="trace", terminal=True):
             pass
 
 
@@ -178,12 +178,11 @@ class EnsureFutureHandler(tornado.web.RequestHandler):
     def get(self):
         import asyncio
 
-        @asyncio.coroutine
-        def coro_trace():
+        async def coro_trace():
             from newrelic.api.function_trace import FunctionTrace
 
-            with FunctionTrace(name='trace', terminal=True):
-                yield from tornado.gen.sleep(0)
+            with FunctionTrace(name="trace", terminal=True):
+                await tornado.gen.sleep(0)
 
         asyncio.ensure_future(coro_trace())
 
@@ -193,18 +192,14 @@ class WebNestedHandler(WebSocketHandler):
         super(WebNestedHandler, self).on_message(message)
 
 
-class CustomApplication(
-        tornado.httputil.HTTPServerConnectionDelegate,
-        tornado.httputil.HTTPMessageDelegate):
-
+class CustomApplication(tornado.httputil.HTTPServerConnectionDelegate, tornado.httputil.HTTPMessageDelegate):
     def start_request(self, server_conn, http_conn):
         self.server_conn = server_conn
         self.http_conn = http_conn
         return self
 
     def finish(self):
-        response_line = tornado.httputil.ResponseStartLine(
-                "HTTP/1.1", 200, "OK")
+        response_line = tornado.httputil.ResponseStartLine("HTTP/1.1", 200, "OK")
         headers = tornado.httputil.HTTPHeaders()
         headers["Content-Type"] = "text/plain"
         self.http_conn.write_headers(response_line, headers)
@@ -221,6 +216,7 @@ class BlockingHandler(tornado.web.RequestHandler):
 
     async def get(self, total=1):
         import asyncio
+
         total = int(total)
 
         cls = type(self)
@@ -239,33 +235,31 @@ class BlockingHandler(tornado.web.RequestHandler):
         if self.yield_before_finish:
             await asyncio.sleep(0)
 
-        self.write('*')
+        self.write("*")
 
 
 def make_app(custom=False):
     handlers = [
-        (PathMatches(r'/simple'), SimpleHandler),
-        (r'/crash', CrashHandler),
-        (r'/call-simple', CallSimpleHandler),
-        (r'/super-simple', SuperSimpleHandler),
-        (r'/coro', CoroHandler),
-        (r'/coro-throw', CoroThrowHandler),
-        (r'/fake-coro', FakeCoroHandler),
-        (r'/init', InitializeHandler),
-        (r'/html-insertion', HTMLInsertionHandler),
-        (r'/bad-get-status', BadGetStatusHandler),
-        (r'/force-cat-response/(\S+)/(\S+)/(\S+)', ProcessCatHeadersHandler),
-        (r'/304-cat-response/(\S+)/(\S+)', ProcessCatHeadersHandler,
-                {'response_code': 304}),
-        (r'/echo-headers', EchoHeaderHandler),
-        (r'/native-simple', NativeSimpleHandler),
-        (r'/multi-trace', MultiTraceHandler),
-        (r'/web-socket', WebSocketHandler),
-        (r'/ensure-future', EnsureFutureHandler),
-        (r'/call-web-socket', WebNestedHandler),
-        (r'/block/(\d+)', BlockingHandler),
-        (r'/block-with-yield/(\d+)', BlockingHandler,
-                {'yield_before_finish': True}),
+        (PathMatches(r"/simple"), SimpleHandler),
+        (r"/crash", CrashHandler),
+        (r"/call-simple", CallSimpleHandler),
+        (r"/super-simple", SuperSimpleHandler),
+        (r"/coro", CoroHandler),
+        (r"/coro-throw", CoroThrowHandler),
+        (r"/fake-coro", FakeCoroHandler),
+        (r"/init", InitializeHandler),
+        (r"/html-insertion", HTMLInsertionHandler),
+        (r"/bad-get-status", BadGetStatusHandler),
+        (r"/force-cat-response/(\S+)/(\S+)/(\S+)", ProcessCatHeadersHandler),
+        (r"/304-cat-response/(\S+)/(\S+)", ProcessCatHeadersHandler, {"response_code": 304}),
+        (r"/echo-headers", EchoHeaderHandler),
+        (r"/native-simple", NativeSimpleHandler),
+        (r"/multi-trace", MultiTraceHandler),
+        (r"/web-socket", WebSocketHandler),
+        (r"/ensure-future", EnsureFutureHandler),
+        (r"/call-web-socket", WebNestedHandler),
+        (r"/block/(\d+)", BlockingHandler),
+        (r"/block-with-yield/(\d+)", BlockingHandler, {"yield_before_finish": True}),
     ]
     if custom:
         return CustomApplication()
@@ -275,5 +269,5 @@ def make_app(custom=False):
 
 if __name__ == "__main__":
     app = make_app()
-    app.listen(8888, address='127.0.0.1')
+    app.listen(8888, address="127.0.0.1")
     tornado.ioloop.IOLoop.current().start()

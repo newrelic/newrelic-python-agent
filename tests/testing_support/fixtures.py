@@ -78,14 +78,6 @@ def _environ_as_bool(name, default=False):
     return flag
 
 
-# def _lookup_string_table(name, string_table, default=None):
-#     try:
-#         index = int(name.lstrip("`"))
-#         return string_table[index]
-#     except ValueError:
-#         return default
-
-
 if _environ_as_bool("NEW_RELIC_HIGH_SECURITY"):
     DeveloperModeClient.RESPONSES["connect"]["high_security"] = True
 
@@ -431,284 +423,6 @@ def check_event_attributes(event_data, required_params=None, forgone_params=None
             assert user_attributes[param] == value, ((param, value), user_attributes)
         for param, value in exact_attrs["intrinsic"].items():
             assert intrinsics[param] == value, ((param, value), intrinsics)
-
-
-# def check_error_attributes(
-#     parameters, required_params=None, forgone_params=None, exact_attrs=None, is_transaction=True
-# ):
-#     required_params = required_params or {}
-#     forgone_params = forgone_params or {}
-#     exact_attrs = exact_attrs or {}
-
-#     parameter_fields = ["userAttributes"]
-#     if is_transaction:
-#         parameter_fields.extend(["stack_trace", "agentAttributes", "intrinsics"])
-
-#     for field in parameter_fields:
-#         assert field in parameters
-
-#     # we can remove this after agent attributes transition is all over
-#     assert "parameter_groups" not in parameters
-#     assert "custom_params" not in parameters
-#     assert "request_params" not in parameters
-#     assert "request_uri" not in parameters
-
-#     check_attributes(parameters, required_params, forgone_params, exact_attrs)
-
-
-# def check_attributes(parameters, required_params=None, forgone_params=None, exact_attrs=None):
-#     required_params = required_params or {}
-#     forgone_params = forgone_params or {}
-#     exact_attrs = exact_attrs or {}
-
-#     intrinsics = parameters.get("intrinsics", {})
-#     user_attributes = parameters.get("userAttributes", {})
-#     agent_attributes = parameters.get("agentAttributes", {})
-
-#     if required_params:
-#         for param in required_params["agent"]:
-#             assert param in agent_attributes, (param, agent_attributes)
-#         for param in required_params["user"]:
-#             assert param in user_attributes, (param, user_attributes)
-#         for param in required_params["intrinsic"]:
-#             assert param in intrinsics, (param, intrinsics)
-
-#     if forgone_params:
-#         for param in forgone_params["agent"]:
-#             assert param not in agent_attributes, (param, agent_attributes)
-#         for param in forgone_params["user"]:
-#             assert param not in user_attributes, (param, user_attributes)
-#         for param in forgone_params["intrinsic"]:
-#             assert param not in intrinsics, (param, intrinsics)
-
-#     if exact_attrs:
-#         for param, value in exact_attrs["agent"].items():
-#             assert agent_attributes[param] == value, ((param, value), agent_attributes)
-#         for param, value in exact_attrs["user"].items():
-#             assert user_attributes[param] == value, ((param, value), user_attributes)
-#         for param, value in exact_attrs["intrinsic"].items():
-#             assert intrinsics[param] == value, ((param, value), intrinsics)
-
-
-# def validate_tt_segment_params(forgone_params=(), present_params=(), exact_params=None):
-#     exact_params = exact_params or {}
-#     recorded_traces = []
-
-#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-#     def _extract_trace(wrapped, instance, args, kwargs):
-#         result = wrapped(*args, **kwargs)
-
-#         # Now that transaction has been recorded, generate
-#         # a transaction trace
-
-#         connections = SQLConnections()
-#         trace_data = instance.transaction_trace_data(connections)
-#         # Save the recorded traces
-#         recorded_traces.extend(trace_data)
-
-#         return result
-
-#     @function_wrapper
-#     def validator(wrapped, instance, args, kwargs):
-#         new_wrapper = _extract_trace(wrapped)
-#         result = new_wrapper(*args, **kwargs)
-
-#         # Verify that traces have been recorded
-#         assert recorded_traces
-
-#         # Extract the first transaction trace
-#         transaction_trace = recorded_traces[0]
-#         pack_data = unpack_field(transaction_trace[4])
-
-#         # Extract the root segment from the root node
-#         root_segment = pack_data[0][3]
-
-#         recorded_params = {}
-
-#         def _validate_segment_params(segment):
-#             segment_params = segment[3]
-
-#             # Translate from the string cache
-#             for key, value in segment_params.items():
-#                 if hasattr(value, "startswith") and value.startswith("`"):
-#                     try:
-#                         index = int(value[1:])
-#                         value = pack_data[1][index]
-#                     except ValueError:
-#                         pass
-#                 segment_params[key] = value
-
-#             recorded_params.update(segment_params)
-
-#             for child_segment in segment[4]:
-#                 _validate_segment_params(child_segment)
-
-#         _validate_segment_params(root_segment)
-
-#         recorded_params_set = set(recorded_params.keys())
-
-#         # Verify that the params in present params have been recorded
-#         present_params_set = set(present_params)
-#         assert recorded_params_set.issuperset(present_params_set)
-
-#         # Verify that all forgone params are omitted
-#         recorded_forgone_params = recorded_params_set & set(forgone_params)
-#         assert not recorded_forgone_params
-
-#         # Verify that all exact params are correct
-#         for key, value in exact_params.items():
-#             assert recorded_params[key] == value
-
-#         return result
-
-#     return validator
-
-
-# def validate_browser_attributes(required_params=None, forgone_params=None):
-#     required_params = required_params or {}
-#     forgone_params = forgone_params or {}
-
-#     @transient_function_wrapper("newrelic.api.web_transaction", "WSGIWebTransaction.browser_timing_footer")
-#     def _validate_browser_attributes(wrapped, instance, args, kwargs):
-#         try:
-#             result = wrapped(*args, **kwargs)
-#         except:
-#             raise
-
-#         # pick out attributes from footer string_types
-
-#         footer_data = result.split("NREUM.info=")[1]
-#         footer_data = footer_data.split("</script>")[0]
-#         footer_data = json.loads(footer_data)
-
-#         if "intrinsic" in required_params:
-#             for attr in required_params["intrinsic"]:
-#                 assert attr in footer_data
-
-#         if "atts" in footer_data:
-#             obfuscation_key = instance._settings.license_key[:13]
-#             attributes = json_decode(deobfuscate(footer_data["atts"], obfuscation_key))
-#         else:
-
-#             # if there are no user or agent attributes, there will be no dict
-#             # for them in the browser data
-
-#             attributes = None
-
-#         if "user" in required_params:
-#             for attr in required_params["user"]:
-#                 assert attr in attributes["u"]
-
-#         if "agent" in required_params:
-#             for attr in required_params["agent"]:
-#                 assert attr in attributes["a"]
-
-#         if "user" in forgone_params:
-#             if attributes:
-#                 if "u" in attributes:
-#                     for attr in forgone_params["user"]:
-#                         assert attr not in attributes["u"]
-
-#         if "agent" in forgone_params:
-#             if attributes:
-#                 if "a" in attributes:
-#                     for attr in forgone_params["agent"]:
-#                         assert attr not in attributes["a"]
-
-#         return result
-
-#     return _validate_browser_attributes
-
-
-# def validate_error_event_attributes(required_params=None, forgone_params=None, exact_attrs=None):
-#     """Check the error event for attributes, expect only one error to be
-#     present in the transaction.
-#     """
-#     required_params = required_params or {}
-#     forgone_params = forgone_params or {}
-#     exact_attrs = exact_attrs or {}
-#     error_data_samples = []
-
-#     @function_wrapper
-#     def _validate_wrapper(wrapped, instance, args, kwargs):
-#         @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-#         def _validate_error_event_attributes(wrapped, instance, args, kwargs):
-#             try:
-#                 result = wrapped(*args, **kwargs)
-#             except:
-#                 raise
-#             else:
-
-#                 event_data = instance.error_events
-#                 for sample in event_data:
-#                     error_data_samples.append(sample)
-
-#                 check_event_attributes(event_data, required_params, forgone_params, exact_attrs)
-
-#             return result
-
-#         _new_wrapper = _validate_error_event_attributes(wrapped)
-#         val = _new_wrapper(*args, **kwargs)
-#         assert error_data_samples
-#         return val
-
-# t     return _validate_wrapper
-
-
-# def validate_error_trace_attributes_outside_transaction(
-#     err_name, required_params=None, forgone_params=None, exact_attrs=None
-# ):
-#     required_params = required_params or {}
-#     forgone_params = forgone_params or {}
-#     exact_attrs = exact_attrs or {}
-
-#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
-#     def _validate_error_trace_attributes_outside_transaction(wrapped, instance, args, kwargs):
-#         try:
-#             result = wrapped(*args, **kwargs)
-#         except:
-#             raise
-#         else:
-#             target_error = core_application_stats_engine_error(err_name)
-
-#             check_error_attributes(
-#                 target_error.parameters, required_params, forgone_params, exact_attrs, is_transaction=False
-#             )
-
-#         return result
-
-#     return _validate_error_trace_attributes_outside_transaction
-
-
-# def validate_error_event_attributes_outside_transaction(
-#     required_params=None, forgone_params=None, exact_attrs=None, num_errors=None
-# ):
-#     required_params = required_params or {}
-#     forgone_params = forgone_params or {}
-
-#     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
-#     def _validate_error_event_attributes_outside_transaction(wrapped, instance, args, kwargs):
-
-#         try:
-#             result = wrapped(*args, **kwargs)
-#         except:
-#             raise
-#         else:
-#             event_data = list(instance.error_events)
-
-#             if num_errors is not None:
-#                 exc_message = (
-#                     "Expected: %d, Got: %d. Verify StatsEngine is being reset before using this validator."
-#                     % (num_errors, len(event_data))
-#                 )
-#                 assert num_errors == len(event_data), exc_message
-
-#             for event in event_data:
-#                 check_event_attributes([event], required_params, forgone_params, exact_attrs=exact_attrs)
-
-#         return result
-
-#     return _validate_error_event_attributes_outside_transaction
 
 
 def validate_request_params_omitted():
@@ -1312,14 +1026,14 @@ def cat_enabled(wrapped, instance, args, kwargs):
 def override_application_settings(overrides):
     @function_wrapper
     def _override_application_settings(wrapped, instance, args, kwargs):
-        try:
-            # The settings object has references from a number of
-            # different places. We have to create a copy, overlay
-            # the temporary settings and then when done clear the
-            # top level settings object and rebuild it when done.
+        # The settings object has references from a number of
+        # different places. We have to create a copy, overlay
+        # the temporary settings and then when done clear the
+        # top level settings object and rebuild it when done.
+        original_settings = application_settings()
+        backup = copy.deepcopy(original_settings.__dict__)
 
-            original_settings = application_settings()
-            backup = copy.deepcopy(original_settings.__dict__)
+        try:
             for name, value in overrides.items():
                 apply_config_setting(original_settings, name, value)
 
@@ -1340,16 +1054,15 @@ def override_application_settings(overrides):
 def override_generic_settings(settings_object, overrides):
     @function_wrapper
     def _override_generic_settings(wrapped, instance, args, kwargs):
+        # In some cases, a settings object may have references
+        # from a number of different places. We have to create
+        # a copy, overlay the temporary settings and then when
+        # done, clear the top level settings object and rebuild
+        # it when done.
+        original = settings_object
+        backup = copy.deepcopy(original.__dict__)
+
         try:
-            # In some cases, a settings object may have references
-            # from a number of different places. We have to create
-            # a copy, overlay the temporary settings and then when
-            # done, clear the top level settings object and rebuild
-            # it when done.
-
-            original = settings_object
-
-            backup = copy.deepcopy(original.__dict__)
             for name, value in overrides.items():
                 apply_config_setting(original, name, value)
             return wrapped(*args, **kwargs)
@@ -1363,19 +1076,20 @@ def override_generic_settings(settings_object, overrides):
 def override_ignore_status_codes(status_codes):
     @function_wrapper
     def _override_ignore_status_codes(wrapped, instance, args, kwargs):
+        # Updates can be made to ignored status codes in server
+        # side configs. Changes will be applied to application
+        # settings so we first check there and if they don't
+        # exist, we default to global settings
+
+        application = application_instance()
+        settings = application and application.settings
+
+        if not settings:
+            settings = global_settings()
+
+        original = settings.error_collector.ignore_status_codes
+
         try:
-            # Updates can be made to ignored status codes in server
-            # side configs. Changes will be applied to application
-            # settings so we first check there and if they don't
-            # exist, we default to global settings
-
-            application = application_instance()
-            settings = application and application.settings
-
-            if not settings:
-                settings = global_settings()
-
-            original = settings.error_collector.ignore_status_codes
             settings.error_collector.ignore_status_codes = status_codes
             return wrapped(*args, **kwargs)
         finally:
@@ -1384,7 +1098,10 @@ def override_ignore_status_codes(status_codes):
     return _override_ignore_status_codes
 
 
-def code_coverage_fixture(source=["newrelic"]):
+def code_coverage_fixture(source=None):
+    if source is None:
+        source = ["newrelic"]
+
     @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:

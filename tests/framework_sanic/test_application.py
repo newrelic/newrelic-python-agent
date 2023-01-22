@@ -38,14 +38,17 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.application import application_instance
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import Transaction
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
 
-sanic_21 = int(sanic.__version__.split(".", 1)[0]) >= 21
+SANIC_VERSION = tuple(map(int, get_package_version("sanic").split(".")))
 
+sanic_21 = SANIC_VERSION >= (21,)
+sanic_v19_to_v22_12 = SANIC_VERSION >= (19,) and SANIC_VERSION < (22, 12)
 
 BASE_METRICS = [
     ("Function/_target_application:index", 1),
-    ("Function/_target_application:request_middleware", 1 if int(sanic.__version__.split(".", 1)[0]) > 18 else 2),
+    ("Function/_target_application:request_middleware", 1 if sanic_v19_to_v22_12 else 2),
 ]
 FRAMEWORK_METRICS = [
     ("Python/Framework/Sanic/%s" % sanic.__version__, 1),
@@ -128,13 +131,11 @@ def test_inbound_distributed_trace(app):
     assert response.status == 200
 
 
-_params = ["error"]
-if not sanic_21:
-    _params.append("write_response_error")
+@pytest.mark.parametrize("endpoint", ["error", "write_response_error"])
+def test_recorded_error(app, endpoint, sanic_version):
+    if sanic_version >= (21, 0, 0) and endpoint == "write_response_error":
+        pytest.skip()
 
-
-@pytest.mark.parametrize("endpoint", _params)
-def test_recorded_error(app, endpoint):
     ERROR_METRICS = [
         ("Function/_target_application:%s" % endpoint, 1),
     ]
@@ -399,10 +400,7 @@ def test_blueprint_middleware(app):
     assert response.status == 200
 
 
-def test_unknown_route(app):
-    import sanic
-
-    sanic_version = [int(x) for x in sanic.__version__.split(".")]
+def test_unknown_route(app, sanic_version):
     _tx_name = (
         "_target_application:CustomRouter.get" if sanic_version[0] < 21 else "_target_application:request_middleware"
     )
@@ -415,10 +413,7 @@ def test_unknown_route(app):
     _test()
 
 
-def test_bad_method(app):
-    import sanic
-
-    sanic_version = [int(x) for x in sanic.__version__.split(".")]
+def test_bad_method(app, sanic_version):
     _tx_name = (
         "_target_application:CustomRouter.get" if sanic_version[0] < 21 else "_target_application:request_middleware"
     )
@@ -431,3 +426,8 @@ def test_bad_method(app):
         assert response.status == 405
 
     _test()
+
+
+@pytest.fixture
+def sanic_version():
+    return tuple(int(v) for v in sanic.__version__.split("."))

@@ -316,7 +316,7 @@ def test_status_codes_outside_transaction(settings, expected, ignore, status_cod
         try:
             raise TeapotError(_error_message)
         except:
-            notice_error(status_code=status_code)
+            notice_error(status_code=status_code, application=application_instance(activate=False))
 
     _test()
 

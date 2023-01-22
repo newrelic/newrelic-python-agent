@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-import aioredis
+# from conftest import AIOREDIS_VERSION, event_loop, loop
+from testing_support.db_settings import redis_settings
+from testing_support.fixtures import override_application_settings
+from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
-
-from conftest import event_loop, loop, AIOREDIS_VERSION
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics, override_application_settings
-from testing_support.db_settings import redis_settings
-from testing_support.util import instance_hostname
 
 DB_SETTINGS = redis_settings()[0]
 
@@ -64,23 +64,11 @@ _enable_rollup_metrics.append((_instance_metric_name, 2))
 _disable_rollup_metrics.append((_instance_metric_name, None))
 
 
-if AIOREDIS_VERSION >= (2, 0):
-    clients = [
-        aioredis.Redis(host=DB_SETTINGS["host"], port=_port, db=0),
-        aioredis.StrictRedis(host=DB_SETTINGS["host"], port=_port, db=0),
-    ]
-else:
-    clients = [
-        event_loop.run_until_complete(aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], _port), db=0)),
-    ]
-
-
 async def exercise_redis(client):
     await client.set("key", "value")
     await client.get("key")
 
 
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_get_and_set:test_redis_client_operation_enable_instance",
@@ -93,7 +81,6 @@ def test_redis_client_operation_enable_instance(client, loop):
     loop.run_until_complete(exercise_redis(client))
 
 
-@pytest.mark.parametrize("client", clients)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
     "test_get_and_set:test_redis_client_operation_disable_instance",

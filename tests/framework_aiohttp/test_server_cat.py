@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import json
 
 import pytest
@@ -99,10 +98,9 @@ def test_cat_headers(
 
     _raw_headers = {}
 
-    @asyncio.coroutine
-    def fetch():
+    async def fetch():
         headers = make_cross_agent_headers(inbound_payload, ENCODING_KEY, cat_id)
-        resp = yield from aiohttp_app.client.request(method, uri, headers=headers)
+        resp = await aiohttp_app.client.request(method, uri, headers=headers)
 
         if _raw_headers:
             raw_headers = _raw_headers
@@ -192,10 +190,9 @@ unexpected_attributes = {
 
 @pytest.mark.parametrize("uri,metric_name", test_uris)
 def test_distributed_tracing_headers(uri, metric_name, aiohttp_app):
-    @asyncio.coroutine
-    def fetch():
+    async def fetch():
         headers = {"newrelic": json.dumps(inbound_payload)}
-        resp = yield from aiohttp_app.client.request("GET", uri, headers=headers)
+        resp = await aiohttp_app.client.request("GET", uri, headers=headers)
 
         # better cat does not send a response in the headers
         assert "newrelic" not in resp.headers

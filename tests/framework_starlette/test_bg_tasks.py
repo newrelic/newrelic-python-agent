@@ -1,4 +1,4 @@
-    # Copyright 2010 New Relic, Inc.
+# Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,26 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import sys
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+import pytest
+from starlette import __version__
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
-from starlette import __version__
 starlette_version = tuple(int(x) for x in __version__.split("."))
 
 try:
-    from starlette.middleware import Middleware     # Ignore Flake8 Error
+    from starlette.middleware import Middleware  # noqa: F401
 
     no_middleware = False
 except ImportError:
     no_middleware = True
 
-skip_if_no_middleware = pytest.mark.skipif(
-    no_middleware, reason="These tests verify middleware functionality"
-)
+skip_if_no_middleware = pytest.mark.skipif(no_middleware, reason="These tests verify middleware functionality")
 
 
 @pytest.fixture(scope="session")
@@ -45,12 +46,8 @@ def target_application():
 def test_simple(target_application, route):
     route_metrics = [("Function/_test_bg_tasks:run_%s_bg_task" % route, 1)]
 
-    @validate_transaction_metrics(
-        "_test_bg_tasks:run_%s_bg_task" % route, index=-2, scoped_metrics=route_metrics
-    )
-    @validate_transaction_metrics(
-        "_test_bg_tasks:%s_bg_task" % route, background_task=True
-    )
+    @validate_transaction_metrics("_test_bg_tasks:run_%s_bg_task" % route, index=-2, scoped_metrics=route_metrics)
+    @validate_transaction_metrics("_test_bg_tasks:%s_bg_task" % route, background_task=True)
     @validate_transaction_count(2)
     def _test():
         app = target_application["none"]
@@ -65,12 +62,8 @@ def test_simple(target_application, route):
 def test_asgi_style_middleware(target_application, route):
     route_metrics = [("Function/_test_bg_tasks:run_%s_bg_task" % route, 1)]
 
-    @validate_transaction_metrics(
-        "_test_bg_tasks:run_%s_bg_task" % route, index=-2, scoped_metrics=route_metrics
-    )
-    @validate_transaction_metrics(
-        "_test_bg_tasks:%s_bg_task" % route, background_task=True
-    )
+    @validate_transaction_metrics("_test_bg_tasks:run_%s_bg_task" % route, index=-2, scoped_metrics=route_metrics)
+    @validate_transaction_metrics("_test_bg_tasks:%s_bg_task" % route, background_task=True)
     @validate_transaction_count(2)
     def _test():
         app = target_application["asgi"]
@@ -83,34 +76,42 @@ def test_asgi_style_middleware(target_application, route):
 @skip_if_no_middleware
 @pytest.mark.parametrize("route", ["async", "sync"])
 def test_basehttp_style_middleware(target_application, route):
-    route_metrics = [("Function/_test_bg_tasks:run_%s_bg_task" % route, 1)]
-    old_metrics = [
-        ("Function/_test_bg_tasks:%s_bg_task" % route, 1),
-        ("Function/_test_bg_tasks:run_%s_bg_task" % route, 1),
-    ]
+    route_metric = ("Function/_test_bg_tasks:run_%s_bg_task" % route, 1)
+    # A function trace metric that appears only when the bug below is present, causing background tasks to be
+    # completed inside web transactions, requiring a function trace to be used for timing
+    # instead of a background task transaction. Should not be present at all when bug is fixed.
+    bg_task_metric = ("Function/_test_bg_tasks:%s_bg_task" % route, 1)
 
     def _test():
         app = target_application["basehttp"]
         response = app.get("/" + route)
         assert response.status == 200
 
-    if starlette_version >= (0, 20, 1):
-        if sys.version_info[:2] > (3, 7):
-            _test = validate_transaction_metrics(
-                "_test_bg_tasks:run_%s_bg_task" % route, index=-2, scoped_metrics=route_metrics
-            )(_test)
-            _test = validate_transaction_metrics(
-                "_test_bg_tasks:%s_bg_task" % route, background_task=True
-            )(_test)
-            _test = validate_transaction_count(2)(_test)
-        else:   # Python <= 3.7 requires this specific configuration with starlette 0.20.1
-            _test = validate_transaction_metrics(
-                "_test_bg_tasks:run_%s_bg_task" % route, scoped_metrics=route_metrics
-            )(_test)
-            _test = validate_transaction_count(1)(_test)
-    else:
+    BUG_COMPLETELY_FIXED = (starlette_version >= (0, 21, 0)) or (
+        starlette_version >= (0, 20, 1) and sys.version_info[:2] > (3, 7)
+    )
+    BUG_PARTIALLY_FIXED = (0, 20, 1) <= starlette_version < (0, 21, 0) and sys.version_info[:2] <= (3, 7)
+
+    if BUG_COMPLETELY_FIXED:
+        # Assert both web transaction and background task transactions are present.
         _test = validate_transaction_metrics(
-            "_test_bg_tasks:run_%s_bg_task" % route, scoped_metrics=old_metrics
+            "_test_bg_tasks:run_%s_bg_task" % route, index=-2, scoped_metrics=[route_metric]
+        )(_test)
+        _test = validate_transaction_metrics("_test_bg_tasks:%s_bg_task" % route, background_task=True)(_test)
+        _test = validate_transaction_count(2)(_test)
+    elif BUG_PARTIALLY_FIXED:
+        # The background task no longer blocks the completion of the web request/web transaction.
+        # However, the BaseHTTPMiddleware causes the task to be cancelled when the web request disconnects, so there are no
+        # longer function traces or background task transactions.
+        _test = validate_transaction_metrics("_test_bg_tasks:run_%s_bg_task" % route, scoped_metrics=[route_metric])(
+            _test
+        )
+        _test = validate_transaction_count(1)(_test)
+    else:
+        # The BaseHTTPMiddleware causes the background task to execute within the web request
+        # with the web transaction still active.
+        _test = validate_transaction_metrics(
+            "_test_bg_tasks:run_%s_bg_task" % route, scoped_metrics=[route_metric, bg_task_metric]
         )(_test)
         _test = validate_transaction_count(1)(_test)
 

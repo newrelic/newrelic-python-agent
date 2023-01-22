@@ -25,13 +25,11 @@ import warnings
 import weakref
 from collections import OrderedDict
 
-from newrelic.api.application import application_instance
 import newrelic.core.database_node
 import newrelic.core.error_node
-from newrelic.core.log_event_node import LogEventNode
 import newrelic.core.root_node
 import newrelic.core.transaction_node
-import newrelic.packages.six as six
+from newrelic.api.application import application_instance
 from newrelic.api.time_trace import TimeTrace, get_linking_metadata
 from newrelic.common.encoding_utils import (
     DistributedTracePayload,
@@ -61,8 +59,9 @@ from newrelic.core.attribute_filter import (
     DST_NONE,
     DST_TRANSACTION_TRACER,
 )
-from newrelic.core.config import DEFAULT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
+from newrelic.core.config import CUSTOM_EVENT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
+from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.stack_trace import exception_stack
 from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.thread_utilization import utilization_tracker
@@ -71,6 +70,7 @@ from newrelic.core.trace_cache import (
     TraceCacheNoActiveTraceError,
     trace_cache,
 )
+from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -120,7 +120,7 @@ class Sentinel(TimeTrace):
             self.exited = True
 
     @staticmethod
-    def complete_trace():
+    def complete_trace():  # pylint: disable=arguments-differ
         pass
 
     @property
@@ -186,6 +186,8 @@ class Transaction(object):
         self._loop_time = 0.0
 
         self._frameworks = set()
+        self._message_brokers = set()
+        self._dispatchers = set()
 
         self._frozen_path = None
 
@@ -324,10 +326,14 @@ class Transaction(object):
                     self.enabled = True
 
         if self._settings:
-            self._custom_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data)
-            self._log_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.log_event_data)
+            self._custom_events = SampledDataSet(
+                capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data
+            )
+            self._log_events = SampledDataSet(
+                capacity=self._settings.event_harvest_config.harvest_limits.log_event_data
+            )
         else:
-            self._custom_events = SampledDataSet(capacity=DEFAULT_RESERVOIR_SIZE)
+            self._custom_events = SampledDataSet(capacity=CUSTOM_EVENT_RESERVOIR_SIZE)
             self._log_events = SampledDataSet(capacity=LOG_EVENT_RESERVOIR_SIZE)
 
     def __del__(self):
@@ -540,6 +546,14 @@ class Transaction(object):
         if self._frameworks:
             for framework, version in self._frameworks:
                 self.record_custom_metric("Python/Framework/%s/%s" % (framework, version), 1)
+
+        if self._message_brokers:
+            for message_broker, version in self._message_brokers:
+                self.record_custom_metric("Python/MessageBroker/%s/%s" % (message_broker, version), 1)
+
+        if self._dispatchers:
+            for dispatcher, version in self._dispatchers:
+                self.record_custom_metric("Python/Dispatcher/%s/%s" % (dispatcher, version), 1)
 
         if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the
@@ -828,7 +842,7 @@ class Transaction(object):
 
         # Add in special CPU time value for UI to display CPU burn.
 
-        # XXX Disable cpu time value for CPU burn as was
+        # TODO: Disable cpu time value for CPU burn as was
         # previously reporting incorrect value and we need to
         # fix it, at least on Linux to report just the CPU time
         # for the executing thread.
@@ -1473,30 +1487,34 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-
     def record_log_event(self, message, level=None, timestamp=None, priority=None):
         settings = self.settings
-        if not (settings and settings.application_logging and settings.application_logging.enabled and settings.application_logging.forwarding and settings.application_logging.forwarding.enabled):
+        if not (
+            settings
+            and settings.application_logging
+            and settings.application_logging.enabled
+            and settings.application_logging.forwarding
+            and settings.application_logging.forwarding.enabled
+        ):
             return
-        
+
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
-        
+
         if not message or message.isspace():
             _logger.debug("record_log_event called where message was missing. No log event will be sent.")
             return
-        
+
         message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
 
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=get_linking_metadata(), 
+            attributes=get_linking_metadata(),
         )
 
         self._log_events.add(event, priority=priority)
-
 
     def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
@@ -1563,7 +1581,7 @@ class Transaction(object):
             source=source,
         )
 
-        # TODO Errors are recorded in time order. If
+        # TODO: Errors are recorded in time order. If
         # there are two exceptions of same type and
         # different message, the UI displays the first
         # one. In the PHP agent it was recording the
@@ -1603,6 +1621,8 @@ class Transaction(object):
 
         if type(node) is newrelic.core.database_node.DatabaseNode:
             settings = self._settings
+            if not settings:
+                return
             if not settings.collect_traces:
                 return
             if not settings.slow_sql.enabled and not settings.transaction_tracer.explain_enabled:
@@ -1633,12 +1653,12 @@ class Transaction(object):
 
         self._cpu_user_time_end = os.times()[0]
 
-    def add_custom_parameter(self, name, value):
+    def add_custom_attribute(self, name, value):
         if not self._settings:
             return False
 
         if self._settings.high_security:
-            _logger.debug("Cannot add custom parameter in High Security Mode.")
+            _logger.debug("Cannot add custom attribute in High Security Mode.")
             return False
 
         if len(self._custom_params) >= MAX_NUM_USER_ATTRIBUTES:
@@ -1653,18 +1673,42 @@ class Transaction(object):
             self._custom_params[key] = val
             return True
 
-    def add_custom_parameters(self, items):
+    def add_custom_attributes(self, items):
         result = True
 
         # items is a list of (name, value) tuples.
         for name, value in items:
-            result &= self.add_custom_parameter(name, value)
+            result &= self.add_custom_attribute(name, value)
 
         return result
+
+    def add_custom_parameter(self, name, value):
+        # Deprecation warning
+        warnings.warn(
+            ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
+            DeprecationWarning,
+        )
+        return self.add_custom_attribute(name, value)
+
+    def add_custom_parameters(self, items):
+        # Deprecation warning
+        warnings.warn(
+            ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
+            DeprecationWarning,
+        )
+        return self.add_custom_attributes(items)
 
     def add_framework_info(self, name, version=None):
         if name:
             self._frameworks.add((name, version))
+
+    def add_messagebroker_info(self, name, version=None):
+        if name:
+            self._message_brokers.add((name, version))
+
+    def add_dispatcher_info(self, name, version=None):
+        if name:
+            self._dispatchers.add((name, version))
 
     def dump(self, file):
         """Dumps details about the transaction to the file object."""
@@ -1734,20 +1778,38 @@ def capture_request_params(flag=True):
             transaction.capture_params = flag
 
 
-def add_custom_parameter(key, value):
+def add_custom_attribute(key, value):
     transaction = current_transaction()
     if transaction:
-        return transaction.add_custom_parameter(key, value)
+        return transaction.add_custom_attribute(key, value)
     else:
         return False
+
+
+def add_custom_attributes(items):
+    transaction = current_transaction()
+    if transaction:
+        return transaction.add_custom_attributes(items)
+    else:
+        return False
+
+
+def add_custom_parameter(key, value):
+    # Deprecation warning
+    warnings.warn(
+        ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
+        DeprecationWarning,
+    )
+    return add_custom_attribute(key, value)
 
 
 def add_custom_parameters(items):
-    transaction = current_transaction()
-    if transaction:
-        return transaction.add_custom_parameters(items)
-    else:
-        return False
+    # Deprecation warning
+    warnings.warn(
+        ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
+        DeprecationWarning,
+    )
+    return add_custom_attributes(items)
 
 
 def add_framework_info(name, version=None):
@@ -1869,7 +1931,9 @@ def record_log_event(message, level=None, timestamp=None, application=None, prio
                     "record_log_event has been called but no transaction or application was running. As a result, "
                     "the following event has not been recorded. message: %r level: %r timestamp %r. To correct "
                     "this problem, supply an application object as a parameter to this record_log_event call.",
-                    message, level, timestamp,
+                    message,
+                    level,
+                    timestamp,
                 )
     elif application.enabled:
         application.record_log_event(message, level, timestamp, priority=priority)

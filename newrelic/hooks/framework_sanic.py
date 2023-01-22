@@ -243,7 +243,12 @@ def _nr_sanic_register_middleware_(wrapped, instance, args, kwargs):
 
     # Cache the callable_name on the middleware object
     callable_name(middleware)
-    wrapped_middleware = _nr_wrapper_middleware_(attach_to)(middleware)
+    middleware_func = middleware
+    if hasattr(middleware, "func"):
+        name = callable_name(middleware.func)
+        middleware_func = middleware.func
+
+    wrapped_middleware = _nr_wrapper_middleware_(attach_to)(middleware_func)
     wrapped(wrapped_middleware, attach_to)
     return middleware
 
@@ -306,4 +311,4 @@ def instrument_sanic_response(module):
 
 def instrument_sanic_touchup_service(module):
     if hasattr(module, "TouchUp") and hasattr(module.TouchUp, "run"):
-        wrap_function_wrapper(module.TouchUp, "run", _nr_wrap_touchup_run)
+        wrap_function_wrapper(module, "TouchUp.run", _nr_wrap_touchup_run)

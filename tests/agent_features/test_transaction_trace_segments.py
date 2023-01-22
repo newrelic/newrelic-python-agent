@@ -23,6 +23,7 @@ from newrelic.api.database_trace import DatabaseTrace
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace, external_trace
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.graphql_trace import GraphQLOperationTrace, GraphQLResolverTrace
 from newrelic.api.memcache_trace import MemcacheTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.solr_trace import SolrTrace
@@ -118,6 +119,8 @@ def test_database_segment_attributes_disabled():
         (DatastoreTrace, ("db_product", "db_target", "db_operation")),
         (ExternalTrace, ("lib", "url")),
         (FunctionTrace, ("name",)),
+        (GraphQLOperationTrace, ()),
+        (GraphQLResolverTrace, ()),
         (MemcacheTrace, ("command",)),
         (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
         (SolrTrace, ("lib", "command")),

@@ -725,9 +725,9 @@ def test_span_event_notice_error_overrides_observed(trace_type, args):
         with trace_type(*args):
             try:
                 raise ERROR
-            except Exception:
+            except Exception as exc:
                 notice_error()
-                raise ValueError  # pylint: disable
+                raise ValueError from exc
     except ValueError:
         pass
 

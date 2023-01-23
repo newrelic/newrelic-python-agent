@@ -24,10 +24,13 @@ from newrelic.hooks.datastore_redis import (
 
 from newrelic.common.async_wrapper import async_wrapper
 
-import aioredis
+try:
+    import aioredis as aioredis_legacy
+except ModuleNotFoundError:
+    aioredis_legacy = None
 
 try:
-    AIOREDIS_VERSION = lambda: tuple(int(x) for x in getattr(aioredis, "__version__").split("."))
+    AIOREDIS_VERSION = lambda: tuple(int(x) for x in getattr(aioredis_legacy, "__version__").split("."))
 except Exception:
     AIOREDIS_VERSION = lambda: (0, 0, 0)
 
@@ -68,7 +71,7 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
         # Check for transaction and return early if found.
         # Method will return synchronously without executing,
         # it will be added to the command stack and run later.
-        if AIOREDIS_VERSION() < (2,):
+        if aioredis_legacy and AIOREDIS_VERSION() < (2,):
             # AioRedis v1 uses a RedisBuffer instead of a real connection for queueing up pipeline commands
             from aioredis.commands.transaction import _RedisBuffer
             if isinstance(instance._pool_or_conn, _RedisBuffer):
@@ -77,7 +80,10 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
                 return wrapped(*args, **kwargs)
         else:
             # AioRedis v2 uses a Pipeline object for a client and internally queues up pipeline commands
-            from aioredis.client import Pipeline
+            if aioredis_legacy:
+                from aioredis.client import Pipeline
+            else:
+                from redis.asyncio.client import Pipeline
             if isinstance(instance, Pipeline):
                 return wrapped(*args, **kwargs)
 

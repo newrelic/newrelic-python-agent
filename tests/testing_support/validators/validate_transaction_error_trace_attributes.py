@@ -13,9 +13,7 @@
 # limitations under the License.
 
 
-from testing_support.validators.validate_error_trace_attributes_outside_transaction import (
-    check_error_attributes,
-)
+from testing_support.fixtures import check_error_attributes
 
 from newrelic.common.object_wrapper import transient_function_wrapper
 

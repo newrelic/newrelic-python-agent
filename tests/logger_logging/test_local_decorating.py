@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import platform
 
 from testing_support.fixtures import reset_core_stats_engine
@@ -76,12 +77,15 @@ def test_local_log_decoration_inside_transaction_with_json(logger):
         entity_guid = application_settings().entity_guid
         entity_name = "Python%20Agent%20Test%20%28logger_logging%29"
         exercise_logging_json(logger)
-        assert logger.caplog.records[
-            0
-        ] == '{"first_name": "Hugh", "last_name": "Man", "NR-LINKING": "%s|%s|abcdefgh12345678|abcdefgh|%s|"}' % (
-            entity_guid,
-            host,
-            entity_name,
+        sorted_json = json.dumps(json.loads(logger.caplog.records[0]), sort_keys=True)
+        assert (
+            sorted_json
+            == '{"NR-LINKING": "%s|%s|abcdefgh12345678|abcdefgh|%s|", "first_name": "Hugh", "last_name": "Man"}'
+            % (
+                entity_guid,
+                host,
+                entity_name,
+            )
         )
 
     test()
@@ -110,7 +114,8 @@ def test_local_log_decoration_outside_transaction_with_json(logger):
         entity_guid = application_settings().entity_guid
         entity_name = "Python%20Agent%20Test%20%28logger_logging%29"
         exercise_logging_json(logger)
-        assert logger.caplog.records[0] == '{"first_name": "Hugh", "last_name": "Man", "NR-LINKING": "%s|%s|||%s|"}' % (
+        sorted_json = json.dumps(json.loads(logger.caplog.records[0]), sort_keys=True)
+        assert sorted_json == '{"NR-LINKING": "%s|%s|||%s|", "first_name": "Hugh", "last_name": "Man"}' % (
             entity_guid,
             host,
             entity_name,

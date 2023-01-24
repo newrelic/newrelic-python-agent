@@ -13,19 +13,20 @@
 # limitations under the License.
 
 import pytest
-
 from elasticsearch import VERSION
 from elasticsearch.serializer import JSONSerializer
 
 try:
-    from elasticsearch.transport import Transport
     from elasticsearch.connection.http_requests import RequestsHttpConnection
     from elasticsearch.connection.http_urllib3 import Urllib3HttpConnection
+    from elasticsearch.transport import Transport
+
     NodeConfig = dict
     is_v8 = False
 except ImportError:
-    from elastic_transport._transport import Transport
     from elastic_transport._models import NodeConfig
+    from elastic_transport._transport import Transport
+
     is_v8 = True
 
 
@@ -34,12 +35,11 @@ from testing_support.db_settings import elasticsearch_settings
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 
-
 SKIP_IF_V7 = pytest.mark.skipif(not is_v8, reason="Skipping v8 tests.")
 SKIP_IF_V8 = pytest.mark.skipif(is_v8, reason="Skipping v7 tests.")
 
 ES_SETTINGS = elasticsearch_settings()[0]
-HOST = NodeConfig(host=ES_SETTINGS["host"], port=int(ES_SETTINGS["port"]))
+HOST = NodeConfig(scheme="http", host=ES_SETTINGS["host"], port=int(ES_SETTINGS["port"]))
 
 INDEX = "contacts"
 DOC_TYPE = "person"
@@ -59,7 +59,7 @@ if hasattr(BODY, "encode"):
 @background_task()
 def test_transport_get_connection():
     transaction = current_transaction()
-    
+
     transport = Transport([HOST])
     transport.get_connection()
 
@@ -71,19 +71,20 @@ def test_transport_get_connection():
 @background_task()
 def test_transport_perform_request():
     transaction = current_transaction()
-    
+
     transport = Transport([HOST])
-    transport.perform_request("POST", METHOD, headers=HEADERS, params=PARAMS, body=DATA)
+    transport.perform_request("POST", METHOD, headers=HEADERS, body=DATA)
 
     expected = (ES_SETTINGS["host"], ES_SETTINGS["port"], None)
     assert transaction._nr_datastore_instance_info == expected
+    # assert transaction.instance.node_pool.get == expected
 
 
 @SKIP_IF_V8
 @background_task()
 def test_transport_perform_request_urllib3():
     transaction = current_transaction()
-    
+
     transport = Transport([HOST], connection_class=Urllib3HttpConnection)
     if VERSION >= (7, 16, 0):
         transport.perform_request("POST", METHOD, headers=HEADERS, params=PARAMS, body=DATA)
@@ -97,7 +98,7 @@ def test_transport_perform_request_urllib3():
 @background_task()
 def test_transport_perform_request_requests():
     transaction = current_transaction()
-    
+
     transport = Transport([HOST], connection_class=RequestsHttpConnection)
     if VERSION >= (7, 16, 0):
         transport.perform_request("POST", METHOD, headers=HEADERS, params=PARAMS, body=DATA)

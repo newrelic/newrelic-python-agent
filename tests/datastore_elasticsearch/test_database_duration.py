@@ -15,29 +15,45 @@
 import sqlite3
 
 from elasticsearch import Elasticsearch
+from testing_support.db_settings import elasticsearch_settings
+from testing_support.validators.validate_database_duration import (
+    validate_database_duration,
+)
 
 from newrelic.api.background_task import background_task
-
-from testing_support.db_settings import elasticsearch_settings
-from testing_support.validators.validate_database_duration import validate_database_duration
+from newrelic.common.package_version_utils import get_package_version
 
 ES_SETTINGS = elasticsearch_settings()[0]
-ES_URL = 'http://%s:%s' % (ES_SETTINGS['host'], ES_SETTINGS['port'])
+ES_URL = "http://%s:%s" % (ES_SETTINGS["host"], ES_SETTINGS["port"])
 
-def _exercise_es(es):
-    es.index(index="contacts", doc_type="person",
-            body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
-    es.index(index="contacts", doc_type="person",
-            body={"name": "Jessica Coder", "age": 32, "title": "Programmer"}, id=2)
-    es.index(index="contacts", doc_type="person",
-            body={"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
-    es.indices.refresh('contacts')
+ES_VERSION = tuple([int(n) for n in get_package_version("elasticsearch").split(".")])
+
+
+def _exercise_es_v7(es):
+    es.index(index="contacts", doc_type="person", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
+    es.index(
+        index="contacts", doc_type="person", body={"name": "Jessica Coder", "age": 32, "title": "Programmer"}, id=2
+    )
+    es.index(index="contacts", doc_type="person", body={"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
+    es.indices.refresh("contacts")
+
+
+def _exercise_es_v8(es):
+    es.index(index="contacts", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
+    es.index(index="contacts", body={"name": "Jessica Coder", "age": 32, "title": "Programmer"}, id=2)
+    es.index(index="contacts", body={"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
+    es.indices.refresh(index="contacts")
+
+
+_exercise_es = _exercise_es_v7 if ES_VERSION < (8, 0, 0) else _exercise_es_v8
+
 
 @validate_database_duration()
 @background_task()
 def test_elasticsearch_database_duration():
     client = Elasticsearch(ES_URL)
     _exercise_es(client)
+
 
 @validate_database_duration()
 @background_task()

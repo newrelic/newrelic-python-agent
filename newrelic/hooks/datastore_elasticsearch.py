@@ -14,7 +14,7 @@
 
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.packages import six
 
 # An index name can be a string, None or a sequence. In the case of None
@@ -559,7 +559,12 @@ def _nr_perform_request_wrapper(wrapped, instance, args, kwargs):
     if hasattr(instance.node_pool.get, "_nr_wrapped"):
         instance.node_pool.get = function_wrapper(_nr_get_connection_wrapper)(instance.node_pool.get)
         instance.node_pool.get._nr_wrapped = True
-    
+
+    host, port_path_or_id = instance.node_pool.get()._nr_host_port
+    instance_info = (host, port_path_or_id, None)
+
+    transaction._nr_datastore_instance_info = instance_info
+
     return wrapped(*args, **kwargs)
 
 

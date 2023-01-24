@@ -16,18 +16,26 @@ import pytest
 
 try:
     from elasticsearch.connection.base import Connection
+
+    NodeConfig = dict
     is_v8 = False
 except ImportError:
-    from elastic_transport._node._base import BaseNode as Connection
     from elastic_transport._models import NodeConfig
+    from elastic_transport._node._base import BaseNode as Connection
+
     is_v8 = True
+
+from testing_support.db_settings import elasticsearch_settings
+
+ES_SETTINGS = elasticsearch_settings()[0]
+HOST = NodeConfig(scheme="http", host=ES_SETTINGS["host"], port=int(ES_SETTINGS["port"]))
 
 SKIP_IF_V7 = pytest.mark.skipif(not is_v8, reason="Skipping v8 tests.")
 SKIP_IF_V8 = pytest.mark.skipif(is_v8, reason="Skipping v7 tests.")
 
 
 def test_connection_default():
-    conn = Connection()
+    conn = Connection(HOST)
     assert conn._nr_host_port == ("localhost", "9200")
 
 
@@ -51,5 +59,5 @@ def test_connection_kwargs():
 
 @SKIP_IF_V7
 def test_connection_config():
-    conn = Connection(NodeConfig(host="foo", port=8888))
+    conn = Connection(NodeConfig(scheme="http", host="foo", port=8888))
     assert conn._nr_host_port == ("foo", "8888")

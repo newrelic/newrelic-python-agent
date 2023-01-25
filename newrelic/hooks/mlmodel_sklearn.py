@@ -35,6 +35,7 @@ METRIC_SCORERS = (
 PY2 = sys.version_info[0] == 2
 _logger = logging.getLogger(__name__)
 
+
 class PredictReturnTypeProxy(ObjectProxy):
     def __init__(self, wrapped, model_name, training_step):
         super(ObjectProxy, self).__init__(wrapped)
@@ -98,6 +99,7 @@ def find_type_category(data_set, row_index, column_index):
     python_type = str(type(data_set[column_index][row_index]))
     return categorize_data_type(python_type)
 
+
 def categorize_data_type(python_type):
     if "int" in python_type or "float" in python_type or "complex" in python_type:
         return "numerical"
@@ -121,7 +123,9 @@ def _get_feature_column_names(user_provided_feature_names, features):
 
     # If the user provided feature names aren't the correct size, log a warning and do not use the user provided feature names.
     if user_provided_feature_names:
-        _logger.warning("The number of feature names passed to the ml_model wrapper function is not equal to the number of columns in the data set. Please supply the correct number of feature names.")
+        _logger.warning(
+            "The number of feature names passed to the ml_model wrapper function is not equal to the number of columns in the data set. Please supply the correct number of feature names."
+        )
 
     # If the user doesn't provide the feature names or they were provided but the size was incorrect and the features are a pandas data frame, return the column names from the pandas data frame.
     pd = sys.modules.get("pandas", None)
@@ -153,7 +157,7 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
         for col_index, feature in enumerate(np_casted_data_set):
             for row_index, value in enumerate(feature):
                 value_type = find_type_category(data_set, row_index, col_index)
- 
+
                 transaction.record_custom_event(
                     "ML Model Feature Event",
                     {
@@ -287,6 +291,28 @@ def instrument_sklearn_ensemble_hist_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_linear_coordinate_descent_models(module):
+    model_classes = (
+        "Lasso",
+        "LassoCV",
+        "ElasticNet",
+        "ElasticNetCV",
+        "MultiTaskLasso",
+        "MultiTaskLassoCV",
+        "MultiTaskElasticNet",
+        "MultiTaskElasticNetCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_compose_models(module):
+    model_classes = (
+        "ColumnTransformer",
+        "TransformedTargetRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_covariance_shrunk_models(module):
     model_classes = (
         "ShrunkCovariance",
@@ -374,6 +400,17 @@ def instrument_sklearn_cluster_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_linear_least_angle_models(module):
+    model_classes = (
+        "Lars",
+        "LarsCV",
+        "LassoLars",
+        "LassoLarsCV",
+        "LassoLarsIC",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_feature_selection_models(module):
     model_classes = (
         "VarianceThreshold",
@@ -391,11 +428,83 @@ def instrument_sklearn_cluster_agglomerative_models(module):
     _instrument_sklearn_models(module, model_classes)
 
 
+def instrument_sklearn_linear_GLM_models(module):
+    model_classes = (
+        "PoissonRegressor",
+        "GammaRegressor",
+        "TweedieRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
 def instrument_sklearn_cluster_clustering_models(module):
     model_classes = (
         "SpectralBiclustering",
         "SpectralCoclustering",
         "SpectralClustering",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_stochastic_gradient_models(module):
+    model_classes = (
+        "SGDClassifier",
+        "SGDRegressor",
+        "SGDOneClassSVM",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_ridge_models(module):
+    model_classes = (
+        "Ridge",
+        "RidgeCV",
+        "RidgeClassifier",
+        "RidgeClassifierCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_logistic_models(module):
+    model_classes = (
+        "LogisticRegression",
+        "LogisticRegressionCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_OMP_models(module):
+    model_classes = (
+        "OrthogonalMatchingPursuit",
+        "OrthogonalMatchingPursuitCV",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_passive_aggressive_models(module):
+    model_classes = (
+        "PassiveAggressiveClassifier",
+        "PassiveAggressiveRegressor",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_bayes_models(module):
+    model_classes = (
+        "ARDRegression",
+        "BayesianRidge",
+    )
+    _instrument_sklearn_models(module, model_classes)
+
+
+def instrument_sklearn_linear_models(module):
+    model_classes = (
+        "HuberRegressor",
+        "LinearRegression",
+        "Perceptron",
+        "QuantileRegressor",
+        "TheilSenRegressor",
+        "RANSACRegressor",
     )
     _instrument_sklearn_models(module, model_classes)
 

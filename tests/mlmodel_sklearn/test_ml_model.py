@@ -13,18 +13,17 @@
 # limitations under the License.
 
 import logging
+
 import pandas
 import six
-from newrelic.api.ml_model import wrap_mlmodel
-
+from _validate_custom_events import validate_custom_events
 from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_custom_event_count,
-    validate_custom_event_in_application_stats_engine,
 )
 
-from _validate_custom_events import validate_custom_events
 from newrelic.api.background_task import background_task
+from newrelic.api.ml_model import wrap_mlmodel
 
 try:
     from sklearn.tree._classes import BaseDecisionTree
@@ -39,20 +38,20 @@ class CustomTestModel(BaseDecisionTree):
     if six.PY2:
 
         def __init__(
-                self,
-                criterion="mse",
-                splitter="random",
-                max_depth=None,
-                min_samples_split=2,
-                min_samples_leaf=1,
-                min_weight_fraction_leaf=0.0,
-                max_features=None,
-                random_state=0,
-                max_leaf_nodes=None,
-                min_impurity_decrease=0.0,
-                min_impurity_split=None,
-                class_weight=None,
-                presort=False,
+            self,
+            criterion="mse",
+            splitter="random",
+            max_depth=None,
+            min_samples_split=2,
+            min_samples_leaf=1,
+            min_weight_fraction_leaf=0.0,
+            max_features=None,
+            random_state=0,
+            max_leaf_nodes=None,
+            min_impurity_decrease=0.0,
+            min_impurity_split=None,
+            class_weight=None,
+            presort=False,
         ):
 
             super(CustomTestModel, self).__init__(
@@ -74,19 +73,19 @@ class CustomTestModel(BaseDecisionTree):
     else:
 
         def __init__(
-                self,
-                criterion="poisson",
-                splitter="random",
-                max_depth=None,
-                min_samples_split=2,
-                min_samples_leaf=1,
-                min_weight_fraction_leaf=0.0,
-                max_features=None,
-                random_state=0,
-                max_leaf_nodes=None,
-                min_impurity_decrease=0.0,
-                class_weight=None,
-                ccp_alpha=0.0,
+            self,
+            criterion="poisson",
+            splitter="random",
+            max_depth=None,
+            min_samples_split=2,
+            min_samples_leaf=1,
+            min_weight_fraction_leaf=0.0,
+            max_features=None,
+            random_state=0,
+            max_leaf_nodes=None,
+            min_impurity_decrease=0.0,
+            class_weight=None,
+            ccp_alpha=0.0,
         ):
 
             super().__init__(
@@ -105,9 +104,12 @@ class CustomTestModel(BaseDecisionTree):
             )
 
     def fit(self, X, y, sample_weight=None, check_input=True):
-        return super(CustomTestModel, self).fit(X, y, sample_weight=sample_weight,
-                                                check_input=check_input,
-                                                )
+        return super(CustomTestModel, self).fit(
+            X,
+            y,
+            sample_weight=sample_weight,
+            check_input=check_input,
+        )
 
     def predict(self, X, check_input=True):
         return super(CustomTestModel, self).predict(X, check_input=check_input)
@@ -198,7 +200,7 @@ pandas_df_recorded_custom_events = [
             "value": "8.0",
         }
     },
-{
+    {
         "users": {
             "inference_id": None,
             "model_name": "PandasTestModel",
@@ -232,7 +234,9 @@ def test_wrapper_attrs_custom_model_pandas_df():
         x_test = pandas.DataFrame({"col1": [5.0, 6.0], "col2": [7.0, 8.0], "col3": [9.0, 10.0]}, dtype="category")
 
         model = CustomTestModel().fit(x_train, y_train)
-        wrap_mlmodel(model, name="PandasTestModel", version="1.5.0b1", feature_names=["feature1", "feature2", "feature3"])
+        wrap_mlmodel(
+            model, name="PandasTestModel", version="1.5.0b1", feature_names=["feature1", "feature2", "feature3"]
+        )
         labels = model.predict(x_test)
 
         return model
@@ -348,7 +352,7 @@ pandas_df_mismatched_custom_events = [
             "value": "15",
         }
     },
-{
+    {
         "users": {
             "inference_id": None,
             "model_name": "MyDecisionTreeClassifier",
@@ -424,8 +428,8 @@ def test_wrapper_mismatched_feature_names_and_cols_np_array():
     @validate_custom_event_count(count=2)
     @background_task()
     def _test():
-        import sklearn.tree
         import numpy as np
+        import sklearn.tree
 
         x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
         y_train = np.array([20, 21], dtype="<U4")

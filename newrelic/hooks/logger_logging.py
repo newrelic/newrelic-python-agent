@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
-from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
 from newrelic.core.config import global_settings
+
 
 try:
     from urllib import quote
@@ -29,22 +28,13 @@ except ImportError:
 def add_nr_linking_metadata(message):
     available_metadata = get_linking_metadata()
     entity_name = quote(available_metadata.get("entity.name", ""))
-    entity_guid = available_metadata.get("entity.guid", "")
+    entity_guid = available_metadata.get("entity.guid", "") 
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
     hostname = available_metadata.get("hostname", "")
 
-    try:
-        # See if the message is in JSON format
-        nr_linking_value = "|".join((entity_guid, hostname, trace_id, span_id, entity_name)) + "|"
-        edited_message = json.loads(message)
-        edited_message["NR-LINKING"] = nr_linking_value
-        message = json.dumps(edited_message)
-        return message
-    except ValueError:
-        # Previous functionality of adding NR Linking Metadata
-        nr_linking_str = "|".join(("NR-LINKING", entity_guid, hostname, trace_id, span_id, entity_name)) + "|"
-        return "%s %s" % (message, nr_linking_str)
+    nr_linking_str = "|".join(("NR-LINKING", entity_guid, hostname, trace_id, span_id, entity_name))
+    return "%s %s|" % (message, nr_linking_str)
 
 
 @function_wrapper
@@ -82,7 +72,7 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
                 if application and application.enabled:
                     application.record_custom_metric("Logging/lines", {"count": 1})
                     application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
-
+            
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             try:
                 message = record.getMessage()

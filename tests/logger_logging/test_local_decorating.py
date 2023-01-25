@@ -14,13 +14,16 @@
 
 import platform
 
+from testing_support.fixtures import reset_core_stats_engine
+from testing_support.validators.validate_log_event_count import validate_log_event_count
+from testing_support.validators.validate_log_event_count_outside_transaction import (
+    validate_log_event_count_outside_transaction,
+)
+
 from newrelic.api.application import application_settings
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from testing_support.fixtures import reset_core_stats_engine
-from testing_support.validators.validate_log_event_count import validate_log_event_count
-from testing_support.validators.validate_log_event_count_outside_transaction import validate_log_event_count_outside_transaction
 
 
 def set_trace_ids():
@@ -31,22 +34,17 @@ def set_trace_ids():
     if trace:
         trace.guid = "abcdefgh"
 
+
 def exercise_logging(logger):
     set_trace_ids()
 
     logger.warning("C")
 
 
-def get_metadata_string(log_message, is_txn):
-    host = platform.uname()[1]
-    assert host
-    entity_guid = application_settings().entity_guid
-    if is_txn:
-        metadata_string = "".join(('NR-LINKING|', entity_guid, '|', host, '|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28logger_logging%29|'))
-    else:
-        metadata_string = "".join(('NR-LINKING|', entity_guid, '|', host, '|||Python%20Agent%20Test%20%28logger_logging%29|'))
-    formatted_string = log_message + " " + metadata_string
-    return formatted_string
+def exercise_logging_json(logger):
+    set_trace_ids()
+
+    logger.warning('{"first_name": "Hugh", "last_name": "Man"}')
 
 
 @reset_core_stats_engine()
@@ -54,8 +52,37 @@ def test_local_log_decoration_inside_transaction(logger):
     @validate_log_event_count(1)
     @background_task()
     def test():
+        host = platform.uname()[1]
+        assert host
+        entity_guid = application_settings().entity_guid
+        entity_name = "Python%20Agent%20Test%20%28logger_logging%29"
         exercise_logging(logger)
-        assert logger.caplog.records[0] == get_metadata_string('C', True)
+        assert logger.caplog.records[0] == "C NR-LINKING|%s|%s|abcdefgh12345678|abcdefgh|%s|" % (
+            entity_guid,
+            host,
+            entity_name,
+        )
+
+    test()
+
+
+@reset_core_stats_engine()
+def test_local_log_decoration_inside_transaction_with_json(logger):
+    @validate_log_event_count(1)
+    @background_task()
+    def test():
+        host = platform.uname()[1]
+        assert host
+        entity_guid = application_settings().entity_guid
+        entity_name = "Python%20Agent%20Test%20%28logger_logging%29"
+        exercise_logging_json(logger)
+        assert logger.caplog.records[
+            0
+        ] == '{"first_name": "Hugh", "last_name": "Man", "NR-LINKING": "%s|%s|abcdefgh12345678|abcdefgh|%s|"}' % (
+            entity_guid,
+            host,
+            entity_name,
+        )
 
     test()
 
@@ -64,7 +91,29 @@ def test_local_log_decoration_inside_transaction(logger):
 def test_local_log_decoration_outside_transaction(logger):
     @validate_log_event_count_outside_transaction(1)
     def test():
+        host = platform.uname()[1]
+        assert host
+        entity_guid = application_settings().entity_guid
+        entity_name = "Python%20Agent%20Test%20%28logger_logging%29"
         exercise_logging(logger)
-        assert logger.caplog.records[0] == get_metadata_string('C', False)
+        assert logger.caplog.records[0] == "C NR-LINKING|%s|%s|||%s|" % (entity_guid, host, entity_name)
+
+    test()
+
+
+@reset_core_stats_engine()
+def test_local_log_decoration_outside_transaction_with_json(logger):
+    @validate_log_event_count_outside_transaction(1)
+    def test():
+        host = platform.uname()[1]
+        assert host
+        entity_guid = application_settings().entity_guid
+        entity_name = "Python%20Agent%20Test%20%28logger_logging%29"
+        exercise_logging_json(logger)
+        assert logger.caplog.records[0] == '{"first_name": "Hugh", "last_name": "Man", "NR-LINKING": "%s|%s|||%s|"}' % (
+            entity_guid,
+            host,
+            entity_name,
+        )
 
     test()

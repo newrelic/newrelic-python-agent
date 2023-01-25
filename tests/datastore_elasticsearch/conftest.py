@@ -17,6 +17,10 @@ import pytest
 from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 
+from newrelic.common.package_version_utils import get_package_version
+
+from testing_support.db_settings import elasticsearch_settings
+
 _coverage_source = [
     'newrelic.hooks.datastore_elasticsearch',
 ]
@@ -35,3 +39,14 @@ collector_agent_registration = collector_agent_registration_fixture(
         app_name='Python Agent Test (datastore_elasticsearch)',
         default_settings=_default_settings,
         linked_applications=['Python Agent Test (datastore)'])
+
+ES_VERSION = tuple([int(n) for n in get_package_version("elasticsearch").split(".")])
+ES_SETTINGS = elasticsearch_settings()[0]
+ES_MULTIPLE_SETTINGS = elasticsearch_settings()
+ES_URL = "http://%s:%s" % (ES_SETTINGS["host"], ES_SETTINGS["port"])
+
+
+@pytest.fixture()
+def client():
+    from elasticsearch import Elasticsearch
+    return Elasticsearch(ES_URL)

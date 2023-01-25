@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import elasticsearch.client
-from elasticsearch import Elasticsearch
-from testing_support.db_settings import elasticsearch_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_errors import (
@@ -25,12 +23,9 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
 
-ES_SETTINGS = elasticsearch_settings()[0]
-ES_URL = "http://%s:%s" % (ES_SETTINGS["host"], ES_SETTINGS["port"])
+from conftest import ES_VERSION, ES_SETTINGS
 
-ES_VERSION = tuple([int(n) for n in get_package_version("elasticsearch").split(".")])
 
 # Settings
 
@@ -71,25 +66,29 @@ _base_rollup_metrics = [
 
 # Version support
 
+def is_importable(module_path):
+    try:
+        __import__(module_path)
+        return True
+    except ImportError:
+        return False
+
+
 _all_count = 14
 
-try:
-    import elasticsearch.client.cat
-
+if is_importable("elasticsearch.client.cat") or is_importable("elasticsearch._sync.client.cat"):
     _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/cat.health", 1))
     _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/cat.health", 1))
     _all_count += 1
-except ImportError:
+else:
     _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/cat.health", None))
     _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/cat.health", None))
 
-try:
-    import elasticsearch.client.nodes
-
+if is_importable("elasticsearch.client.nodes") or is_importable("elasticsearch._sync.client.nodes"):
     _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/nodes.info", 1))
     _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/nodes.info", 1))
     _all_count += 1
-except ImportError:
+else:
     _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/nodes.info", None))
     _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/nodes.info", None))
 
@@ -214,7 +213,6 @@ _exercise_es = _exercise_es_v7 if ES_VERSION < (8, 0, 0) else _exercise_es_v8
 
 # Test
 
-
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
     "test_elasticsearch:test_elasticsearch_operation_disabled",
@@ -224,8 +222,7 @@ _exercise_es = _exercise_es_v7 if ES_VERSION < (8, 0, 0) else _exercise_es_v8
 )
 @override_application_settings(_disable_instance_settings)
 @background_task()
-def test_elasticsearch_operation_disabled():
-    client = Elasticsearch(ES_URL)
+def test_elasticsearch_operation_disabled(client):
     _exercise_es(client)
 
 
@@ -238,6 +235,5 @@ def test_elasticsearch_operation_disabled():
 )
 @override_application_settings(_enable_instance_settings)
 @background_task()
-def test_elasticsearch_operation_enabled():
-    client = Elasticsearch(ES_URL)
+def test_elasticsearch_operation_enabled(client):
     _exercise_es(client)

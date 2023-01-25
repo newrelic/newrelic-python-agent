@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from elasticsearch import Elasticsearch
-from testing_support.db_settings import elasticsearch_settings
 from testing_support.fixtures import (
     override_application_settings,
     validate_tt_parenting,
@@ -24,11 +22,8 @@ from testing_support.validators.validate_tt_collector_json import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
 
-ES_VERSION = tuple([int(n) for n in get_package_version("elasticsearch").split(".")])
-ES_SETTINGS = elasticsearch_settings()[0]
-ES_URL = "http://%s:%s" % (ES_SETTINGS["host"], ES_SETTINGS["port"])
+from conftest import ES_SETTINGS, ES_VERSION
 
 # Settings
 
@@ -98,8 +93,7 @@ _exercise_es = _exercise_es_v7 if ES_VERSION < (8, 0, 0) else _exercise_es_v8
 @validate_tt_collector_json(datastore_params=_enabled_required, datastore_forgone_params=_enabled_forgone)
 @validate_tt_parenting(_tt_parenting)
 @background_task()
-def test_trace_node_datastore_params_enable_instance():
-    client = Elasticsearch(ES_URL)
+def test_trace_node_datastore_params_enable_instance(client):
     _exercise_es(client)
 
 
@@ -107,8 +101,7 @@ def test_trace_node_datastore_params_enable_instance():
 @validate_tt_collector_json(datastore_params=_disabled_required, datastore_forgone_params=_disabled_forgone)
 @validate_tt_parenting(_tt_parenting)
 @background_task()
-def test_trace_node_datastore_params_disable_instance():
-    client = Elasticsearch(ES_URL)
+def test_trace_node_datastore_params_disable_instance(client):
     _exercise_es(client)
 
 
@@ -116,6 +109,5 @@ def test_trace_node_datastore_params_disable_instance():
 @validate_tt_collector_json(datastore_params=_instance_only_required, datastore_forgone_params=_instance_only_forgone)
 @validate_tt_parenting(_tt_parenting)
 @background_task()
-def test_trace_node_datastore_params_instance_only():
-    client = Elasticsearch(ES_URL)
+def test_trace_node_datastore_params_instance_only(client):
     _exercise_es(client)

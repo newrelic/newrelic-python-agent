@@ -23,7 +23,7 @@ from testing_support.util import instance_hostname
 
 from newrelic.api.background_task import background_task
 
-ES_MULTIPLE_SETTINGS = elasticsearch_settings()
+from conftest import ES_VERSION, ES_MULTIPLE_SETTINGS
 
 # Settings
 
@@ -83,8 +83,10 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
 # Query
 
 def _exercise_es(es):
-    es.index(index='contacts', doc_type='person',
-            body={'name': 'Joe Tester', 'age': 25, 'title': 'QA Engineer'}, id=1)
+    if ES_VERSION >= (8,):
+        es.index(index='contacts', body={'name': 'Joe Tester', 'age': 25, 'title': 'QA Engineer'}, id=1)
+    else:
+        es.index(index='contacts', doc_type='person', body={'name': 'Joe Tester', 'age': 25, 'title': 'QA Engineer'}, id=1)
 
 # Test
 

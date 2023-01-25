@@ -3114,50 +3114,6 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
-def _get_linking_metadata_for_security_module():
-    import newrelic.agent
-    context = newrelic.agent.get_linking_metadata()
-    return context
-
-
-def _get_trace_linking_metadata_for_security_module():
-    trace = trace_cache.trace_cache().current_trace()
-    metadata = trace and trace._get_trace_linking_metadata() or {}
-    return metadata
-
-
-def _generate_security_module_policy():
-    return dict(_settings.security.policy)
-
-
-def _generate_security_module_config():
-    from newrelic_security.agent.models.agent_config import SingletonAgentConfig
-    config = SingletonAgentConfig.instance()
-    config.set_base_config(_settings.security)
-    config.set_acessor_token(_settings.license_key)
-    config.application_name = _settings.app_name
-
-    return config
-
-
-def _update_security_module(agent):
-    """refreshes the security module with latest config and
-    linking metadata
-    """
-    config = _generate_security_module_config()
-    policy = _generate_security_module_policy()
-    metadata = _get_linking_metadata_for_security_module()
-    # propogate app name and id
-    agent_instance = newrelic.core.agent.agent_instance()
-    application = agent_instance.application(_settings.app_name)
-    if application:
-        configuration = application.configuration
-        metadata["agentRunId"] = configuration.agent_run_id
-        metadata["accountId"] = configuration.account_id
-    print("REFRESH AGENT!!!!")
-    agent.refresh_agent(config, policy, metadata)
-
-
 def _setup_security_module():
     """Initiates k2 security module and adds a
     callback to agent startup to propagate NR config
@@ -3165,31 +3121,12 @@ def _setup_security_module():
     try:
         if _settings.security.force_complete_disable:
             return
-        # run security module
-        from newrelic_security.agent.nr_security_agent import NRSecurityAgent
-        from functools import partial as Partial
-
-        config =_generate_security_module_config()
-        policy = _generate_security_module_policy()
-
-        security_module_agent = NRSecurityAgent(config)
-        security_module_agent.initialise()
-        security_module_agent.set_policy_from_flat_dict(policy)
-
-        if not _settings.security.enable:
-            security_module_agent.disable()
-
-        # create a callback to reinitialise the security module
-        callback = Partial(_update_security_module, security_module_agent)
-        newrelic.core.agent.Agent.run_on_startup(callback)
-
-        # set trace_linking_metadata catcher
-        security_module_agent.set_linking_metadata_catcher(
-            _get_trace_linking_metadata_for_security_module
-        )
+        from newrelic_security.api.agent import Agent as SecurityAgent
+        # initialize security agent
+        security_agent = SecurityAgent()
+         # create a callback to reinitialise the security module
+        newrelic.core.agent.Agent.run_on_startup(security_agent.refresh_agent)
     except Exception as k2error:
-        import traceback
-        traceback.print_tb(k2error.__traceback__)
         _logger.error("K2 Startup failed with error %s", k2error)
 
 

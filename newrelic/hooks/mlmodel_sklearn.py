@@ -35,6 +35,7 @@ METRIC_SCORERS = (
 PY2 = sys.version_info[0] == 2
 _logger = logging.getLogger(__name__)
 
+
 class PredictReturnTypeProxy(ObjectProxy):
     def __init__(self, wrapped, model_name, training_step):
         super(ObjectProxy, self).__init__(wrapped)
@@ -98,6 +99,7 @@ def find_type_category(data_set, row_index, column_index):
     python_type = str(type(data_set[column_index][row_index]))
     return categorize_data_type(python_type)
 
+
 def categorize_data_type(python_type):
     if "int" in python_type or "float" in python_type or "complex" in python_type:
         return "numerical"
@@ -121,7 +123,9 @@ def _get_feature_column_names(user_provided_feature_names, features):
 
     # If the user provided feature names aren't the correct size, log a warning and do not use the user provided feature names.
     if user_provided_feature_names:
-        _logger.warning("The number of feature names passed to the ml_model wrapper function is not equal to the number of columns in the data set. Please supply the correct number of feature names.")
+        _logger.warning(
+            "The number of feature names passed to the ml_model wrapper function is not equal to the number of columns in the data set. Please supply the correct number of feature names."
+        )
 
     # If the user doesn't provide the feature names or they were provided but the size was incorrect and the features are a pandas data frame, return the column names from the pandas data frame.
     pd = sys.modules.get("pandas", None)
@@ -153,7 +157,7 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
         for col_index, feature in enumerate(np_casted_data_set):
             for row_index, value in enumerate(feature):
                 value_type = find_type_category(data_set, row_index, col_index)
- 
+
                 transaction.record_custom_event(
                     "ML Model Feature Event",
                     {

@@ -72,6 +72,7 @@ _redis_client_methods = {
     "bzmpop",
     "bzpopmax",
     "bzpopmin",
+    "card",
     "cdf",
     "clear",
     "client_getname",

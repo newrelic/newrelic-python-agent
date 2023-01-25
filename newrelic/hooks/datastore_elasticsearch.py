@@ -105,46 +105,7 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
     wrap_function_wrapper(module, "%s.%s" % (class_name, method_name), _nr_wrapper_Elasticsearch_method_)
 
 
-# CHECK (MOSTLY) COMPLETE
 _elasticsearch_client_methods = (
-    # ("abort_benchmark", None),
-    # ("benchmark", _extract_args_index),
-    # ("bulk", None),
-    # ("clear_scroll", None),
-    # ("count", _extract_args_index),
-    # ("count_percolate", _extract_args_index),
-    # ("create", _extract_args_index),
-    # ("delete", _extract_args_index),
-    # ("delete_by_query", _extract_args_index),
-    # ("delete_script", None),
-    # ("delete_template", None),
-    # ("exists", _extract_args_index),
-    # ("explain", _extract_args_index),
-    # ("get", _extract_args_index),
-    # ("get_script", None),
-    # ("get_source", _extract_args_index),
-    # ("get_template", None),
-    # ("index", _extract_args_index),
-    # ("info", None),
-    # ("list_benchmarks", _extract_args_index),
-    # ("mget", None),
-    # ("mlt", _extract_args_index),
-    # ("mpercolate", _extract_args_body_index),
-    # ("msearch", None),
-    # ("mtermvectors", None),
-    # ("percolate", _extract_args_index),
-    # ("ping", None),
-    # ("put_script", None),
-    # ("put_template", None),
-    # ("scroll", None),
-    # ("search", _extract_args_index),
-    # ("search_exists", _extract_args_index),
-    # ("search_shards", _extract_args_index),
-    # ("search_template", _extract_args_index),
-    # ("suggest", _extract_args_body_index),
-    # ("termvector", _extract_args_index),
-    # ("termvectors", None),
-    # ("update", _extract_args_index),
     ("abort_benchmark", None),
     ("benchmark", _extract_args_index),
     ("bulk", _extract_args_index),  # None in v7--should it be _extract_args_body_index ?
@@ -212,47 +173,7 @@ def instrument_elasticsearch_client(module):
             wrap_elasticsearch_client_method(module, "Elasticsearch", method_name, arg_extractor)
 
 
-# CHECK (MOSTLY) COMPLETE
 _elasticsearch_client_indices_methods = (
-    # ("analyze", _extract_args_index),
-    # ("clear_cache", _extract_args_index),
-    # ("close", _extract_args_index),
-    # ("create", _extract_args_index),
-    # ("delete", _extract_args_index),
-    # ("delete_alias", _extract_args_index),
-    # ("delete_mapping", _extract_args_index),
-    # ("delete_template", None),
-    # ("delete_warmer", _extract_args_index),
-    # ("exists", _extract_args_index),
-    # ("exists_alias", _extract_args_name_index),
-    # ("exists_template", None),
-    # ("exists_type", _extract_args_index),
-    # ("flush", _extract_args_index),
-    # ("get", _extract_args_index),
-    # ("get_alias", _extract_args_index),
-    # ("get_aliases", _extract_args_index),
-    # ("get_mapping", _extract_args_index),
-    # ("get_field_mapping", _extract_args_field_index),
-    # ("get_settings", _extract_args_index),
-    # ("get_template", None),
-    # ("get_upgrade", _extract_args_index),
-    # ("get_warmer", _extract_args_index),
-    # ("open", _extract_args_index),
-    # ("optimize", _extract_args_index),
-    # ("put_alias", _extract_args_name_index),
-    # ("put_mapping", _extract_args_doctype_body_index),
-    # ("put_settings", _extract_args_body_index),
-    # ("put_template", None),
-    # ("put_warmer", _extract_args_name_body_index),
-    # ("recovery", _extract_args_index),
-    # ("refresh", _extract_args_index),
-    # ("segments", _extract_args_index),
-    # ("snapshot_index", _extract_args_index),
-    # ("stats", _extract_args_index),
-    # ("status", _extract_args_index),
-    # ("update_aliases", None),
-    # ("upgrade", _extract_args_index),
-    # ("validate_query", _extract_args_index),
     ("add_block", _extract_args_index),
     ("analyze", _extract_args_field_index),
     ("clear_cache", _extract_args_index),
@@ -317,23 +238,7 @@ def instrument_elasticsearch_client_indices(module):
             wrap_elasticsearch_client_method(module, "IndicesClient", method_name, arg_extractor, "indices")
 
 
-# CHECK COMPLETE
 _elasticsearch_client_cat_methods = (
-    # ("aliases", None),
-    # ("allocation", None),
-    # ("count", _extract_args_index),
-    # ("fielddata", None),
-    # ("health", None),
-    # ("help", None),
-    # ("indices", _extract_args_index),
-    # ("master", None),
-    # ("nodes", None),
-    # ("pending_tasks", None),
-    # ("plugins", None),
-    # ("recovery", _extract_args_index),
-    # ("shards", _extract_args_index),
-    # ("segments", _extract_args_index),
-    # ("thread_pool", None),
     ("aliases", None),
     ("allocation", None),
     ("component_templates", None),
@@ -369,15 +274,7 @@ def instrument_elasticsearch_client_cat(module):
             wrap_elasticsearch_client_method(module, "CatClient", method_name, arg_extractor, "cat")
 
 
-# CHECK COMPLETE
 _elasticsearch_client_cluster_methods = (
-    # ("get_settings", None),
-    # ("health", _extract_args_index),
-    # ("pending_tasks", None),
-    # ("put_settings", None),
-    # ("reroute", None),
-    # ("state", _extract_args_metric_index),
-    # ("stats", None),
     ("allocation_explain", _extract_args_index),
     ("delete_component_template", None),
     ("delete_voting_config_exclusions", None),
@@ -402,12 +299,7 @@ def instrument_elasticsearch_client_cluster(module):
             wrap_elasticsearch_client_method(module, "ClusterClient", method_name, arg_extractor, "cluster")
 
 
-# CHECK COMPLETE
 _elasticsearch_client_nodes_methods = (
-    # ("hot_threads", None),
-    # ("info", None),
-    # ("shutdown", None),
-    # ("stats", None),
     ("clear_repositories_metering_archive", None),
     ("get_repositories_metering_info", None),
     ("hot_threads", None),
@@ -424,17 +316,7 @@ def instrument_elasticsearch_client_nodes(module):
             wrap_elasticsearch_client_method(module, "NodesClient", method_name, arg_extractor, "nodes")
 
 
-# CHECK COMPLETE
 _elasticsearch_client_snapshot_methods = (
-    # ("create", None),
-    # ("create_repository", None),
-    # ("delete", None),
-    # ("delete_repository", None),
-    # ("get", None),
-    # ("get_repository", None),
-    # ("restore", None),
-    # ("status", None),
-    # ("verify_repository", None),
     ("cleanup_repository", None),
     ("clone", None),
     ("create", None),
@@ -455,7 +337,6 @@ def instrument_elasticsearch_client_snapshot(module):
             wrap_elasticsearch_client_method(module, "SnapshotClient", method_name, arg_extractor, "snapshot")
 
 
-# CHECK COMPLETE
 _elasticsearch_client_tasks_methods = (
     ("list", None),
     ("cancel", None),
@@ -469,12 +350,7 @@ def instrument_elasticsearch_client_tasks(module):
             wrap_elasticsearch_client_method(module, "TasksClient", method_name, arg_extractor, "tasks")
 
 
-# CHECK COMPLETE
 _elasticsearch_client_ingest_methods = (
-    # ("get_pipeline", None),
-    # ("put_pipeline", None),
-    # ("delete_pipeline", None),
-    # ("simulate", None),
     ("delete_pipeline", None),
     ("geo_ip_stats", None),
     ("get_pipeline", None),
@@ -556,14 +432,9 @@ def _nr_perform_request_wrapper(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    if hasattr(instance.node_pool.get, "_nr_wrapped"):
+    if not hasattr(instance.node_pool.get, "_nr_wrapped"):
         instance.node_pool.get = function_wrapper(_nr_get_connection_wrapper)(instance.node_pool.get)
         instance.node_pool.get._nr_wrapped = True
-
-    host, port_path_or_id = instance.node_pool.get()._nr_host_port
-    instance_info = (host, port_path_or_id, None)
-
-    transaction._nr_datastore_instance_info = instance_info
 
     return wrapped(*args, **kwargs)
 

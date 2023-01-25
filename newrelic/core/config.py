@@ -873,10 +873,6 @@ _settings.security.validator_service_endpoint_url = os.environ.get(
     "NEW_RELIC_SECURITY_VALIDATOR_SERVICE_ENDPOINT_URL",
     default=None
 )
-_settings.security.resource_service_endpoint_url = os.environ.get(
-    "NEW_RELIC_SECURITY_RESOURCE_SERVICE_ENDPOINT_URL",
-    default=None
-)
 _settings.security.log_level = os.environ.get(
     "NEW_RELIC_SECURITY_LOG_LEVEL",
     default="INFO"

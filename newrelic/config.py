@@ -332,7 +332,6 @@ def _process_configuration(section):
     _process_setting(section, "security.enable", "getboolean", None)
     _process_setting(section, "security.mode", "get", None)
     _process_setting(section, "security.validator_service_endpoint_url", "get", None)
-    _process_setting(section, "security.resource_service_endpoint_url", "get", None)
     _process_setting(section, "security.log_level", "get", None)
     _process_setting(section, "security.sec_home_path", "get", None)
     _process_setting(section, "security.detection.disable_rci", "getboolean", None)
@@ -3132,8 +3131,8 @@ def _generate_security_module_policy():
 
 
 def _generate_security_module_config():
-    from newrelic_security.agent.models.agent_config import NRSecurityAgentConfig
-    config = NRSecurityAgentConfig()
+    from newrelic_security.agent.models.agent_config import SingletonAgentConfig
+    config = SingletonAgentConfig.instance()
     config.set_base_config(_settings.security)
     config.set_acessor_token(_settings.license_key)
     config.application_name = _settings.app_name

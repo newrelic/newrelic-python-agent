@@ -108,7 +108,7 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
 _elasticsearch_client_methods = (
     ("abort_benchmark", None),
     ("benchmark", _extract_args_index),
-    ("bulk", _extract_args_index),  # None in v7--should it be _extract_args_body_index ?
+    ("bulk", _extract_args_index),
     ("clear_scroll", None),
     ("close", None),
     ("close_point_in_time", None),
@@ -134,12 +134,12 @@ _elasticsearch_client_methods = (
     ("info", None),
     ("knn_search", _extract_args_index),
     ("list_benchmarks", _extract_args_index),
-    ("mget", _extract_args_index),  # None in v7--should it be _extract_args_body_index ?
+    ("mget", _extract_args_index),
     ("mlt", _extract_args_index),
     ("mpercolate", _extract_args_body_index),
-    ("msearch", _extract_args_index),  # None in v7--should it be _extract_args_body_index ?
+    ("msearch", _extract_args_index),
     ("msearch_template", _extract_args_index),
-    ("mtermvectors", _extract_args_index),  # None in v7--should it be _extract_args_body_index ?
+    ("mtermvectors", _extract_args_index),
     ("open_point_in_time", _extract_args_index),
     ("options", None),
     ("percolate", _extract_args_index),
@@ -160,7 +160,7 @@ _elasticsearch_client_methods = (
     ("suggest", _extract_args_body_index),
     ("terms_enum", _extract_args_field_index),
     ("termvector", _extract_args_index),
-    ("termvectors", _extract_args_index),  # None in v7--should it be _extract_args_index ?
+    ("termvectors", _extract_args_index),
     ("update", _extract_args_index),
     ("update_by_query", _extract_args_index),
     ("update_by_query_rethrottle", _extract_args_index),
@@ -202,7 +202,7 @@ _elasticsearch_client_indices_methods = (
     ("get_field_mapping", _extract_args_index),
     ("get_index_template", None),
     ("get_mapping", _extract_args_index),
-    ("get_settings", _extract_args_name_index),  # _extract_args_index in v7
+    ("get_settings", _extract_args_name_index),
     ("get_template", None),
     ("migrate_to_data_stream", None),
     ("modify_data_stream", None),
@@ -211,13 +211,13 @@ _elasticsearch_client_indices_methods = (
     ("put_alias", _extract_args_name_index),
     ("put_index_template", None),
     ("put_mapping", _extract_args_index),
-    ("put_settings", _extract_args_body_index),  # No body arg in v8+
+    ("put_settings", _extract_args_body_index),
     ("put_template", None),
     ("recovery", _extract_args_index),
     ("refresh", _extract_args_index),
     ("reload_search_analyzers", _extract_args_index),
     ("resolve_index", None),
-    ("rollover", None),  # TODO: Review: This has new_index instead of index as arg.  New to v8+
+    ("rollover", None),
     ("segments", _extract_args_index),
     ("shard_stores", _extract_args_index),
     ("shrink", _extract_args_index),

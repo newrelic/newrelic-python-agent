@@ -46,7 +46,7 @@ ES_MULTIPLE_SETTINGS = elasticsearch_settings()
 ES_URL = "http://%s:%s" % (ES_SETTINGS["host"], ES_SETTINGS["port"])
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def client():
     from elasticsearch import Elasticsearch
     return Elasticsearch(ES_URL)

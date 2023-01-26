@@ -80,10 +80,46 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
             wrap_predict(transaction, _class, wrapped, instance, args, kwargs)
+            create_label_event(transaction, _class, instance, return_val)
             return PredictReturnTypeProxy(return_val, model_name=_class, training_step=training_step)
         return return_val
 
     wrap_function_wrapper(module, "%s.%s" % (_class, method), _nr_wrapper_method)
+
+
+def create_label_event(transaction, _class, instance, return_val):
+    inference_id = uuid.uuid4()
+    model_name = getattr(instance, "_nr_wrapped_name", _class)
+    model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
+    label_names = getattr(instance, "_nr_wrapped_label_names", None)
+
+    if return_val is not None:
+        for index, value in enumerate(return_val):
+            python_value_type = str(type(value))
+            value_type = str(categorize_data_type(python_value_type))
+            label_names_list = _get_label_names(label_names, return_val)
+            transaction.record_custom_event(
+                "ML Model Feature Event",
+                {
+                    "inference_id": inference_id,
+                    "model_name": model_name,
+                    "model_version": model_version,
+                    "label_name": str(label_names_list[index]),
+                    "type": value_type,
+                    "value": str(value),
+                },
+            )
+
+
+def _get_label_names(user_defined_label_names, prediction_array):
+    import numpy as np
+    if user_defined_label_names is None or len(user_defined_label_names) != len(prediction_array):
+        _logger.warning(
+            "The number of label names passed to the ml_model wrapper function is not equal to the number of predictions in the data set. Please supply the correct number of label names."
+        )
+        return np.array(range(len(prediction_array)))
+    else:
+        return user_defined_label_names
 
 
 def find_type_category(data_set, row_index, column_index):
@@ -148,7 +184,6 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
     model_name = getattr(instance, "_nr_wrapped_name", _class)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
-    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
     np_casted_data_set = np.array(data_set)
@@ -167,6 +202,7 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
             if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
                 event["value"] = str(value)
             transaction.record_custom_event("ML Model Feature Event", event)
+
 
 
 def _nr_instrument_model(module, model_class):

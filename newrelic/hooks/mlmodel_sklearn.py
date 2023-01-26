@@ -113,6 +113,7 @@ def create_label_event(transaction, _class, instance, return_val):
 
 def _get_label_names(user_defined_label_names, prediction_array):
     import numpy as np
+
     if user_defined_label_names is None or len(user_defined_label_names) != len(prediction_array):
         _logger.warning(
             "The number of label names passed to the ml_model wrapper function is not equal to the number of predictions in the data set. Please supply the correct number of label names."

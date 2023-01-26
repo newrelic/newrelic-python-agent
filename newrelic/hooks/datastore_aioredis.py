@@ -21,17 +21,15 @@ from newrelic.hooks.datastore_redis import (
     _redis_multipart_commands,
     _redis_operation_re,
 )
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 
 def get_aioredis_version():
     try:
-        import aioredis as aioredis_legacy
-    except ModuleNotFoundError:
+        import aioredis
+        return get_package_version_tuple(aioredis)
+    except ImportError:
         return None
-    try:
-        return tuple(int(x) for x in getattr(aioredis_legacy, "__version__").split("."))
-    except Exception:
-        return 0, 0, 0
 
 
 def _conn_attrs_to_dict(connection):

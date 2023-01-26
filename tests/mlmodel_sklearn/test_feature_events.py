@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import six
 import sys
 
 import numpy as np
 import pandas
+import six
 from _validate_custom_events import validate_custom_events
 from testing_support.fixtures import (
+    override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
 )
 
 from newrelic.api.background_task import background_task
-from testing_support.fixtures import override_application_settings
 
 pandas_df_category_recorded_custom_events = [
     {
@@ -100,7 +100,8 @@ def test_pandas_df_categorical_feature_event():
 
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
         model = clf.fit(
-            pandas.DataFrame({"col1": [27.0, 24.0], "col2": [23.0, 25.0]}, dtype="category"), pandas.DataFrame({"label": [27.0, 28.0]})
+            pandas.DataFrame({"col1": [27.0, 24.0], "col2": [23.0, 25.0]}, dtype="category"),
+            pandas.DataFrame({"label": [27.0, 28.0]}),
         )
 
         labels = model.predict(pandas.DataFrame({"col1": [2.0, 3.0], "col2": [4.0, 1.0]}, dtype="category"))
@@ -174,7 +175,6 @@ pandas_df_bool_recorded_custom_events = [
         }
     },
 ]
-
 
 
 @reset_core_stats_engine()
@@ -411,7 +411,7 @@ numpy_int_recorded_custom_events = [
             "value": "15",
         }
     },
-{
+    {
         "users": {
             "inference_id": None,
             "model_name": "ExtraTreeRegressor",

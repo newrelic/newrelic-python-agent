@@ -136,7 +136,7 @@ int_list_recorded_custom_events = [
             "value": "2.0",
         }
     },
-{
+    {
         "users": {
             "inference_id": None,
             "model_name": "MyCustomModel",
@@ -230,7 +230,7 @@ pandas_df_recorded_custom_events = [
             "value": "10.0",
         }
     },
-{
+    {
         "users": {
             "inference_id": None,
             "model_name": "PandasTestModel",
@@ -240,7 +240,7 @@ pandas_df_recorded_custom_events = [
             "value": "0.5",
         }
     },
-{
+    {
         "users": {
             "inference_id": None,
             "model_name": "PandasTestModel",
@@ -265,8 +265,11 @@ def test_wrapper_attrs_custom_model_pandas_df():
 
         model = CustomTestModel().fit(x_train, y_train)
         wrap_mlmodel(
-            model, name="PandasTestModel", version="1.5.0b1", feature_names=["feature1", "feature2", "feature3"],
-            label_names=["label1", "label2"]
+            model,
+            name="PandasTestModel",
+            version="1.5.0b1",
+            feature_names=["feature1", "feature2", "feature3"],
+            label_names=["label1", "label2"],
         )
         labels = model.predict(x_test)
         return model
@@ -353,7 +356,13 @@ def test_wrapper_attrs_builtin_model():
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
 
         model = clf.fit(x_train, y_train)
-        wrap_mlmodel(model, name="MyDecisionTreeClassifier", version="1.5.0b1", feature_names=["feature1", "feature2"], label_names=["label1", "label2"])
+        wrap_mlmodel(
+            model,
+            name="MyDecisionTreeClassifier",
+            version="1.5.0b1",
+            feature_names=["feature1", "feature2"],
+            label_names=["label1", "label2"],
+        )
         labels = model.predict(x_test)
 
         return model
@@ -460,7 +469,13 @@ def test_wrapper_mismatched_features_and_labels_df():
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
 
         model = clf.fit(x_train, y_train)
-        wrap_mlmodel(model, name="MyDecisionTreeClassifier", version="1.5.0b1", feature_names=["feature1", "feature2"], label_names=["label1"])
+        wrap_mlmodel(
+            model,
+            name="MyDecisionTreeClassifier",
+            version="1.5.0b1",
+            feature_names=["feature1", "feature2"],
+            label_names=["label1"],
+        )
         labels = model.predict(x_test)
         return model
 
@@ -488,7 +503,7 @@ numpy_str_mismatched_custom_events = [
             "value": "21",
         }
     },
-{
+    {
         "users": {
             "inference_id": None,
             "model_name": "MyDecisionTreeClassifier",

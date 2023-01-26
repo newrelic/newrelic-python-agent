@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
@@ -34,17 +32,8 @@ def add_nr_linking_metadata(message):
     trace_id = available_metadata.get("trace.id", "")
     hostname = available_metadata.get("hostname", "")
 
-    try:
-        # See if the message is in JSON format
-        nr_linking_value = "|".join((entity_guid, hostname, trace_id, span_id, entity_name)) + "|"
-        edited_message = json.loads(message)
-        edited_message["NR-LINKING"] = nr_linking_value
-        message = json.dumps(edited_message)
-        return message
-    except ValueError:
-        # Previous functionality of adding NR Linking Metadata
-        nr_linking_str = "|".join(("NR-LINKING", entity_guid, hostname, trace_id, span_id, entity_name)) + "|"
-        return "%s %s" % (message, nr_linking_str)
+    nr_linking_str = "|".join(("NR-LINKING", entity_guid, hostname, trace_id, span_id, entity_name))
+    return "%s %s|" % (message, nr_linking_str)
 
 
 @function_wrapper

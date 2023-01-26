@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import pytest
 from starlette import __version__
 from testing_support.validators.validate_transaction_count import (
@@ -85,7 +87,9 @@ def test_basehttp_style_middleware(target_application, route):
         response = app.get("/" + route)
         assert response.status == 200
 
-    BUG_COMPLETELY_FIXED = (0, 21, 0) <= starlette_version < (0, 23, 1)
+    BUG_COMPLETELY_FIXED = (0, 21, 0) <= starlette_version < (0, 23, 1) or (
+        (0, 20, 1) <= starlette_version < (0, 23, 1) and sys.version_info[:2] > (3, 7)
+    )
     BUG_PARTIALLY_FIXED = (0, 20, 1) <= starlette_version < (0, 21, 0) or starlette_version >= (0, 23, 1)
 
     if BUG_COMPLETELY_FIXED:

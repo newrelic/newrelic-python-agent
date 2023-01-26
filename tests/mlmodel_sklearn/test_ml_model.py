@@ -122,6 +122,7 @@ int_list_recorded_custom_events = [
             "inference_id": None,
             "model_name": "MyCustomModel",
             "model_version": "1.2.3",
+            "feature_name": "0",
             "type": "numerical",
             "value": "1.0",
         }

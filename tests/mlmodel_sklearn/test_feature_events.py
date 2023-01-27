@@ -18,6 +18,7 @@ import numpy as np
 import pandas
 from _validate_custom_events import validate_custom_events
 from testing_support.fixtures import (
+    override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
 )
@@ -404,6 +405,50 @@ def test_numpy_str_array():
         x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
         y_train = np.array([20, 21], dtype="<U4")
         x_test = np.array([[20, 21], [22, 23]], dtype="<U4")
+        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+
+        model = clf.fit(x_train, y_train)
+        labels = model.predict(x_test)
+
+        return model
+
+    _test()
+
+
+numpy_str_recorded_custom_events_no_value = [
+    {
+        "users": {
+            "inference_id": None,
+            "model_name": "DecisionTreeClassifier",
+            "model_version": "0.0.0",
+            "feature_name": "0",
+            "type": "str",
+        }
+    },
+    {
+        "users": {
+            "inference_id": None,
+            "model_name": "DecisionTreeClassifier",
+            "model_version": "0.0.0",
+            "feature_name": "1",
+            "type": "str",
+        }
+    },
+]
+
+
+@reset_core_stats_engine()
+@override_application_settings({"machine_learning.inference_event_value.enabled": False})
+def test_does_not_include_value_when_inference_event_value_enabled_is_false():
+    @validate_custom_events(numpy_str_recorded_custom_events_no_value)
+    @validate_custom_event_count(count=2)
+    @background_task()
+    def _test():
+        import sklearn.tree
+
+        x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
+        y_train = np.array([20, 21], dtype="<U4")
+        x_test = np.array([[20, 21]], dtype="<U4")
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
 
         model = clf.fit(x_train, y_train)

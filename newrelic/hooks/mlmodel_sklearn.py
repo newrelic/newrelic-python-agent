@@ -150,25 +150,23 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
     user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
-        final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
-        np_casted_data_set = np.array(data_set)
+    final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
+    np_casted_data_set = np.array(data_set)
 
-        for col_index, feature in enumerate(np_casted_data_set):
-            for row_index, value in enumerate(feature):
-                value_type = find_type_category(data_set, row_index, col_index)
-
-                transaction.record_custom_event(
-                    "ML Model Feature Event",
-                    {
-                        "inference_id": inference_id,
-                        "model_name": model_name,
-                        "model_version": model_version,
-                        "feature_name": str(final_feature_names[row_index]),
-                        "type": value_type,
-                        "value": str(value),
-                    },
-                )
+    for col_index, feature in enumerate(np_casted_data_set):
+        for row_index, value in enumerate(feature):
+            value_type = find_type_category(data_set, row_index, col_index)
+            event = {
+                "inference_id": inference_id,
+                "model_name": model_name,
+                "model_version": model_version,
+                "feature_name": str(final_feature_names[row_index]),
+                "type": value_type,
+            }
+            # Don't include the raw value when inference_event_value is disabled.
+            if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
+                event["value"] = str(value)
+            transaction.record_custom_event("ML Model Feature Event", event)
 
 
 def _nr_instrument_model(module, model_class):

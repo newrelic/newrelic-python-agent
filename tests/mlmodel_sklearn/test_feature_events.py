@@ -110,9 +110,9 @@ def test_pandas_df_categorical_feature_event():
     _test()
 
 
-label_type = "bool" if six.PY2 else "numerical"
-true_label_value = "True" if six.PY2 else "1.0"
-false_label_value = "False" if six.PY2 else "0.0"
+label_type = "bool" if sys.version_info < (3, 8) else "numerical"
+true_label_value = "True" if sys.version_info < (3, 8) else "1.0"
+false_label_value = "False" if sys.version_info < (3, 8) else "0.0"
 pandas_df_bool_recorded_custom_events = [
     {
         "users": {

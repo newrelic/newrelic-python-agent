@@ -1500,7 +1500,7 @@ def code_coverage_fixture(source=None):
     @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:
-            yield None
+            yield None  # Required, generator based fixtures must yield 1 value or pytest will throw an exception.
             return
 
         from coverage import coverage

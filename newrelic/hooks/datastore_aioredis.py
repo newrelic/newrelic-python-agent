@@ -24,12 +24,7 @@ from newrelic.hooks.datastore_redis import (
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 
-def get_aioredis_version():
-    try:
-        import aioredis
-        return get_package_version_tuple(aioredis)
-    except ImportError:
-        return None
+get_aioredis_version = lambda: get_package_version_tuple("aioredis")
 
 
 def _conn_attrs_to_dict(connection):

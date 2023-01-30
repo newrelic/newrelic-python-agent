@@ -27,7 +27,7 @@ from testing_support.fixtures import (  # noqa: F401
 try:
     import aioredis
 
-    AIOREDIS_VERSION = get_package_version_tuple(aioredis)
+    AIOREDIS_VERSION = get_package_version_tuple("aioredis")
 except ImportError:
     import redis.asyncio as aioredis
 

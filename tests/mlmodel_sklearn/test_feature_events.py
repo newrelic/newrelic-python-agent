@@ -559,6 +559,15 @@ numpy_str_recorded_custom_events_no_value = [
             "type": "str",
         }
     },
+    {
+        "users": {
+            "inference_id": None,
+            "model_name": "DecisionTreeClassifier",
+            "model_version": "0.0.0",
+            "label_name": "0",
+            "type": "str",
+        }
+    },
 ]
 
 
@@ -566,7 +575,7 @@ numpy_str_recorded_custom_events_no_value = [
 @override_application_settings({"machine_learning.inference_event_value.enabled": False})
 def test_does_not_include_value_when_inference_event_value_enabled_is_false():
     @validate_custom_events(numpy_str_recorded_custom_events_no_value)
-    @validate_custom_event_count(count=2)
+    @validate_custom_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree

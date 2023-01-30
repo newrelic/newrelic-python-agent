@@ -92,23 +92,26 @@ def create_label_event(transaction, _class, instance, return_val):
     model_name = getattr(instance, "_nr_wrapped_name", _class)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     label_names = getattr(instance, "_nr_wrapped_label_names", None)
+    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     if return_val is not None:
         for index, value in enumerate(return_val):
             python_value_type = str(type(value))
             value_type = str(categorize_data_type(python_value_type))
             label_names_list = _get_label_names(label_names, return_val)
-            transaction.record_custom_event(
-                "ML Model Feature Event",
-                {
-                    "inference_id": inference_id,
-                    "model_name": model_name,
-                    "model_version": model_version,
-                    "label_name": str(label_names_list[index]),
-                    "type": value_type,
-                    "value": str(value),
-                },
-            )
+
+            event = {
+                "inference_id": inference_id,
+                "model_name": model_name,
+                "model_version": model_version,
+                "label_name": str(label_names_list[index]),
+                "type": value_type,
+                "value": str(value),
+            }
+            # Don't include the raw value when inference_event_value is disabled.
+            if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
+                event["value"] = str(value)
+            transaction.record_custom_event("ML Model Label Event", event)
 
 
 def _get_label_names(user_defined_label_names, prediction_array):
@@ -185,6 +188,8 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
     model_name = getattr(instance, "_nr_wrapped_name", _class)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+
 
     final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
     np_casted_data_set = np.array(data_set)

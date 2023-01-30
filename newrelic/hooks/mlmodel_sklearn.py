@@ -190,7 +190,6 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
     user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-
     final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
     np_casted_data_set = np.array(data_set)
 
@@ -208,7 +207,6 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
             if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
                 event["value"] = str(value)
             transaction.record_custom_event("ML Model Feature Event", event)
-
 
 
 def _nr_instrument_model(module, model_class):

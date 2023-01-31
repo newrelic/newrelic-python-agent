@@ -531,6 +531,7 @@ def _process_configuration(section):
     _process_setting(section, "infinite_tracing.trace_observer_host", "get", None)
     _process_setting(section, "infinite_tracing.trace_observer_port", "getint", None)
     _process_setting(section, "infinite_tracing.compression", "getboolean", None)
+    _process_setting(section, "infinite_tracing.batching", "getboolean", None)
     _process_setting(section, "infinite_tracing.span_queue_size", "getint", None)
     _process_setting(section, "code_level_metrics.enabled", "getboolean", None)
 

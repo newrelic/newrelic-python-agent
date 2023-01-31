@@ -21,17 +21,7 @@ from newrelic.hooks.datastore_redis import (
     _redis_multipart_commands,
     _redis_operation_re,
 )
-
-
-def get_aioredis_version():
-    try:
-        import aioredis as aioredis_legacy
-    except ModuleNotFoundError:
-        return None
-    try:
-        return tuple(int(x) for x in getattr(aioredis_legacy, "__version__").split("."))
-    except Exception:
-        return 0, 0, 0
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 
 def _conn_attrs_to_dict(connection):
@@ -70,7 +60,7 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
         # Check for transaction and return early if found.
         # Method will return synchronously without executing,
         # it will be added to the command stack and run later.
-        aioredis_version = get_aioredis_version()
+        aioredis_version = get_package_version_tuple("aioredis")
         if aioredis_version and aioredis_version < (2,):
             # AioRedis v1 uses a RedisBuffer instead of a real connection for queueing up pipeline commands
             from aioredis.commands.transaction import _RedisBuffer

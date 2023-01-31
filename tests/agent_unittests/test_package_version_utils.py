@@ -21,6 +21,7 @@ from newrelic.common.package_version_utils import (
     NULL_VERSIONS,
     VERSION_ATTRS,
     get_package_version,
+    get_package_version_tuple,
 )
 
 IS_PY38_PLUS = sys.version_info[:2] >= (3, 8)
@@ -53,6 +54,24 @@ def test_get_package_version(attr, value, expected_value):
     # pytest instead for our purposes
     setattr(pytest, attr, value)
     version = get_package_version("pytest")
+    assert version == expected_value
+    delattr(pytest, attr)
+
+
+@pytest.mark.parametrize(
+    "attr,value,expected_value",
+    (
+        ("version", "1.2.3.4", (1, 2, 3, 4)),
+        ("__version__", "1.3.5rc2", (1, 3, "5rc2")),
+        ("__version_tuple__", (3, 5, 8), (3, 5, 8)),
+        ("version_tuple", [3, 1, "0b2"], (3, 1, "0b2")),
+    ),
+)
+def test_get_package_version_tuple(attr, value, expected_value):
+    # There is no file/module here, so we monkeypatch
+    # pytest instead for our purposes
+    setattr(pytest, attr, value)
+    version = get_package_version_tuple("pytest")
     assert version == expected_value
     delattr(pytest, attr)
 

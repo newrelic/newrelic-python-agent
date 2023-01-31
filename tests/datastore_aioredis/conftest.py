@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import aioredis
 import pytest
 
+from newrelic.common.package_version_utils import get_package_version_tuple
 from testing_support.db_settings import redis_settings
 
 from testing_support.fixture.event_loop import event_loop as loop
@@ -24,7 +24,17 @@ from testing_support.fixtures import (  # noqa: F401
     collector_available_fixture,
 )
 
-AIOREDIS_VERSION = tuple(int(x) for x in aioredis.__version__.split(".")[:2])
+try:
+    import aioredis
+
+    AIOREDIS_VERSION = get_package_version_tuple("aioredis")
+except ImportError:
+    import redis.asyncio as aioredis
+
+    # Fake aioredis version to show when it was moved to redis.asyncio
+    AIOREDIS_VERSION = (2, 0, 2)
+
+
 SKIPIF_AIOREDIS_V1 = pytest.mark.skipif(AIOREDIS_VERSION < (2,), reason="Unsupported aioredis version.")
 SKIPIF_AIOREDIS_V2 = pytest.mark.skipif(AIOREDIS_VERSION >= (2,), reason="Unsupported aioredis version.")
 DB_SETTINGS = redis_settings()[0]

@@ -12,25 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 import collections
 import logging
 import threading
 
 try:
-    from newrelic.core.infinite_tracing_pb2 import AttributeValue
+    from newrelic.core.infinite_tracing_pb2 import AttributeValue, SpanBatch
 except:
-    AttributeValue = None
+    AttributeValue, SpanBatch = None, None
+
 
 _logger = logging.getLogger(__name__)
 
 
 class StreamBuffer(object):
-    def __init__(self, maxlen):
+    def __init__(self, maxlen, batching=False):
         self._queue = collections.deque(maxlen=maxlen)
         self._notify = self.condition()
         self._shutdown = False
         self._seen = 0
         self._dropped = 0
+        self._batching = batching
 
     @staticmethod
     def condition(*args, **kwargs):
@@ -66,11 +69,20 @@ class StreamBuffer(object):
 
         return seen, dropped
 
+    def __bool__(self):
+        return bool(self._queue)
+
+    def __len__(self):
+        return len(self._queue)
+
     def __iter__(self):
-        return StreamBufferIterator(self)
+        return StreamBufferIterator(self, batching=self._batching)
 
 
 class StreamBufferIterator(object):
+    MAX_BATCH_SIZE = 100
+    MAX_BATCH_HOLD_TIME = 5
+
     def __init__(self, stream_buffer):
         self.stream_buffer = stream_buffer
         self._notify = self.stream_buffer._notify
@@ -84,6 +96,10 @@ class StreamBufferIterator(object):
 
     def stream_closed(self):
         return self._shutdown or self.stream_buffer._shutdown or (self._stream and self._stream.done())
+
+    @property
+    def batching(self):
+        return self.stream_buffer._batching
 
     def __next__(self):
         with self._notify:
@@ -100,12 +116,33 @@ class StreamBufferIterator(object):
                         self.shutdown()
                     raise StopIteration
 
-                try:
-                    return self.stream_buffer._queue.popleft()
-                except IndexError:
-                    pass
+                if self.batching:
+                    # Empty stream buffer into batch and send
+                    batch_start_time = time.time()
+                    batch = []
+                    batch_size = 0
+                    while self.stream_buffer:
+                        # Stop reading from queue if batch is ready to send
+                        if batch_size >= self.MAX_BATCH_SIZE or time.time() - batch_start_time >= self.MAX_BATCH_HOLD_TIME:
+                            break
 
-                if not self.stream_closed() and not self.stream_buffer._queue:
+                        # Add new span to batch, copying from stream buffer
+                        batch.append(self.stream_buffer._queue.popleft())
+                        batch_size += 1
+                    
+                    # Only return if there are items in the batch, else proceed to below to wait for items.
+                    if batch_size:
+                        return SpanBatch(spans=batch)
+
+                else:
+                    # Send items from stream buffer one at a time.
+                    try:
+                        return self.stream_buffer._queue.popleft()
+                    except IndexError:
+                        pass
+                
+                # Wait until items are added to the stream buffer.
+                if not self.stream_closed() and not self.stream_buffer:
                     self._notify.wait()
 
     next = __next__

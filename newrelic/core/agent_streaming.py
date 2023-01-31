@@ -18,9 +18,9 @@ import threading
 try:
     import grpc
 
-    from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span
+    from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span, SpanBatch
 except Exception:
-    grpc, RecordStatus, Span = None, None, None
+    grpc, RecordStatus, Span, SpanBatch = None, None, None, None
 
 _logger = logging.getLogger(__name__)
 
@@ -33,7 +33,6 @@ class StreamingRpc(object):
     retry will not occur.
     """
 
-    PATH = "/com.newrelic.trace.v1.IngestService/RecordSpan"
     RETRY_POLICY = (
         (15, False),
         (15, False),
@@ -60,7 +59,19 @@ class StreamingRpc(object):
         # If this is not set, None is still a falsy value.
         self.compression_setting = grpc.Compression.Gzip if compression else grpc.Compression.NoCompression
 
+        if self.batching:  # Stream buffer will be sending span batches
+            self.path = "/com.newrelic.trace.v1.IngestService/RecordSpanBatch"
+            self.serializer = SpanBatch.SerializeToString
+        else:
+            self.path = "/com.newrelic.trace.v1.IngestService/RecordSpan"
+            self.serializer = Span.SerializeToString
+
         self.create_channel()
+
+    @property
+    def batching(self):
+        # Determine batching by stream buffer settings
+        return self.stream_buffer._batching
 
     def create_channel(self):
         if self._ssl:
@@ -73,7 +84,7 @@ class StreamingRpc(object):
                 self._endpoint, compression=self.compression_setting, options=self.OPTIONS
             )
 
-        self.rpc = self.channel.stream_stream(self.PATH, Span.SerializeToString, RecordStatus.FromString)
+        self.rpc = self.channel.stream_stream(self.path, self.serializer, RecordStatus.FromString)
 
     def create_response_iterator(self):
         with self.stream_buffer._notify:

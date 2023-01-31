@@ -1398,7 +1398,8 @@ class StatsEngine(object):
         self.reset_synthetics_events()
         # streams are never reset after instantiation
         if reset_stream:
-            self._span_stream = StreamBuffer(settings.infinite_tracing.span_queue_size)
+            # TODO add stream buffer batching setting here
+            self._span_stream = StreamBuffer(settings.infinite_tracing.span_queue_size, batching=True)
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for

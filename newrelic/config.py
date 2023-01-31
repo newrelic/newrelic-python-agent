@@ -238,10 +238,9 @@ def _raise_configuration_error(section, option=None):
                     "Check New Relic agent log file for further "
                     "details." % section
                 )
-            else:
-                raise newrelic.api.exceptions.ConfigurationError(
-                    "Invalid configuration. Check New Relic agent log file for further details."
-                )
+            raise newrelic.api.exceptions.ConfigurationError(
+                "Invalid configuration. Check New Relic agent log file for further details."
+            )
 
     else:
         _logger.error("Option = %s" % option)
@@ -254,12 +253,11 @@ def _raise_configuration_error(section, option=None):
                     'section "%s". Check New Relic agent log '
                     "file for further details." % (option, section)
                 )
-            else:
-                raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for option "%s". '
-                    "Check New Relic agent log file for further "
-                    "details." % option
-                )
+            raise newrelic.api.exceptions.ConfigurationError(
+                'Invalid configuration for option "%s". '
+                "Check New Relic agent log file for further "
+                "details." % option
+            )
 
 
 def _process_setting(section, option, getter, mapper):
@@ -289,9 +287,8 @@ def _process_setting(section, option, getter, mapper):
             if len(fields) == 1:
                 setattr(target, fields[0], value)
                 break
-            else:
-                target = getattr(target, fields[0])
-                fields = fields[1].split(".", 1)
+            target = getattr(target, fields[0])
+            fields = fields[1].split(".", 1)
 
         # Cache the configuration so can be dumped out to
         # log file when whole main configuration has been
@@ -912,8 +909,7 @@ def _load_configuration(
                 'Prior configuration file used was "%s" and '
                 'environment "%s".' % (_config_file, _environment)
             )
-        else:
-            return
+        return
 
     _configuration_done = True
 

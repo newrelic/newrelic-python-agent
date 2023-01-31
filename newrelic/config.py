@@ -42,9 +42,9 @@ import newrelic.api.wsgi_application
 import newrelic.console
 import newrelic.core.agent
 import newrelic.core.config
-import newrelic.core.trace_cache as trace_cache
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import expand_builtin_exception_name
+from newrelic.core import trace_cache
 from newrelic.core.config import (
     Settings,
     apply_config_setting,
@@ -106,7 +106,11 @@ _cache_object = []
 # instrumentation modules and extensions.
 
 
-def extra_settings(section, types={}, defaults={}):
+def extra_settings(section, types=None, defaults=None):
+    if types is None:
+        types = {}
+    if defaults is None:
+        defaults = {}
     settings = {}
 
     if _config_object.has_section(section):

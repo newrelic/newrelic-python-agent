@@ -15,7 +15,7 @@
 from concurrent import futures
 
 import grpc
-from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span
+from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span, SpanBatch
 
 
 def record_span(request, context):
@@ -34,6 +34,27 @@ def record_span(request, context):
 
         yield RecordStatus(messages_seen=1)
 
+def record_span_batch(request, context):
+    metadata = dict(context.invocation_metadata())
+    assert 'agent_run_token' in metadata
+    assert 'license_key' in metadata
+
+    for span_batch in request:
+        batch_size = 0
+
+        for span in span_batch.spans:
+            status_code = span.intrinsics.get('status_code', None)
+            status_code = status_code and getattr(
+                grpc.StatusCode, status_code.string_value)
+            if status_code is grpc.StatusCode.OK:
+                break
+            elif status_code:
+                context.abort(status_code, "Abort triggered by client")
+            
+            batch_size += 1
+
+        yield RecordStatus(messages_seen=batch_size)
+
 
 HANDLERS = (
     grpc.method_handlers_generic_handler(
@@ -41,6 +62,9 @@ HANDLERS = (
         {
             "RecordSpan": grpc.stream_stream_rpc_method_handler(
                 record_span, Span.FromString, RecordStatus.SerializeToString
+            ),
+            "RecordSpanBatch": grpc.stream_stream_rpc_method_handler(
+                record_span_batch, SpanBatch.FromString, RecordStatus.SerializeToString
             )
         },
     ),

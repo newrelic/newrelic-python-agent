@@ -76,7 +76,7 @@ class StreamBuffer(object):
         return len(self._queue)
 
     def __iter__(self):
-        return StreamBufferIterator(self, batching=self._batching)
+        return StreamBufferIterator(self)
 
 
 class StreamBufferIterator(object):

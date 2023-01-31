@@ -16,7 +16,6 @@ import sys
 
 import numpy as np
 import pandas
-import six
 from _validate_custom_events import validate_custom_events
 from testing_support.fixtures import (
     override_application_settings,

@@ -79,26 +79,26 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         # _nr_wrapped attrs that will attach model info to the data.
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
-            wrap_predict(transaction, _class, wrapped, instance, args, kwargs)
-            create_label_event(transaction, _class, instance, return_val)
+            inference_id = uuid.uuid4()
+            wrap_predict(transaction, _class, inference_id, instance, args, kwargs)
+            create_label_event(transaction, _class, inference_id, instance, return_val)
             return PredictReturnTypeProxy(return_val, model_name=_class, training_step=training_step)
         return return_val
 
     wrap_function_wrapper(module, "%s.%s" % (_class, method), _nr_wrapper_method)
 
 
-def create_label_event(transaction, _class, instance, return_val):
-    inference_id = uuid.uuid4()
+def create_label_event(transaction, _class, inference_id, instance, return_val):
     model_name = getattr(instance, "_nr_wrapped_name", _class)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     label_names = getattr(instance, "_nr_wrapped_label_names", None)
+    label_names_list = _get_label_names(label_names, return_val)
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     if return_val is not None:
         for index, value in enumerate(return_val):
             python_value_type = str(type(value))
             value_type = str(categorize_data_type(python_value_type))
-            label_names_list = _get_label_names(label_names, return_val)
 
             event = {
                 "inference_id": inference_id,
@@ -180,11 +180,10 @@ def bind_predict(X, *args, **kwargs):
     return X
 
 
-def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
+def wrap_predict(transaction, _class, inference_id, instance, args, kwargs):
     import numpy as np
 
     data_set = bind_predict(*args, **kwargs)
-    inference_id = uuid.uuid4()
     model_name = getattr(instance, "_nr_wrapped_name", _class)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)

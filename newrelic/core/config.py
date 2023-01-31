@@ -731,6 +731,8 @@ _settings.agent_limits.data_compression_level = None
 
 _settings.infinite_tracing.trace_observer_host = os.environ.get("NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_HOST", None)
 _settings.infinite_tracing.trace_observer_port = _environ_as_int("NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_PORT", 443)
+_settings.infinite_tracing.compression = _environ_as_bool("NEW_RELIC_INFINITE_TRACING_COMPRESSION", default=True)
+_settings.infinite_tracing.batching = _environ_as_bool("NEW_RELIC_INFINITE_TRACING_BATCHING", default=True)
 _settings.infinite_tracing.ssl = True
 _settings.infinite_tracing.span_queue_size = _environ_as_int("NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE", 10000)
 

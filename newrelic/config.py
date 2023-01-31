@@ -219,12 +219,12 @@ def _map_default_host_value(license_key):
 def _raise_configuration_error(section, option=None):
     _logger.error("CONFIGURATION ERROR")
     if section:
-        _logger.error("Section = %s" % section)
+        _logger.error("Section = %s", section)
 
     if option is None:
         options = _config_object.options(section)
 
-        _logger.error("Options = %s" % options)
+        _logger.error("Options = %s", options)
         _logger.exception("Exception Details")
 
         if not _ignore_errors:

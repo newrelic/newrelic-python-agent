@@ -598,13 +598,14 @@ def _process_labels_setting(labels=None):
 
         if len(key) > length_limit:
             _logger.warning(
-                "Improper configuration. Label key %s is too long. Truncating key to: %s", (key, key[:length_limit])
+                "Improper configuration. Label key %s is too long. Truncating key to: %s", key, key[:length_limit]
             )
 
         if len(value) > length_limit:
             _logger.warning(
                 "Improper configuration. Label value %s is too long. Truncating value to: %s",
-                (value, value[:length_limit]),
+                value,
+                value[:length_limit],
             )
 
         if len(deduped) >= count_limit:
@@ -1014,7 +1015,7 @@ def _load_configuration(
     # against the internal settings object.
 
     for option, value in _cache_object:
-        _logger.debug("agent config %s = %s", (option, repr(value)))
+        _logger.debug("agent config %s = %s", option, repr(value))
 
     # Validate provided feature flags and log a warning if get one
     # which isn't valid.

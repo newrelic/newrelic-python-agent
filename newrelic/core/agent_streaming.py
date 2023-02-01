@@ -15,6 +15,8 @@
 import logging
 import threading
 
+from newrelic.api.settings import settings
+
 try:
     import grpc
 
@@ -61,11 +63,17 @@ class StreamingRpc(object):
         self.create_channel()
 
     def create_channel(self):
+        _settings = settings()
+        compression_setting = (
+            grpc.Compression.Gzip if _settings.infinite_tracing.compression else grpc.Compression.NoCompression
+        )
         if self._ssl:
             credentials = grpc.ssl_channel_credentials()
-            self.channel = grpc.secure_channel(self._endpoint, credentials, options=self.OPTIONS)
+            self.channel = grpc.secure_channel(
+                self._endpoint, credentials, compression=compression_setting, options=self.OPTIONS
+            )
         else:
-            self.channel = grpc.insecure_channel(self._endpoint, options=self.OPTIONS)
+            self.channel = grpc.insecure_channel(self._endpoint, compression=compression_setting, options=self.OPTIONS)
 
         self.rpc = self.channel.stream_stream(self.PATH, Span.SerializeToString, RecordStatus.FromString)
 

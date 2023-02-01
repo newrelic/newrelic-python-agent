@@ -1194,7 +1194,7 @@ def _module_function_glob(module, object_path):
             available_functions = {k: v for k, v in module.__dict__.items() if callable(v) and not isinstance(v, type)}
         except Exception:
             # Default to empty dict if no functions available
-            available_functions = dict()
+            available_functions = {}
 
         # Gather module classes and methods
         try:

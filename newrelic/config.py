@@ -603,7 +603,7 @@ def _process_labels_setting(labels=None):
 
         if len(value) > length_limit:
             _logger.warning(
-                "Improper configuration. Label value %s is too " "long. Truncating value to: %s",
+                "Improper configuration. Label value %s is too long. Truncating value to: %s",
                 (value, value[:length_limit]),
             )
 

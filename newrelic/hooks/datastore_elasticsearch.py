@@ -14,6 +14,7 @@
 
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
+from newrelic.common.function_signature_utils import bind_arguments
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.packages import six
 
@@ -24,63 +25,24 @@ from newrelic.packages import six
 # there is only a single index name we use it, otherwise we use 'other'.
 
 
-def _index_name(index):
-    if not index or index == "*":
-        return "_all"
-    if not isinstance(index, six.string_types) or "," in index:
-        return "other"
-    return index
-
-
-def _extract_kwargs_index(*args, **kwargs):
-    return _index_name(kwargs.get("index"))
-
-
-def _extract_args_index(index=None, *args, **kwargs):
-    return _index_name(index)
-
-
-def _extract_args_body_index(body=None, index=None, *args, **kwargs):
-    return _index_name(index)
-
-
-def _extract_args_doctype_body_index(doc_type=None, body=None, index=None, *args, **kwargs):
-    return _index_name(index)
-
-
-def _extract_args_field_index(field=None, index=None, *args, **kwargs):
-    return _index_name(index)
-
-
-def _extract_args_name_body_index(name=None, body=None, index=None, *args, **kwargs):
-    return _index_name(index)
-
-
-def _extract_args_name_index(name=None, index=None, *args, **kwargs):
-    return _index_name(index)
-
-
-def _extract_args_metric_index(metric=None, index=None, *args, **kwargs):
-    return _index_name(index)
-
-
-def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extractor, prefix=None):
+def wrap_elasticsearch_client_method(module, class_name, method_name, prefix=None):
     def _nr_wrapper_Elasticsearch_method_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        # When arg_extractor is None, it means there is no target field
+        # When index is None, it means there is no target field
         # associated with this method. Hence this method will only
         # create an operation metric and no statement metric. This is
         # handled by setting the target to None when calling the
         # DatastoreTraceWrapper.
 
-        if arg_extractor is None:
-            index = None
-        else:
-            index = arg_extractor(*args, **kwargs)
+        index = bind_arguments(*args, **kwargs).get("index", None)
+        if not index or index == "*":
+            index = "_all"
+        if not isinstance(index, six.string_types) or "," in index:
+            index = "other"
 
         if prefix:
             operation = "%s.%s" % (prefix, method_name)
@@ -106,264 +68,264 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
 
 
 _elasticsearch_client_methods = (
-    ("abort_benchmark", None),
-    ("benchmark", _extract_args_index),
-    ("bulk", _extract_args_index),
-    ("clear_scroll", None),
-    ("close", None),
-    ("close_point_in_time", None),
-    ("count", _extract_args_index),
-    ("count_percolate", _extract_args_index),
-    ("create", _extract_args_index),
-    ("delete", _extract_args_index),
-    ("delete_by_query", _extract_args_index),
-    ("delete_by_query_rethrottle", None),
-    ("delete_script", None),
-    ("delete_template", None),
-    ("exists", _extract_args_index),
-    ("exists_source", _extract_args_index),
-    ("explain", _extract_args_index),
-    ("field_caps", _extract_args_index),
-    ("get", _extract_args_index),
-    ("get_script", None),
-    ("get_script_context", None),
-    ("get_script_languages", None),
-    ("get_source", _extract_args_index),
-    ("get_template", None),
-    ("index", _extract_args_index),
-    ("info", None),
-    ("knn_search", _extract_args_index),
-    ("list_benchmarks", _extract_args_index),
-    ("mget", _extract_args_index),
-    ("mlt", _extract_args_index),
-    ("mpercolate", _extract_args_body_index),
-    ("msearch", _extract_args_index),
-    ("msearch_template", _extract_args_index),
-    ("mtermvectors", _extract_args_index),
-    ("open_point_in_time", _extract_args_index),
-    ("options", None),
-    ("percolate", _extract_args_index),
-    ("ping", None),
-    ("put_script", None),
-    ("put_template", None),
-    ("rank_eval", _extract_args_index),
-    ("reindex", None),
-    ("reindex_rethrottle", None),
-    ("render_search_template", None),
-    ("scripts_painless_execute", None),
-    ("scroll", None),
-    ("search", _extract_args_index),
-    ("search_exists", _extract_args_index),
-    ("search_mvt", _extract_args_index),
-    ("search_shards", _extract_args_index),
-    ("search_template", _extract_args_index),
-    ("suggest", _extract_args_body_index),
-    ("terms_enum", _extract_args_field_index),
-    ("termvector", _extract_args_index),
-    ("termvectors", _extract_args_index),
-    ("update", _extract_args_index),
-    ("update_by_query", _extract_args_index),
-    ("update_by_query_rethrottle", _extract_args_index),
+    "abort_benchmark",
+    "benchmark",
+    "bulk",
+    "clear_scroll",
+    "close",
+    "close_point_in_time",
+    "count",
+    "count_percolate",
+    "create",
+    "delete",
+    "delete_by_query",
+    "delete_by_query_rethrottle",
+    "delete_script",
+    "delete_template",
+    "exists",
+    "exists_source",
+    "explain",
+    "field_caps",
+    "get",
+    "get_script",
+    "get_script_context",
+    "get_script_languages",
+    "get_source",
+    "get_template",
+    "index",
+    "info",
+    "knn_search",
+    "list_benchmarks",
+    "mget",
+    "mlt",
+    "mpercolate",
+    "msearch",
+    "msearch_template",
+    "mtermvectors",
+    "open_point_in_time",
+    "options",
+    "percolate",
+    "ping",
+    "put_script",
+    "put_template",
+    "rank_eval",
+    "reindex",
+    "reindex_rethrottle",
+    "render_search_template",
+    "scripts_painless_execute",
+    "scroll",
+    "search",
+    "search_exists",
+    "search_mvt",
+    "search_shards",
+    "search_template",
+    "suggest",
+    "terms_enum",
+    "termvector",
+    "termvectors",
+    "update",
+    "update_by_query",
+    "update_by_query_rethrottle",
 )
 
 
 def instrument_elasticsearch_client(module):
-    for method_name, arg_extractor in _elasticsearch_client_methods:
+    for method_name in _elasticsearch_client_methods:
         if hasattr(getattr(module, "Elasticsearch"), method_name):
-            wrap_elasticsearch_client_method(module, "Elasticsearch", method_name, arg_extractor)
+            wrap_elasticsearch_client_method(module, "Elasticsearch", method_name)
 
 
 _elasticsearch_client_indices_methods = (
-    ("add_block", _extract_args_index),
-    ("analyze", _extract_args_field_index),
-    ("clear_cache", _extract_args_index),
-    ("clone", _extract_args_index),
-    ("close", _extract_args_index),
-    ("create", _extract_args_index),
-    ("create_data_stream", None),
-    ("data_streams_stats", None),
-    ("delete", _extract_args_index),
-    ("delete_alias", _extract_args_name_index),
-    ("delete_data_stream", None),
-    ("delete_index_template", None),
-    ("delete_template", None),
-    ("disk_usage", _extract_args_index),
-    ("downsample", _extract_args_index),
-    ("exists", _extract_args_index),
-    ("exists_alias", _extract_args_index),
-    ("exists_index_template", None),
-    ("exists_template", None),
-    ("field_usage_stats", _extract_args_index),
-    ("flush", _extract_args_index),
-    ("forcemerge", _extract_args_index),
-    ("get", _extract_args_index),
-    ("get_alias", _extract_args_name_index),
-    ("get_data_stream", None),
-    ("get_field_mapping", _extract_args_index),
-    ("get_index_template", None),
-    ("get_mapping", _extract_args_index),
-    ("get_settings", _extract_args_name_index),
-    ("get_template", None),
-    ("migrate_to_data_stream", None),
-    ("modify_data_stream", None),
-    ("open", _extract_args_index),
-    ("promote_data_stream", None),
-    ("put_alias", _extract_args_name_index),
-    ("put_index_template", None),
-    ("put_mapping", _extract_args_index),
-    ("put_settings", _extract_args_body_index),
-    ("put_template", None),
-    ("recovery", _extract_args_index),
-    ("refresh", _extract_args_index),
-    ("reload_search_analyzers", _extract_args_index),
-    ("resolve_index", None),
-    ("rollover", None),
-    ("segments", _extract_args_index),
-    ("shard_stores", _extract_args_index),
-    ("shrink", _extract_args_index),
-    ("simulate_index_template", None),
-    ("simulate_template", None),
-    ("split", _extract_args_index),
-    ("stats", _extract_args_index),
-    ("status", _extract_args_index),
-    ("unfreeze", _extract_args_index),
-    ("update_aliases", None),
-    ("validate_query", _extract_args_index),
+    "add_block",
+    "analyze",
+    "clear_cache",
+    "clone",
+    "close",
+    "create",
+    "create_data_stream",
+    "data_streams_stats",
+    "delete",
+    "delete_alias",
+    "delete_data_stream",
+    "delete_index_template",
+    "delete_template",
+    "disk_usage",
+    "downsample",
+    "exists",
+    "exists_alias",
+    "exists_index_template",
+    "exists_template",
+    "field_usage_stats",
+    "flush",
+    "forcemerge",
+    "get",
+    "get_alias",
+    "get_data_stream",
+    "get_field_mapping",
+    "get_index_template",
+    "get_mapping",
+    "get_settings",
+    "get_template",
+    "migrate_to_data_stream",
+    "modify_data_stream",
+    "open",
+    "promote_data_stream",
+    "put_alias",
+    "put_index_template",
+    "put_mapping",
+    "put_settings",
+    "put_template",
+    "recovery",
+    "refresh",
+    "reload_search_analyzers",
+    "resolve_index",
+    "rollover",
+    "segments",
+    "shard_stores",
+    "shrink",
+    "simulate_index_template",
+    "simulate_template",
+    "split",
+    "stats",
+    "status",
+    "unfreeze",
+    "update_aliases",
+    "validate_query",
 )
 
 
 def instrument_elasticsearch_client_indices(module):
-    for method_name, arg_extractor in _elasticsearch_client_indices_methods:
+    for method_name in _elasticsearch_client_indices_methods:
         if hasattr(getattr(module, "IndicesClient"), method_name):
-            wrap_elasticsearch_client_method(module, "IndicesClient", method_name, arg_extractor, "indices")
+            wrap_elasticsearch_client_method(module, "IndicesClient", method_name, "indices")
 
 
 _elasticsearch_client_cat_methods = (
-    ("aliases", None),
-    ("allocation", None),
-    ("component_templates", None),
-    ("count", _extract_args_index),
-    ("fielddata", None),
-    ("health", None),
-    ("help", None),
-    ("indices", _extract_args_index),
-    ("master", None),
-    ("ml_data_frame_analytics", None),
-    ("ml_datafeeds", None),
-    ("ml_jobs", None),
-    ("ml_trained_models", None),
-    ("nodeattrs", None),
-    ("nodes", None),
-    ("pending_tasks", None),
-    ("plugins", None),
-    ("recovery", _extract_args_index),
-    ("repositories", None),
-    ("segments", _extract_args_index),
-    ("shards", _extract_args_index),
-    ("snapshots", None),
-    ("tasks", None),
-    ("templates", None),
-    ("thread_pool", None),
-    ("transforms", None),
+    "aliases",
+    "allocation",
+    "component_templates",
+    "count",
+    "fielddata",
+    "health",
+    "help",
+    "indices",
+    "master",
+    "ml_data_frame_analytics",
+    "ml_datafeeds",
+    "ml_jobs",
+    "ml_trained_models",
+    "nodeattrs",
+    "nodes",
+    "pending_tasks",
+    "plugins",
+    "recovery",
+    "repositories",
+    "segments",
+    "shards",
+    "snapshots",
+    "tasks",
+    "templates",
+    "thread_pool",
+    "transforms",
 )
 
 
 def instrument_elasticsearch_client_cat(module):
-    for method_name, arg_extractor in _elasticsearch_client_cat_methods:
+    for method_name in _elasticsearch_client_cat_methods:
         if hasattr(getattr(module, "CatClient"), method_name):
-            wrap_elasticsearch_client_method(module, "CatClient", method_name, arg_extractor, "cat")
+            wrap_elasticsearch_client_method(module, "CatClient", method_name, "cat")
 
 
 _elasticsearch_client_cluster_methods = (
-    ("allocation_explain", _extract_args_index),
-    ("delete_component_template", None),
-    ("delete_voting_config_exclusions", None),
-    ("exists_component_template", None),
-    ("get_component_template", None),
-    ("get_settings", None),
-    ("health", _extract_args_index),
-    ("pending_tasks", None),
-    ("post_voting_config_exclusions", None),
-    ("put_component_template", None),
-    ("put_settings", None),
-    ("remote_info", None),
-    ("reroute", None),
-    ("state", _extract_args_index),
-    ("stats", None),
+    "allocation_explain",
+    "delete_component_template",
+    "delete_voting_config_exclusions",
+    "exists_component_template",
+    "get_component_template",
+    "get_settings",
+    "health",
+    "pending_tasks",
+    "post_voting_config_exclusions",
+    "put_component_template",
+    "put_settings",
+    "remote_info",
+    "reroute",
+    "state",
+    "stats",
 )
 
 
 def instrument_elasticsearch_client_cluster(module):
-    for method_name, arg_extractor in _elasticsearch_client_cluster_methods:
+    for method_name in _elasticsearch_client_cluster_methods:
         if hasattr(getattr(module, "ClusterClient"), method_name):
-            wrap_elasticsearch_client_method(module, "ClusterClient", method_name, arg_extractor, "cluster")
+            wrap_elasticsearch_client_method(module, "ClusterClient", method_name, "cluster")
 
 
 _elasticsearch_client_nodes_methods = (
-    ("clear_repositories_metering_archive", None),
-    ("get_repositories_metering_info", None),
-    ("hot_threads", None),
-    ("info", None),
-    ("reload_secure_settings", None),
-    ("stats", None),
-    ("usage", None),
+    "clear_repositories_metering_archive",
+    "get_repositories_metering_info",
+    "hot_threads",
+    "info",
+    "reload_secure_settings",
+    "stats",
+    "usage",
 )
 
 
 def instrument_elasticsearch_client_nodes(module):
-    for method_name, arg_extractor in _elasticsearch_client_nodes_methods:
+    for method_name in _elasticsearch_client_nodes_methods:
         if hasattr(getattr(module, "NodesClient"), method_name):
-            wrap_elasticsearch_client_method(module, "NodesClient", method_name, arg_extractor, "nodes")
+            wrap_elasticsearch_client_method(module, "NodesClient", method_name, "nodes")
 
 
 _elasticsearch_client_snapshot_methods = (
-    ("cleanup_repository", None),
-    ("clone", None),
-    ("create", None),
-    ("create_repository", None),
-    ("delete", None),
-    ("delete_repository", None),
-    ("get", None),
-    ("get_repository", None),
-    ("restore", None),
-    ("status", None),
-    ("verify_repository", None),
+    "cleanup_repository",
+    "clone",
+    "create",
+    "create_repository",
+    "delete",
+    "delete_repository",
+    "get",
+    "get_repository",
+    "restore",
+    "status",
+    "verify_repository",
 )
 
 
 def instrument_elasticsearch_client_snapshot(module):
-    for method_name, arg_extractor in _elasticsearch_client_snapshot_methods:
+    for method_name in _elasticsearch_client_snapshot_methods:
         if hasattr(getattr(module, "SnapshotClient"), method_name):
-            wrap_elasticsearch_client_method(module, "SnapshotClient", method_name, arg_extractor, "snapshot")
+            wrap_elasticsearch_client_method(module, "SnapshotClient", method_name, "snapshot")
 
 
 _elasticsearch_client_tasks_methods = (
-    ("list", None),
-    ("cancel", None),
-    ("get", None),
+    "list",
+    "cancel",
+    "get",
 )
 
 
 def instrument_elasticsearch_client_tasks(module):
-    for method_name, arg_extractor in _elasticsearch_client_tasks_methods:
+    for method_name in _elasticsearch_client_tasks_methods:
         if hasattr(getattr(module, "TasksClient"), method_name):
-            wrap_elasticsearch_client_method(module, "TasksClient", method_name, arg_extractor, "tasks")
+            wrap_elasticsearch_client_method(module, "TasksClient", method_name, "tasks")
 
 
 _elasticsearch_client_ingest_methods = (
-    ("delete_pipeline", None),
-    ("geo_ip_stats", None),
-    ("get_pipeline", None),
-    ("processor_grok", None),
-    ("put_pipeline", None),
-    ("simulate", None),
+    "delete_pipeline",
+    "geo_ip_stats",
+    "get_pipeline",
+    "processor_grok",
+    "put_pipeline",
+    "simulate",
 )
 
 
 def instrument_elasticsearch_client_ingest(module):
-    for method_name, arg_extractor in _elasticsearch_client_ingest_methods:
+    for method_name in _elasticsearch_client_ingest_methods:
         if hasattr(getattr(module, "IngestClient"), method_name):
-            wrap_elasticsearch_client_method(module, "IngestClient", method_name, arg_extractor, "ingest")
+            wrap_elasticsearch_client_method(module, "IngestClient", method_name, "ingest")
 
 
 #

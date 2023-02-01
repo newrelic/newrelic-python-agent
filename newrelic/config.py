@@ -1319,7 +1319,7 @@ def _process_background_task_configuration():
 
             if name and name.startswith("lambda "):
                 callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, callable_vars)  # nosec
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register background-task %s", ((module, object_path, application, name, group),))
 
@@ -1369,7 +1369,7 @@ def _process_database_trace_configuration():
 
             if sql.startswith("lambda "):
                 callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                sql = eval(sql, callable_vars)  # nosec
+                sql = eval(sql, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register database-trace %s", ((module, object_path, sql),))
 
@@ -1424,11 +1424,11 @@ def _process_external_trace_configuration():
 
             if url.startswith("lambda "):
                 callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                url = eval(url, callable_vars)  # nosec
+                url = eval(url, callable_vars)  # nosec, pylint: disable=W0123
 
             if method and method.startswith("lambda "):
                 callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                method = eval(method, callable_vars)  # nosec
+                method = eval(method, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register external-trace %s", ((module, object_path, library, url, method),))
 
@@ -1496,7 +1496,7 @@ def _process_function_trace_configuration():
 
             if name and name.startswith("lambda "):
                 callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, callable_vars)  # nosec
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug(
                 "register function-trace %s", ((module, object_path, name, group, label, params, terminal, rollup),)
@@ -1554,7 +1554,7 @@ def _process_generator_trace_configuration():
 
             if name and name.startswith("lambda "):
                 callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, callable_vars)  # nosec
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register generator-trace %s", ((module, object_path, name, group),))
 
@@ -1613,7 +1613,7 @@ def _process_profile_trace_configuration():
 
             if name and name.startswith("lambda "):
                 callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, callable_vars)  # nosec
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register profile-trace %s", ((module, object_path, name, group, depth),))
 
@@ -1663,7 +1663,7 @@ def _process_memcache_trace_configuration():
 
             if command.startswith("lambda "):
                 callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                command = eval(command, callable_vars)  # nosec
+                command = eval(command, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register memcache-trace %s", (module, object_path, command))
 
@@ -1723,7 +1723,7 @@ def _process_transaction_name_configuration():
 
             if name and name.startswith("lambda "):
                 callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, callable_vars)  # nosec
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register transaction-name %s", ((module, object_path, name, group, priority),))
 

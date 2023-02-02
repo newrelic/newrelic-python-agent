@@ -144,3 +144,35 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
     rpc.close()
     # Make sure the processing_thread is closed
     assert not rpc.response_processing_thread.is_alive()
+
+
+def test_proper_rpc_method_called(mock_grpc_server, batching, buffer_empty_event, spans_received, span_batches_received, spans_processed_event):
+    """StreamingRPC sends deserializable span to correct endpoint."""
+
+    endpoint = "localhost:%s" % mock_grpc_server
+    stream_buffer = StreamBuffer(1, batching=batching)
+
+    span = Span(
+        intrinsics={},
+        agent_attributes={},
+        user_attributes={},
+    )
+
+    rpc = StreamingRpc(
+        endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False
+    )
+
+    rpc.connect()
+    
+    buffer_empty_event.clear()
+    stream_buffer.put(span)
+
+    assert buffer_empty_event.wait(5)
+    assert spans_processed_event.wait(5)
+
+    if batching:
+        assert not spans_received, "Spans incorrectly received."
+        assert span_batches_received, "No span batches received."
+    else:
+        assert not span_batches_received, "Span batches incorrectly received."
+        assert spans_received, "No spans received."

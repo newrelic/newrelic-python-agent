@@ -33,7 +33,9 @@ class StreamBuffer(object):
         self._shutdown = False
         self._seen = 0
         self._dropped = 0
-        self._batching = batching
+        self._settings = None
+
+        self.batching = batching
 
     @staticmethod
     def condition(*args, **kwargs):
@@ -86,6 +88,7 @@ class StreamBufferIterator(object):
     def __init__(self, stream_buffer):
         self.stream_buffer = stream_buffer
         self._notify = self.stream_buffer._notify
+        self.batching = self.stream_buffer.batching
         self._shutdown = False
         self._stream = None
 
@@ -96,10 +99,6 @@ class StreamBufferIterator(object):
 
     def stream_closed(self):
         return self._shutdown or self.stream_buffer._shutdown or (self._stream and self._stream.done())
-
-    @property
-    def batching(self):
-        return self.stream_buffer._batching
 
     def __next__(self):
         with self._notify:

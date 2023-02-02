@@ -71,7 +71,7 @@ class StreamingRpc(object):
     @property
     def batching(self):
         # Determine batching by stream buffer settings
-        return self.stream_buffer._batching
+        return self.stream_buffer.batching
 
     def create_channel(self):
         if self._ssl:

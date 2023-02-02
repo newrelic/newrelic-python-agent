@@ -41,9 +41,9 @@ def validate_datastore_trace_inputs(operation=None, target=None):
         ) = _bind_params(*args, **kwargs)
 
         if target is not None:
-            assert target == captured_target
+            assert captured_target == target, "%s didn't match expected %s" % (captured_target, target)
         if operation is not None:
-            assert operation == captured_operation
+            assert captured_operation == operation, "%s didn't match expected %s" % (captured_operation, operation)
 
         return wrapped(*args, **kwargs)
 

@@ -47,6 +47,7 @@ def wildcard_args_and_kwargs_func(a, *args, **kwargs):
 def passthrough_wrapper(func):
     @functools.wraps(func)
     def _wrapper(*args, **kwargs):
+        kwargs["c"] = kwargs.pop("d")
         return func(*args, **kwargs)
 
     return _wrapper
@@ -157,5 +158,6 @@ def test_bound_methods():
 
 def test_wrapped_functions():
     """Tests functions wrapped with functools.wraps wrappers."""
-    bound_args = bind_arguments(passthrough_wrapper(test_posargs), 1, 2, 3)
-    assert bound_args == EXPECTED
+    expected = {"args": (1, 2), "kwargs": {"d": 3}}
+    bound_args = bind_arguments(passthrough_wrapper(required_arg_func), 1, 2, d=3)
+    assert bound_args == expected

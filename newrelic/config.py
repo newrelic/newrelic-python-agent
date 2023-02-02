@@ -2675,7 +2675,7 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "elasticsearch._sync.client",
         "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client",
+        "instrument_elasticsearch_client_v8",
     )
 
     # v7 and below
@@ -2688,7 +2688,7 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "elasticsearch._sync.client.cat",
         "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_cat",
+        "instrument_elasticsearch_client_cat_v8",
     )
 
     # v7 and below
@@ -2701,7 +2701,7 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "elasticsearch._sync.client.cluster",
         "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_cluster",
+        "instrument_elasticsearch_client_cluster_v8",
     )
 
     # v7 and below
@@ -2714,7 +2714,7 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "elasticsearch._sync.client.indices",
         "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_indices",
+        "instrument_elasticsearch_client_indices_v8",
     )
 
     # v7 and below
@@ -2727,7 +2727,7 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "elasticsearch._sync.client.nodes",
         "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_nodes",
+        "instrument_elasticsearch_client_nodes_v8",
     )
 
     # v7 and below
@@ -2740,7 +2740,7 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "elasticsearch._sync.client.snapshot",
         "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_snapshot",
+        "instrument_elasticsearch_client_snapshot_v8",
     )
 
     # v7 and below
@@ -2753,7 +2753,7 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "elasticsearch._sync.client.tasks",
         "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_tasks",
+        "instrument_elasticsearch_client_tasks_v8",
     )
 
     # v7 and below
@@ -2766,7 +2766,7 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "elasticsearch._sync.client.ingest",
         "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_ingest",
+        "instrument_elasticsearch_client_ingest_v8",
     )
 
     # v7 and below

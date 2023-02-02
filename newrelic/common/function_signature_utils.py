@@ -11,12 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 try:
     from inspect import signature
 
     def bind_arguments(func, *args, **kwargs):
-        args = signature(func).bind(*args, **kwargs)
+        try:
+            args = signature(func).bind(*args, **kwargs)
+        except TypeError:
+            if hasattr(func, "__call__"):
+                args = signature(func.__call__).bind(*args, **kwargs)
         args.apply_defaults()
         return args.arguments
 

@@ -29,7 +29,6 @@ jobs:
     runs-on: ubuntu-20.04
     needs:
       - python
-      - elasticsearchserver01
       - elasticsearchserver07
       - elasticsearchserver08
       - gearman
@@ -520,51 +519,6 @@ jobs:
         # Set health checks to wait until mongodb has started
         options: >-
           --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongo localhost:27017/test --quiet || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
-
-  elasticsearchserver01:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-20.04
-    timeout-minutes: 30
-
-    services:
-      es01:
-        image: elasticsearch:1.4.4
-        env:
-          "discovery.type": "single-node"
-        ports:
-          - 8080:9200
-          - 8081:9200
-        # Set health checks to wait until elasticsearch has started
-        options: >-
-          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

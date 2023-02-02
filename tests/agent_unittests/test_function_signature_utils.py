@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+
 import pytest
 
 from newrelic.common.function_signature_utils import bind_arguments
@@ -40,6 +42,14 @@ def default_arg_func(a=1, b=2, c=3):
 def wildcard_args_and_kwargs_func(a, *args, **kwargs):
     """Accepts indefinite number of args and kwargs."""
     pass
+
+
+def passthrough_wrapper(func):
+    @functools.wraps(func)
+    def _wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return _wrapper
 
 
 lambda_func = lambda a, b=2, c=3: None  # noqa: E731
@@ -142,4 +152,10 @@ def test_bound_methods():
     """Tests bound methods with positional argument, keyword argument, and default argument values."""
     bound_args = bind_arguments(CallableObject().object_bound_method, 1, c=3)
     bound_args.pop("self", None)  # Py2 has self argument
+    assert bound_args == EXPECTED
+
+
+def test_wrapped_functions():
+    """Tests functions wrapped with functools.wraps wrappers."""
+    bound_args = bind_arguments(passthrough_wrapper(test_posargs), 1, 2, 3)
     assert bound_args == EXPECTED

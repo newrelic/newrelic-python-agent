@@ -35,6 +35,7 @@ def record_metric(*args, **kwargs):
 @pytest.mark.parametrize(
     "compression_setting, gRPC_compression_val",
     (
+        (None, 0),
         (True, 2),
         (False, 0),
     ),
@@ -56,7 +57,14 @@ def test_correct_settings(mock_grpc_server, compression_setting, gRPC_compressio
         endpoint = "localhost:%s" % mock_grpc_server
         stream_buffer = StreamBuffer(1)
 
-        rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
+        rpc = StreamingRpc(
+            endpoint,
+            stream_buffer,
+            DEFAULT_METADATA,
+            record_metric,
+            ssl=False,
+            compression=settings.infinite_tracing.compression,
+        )
 
         rpc.connect()
         assert rpc.compression_setting.value == gRPC_compression_val

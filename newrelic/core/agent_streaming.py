@@ -15,8 +15,6 @@
 import logging
 import threading
 
-from newrelic.core.config import global_settings_dump
-
 try:
     import grpc
 
@@ -59,8 +57,7 @@ class StreamingRpc(object):
         self.notify = self.condition()
         self.record_metric = record_metric
         self.closed = False
-        if compression is None:
-            compression = global_settings_dump()["infinite_tracing.compression"]
+        # If this is not set, None is still a falsy value.
         self.compression_setting = grpc.Compression.Gzip if compression else grpc.Compression.NoCompression
 
         self.create_channel()

@@ -1051,7 +1051,7 @@ class StatsEngine(object):
 
         if priority is None:
             # Base priority for log events outside transactions is below those inside transactions
-            priority = random.random() - 1
+            priority = random.random() - 1  # nosec
 
         self._log_events.add(event, priority=priority)
 

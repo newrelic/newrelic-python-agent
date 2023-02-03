@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 import collections
 import logging
 import threading
+import time
 
 try:
     from newrelic.core.infinite_tracing_pb2 import AttributeValue, SpanBatch
@@ -122,13 +122,16 @@ class StreamBufferIterator(object):
                     batch_size = 0
                     while self.stream_buffer:
                         # Stop reading from queue if batch is ready to send
-                        if batch_size >= self.MAX_BATCH_SIZE or time.time() - batch_start_time >= self.MAX_BATCH_HOLD_TIME:
+                        if (
+                            batch_size >= self.MAX_BATCH_SIZE
+                            or time.time() - batch_start_time >= self.MAX_BATCH_HOLD_TIME
+                        ):
                             break
 
                         # Add new span to batch, copying from stream buffer
                         batch.append(self.stream_buffer._queue.popleft())
                         batch_size += 1
-                    
+
                     # Only return if there are items in the batch, else proceed to below to wait for items.
                     if batch_size:
                         return SpanBatch(spans=batch)
@@ -139,7 +142,7 @@ class StreamBufferIterator(object):
                         return self.stream_buffer._queue.popleft()
                     except IndexError:
                         pass
-                
+
                 # Wait until items are added to the stream buffer.
                 if not self.stream_closed() and not self.stream_buffer:
                     self._notify.wait()

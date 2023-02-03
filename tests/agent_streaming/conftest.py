@@ -14,7 +14,7 @@
 
 import threading
 import copy
-import pytest
+import threading
 
 import pytest
 from testing_support.fixtures import collector_available_fixture  # noqa
@@ -89,7 +89,9 @@ def buffer_empty_event(monkeypatch):
     return event
 
 
-@pytest.fixture(scope="session", params=[pytest.param(True, id="batching"), pytest.param(False, id="nonbatching")], autouse=True)
+@pytest.fixture(
+    scope="session", params=[pytest.param(True, id="batching"), pytest.param(False, id="nonbatching")], autouse=True
+)
 def override_batching_settings(request):
     # Taken from override_generic_settings
     original = global_settings()

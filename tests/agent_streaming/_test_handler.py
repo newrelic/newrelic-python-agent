@@ -14,11 +14,11 @@
 
 from collections import deque
 from concurrent import futures
-
 from threading import Event
-import grpc
-from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span, SpanBatch
 
+import grpc
+
+from newrelic.core.infinite_tracing_pb2 import RecordStatus, Span, SpanBatch
 
 SPANS_PROCESSED_EVENT = Event()
 SPANS_RECEIVED = deque()
@@ -27,15 +27,14 @@ SPAN_BATCHES_RECEIVED = deque()
 
 def record_span(request, context):
     metadata = dict(context.invocation_metadata())
-    assert 'agent_run_token' in metadata
-    assert 'license_key' in metadata
+    assert "agent_run_token" in metadata
+    assert "license_key" in metadata
 
     for span in request:
         SPANS_RECEIVED.append(span)
         SPANS_PROCESSED_EVENT.set()
-        status_code = span.intrinsics.get('status_code', None)
-        status_code = status_code and getattr(
-            grpc.StatusCode, status_code.string_value)
+        status_code = span.intrinsics.get("status_code", None)
+        status_code = status_code and getattr(grpc.StatusCode, status_code.string_value)
         if status_code is grpc.StatusCode.OK:
             break
         elif status_code:
@@ -43,10 +42,11 @@ def record_span(request, context):
 
         yield RecordStatus(messages_seen=1)
 
+
 def record_span_batch(request, context):
     metadata = dict(context.invocation_metadata())
-    assert 'agent_run_token' in metadata
-    assert 'license_key' in metadata
+    assert "agent_run_token" in metadata
+    assert "license_key" in metadata
 
     for span_batch in request:
         SPAN_BATCHES_RECEIVED.append(span_batch)
@@ -54,14 +54,13 @@ def record_span_batch(request, context):
         batch_size = 0
 
         for span in span_batch.spans:
-            status_code = span.intrinsics.get('status_code', None)
-            status_code = status_code and getattr(
-                grpc.StatusCode, status_code.string_value)
+            status_code = span.intrinsics.get("status_code", None)
+            status_code = status_code and getattr(grpc.StatusCode, status_code.string_value)
             if status_code is grpc.StatusCode.OK:
                 break
             elif status_code:
                 context.abort(status_code, "Abort triggered by client")
-            
+
             batch_size += 1
 
         yield RecordStatus(messages_seen=batch_size)
@@ -76,7 +75,7 @@ HANDLERS = (
             ),
             "RecordSpanBatch": grpc.stream_stream_rpc_method_handler(
                 record_span_batch, SpanBatch.FromString, RecordStatus.SerializeToString
-            )
+            ),
         },
     ),
 )

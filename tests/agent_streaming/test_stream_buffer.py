@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.streaming_utils import StreamBuffer
-
-from newrelic.core.infinite_tracing_pb2 import Span, SpanBatch
-
 from conftest import CONDITION_CLS
+
+from newrelic.common.streaming_utils import StreamBuffer
+from newrelic.core.infinite_tracing_pb2 import Span, SpanBatch
 
 
 class StopIterationOnWait(CONDITION_CLS):
     def wait(self, *args, **kwargs):
         raise StopIteration()
+
 
 @staticmethod
 def stop_iteration_condition(*args, **kwargs):

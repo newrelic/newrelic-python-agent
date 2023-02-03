@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import threading
 
-from newrelic.core.config import global_settings
+import pytest
 from testing_support.fixtures import override_generic_settings
-
-from newrelic.core.application import Application
-from newrelic.core.agent_streaming import StreamingRpc
-from newrelic.core.infinite_tracing_pb2 import Span, AttributeValue
 from testing_support.validators.validate_internal_metrics import (
-    validate_internal_metrics)
+    validate_internal_metrics,
+)
+
+from newrelic.core.agent_streaming import StreamingRpc
+from newrelic.core.application import Application
+from newrelic.core.config import global_settings
+from newrelic.core.infinite_tracing_pb2 import AttributeValue, Span
 
 settings = global_settings()
 
@@ -31,7 +32,7 @@ CONDITION_CLS = type(threading.Condition())
 
 @pytest.fixture()
 def app():
-    app = Application('Python Agent Test (Infinite Tracing)')
+    app = Application("Python Agent Test (Infinite Tracing)")
     yield app
     # Calling internal_agent_shutdown on an application that is already closed
     # will raise an exception.
@@ -46,16 +47,25 @@ def app():
 
 
 @pytest.mark.parametrize(
-     'status_code, metrics', (
-     ('UNIMPLEMENTED', [
-            ('Supportability/InfiniteTracing/Span/gRPC/UNIMPLEMENTED', 1),
-            ('Supportability/InfiniteTracing/Span/Response/Error', 1)]),
-     ('INTERNAL', [
-            ('Supportability/InfiniteTracing/Span/gRPC/INTERNAL', 1),
-            ('Supportability/InfiniteTracing/Span/Response/Error', 1)]),
- ))
-def test_infinite_tracing_span_streaming(mock_grpc_server,
-        status_code, metrics, monkeypatch, app):
+    "status_code, metrics",
+    (
+        (
+            "UNIMPLEMENTED",
+            [
+                ("Supportability/InfiniteTracing/Span/gRPC/UNIMPLEMENTED", 1),
+                ("Supportability/InfiniteTracing/Span/Response/Error", 1),
+            ],
+        ),
+        (
+            "INTERNAL",
+            [
+                ("Supportability/InfiniteTracing/Span/gRPC/INTERNAL", 1),
+                ("Supportability/InfiniteTracing/Span/Response/Error", 1),
+            ],
+        ),
+    ),
+)
+def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics, monkeypatch, app):
     event = threading.Event()
 
     class TerminateOnWait(CONDITION_CLS):
@@ -71,20 +81,22 @@ def test_infinite_tracing_span_streaming(mock_grpc_server,
     def condition(*args, **kwargs):
         return TerminateOnWait(*args, **kwargs)
 
-    monkeypatch.setattr(StreamingRpc, 'condition', condition)
+    monkeypatch.setattr(StreamingRpc, "condition", condition)
 
     span = Span(
-        intrinsics={'status_code': AttributeValue(string_value=status_code)},
-        agent_attributes={},
-        user_attributes={})
+        intrinsics={"status_code": AttributeValue(string_value=status_code)}, agent_attributes={}, user_attributes={}
+    )
 
-    @override_generic_settings(settings, {
-        'distributed_tracing.enabled': True,
-        'span_events.enabled': True,
-        'infinite_tracing.trace_observer_host': 'localhost',
-        'infinite_tracing.trace_observer_port': mock_grpc_server,
-        'infinite_tracing.ssl': False,
-    })
+    @override_generic_settings(
+        settings,
+        {
+            "distributed_tracing.enabled": True,
+            "span_events.enabled": True,
+            "infinite_tracing.trace_observer_host": "localhost",
+            "infinite_tracing.trace_observer_port": mock_grpc_server,
+            "infinite_tracing.ssl": False,
+        },
+    )
     @validate_internal_metrics(metrics)
     def _test():
         app.connect_to_data_collector(None)
@@ -98,8 +110,7 @@ def test_infinite_tracing_span_streaming(mock_grpc_server,
     _test()
 
 
-def test_reconnect_on_failure(monkeypatch, mock_grpc_server,
-        buffer_empty_event, app):
+def test_reconnect_on_failure(monkeypatch, mock_grpc_server, buffer_empty_event, app):
 
     status_code = "INTERNAL"
     wait_event = threading.Event()
@@ -115,25 +126,24 @@ def test_reconnect_on_failure(monkeypatch, mock_grpc_server,
     def condition(*args, **kwargs):
         return WaitOnWait(*args, **kwargs)
 
-    monkeypatch.setattr(StreamingRpc, 'condition', condition)
+    monkeypatch.setattr(StreamingRpc, "condition", condition)
 
     terminating_span = Span(
-        intrinsics={'status_code': AttributeValue(string_value=status_code)},
-        agent_attributes={},
-        user_attributes={})
+        intrinsics={"status_code": AttributeValue(string_value=status_code)}, agent_attributes={}, user_attributes={}
+    )
 
-    span = Span(
-        intrinsics={},
-        agent_attributes={},
-        user_attributes={})
+    span = Span(intrinsics={}, agent_attributes={}, user_attributes={})
 
-    @override_generic_settings(settings, {
-        'distributed_tracing.enabled': True,
-        'span_events.enabled': True,
-        'infinite_tracing.trace_observer_host': 'localhost',
-        'infinite_tracing.trace_observer_port': mock_grpc_server,
-        'infinite_tracing.ssl': False,
-    })
+    @override_generic_settings(
+        settings,
+        {
+            "distributed_tracing.enabled": True,
+            "span_events.enabled": True,
+            "infinite_tracing.trace_observer_host": "localhost",
+            "infinite_tracing.trace_observer_port": mock_grpc_server,
+            "infinite_tracing.ssl": False,
+        },
+    )
     def _test():
         app.connect_to_data_collector(None)
 
@@ -194,21 +204,24 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch, app):
     def condition(*args, **kwargs):
         return WaitOnNotify(*args, **kwargs)
 
-    monkeypatch.setattr(StreamingRpc, 'condition', condition)
+    monkeypatch.setattr(StreamingRpc, "condition", condition)
 
     terminating_span = Span(
-        intrinsics={'status_code': AttributeValue(
-            string_value='UNIMPLEMENTED')},
+        intrinsics={"status_code": AttributeValue(string_value="UNIMPLEMENTED")},
         agent_attributes={},
-        user_attributes={})
+        user_attributes={},
+    )
 
-    @override_generic_settings(settings, {
-        'distributed_tracing.enabled': True,
-        'span_events.enabled': True,
-        'infinite_tracing.trace_observer_host': 'localhost',
-        'infinite_tracing.trace_observer_port': mock_grpc_server,
-        'infinite_tracing.ssl': False,
-    })
+    @override_generic_settings(
+        settings,
+        {
+            "distributed_tracing.enabled": True,
+            "span_events.enabled": True,
+            "infinite_tracing.trace_observer_host": "localhost",
+            "infinite_tracing.trace_observer_port": mock_grpc_server,
+            "infinite_tracing.ssl": False,
+        },
+    )
     def _test():
         app.connect_to_data_collector(None)
 
@@ -228,7 +241,7 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch, app):
 
 def test_agent_shutdown():
     # Get the application connected to the actual 8T endpoint
-    app = Application('Python Agent Test (Infinite Tracing)')
+    app = Application("Python Agent Test (Infinite Tracing)")
     app.connect_to_data_collector(None)
     rpc = app._active_session._rpc
     # Store references to the original rpc and threads
@@ -243,8 +256,10 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
     wait_event = threading.Event()
     connect_event = threading.Event()
 
-    metrics = [('Supportability/InfiniteTracing/Span/gRPC/OK', 1),
-            ('Supportability/InfiniteTracing/Span/Response/Error', None)]
+    metrics = [
+        ("Supportability/InfiniteTracing/Span/gRPC/OK", 1),
+        ("Supportability/InfiniteTracing/Span/Response/Error", None),
+    ]
 
     class SetFlagOnWait(CONDITION_CLS):
         def wait(self, *args, **kwargs):
@@ -255,23 +270,25 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
     def condition(*args, **kwargs):
         return SetFlagOnWait(*args, **kwargs)
 
-    monkeypatch.setattr(StreamingRpc, 'condition', condition)
+    monkeypatch.setattr(StreamingRpc, "condition", condition)
     span = Span(
         intrinsics={"status_code": AttributeValue(string_value="OK")},
         agent_attributes={},
         user_attributes={},
     )
 
-    @override_generic_settings(settings, {
-        'distributed_tracing.enabled': True,
-        'span_events.enabled': True,
-        'infinite_tracing.trace_observer_host': 'localhost',
-        'infinite_tracing.trace_observer_port': mock_grpc_server,
-        'infinite_tracing.ssl': False,
-    })
+    @override_generic_settings(
+        settings,
+        {
+            "distributed_tracing.enabled": True,
+            "span_events.enabled": True,
+            "infinite_tracing.trace_observer_host": "localhost",
+            "infinite_tracing.trace_observer_port": mock_grpc_server,
+            "infinite_tracing.ssl": False,
+        },
+    )
     @validate_internal_metrics(metrics)
     def _test():
-
         def connect_complete():
             connect_event.set()
 
@@ -292,7 +309,6 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
 
         rpc.rpc = patched_rpc
 
-
         # Put a span that will trigger an OK status code and wait for an attempted
         # reconnect.
         stream_buffer.put(span)
@@ -311,8 +327,11 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
 
     total_spans = 3
     metrics = [
-        ('Supportability/InfiniteTracing/Span/Seen', total_spans),
-        ('Supportability/InfiniteTracing/Span/Sent', (total_spans - dropped_spans) or None),  # Replace 0 with None to indicate metric will not be sent
+        ("Supportability/InfiniteTracing/Span/Seen", total_spans),
+        (
+            "Supportability/InfiniteTracing/Span/Sent",
+            (total_spans - dropped_spans) or None,
+        ),  # Replace 0 with None to indicate metric will not be sent
     ]
 
     class SetFlagOnWait(CONDITION_CLS):
@@ -324,24 +343,26 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
     def condition(*args, **kwargs):
         return SetFlagOnWait(*args, **kwargs)
 
-    monkeypatch.setattr(StreamingRpc, 'condition', condition)
+    monkeypatch.setattr(StreamingRpc, "condition", condition)
     span = Span(
         intrinsics={},
         agent_attributes={},
         user_attributes={},
     )
 
-    @override_generic_settings(settings, {
-        'distributed_tracing.enabled': True,
-        'span_events.enabled': True,
-        'infinite_tracing.trace_observer_host': 'localhost',
-        'infinite_tracing.trace_observer_port': mock_grpc_server,
-        'infinite_tracing.ssl': False,
-        "infinite_tracing.span_queue_size": total_spans - dropped_spans,
-    })
+    @override_generic_settings(
+        settings,
+        {
+            "distributed_tracing.enabled": True,
+            "span_events.enabled": True,
+            "infinite_tracing.trace_observer_host": "localhost",
+            "infinite_tracing.trace_observer_port": mock_grpc_server,
+            "infinite_tracing.ssl": False,
+            "infinite_tracing.span_queue_size": total_spans - dropped_spans,
+        },
+    )
     @validate_internal_metrics(metrics)
     def _test():
-
         def connect_complete():
             connect_event.set()
 

@@ -146,7 +146,9 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
     assert not rpc.response_processing_thread.is_alive()
 
 
-def test_rpc_serialization_and_deserialization(mock_grpc_server, batching, buffer_empty_event, spans_received, span_batches_received, spans_processed_event):
+def test_rpc_serialization_and_deserialization(
+    mock_grpc_server, batching, buffer_empty_event, spans_received, span_batches_received, spans_processed_event
+):
     """StreamingRPC sends deserializable span to correct endpoint."""
 
     endpoint = "localhost:%s" % mock_grpc_server
@@ -158,12 +160,10 @@ def test_rpc_serialization_and_deserialization(mock_grpc_server, batching, buffe
         user_attributes={},
     )
 
-    rpc = StreamingRpc(
-        endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False
-    )
+    rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
 
     rpc.connect()
-    
+
     buffer_empty_event.clear()
     stream_buffer.put(span)
 

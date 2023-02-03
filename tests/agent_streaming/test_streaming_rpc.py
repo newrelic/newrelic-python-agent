@@ -146,7 +146,7 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
     assert not rpc.response_processing_thread.is_alive()
 
 
-def test_proper_rpc_method_called(mock_grpc_server, batching, buffer_empty_event, spans_received, span_batches_received, spans_processed_event):
+def test_rpc_serialization_and_deserialization(mock_grpc_server, batching, buffer_empty_event, spans_received, span_batches_received, spans_processed_event):
     """StreamingRPC sends deserializable span to correct endpoint."""
 
     endpoint = "localhost:%s" % mock_grpc_server

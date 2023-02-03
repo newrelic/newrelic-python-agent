@@ -21,8 +21,8 @@ from testing_support.fixtures import override_generic_settings
 from newrelic.core.application import Application
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.infinite_tracing_pb2 import Span, AttributeValue
-from testing_support.validators.validate_metric_payload import (
-    validate_metric_payload)
+from testing_support.validators.validate_internal_metrics import (
+    validate_internal_metrics)
 
 settings = global_settings()
 
@@ -85,7 +85,7 @@ def test_infinite_tracing_span_streaming(mock_grpc_server,
         'infinite_tracing.trace_observer_port': mock_grpc_server,
         'infinite_tracing.ssl': False,
     })
-    @validate_metric_payload(metrics=metrics)
+    @validate_internal_metrics(metrics)
     def _test():
         app.connect_to_data_collector(None)
 
@@ -269,7 +269,7 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
         'infinite_tracing.trace_observer_port': mock_grpc_server,
         'infinite_tracing.ssl': False,
     })
-    @validate_metric_payload(metrics=metrics)
+    @validate_internal_metrics(metrics)
     def _test():
 
         def connect_complete():
@@ -299,6 +299,68 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
         assert connect_event.wait(timeout=5)
         rpc.close()
         assert not wait_event.is_set()
+        app.harvest()
+
+    _test()
+
+
+@pytest.mark.parametrize("dropped_spans", [0, 1])
+def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped_spans):
+    wait_event = threading.Event()
+    connect_event = threading.Event()
+
+    total_spans = 3
+    metrics = [
+        ('Supportability/InfiniteTracing/Span/Seen', total_spans),
+        ('Supportability/InfiniteTracing/Span/Sent', (total_spans - dropped_spans) or None),  # Replace 0 with None to indicate metric will not be sent
+    ]
+
+    class SetFlagOnWait(CONDITION_CLS):
+        def wait(self, *args, **kwargs):
+            wait_event.set()
+            return super(SetFlagOnWait, self).wait(*args, **kwargs)
+
+    @staticmethod
+    def condition(*args, **kwargs):
+        return SetFlagOnWait(*args, **kwargs)
+
+    monkeypatch.setattr(StreamingRpc, 'condition', condition)
+    span = Span(
+        intrinsics={},
+        agent_attributes={},
+        user_attributes={},
+    )
+
+    @override_generic_settings(settings, {
+        'distributed_tracing.enabled': True,
+        'span_events.enabled': True,
+        'infinite_tracing.trace_observer_host': 'localhost',
+        'infinite_tracing.trace_observer_port': mock_grpc_server,
+        'infinite_tracing.ssl': False,
+        "infinite_tracing.span_queue_size": total_spans - dropped_spans,
+    })
+    @validate_internal_metrics(metrics)
+    def _test():
+
+        def connect_complete():
+            connect_event.set()
+
+        app.connect_to_data_collector(connect_complete)
+
+        assert connect_event.wait(timeout=5)
+        connect_event.clear()
+
+        stream_buffer = app._stats_engine.span_stream
+        rpc = app._active_session._rpc
+
+        # Close RPC so no spans are consumed, spans will only contribute to stats.
+        # Spans don't actually need to be sent to contribute to metrics, just queued for sending before harvest.
+        rpc.close()
+
+        # Put enough spans to overflow buffer
+        for _ in range(total_spans):
+            stream_buffer.put(span)
+
         app.harvest()
 
     _test()

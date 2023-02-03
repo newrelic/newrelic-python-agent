@@ -15,6 +15,8 @@
 import logging
 import threading
 
+from newrelic.core.config import global_settings_dump
+
 try:
     import grpc
 
@@ -44,7 +46,7 @@ class StreamingRpc(object):
     )
     OPTIONS = [("grpc.enable_retries", 0)]
 
-    def __init__(self, endpoint, stream_buffer, metadata, record_metric, ssl=True, compression=True):
+    def __init__(self, endpoint, stream_buffer, metadata, record_metric, ssl=True, compression=None):
         self._endpoint = endpoint
         self._ssl = ssl
         self.metadata = metadata
@@ -57,6 +59,8 @@ class StreamingRpc(object):
         self.notify = self.condition()
         self.record_metric = record_metric
         self.closed = False
+        if compression is None:
+            compression = global_settings_dump()["infinite_tracing.compression"]
         self.compression_setting = grpc.Compression.Gzip if compression else grpc.Compression.NoCompression
 
         self.create_channel()

@@ -14,10 +14,13 @@
 
 import threading
 
-from newrelic.core.agent_streaming import StreamingRpc
-from newrelic.common.streaming_utils import StreamBuffer
-from newrelic.core.infinite_tracing_pb2 import Span, AttributeValue
+import pytest
+from testing_support.fixtures import override_generic_settings
 
+from newrelic.common.streaming_utils import StreamBuffer
+from newrelic.core.agent_streaming import StreamingRpc
+from newrelic.core.config import global_settings
+from newrelic.core.infinite_tracing_pb2 import AttributeValue, Span
 
 CONDITION_CLS = type(threading.Condition())
 DEFAULT_METADATA = (("agent_run_token", ""), ("license_key", ""))
@@ -27,13 +30,46 @@ def record_metric(*args, **kwargs):
     pass
 
 
+# This enumeration is taken from gRPC's implementation for compression:
+# https://grpc.github.io/grpc/python/grpc.html#compression
+@pytest.mark.parametrize(
+    "compression_setting, gRPC_compression_val",
+    (
+        (True, 2),
+        (False, 0),
+    ),
+)
+def test_correct_settings(mock_grpc_server, compression_setting, gRPC_compression_val):
+    settings = global_settings()
+
+    @override_generic_settings(
+        settings,
+        {
+            "distributed_tracing.enabled": True,
+            "infinite_tracing.trace_observer_host": "localhost",
+            "infinite_tracing.trace_observer_port": mock_grpc_server,
+            "infinite_tracing.ssl": False,
+            "infinite_tracing.compression": compression_setting,
+        },
+    )
+    def _test():
+        endpoint = "localhost:%s" % mock_grpc_server
+        stream_buffer = StreamBuffer(1)
+
+        rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
+
+        rpc.connect()
+        assert rpc.compression_setting.value == gRPC_compression_val
+        rpc.close()
+
+    _test()
+
+
 def test_close_before_connect(mock_grpc_server):
     endpoint = "localhost:%s" % mock_grpc_server
     stream_buffer = StreamBuffer(0)
 
-    rpc = StreamingRpc(
-        endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False
-    )
+    rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
 
     # Calling close will close the grpc channel
     rpc.close()
@@ -48,9 +84,7 @@ def test_close_while_connected(mock_grpc_server, buffer_empty_event):
     endpoint = "localhost:%s" % mock_grpc_server
     stream_buffer = StreamBuffer(1)
 
-    rpc = StreamingRpc(
-        endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False
-    )
+    rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
 
     rpc.connect()
     # Check the processing thread is alive and spans are being sent
@@ -91,9 +125,7 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
     endpoint = "localhost:%s" % mock_grpc_server
     stream_buffer = StreamBuffer(1)
 
-    rpc = StreamingRpc(
-        endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False
-    )
+    rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
 
     rpc.connect()
     # Send a span to trigger reconnect

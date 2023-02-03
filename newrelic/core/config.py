@@ -284,10 +284,6 @@ class InfiniteTracingSettings(Settings):
     def enabled(self):
         return bool(self._trace_observer_host)
 
-    # @property
-    # def compression_enabled(self):
-    #     return grpc.Compression.Gzip if self.compression else grpc.Compression.NoCompression
-
     @property
     def trace_observer_host(self):
         return self._trace_observer_host

@@ -73,9 +73,9 @@ def test_correct_settings(mock_grpc_server, compression_setting, gRPC_compressio
     _test()
 
 
-def test_close_before_connect(mock_grpc_server):
+def test_close_before_connect(mock_grpc_server, batching):
     endpoint = "localhost:%s" % mock_grpc_server
-    stream_buffer = StreamBuffer(0)
+    stream_buffer = StreamBuffer(0, batching=batching)
 
     rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
 
@@ -88,9 +88,9 @@ def test_close_before_connect(mock_grpc_server):
     assert not rpc.response_processing_thread.is_alive()
 
 
-def test_close_while_connected(mock_grpc_server, buffer_empty_event):
+def test_close_while_connected(mock_grpc_server, buffer_empty_event, batching):
     endpoint = "localhost:%s" % mock_grpc_server
-    stream_buffer = StreamBuffer(1)
+    stream_buffer = StreamBuffer(1, batching=batching)
 
     rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
 
@@ -109,7 +109,7 @@ def test_close_while_connected(mock_grpc_server, buffer_empty_event):
     assert not rpc.response_processing_thread.is_alive()
 
 
-def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
+def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch, batching):
     event = threading.Event()
 
     class WaitOnWait(CONDITION_CLS):
@@ -131,7 +131,7 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch):
     )
 
     endpoint = "localhost:%s" % mock_grpc_server
-    stream_buffer = StreamBuffer(1)
+    stream_buffer = StreamBuffer(1, batching=batching)
 
     rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
 

@@ -65,7 +65,7 @@ def app():
         ),
     ),
 )
-def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics, monkeypatch, app):
+def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics, monkeypatch, app, batching):
     event = threading.Event()
 
     class TerminateOnWait(CONDITION_CLS):
@@ -95,6 +95,7 @@ def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics,
             "infinite_tracing.trace_observer_host": "localhost",
             "infinite_tracing.trace_observer_port": mock_grpc_server,
             "infinite_tracing.ssl": False,
+            "infinite_tracing.batching": batching,
         },
     )
     @validate_internal_metrics(metrics)
@@ -110,7 +111,7 @@ def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics,
     _test()
 
 
-def test_reconnect_on_failure(monkeypatch, mock_grpc_server, buffer_empty_event, app):
+def test_reconnect_on_failure(monkeypatch, mock_grpc_server, buffer_empty_event, app, batching):
 
     status_code = "INTERNAL"
     wait_event = threading.Event()
@@ -142,6 +143,7 @@ def test_reconnect_on_failure(monkeypatch, mock_grpc_server, buffer_empty_event,
             "infinite_tracing.trace_observer_host": "localhost",
             "infinite_tracing.trace_observer_port": mock_grpc_server,
             "infinite_tracing.ssl": False,
+            "infinite_tracing.batching": batching,
         },
     )
     def _test():
@@ -192,7 +194,7 @@ def test_agent_restart(app):
     assert rpc.response_processing_thread.is_alive()
 
 
-def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch, app):
+def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch, app, batching):
     event = threading.Event()
 
     class WaitOnNotify(CONDITION_CLS):
@@ -220,6 +222,7 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch, app):
             "infinite_tracing.trace_observer_host": "localhost",
             "infinite_tracing.trace_observer_port": mock_grpc_server,
             "infinite_tracing.ssl": False,
+            "infinite_tracing.batching": batching,
         },
     )
     def _test():
@@ -252,7 +255,7 @@ def test_agent_shutdown():
 
 
 @pytest.mark.xfail(reason="This test is flaky", strict=False)
-def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
+def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
     wait_event = threading.Event()
     connect_event = threading.Event()
 
@@ -285,6 +288,7 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
             "infinite_tracing.trace_observer_host": "localhost",
             "infinite_tracing.trace_observer_port": mock_grpc_server,
             "infinite_tracing.ssl": False,
+            "infinite_tracing.batching": batching,
         },
     )
     @validate_internal_metrics(metrics)
@@ -321,7 +325,7 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app):
 
 
 @pytest.mark.parametrize("dropped_spans", [0, 1])
-def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped_spans):
+def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped_spans, batching):
     wait_event = threading.Event()
     connect_event = threading.Event()
 
@@ -358,6 +362,7 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
             "infinite_tracing.trace_observer_host": "localhost",
             "infinite_tracing.trace_observer_port": mock_grpc_server,
             "infinite_tracing.ssl": False,
+            "infinite_tracing.batching": batching,
             "infinite_tracing.span_queue_size": total_spans - dropped_spans,
         },
     )

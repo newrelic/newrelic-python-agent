@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import threading
-import copy
-import threading
 
 import pytest
 from testing_support.fixtures import collector_available_fixture  # noqa
@@ -25,7 +23,6 @@ from testing_support.fixtures import (
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
 from newrelic.common.streaming_utils import StreamBuffer
-from newrelic.core.config import apply_config_setting, global_settings
 
 CONDITION_CLS = type(threading.Condition())
 
@@ -89,26 +86,9 @@ def buffer_empty_event(monkeypatch):
     return event
 
 
-@pytest.fixture(
-    scope="session", params=[pytest.param(True, id="batching"), pytest.param(False, id="nonbatching")], autouse=True
-)
-def override_batching_settings(request):
-    # Taken from override_generic_settings
-    original = global_settings()
-    backup = copy.deepcopy(original.__dict__)
-
-    try:
-        apply_config_setting(original, "infinite_tracing.batching", request.param)
-        yield request.param
-    finally:
-        original.__dict__.clear()
-        original.__dict__.update(backup)
-
-
-@pytest.fixture(scope="session")
-def batching(override_batching_settings):
-    # Alias for a cleaner fixture name for use as a manual parameter
-    return override_batching_settings
+@pytest.fixture(scope="session", params=[pytest.param(True, id="batching"), pytest.param(False, id="nonbatching")])
+def batching(request):
+    return request.param
 
 
 @pytest.fixture(scope="function")

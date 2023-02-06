@@ -83,7 +83,6 @@ class StreamBuffer(object):
 
 class StreamBufferIterator(object):
     MAX_BATCH_SIZE = 100
-    MAX_BATCH_HOLD_TIME = 5
 
     def __init__(self, stream_buffer):
         self.stream_buffer = stream_buffer
@@ -116,25 +115,20 @@ class StreamBufferIterator(object):
                     raise StopIteration
 
                 if self.batching:
-                    # Empty stream buffer into batch and send
-                    batch_start_time = time.time()
-                    batch = []
-                    batch_size = 0
-                    while self.stream_buffer:
-                        # Stop reading from queue if batch is ready to send
-                        if (
-                            batch_size >= self.MAX_BATCH_SIZE
-                            or time.time() - batch_start_time >= self.MAX_BATCH_HOLD_TIME
-                        ):
-                            break
+                    # Empty stream buffer into list and clear queue.
+                    # This is only safe to do under lock which prevents items being added to the queue.
+                    if self.stream_buffer:
+                        if len(self.stream_buffer) <= self.MAX_BATCH_SIZE:
+                            batch = list(self.stream_buffer._queue)
+                            self.stream_buffer._queue.clear()
+                            return SpanBatch(spans=batch)
+                        else:
+                            # Ensure batch size is never more than 100 to prevent issues with serializing large numbers
+                            # of spans causing their age to exceed 10 seconds. That would cause them to be rejected
+                            # by the trace observer.
+                            batch = [self.stream_buffer._queue.popleft() for _ in range(self.MAX_BATCH_SIZE)]
+                            return SpanBatch(spans=batch)
 
-                        # Add new span to batch, copying from stream buffer
-                        batch.append(self.stream_buffer._queue.popleft())
-                        batch_size += 1
-
-                    # Only return if there are items in the batch, else proceed to below to wait for items.
-                    if batch_size:
-                        return SpanBatch(spans=batch)
 
                 else:
                     # Send items from stream buffer one at a time.

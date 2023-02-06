@@ -80,7 +80,7 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
             inference_id = uuid.uuid4()
-            wrap_predict(transaction, _class, inference_id, instance, args, kwargs)
+            create_feature_event(transaction, _class, inference_id, instance, args, kwargs)
             create_label_event(transaction, _class, inference_id, instance, return_val)
             return PredictReturnTypeProxy(return_val, model_name=_class, training_step=training_step)
         return return_val
@@ -92,10 +92,11 @@ def create_label_event(transaction, _class, inference_id, instance, return_val):
     model_name = getattr(instance, "_nr_wrapped_name", _class)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     label_names = getattr(instance, "_nr_wrapped_label_names", None)
-    label_names_list = _get_label_names(label_names, return_val)
-    settings = transaction.settings if transaction.settings is not None else global_settings()
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
     if return_val is not None:
+        return_val = return_val.flatten()
+        label_names_list = _get_label_names(label_names, return_val)
         for index, value in enumerate(return_val):
             python_value_type = str(type(value))
             value_type = str(categorize_data_type(python_value_type))
@@ -116,7 +117,6 @@ def create_label_event(transaction, _class, inference_id, instance, return_val):
 
 def _get_label_names(user_defined_label_names, prediction_array):
     import numpy as np
-
     if user_defined_label_names is None or len(user_defined_label_names) != len(prediction_array):
         _logger.warning(
             "The number of label names passed to the ml_model wrapper function is not equal to the number of predictions in the data set. Please supply the correct number of label names."
@@ -180,7 +180,7 @@ def bind_predict(X, *args, **kwargs):
     return X
 
 
-def wrap_predict(transaction, _class, inference_id, instance, args, kwargs):
+def create_feature_event(transaction, _class, inference_id, instance, args, kwargs):
     import numpy as np
 
     data_set = bind_predict(*args, **kwargs)

@@ -16,8 +16,8 @@ import threading
 
 import pytest
 from testing_support.fixtures import override_generic_settings
-from testing_support.validators.validate_internal_metrics import (
-    validate_internal_metrics,
+from testing_support.validators.validate_metric_payload import (
+    validate_metric_payload,
 )
 
 from newrelic.core.agent_streaming import StreamingRpc
@@ -98,7 +98,7 @@ def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics,
             "infinite_tracing.batching": batching,
         },
     )
-    @validate_internal_metrics(metrics)
+    @validate_metric_payload(metrics)
     def _test():
         app.connect_to_data_collector(None)
 
@@ -291,7 +291,7 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
             "infinite_tracing.batching": batching,
         },
     )
-    @validate_internal_metrics(metrics)
+    @validate_metric_payload(metrics)
     def _test():
         def connect_complete():
             connect_event.set()
@@ -366,7 +366,7 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
             "infinite_tracing.span_queue_size": total_spans - dropped_spans,
         },
     )
-    @validate_internal_metrics(metrics)
+    @validate_metric_payload(metrics)
     def _test():
         def connect_complete():
             connect_event.set()

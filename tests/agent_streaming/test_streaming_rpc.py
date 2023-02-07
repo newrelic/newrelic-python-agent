@@ -146,8 +146,9 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch, batching)
     assert not rpc.response_processing_thread.is_alive()
 
 
+@pytest.mark.parametrize("compression", (True, False))
 def test_rpc_serialization_and_deserialization(
-    mock_grpc_server, batching, buffer_empty_event, spans_received, span_batches_received, spans_processed_event
+    mock_grpc_server, batching, compression, buffer_empty_event, spans_received, span_batches_received, spans_processed_event
 ):
     """StreamingRPC sends deserializable span to correct endpoint."""
 
@@ -160,7 +161,7 @@ def test_rpc_serialization_and_deserialization(
         user_attributes={},
     )
 
-    rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
+    rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, compression=compression, ssl=False)
 
     rpc.connect()
 

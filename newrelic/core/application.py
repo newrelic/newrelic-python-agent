@@ -1235,7 +1235,7 @@ class Application(object):
                         if configuration.infinite_tracing.enabled:
                             span_stream = stats.span_stream
                             # Only merge stats as part of default harvest
-                            if span_stream and not flexible:
+                            if span_stream is not None and not flexible:
                                 spans_seen, spans_dropped = span_stream.stats()
                                 spans_sent = spans_seen - spans_dropped
 

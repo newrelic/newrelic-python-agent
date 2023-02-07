@@ -381,7 +381,8 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
         (7, 10, 10, 7),
     ),
 )
-def test_application_harvest_with_span_streaming(span_queue_size, spans_to_send, expected_sent, expected_seen):
+@pytest.mark.parametrize("span_batching", (True, False))
+def test_application_harvest_with_span_streaming(span_batching, span_queue_size, spans_to_send, expected_sent, expected_seen):
     @override_generic_settings(
         settings,
         {
@@ -390,6 +391,7 @@ def test_application_harvest_with_span_streaming(span_queue_size, spans_to_send,
             "span_events.enabled": True,
             "infinite_tracing._trace_observer_host": "x",
             "infinite_tracing.span_queue_size": span_queue_size,
+            "infinite_tracing.batching": span_batching,
         },
     )
     @validate_metric_payload(

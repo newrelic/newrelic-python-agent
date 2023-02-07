@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 from conftest import CONDITION_CLS
 
 from newrelic.common.streaming_utils import StreamBuffer, StreamBufferIterator
@@ -67,12 +66,12 @@ def test_stream_buffer_iterator_max_batch_size(stop_iteration_on_wait):
     batch = buffer_contents.pop(0)
     assert isinstance(batch, SpanBatch)
     assert len(batch.spans) == StreamBufferIterator.MAX_BATCH_SIZE
-    
+
     # Single span batch
     batch = buffer_contents.pop(0)
     assert isinstance(batch, SpanBatch)
     assert len(batch.spans) == 1
-    
+
 
 def test_stream_buffer_queue_size():
     stream_buffer = StreamBuffer(1)

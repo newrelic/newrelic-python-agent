@@ -596,7 +596,6 @@ def _process_labels_setting(labels=None):
     deduped = {}
 
     for key, value in labels:
-
         if len(key) > length_limit:
             _logger.warning(
                 "Improper configuration. Label key %s is too long. Truncating key to: %s" % (key, key[:length_limit])
@@ -730,8 +729,7 @@ def translate_deprecated_settings(settings, cached_settings):
         ),
     ]
 
-    for (old_key, new_key) in deprecated_settings_map:
-
+    for old_key, new_key in deprecated_settings_map:
         if old_key in cached:
             _logger.info(
                 "Deprecated setting found: %r. Please use new setting: %r.",
@@ -755,7 +753,6 @@ def translate_deprecated_settings(settings, cached_settings):
     # deprecated settings, so it gets handled separately.
 
     if "ignored_params" in cached:
-
         _logger.info(
             "Deprecated setting found: ignored_params. Please use "
             "new setting: attributes.exclude. For the new setting, an "
@@ -887,7 +884,6 @@ def _load_configuration(
     log_file=None,
     log_level=None,
 ):
-
     global _configuration_done
 
     global _config_file
@@ -925,7 +921,6 @@ def _load_configuration(
     # If no configuration file then nothing more to be done.
 
     if not config_file:
-
         _logger.debug("no agent configuration file")
 
         # Force initialisation of the logging system now in case
@@ -1885,7 +1880,6 @@ _data_sources_done = False
 
 
 def _setup_data_source():
-
     global _data_sources_done
 
     if _data_sources_done:
@@ -3034,7 +3028,6 @@ _instrumentation_done = False
 
 
 def _setup_instrumentation():
-
     global _instrumentation_done
 
     if _instrumentation_done:

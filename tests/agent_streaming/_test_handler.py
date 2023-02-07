@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import time
-
 from collections import deque
 from concurrent import futures
 from threading import Event

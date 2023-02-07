@@ -756,7 +756,6 @@ class StatsEngine(object):
             self.record_time_metric(TimeMetric(name="Errors/all", scope="", duration=0.0, exclusive=None))
 
     def _error_event(self, error):
-
         # This method is for recording error events outside of transactions,
         # don't let the poorly named 'type' attribute fool you.
 
@@ -777,7 +776,6 @@ class StatsEngine(object):
         return error_event
 
     def record_custom_event(self, event):
-
         settings = self.__settings
 
         if not settings:
@@ -969,7 +967,6 @@ class StatsEngine(object):
         transaction_tracer = settings.transaction_tracer
 
         if not transaction.suppress_transaction_trace and transaction_tracer.enabled and settings.collect_traces:
-
             # Transactions saved for Synthetics transactions
             # do not depend on the transaction threshold.
 
@@ -992,7 +989,6 @@ class StatsEngine(object):
             self._synthetics_events.add(event)
 
         elif settings.collect_analytics_events and settings.transaction_events.enabled:
-
             event = transaction.transaction_event(self.__stats_table)
             self._transaction_events.add(event, priority=transaction.priority)
 
@@ -1130,7 +1126,6 @@ class StatsEngine(object):
         return self.__transaction_errors
 
     def slow_sql_data(self, connections):
-
         _logger.debug("Generating slow SQL data.")
 
         if not self.__settings:
@@ -1149,7 +1144,6 @@ class StatsEngine(object):
         result = []
 
         for stats_node in slow_sql_nodes:
-
             slow_sql_node = stats_node.slow_sql_node
 
             params = slow_sql_node.params or {}
@@ -1629,7 +1623,6 @@ class StatsEngine(object):
                 stats.merge_stats(other)
 
     def _merge_transaction_events(self, snapshot, rollback=False):
-
         # Merge in transaction events. In the normal case snapshot is a
         # StatsEngine from a single transaction, and should only have one
         # event. Just to avoid issues, if there is more than one, don't merge.
@@ -1648,7 +1641,6 @@ class StatsEngine(object):
                 self._transaction_events.merge(events)
 
     def _merge_synthetics_events(self, snapshot, rollback=False):
-
         # Merge Synthetic analytic events, appending to the list
         # that contains events from previous transactions. In the normal
         # case snapshot is a StatsEngine from a single transaction, and should
@@ -1665,7 +1657,6 @@ class StatsEngine(object):
         self._synthetics_events.merge(events)
 
     def _merge_error_events(self, snapshot):
-
         # Merge in error events. Since we are using reservoir sampling that
         # gives equal probability to keeping each event, merge is the same as
         # rollback. There may be multiple error events per transaction.
@@ -1693,7 +1684,6 @@ class StatsEngine(object):
         self._log_events.merge(events)
 
     def _merge_error_traces(self, snapshot):
-
         # Append snapshot error details at end to maintain time
         # based order and then trim at maximum to be kept. snapshot will
         # always have newer data.
@@ -1703,7 +1693,6 @@ class StatsEngine(object):
         self.__transaction_errors = self.__transaction_errors[:maximum]
 
     def _merge_sql(self, snapshot):
-
         # Add sql traces to the set of existing entries. If over
         # the limit of how many to collect, only merge in if already
         # seen the specific SQL.
@@ -1718,7 +1707,6 @@ class StatsEngine(object):
                 stats.merge_stats(slow_sql_stats)
 
     def _merge_traces(self, snapshot):
-
         # Limit number of Synthetics transactions
 
         maximum = self.__settings.agent_limits.synthetics_transactions

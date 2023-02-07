@@ -458,7 +458,6 @@ def _environ_as_mapping(name, default=""):
         return result
 
     for item in items.split(";"):
-
         try:
             key, value = item.split(":")
         except ValueError:
@@ -941,7 +940,6 @@ def global_settings_dump(settings_object=None, serializable=False):
         components = urlparse.urlparse(proxy_host)
 
         if components.scheme:
-
             netloc = create_obfuscated_netloc(components.username, components.password, components.hostname, obfuscated)
 
             if components.port:
@@ -1064,14 +1062,14 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
 
     # Overlay with agent server side configuration settings.
 
-    for (name, value) in agent_config.items():
+    for name, value in agent_config.items():
         apply_config_setting(settings_snapshot, name, value)
 
     # Overlay with global server side configuration settings.
     # global server side configuration always takes precedence over the global
     # server side configuration settings.
 
-    for (name, value) in server_side_config.items():
+    for name, value in server_side_config.items():
         apply_config_setting(settings_snapshot, name, value)
 
     event_harvest_config = server_side_config.get("event_harvest_config", {})

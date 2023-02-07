@@ -538,12 +538,29 @@ class Application(object):
             internal_metric("Supportability/Python/Application/Registration/Attempts", connect_attempts)
 
             # Logging feature toggle supportability metrics
-            application_logging_metrics = configuration.application_logging.enabled and configuration.application_logging.metrics.enabled
-            application_logging_forwarding = configuration.application_logging.enabled and configuration.application_logging.forwarding.enabled
-            application_logging_local_decorating = configuration.application_logging.enabled and configuration.application_logging.local_decorating.enabled
-            internal_metric("Supportability/Logging/Forwarding/Python/%s" % ("enabled" if application_logging_forwarding else "disabled"), 1)
-            internal_metric("Supportability/Logging/LocalDecorating/Python/%s" % ("enabled" if application_logging_local_decorating else "disabled"), 1)
-            internal_metric("Supportability/Logging/Metrics/Python/%s" % ("enabled" if application_logging_metrics else "disabled"), 1)
+            application_logging_metrics = (
+                configuration.application_logging.enabled and configuration.application_logging.metrics.enabled
+            )
+            application_logging_forwarding = (
+                configuration.application_logging.enabled and configuration.application_logging.forwarding.enabled
+            )
+            application_logging_local_decorating = (
+                configuration.application_logging.enabled and configuration.application_logging.local_decorating.enabled
+            )
+            internal_metric(
+                "Supportability/Logging/Forwarding/Python/%s"
+                % ("enabled" if application_logging_forwarding else "disabled"),
+                1,
+            )
+            internal_metric(
+                "Supportability/Logging/LocalDecorating/Python/%s"
+                % ("enabled" if application_logging_local_decorating else "disabled"),
+                1,
+            )
+            internal_metric(
+                "Supportability/Logging/Metrics/Python/%s" % ("enabled" if application_logging_metrics else "disabled"),
+                1,
+            )
 
         self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
@@ -724,11 +741,9 @@ class Application(object):
 
     def remove_data_source(self, name):
         with self._data_samplers_lock:
-
             data_sampler = [x for x in self._data_samplers if x.name == name]
 
             if len(data_sampler) > 0:
-
                 # Should be at most one data sampler for a given name.
 
                 data_sampler = data_sampler[0]
@@ -741,7 +756,6 @@ class Application(object):
                     data_sampler.stop()
 
                 except Exception:
-
                     # If sampler has not started yet, it may throw an error.
 
                     _logger.debug(
@@ -1066,7 +1080,6 @@ class Application(object):
 
         with InternalTraceContext(internal_metrics):
             with InternalTrace("Supportability/Python/Harvest/Calls/" + call_metric):
-
                 self._harvest_count += 1
 
                 start = time.time()
@@ -1204,7 +1217,6 @@ class Application(object):
                         stats.reset_synthetics_events()
 
                     if configuration.collect_analytics_events and configuration.transaction_events.enabled:
-
                         transaction_events = stats.transaction_events
 
                         if transaction_events:
@@ -1267,7 +1279,6 @@ class Application(object):
                         and configuration.error_collector.capture_events
                         and configuration.error_collector.enabled
                     ):
-
                         error_events = stats.error_events
                         if error_events:
                             num_error_samples = error_events.num_samples
@@ -1289,7 +1300,6 @@ class Application(object):
                     # Send custom events
 
                     if configuration.collect_custom_events and configuration.custom_insights_events.enabled:
-
                         customs = stats.custom_events
 
                         if customs:
@@ -1309,8 +1319,13 @@ class Application(object):
 
                     # Send log events
 
-                    if configuration and configuration.application_logging and configuration.application_logging.enabled and configuration.application_logging.forwarding and configuration.application_logging.forwarding.enabled:
-
+                    if (
+                        configuration
+                        and configuration.application_logging
+                        and configuration.application_logging.enabled
+                        and configuration.application_logging.forwarding
+                        and configuration.application_logging.forwarding.enabled
+                    ):
                         logs = stats.log_events
 
                         if logs:

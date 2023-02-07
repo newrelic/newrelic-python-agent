@@ -17,9 +17,7 @@ import time
 
 import pytest
 from testing_support.fixtures import override_generic_settings
-from testing_support.validators.validate_metric_payload import (
-    validate_metric_payload,
-)
+from testing_support.validators.validate_metric_payload import validate_metric_payload
 
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.application import Application
@@ -113,7 +111,6 @@ def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics,
 
 
 def test_reconnect_on_failure(monkeypatch, mock_grpc_server, buffer_empty_event, app, batching):
-
     status_code = "INTERNAL"
     wait_event = threading.Event()
     continue_event = threading.Event()
@@ -328,14 +325,14 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
 def test_no_data_loss_on_reconnect(mock_grpc_server, app, buffer_empty_event, batching, spans_processed_event):
     """
     Test for data loss when channel is closed by the server while waiting for more data in a request iterator.
-    
+
     This is a bug that's caused by the periodic (15 second) disconnects issued by the trace observer. To observe,
     wait long enough in __next__'s notify.wait() call until the server issues a grpc.StatusCode.OK causing a
     disconnect and reconnect. Alternatively in the case of this test, we use a mock server to issue one at the
     appropriate moment rather than waiting for a real trace observer to issue a disconnect.
 
     While in this state, the very next span placed in the StreamBuffer would wake up the request_iterator for the
-    now closed channel (which was waiting in the __next__ function) and be consumed. The channel, being closed, 
+    now closed channel (which was waiting in the __next__ function) and be consumed. The channel, being closed,
     would discard the data and finish shutting down. This is now prevented by guards checking if the channel is
     closed before popping any data inside the request iterator, which instead raises a StopIteration.
 
@@ -382,7 +379,7 @@ def test_no_data_loss_on_reconnect(mock_grpc_server, app, buffer_empty_event, ba
         start_time = time.time()
         while not (request_iterator._stream and request_iterator._stream.done()):
             assert time.time() - start_time < 5, "Timed out waiting for OK status code."
-    
+
         # Put new span and wait until buffer has been emptied and either sent or lost
         stream_buffer.put(span)
         assert spans_processed_event.wait(timeout=5), "Data lost in stream buffer iterator."

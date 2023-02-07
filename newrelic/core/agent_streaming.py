@@ -44,7 +44,7 @@ class StreamingRpc(object):
     )
     OPTIONS = [("grpc.enable_retries", 0)]
 
-    def __init__(self, endpoint, stream_buffer, metadata, record_metric, ssl=True):
+    def __init__(self, endpoint, stream_buffer, metadata, record_metric, ssl=True, compression=None):
         self._endpoint = endpoint
         self._ssl = ssl
         self.metadata = metadata
@@ -57,15 +57,21 @@ class StreamingRpc(object):
         self.notify = self.condition()
         self.record_metric = record_metric
         self.closed = False
+        # If this is not set, None is still a falsy value.
+        self.compression_setting = grpc.Compression.Gzip if compression else grpc.Compression.NoCompression
 
         self.create_channel()
 
     def create_channel(self):
         if self._ssl:
             credentials = grpc.ssl_channel_credentials()
-            self.channel = grpc.secure_channel(self._endpoint, credentials, options=self.OPTIONS)
+            self.channel = grpc.secure_channel(
+                self._endpoint, credentials, compression=self.compression_setting, options=self.OPTIONS
+            )
         else:
-            self.channel = grpc.insecure_channel(self._endpoint, options=self.OPTIONS)
+            self.channel = grpc.insecure_channel(
+                self._endpoint, compression=self.compression_setting, options=self.OPTIONS
+            )
 
         self.rpc = self.channel.stream_stream(self.PATH, Span.SerializeToString, RecordStatus.FromString)
 

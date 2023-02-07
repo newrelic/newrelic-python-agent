@@ -61,6 +61,7 @@ class Session(object):
 
             port = self.configuration.infinite_tracing.trace_observer_port
             ssl = self.configuration.infinite_tracing.ssl
+            compression_setting = self.configuration.infinite_tracing.compression
             endpoint = "{}:{}".format(host, port)
 
             if (
@@ -75,7 +76,7 @@ class Session(object):
                 )
 
                 rpc = self._rpc = StreamingRpc(
-                    endpoint, span_iterator, metadata, record_metric, ssl=ssl
+                    endpoint, span_iterator, metadata, record_metric, ssl=ssl, compression=compression_setting
                 )
                 rpc.connect()
                 return rpc
@@ -135,9 +136,7 @@ class Session(object):
         return self._protocol.send("log_event_data", payload)
 
     def get_agent_commands(self):
-        """Receive agent commands from the data collector.
-
-        """
+        """Receive agent commands from the data collector."""
 
         payload = (self.agent_run_id,)
         return self._protocol.send("get_agent_commands", payload)
@@ -180,8 +179,7 @@ class Session(object):
         return self._protocol.send("agent_command_results", payload)
 
     def send_profile_data(self, profile_data):
-        """Called to submit Profile Data.
-        """
+        """Called to submit Profile Data."""
 
         payload = (self.agent_run_id, profile_data)
         return self._protocol.send("profile_data", payload)
@@ -206,9 +204,7 @@ class DeveloperModeSession(Session):
 
     def connect_span_stream(self, span_iterator, record_metric):
         if self.configuration.debug.connect_span_stream_in_developer_mode:
-            super(DeveloperModeSession, self).connect_span_stream(
-                span_iterator, record_metric
-            )
+            super(DeveloperModeSession, self).connect_span_stream(span_iterator, record_metric)
 
 
 class ServerlessModeSession(Session):
@@ -231,12 +227,8 @@ class ServerlessModeSession(Session):
 def create_session(license_key, app_name, linked_applications, environment):
     settings = global_settings()
     if settings.serverless_mode.enabled:
-        return ServerlessModeSession(
-            app_name, linked_applications, environment, settings
-        )
+        return ServerlessModeSession(app_name, linked_applications, environment, settings)
     elif settings.developer_mode:
-        return DeveloperModeSession(
-            app_name, linked_applications, environment, settings
-        )
+        return DeveloperModeSession(app_name, linked_applications, environment, settings)
     else:
         return Session(app_name, linked_applications, environment, settings)

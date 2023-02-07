@@ -115,19 +115,19 @@ class StreamBufferIterator(object):
                     raise StopIteration
 
                 if self.batching:
-                    # Empty stream buffer into list and clear queue.
-                    # This is only safe to do under lock which prevents items being added to the queue.
-                    if self.stream_buffer:
-                        if len(self.stream_buffer) <= self.MAX_BATCH_SIZE:
-                            batch = list(self.stream_buffer._queue)
-                            self.stream_buffer._queue.clear()
-                            return SpanBatch(spans=batch)
-                        else:
-                            # Ensure batch size is never more than 100 to prevent issues with serializing large numbers
-                            # of spans causing their age to exceed 10 seconds. That would cause them to be rejected
-                            # by the trace observer.
-                            batch = [self.stream_buffer._queue.popleft() for _ in range(self.MAX_BATCH_SIZE)]
-                            return SpanBatch(spans=batch)
+                    stream_buffer_len = len(self.stream_buffer)
+                    if stream_buffer_len > self.MAX_BATCH_SIZE:
+                        # Ensure batch size is never more than 100 to prevent issues with serializing large numbers
+                        # of spans causing their age to exceed 10 seconds. That would cause them to be rejected
+                        # by the trace observer.
+                        batch = [self.stream_buffer._queue.popleft() for _ in range(self.MAX_BATCH_SIZE)]
+                        return SpanBatch(spans=batch)
+                    elif stream_buffer_len:
+                        # For small span batches empty stream buffer into list and clear queue.
+                        # This is only safe to do under lock which prevents items being added to the queue.
+                        batch = list(self.stream_buffer._queue)
+                        self.stream_buffer._queue.clear()
+                        return SpanBatch(spans=batch)
 
                 else:
                     # Send items from stream buffer one at a time.

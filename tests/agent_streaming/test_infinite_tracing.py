@@ -263,15 +263,28 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
     ]
 
     class SetFlagOnWait(CONDITION_CLS):
+        def __init__(self, event, *args, **kwargs):
+            super(SetFlagOnWait, self).__init__(*args, **kwargs)
+            self.event = event
+
         def wait(self, *args, **kwargs):
-            wait_event.set()
+            self.event.set()
             return super(SetFlagOnWait, self).wait(*args, **kwargs)
 
     @staticmethod
     def condition(*args, **kwargs):
-        return SetFlagOnWait(*args, **kwargs)
+        return SetFlagOnWait(wait_event, *args, **kwargs)
+
+    _create_channel = StreamingRpc.create_channel
+
+    def create_channel(self, *args, **kwargs):
+        ret = _create_channel(self, *args, **kwargs)
+        connect_event.set()
+        return ret
 
     monkeypatch.setattr(StreamingRpc, "condition", condition)
+    monkeypatch.setattr(StreamingRpc, "create_channel", create_channel)
+
     span = Span(
         intrinsics={"status_code": AttributeValue(string_value="OK")},
         agent_attributes={},

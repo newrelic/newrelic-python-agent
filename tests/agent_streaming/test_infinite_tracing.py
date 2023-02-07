@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import threading
+import time
 
 import pytest
 from testing_support.fixtures import override_generic_settings
@@ -324,6 +325,71 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
     _test()
 
 
+def test_no_data_loss_on_reconnect(mock_grpc_server, app, buffer_empty_event, batching, spans_processed_event):
+    """
+    Test for data loss when channel is closed by the server while waiting for more data in a request iterator.
+    
+    This is a bug that's caused by the periodic (15 second) disconnects issued by the trace observer. To observe,
+    wait long enough in __next__'s notify.wait() call until the server issues a grpc.StatusCode.OK causing a
+    disconnect and reconnect. Alternatively in the case of this test, we use a mock server to issue one at the
+    appropriate moment rather than waiting for a real trace observer to issue a disconnect.
+
+    While in this state, the very next span placed in the StreamBuffer would wake up the request_iterator for the
+    now closed channel (which was waiting in the __next__ function) and be consumed. The channel, being closed, 
+    would discard the data and finish shutting down. This is now prevented by guards checking if the channel is
+    closed before popping any data inside the request iterator, which instead raises a StopIteration.
+
+    Relevant GitHub issue: https://github.com/grpc/grpc/issues/29110
+    """
+
+    terminating_span = Span(
+        intrinsics={"wait_then_ok": AttributeValue(string_value="OK")}, agent_attributes={}, user_attributes={}
+    )
+
+    span = Span(intrinsics={}, agent_attributes={}, user_attributes={})
+
+    @override_generic_settings(
+        settings,
+        {
+            "distributed_tracing.enabled": True,
+            "span_events.enabled": True,
+            "infinite_tracing.trace_observer_host": "localhost",
+            "infinite_tracing.trace_observer_port": mock_grpc_server,
+            "infinite_tracing.ssl": False,
+            "infinite_tracing.batching": batching,
+        },
+    )
+    def _test():
+        # Connect to app and retrieve references to various components
+        app.connect_to_data_collector(None)
+
+        stream_buffer = app._stats_engine.span_stream
+        rpc = app._active_session._rpc
+        request_iterator = rpc.request_iterator
+
+        # Wait until iterator is waiting on spans
+        assert buffer_empty_event.wait(timeout=5)
+        buffer_empty_event.clear()
+
+        # Send a span that will trigger disconnect
+        stream_buffer.put(terminating_span)
+
+        # Wait for spans to be processed by server
+        assert spans_processed_event.wait(timeout=5)
+        spans_processed_event.clear()
+
+        # Wait for OK status code to close the channel
+        start_time = time.time()
+        while not (request_iterator._stream and request_iterator._stream.done()):
+            assert time.time() - start_time < 5, "Timed out waiting for OK status code."
+    
+        # Put new span and wait until buffer has been emptied and either sent or lost
+        stream_buffer.put(span)
+        assert spans_processed_event.wait(timeout=5), "Data lost in stream buffer iterator."
+
+    _test()
+
+
 @pytest.mark.parametrize("dropped_spans", [0, 1])
 def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped_spans, batching):
     wait_event = threading.Event()
@@ -377,11 +443,6 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
         connect_event.clear()
 
         stream_buffer = app._stats_engine.span_stream
-        rpc = app._active_session._rpc
-
-        # Close RPC so no spans are consumed, spans will only contribute to stats.
-        # Spans don't actually need to be sent to contribute to metrics, just queued for sending before harvest.
-        rpc.close()
 
         # Put enough spans to overflow buffer
         for _ in range(total_spans):

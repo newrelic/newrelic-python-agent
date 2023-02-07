@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 from collections import deque
 from concurrent import futures
 from threading import Event
@@ -33,12 +35,20 @@ def record_span(request, context):
     for span in request:
         SPANS_RECEIVED.append(span)
         SPANS_PROCESSED_EVENT.set()
+
+        # Handle injecting status codes.
         status_code = span.intrinsics.get("status_code", None)
         status_code = status_code and getattr(grpc.StatusCode, status_code.string_value)
         if status_code is grpc.StatusCode.OK:
-            break
+            return
         elif status_code:
             context.abort(status_code, "Abort triggered by client")
+
+        # Give the client time to enter the wait condition before closing the server.
+        if span.intrinsics.get("wait_then_ok", None):
+            # Wait long enough that the client is now waiting for more spans and stuck in notify.wait().
+            time.sleep(1)
+            return
 
         yield RecordStatus(messages_seen=1)
 
@@ -54,14 +64,19 @@ def record_span_batch(request, context):
         batch_size = 0
 
         for span in span_batch.spans:
+            # Handle injecting status codes.
             status_code = span.intrinsics.get("status_code", None)
             status_code = status_code and getattr(grpc.StatusCode, status_code.string_value)
             if status_code is grpc.StatusCode.OK:
-                break
+                return
             elif status_code:
                 context.abort(status_code, "Abort triggered by client")
 
-            batch_size += 1
+            # Give the client time to enter the wait condition before closing the server.
+            if span.intrinsics.get("wait_then_ok", None):
+                # Wait long enough that the client is now waiting for more spans and stuck in notify.wait().
+                time.sleep(1)
+                return
 
         yield RecordStatus(messages_seen=batch_size)
 

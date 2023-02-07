@@ -129,7 +129,6 @@ class StreamBufferIterator(object):
                             batch = [self.stream_buffer._queue.popleft() for _ in range(self.MAX_BATCH_SIZE)]
                             return SpanBatch(spans=batch)
 
-
                 else:
                     # Send items from stream buffer one at a time.
                     try:

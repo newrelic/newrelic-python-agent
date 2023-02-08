@@ -211,7 +211,6 @@ def collector_agent_registration_fixture(
 
     @pytest.fixture(scope="session")
     def _collector_agent_registration_fixture(request):
-
         if should_initialize_agent:
             initialize_agent(app_name=app_name, default_settings=default_settings)
 
@@ -529,7 +528,7 @@ def validate_custom_event_collector_json(num_events=1):
             assert decoded_sampling_info["events_seen"] == num_events
             assert len(decoded_events) == num_events
 
-            for (intrinsics, attributes) in decoded_events:
+            for intrinsics, attributes in decoded_events:
                 assert isinstance(intrinsics, dict)
                 assert isinstance(attributes, dict)
 
@@ -549,7 +548,6 @@ def validate_tt_parameters(required_params=None, forgone_params=None):
         except:
             raise
         else:
-
             # Now that transaction has been recorded, generate
             # a transaction trace
 
@@ -673,7 +671,6 @@ def validate_browser_attributes(required_params=None, forgone_params=None):
             obfuscation_key = instance._settings.license_key[:13]
             attributes = json_decode(deobfuscate(footer_data["atts"], obfuscation_key))
         else:
-
             # if there are no user or agent attributes, there will be no dict
             # for them in the browser data
 
@@ -722,7 +719,6 @@ def validate_error_event_attributes(required_params=None, forgone_params=None, e
             except:
                 raise
             else:
-
                 event_data = instance.error_events
                 for sample in event_data:
                     error_data_samples.append(sample)
@@ -863,7 +859,6 @@ def validate_attributes(attr_type, required_attr_names=None, forgone_attr_names=
 
 
 def validate_attributes_complete(attr_type, required_attrs=None, forgone_attrs=None):
-
     # This differs from `validate_attributes` in that all fields of
     # Attribute must match (name, value, and destinations), not just
     # name. It's a more thorough test, but it's more of a pain to set
@@ -895,7 +890,6 @@ def validate_attributes_complete(attr_type, required_attrs=None, forgone_attrs=N
         attribute_filter = transaction.settings.attribute_filter
 
         if attr_type == "intrinsic":
-
             # Intrinsics are stored as a dict, so for consistency's sake
             # in this test, we convert them to Attributes.
 
@@ -1095,7 +1089,6 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
             error_events = transaction.error_events(instance.stats_table)
             assert len(error_events) == num_errors
             for sample in error_events:
-
                 assert isinstance(sample, list)
                 assert len(sample) == 3
 
@@ -1127,7 +1120,6 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
 
 
 def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics, required_user):
-
     now = time.time()
     assert isinstance(intrinsics["timestamp"], int)
     assert intrinsics["timestamp"] <= 1000.0 * now
@@ -1191,7 +1183,6 @@ def validate_transaction_exception_message(expected_message):
         except:
             raise
         else:
-
             error_data = instance.error_data()
             assert len(error_data) == 1
             error = error_data[0]
@@ -1221,13 +1212,11 @@ def validate_application_exception_message(expected_message):
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
     def _validate_application_exception_message(wrapped, instance, args, kwargs):
-
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
-
             error_data = instance.error_data()
             assert len(error_data) == 1
             error = error_data[0]
@@ -1615,7 +1604,6 @@ def set_default_encoding(encoding):
 
     @function_wrapper
     def _set_default_encoding(wrapped, instance, args, kwargs):
-
         # This technique of reloading the sys module is necessary because the
         # method is removed during initialization of Python. Doing this is
         # highly frowned upon, but it is the only way to test how our agent
@@ -1663,7 +1651,6 @@ def function_not_called(module, name):
 
 
 def validate_analytics_catmap_data(name, expected_attributes=(), non_expected_attributes=()):
-
     samples = []
 
     @transient_function_wrapper("newrelic.core.stats_engine", "SampledDataSet.add")
@@ -1715,7 +1702,6 @@ def count_transactions(count_list):
 
 
 def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
-
     called_list = []
 
     @transient_function_wrapper("newrelic.core.agent_protocol", "AgentProtocol.send")

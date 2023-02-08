@@ -19,6 +19,7 @@ import pytest
 from testing_support.fixtures import override_generic_settings
 from testing_support.validators.validate_metric_payload import validate_metric_payload
 
+from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.application import Application
 from newrelic.core.config import global_settings
@@ -395,7 +396,7 @@ def test_no_data_loss_on_reconnect(mock_grpc_server, app, buffer_empty_event, ba
 @pytest.mark.parametrize("dropped_spans", [0, 1])
 def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped_spans, batching):
     wait_event = threading.Event()
-    connect_event = threading.Event()
+    continue_event = threading.Event()
 
     total_spans = 3
     metrics = [
@@ -406,16 +407,19 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
         ),  # Replace 0 with None to indicate metric will not be sent
     ]
 
-    class SetFlagOnWait(CONDITION_CLS):
+    class WaitOnWait(CONDITION_CLS):
         def wait(self, *args, **kwargs):
             wait_event.set()
-            return super(SetFlagOnWait, self).wait(*args, **kwargs)
+            ret = super(WaitOnWait, self).wait(*args, **kwargs)
+            assert continue_event.wait(timeout=5)
+            return ret
 
     @staticmethod
     def condition(*args, **kwargs):
-        return SetFlagOnWait(*args, **kwargs)
+        return WaitOnWait(*args, **kwargs)
 
-    monkeypatch.setattr(StreamingRpc, "condition", condition)
+    monkeypatch.setattr(StreamBuffer, "condition", condition)
+
     span = Span(
         intrinsics={},
         agent_attributes={},
@@ -436,19 +440,21 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
     )
     @validate_metric_payload(metrics)
     def _test():
-        def connect_complete():
-            connect_event.set()
+        app.connect_to_data_collector(None)
 
-        app.connect_to_data_collector(connect_complete)
-
-        assert connect_event.wait(timeout=5)
-        connect_event.clear()
+        assert wait_event.wait(timeout=5)
 
         stream_buffer = app._stats_engine.span_stream
 
         # Put enough spans to overflow buffer
         for _ in range(total_spans):
             stream_buffer.put(span)
+
+        # Harvest all spans simultaneously
+        wait_event.clear()
+        continue_event.set()
+        assert wait_event.wait(timeout=5)
+        wait_event.clear()
 
         app.harvest()
 

@@ -6,6 +6,9 @@ shared:
       - "#approved-reviews-by>=1"  # A '#' pulls the length of the underlying list
       - "label=ready-to-merge"
       - "check-success=tests"
+      - or:  # Only handle branches that target main or develop branches
+        - "base=main"  
+        - "base~=^develop"
 
 queue_rules:
   - name: default
@@ -13,39 +16,31 @@ queue_rules:
       - and: *pr_ready_checks
 
 pull_request_rules:
-  - name: main branch PRs - Add to merge queue on approval
+  # Merge Queue PR Rules
+  - name: Regular PRs - Add to merge queue on approval (squash)
     conditions:
       - and: *pr_ready_checks
-      - "base=main"  # Only branches that target main
-      - "-head~=^develop"  # Don't include develop branches
+      - "-head~=^develop"  # Don't include PRs from develop branches
     actions:
       queue:
         method: squash
 
-  - name: main branch PRs from develop branches - Add to merge queue on approval without squashing
+  - name: Develop Branch PRs - Add to merge queue on approval (rebase)
     conditions:
       - and: *pr_ready_checks
-      - "base=main"  # Only branches that target main
-      - "-head~=^develop"  # Don't include develop branches
+      - "head~=^develop"  # Only include PRs from develop branches
     actions:
       queue:
         method: rebase
 
-  - name: develop branch PRs - Add to merge queue on approval
-    conditions:
-      - and: *pr_ready_checks
-      - "base~=^develop"  # Filter branches by name
-      - "-head~=^develop"  # Don't include develop branches
-    actions:
-      queue:
-        method: squash
-
+  # Automatic PR Updates
   - name: Automatic PR branch updates
     conditions:
       - "queue-position=-1"  # Not queued
     actions:
       update:
 
+  # Automatic Labeling
   - name: Clean up after merge
     conditions:
       - merged

@@ -27,14 +27,6 @@ pull_request_rules:
       queue:
         method: squash
 
-  - name: Develop Branch PRs - Add to merge queue on approval (rebase)
-    conditions:
-      - and: *pr_ready_checks
-      - "head~=^develop" # Only include PRs from develop branches
-    actions:
-      queue:
-        method: rebase
-
   # Automatic PR Updates
   - name: Automatic PR branch updates
     conditions:

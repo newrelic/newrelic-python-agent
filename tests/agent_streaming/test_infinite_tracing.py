@@ -316,14 +316,6 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
         stream_buffer = app._stats_engine.span_stream
         rpc = app._active_session._rpc
 
-        _rpc = rpc.rpc
-
-        def patched_rpc(*args, **kwargs):
-            connect_event.set()
-            return _rpc(*args, **kwargs)
-
-        rpc.rpc = patched_rpc
-
         # Put a span that will trigger an OK status code and wait for an attempted
         # reconnect.
         stream_buffer.put(span)

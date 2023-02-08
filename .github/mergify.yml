@@ -15,6 +15,7 @@ queue_rules:
   - name: default
     conditions:
       - and: *pr_ready_checks
+    merge_method: squash
 
 pull_request_rules:
   # Merge Queue PR Rules

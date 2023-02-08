@@ -3,13 +3,13 @@
 shared:
   conditions:
     - and: &pr_ready_checks
-      - "#approved-reviews-by>=1"  # A '#' pulls the length of the underlying list
-      - "label=ready-to-merge"
-      - "check-success=tests"
-      - "-draft"  # Don't include draft PRs
-      - or:  # Only handle branches that target main or develop branches
-        - "base=main"  
-        - "base~=^develop"
+        - "#approved-reviews-by>=1" # A '#' pulls the length of the underlying list
+        - "label=ready-to-merge"
+        - "check-success=tests"
+        - "-draft" # Don't include draft PRs
+        - or: # Only handle branches that target main or develop branches
+            - "base=main"
+            - "base~=^develop"
 
 queue_rules:
   - name: default
@@ -30,8 +30,8 @@ pull_request_rules:
   # Automatic PR Updates
   - name: Automatic PR branch updates
     conditions:
-      - "queue-position=-1"  # Not queued
-      - "-draft"  # Don't include draft PRs
+      - "queue-position=-1" # Not queued
+      - "-draft" # Don't include draft PRs
     actions:
       update:
 

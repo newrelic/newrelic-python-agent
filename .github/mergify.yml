@@ -6,6 +6,7 @@ shared:
       - "#approved-reviews-by>=1"  # A '#' pulls the length of the underlying list
       - "label=ready-to-merge"
       - "check-success=tests"
+      - "-draft"
       - or:  # Only handle branches that target main or develop branches
         - "base=main"  
         - "base~=^develop"

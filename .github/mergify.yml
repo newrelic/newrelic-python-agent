@@ -21,7 +21,6 @@ pull_request_rules:
     actions:
       queue:
         method: squash
-        priority: medium
 
   - name: main branch PRs from develop branches - Add to merge queue on approval without squashing
     conditions:
@@ -31,7 +30,6 @@ pull_request_rules:
     actions:
       queue:
         method: rebase
-        priority: high
 
   - name: develop branch PRs - Add to merge queue on approval
     conditions:
@@ -41,7 +39,6 @@ pull_request_rules:
     actions:
       queue:
         method: squash
-        priority: medium
 
   - name: Automatic PR branch updates
     conditions:

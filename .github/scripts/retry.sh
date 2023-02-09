@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Time in seconds to backoff after the initial attempt.
+INITIAL_BACKOFF=10
+
 # Grab first arg as number of retries
 retries=$1
 shift
@@ -10,8 +13,8 @@ for i in $(seq 1 $retries); do
 
     # Exponential backoff
     if [[ i -gt 1 ]]; then
-        # Start with 10 seconds, then double every retry.
-        backoff=$((1 * (2 ** (i - 2))))
+        # Starts with the initial backoff then doubles every retry.
+        backoff=$(($INITIAL_BACKOFF * (2 ** (i - 2))))
         echo "Command failed, retrying in $backoff seconds..."
         sleep $backoff
     fi

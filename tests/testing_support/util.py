@@ -50,7 +50,7 @@ def conditional_decorator(condition, decorator):
         else:
             condition_eval = condition
         
-        if condition:
+        if condition_eval:
             return decorator(func)
         else:
             return func

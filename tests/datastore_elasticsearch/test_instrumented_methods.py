@@ -37,7 +37,6 @@ def client(client):
     return client
 
 
-@RUN_IF_V8
 @pytest.mark.parametrize(
     "sub_module,method,args,kwargs,expected_index",
     [

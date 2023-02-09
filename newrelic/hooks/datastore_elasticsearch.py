@@ -14,9 +14,8 @@
 
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.function_signature_utils import bind_arguments
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.packages import six
 
 # An index name can be a string, None or a sequence. In the case of None
@@ -25,8 +24,7 @@ from newrelic.packages import six
 # obviously can also be more than one index name. Where we are certain
 # there is only a single index name we use it, otherwise we use 'other'.
 
-es_version_str = get_package_version("elasticsearch")
-ES_VERSION = tuple(int(v) for v in es_version_str.split("."))
+ES_VERSION = get_package_version_tuple("elasticsearch")
 
 
 def _index_name(index):
@@ -92,10 +90,6 @@ def _extract_args_fields_index(fields=None, index=None, *args, **kwargs):
 
 
 def _extract_args_name_body_index(name=None, body=None, index=None, *args, **kwargs):
-    return _index_name(index)
-
-
-def _extract_args_name_index(name=None, index=None, *args, **kwargs):
     return _index_name(index)
 
 

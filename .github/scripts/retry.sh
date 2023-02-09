@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Time in seconds to backoff after the initial attempt.
 INITIAL_BACKOFF=10

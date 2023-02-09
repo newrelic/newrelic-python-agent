@@ -2665,6 +2665,18 @@ def _process_module_builtin_defaults():
         "aioredis.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
     )
 
+    _process_module_definition(
+        "redis.asyncio.client", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
+    )
+
+    _process_module_definition(
+        "redis.asyncio.commands", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
+    )
+
+    _process_module_definition(
+        "redis.asyncio.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
+    )
+
     # v7 and below
     _process_module_definition(
         "elasticsearch.client",

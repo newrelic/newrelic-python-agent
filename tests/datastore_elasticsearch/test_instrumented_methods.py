@@ -42,18 +42,26 @@ def client(client):
     [
         (None, "exists", (), {"index": "contacts", "id": 1}, "contacts"),
         (None, "info", (), {}, None),
-        (
+        pytest.param(
             None,
             "msearch",
             (),
             {"searches": [{}, {"query": {"match": {"message": "this is a test"}}}], "index": "contacts"},
             "contacts",
+            marks=RUN_IF_V8,
         ),
         ("indices", "exists", (), {"index": "contacts"}, "contacts"),
         ("indices", "exists_template", (), {"name": "no-exist"}, None),
         ("cat", "count", (), {"index": "contacts"}, "contacts"),
         ("cat", "health", (), {}, None),
-        ("cluster", "allocation_explain", (), {"index": "contacts", "shard": 0, "primary": True}, "contacts"),
+        pytest.param(
+            "cluster",
+            "allocation_explain",
+            (),
+            {"index": "contacts", "shard": 0, "primary": True},
+            "contacts",
+            marks=RUN_IF_V8,
+        ),
         ("cluster", "get_settings", (), {}, None),
         ("cluster", "health", (), {"index": "contacts"}, "contacts"),
         ("nodes", "info", (), {}, None),

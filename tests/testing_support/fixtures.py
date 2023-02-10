@@ -1512,8 +1512,11 @@ def code_coverage():
         coverage_directory = "htmlcov"
         xml_report = "coverage.xml"
 
-    cov = coverage(source=["newrelic"], omit=["newrelic/packages/**/*.py"], data_file=data_file, data_suffix=data_suffix, branch=True)
-    cov.start()
+    # Grab current coverage
+    cov = coverage.current()
+
+    coverage.set_option("run:data_file", data_file)
+    coverage.set_option("run:data_suffix", data_suffix)
 
     yield cov
 

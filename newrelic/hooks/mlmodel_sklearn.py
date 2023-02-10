@@ -159,6 +159,8 @@ def _record_stats(data, column_names, _class, column_type):
 
 
 def _calc_prediction_label_stats(labels, _class, label_column_names):
+    import numpy as np
+
     labels = np.array(labels, dtype=np.float64)
     _record_stats(labels, label_column_names, _class, "Label")
 
@@ -172,40 +174,42 @@ def create_label_event(transaction, _class, inference_id, instance, return_val):
     if return_val is not None:
         import numpy as np
 
-        if not hasattr(predict_return_val, "__iter__"):
+        if not hasattr(return_val, "__iter__"):
             labels = np.array([return_val])
         else:
             labels = np.array(return_val)
         if len(labels.shape) == 1:
             labels = np.reshape(labels, (len(labels) // 1, 1))
 
-        label_names_list = _get_label_names(label_names, labels[0])
+        label_names_list = _get_label_names(label_names, labels)
         _calc_prediction_label_stats(labels, _class, label_names_list)
-        for index, value in enumerate(return_val):
-            python_value_type = str(type(value))
-            value_type = str(categorize_data_type(python_value_type))
+        for prediction in labels:
+            for index, value in enumerate(prediction):
+                python_value_type = str(type(value))
+                value_type = str(categorize_data_type(python_value_type))
 
-            event = {
-                "inference_id": inference_id,
-                "model_name": model_name,
-                "model_version": model_version,
-                "label_name": str(label_names_list[index]),
-                "type": value_type,
-                "value": str(value),
-            }
-            # Don't include the raw value when inference_event_value is disabled.
-            if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
-                event["value"] = str(value)
-            transaction.record_custom_event("ML Model Label Event", event)
+                event = {
+                    "inference_id": inference_id,
+                    "model_name": model_name,
+                    "model_version": model_version,
+                    "label_name": str(label_names_list[index]),
+                    "type": value_type,
+                    "value": str(value),
+                }
+                # Don't include the raw value when inference_event_value is disabled.
+                if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
+                    event["value"] = str(value)
+                transaction.record_custom_event("ML Model Label Event", event)
 
 
 def _get_label_names(user_defined_label_names, prediction_array):
     import numpy as np
-    if user_defined_label_names is None or len(user_defined_label_names) != len(prediction_array):
+
+    if user_defined_label_names is None or len(user_defined_label_names) != prediction_array.shape[1]:
         _logger.warning(
             "The number of label names passed to the ml_model wrapper function is not equal to the number of predictions in the data set. Please supply the correct number of label names."
         )
-        return np.array(range(len(prediction_array)))
+        return np.array(range(prediction_array.shape[1]))
     else:
         return user_defined_label_names
 
@@ -276,7 +280,6 @@ def create_feature_event(transaction, _class, inference_id, instance, args, kwar
     final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
     np_casted_data_set = np.array(data_set)
     _calc_prediction_feature_stats(data_set, _class, final_feature_names)
-
 
     for col_index, feature in enumerate(np_casted_data_set):
         for row_index, value in enumerate(feature):

@@ -115,7 +115,7 @@ def initialize_agent(app_name=None, default_settings=None):
     for name, value in default_settings.items():
         apply_config_setting(settings, name, value)
 
-    env_directory = os.environ.get("TOX_ENVDIR", None)
+    env_directory = os.environ.get("TOX_ENV_DIR", None)
 
     if env_directory is not None:
         log_directory = os.path.join(env_directory, "log")

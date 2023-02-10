@@ -1493,14 +1493,13 @@ def override_expected_status_codes(status_codes):
     return _override_expected_status_codes
 
 
-def code_coverage_fixture(source=None):
-    if source is None:
-        source = ["newrelic"]
-
-    # source = ["newrelic"]
+@pytest.fixture(scope="session")
+def code_coverage():
+    from coverage import coverage
 
     github_actions = bool(os.environ.get("GITHUB_ACTIONS", None))
     tox_env_directory = os.environ.get("TOX_ENVDIR", None)
+    make_coverage_report = not github_actions and bool(os.environ.get("COVERAGE_REPORT", None))
 
     if tox_env_directory:
         data_file = os.path.join(tox_env_directory, ".coverage")
@@ -1513,28 +1512,19 @@ def code_coverage_fixture(source=None):
         coverage_directory = "htmlcov"
         xml_report = "coverage.xml"
 
-    @pytest.fixture(scope="session")
-    def _code_coverage_fixture(request):
-        if not source:
-            yield None  # Required, generator based fixtures must yield 1 value or pytest will throw an exception.
-            return
+    cov = coverage(source=["newrelic"], omit=["newrelic/packages/**/*.py"], data_file=data_file, data_suffix=data_suffix, branch=True)
+    cov.start()
 
-        from coverage import coverage
+    yield cov
 
-        cov = coverage(source=source, data_file=data_file, data_suffix=data_suffix, branch=True)
-        cov.start()
+    # At exit, stop coverage and save to data file
+    cov.stop()
+    cov.save()
 
-        yield cov
-
-        # At exit, stop coverage and save to data file
-        cov.stop()
-        cov.save()
-        if not github_actions:
-            # Run html and xml reports locally
-            cov.html_report(directory=coverage_directory)
-            cov.xml_report(outfile=xml_report)
-
-    return _code_coverage_fixture
+    if make_coverage_report:
+        # Run html and xml reports locally if the env var COVERAGE_REPORT=true is set
+        cov.html_report(directory=coverage_directory)
+        cov.xml_report(outfile=xml_report)
 
 
 def reset_core_stats_engine():

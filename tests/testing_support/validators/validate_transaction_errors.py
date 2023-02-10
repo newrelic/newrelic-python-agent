@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-
 from newrelic.common.object_wrapper import (
     function_wrapper,
     transient_function_wrapper,
 )
 from testing_support.fixtures import catch_background_exceptions
 
-def validate_transaction_errors(errors=None, required_params=None, forgone_params=None):
+
+def validate_transaction_errors(
+    errors=None, required_params=None, forgone_params=None, expected_errors=None
+):
     errors = errors or []
     required_params = required_params or []
     forgone_params = forgone_params or []
+    expected_errors = expected_errors or []
     captured_errors = []
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
@@ -70,6 +72,11 @@ def validate_transaction_errors(errors=None, required_params=None, forgone_param
 
             for name, value in forgone_params:
                 assert name not in e.custom_params, "name=%r, params=%r" % (name, e.custom_params)
+
+            if e.type in expected_errors:
+                assert e.expected is True
+            else:
+                assert e.expected is False
 
         return output
 

@@ -16,16 +16,11 @@ import logging
 import pytest
 
 from testing_support.fixtures import (
-    code_coverage_fixture,
+    code_coverage,
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
 
-_coverage_source = [
-    "newrelic.hooks.logger_loguru",
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,

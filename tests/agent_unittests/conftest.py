@@ -19,6 +19,7 @@ import pytest
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
+    code_coverage,
 )
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     newrelic_caplog as caplog,

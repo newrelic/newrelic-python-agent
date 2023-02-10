@@ -19,7 +19,7 @@ from testing_support.db_settings import redis_settings
 
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (  # noqa: F401
-    code_coverage_fixture,
+    code_coverage,
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
@@ -39,12 +39,6 @@ SKIPIF_AIOREDIS_V1 = pytest.mark.skipif(AIOREDIS_VERSION < (2,), reason="Unsuppo
 SKIPIF_AIOREDIS_V2 = pytest.mark.skipif(AIOREDIS_VERSION >= (2,), reason="Unsupported aioredis version.")
 DB_SETTINGS = redis_settings()[0]
 
-
-_coverage_source = [
-    "newrelic.hooks.datastore_aioredis",
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,

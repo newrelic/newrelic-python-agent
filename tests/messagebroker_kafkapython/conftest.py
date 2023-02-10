@@ -19,7 +19,7 @@ import kafka
 import pytest
 from testing_support.db_settings import kafka_settings
 from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
-    code_coverage_fixture,
+    code_coverage,
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
@@ -32,11 +32,6 @@ DB_SETTINGS = kafka_settings()[0]
 BOOTSTRAP_SERVER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
 BROKER = [BOOTSTRAP_SERVER]
 
-_coverage_source = [
-    "newrelic.hooks.messagebroker_kafkapython",
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,

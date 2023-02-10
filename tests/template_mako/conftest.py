@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import (code_coverage_fixture,  # noqa
+from testing_support.fixtures import (code_coverage,  # noqa
         collector_agent_registration_fixture, collector_available_fixture)
 
 _default_settings = {
@@ -27,8 +27,3 @@ collector_agent_registration = collector_agent_registration_fixture(
         app_name='Python Agent Test (template_mako)',
         default_settings=_default_settings)
 
-_coverage_source = [
-    'newrelic.hooks.template_mako',
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)

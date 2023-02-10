@@ -14,17 +14,11 @@
 
 import pytest
 
-from testing_support.fixtures import (code_coverage_fixture,
+from testing_support.fixtures import (code_coverage,
         collector_agent_registration_fixture, collector_available_fixture)
 from testing_support.mock_external_http_server import (
         MockExternalHTTPHResponseHeadersServer)
 
-_coverage_source = [
-    'newrelic.api.external_trace',
-    'newrelic.hooks.external_httplib',
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     'transaction_tracer.explain_threshold': 0.0,

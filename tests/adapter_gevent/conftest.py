@@ -16,7 +16,7 @@ import pytest
 import webtest
 
 from testing_support.fixtures import (collector_agent_registration_fixture,
-    collector_available_fixture)
+    collector_available_fixture, code_coverage)
 
 _default_settings = {
     'transaction_tracer.explain_threshold': 0.0,

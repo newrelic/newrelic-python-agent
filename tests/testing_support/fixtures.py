@@ -210,7 +210,7 @@ def collector_agent_registration_fixture(
     linked_applications = linked_applications or []
 
     @pytest.fixture(scope="session")
-    def _collector_agent_registration_fixture(request):
+    def _collector_agent_registration_fixture(request, code_coverage):
         if should_initialize_agent:
             initialize_agent(app_name=app_name, default_settings=default_settings)
 
@@ -281,7 +281,7 @@ def collector_agent_registration_fixture(
 
 
 @pytest.fixture(scope="function")
-def collector_available_fixture(request):
+def collector_available_fixture(request, collector_agent_registration):
     application = application_instance()
     active = application.active
     assert active
@@ -1496,6 +1496,8 @@ def override_expected_status_codes(status_codes):
 def code_coverage_fixture(source=None):
     if source is None:
         source = ["newrelic"]
+
+    # source = ["newrelic"]
 
     github_actions = bool(os.environ.get("GITHUB_ACTIONS", None))
     tox_env_directory = os.environ.get("TOX_ENVDIR", None)

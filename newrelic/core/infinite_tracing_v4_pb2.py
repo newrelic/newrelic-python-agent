@@ -113,7 +113,7 @@ RecordStatus = _reflection.GeneratedProtocolMessageType(
 _sym_db.RegisterMessage(RecordStatus)
 
 _INGESTSERVICE = DESCRIPTOR.services_by_name["IngestService"]
-if _descriptor._USE_C_DESCRIPTORS == False:
+if _descriptor._USE_C_DESCRIPTORS is False:
     DESCRIPTOR._options = None
     _SPAN_INTRINSICSENTRY._options = None
     _SPAN_INTRINSICSENTRY._serialized_options = b"8\001"

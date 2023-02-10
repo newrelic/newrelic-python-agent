@@ -15,7 +15,6 @@
 import collections
 import logging
 import threading
-import time
 
 try:
     from newrelic.core.infinite_tracing_pb2 import AttributeValue, SpanBatch

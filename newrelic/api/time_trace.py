@@ -328,8 +328,8 @@ class TimeTrace(object):
             is_expected = expected(exc, value, tb)
 
         # Callable on transaction
-        if is_expected is None and hasattr(transaction, "_is_expected"):
-            is_expected = transaction._is_expected(exc, value, tb)
+        if is_expected is None and hasattr(transaction, "_expect_errors"):
+            is_expected = transaction._expect_errors(exc, value, tb)
 
         # List of class names
         if is_expected is None and expected is not None and not callable(expected):

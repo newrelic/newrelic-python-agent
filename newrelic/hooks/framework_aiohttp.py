@@ -352,7 +352,7 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
         transaction._ignore_errors = should_ignore(transaction)
 
         # Patch in is_expected to all notice_error calls
-        transaction._is_expected = is_expected(transaction)
+        transaction._expect_errors = is_expected(transaction)
 
         import aiohttp
 

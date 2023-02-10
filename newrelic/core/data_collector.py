@@ -69,7 +69,6 @@ class Session(object):
                 and self.configuration.span_events.enabled
                 and self.configuration.collect_span_events
             ):
-
                 metadata = (
                     ("agent_run_token", self.configuration.agent_run_id),
                     ("license_key", self.configuration.license_key),

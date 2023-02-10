@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import random
 import threading
 
 import pytest
@@ -52,9 +51,8 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope="module")
 def grpc_app_server():
-    port = random.randint(50000, 50099)  # nosec: B311
-    with MockExternalgRPCServer(port=port) as server:
-        yield server, port
+    with MockExternalgRPCServer() as server:
+        yield server, server.port
 
 
 @pytest.fixture(scope="module")
@@ -86,3 +84,32 @@ def buffer_empty_event(monkeypatch):
 
     monkeypatch.setattr(StreamBuffer, "condition", condition)
     return event
+
+
+@pytest.fixture(scope="session", params=[pytest.param(True, id="batching"), pytest.param(False, id="nonbatching")])
+def batching(request):
+    return request.param
+
+
+@pytest.fixture(scope="function")
+def spans_received():
+    from _test_handler import SPANS_RECEIVED
+
+    SPANS_RECEIVED.clear()
+    return SPANS_RECEIVED
+
+
+@pytest.fixture(scope="function")
+def span_batches_received():
+    from _test_handler import SPAN_BATCHES_RECEIVED
+
+    SPAN_BATCHES_RECEIVED.clear()
+    return SPAN_BATCHES_RECEIVED
+
+
+@pytest.fixture(scope="function")
+def spans_processed_event():
+    from _test_handler import SPANS_PROCESSED_EVENT
+
+    SPANS_PROCESSED_EVENT.clear()
+    return SPANS_PROCESSED_EVENT

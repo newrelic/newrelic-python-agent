@@ -22,11 +22,8 @@ from aiohttp.test_utils import TestClient as _TestClient
 from testing_support.fixture.event_loop import (  # noqa: F401 pylint: disable=W0611
     event_loop,
 )
-from testing_support.fixtures import (  # noqa: F401 pylint: disable=W0611
-    code_coverage,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer,
     MockExternalHTTPServer,

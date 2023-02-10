@@ -13,11 +13,8 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    code_coverage,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     newrelic_caplog as caplog,
 )

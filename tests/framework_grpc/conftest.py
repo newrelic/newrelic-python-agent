@@ -16,11 +16,8 @@ import gc
 
 import grpc
 import pytest
-from testing_support.fixtures import (  # noqa
-    code_coverage,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
 import newrelic.packages.six as six

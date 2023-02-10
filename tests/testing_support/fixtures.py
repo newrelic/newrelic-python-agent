@@ -210,7 +210,7 @@ def collector_agent_registration_fixture(
     linked_applications = linked_applications or []
 
     @pytest.fixture(scope="session")
-    def _collector_agent_registration_fixture(request, code_coverage):
+    def _collector_agent_registration_fixture(request):
         if should_initialize_agent:
             initialize_agent(app_name=app_name, default_settings=default_settings)
 
@@ -1491,43 +1491,6 @@ def override_expected_status_codes(status_codes):
             settings.error_collector.expected_status_codes = original
 
     return _override_expected_status_codes
-
-
-@pytest.fixture(scope="session")
-def code_coverage():
-    from coverage import coverage
-
-    github_actions = bool(os.environ.get("GITHUB_ACTIONS", None))
-    tox_env_directory = os.environ.get("TOX_ENVDIR", None)
-    make_coverage_report = not github_actions and bool(os.environ.get("COVERAGE_REPORT", None))
-
-    if tox_env_directory:
-        data_file = os.path.join(tox_env_directory, ".coverage")
-        data_suffix = os.path.split(tox_env_directory)[-1]
-        coverage_directory = os.path.join(tox_env_directory, "htmlcov")
-        xml_report = os.path.join(tox_env_directory, "coverage.xml")
-    else:
-        data_file = ".coverage"
-        data_suffix = None
-        coverage_directory = "htmlcov"
-        xml_report = "coverage.xml"
-
-    # Grab current coverage
-    cov = coverage.current()
-
-    coverage.set_option("run:data_file", data_file)
-    coverage.set_option("run:data_suffix", data_suffix)
-
-    yield cov
-
-    # At exit, stop coverage and save to data file
-    cov.stop()
-    cov.save()
-
-    if make_coverage_report:
-        # Run html and xml reports locally if the env var COVERAGE_REPORT=true is set
-        cov.html_report(directory=coverage_directory)
-        cov.xml_report(outfile=xml_report)
 
 
 def reset_core_stats_engine():

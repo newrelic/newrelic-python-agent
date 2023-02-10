@@ -15,11 +15,7 @@
 import pytest
 import random
 
-from testing_support.fixtures import (
-    code_coverage,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 from newrelic.common.streaming_utils import StreamBuffer
 import threading

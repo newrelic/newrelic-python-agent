@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (code_coverage,  # noqa
-        collector_agent_registration_fixture, collector_available_fixture)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 _default_settings = {

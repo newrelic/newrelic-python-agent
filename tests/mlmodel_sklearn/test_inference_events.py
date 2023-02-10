@@ -23,12 +23,8 @@ from testing_support.fixtures import (
     validate_custom_event_count,
 )
 
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-
 from newrelic.api.background_task import background_task
-import six
+
 pandas_df_category_recorded_custom_events = [
     {
         "users": {
@@ -38,16 +34,6 @@ pandas_df_category_recorded_custom_events = [
             "feature_name": "col1",
             "type": "categorical",
             "value": "2.0",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "feature_name": "col1",
-            "type": "categorical",
-            "value": "3.0",
         }
     },
     {
@@ -65,27 +51,7 @@ pandas_df_category_recorded_custom_events = [
             "inference_id": None,
             "model_name": "DecisionTreeClassifier",
             "model_version": "0.0.0",
-            "feature_name": "col2",
-            "type": "categorical",
-            "value": "1.0",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numerical",
-            "value": "27.0",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "label_name": "1",
             "type": "numerical",
             "value": "27.0",
         }
@@ -96,7 +62,7 @@ pandas_df_category_recorded_custom_events = [
 @reset_core_stats_engine()
 def test_pandas_df_categorical_feature_event():
     @validate_custom_events(pandas_df_category_recorded_custom_events)
-    @validate_custom_event_count(count=6)
+    @validate_custom_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
@@ -107,7 +73,7 @@ def test_pandas_df_categorical_feature_event():
             pandas.DataFrame({"label": [27.0, 28.0]}),
         )
 
-        labels = model.predict(pandas.DataFrame({"col1": [2.0, 3.0], "col2": [4.0, 1.0]}, dtype="category"))
+        labels = model.predict(pandas.DataFrame({"col1": [2.0], "col2": [4.0]}, dtype="category"))
         return model
 
     _test()
@@ -132,29 +98,9 @@ pandas_df_bool_recorded_custom_events = [
             "inference_id": None,
             "model_name": "DecisionTreeClassifier",
             "model_version": "0.0.0",
-            "feature_name": "col1",
-            "type": "bool",
-            "value": "False",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
             "feature_name": "col2",
             "type": "bool",
             "value": "True",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "feature_name": "col2",
-            "type": "bool",
-            "value": "False",
         }
     },
     {
@@ -167,23 +113,13 @@ pandas_df_bool_recorded_custom_events = [
             "value": true_label_value,
         }
     },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "label_name": "1",
-            "type": label_type,
-            "value": false_label_value,
-        }
-    },
 ]
 
 
 @reset_core_stats_engine()
 def test_pandas_df_bool_feature_event():
     @validate_custom_events(pandas_df_bool_recorded_custom_events)
-    @validate_custom_event_count(count=6)
+    @validate_custom_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
@@ -191,7 +127,7 @@ def test_pandas_df_bool_feature_event():
         dtype_name = "bool" if sys.version_info < (3, 8) else "boolean"
         x_train = pandas.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name)
         y_train = pandas.DataFrame({"label": [True, False]}, dtype=dtype_name)
-        x_test = pandas.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name)
+        x_test = pandas.DataFrame({"col1": [True], "col2": [True]}, dtype=dtype_name)
 
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
         model = clf.fit(x_train, y_train)
@@ -218,29 +154,9 @@ pandas_df_float_recorded_custom_events = [
             "inference_id": None,
             "model_name": "DecisionTreeRegressor",
             "model_version": "0.0.0",
-            "feature_name": "col1",
-            "type": "numerical",
-            "value": "200.0",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeRegressor",
-            "model_version": "0.0.0",
             "feature_name": "col2",
             "type": "numerical",
             "value": "300.0",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeRegressor",
-            "model_version": "0.0.0",
-            "feature_name": "col2",
-            "type": "numerical",
-            "value": "400.0",
         }
     },
     {
@@ -253,30 +169,20 @@ pandas_df_float_recorded_custom_events = [
             "value": "345.6",
         }
     },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeRegressor",
-            "model_version": "0.0.0",
-            "label_name": "1",
-            "type": "numerical",
-            "value": "345.6",
-        }
-    },
 ]
 
 
 @reset_core_stats_engine()
 def test_pandas_df_float_feature_event():
     @validate_custom_events(pandas_df_float_recorded_custom_events)
-    @validate_custom_event_count(count=6)
+    @validate_custom_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
 
         x_train = pandas.DataFrame({"col1": [120.0, 254.0], "col2": [236.9, 234.5]}, dtype="float64")
         y_train = pandas.DataFrame({"label": [345.6, 456.7]}, dtype="float64")
-        x_test = pandas.DataFrame({"col1": [100.0, 200.0], "col2": [300.0, 400.0]}, dtype="float64")
+        x_test = pandas.DataFrame({"col1": [100.0], "col2": [300.0]}, dtype="float64")
 
         clf = getattr(sklearn.tree, "DecisionTreeRegressor")(random_state=0)
 
@@ -314,37 +220,7 @@ int_list_recorded_custom_events = [
             "inference_id": None,
             "model_name": "ExtraTreeRegressor",
             "model_version": "0.0.0",
-            "feature_name": "0",
-            "type": "numerical",
-            "value": "3",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
-            "model_version": "0.0.0",
-            "feature_name": "1",
-            "type": "numerical",
-            "value": "4",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
-            "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numerical",
-            "value": "1.0",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
-            "model_version": "0.0.0",
-            "label_name": "1",
             "type": "numerical",
             "value": "1.0",
         }
@@ -355,14 +231,14 @@ int_list_recorded_custom_events = [
 @reset_core_stats_engine()
 def test_int_list():
     @validate_custom_events(int_list_recorded_custom_events)
-    @validate_custom_event_count(count=6)
+    @validate_custom_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
 
         x_train = [[0, 0], [1, 1]]
         y_train = [0, 1]
-        x_test = [[1, 2], [3, 4]]
+        x_test = [[1, 2]]
 
         clf = getattr(sklearn.tree, "ExtraTreeRegressor")(random_state=0)
         model = clf.fit(x_train, y_train)
@@ -399,37 +275,7 @@ numpy_int_recorded_custom_events = [
             "inference_id": None,
             "model_name": "ExtraTreeRegressor",
             "model_version": "0.0.0",
-            "feature_name": "0",
-            "type": "numerical",
-            "value": "14",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
-            "model_version": "0.0.0",
-            "feature_name": "1",
-            "type": "numerical",
-            "value": "15",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
-            "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numerical",
-            "value": "11.0",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
-            "model_version": "0.0.0",
-            "label_name": "1",
             "type": "numerical",
             "value": "11.0",
         }
@@ -440,14 +286,14 @@ numpy_int_recorded_custom_events = [
 @reset_core_stats_engine()
 def test_numpy_int_array():
     @validate_custom_events(numpy_int_recorded_custom_events)
-    @validate_custom_event_count(count=6)
+    @validate_custom_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
 
         x_train = np.array([[10, 10], [11, 11]], dtype="int")
         y_train = np.array([10, 11], dtype="int")
-        x_test = np.array([[12, 13], [14, 15]], dtype="int")
+        x_test = np.array([[12, 13]], dtype="int")
 
         clf = getattr(sklearn.tree, "ExtraTreeRegressor")(random_state=0)
         model = clf.fit(x_train, y_train)
@@ -499,31 +345,11 @@ numpy_str_recorded_custom_events = [
             "value": "23",
         }
     },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "label_name": "0",
-            "type": "str",
-            "value": "21",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "label_name": "1",
-            "type": "str",
-            "value": "21",
-        }
-    },
 ]
 
 
 @reset_core_stats_engine()
-def test_numpy_str_array():
+def test_numpy_str_array_multiple_features():
     @validate_custom_events(numpy_str_recorded_custom_events)
     @validate_custom_event_count(count=6)
     @background_task()

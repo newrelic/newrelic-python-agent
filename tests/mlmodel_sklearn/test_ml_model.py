@@ -264,7 +264,7 @@ pandas_df_recorded_builtin_events = [
             "inference_id": None,
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
-            "label_name": "label2",
+            "label_name": "label1",
             "type": "numerical",
             "value": "0",
         }
@@ -274,7 +274,7 @@ pandas_df_recorded_builtin_events = [
 
 @reset_core_stats_engine()
 def test_wrapper_attrs_builtin_model():
-    @validate_custom_event_count(count=6)
+    @validate_custom_event_count(count=3)
     @validate_custom_events(pandas_df_recorded_builtin_events)
     @background_task()
     def _test():

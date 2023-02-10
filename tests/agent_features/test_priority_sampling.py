@@ -41,8 +41,9 @@ def test_priority_used_in_transaction_events(first_transaction_saved):
         transaction_events = list(stats_engine.transaction_events)
         assert len(transaction_events) == 1
 
-        # highest priority should win
-        assert stats_engine.transaction_events.pq[0][0] == 1
+        # Highest priority should win.
+        # Priority can be 1 or 2 depending on randomness in sampling computation.
+        assert stats_engine.transaction_events.pq[0][0] >= 1
 
         if first_transaction_saved:
             assert transaction_events[0][0]['name'].endswith('/T1')

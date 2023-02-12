@@ -53,7 +53,6 @@ class CustomTestModel(BaseDecisionTree):
             class_weight=None,
             presort=False,
         ):
-
             super(CustomTestModel, self).__init__(
                 criterion=criterion,
                 splitter=splitter,
@@ -87,7 +86,6 @@ class CustomTestModel(BaseDecisionTree):
             class_weight=None,
             ccp_alpha=0.0,
         ):
-
             super().__init__(
                 criterion=criterion,
                 splitter=splitter,

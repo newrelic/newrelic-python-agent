@@ -422,8 +422,43 @@ def test_does_not_include_value_when_inference_event_value_enabled_is_false():
     _test()
 
 
+multilabel_output_label_events = [
+    {
+        "users": {
+            "inference_id": None,
+            "model_name": "MultiOutputClassifier",
+            "model_version": "0.0.0",
+            "label_name": "0",
+            "type": "numerical",
+            "value": "1",
+        }
+    },
+    {
+        "users": {
+            "inference_id": None,
+            "model_name": "MultiOutputClassifier",
+            "model_version": "0.0.0",
+            "label_name": "1",
+            "type": "numerical",
+            "value": "0",
+        }
+    },
+    {
+        "users": {
+            "inference_id": None,
+            "model_name": "MultiOutputClassifier",
+            "model_version": "0.0.0",
+            "label_name": "2",
+            "type": "numerical",
+            "value": "1",
+        }
+    },
+]
+
+
 @reset_core_stats_engine()
 def test_custom_event_count_multilabel_output():
+    @validate_custom_events(multilabel_output_label_events)
     # The expected count of 23 comes from 20 feature events + 3 label events to be generated
     @validate_custom_event_count(count=23)
     @background_task()

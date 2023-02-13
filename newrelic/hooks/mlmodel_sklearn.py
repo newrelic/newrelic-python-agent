@@ -36,17 +36,6 @@ PY2 = sys.version_info[0] == 2
 _logger = logging.getLogger(__name__)
 
 
-def isnumeric(column):
-    import numpy as np
-
-    try:
-        column.astype(np.float64)
-        return [True] * len(column)
-    except:
-        pass
-    return [False] * len(column)
-
-
 class PredictReturnTypeProxy(ObjectProxy):
     def __init__(self, wrapped, model_name, training_step):
         super(ObjectProxy, self).__init__(wrapped)

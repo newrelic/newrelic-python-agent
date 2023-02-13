@@ -155,7 +155,6 @@ def _record_stats(data, column_names, _class, column_type):
                 ("%s/%s" % (metric_name, "Count"), _count),
             ]
         )
-    return (mean, percentile25, percentile50, percentile75, standard_deviation, _min, _max, _count)
 
 
 def _calc_prediction_label_stats(labels, _class, label_column_names):

@@ -40,6 +40,10 @@ async def non_500_error(request):
     raise web.HTTPGone()
 
 
+async def raise_403(request):
+    raise web.HTTPForbidden()
+
+
 async def raise_404(request):
     raise web.HTTPNotFound()
 
@@ -167,6 +171,7 @@ def make_app(middlewares=None):
     app.router.add_route("*", "/error", error)
     app.router.add_route("*", "/known_error", KnownErrorView)
     app.router.add_route("*", "/non_500_error", non_500_error)
+    app.router.add_route("*", "/raise_403", raise_403)
     app.router.add_route("*", "/raise_404", raise_404)
     app.router.add_route("*", "/hang", hang)
     app.router.add_route("*", "/background", background)

@@ -176,7 +176,7 @@ pandas_df_recorded_custom_events = [
             "model_version": "1.5.0b1",
             "feature_name": "feature1",
             "type": "categorical",
-            "value": "0"
+            "value": "0",
         }
     },
     {

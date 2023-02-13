@@ -201,7 +201,6 @@ def collector_agent_registration_fixture(
 
     @pytest.fixture(scope="session")
     def _collector_agent_registration_fixture(request):
-
         if should_initialize_agent:
             initialize_agent(app_name=app_name, default_settings=default_settings)
 
@@ -482,7 +481,6 @@ def validate_attributes(attr_type, required_attr_names=None, forgone_attr_names=
 
 
 def validate_attributes_complete(attr_type, required_attrs=None, forgone_attrs=None):
-
     # This differs from `validate_attributes` in that all fields of
     # Attribute must match (name, value, and destinations), not just
     # name. It's a more thorough test, but it's more of a pain to set
@@ -514,7 +512,6 @@ def validate_attributes_complete(attr_type, required_attrs=None, forgone_attrs=N
         attribute_filter = transaction.settings.attribute_filter
 
         if attr_type == "intrinsic":
-
             # Intrinsics are stored as a dict, so for consistency's sake
             # in this test, we convert them to Attributes.
 
@@ -714,7 +711,6 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
             error_events = transaction.error_events(instance.stats_table)
             assert len(error_events) == num_errors
             for sample in error_events:
-
                 assert isinstance(sample, list)
                 assert len(sample) == 3
 
@@ -746,7 +742,6 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
 
 
 def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics, required_user):
-
     now = time.time()
     assert isinstance(intrinsics["timestamp"], int)
     assert intrinsics["timestamp"] <= 1000.0 * now
@@ -810,7 +805,6 @@ def validate_transaction_exception_message(expected_message):
         except:
             raise
         else:
-
             error_data = instance.error_data()
             assert len(error_data) == 1
             error = error_data[0]
@@ -840,13 +834,11 @@ def validate_application_exception_message(expected_message):
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
     def _validate_application_exception_message(wrapped, instance, args, kwargs):
-
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
-
             error_data = instance.error_data()
             assert len(error_data) == 1
             error = error_data[0]
@@ -1098,38 +1090,69 @@ def override_ignore_status_codes(status_codes):
     return _override_ignore_status_codes
 
 
+def override_expected_status_codes(status_codes):
+    @function_wrapper
+    def _override_expected_status_codes(wrapped, instance, args, kwargs):
+        # Updates can be made to expected status codes in server
+        # side configs. Changes will be applied to application
+        # settings so we first check there and if they don't
+        # exist, we default to global settings
+
+        application = application_instance()
+        settings = application and application.settings
+
+        if not settings:
+            settings = global_settings()
+
+        original = settings.error_collector.expected_status_codes
+
+        try:
+            settings.error_collector.expected_status_codes = status_codes
+            return wrapped(*args, **kwargs)
+        finally:
+            settings.error_collector.expected_status_codes = original
+
+    return _override_expected_status_codes
+
+
 def code_coverage_fixture(source=None):
     if source is None:
         source = ["newrelic"]
 
+    github_actions = bool(os.environ.get("GITHUB_ACTIONS", None))
+    tox_env_directory = os.environ.get("TOX_ENVDIR", None)
+
+    if tox_env_directory:
+        data_file = os.path.join(tox_env_directory, ".coverage")
+        data_suffix = os.path.split(tox_env_directory)[-1]
+        coverage_directory = os.path.join(tox_env_directory, "htmlcov")
+        xml_report = os.path.join(tox_env_directory, "coverage.xml")
+    else:
+        data_file = ".coverage"
+        data_suffix = None
+        coverage_directory = "htmlcov"
+        xml_report = "coverage.xml"
+
     @pytest.fixture(scope="session")
     def _code_coverage_fixture(request):
         if not source:
-            return
-
-        if os.environ.get("GITHUB_ACTIONS") is not None:
+            yield None  # Required, generator based fixtures must yield 1 value or pytest will throw an exception.
             return
 
         from coverage import coverage
 
-        env_directory = os.environ.get("TOX_ENVDIR", None)
+        cov = coverage(source=source, data_file=data_file, data_suffix=data_suffix, branch=True)
+        cov.start()
 
-        if env_directory is not None:
-            coverage_directory = os.path.join(env_directory, "htmlcov")
-            xml_report = os.path.join(env_directory, "coverage.xml")
-        else:
-            coverage_directory = "htmlcov"
-            xml_report = "coverage.xml"
+        yield cov
 
-        def finalize():
-            cov.stop()
+        # At exit, stop coverage and save to data file
+        cov.stop()
+        cov.save()
+        if not github_actions:
+            # Run html and xml reports locally
             cov.html_report(directory=coverage_directory)
             cov.xml_report(outfile=xml_report)
-
-        request.addfinalizer(finalize)
-
-        cov = coverage(source=source, branch=True)
-        cov.start()
 
     return _code_coverage_fixture
 
@@ -1228,7 +1251,6 @@ def set_default_encoding(encoding):
 
     @function_wrapper
     def _set_default_encoding(wrapped, instance, args, kwargs):
-
         # This technique of reloading the sys module is necessary because the
         # method is removed during initialization of Python. Doing this is
         # highly frowned upon, but it is the only way to test how our agent
@@ -1276,7 +1298,6 @@ def function_not_called(module, name):
 
 
 def validate_analytics_catmap_data(name, expected_attributes=(), non_expected_attributes=()):
-
     samples = []
 
     @transient_function_wrapper("newrelic.core.stats_engine", "SampledDataSet.add")
@@ -1328,7 +1349,6 @@ def count_transactions(count_list):
 
 
 def failing_endpoint(endpoint, raises=RetryDataForRequest, call_number=1):
-
     called_list = []
 
     @transient_function_wrapper("newrelic.core.agent_protocol", "AgentProtocol.send")

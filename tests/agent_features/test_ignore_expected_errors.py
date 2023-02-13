@@ -98,8 +98,9 @@ def test_classes_error_event_inside_transaction(settings, expected, ignore):
 
     error_count = 1 if not ignore else 0
     errors = _test_runtime_error if not ignore else []
+    expected_errors = _runtime_error_name if expected and not ignore else None
 
-    @validate_transaction_errors(errors=errors)
+    @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
     @validate_error_event_sample_data(
         required_attrs=attributes,
         required_user_attrs=False,
@@ -272,8 +273,9 @@ def test_status_codes_inside_transaction(settings, expected, ignore, status_code
 
     error_count = 1 if not ignore else 0
     errors = _test_teapot_error if not ignore else []
+    expected_errors = _teapot_error_name if expected and not ignore else None
 
-    @validate_transaction_errors(errors=errors)
+    @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
     @validate_error_event_sample_data(
         required_attrs=attributes,
         required_user_attrs=False,
@@ -363,8 +365,9 @@ def test_mixed_ignore_expected_settings_inside_transaction(
 
     error_count = 1 if not ignore else 0
     errors = _test_runtime_error if not ignore else []
+    expected_errors = _runtime_error_name if expected and not ignore else None
 
-    @validate_transaction_errors(errors=errors)
+    @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
     @validate_error_event_sample_data(
         required_attrs=attributes,
         required_user_attrs=False,
@@ -432,8 +435,9 @@ def test_overrides_inside_transaction(override, result, parameter):
 
     error_count = 1 if not ignore else 0
     errors = _test_runtime_error if not ignore else []
+    expected_errors = _runtime_error_name if expected and not ignore else None
 
-    @validate_transaction_errors(errors=errors)
+    @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
     @validate_error_event_sample_data(
         required_attrs=attributes,
         required_user_attrs=False,

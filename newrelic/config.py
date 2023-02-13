@@ -2666,54 +2666,145 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "redis.asyncio.client", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
+    )
+
+    _process_module_definition(
+        "redis.asyncio.commands", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
+    )
+
+    _process_module_definition(
+        "redis.asyncio.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
+    )
+
+    # v7 and below
+    _process_module_definition(
         "elasticsearch.client",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.cat",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_cat",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.cat",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_cat_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.cluster",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_cluster",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.cluster",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_cluster_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.indices",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_indices",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.indices",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_indices_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.nodes",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_nodes",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.nodes",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_nodes_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.snapshot",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_snapshot",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.snapshot",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_snapshot_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.tasks",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_tasks",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.tasks",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_tasks_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.ingest",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_ingest",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.ingest",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_ingest_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.connection.base",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_connection_base",
     )
+    # v8 and above
+    _process_module_definition(
+        "elastic_transport._node._base",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elastic_transport__node__base",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.transport",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_transport",
+    )
+    # v8 and above
+    _process_module_definition(
+        "elastic_transport._transport",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elastic_transport__transport",
     )
 
     _process_module_definition("pika.adapters", "newrelic.hooks.messagebroker_pika", "instrument_pika_adapters")

@@ -98,4 +98,4 @@ def instrument_aredis_client(module):
 
 
 def instrument_aredis_connection(module):
-    wrap_function_wrapper(module.Connection, "send_command", wrap_Connection_send_command)
+    wrap_function_wrapper(module, "Connection.send_command", wrap_Connection_send_command)

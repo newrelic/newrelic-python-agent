@@ -87,10 +87,12 @@ def test_basehttp_style_middleware(target_application, route):
         response = app.get("/" + route)
         assert response.status == 200
 
-    BUG_COMPLETELY_FIXED = (starlette_version >= (0, 21, 0)) or (
-        starlette_version >= (0, 20, 1) and sys.version_info[:2] > (3, 7)
+    # The bug was fixed in version 0.21.0 but re-occured in 0.23.1.
+    # The bug was also not present on 0.20.1 to 0.23.1 if using Python3.7.
+    BUG_COMPLETELY_FIXED = (0, 21, 0) <= starlette_version < (0, 23, 1) or (
+        (0, 20, 1) <= starlette_version < (0, 23, 1) and sys.version_info[:2] > (3, 7)
     )
-    BUG_PARTIALLY_FIXED = (0, 20, 1) <= starlette_version < (0, 21, 0) and sys.version_info[:2] <= (3, 7)
+    BUG_PARTIALLY_FIXED = (0, 20, 1) <= starlette_version < (0, 21, 0) or starlette_version >= (0, 23, 1)
 
     if BUG_COMPLETELY_FIXED:
         # Assert both web transaction and background task transactions are present.
@@ -103,6 +105,7 @@ def test_basehttp_style_middleware(target_application, route):
         # The background task no longer blocks the completion of the web request/web transaction.
         # However, the BaseHTTPMiddleware causes the task to be cancelled when the web request disconnects, so there are no
         # longer function traces or background task transactions.
+        # In version 0.23.1, the check to see if more_body exists is removed, reverting behavior to this model
         _test = validate_transaction_metrics("_test_bg_tasks:run_%s_bg_task" % route, scoped_metrics=[route_metric])(
             _test
         )

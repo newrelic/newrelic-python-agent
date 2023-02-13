@@ -36,6 +36,17 @@ PY2 = sys.version_info[0] == 2
 _logger = logging.getLogger(__name__)
 
 
+def isnumeric(column):
+    import numpy as np
+
+    try:
+        column.astype(np.float64)
+        return [True] * len(column)
+    except:
+        pass
+    return [False] * len(column)
+
+
 class PredictReturnTypeProxy(ObjectProxy):
     def __init__(self, wrapped, model_name, training_step):
         super(ObjectProxy, self).__init__(wrapped)
@@ -95,33 +106,44 @@ def create_label_event(transaction, _class, inference_id, instance, return_val):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if return_val is not None:
-        return_val = return_val.flatten()
-        label_names_list = _get_label_names(label_names, return_val)
-        for index, value in enumerate(return_val):
-            python_value_type = str(type(value))
-            value_type = str(categorize_data_type(python_value_type))
+        import numpy as np
 
-            event = {
-                "inference_id": inference_id,
-                "model_name": model_name,
-                "model_version": model_version,
-                "label_name": str(label_names_list[index]),
-                "type": value_type,
-                "value": str(value),
-            }
-            # Don't include the raw value when inference_event_value is disabled.
-            if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
-                event["value"] = str(value)
-            transaction.record_custom_event("ML Model Label Event", event)
+        if not hasattr(return_val, "__iter__"):
+            labels = np.array([return_val])
+        else:
+            labels = np.array(return_val)
+        if len(labels.shape) == 1:
+            labels = np.reshape(labels, (len(labels) // 1, 1))
+
+        label_names_list = _get_label_names(label_names, labels)
+
+        for prediction in labels:
+            for index, value in enumerate(prediction):
+                python_value_type = str(type(value))
+                value_type = str(categorize_data_type(python_value_type))
+
+                event = {
+                    "inference_id": inference_id,
+                    "model_name": model_name,
+                    "model_version": model_version,
+                    "label_name": str(label_names_list[index]),
+                    "type": value_type,
+                    "value": str(value),
+                }
+                # Don't include the raw value when inference_event_value is disabled.
+                if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
+                    event["value"] = str(value)
+                transaction.record_custom_event("ML Model Label Event", event)
 
 
 def _get_label_names(user_defined_label_names, prediction_array):
     import numpy as np
-    if user_defined_label_names is None or len(user_defined_label_names) != len(prediction_array):
+
+    if user_defined_label_names is None or len(user_defined_label_names) != prediction_array.shape[1]:
         _logger.warning(
             "The number of label names passed to the ml_model wrapper function is not equal to the number of predictions in the data set. Please supply the correct number of label names."
         )
-        return np.array(range(len(prediction_array)))
+        return np.array(range(prediction_array.shape[1]))
     else:
         return user_defined_label_names
 
@@ -159,7 +181,7 @@ def _get_feature_column_names(user_provided_feature_names, features):
     # If the user provided feature names are the correct size, return the user provided feature
     # names.
     if user_provided_feature_names and len(user_provided_feature_names) == num_feature_columns:
-        return user_provided_feature_names
+        return np.array(user_provided_feature_names)
 
     # If the user provided feature names aren't the correct size, log a warning and do not use the user provided feature names.
     if user_provided_feature_names:

@@ -44,7 +44,7 @@ def app():
         app.internal_agent_shutdown(restart=False)
     except:
         pass
-    if active_session:
+    if active_session and active_session._rpc is not None:
         assert not active_session._rpc.response_processing_thread.is_alive()
         assert not active_session._rpc.channel
 
@@ -466,18 +466,19 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
     _test()
 
 
+@pytest.mark.parametrize("trace_observer_host", ["localhost", None])
 @pytest.mark.parametrize("batching", [True, False])
 @pytest.mark.parametrize("compression", [True, False])
-def test_settings_supportability_metrics(mock_grpc_server, monkeypatch, app, batching, compression):
+def test_settings_supportability_metrics(mock_grpc_server, app, trace_observer_host, batching, compression):
     connect_event = threading.Event()
 
+    enabled = bool(trace_observer_host)
+
     metrics = [
-        # Metrics must be present
-        ("Supportability/InfiniteTracing/gRPC/Batching/%s" % ("enabled" if batching else "disabled"), 1),
-        ("Supportability/InfiniteTracing/gRPC/Compression/%s" % ("enabled" if compression else "disabled"), 1),
-        # Opposing metrics must not be present
-        ("Supportability/InfiniteTracing/gRPC/Batching/%s" % ("enabled" if not batching else "disabled"), None),
-        ("Supportability/InfiniteTracing/gRPC/Compression/%s" % ("enabled" if not compression else "disabled"), None),
+        ("Supportability/InfiniteTracing/gRPC/Batching/enabled", 1 if enabled and batching else None),
+        ("Supportability/InfiniteTracing/gRPC/Batching/disabled", 1 if enabled and not batching else None),
+        ("Supportability/InfiniteTracing/gRPC/Compression/enabled", 1 if enabled and compression else None),
+        ("Supportability/InfiniteTracing/gRPC/Compression/disabled", 1 if enabled and not compression else None),
     ]
 
     @override_generic_settings(
@@ -485,7 +486,7 @@ def test_settings_supportability_metrics(mock_grpc_server, monkeypatch, app, bat
         {
             "distributed_tracing.enabled": True,
             "span_events.enabled": True,
-            "infinite_tracing.trace_observer_host": "localhost",
+            "infinite_tracing.trace_observer_host": trace_observer_host,
             "infinite_tracing.trace_observer_port": mock_grpc_server,
             "infinite_tracing.ssl": False,
             "infinite_tracing.batching": batching,

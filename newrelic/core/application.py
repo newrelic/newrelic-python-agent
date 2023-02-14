@@ -566,16 +566,17 @@ class Application(object):
 
             # Infinite tracing feature toggle metrics
             infinite_tracing = configuration.infinite_tracing.enabled  # Property that checks trace observer host
-            infinite_tracing_batching = infinite_tracing and configuration.infinite_tracing.batching
-            infinite_tracing_compression = infinite_tracing and configuration.infinite_tracing.compression
-            internal_metric(
-                "Supportability/InfiniteTracing/gRPC/Batching/%s" % ("enabled" if infinite_tracing_batching else "disabled"),
-                1,
-            )
-            internal_metric(
-                "Supportability/InfiniteTracing/gRPC/Compression/%s" % ("enabled" if infinite_tracing_compression else "disabled"),
-                1,
-            )
+            if infinite_tracing:
+                infinite_tracing_batching = configuration.infinite_tracing.batching
+                infinite_tracing_compression = configuration.infinite_tracing.compression
+                internal_metric(
+                    "Supportability/InfiniteTracing/gRPC/Batching/%s" % ("enabled" if infinite_tracing_batching else "disabled"),
+                    1,
+                )
+                internal_metric(
+                    "Supportability/InfiniteTracing/gRPC/Compression/%s" % ("enabled" if infinite_tracing_compression else "disabled"),
+                    1,
+                )
 
         self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 

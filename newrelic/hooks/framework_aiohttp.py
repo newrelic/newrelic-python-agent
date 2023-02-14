@@ -26,7 +26,7 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_function_wrapper,
 )
-from newrelic.core.config import should_ignore_error
+from newrelic.core.config import is_expected_error, should_ignore_error
 
 SUPPORTED_METHODS = ("connect", "head", "get", "delete", "options", "patch", "post", "put", "trace")
 
@@ -59,6 +59,19 @@ def should_ignore(transaction):
             return should_ignore_error((exc, value, tb), status_code, settings=settings)
 
     return _should_ignore
+
+
+def is_expected(transaction):
+    settings = transaction.settings
+
+    def _is_expected(exc, value, tb):
+        from aiohttp import web
+
+        if isinstance(value, web.HTTPException):
+            status_code = value.status_code
+            return is_expected_error((exc, value, tb), status_code, settings=settings)
+
+    return _is_expected
 
 
 def _nr_process_response_proxy(response, transaction):
@@ -337,6 +350,9 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
 
         # Patch in should_ignore to all notice_error calls
         transaction._ignore_errors = should_ignore(transaction)
+
+        # Patch in is_expected to all notice_error calls
+        transaction._expect_errors = is_expected(transaction)
 
         import aiohttp
 

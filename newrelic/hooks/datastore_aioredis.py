@@ -12,24 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper, FunctionWrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
 from newrelic.hooks.datastore_redis import (
     _redis_client_methods,
     _redis_multipart_commands,
     _redis_operation_re,
 )
-
-from newrelic.common.async_wrapper import async_wrapper
-
-import aioredis
-
-try:
-    AIOREDIS_VERSION = lambda: tuple(int(x) for x in getattr(aioredis, "__version__").split("."))
-except Exception:
-    AIOREDIS_VERSION = lambda: (0, 0, 0)
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 
 def _conn_attrs_to_dict(connection):
@@ -68,7 +60,8 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
         # Check for transaction and return early if found.
         # Method will return synchronously without executing,
         # it will be added to the command stack and run later.
-        if AIOREDIS_VERSION() < (2,):
+        aioredis_version = get_package_version_tuple("aioredis")
+        if aioredis_version and aioredis_version < (2,):
             # AioRedis v1 uses a RedisBuffer instead of a real connection for queueing up pipeline commands
             from aioredis.commands.transaction import _RedisBuffer
             if isinstance(instance._pool_or_conn, _RedisBuffer):
@@ -77,7 +70,10 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
                 return wrapped(*args, **kwargs)
         else:
             # AioRedis v2 uses a Pipeline object for a client and internally queues up pipeline commands
-            from aioredis.client import Pipeline
+            if aioredis_version:
+                from aioredis.client import Pipeline
+            else:
+                from redis.asyncio.client import Pipeline
             if isinstance(instance, Pipeline):
                 return wrapped(*args, **kwargs)
 

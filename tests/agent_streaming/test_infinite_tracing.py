@@ -464,3 +464,44 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
         app.harvest()
 
     _test()
+
+
+@pytest.mark.parametrize("batching", [True, False])
+@pytest.mark.parametrize("compression", [True, False])
+def test_settings_supportability_metrics(mock_grpc_server, monkeypatch, app, batching, compression):
+    connect_event = threading.Event()
+
+    metrics = [
+        # Metrics must be present
+        ("Supportability/InfiniteTracing/gRPC/Batching/%s" % ("enabled" if batching else "disabled"), 1),
+        ("Supportability/InfiniteTracing/gRPC/Compression/%s" % ("enabled" if compression else "disabled"), 1),
+        # Opposing metrics must not be present
+        ("Supportability/InfiniteTracing/gRPC/Batching/%s" % ("enabled" if not batching else "disabled"), None),
+        ("Supportability/InfiniteTracing/gRPC/Compression/%s" % ("enabled" if not compression else "disabled"), None),
+    ]
+
+    @override_generic_settings(
+        settings,
+        {
+            "distributed_tracing.enabled": True,
+            "span_events.enabled": True,
+            "infinite_tracing.trace_observer_host": "localhost",
+            "infinite_tracing.trace_observer_port": mock_grpc_server,
+            "infinite_tracing.ssl": False,
+            "infinite_tracing.batching": batching,
+            "infinite_tracing.compression": compression,
+        },
+    )
+    @validate_metric_payload(metrics)
+    def _test():        
+        def connect_complete():
+            connect_event.set()
+
+        app.connect_to_data_collector(connect_complete)
+
+        assert connect_event.wait(timeout=5)
+        connect_event.clear()
+
+        app.harvest()
+
+    _test()

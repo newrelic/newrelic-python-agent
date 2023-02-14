@@ -520,24 +520,26 @@ class Application(object):
 
         self._global_events_account = 0
 
-        # Record metrics for how long it took us to connect and how
-        # many attempts we made. Also record metrics for the final
-        # successful attempt. If we went through multiple attempts,
-        # individual details of errors before the final one that
-        # worked are not recorded as recording them all in the
-        # initial harvest would possibly skew first harvest metrics
-        # and cause confusion as we cannot properly mark the time over
-        # which they were recorded. Make sure we do this before we
-        # mark the session active so we don't have to grab a lock on
-        # merging the internal metrics.
-
         with InternalTraceContext(internal_metrics):
+            # Record metrics for how long it took us to connect and how
+            # many attempts we made. Also record metrics for the final
+            # successful attempt. If we went through multiple attempts,
+            # individual details of errors before the final one that
+            # worked are not recorded as recording them all in the
+            # initial harvest would possibly skew first harvest metrics
+            # and cause confusion as we cannot properly mark the time over
+            # which they were recorded. Make sure we do this before we
+            # mark the session active so we don't have to grab a lock on
+            # merging the internal metrics.
+            
             internal_metric(
                 "Supportability/Python/Application/Registration/Duration", self._period_start - connect_start
             )
             internal_metric("Supportability/Python/Application/Registration/Attempts", connect_attempts)
 
-            # Logging feature toggle supportability metrics
+            # Record metrics for feature toggles from settings
+
+            # Logging feature toggle metrics
             application_logging_metrics = (
                 configuration.application_logging.enabled and configuration.application_logging.metrics.enabled
             )
@@ -559,6 +561,19 @@ class Application(object):
             )
             internal_metric(
                 "Supportability/Logging/Metrics/Python/%s" % ("enabled" if application_logging_metrics else "disabled"),
+                1,
+            )
+
+            # Infinite tracing feature toggle metrics
+            infinite_tracing = configuration.infinite_tracing.enabled  # Property that checks trace observer host
+            infinite_tracing_batching = infinite_tracing and configuration.infinite_tracing.batching
+            infinite_tracing_compression = infinite_tracing and configuration.infinite_tracing.compression
+            internal_metric(
+                "Supportability/InfiniteTracing/gRPC/Batching/%s" % ("enabled" if infinite_tracing_batching else "disabled"),
+                1,
+            )
+            internal_metric(
+                "Supportability/InfiniteTracing/gRPC/Compression/%s" % ("enabled" if infinite_tracing_compression else "disabled"),
                 1,
             )
 

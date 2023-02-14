@@ -531,7 +531,7 @@ class Application(object):
             # which they were recorded. Make sure we do this before we
             # mark the session active so we don't have to grab a lock on
             # merging the internal metrics.
-            
+
             internal_metric(
                 "Supportability/Python/Application/Registration/Duration", self._period_start - connect_start
             )
@@ -570,11 +570,13 @@ class Application(object):
                 infinite_tracing_batching = configuration.infinite_tracing.batching
                 infinite_tracing_compression = configuration.infinite_tracing.compression
                 internal_metric(
-                    "Supportability/InfiniteTracing/gRPC/Batching/%s" % ("enabled" if infinite_tracing_batching else "disabled"),
+                    "Supportability/InfiniteTracing/gRPC/Batching/%s"
+                    % ("enabled" if infinite_tracing_batching else "disabled"),
                     1,
                 )
                 internal_metric(
-                    "Supportability/InfiniteTracing/gRPC/Compression/%s" % ("enabled" if infinite_tracing_compression else "disabled"),
+                    "Supportability/InfiniteTracing/gRPC/Compression/%s"
+                    % ("enabled" if infinite_tracing_compression else "disabled"),
                     1,
                 )
 

@@ -17,15 +17,14 @@ import time
 
 import pytest
 from testing_support.fixtures import override_generic_settings
-from testing_support.validators.validate_metric_payload import validate_metric_payload
 from testing_support.util import conditional_decorator
+from testing_support.validators.validate_metric_payload import validate_metric_payload
 
 from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.application import Application
 from newrelic.core.config import global_settings
 from newrelic.core.infinite_tracing_pb2 import AttributeValue, Span
-
 from newrelic.packages import six
 
 settings = global_settings()
@@ -331,7 +330,9 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
     _test()
 
 
-@conditional_decorator(condition=six.PY2, decorator=pytest.mark.xfail(reason="Test frequently times out on Py2.", strict=False))
+@conditional_decorator(
+    condition=six.PY2, decorator=pytest.mark.xfail(reason="Test frequently times out on Py2.", strict=False)
+)
 def test_no_data_loss_on_reconnect(mock_grpc_server, app, buffer_empty_event, batching, spans_processed_event):
     """
     Test for data loss when channel is closed by the server while waiting for more data in a request iterator.
@@ -494,7 +495,7 @@ def test_settings_supportability_metrics(mock_grpc_server, app, trace_observer_h
         },
     )
     @validate_metric_payload(metrics)
-    def _test():        
+    def _test():
         def connect_complete():
             connect_event.set()
 

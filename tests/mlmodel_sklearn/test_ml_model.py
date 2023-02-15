@@ -53,7 +53,6 @@ class CustomTestModel(BaseDecisionTree):
             class_weight=None,
             presort=False,
         ):
-
             super(CustomTestModel, self).__init__(
                 criterion=criterion,
                 splitter=splitter,
@@ -87,7 +86,6 @@ class CustomTestModel(BaseDecisionTree):
             class_weight=None,
             ccp_alpha=0.0,
         ):
-
             super().__init__(
                 criterion=criterion,
                 splitter=splitter,
@@ -115,13 +113,14 @@ class CustomTestModel(BaseDecisionTree):
         return super(CustomTestModel, self).predict(X, check_input=check_input)
 
 
+label_value = "1.0" if six.PY2 else "0.5"
 int_list_recorded_custom_events = [
     {
         "users": {
             "inference_id": None,
             "model_name": "MyCustomModel",
             "model_version": "1.2.3",
-            "feature_name": None,
+            "feature_name": "0",
             "type": "numerical",
             "value": "1.0",
         }
@@ -131,17 +130,27 @@ int_list_recorded_custom_events = [
             "inference_id": None,
             "model_name": "MyCustomModel",
             "model_version": "1.2.3",
-            "feature_name": None,
+            "feature_name": "1",
             "type": "numerical",
             "value": "2.0",
+        }
+    },
+    {
+        "users": {
+            "inference_id": None,
+            "model_name": "MyCustomModel",
+            "model_version": "1.2.3",
+            "label_name": "0",
+            "type": "numerical",
+            "value": label_value,
         }
     },
 ]
 
 
 @reset_core_stats_engine()
-def test_wrapper_attrs_custom_model_int_list():
-    @validate_custom_event_count(count=2)
+def test_custom_model_int_list_no_features_and_labels():
+    @validate_custom_event_count(count=3)
     @validate_custom_events(int_list_recorded_custom_events)
     @background_task()
     def _test():
@@ -167,17 +176,7 @@ pandas_df_recorded_custom_events = [
             "model_version": "1.5.0b1",
             "feature_name": "feature1",
             "type": "categorical",
-            "value": "5.0",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "PandasTestModel",
-            "model_version": "1.5.0b1",
-            "feature_name": "feature1",
-            "type": "categorical",
-            "value": "6.0",
+            "value": "0",
         }
     },
     {
@@ -187,17 +186,7 @@ pandas_df_recorded_custom_events = [
             "model_version": "1.5.0b1",
             "feature_name": "feature2",
             "type": "categorical",
-            "value": "7.0",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "PandasTestModel",
-            "model_version": "1.5.0b1",
-            "feature_name": "feature2",
-            "type": "categorical",
-            "value": "8.0",
+            "value": "0",
         }
     },
     {
@@ -207,7 +196,7 @@ pandas_df_recorded_custom_events = [
             "model_version": "1.5.0b1",
             "feature_name": "feature3",
             "type": "categorical",
-            "value": "9.0",
+            "value": "1",
         }
     },
     {
@@ -215,9 +204,9 @@ pandas_df_recorded_custom_events = [
             "inference_id": None,
             "model_name": "PandasTestModel",
             "model_version": "1.5.0b1",
-            "feature_name": "feature3",
-            "type": "categorical",
-            "value": "10.0",
+            "label_name": "label1",
+            "type": "numerical",
+            "value": "0.5" if six.PY3 else "0.0",
         }
     },
 ]
@@ -225,20 +214,23 @@ pandas_df_recorded_custom_events = [
 
 @reset_core_stats_engine()
 def test_wrapper_attrs_custom_model_pandas_df():
-    @validate_custom_event_count(count=6)
+    @validate_custom_event_count(count=4)
     @validate_custom_events(pandas_df_recorded_custom_events)
     @background_task()
     def _test():
-        x_train = pandas.DataFrame({"col1": [0, 0], "col2": [1, 1], "col3": [2, 2]}, dtype="category")
-        y_train = pandas.DataFrame({"label": [0, 1]}, dtype="category")
-        x_test = pandas.DataFrame({"col1": [5.0, 6.0], "col2": [7.0, 8.0], "col3": [9.0, 10.0]}, dtype="category")
+        x_train = pandas.DataFrame({"col1": [0, 1], "col2": [0, 1], "col3": [1, 2]}, dtype="category")
+        y_train = [0, 1]
+        x_test = pandas.DataFrame({"col1": [0], "col2": [0], "col3": [1]}, dtype="category")
 
-        model = CustomTestModel().fit(x_train, y_train)
+        model = CustomTestModel(random_state=0).fit(x_train, y_train)
         wrap_mlmodel(
-            model, name="PandasTestModel", version="1.5.0b1", feature_names=["feature1", "feature2", "feature3"]
+            model,
+            name="PandasTestModel",
+            version="1.5.0b1",
+            feature_names=["feature1", "feature2", "feature3"],
+            label_names=["label1"],
         )
         labels = model.predict(x_test)
-
         return model
 
     _test()
@@ -260,16 +252,6 @@ pandas_df_recorded_builtin_events = [
             "inference_id": None,
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
-            "feature_name": "feature1",
-            "type": "numerical",
-            "value": "13",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
-            "model_version": "1.5.0b1",
             "feature_name": "feature2",
             "type": "numerical",
             "value": "14",
@@ -280,9 +262,9 @@ pandas_df_recorded_builtin_events = [
             "inference_id": None,
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
-            "feature_name": "feature2",
+            "label_name": "label1",
             "type": "numerical",
-            "value": "15",
+            "value": "0",
         }
     },
 ]
@@ -290,7 +272,7 @@ pandas_df_recorded_builtin_events = [
 
 @reset_core_stats_engine()
 def test_wrapper_attrs_builtin_model():
-    @validate_custom_event_count(count=4)
+    @validate_custom_event_count(count=3)
     @validate_custom_events(pandas_df_recorded_builtin_events)
     @background_task()
     def _test():
@@ -298,12 +280,18 @@ def test_wrapper_attrs_builtin_model():
 
         x_train = pandas.DataFrame({"col1": [0, 0], "col2": [1, 1]}, dtype="int")
         y_train = pandas.DataFrame({"label": [0, 1]}, dtype="int")
-        x_test = pandas.DataFrame({"col1": [12, 13], "col2": [14, 15]}, dtype="int")
+        x_test = pandas.DataFrame({"col1": [12], "col2": [14]}, dtype="int")
 
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
 
         model = clf.fit(x_train, y_train)
-        wrap_mlmodel(model, name="MyDecisionTreeClassifier", version="1.5.0b1", feature_names=["feature1", "feature2"])
+        wrap_mlmodel(
+            model,
+            name="MyDecisionTreeClassifier",
+            version="1.5.0b1",
+            feature_names=["feature1", "feature2"],
+            label_names=["label1"],
+        )
         labels = model.predict(x_test)
 
         return model
@@ -327,29 +315,9 @@ pandas_df_mismatched_custom_events = [
             "inference_id": None,
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
-            "feature_name": "col1",
-            "type": "numerical",
-            "value": "13",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
-            "model_version": "1.5.0b1",
             "feature_name": "col2",
             "type": "numerical",
             "value": "14",
-        }
-    },
-    {
-        "users": {
-            "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
-            "model_version": "1.5.0b1",
-            "feature_name": "col2",
-            "type": "numerical",
-            "value": "15",
         }
     },
     {
@@ -367,32 +335,37 @@ pandas_df_mismatched_custom_events = [
             "inference_id": None,
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
-            "feature_name": "col3",
+            "label_name": "0",
             "type": "numerical",
-            "value": "17",
+            "value": "1",
         }
     },
 ]
 
 
 @reset_core_stats_engine()
-def test_wrapper_mismatched_feature_names_and_cols_df():
-    @validate_custom_event_count(count=6)
+def test_wrapper_mismatched_features_and_labels_df():
+    @validate_custom_event_count(count=4)
     @validate_custom_events(pandas_df_mismatched_custom_events)
     @background_task()
     def _test():
         import sklearn.tree
 
-        x_train = pandas.DataFrame({"col1": [0, 0], "col2": [1, 1], "col3": [2, 2]}, dtype="int")
+        x_train = pandas.DataFrame({"col1": [7, 8], "col2": [9, 10], "col3": [24, 25]}, dtype="int")
         y_train = pandas.DataFrame({"label": [0, 1]}, dtype="int")
-        x_test = pandas.DataFrame({"col1": [12, 13], "col2": [14, 15], "col3": [16, 17]}, dtype="int")
+        x_test = pandas.DataFrame({"col1": [12], "col2": [14], "col3": [16]}, dtype="int")
 
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
 
         model = clf.fit(x_train, y_train)
-        wrap_mlmodel(model, name="MyDecisionTreeClassifier", version="1.5.0b1", feature_names=["feature1", "feature2"])
+        wrap_mlmodel(
+            model,
+            name="MyDecisionTreeClassifier",
+            version="1.5.0b1",
+            feature_names=["feature1", "feature2"],
+            label_names=["label1", "label2"],
+        )
         labels = model.predict(x_test)
-
         return model
 
     _test()
@@ -419,13 +392,23 @@ numpy_str_mismatched_custom_events = [
             "value": "21",
         }
     },
+    {
+        "users": {
+            "inference_id": None,
+            "model_name": "MyDecisionTreeClassifier",
+            "model_version": "0.0.1",
+            "label_name": "0",
+            "type": "str",
+            "value": "21",
+        }
+    },
 ]
 
 
 @reset_core_stats_engine()
-def test_wrapper_mismatched_feature_names_and_cols_np_array():
+def test_wrapper_mismatched_features_and_labels_np_array():
     @validate_custom_events(numpy_str_mismatched_custom_events)
-    @validate_custom_event_count(count=2)
+    @validate_custom_event_count(count=3)
     @background_task()
     def _test():
         import numpy as np

@@ -36,6 +36,17 @@ PY2 = sys.version_info[0] == 2
 _logger = logging.getLogger(__name__)
 
 
+def isnumeric(column):
+    import numpy as np
+
+    try:
+        column.astype(np.float64)
+        return [True] * len(column)
+    except:
+        pass
+    return [False] * len(column)
+
+
 class PredictReturnTypeProxy(ObjectProxy):
     def __init__(self, wrapped, model_name, training_step):
         super(ObjectProxy, self).__init__(wrapped)
@@ -79,11 +90,127 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         # _nr_wrapped attrs that will attach model info to the data.
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
-            wrap_predict(transaction, _class, wrapped, instance, args, kwargs)
+            inference_id = uuid.uuid4()
+            create_feature_event(transaction, _class, inference_id, instance, args, kwargs)
+            create_label_event(transaction, _class, inference_id, instance, return_val)
             return PredictReturnTypeProxy(return_val, model_name=_class, training_step=training_step)
         return return_val
 
     wrap_function_wrapper(module, "%s.%s" % (_class, method), _nr_wrapper_method)
+
+
+def _calc_prediction_feature_stats(prediction_input, _class, feature_column_names):
+    import numpy as np
+
+    # Drop any feature columns that are not numeric since we can't compute stats
+    # on non-numeric columns.
+    x = np.array(prediction_input)
+    isnumeric_features = np.apply_along_axis(isnumeric, 0, x)
+    numeric_features = x[isnumeric_features]
+
+    # Drop any feature column names that are not numeric since we can't compute stats
+    # on non-numeric columns.
+    feature_column_names = feature_column_names[isnumeric_features[0]]
+
+    # Only compute stats for features if we have any feature columns left after dropping
+    # non-numeric columns.
+    num_cols = len(feature_column_names)
+    if num_cols > 0:
+        # Boolean selection of numpy array values reshapes the array to a single
+        # dimension so we have to reshape it back into a 2D array.
+        features = np.reshape(numeric_features, (len(numeric_features) // num_cols, num_cols))
+        features = features.astype(dtype=np.float64)
+
+        _record_stats(features, feature_column_names, _class, "Feature")
+
+
+def _record_stats(data, column_names, _class, column_type):
+    import numpy as np
+
+    mean = np.mean(data, axis=0)
+    percentile25 = np.percentile(data, q=0.25, axis=0)
+    percentile50 = np.percentile(data, q=0.50, axis=0)
+    percentile75 = np.percentile(data, q=0.75, axis=0)
+    standard_deviation = np.std(data, axis=0)
+    _min = np.min(data, axis=0)
+    _max = np.max(data, axis=0)
+    _count = data.shape[0]
+
+    transaction = current_transaction()
+
+    # Currently record_metric only supports a subset of these stats so we have
+    # to upload them one at a time instead of as a dictionary of stats per
+    # feature column.
+    for index, col_name in enumerate(column_names):
+        metric_name = "MLModel/Sklearn/Named/%s/Predict/%s/%s" % (_class, column_type, col_name)
+        transaction.record_custom_metrics(
+            [
+                ("%s/%s" % (metric_name, "Mean"), float(mean[index])),
+                ("%s/%s" % (metric_name, "Percentile25"), float(percentile25[index])),
+                ("%s/%s" % (metric_name, "Percentile50"), float(percentile50[index])),
+                ("%s/%s" % (metric_name, "Percentile75"), float(percentile75[index])),
+                ("%s/%s" % (metric_name, "StandardDeviation"), float(standard_deviation[index])),
+                ("%s/%s" % (metric_name, "Min"), float(_min[index])),
+                ("%s/%s" % (metric_name, "Max"), float(_max[index])),
+                ("%s/%s" % (metric_name, "Count"), _count),
+            ]
+        )
+
+
+def _calc_prediction_label_stats(labels, _class, label_column_names):
+    import numpy as np
+
+    labels = np.array(labels, dtype=np.float64)
+    _record_stats(labels, label_column_names, _class, "Label")
+
+
+def create_label_event(transaction, _class, inference_id, instance, return_val):
+    model_name = getattr(instance, "_nr_wrapped_name", _class)
+    model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
+    label_names = getattr(instance, "_nr_wrapped_label_names", None)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if return_val is not None:
+        import numpy as np
+
+        if not hasattr(return_val, "__iter__"):
+            labels = np.array([return_val])
+        else:
+            labels = np.array(return_val)
+        if len(labels.shape) == 1:
+            labels = np.reshape(labels, (len(labels) // 1, 1))
+
+        label_names_list = _get_label_names(label_names, labels)
+        _calc_prediction_label_stats(labels, _class, label_names_list)
+        for prediction in labels:
+            for index, value in enumerate(prediction):
+                python_value_type = str(type(value))
+                value_type = str(categorize_data_type(python_value_type))
+
+                event = {
+                    "inference_id": inference_id,
+                    "model_name": model_name,
+                    "model_version": model_version,
+                    "label_name": str(label_names_list[index]),
+                    "type": value_type,
+                    "value": str(value),
+                }
+                # Don't include the raw value when inference_event_value is disabled.
+                if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
+                    event["value"] = str(value)
+                transaction.record_custom_event("ML Model Label Event", event)
+
+
+def _get_label_names(user_defined_label_names, prediction_array):
+    import numpy as np
+
+    if user_defined_label_names is None or len(user_defined_label_names) != prediction_array.shape[1]:
+        _logger.warning(
+            "The number of label names passed to the ml_model wrapper function is not equal to the number of predictions in the data set. Please supply the correct number of label names."
+        )
+        return np.array(range(prediction_array.shape[1]))
+    else:
+        return user_defined_label_names
 
 
 def find_type_category(data_set, row_index, column_index):
@@ -119,7 +246,7 @@ def _get_feature_column_names(user_provided_feature_names, features):
     # If the user provided feature names are the correct size, return the user provided feature
     # names.
     if user_provided_feature_names and len(user_provided_feature_names) == num_feature_columns:
-        return user_provided_feature_names
+        return np.array(user_provided_feature_names)
 
     # If the user provided feature names aren't the correct size, log a warning and do not use the user provided feature names.
     if user_provided_feature_names:
@@ -140,11 +267,10 @@ def bind_predict(X, *args, **kwargs):
     return X
 
 
-def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
+def create_feature_event(transaction, _class, inference_id, instance, args, kwargs):
     import numpy as np
 
     data_set = bind_predict(*args, **kwargs)
-    inference_id = uuid.uuid4()
     model_name = getattr(instance, "_nr_wrapped_name", _class)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
@@ -152,6 +278,7 @@ def wrap_predict(transaction, _class, wrapped, instance, args, kwargs):
 
     final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
     np_casted_data_set = np.array(data_set)
+    _calc_prediction_feature_stats(data_set, _class, final_feature_names)
 
     for col_index, feature in enumerate(np_casted_data_set):
         for row_index, value in enumerate(feature):

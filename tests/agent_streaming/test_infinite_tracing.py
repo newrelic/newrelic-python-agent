@@ -17,15 +17,14 @@ import time
 
 import pytest
 from testing_support.fixtures import override_generic_settings
-from testing_support.validators.validate_metric_payload import validate_metric_payload
 from testing_support.util import conditional_decorator
+from testing_support.validators.validate_metric_payload import validate_metric_payload
 
 from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.application import Application
 from newrelic.core.config import global_settings
 from newrelic.core.infinite_tracing_pb2 import AttributeValue, Span
-
 from newrelic.packages import six
 
 settings = global_settings()
@@ -44,7 +43,7 @@ def app():
         app.internal_agent_shutdown(restart=False)
     except:
         pass
-    if active_session:
+    if active_session and active_session._rpc is not None:
         assert not active_session._rpc.response_processing_thread.is_alive()
         assert not active_session._rpc.channel
 
@@ -331,7 +330,9 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
     _test()
 
 
-@conditional_decorator(condition=six.PY2, decorator=pytest.mark.xfail(reason="Test frequently times out on Py2.", strict=False))
+@conditional_decorator(
+    condition=six.PY2, decorator=pytest.mark.xfail(reason="Test frequently times out on Py2.", strict=False)
+)
 def test_no_data_loss_on_reconnect(mock_grpc_server, app, buffer_empty_event, batching, spans_processed_event):
     """
     Test for data loss when channel is closed by the server while waiting for more data in a request iterator.
@@ -460,6 +461,48 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
         continue_event.set()
         assert wait_event.wait(timeout=5)
         wait_event.clear()
+
+        app.harvest()
+
+    _test()
+
+
+@pytest.mark.parametrize("trace_observer_host", ["localhost", None])
+@pytest.mark.parametrize("batching", [True, False])
+@pytest.mark.parametrize("compression", [True, False])
+def test_settings_supportability_metrics(mock_grpc_server, app, trace_observer_host, batching, compression):
+    connect_event = threading.Event()
+
+    enabled = bool(trace_observer_host)
+
+    metrics = [
+        ("Supportability/InfiniteTracing/gRPC/Batching/enabled", 1 if enabled and batching else None),
+        ("Supportability/InfiniteTracing/gRPC/Batching/disabled", 1 if enabled and not batching else None),
+        ("Supportability/InfiniteTracing/gRPC/Compression/enabled", 1 if enabled and compression else None),
+        ("Supportability/InfiniteTracing/gRPC/Compression/disabled", 1 if enabled and not compression else None),
+    ]
+
+    @override_generic_settings(
+        settings,
+        {
+            "distributed_tracing.enabled": True,
+            "span_events.enabled": True,
+            "infinite_tracing.trace_observer_host": trace_observer_host,
+            "infinite_tracing.trace_observer_port": mock_grpc_server,
+            "infinite_tracing.ssl": False,
+            "infinite_tracing.batching": batching,
+            "infinite_tracing.compression": compression,
+        },
+    )
+    @validate_metric_payload(metrics)
+    def _test():
+        def connect_complete():
+            connect_event.set()
+
+        app.connect_to_data_collector(connect_complete)
+
+        assert connect_event.wait(timeout=5)
+        connect_event.clear()
 
         app.harvest()
 

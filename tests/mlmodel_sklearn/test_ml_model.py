@@ -206,7 +206,7 @@ pandas_df_recorded_custom_events = [
             "model_version": "1.5.0b1",
             "label_name": "label1",
             "type": "numerical",
-            "value": "0.5",
+            "value": "0.5" if six.PY3 else "0.0",
         }
     },
 ]
@@ -222,7 +222,7 @@ def test_wrapper_attrs_custom_model_pandas_df():
         y_train = [0, 1]
         x_test = pandas.DataFrame({"col1": [0], "col2": [0], "col3": [1]}, dtype="category")
 
-        model = CustomTestModel().fit(x_train, y_train)
+        model = CustomTestModel(random_state=0).fit(x_train, y_train)
         wrap_mlmodel(
             model,
             name="PandasTestModel",

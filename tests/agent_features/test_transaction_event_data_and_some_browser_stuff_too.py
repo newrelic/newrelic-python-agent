@@ -286,6 +286,7 @@ def validate_no_analytics_sample_data(wrapped, instance, args, kwargs):
 
 _test_collect_analytic_events_disabled_settings = {
     "collect_analytics_events": False,
+    "distributed_tracing.enabled": False,
     "browser_monitoring.attributes.enabled": True,
 }
 
@@ -328,6 +329,7 @@ def test_collect_analytic_events_disabled():
 
 _test_analytic_events_disabled_settings = {
     "transaction_events.enabled": False,
+    "distributed_tracing.enabled": False,
     "browser_monitoring.attributes.enabled": True,
 }
 

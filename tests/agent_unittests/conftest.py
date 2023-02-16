@@ -47,6 +47,7 @@ except NameError:
 
 class FakeProtos(object):
     Span = object()
+    SpanBatch = object()
 
 
 sys.modules["grpc"] = object()

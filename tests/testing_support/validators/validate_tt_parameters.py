@@ -27,26 +27,25 @@ def validate_tt_parameters(required_params=None, forgone_params=None):
             result = wrapped(*args, **kwargs)
         except:
             raise
-        else:
 
-            # Now that transaction has been recorded, generate
-            # a transaction trace
+        # Now that transaction has been recorded, generate
+        # a transaction trace
 
-            connections = SQLConnections()
-            trace_data = instance.transaction_trace_data(connections)
-            pack_data = unpack_field(trace_data[0][4])
-            tt_intrinsics = pack_data[0][4]["intrinsics"]
+        connections = SQLConnections()
+        trace_data = instance.transaction_trace_data(connections)
+        pack_data = unpack_field(trace_data[0][4])
+        tt_intrinsics = pack_data[0][4]["intrinsics"]
 
-            for name in required_params:
-                assert name in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
-                assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
-                    name,
-                    required_params[name],
-                    tt_intrinsics,
-                )
+        for name in required_params:
+            assert name in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
+            assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
+                name,
+                required_params[name],
+                tt_intrinsics,
+            )
 
-            for name in forgone_params:
-                assert name not in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
+        for name in forgone_params:
+            assert name not in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
 
         return result
 

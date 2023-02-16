@@ -34,13 +34,12 @@ def validate_error_event_attributes(required_params=None, forgone_params=None, e
                 result = wrapped(*args, **kwargs)
             except:
                 raise
-            else:
 
-                event_data = instance.error_events
-                for sample in event_data:
-                    error_data_samples.append(sample)
+            event_data = instance.error_events
+            for sample in event_data:
+                error_data_samples.append(sample)
 
-                check_event_attributes(event_data, required_params, forgone_params, exact_attrs)
+            check_event_attributes(event_data, required_params, forgone_params, exact_attrs)
 
             return result
 

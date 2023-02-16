@@ -27,37 +27,37 @@ def validate_custom_event_collector_json(num_events=1):
             result = wrapped(*args, **kwargs)
         except:
             raise
-        else:
-            stats = instance._stats_engine
-            settings = stats.settings
 
-            agent_run_id = 666
-            sampling_info = stats.custom_events.sampling_info
-            samples = list(stats.custom_events)
+        stats = instance._stats_engine
+        settings = stats.settings
 
-            # Emulate the payload used in data_collector.py
+        agent_run_id = 666
+        sampling_info = stats.custom_events.sampling_info
+        samples = list(stats.custom_events)
 
-            payload = (agent_run_id, sampling_info, samples)
-            collector_json = json_encode(payload)
+        # Emulate the payload used in data_collector.py
 
-            decoded_json = json.loads(collector_json)
+        payload = (agent_run_id, sampling_info, samples)
+        collector_json = json_encode(payload)
 
-            decoded_agent_run_id = decoded_json[0]
-            decoded_sampling_info = decoded_json[1]
-            decoded_events = decoded_json[2]
+        decoded_json = json.loads(collector_json)
 
-            assert decoded_agent_run_id == agent_run_id
-            assert decoded_sampling_info == sampling_info
+        decoded_agent_run_id = decoded_json[0]
+        decoded_sampling_info = decoded_json[1]
+        decoded_events = decoded_json[2]
 
-            max_setting = settings.event_harvest_config.harvest_limits.custom_event_data
-            assert decoded_sampling_info["reservoir_size"] == max_setting
+        assert decoded_agent_run_id == agent_run_id
+        assert decoded_sampling_info == sampling_info
 
-            assert decoded_sampling_info["events_seen"] == num_events
-            assert len(decoded_events) == num_events
+        max_setting = settings.event_harvest_config.harvest_limits.custom_event_data
+        assert decoded_sampling_info["reservoir_size"] == max_setting
 
-            for (intrinsics, attributes) in decoded_events:
-                assert isinstance(intrinsics, dict)
-                assert isinstance(attributes, dict)
+        assert decoded_sampling_info["events_seen"] == num_events
+        assert len(decoded_events) == num_events
+
+        for (intrinsics, attributes) in decoded_events:
+            assert isinstance(intrinsics, dict)
+            assert isinstance(attributes, dict)
 
         return result
 

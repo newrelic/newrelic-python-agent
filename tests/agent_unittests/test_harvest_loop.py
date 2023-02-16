@@ -163,7 +163,6 @@ def transaction_node(request):
 
 
 def validate_metric_payload(metrics=[], endpoints_called=[]):
-
     sent_metrics = {}
 
     @transient_function_wrapper("newrelic.core.agent_protocol", "AgentProtocol.send")
@@ -204,7 +203,6 @@ def validate_metric_payload(metrics=[], endpoints_called=[]):
 def validate_transaction_event_payloads(payload_validators):
     @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
-
         payloads = []
 
         @transient_function_wrapper("newrelic.core.agent_protocol", "AgentProtocol.send")
@@ -319,7 +317,6 @@ def test_serverless_application_harvest():
     ],
 )
 def test_application_harvest_with_spans(distributed_tracing_enabled, span_events_enabled, spans_created):
-
     span_endpoints_called = []
     max_samples_stored = 10
 
@@ -381,7 +378,10 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
         (7, 10, 10, 7),
     ),
 )
-def test_application_harvest_with_span_streaming(span_queue_size, spans_to_send, expected_sent, expected_seen):
+@pytest.mark.parametrize("span_batching", (True, False))
+def test_application_harvest_with_span_streaming(
+    span_batching, span_queue_size, spans_to_send, expected_sent, expected_seen
+):
     @override_generic_settings(
         settings,
         {
@@ -390,6 +390,7 @@ def test_application_harvest_with_span_streaming(span_queue_size, spans_to_send,
             "span_events.enabled": True,
             "infinite_tracing._trace_observer_host": "x",
             "infinite_tracing.span_queue_size": span_queue_size,
+            "infinite_tracing.batching": span_batching,
         },
     )
     @validate_metric_payload(
@@ -600,7 +601,6 @@ def test_reservoir_size_zeros(harvest_name, event_name):
 
 @pytest.mark.parametrize("events_seen", (1, 5, 10))
 def test_error_event_sampling_info(events_seen):
-
     reservoir_size = 5
     endpoints_called = []
 
@@ -671,7 +671,6 @@ def test_compute_sampled_no_reset():
 
 
 def test_analytic_event_sampling_info():
-
     synthetics_limit = 10
     transactions_limit = 20
 
@@ -756,7 +755,6 @@ def test_analytic_event_payloads(has_synthetic_events, has_transaction_events):
     },
 )
 def test_transaction_events_disabled():
-
     endpoints_called = []
     expected_metrics = (
         ("Supportability/Python/RequestSampler/requests", None),
@@ -798,7 +796,8 @@ def test_reset_synthetics_events():
 
 
 @pytest.mark.parametrize(
-    "allowlist_event", ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data")
+    "allowlist_event",
+    ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data"),
 )
 @override_generic_settings(
     settings,
@@ -850,7 +849,8 @@ def test_flexible_events_harvested(allowlist_event):
 
 
 @pytest.mark.parametrize(
-    "allowlist_event", ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data")
+    "allowlist_event",
+    ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data"),
 )
 @override_generic_settings(
     settings,

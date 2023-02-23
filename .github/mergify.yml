@@ -7,6 +7,7 @@ shared:
         - "label=ready-to-merge"
         - "check-success=tests"
         - "-draft" # Don't include draft PRs
+        - "-merged"
         - or: # Only handle branches that target main or develop branches
             - "base=main"
             - "base~=^develop"
@@ -32,6 +33,7 @@ pull_request_rules:
     conditions:
       - "queue-position=-1" # Not queued
       - "-draft" # Don't include draft PRs
+      - "-merged"
     actions:
       update:
 
@@ -49,6 +51,7 @@ pull_request_rules:
 
   - name: Toggle label on merge conflicts
     conditions:
+      - "-merged"
       - conflict
     actions:
       label:
@@ -58,6 +61,7 @@ pull_request_rules:
   # Don't use a toggle for this, as the label constantly gets applied and removed when tests are rerun.
   - name: Add label on test failures
     conditions:
+      - "-merged"
       - or:
           - check-failure=tests
           - check-skipped=tests
@@ -68,6 +72,7 @@ pull_request_rules:
 
   - name: Remove label on test success
     conditions:
+      - "-merged"
       - check-success=tests
     actions:
       label:

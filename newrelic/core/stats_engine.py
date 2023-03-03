@@ -26,6 +26,7 @@ import operator
 import random
 import sys
 import time
+import traceback
 import warnings
 import zlib
 from heapq import heapify, heapreplace
@@ -715,12 +716,23 @@ class StatsEngine(object):
 
         # Call callback to obtain error group name
         agent_attributes = {}
-        _, error_group_name = process_user_attribute("error.group.name", "TODO")  # TODO Call callback here
-        if error_group_name:
-            agent_attributes["error.group.name"] = error_group_name
 
-        if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
-            extract_code_from_traceback(tb).add_attrs(agent_attributes.__setitem__)
+        if settings:
+            if settings.code_level_metrics and settings.code_level_metrics.enabled:
+                extract_code_from_traceback(tb).add_attrs(agent_attributes.__setitem__)
+            if settings.error_collector and settings.error_collector.error_group_callback is not None:
+                try:
+                    error_group_name_raw = settings.error_collector.error_group_callback(exc, value, tb)
+                    if error_group_name:
+                        _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
+                        if error_group_name is None:
+                            raise ValueError("Invalid attribute value for error.group.name: %s" % str(error_group_name_raw))
+                except Exception:
+                    _logger.error("Encountered error when calling error group callback:\n%s", "".join(traceback.format_exception(*sys.exc_info())))
+                    error_group_name = None
+
+                if error_group_name:
+                    agent_attributes["error.group.name"] = error_group_name
 
         agent_attributes = create_agent_attributes(agent_attributes, settings.attribute_filter)
 
@@ -746,7 +758,7 @@ class StatsEngine(object):
         for attr in agent_attributes:
             if attr.destinations & DST_ERROR_COLLECTOR:
                 attributes["agentAttributes"][attr.name] = attr.value
-
+        
         error_details = TracedError(
             start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
         )

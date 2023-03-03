@@ -30,6 +30,8 @@ from newrelic.core.code_level_metrics import (
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
 
+from newrelic.packages import six
+
 _logger = logging.getLogger(__name__)
 
 
@@ -358,6 +360,18 @@ class TimeTrace(object):
     def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         attributes = attributes if attributes is not None else {}
 
+        # If no exception details provided, use current exception.
+
+        # Pull from sys.exc_info if no exception is passed
+        if not error or None in error:
+            error = sys.exc_info()
+
+            # If no exception to report, exit
+            if not error or None in error:
+                return
+
+        exc, value, tb = error
+
         recorded = self._observe_exception(
             error,
             ignore=ignore,
@@ -392,10 +406,26 @@ class TimeTrace(object):
                     )
                     custom_params = {}
 
-            if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
-                source = extract_code_from_traceback(tb)
-            else:
-                source = None
+            breakpoint()
+
+            if settings:
+                if settings.code_level_metrics and settings.code_level_metrics.enabled:
+                    source = extract_code_from_traceback(tb)
+                else:
+                    source = None
+
+                if settings.error_collector and settings.error_collector.error_group_callback is not None:
+                    try:
+                        group = settings.error_collector.error_group_callback(exc, value, tb)
+                    except Exception:
+                        _logger.error("Encountered error when calling error group callback:\n%s", "".join(traceback.format_exception(*sys.exc_info())))
+                        group = None
+                    
+                    if group:
+                        if isinstance(group, six.text_type):
+                            attributes["agentAttributes"]["error_group"] = group
+                        else:
+                            _logger.error("Error group callback returned type %s. Only str and None are valid return types.", str(type(group)))
 
             # Call callback to obtain error group name
             _, error_group_name = process_user_attribute("error.group.name", "TODO")  # TODO Call callback here

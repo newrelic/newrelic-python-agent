@@ -688,6 +688,7 @@ _settings.error_collector.ignore_classes = []
 _settings.error_collector.ignore_status_codes = _parse_status_codes("100-102 200-208 226 300-308 404", set())
 _settings.error_collector.expected_classes = []
 _settings.error_collector.expected_status_codes = set()
+_settings.error_collector.error_group_callback = None
 _settings.error_collector.attributes.enabled = True
 _settings.error_collector.attributes.exclude = []
 _settings.error_collector.attributes.include = []

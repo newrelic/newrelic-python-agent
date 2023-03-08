@@ -15,12 +15,19 @@
 import pytest
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_count import (
+    validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 
 @pytest.fixture(scope="session")
@@ -194,7 +201,13 @@ def test_middleware(app, graphql_run, is_graphql_2):
     def _test():
         from graphql import MiddlewareManager
 
-        ok, response = graphql_run(app, "{ hello }", middleware=MiddlewareManager(example_middleware))
+        middleware = (
+            [example_middleware]
+            if get_package_version_tuple("ariadne") >= (0, 18)
+            else MiddlewareManager(example_middleware)
+        )
+
+        ok, response = graphql_run(app, "{ hello }", middleware=middleware)
         assert ok and not response.get("errors")
         assert "Hello!" in str(response["data"])
 
@@ -244,7 +257,13 @@ def test_exception_in_middleware(app, graphql_run):
     def _test():
         from graphql import MiddlewareManager
 
-        _, response = graphql_run(app, query, middleware=MiddlewareManager(error_middleware))
+        middleware = (
+            [error_middleware]
+            if get_package_version_tuple("ariadne") >= (0, 18)
+            else MiddlewareManager(error_middleware)
+        )
+
+        _, response = graphql_run(app, query, middleware=middleware)
         assert response["errors"]
 
     _test()
@@ -322,7 +341,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-            ('GraphQL/operation/Ariadne/<unknown>/<anonymous>/<unknown>', 1),
+        ("GraphQL/operation/Ariadne/<unknown>/<anonymous>/<unknown>", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),

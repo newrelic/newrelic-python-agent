@@ -13,7 +13,10 @@
 # limitations under the License.
 
 from newrelic.common.object_wrapper import (
-        wrap_out_function, wrap_function_wrapper)
+    wrap_function_wrapper,
+    wrap_in_function,
+    wrap_out_function,
+)
 from newrelic.core.trace_cache import trace_cache
 
 
@@ -26,6 +29,21 @@ def propagate_task_context(task):
     trace_cache().task_start(task)
     task.add_done_callback(remove_from_cache)
     return task
+
+
+def propagate_context_to_thread(instance, thread_pool, function, *args, **kwargs):
+    current_trace = trace_cache().current_trace()
+    if not current_trace:
+        return ((instance, thread_pool, function, *args), kwargs)
+
+    def inject_context_to_thread_wrapper(*args, **kwargs):
+        try:
+            trace_cache()[trace_cache().current_thread_id()] = current_trace
+            return function(*args, **kwargs)
+        finally:
+            trace_cache().pop(trace_cache().current_thread_id(), None)
+
+    return ((instance, thread_pool, inject_context_to_thread_wrapper, *args), kwargs)
 
 
 def _bind_loop(loop, *args, **kwargs):
@@ -49,6 +67,16 @@ def instrument_asyncio_base_events(module):
         module,
         'BaseEventLoop.create_task',
         propagate_task_context)
+
+    wrap_in_function(
+        module,
+        'BaseEventLoop.run_in_executor',
+        propagate_context_to_thread)
+
+    wrap_in_function(
+        "uvloop",
+        'Loop.run_in_executor',
+        propagate_context_to_thread)
 
 
 def instrument_asyncio_events(module):

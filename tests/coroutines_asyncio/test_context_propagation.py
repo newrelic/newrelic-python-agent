@@ -426,3 +426,94 @@ def test_transaction_end_on_different_task(event_loop):
         await task
 
     event_loop.run_until_complete(test())
+
+
+@function_trace("thread_waiter3")
+def thread_child():
+    pass
+
+
+def thread_waiter(asyncio, event, wait):
+    with FunctionTrace(name="thread_waiter1", terminal=True):
+        event.set()
+
+        # Block until the parent says to exit
+        wait.wait()
+
+    with FunctionTrace(name="thread_waiter2", terminal=True):
+        pass
+
+    thread_child()
+
+
+def thread_task(asyncio, trace, event, wait):
+    # Test that the trace has been propagated onto this task
+    assert current_trace() is trace
+
+    # Start a function trace, this should not interfere with context in the
+    # parent task
+    thread_waiter(asyncio, event, wait)
+
+
+@background_task(name="test_context_propagation_to_thread")
+async def _test_to_thread(asyncio, event_loop, nr_enabled=True):
+    import threading
+
+    trace = current_trace()
+
+    if nr_enabled:
+        assert trace is not None
+    else:
+        assert trace is None
+
+    events = [threading.Event() for _ in range(2)]
+    wait = threading.Event()
+
+    threaded_tasks = [event_loop.run_in_executor(None, thread_task, asyncio, trace, events[idx], wait) for idx in range(2)]
+
+    for e in events:
+        e.wait()
+
+    # Test that the current trace is still "trace" even though the threaded_tasks
+    # are active
+    assert current_trace() is trace
+
+    # Unblock the execution of the tasks and wait for the tasks to terminate
+    wait.set()
+    await asyncio.gather(*threaded_tasks)
+
+    return trace
+
+
+@pytest.mark.parametrize("loop_policy", loop_policies)
+@validate_transaction_metrics(
+    "test_context_propagation_to_thread",
+    background_task=True,
+    scoped_metrics=(
+        ("Function/thread_waiter1", 2),
+        ("Function/thread_waiter2", 2),
+        ("Function/thread_waiter3", 2),
+    ),
+)
+def test_context_propagation_to_thread(event_loop, loop_policy):
+    import asyncio
+
+    asyncio.set_event_loop_policy(loop_policy)
+    exceptions = []
+
+    def handle_exception(loop, context):
+        exceptions.append(context)
+
+    event_loop.set_exception_handler(handle_exception)
+
+    # Keep the trace around so that it's not removed from the trace cache
+    # through reference counting (for testing)
+    _ = event_loop.run_until_complete(_test_to_thread(asyncio, event_loop))
+
+    # The agent should have removed all traces from the cache since
+    # run_until_complete has terminated (all callbacks scheduled inside the
+    # task have run)
+    assert not trace_cache()
+
+    # Assert that no exceptions have occurred
+    assert not exceptions, exceptions

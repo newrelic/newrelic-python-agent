@@ -17,13 +17,20 @@ import sys
 import pytest
 import starlette
 from testing_support.fixtures import override_ignore_status_codes
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.common.object_names import callable_name
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 starlette_version = tuple(int(x) for x in starlette.__version__.split("."))
+
 
 @pytest.fixture(scope="session")
 def target_application():
@@ -34,21 +41,10 @@ def target_application():
 
 FRAMEWORK_METRIC = ("Python/Framework/Starlette/%s" % starlette.__version__, 1)
 
-if starlette_version >= (0, 20, 1):
-    DEFAULT_MIDDLEWARE_METRICS = [
-        ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
-        ("Function/starlette.middleware.exceptions:ExceptionMiddleware.__call__", 1),
-    ]
-else:
-    DEFAULT_MIDDLEWARE_METRICS = [
-        ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
-        ("Function/starlette.exceptions:ExceptionMiddleware.__call__", 1),
-    ]
-
 MIDDLEWARE_METRICS = [
     ("Function/_test_application:middleware_factory.<locals>.middleware", 2),
     ("Function/_test_application:middleware_decorator", 1),
-] + DEFAULT_MIDDLEWARE_METRICS
+]
 
 
 @pytest.mark.parametrize("app_name", ("no_error_handler",))
@@ -78,31 +74,34 @@ def test_application_non_async(target_application, app_name):
     response = app.get("/non_async")
     assert response.status == 200
 
+
 # Starting in Starlette v0.20.1, the ExceptionMiddleware class
 # has been moved to the starlette.middleware.exceptions from
 # starlette.exceptions
 version_tweak_string = ".middleware" if starlette_version >= (0, 20, 1) else ""
 
-DEFAULT_MIDDLEWARE_METRICS = [
-    ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
-    ("Function/starlette%s.exceptions:ExceptionMiddleware.__call__" % version_tweak_string, 1),
-]
-
 middleware_test = (
-    ("no_error_handler", "starlette%s.exceptions:ExceptionMiddleware.__call__" % version_tweak_string),
+    (
+        "no_error_handler",
+        "_test_application:middleware_factory.<locals>.middleware",
+        "starlette.middleware.exceptions:ExceptionMiddleware.http_exception",
+    ),
     (
         "non_async_error_handler_no_middleware",
-        "starlette%s.exceptions:ExceptionMiddleware.__call__" % version_tweak_string,
+        "starlette.applications:Starlette.__call__",
+        "_test_application:missing_route_handler",
     ),
 )
 
+
 @pytest.mark.parametrize(
-    "app_name, transaction_name", middleware_test,
+    "app_name, transaction_name, metric_name",
+    middleware_test,
 )
-def test_application_nonexistent_route(target_application, app_name, transaction_name):
+def test_application_nonexistent_route(target_application, app_name, transaction_name, metric_name):
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=[("Function/" + transaction_name, 1)],
+        scoped_metrics=[("Function/" + metric_name, 1)],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():
@@ -187,7 +186,7 @@ def test_exception_in_middleware(target_application, app_name):
 def test_server_error_middleware(target_application, app_name, transaction_name, path, scoped_metrics):
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=scoped_metrics + [("Function/_test_application:runtime_error", 1)] + DEFAULT_MIDDLEWARE_METRICS,
+        scoped_metrics=scoped_metrics + [("Function/_test_application:runtime_error", 1)],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():
@@ -272,14 +271,13 @@ middleware_test_exception = (
     ),
 )
 
-@pytest.mark.parametrize(
-    "app_name,scoped_metrics", middleware_test_exception
-)
+
+@pytest.mark.parametrize("app_name,scoped_metrics", middleware_test_exception)
 def test_starlette_http_exception(target_application, app_name, scoped_metrics):
     @validate_transaction_errors(errors=["starlette.exceptions:HTTPException"])
     @validate_transaction_metrics(
         "_test_application:teapot",
-        scoped_metrics=scoped_metrics + DEFAULT_MIDDLEWARE_METRICS,
+        scoped_metrics=scoped_metrics,
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():

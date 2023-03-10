@@ -188,14 +188,6 @@ def wrap_add_exception_handler(wrapped, instance, args, kwargs):
     return wrapped(exc_class_or_status_code, handler, *args, **kwargs)
 
 
-def error_middleware_wrapper(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if transaction:
-        transaction.set_transaction_name(callable_name(wrapped), priority=1)
-
-    return FunctionTraceWrapper(wrapped)(*args, **kwargs)
-
-
 def bind_run_in_threadpool(func, *args, **kwargs):
     return func, args, kwargs
 
@@ -232,8 +224,6 @@ def instrument_starlette_requests(module):
 
 
 def instrument_starlette_middleware_errors(module):
-    wrap_function_wrapper(module, "ServerErrorMiddleware.__call__", error_middleware_wrapper)
-
     wrap_function_wrapper(module, "ServerErrorMiddleware.__init__", wrap_server_error_handler)
 
     wrap_function_wrapper(module, "ServerErrorMiddleware.error_response", wrap_exception_handler)
@@ -242,8 +232,6 @@ def instrument_starlette_middleware_errors(module):
 
 
 def instrument_starlette_middleware_exceptions(module):
-    wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
-
     wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
 
     wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)
@@ -253,9 +241,6 @@ def instrument_starlette_exceptions(module):
     # ExceptionMiddleware was moved to starlette.middleware.exceptions, need to check
     # that it isn't being imported through a deprecation and double wrapped.
     if not hasattr(module, "__deprecated__"):
-
-        wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
-
         wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
 
         wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)

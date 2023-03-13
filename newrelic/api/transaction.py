@@ -419,6 +419,8 @@ class Transaction(object):
         if exc is not None and value is not None and tb is not None:
             self.root_span.notice_error((exc, value, tb))
 
+        # Root span
+
         self._state = self.STATE_STOPPED
 
         # Force the root span out of the cache if it's there
@@ -1547,7 +1549,9 @@ class Transaction(object):
                 status_code=status_code,
             )
 
-    def _create_error_node(self, settings, fullname, message, expected, custom_params, span_id, tb, source):
+    def _create_error_node(
+        self, settings, fullname, message, expected, error_group_name, custom_params, span_id, tb, source
+    ):
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
         # later if there are already recorded errors and would
@@ -1576,9 +1580,8 @@ class Transaction(object):
             span_id=span_id,
             stack_trace=exception_stack(tb),
             custom_params=custom_params,
-            file_name=None,
-            line_number=None,
             source=source,
+            error_group_name=error_group_name,
         )
 
         # TODO: Errors are recorded in time order. If

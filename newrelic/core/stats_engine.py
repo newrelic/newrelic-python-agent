@@ -712,6 +712,15 @@ class StatsEngine(object):
 
             user_attributes = create_user_attributes(custom_attributes, settings.attribute_filter)
 
+        # Call callback to obtain error group name
+        agent_attributes = {}
+        _, error_group_name = process_user_attribute("error.group.name", "TODO - Add groups")  # TODO Call callback here
+        if error_group_name:
+            agent_attributes["error.group.name"] = error_group_name
+
+        if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
+            extract_code_from_traceback(tb).add_attrs(agent_attributes.__setitem__)
+
         # Record the exception details.
 
         attributes = {}
@@ -731,8 +740,9 @@ class StatsEngine(object):
 
         # set source code attributes
         attributes["agentAttributes"] = {}
-        if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
-            extract_code_from_traceback(tb).add_attrs(attributes["agentAttributes"].__setitem__)
+        for attr in agent_attributes:
+            if attr.destinations & DST_ERROR_COLLECTOR:
+                attributes["userAttributes"][attr.name] = attr.value
 
         error_details = TracedError(
             start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
@@ -771,7 +781,11 @@ class StatsEngine(object):
 
         # Leave agent attributes field blank since not a transaction
 
-        error_event = [error.parameters["intrinsics"], error.parameters["userAttributes"], {}]
+        error_event = [
+            error.parameters["intrinsics"],
+            error.parameters["userAttributes"],
+            error.parameters["agentAttributes"],
+        ]
 
         return error_event
 

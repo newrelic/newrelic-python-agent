@@ -38,6 +38,7 @@ from newrelic.common.object_names import parse_exc_info
 from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.attribute import (
     MAX_LOG_MESSAGE_LENGTH,
+    create_agent_attributes,
     create_user_attributes,
     process_user_attribute,
     truncate,
@@ -714,16 +715,14 @@ class StatsEngine(object):
 
         # Call callback to obtain error group name
         agent_attributes = {}
-        _, error_group_name = process_user_attribute("error.group.name", "TODO - Add groups")  # TODO Call callback here
+        _, error_group_name = process_user_attribute("error.group.name", "TODO")  # TODO Call callback here
         if error_group_name:
             agent_attributes["error.group.name"] = error_group_name
 
-        # _, enduser_id = process_user_attribute("enduser.id", "TODO: pass in enduser.id")
-        # if enduser_id:
-        #     agent_attributes["enduser.id"] = enduser_id
-
         if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
             extract_code_from_traceback(tb).add_attrs(agent_attributes.__setitem__)
+
+        agent_attributes = create_agent_attributes(agent_attributes, settings.attribute_filter)
 
         # Record the exception details.
 
@@ -746,7 +745,7 @@ class StatsEngine(object):
         attributes["agentAttributes"] = {}
         for attr in agent_attributes:
             if attr.destinations & DST_ERROR_COLLECTOR:
-                attributes["userAttributes"][attr.name] = attr.value
+                attributes["agentAttributes"][attr.name] = attr.value
 
         error_details = TracedError(
             start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes

@@ -507,11 +507,6 @@ class Transaction(object):
 
         root.update_with_transaction_custom_attributes(self._custom_params)
 
-        # This should be done on the API side, adding into the transaction
-        # and errors
-        # if enduser_id:
-        #     self._add_agent_attribute("enduser.id", enduser_id)
-
         # Update agent attributes and include them on the root node
         self._update_agent_attributes()
         root_agent_attributes = dict(self._agent_attributes)

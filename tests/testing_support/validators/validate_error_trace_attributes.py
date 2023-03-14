@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import (
-    check_error_attributes,
-    core_application_stats_engine_error,
-)
+from testing_support.fixtures import check_error_attributes
 
 from newrelic.common.object_wrapper import transient_function_wrapper
 
@@ -29,10 +26,11 @@ def validate_error_trace_attributes(err_name, required_params=None, forgone_para
     def _validate_error_trace_attributes(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
-        except:
+        except Exception:
             raise
         else:
-            target_error = core_application_stats_engine_error(err_name)
+            target_error = next((e for e in instance.error_data() if e.type == err_name), None)
+            assert target_error is not None, "No error found with name %s" % err_name
 
             check_error_attributes(target_error.parameters, required_params, forgone_params, exact_attrs)
 

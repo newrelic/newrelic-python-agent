@@ -419,8 +419,6 @@ class Transaction(object):
         if exc is not None and value is not None and tb is not None:
             self.root_span.notice_error((exc, value, tb))
 
-        # Root span
-
         self._state = self.STATE_STOPPED
 
         # Force the root span out of the cache if it's there
@@ -508,6 +506,11 @@ class Transaction(object):
         request_params = self.request_parameters
 
         root.update_with_transaction_custom_attributes(self._custom_params)
+
+        # This should be done on the API side, adding into the transaction
+        # and errors
+        # if enduser_id:
+        #     self._add_agent_attribute("enduser.id", enduser_id)
 
         # Update agent attributes and include them on the root node
         self._update_agent_attributes()

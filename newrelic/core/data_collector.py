@@ -155,8 +155,6 @@ class Session(object):
     def send_error_events(self, sampling_info, error_data):
         """Called to submit sample set for error events."""
 
-        breakpoint()
-
         payload = (self.agent_run_id, sampling_info, error_data)
         return self._protocol.send("error_event_data", payload)
 

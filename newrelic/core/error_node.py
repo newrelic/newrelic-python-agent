@@ -26,6 +26,6 @@ ErrorNode = namedtuple(
         "custom_params",
         "source",
         "error_group_name",
-        "enduser_id",
+        # "enduser_id",
     ],
 )

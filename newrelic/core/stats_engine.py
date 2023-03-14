@@ -718,9 +718,9 @@ class StatsEngine(object):
         if error_group_name:
             agent_attributes["error.group.name"] = error_group_name
 
-        _, enduser_id = process_user_attribute("enduser.id", "TODO: pass in enduser.id")
-        if enduser_id:
-            agent_attributes["enduser.id"] = enduser_id
+        # _, enduser_id = process_user_attribute("enduser.id", "TODO: pass in enduser.id")
+        # if enduser_id:
+        #     agent_attributes["enduser.id"] = enduser_id
 
         if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
             extract_code_from_traceback(tb).add_attrs(agent_attributes.__setitem__)

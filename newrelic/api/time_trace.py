@@ -398,10 +398,8 @@ class TimeTrace(object):
                 source = None
 
             # Call callback to obtain error group name
-            _, error_group_name = process_user_attribute(
-                "error.group.name", "TODO - Add groups"
-            )  # TODO Call callback here
-            _, enduser_id = process_user_attribute("enduser.id", "TODO: pass in enduser.id")
+            _, error_group_name = process_user_attribute("error.group.name", "TODO")  # TODO Call callback here
+            # _, enduser_id = process_user_attribute("enduser.id", "TODO: pass in enduser.id")
 
             transaction._create_error_node(
                 settings,
@@ -409,7 +407,7 @@ class TimeTrace(object):
                 message,
                 is_expected,
                 error_group_name,
-                enduser_id,
+                # enduser_id,
                 custom_params,
                 self.guid,
                 tb,

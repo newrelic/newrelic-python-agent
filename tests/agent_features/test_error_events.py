@@ -22,16 +22,23 @@ from testing_support.fixtures import (
     make_synthetics_header,
     override_application_settings,
     reset_core_stats_engine,
+    validate_error_event_attributes,
+    validate_error_event_attributes_outside_transaction,
     validate_error_event_sample_data,
+    validate_error_trace_attributes_outside_transaction,
     validate_transaction_error_event_count,
 )
 from testing_support.sample_applications import fully_featured_app
+from testing_support.validators.validate_error_trace_attributes import (
+    validate_error_trace_attributes,
+)
 from testing_support.validators.validate_non_transaction_error_event import (
     validate_non_transaction_error_event,
 )
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.application import application_settings
+from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import notice_error
 from newrelic.common.object_names import callable_name
 
@@ -285,3 +292,39 @@ def test_error_event_outside_transaction_collect_error_events_false():
     except ErrorEventOutsideTransactionError:
         app = application()
         notice_error(sys.exc_info(), application=app)
+
+
+@reset_core_stats_engine()
+def test_error_callback_attributes():
+    @validate_error_trace_attributes(
+        callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"error.group.name": "TODO"}}
+    )
+    @validate_error_event_attributes(exact_attrs={"user": {}, "intrinsic": {}, "agent": {"error.group.name": "TODO"}})
+    @background_task()
+    def _test():
+        # TODO Set error callback here
+        try:
+            raise ValueError()
+        except Exception:
+            notice_error()
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_error_callback_attributes_outside_transaction():
+    @validate_error_trace_attributes_outside_transaction(
+        callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"error.group.name": "TODO"}}
+    )
+    @validate_error_event_attributes_outside_transaction(
+        exact_attrs={"user": {}, "intrinsic": {}, "agent": {"error.group.name": "TODO"}}
+    )
+    def _test():
+        # TODO Set error callback here
+        try:
+            raise ValueError()
+        except Exception:
+            app = application()
+            notice_error(application=app)
+
+    _test()

@@ -344,7 +344,7 @@ class TimeTrace(object):
             is_expected = is_expected_error(exc_info, status_code=status_code, settings=settings)
 
         # Record a supportability metric if error attributes are being
-        # overiden.
+        # overridden.
         if "error.class" in self.agent_attributes:
             transaction._record_supportability("Supportability/SpanEvent/Errors/Dropped")
 
@@ -397,11 +397,15 @@ class TimeTrace(object):
             else:
                 source = None
 
+            # Call callback to obtain error group name
+            _, error_group_name = process_user_attribute("error.group.name", "TODO")  # TODO Call callback here
+
             transaction._create_error_node(
                 settings,
                 fullname,
                 message,
                 is_expected,
+                error_group_name,
                 custom_params,
                 self.guid,
                 tb,
@@ -634,6 +638,7 @@ def get_service_linking_metadata(application=None, settings=None):
     if not settings:
         if application is None:
             from newrelic.api.application import application_instance
+
             application = application_instance(activate=False)
 
         if application is not None:

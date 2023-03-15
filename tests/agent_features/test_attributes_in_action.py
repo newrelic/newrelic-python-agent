@@ -25,6 +25,9 @@ from testing_support.fixtures import (
     validate_error_event_attributes_outside_transaction,
     validate_error_trace_attributes_outside_transaction,
 )
+from testing_support.validators.validate_error_trace_attributes import (
+    validate_error_trace_attributes,
+)
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_trace_attributes import (
     validate_transaction_error_trace_attributes,
@@ -37,9 +40,10 @@ from testing_support.validators.validate_transaction_trace_attributes import (
 )
 
 from newrelic.api.application import application_instance as application
+from newrelic.api.background_task import background_task
 from newrelic.api.message_transaction import message_transaction
 from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import add_custom_attribute
+from newrelic.api.transaction import add_custom_attribute, current_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_names import callable_name
 
@@ -93,7 +97,16 @@ TRACE_ERROR_AGENT_KEYS = [
 
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
 
-TRANS_EVENT_INTRINSICS = ("name", "duration", "type", "timestamp", "totalTime", "error", "nr.apdexPerfZone", "apdexPerfZone")
+TRANS_EVENT_INTRINSICS = (
+    "name",
+    "duration",
+    "type",
+    "timestamp",
+    "totalTime",
+    "error",
+    "nr.apdexPerfZone",
+    "apdexPerfZone",
+)
 TRANS_EVENT_AGENT_KEYS = [
     "response.status",
     "request.method",
@@ -911,3 +924,24 @@ _forgone_agent_attributes = ["message.routingKey"]
 @message_transaction(library="RabbitMQ", destination_type="Exchange", destination_name="x")
 def test_none_type_routing_key_agent_attribute():
     pass
+
+
+_required_agent_attributes = ["enduser.id"]
+_forgone_agent_attributes = []
+
+
+@validate_error_trace_attributes(
+    callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": "1234"}}
+)
+@validate_error_event_attributes(exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": "1234"}})
+@validate_attributes("agent", _required_agent_attributes, _forgone_agent_attributes)
+@background_task()
+def test_enduser_id_attribute_api():
+    """Validate enduser.id attribute set by API ends up on transaction events, error events, and traced errors."""
+    txn = current_transaction()
+    txn._add_agent_attribute("enduser.id", "1234")  # TODO Replace this with an API call
+
+    try:
+        raise ValueError()
+    except Exception:
+        notice_error()

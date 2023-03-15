@@ -38,6 +38,7 @@ from newrelic.common.object_names import parse_exc_info
 from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.attribute import (
     MAX_LOG_MESSAGE_LENGTH,
+    create_agent_attributes,
     create_user_attributes,
     process_user_attribute,
     truncate,
@@ -712,6 +713,17 @@ class StatsEngine(object):
 
             user_attributes = create_user_attributes(custom_attributes, settings.attribute_filter)
 
+        # Call callback to obtain error group name
+        agent_attributes = {}
+        _, error_group_name = process_user_attribute("error.group.name", "TODO")  # TODO Call callback here
+        if error_group_name:
+            agent_attributes["error.group.name"] = error_group_name
+
+        if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
+            extract_code_from_traceback(tb).add_attrs(agent_attributes.__setitem__)
+
+        agent_attributes = create_agent_attributes(agent_attributes, settings.attribute_filter)
+
         # Record the exception details.
 
         attributes = {}
@@ -731,8 +743,9 @@ class StatsEngine(object):
 
         # set source code attributes
         attributes["agentAttributes"] = {}
-        if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
-            extract_code_from_traceback(tb).add_attrs(attributes["agentAttributes"].__setitem__)
+        for attr in agent_attributes:
+            if attr.destinations & DST_ERROR_COLLECTOR:
+                attributes["agentAttributes"][attr.name] = attr.value
 
         error_details = TracedError(
             start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
@@ -771,7 +784,11 @@ class StatsEngine(object):
 
         # Leave agent attributes field blank since not a transaction
 
-        error_event = [error.parameters["intrinsics"], error.parameters["userAttributes"], {}]
+        error_event = [
+            error.parameters["intrinsics"],
+            error.parameters["userAttributes"],
+            error.parameters["agentAttributes"],
+        ]
 
         return error_event
 

@@ -17,11 +17,8 @@ import uuid
 import pika
 import pytest
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import (  # noqa: F401
-    code_coverage_fixture,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 
 QUEUE = "test_pika-%s" % uuid.uuid4()
 QUEUE_2 = "test_pika-%s" % uuid.uuid4()
@@ -36,11 +33,6 @@ BODY = b"test_body"
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
-_coverage_source = [
-    "newrelic.hooks.messagebroker_pika",
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,

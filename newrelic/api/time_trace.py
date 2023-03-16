@@ -257,13 +257,15 @@ class TimeTrace(object):
         if getattr(value, "_nr_ignored", None):
             return
 
-        module, name, fullnames, message = parse_exc_info((exc, value, tb))
+        module, name, fullnames, message_raw = parse_exc_info((exc, value, tb))
         fullname = fullnames[0]
 
         # Check to see if we need to strip the message before recording it.
 
         if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
             message = STRIP_EXCEPTION_MESSAGE
+        else:
+            message = message_raw
 
         # Where expected or ignore are a callable they should return a
         # tri-state variable with the following behavior.
@@ -355,7 +357,7 @@ class TimeTrace(object):
         self._add_agent_attribute("error.message", message)
         self._add_agent_attribute("error.expected", is_expected)
 
-        return fullname, message, tb, is_expected
+        return fullname, message, message_raw, tb, is_expected
 
     def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         attributes = attributes if attributes is not None else {}
@@ -379,7 +381,7 @@ class TimeTrace(object):
             status_code=status_code,
         )
         if recorded:
-            fullname, message, tb, is_expected = recorded
+            fullname, message, message_raw, tb, is_expected = recorded
             transaction = self.transaction
             settings = transaction and transaction.settings
 
@@ -406,29 +408,35 @@ class TimeTrace(object):
                     )
                     custom_params = {}
 
-            breakpoint()
+            # Extract additional details about the exception
 
+            source = None
+            error_group_name = None
             if settings:
                 if settings.code_level_metrics and settings.code_level_metrics.enabled:
                     source = extract_code_from_traceback(tb)
-                else:
-                    source = None
 
                 if settings.error_collector and settings.error_collector.error_group_callback is not None:
                     try:
-                        group = settings.error_collector.error_group_callback(exc, value, tb)
+                        # Call callback to obtain error group name
+                        error_group_name_raw = settings.error_collector.error_group_callback(value, {
+                            "traceback": tb,
+                            "error.class": exc,
+                            "error.message": message_raw,
+                            "error.expected": is_expected,
+                            "custom_params": attributes,  # TODO Include transaction attributes as well
+                            "transactionName": getattr(transaction, "name", None),
+                            "response.status": getattr(transaction, "_response_code", None),
+                            "request.method": getattr(transaction, "_request_method", None),
+                            "request.uri": getattr(transaction, "_request_uri", None),
+                        })
+                        if error_group_name_raw:
+                            _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
+                            if error_group_name is None:
+                                raise ValueError("Invalid attribute value for error.group.name: %s" % str(error_group_name_raw))
                     except Exception:
                         _logger.error("Encountered error when calling error group callback:\n%s", "".join(traceback.format_exception(*sys.exc_info())))
-                        group = None
-                    
-                    if group:
-                        if isinstance(group, six.text_type):
-                            attributes["agentAttributes"]["error_group"] = group
-                        else:
-                            _logger.error("Error group callback returned type %s. Only str and None are valid return types.", str(type(group)))
-
-            # Call callback to obtain error group name
-            _, error_group_name = process_user_attribute("error.group.name", "TODO")  # TODO Call callback here
+                        error_group_name = None
 
             transaction._create_error_node(
                 settings,

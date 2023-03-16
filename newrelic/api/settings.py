@@ -35,8 +35,6 @@ def set_error_group_callback(callback, application=None):
     """Set the current callback to be used to determine error groups."""
     from newrelic.api.application import application_instance
 
-    breakpoint()
-
     if not callable(callback):
         raise TypeError("Error group callback must be a callable.")
 

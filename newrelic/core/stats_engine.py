@@ -612,13 +612,15 @@ class StatsEngine(object):
         if getattr(value, "_nr_ignored", None):
             return
 
-        module, name, fullnames, message = parse_exc_info(error)
+        module, name, fullnames, message_raw = parse_exc_info(error)
         fullname = fullnames[0]
 
         # Check to see if we need to strip the message before recording it.
 
         if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
             message = STRIP_EXCEPTION_MESSAGE
+        else:
+            message = message_raw
 
         # Where expected or ignore are a callable they should return a
         # tri-state variable with the following behavior.
@@ -714,26 +716,40 @@ class StatsEngine(object):
 
             user_attributes = create_user_attributes(custom_attributes, settings.attribute_filter)
 
-        # Call callback to obtain error group name
+
+        # Extract additional details about the exception as agent attributes
         agent_attributes = {}
 
         if settings:
             if settings.code_level_metrics and settings.code_level_metrics.enabled:
                 extract_code_from_traceback(tb).add_attrs(agent_attributes.__setitem__)
+
             if settings.error_collector and settings.error_collector.error_group_callback is not None:
+                error_group_name = None
                 try:
-                    error_group_name_raw = settings.error_collector.error_group_callback(exc, value, tb)
-                    if error_group_name:
+                    # Call callback to obtain error group name
+                    error_group_name_raw = settings.error_collector.error_group_callback(value, {
+                        "traceback": tb,
+                        "error.class": exc,
+                        "error.message": message_raw,
+                        "error.expected": is_expected,
+                        "custom_params": attributes,
+                        # Transaction specific items should be set to None
+                        "transactionName": None,
+                        "response.status_code": None,
+                        "request.method": None,
+                        "request.uri": None,
+                    })
+                    if error_group_name_raw:
                         _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
                         if error_group_name is None:
                             raise ValueError("Invalid attribute value for error.group.name: %s" % str(error_group_name_raw))
+                        else:
+                            agent_attributes["error.group.name"] = error_group_name
+
                 except Exception:
                     _logger.error("Encountered error when calling error group callback:\n%s", "".join(traceback.format_exception(*sys.exc_info())))
-                    error_group_name = None
-
-                if error_group_name:
-                    agent_attributes["error.group.name"] = error_group_name
-
+        
         agent_attributes = create_agent_attributes(agent_attributes, settings.attribute_filter)
 
         # Record the exception details.

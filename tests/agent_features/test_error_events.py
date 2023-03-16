@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import threading
 import sys
 import time
 
+import pytest
 import webtest
+
 from testing_support.fixtures import (
     cat_enabled,
     make_cross_agent_headers,
@@ -40,6 +43,7 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.application import application_settings
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import notice_error
+from newrelic.api.settings import set_error_group_callback
 from newrelic.common.object_names import callable_name
 
 # Error in test app hard-coded as a ValueError
@@ -293,38 +297,80 @@ def test_error_event_outside_transaction_collect_error_events_false():
         app = application()
         notice_error(sys.exc_info(), application=app)
 
+_callback_called = threading.Event()
 
+def error_group_callback(exc, data):
+    _callback_called.set()
+
+    if isinstance(exc, ValueError):
+        return "value"
+    elif isinstance(exc, TypeError):
+        return ""
+
+
+@pytest.mark.parametrize("exc_class,group_name", [
+    (ValueError, "value"),
+    (TypeError, None),
+    (RuntimeError, None),
+])
 @reset_core_stats_engine()
-def test_error_callback_attributes():
+def test_error_group_name_callback(exc_class, group_name):
+    _callback_called.clear()
+
+    if group_name is not None:
+        exact = {"user": {}, "intrinsic": {}, "agent": {"error.group.name": group_name}}
+        forgone = None
+    else:
+        exact = None
+        forgone = {"user": [], "intrinsic": [], "agent": ["error.group.name"]}
+
     @validate_error_trace_attributes(
-        callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"error.group.name": "TODO"}}
+        callable_name(exc_class), forgone_params=forgone, exact_attrs=exact
     )
-    @validate_error_event_attributes(exact_attrs={"user": {}, "intrinsic": {}, "agent": {"error.group.name": "TODO"}})
+    @validate_error_event_attributes(forgone_params=forgone, exact_attrs=exact)
     @background_task()
     def _test():
-        # TODO Set error callback here
+        set_error_group_callback(error_group_callback)
+
         try:
-            raise ValueError()
+            raise exc_class()
         except Exception:
             notice_error()
+
+        assert _callback_called
 
     _test()
 
 
+@pytest.mark.parametrize("exc_class,group_name", [
+    (ValueError, "value"),
+    (TypeError, None),
+    (RuntimeError, None),
+])
 @reset_core_stats_engine()
-def test_error_callback_attributes_outside_transaction():
-    @validate_error_trace_attributes_outside_transaction(
-        callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"error.group.name": "TODO"}}
+def test_error_group_name_callback_outside_transaction(exc_class, group_name):
+    _callback_called.clear()
+
+    if group_name is not None:
+        exact = {"user": {}, "intrinsic": {}, "agent": {"error.group.name": group_name}}
+        forgone = None
+    else:
+        exact = None
+        forgone = {"user": [], "intrinsic": [], "agent": ["error.group.name"]}
+
+    @validate_error_trace_attributes(
+        callable_name(exc_class), forgone_params=forgone, exact_attrs=exact
     )
-    @validate_error_event_attributes_outside_transaction(
-        exact_attrs={"user": {}, "intrinsic": {}, "agent": {"error.group.name": "TODO"}}
-    )
+    @validate_error_event_attributes(forgone_params=forgone, exact_attrs=exact)
     def _test():
-        # TODO Set error callback here
+        set_error_group_callback(error_group_callback)
+
         try:
-            raise ValueError()
+            raise exc_class()
         except Exception:
             app = application()
             notice_error(application=app)
+        
+        assert _callback_called
 
     _test()

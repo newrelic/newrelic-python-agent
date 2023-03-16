@@ -165,6 +165,10 @@ async def wrap_exception_handler_async(coro, exc):
 
 
 def wrap_exception_handler(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction:
+        transaction.set_transaction_name(callable_name(wrapped), priority=1)
+
     if is_coroutine_function(wrapped):
         return wrap_exception_handler_async(FunctionTraceWrapper(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs))
     else:

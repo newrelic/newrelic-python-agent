@@ -83,25 +83,23 @@ version_tweak_string = ".middleware" if starlette_version >= (0, 20, 1) else ""
 middleware_test = (
     (
         "no_error_handler",
-        "_test_application:middleware_factory.<locals>.middleware",
         "starlette.middleware.exceptions:ExceptionMiddleware.http_exception",
     ),
     (
         "non_async_error_handler_no_middleware",
-        "starlette.applications:Starlette.__call__",
         "_test_application:missing_route_handler",
     ),
 )
 
 
 @pytest.mark.parametrize(
-    "app_name, transaction_name, metric_name",
+    "app_name, transaction_name",
     middleware_test,
 )
-def test_application_nonexistent_route(target_application, app_name, transaction_name, metric_name):
+def test_application_nonexistent_route(target_application, app_name, transaction_name):
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=[("Function/" + metric_name, 1)],
+        scoped_metrics=[("Function/" + transaction_name, 1)],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():
@@ -130,8 +128,8 @@ def test_exception_in_middleware(target_application, app_name):
         exc_type = ValueError
 
     @validate_transaction_metrics(
-        "_test_application:middleware_factory.<locals>.middleware",
-        scoped_metrics=[("Function/_test_application:middleware_factory.<locals>.middleware", 1)],
+        "starlette.middleware.errors:ServerErrorMiddleware.error_response",
+        scoped_metrics=[("Function/starlette.middleware.errors:ServerErrorMiddleware.error_response", 1)],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     @validate_transaction_errors(errors=[callable_name(exc_type)])

@@ -43,7 +43,6 @@ def bind_exc(request, exc, *args, **kwargs):
 
 @function_wrapper
 def route_naming_wrapper(wrapped, instance, args, kwargs):
-
     with ContextOf(request=bind_request(*args, **kwargs)):
         transaction = current_transaction()
         if transaction:

@@ -124,14 +124,11 @@ def test_exception_in_middleware(target_application, app_name):
         from anyio._backends._asyncio import ExceptionGroup
 
         exc_type = ExceptionGroup
+        expected_transaction = "_test_application:middleware_factory.<locals>.middleware"
     else:
         exc_type = ValueError
 
-    expected_transaction = (
-        "_test_application:middleware_factory.<locals>.middleware"
-        if (0, 15) <= starlette_version < (0, 16)
-        else "starlette.middleware.errors:ServerErrorMiddleware.error_response"
-    )
+        expected_transaction = "starlette.middleware.errors:ServerErrorMiddleware.error_response"
 
     @validate_transaction_metrics(
         expected_transaction,

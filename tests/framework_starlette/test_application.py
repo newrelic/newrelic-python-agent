@@ -128,9 +128,9 @@ def test_exception_in_middleware(target_application, app_name):
         exc_type = ValueError
 
     expected_transaction = (
-        "starlette.middleware.errors:ServerErrorMiddleware.error_response"
-        if starlette_version >= (0, 16, 0)
-        else "_test_application:middleware_factory.<locals>.middleware"
+        "_test_application:middleware_factory.<locals>.middleware"
+        if (0, 15) <= starlette_version < (0, 16)
+        else "starlette.middleware.errors:ServerErrorMiddleware.error_response"
     )
 
     @validate_transaction_metrics(

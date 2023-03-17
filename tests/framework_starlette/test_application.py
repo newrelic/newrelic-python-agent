@@ -83,7 +83,7 @@ version_tweak_string = ".middleware" if starlette_version >= (0, 20, 1) else ""
 middleware_test = (
     (
         "no_error_handler",
-        "starlette.middleware.exceptions:ExceptionMiddleware.http_exception",
+        "starlette%s.exceptions:ExceptionMiddleware.http_exception" % (version_tweak_string),
     ),
     (
         "non_async_error_handler_no_middleware",
@@ -127,9 +127,15 @@ def test_exception_in_middleware(target_application, app_name):
     else:
         exc_type = ValueError
 
+    expected_transaction = (
+        "starlette.middleware.errors:ServerErrorMiddleware.error_response"
+        if starlette_version >= (0, 16, 0)
+        else "_test_application:middleware_factory.<locals>.middleware"
+    )
+
     @validate_transaction_metrics(
-        "starlette.middleware.errors:ServerErrorMiddleware.error_response",
-        scoped_metrics=[("Function/starlette.middleware.errors:ServerErrorMiddleware.error_response", 1)],
+        expected_transaction,
+        scoped_metrics=[("Function/" + expected_transaction, 1)],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     @validate_transaction_errors(errors=[callable_name(exc_type)])

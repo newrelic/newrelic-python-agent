@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import asyncio
 
 import pytest
 
@@ -122,3 +123,36 @@ def test_redis_execute_command_as_two_args_enable(client, loop):  # noqa
 @background_task()
 def test_redis_execute_command_as_two_args_disable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_multi_args(client))
+
+
+@background_task()
+def test_pubsub(client, loop):
+    async def exercise():
+        pubsub = client.pubsub()
+
+        return await pubsub.psubscribe("channel:*")
+
+    status = loop.run_until_complete(exercise())
+
+    assert status is None
+
+
+@background_task()
+def test_monitor(client, loop):
+    async def exercise():
+        monitor = client.monitor()
+        try:
+            async with asyncio.timeout(0.1):
+                async for _ in monitor.listen():
+                    break
+        except asyncio.CancelledError:
+            # that's ok, we are just testing sync/async wrapping
+            pass
+
+        return
+
+    status = loop.run_until_complete(exercise())
+
+    # "When successful, this command doesn't return anything"
+    # more info: https://redis.io/commands/psubscribe/
+    assert status is None

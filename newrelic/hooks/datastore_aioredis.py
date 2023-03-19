@@ -11,17 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.hooks.datastore_redis import (
     _redis_client_methods,
     _redis_multipart_commands,
-    _redis_operation_re,
+    _redis_operation_re, _redis_client_sync_methods,
 )
-from newrelic.common.package_version_utils import get_package_version_tuple
 
 
 def _conn_attrs_to_dict(connection):
@@ -46,7 +45,6 @@ def _instance_info(kwargs):
 
 
 def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
-
     @function_wrapper
     async def _nr_wrapper_AioRedis_async_method_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -55,7 +53,7 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
 
         with DatastoreTrace(product="Redis", target=None, operation=operation):
             return await wrapped(*args, **kwargs)
-    
+
     def _nr_wrapper_AioRedis_method_(wrapped, instance, args, kwargs):
         # Check for transaction and return early if found.
         # Method will return synchronously without executing,
@@ -76,6 +74,9 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
                 from redis.asyncio.client import Pipeline
             if isinstance(instance, Pipeline):
                 return wrapped(*args, **kwargs)
+
+        if operation in _redis_client_sync_methods:
+            return wrapped(*args, **kwargs)
 
         # Method should be run when awaited, therefore we wrap in an async wrapper.
         return _nr_wrapper_AioRedis_async_method_(wrapped)(*args, **kwargs)

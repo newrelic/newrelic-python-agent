@@ -129,7 +129,6 @@ def test_redis_execute_command_as_two_args_disable(client, loop):  # noqa
 def test_pubsub(client, loop):
     async def exercise():
         pubsub = client.pubsub()
-
         return await pubsub.psubscribe("channel:*")
 
     status = loop.run_until_complete(exercise())
@@ -149,10 +148,4 @@ def test_monitor(client, loop):
             # that's ok, we are just testing sync/async wrapping
             pass
 
-        return
-
-    status = loop.run_until_complete(exercise())
-
-    # "When successful, this command doesn't return anything"
-    # more info: https://redis.io/commands/psubscribe/
-    assert status is None
+    loop.run_until_complete(exercise())

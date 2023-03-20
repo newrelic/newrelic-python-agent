@@ -136,11 +136,9 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     if operation.selection_set is not None:
         fields = operation.selection_set.selections
         # Ignore transactions for introspection queries
-        for field in fields:
-            if (
-                not settings.instrumentation.graphql.capture_introspection_queries
-                and get_node_value(field, "name") in GRAPHQL_INTROSPECTION_FIELDS
-            ):
+        if not settings.instrumentation.graphql.capture_introspection_queries:
+            # If all selected fields are introspection fields
+            if all(get_node_value(field, "name") in GRAPHQL_INTROSPECTION_FIELDS for field in fields):
                 ignore_transaction()
 
         fragments = execution_context.fragments

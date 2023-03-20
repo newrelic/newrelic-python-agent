@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import dt_enabled
+from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -434,8 +434,15 @@ def test_deepest_unique_path(app, graphql_run, query, expected_path):
     _test()
 
 
-@validate_transaction_count(0)
-@background_task()
-def test_ignored_introspection_transactions(app, graphql_run):
-    response = graphql_run(app, "{ __schema { types { name } } }")
-    assert not response.errors
+@pytest.mark.parametrize("capture_introspection_setting", (True, False))
+def test_introspection_transactions(app, graphql_run, capture_introspection_setting):
+    txn_ct = 1 if capture_introspection_setting else 0
+
+    @override_application_settings({"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting})
+    @validate_transaction_count(txn_ct)
+    @background_task()
+    def _test():
+        response = graphql_run(app, "{ __schema { types { name } } }")
+        assert not response.errors
+
+    _test()

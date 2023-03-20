@@ -334,6 +334,14 @@ class InfiniteTracingSettings(Settings):
         return True
 
 
+class InstrumentationSettings(Settings):
+    pass
+
+
+class InstrumentationGraphQLSettings(Settings):
+    pass
+
+
 class EventHarvestConfigSettings(Settings):
     nested = True
     _lock = threading.Lock()
@@ -390,6 +398,7 @@ _settings.datastore_tracer = DatastoreTracerSettings()
 _settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
 _settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseNameReportingSettings()
 _settings.heroku = HerokuSettings()
+_settings.instrumentation = InstrumentationSettings()
 _settings.span_events = SpanEventSettings()
 _settings.span_events.attributes = SpanEventAttributesSettings()
 _settings.transaction_segments = TransactionSegmentSettings()
@@ -734,6 +743,8 @@ _settings.infinite_tracing.compression = _environ_as_bool("NEW_RELIC_INFINITE_TR
 _settings.infinite_tracing.batching = _environ_as_bool("NEW_RELIC_INFINITE_TRACING_BATCHING", default=True)
 _settings.infinite_tracing.ssl = True
 _settings.infinite_tracing.span_queue_size = _environ_as_int("NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE", 10000)
+
+_settings.instrumentation.graphql.capture_introspection_queries = os.environ.get("NEW_RELIC_INSTRUMENTATION_GRAPHQL_CAPTURE_INTROSPECTION_QUERIES", False)
 
 _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
     "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE

@@ -105,6 +105,7 @@ def bind_operation_v2(exe_context, operation, root_value):
 def wrap_execute_operation(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     trace = current_trace()
+    settings = transaction.settings
 
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -136,7 +137,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
         fields = operation.selection_set.selections
         # Ignore transactions for introspection queries
         for field in fields:
-            if get_node_value(field, "name") in GRAPHQL_INTROSPECTION_FIELDS:
+            if not settings.instrumentation.graphql.capture_introspection_queries and get_node_value(field, "name") in GRAPHQL_INTROSPECTION_FIELDS:
                 ignore_transaction()
 
         fragments = execution_context.fragments

@@ -745,7 +745,9 @@ _settings.infinite_tracing.batching = _environ_as_bool("NEW_RELIC_INFINITE_TRACI
 _settings.infinite_tracing.ssl = True
 _settings.infinite_tracing.span_queue_size = _environ_as_int("NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE", 10000)
 
-_settings.instrumentation.graphql.capture_introspection_queries = os.environ.get("NEW_RELIC_INSTRUMENTATION_GRAPHQL_CAPTURE_INTROSPECTION_QUERIES", False)
+_settings.instrumentation.graphql.capture_introspection_queries = os.environ.get(
+    "NEW_RELIC_INSTRUMENTATION_GRAPHQL_CAPTURE_INTROSPECTION_QUERIES", False
+)
 
 _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
     "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE

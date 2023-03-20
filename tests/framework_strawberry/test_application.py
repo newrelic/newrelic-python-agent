@@ -15,9 +15,15 @@
 import pytest
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_count import (
+    validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -61,12 +67,12 @@ def to_graphql_source(query):
     return delay_import
 
 
-def example_middleware(next, root, info, **args):  #pylint: disable=W0622
+def example_middleware(next, root, info, **args):  # pylint: disable=W0622
     return_value = next(root, info, **args)
     return return_value
 
 
-def error_middleware(next, root, info, **args):  #pylint: disable=W0622
+def error_middleware(next, root, info, **args):  # pylint: disable=W0622
     raise RuntimeError("Runtime Error!")
 
 
@@ -248,7 +254,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-            ('GraphQL/operation/Strawberry/<unknown>/<anonymous>/<unknown>', 1),
+        ("GraphQL/operation/Strawberry/<unknown>/<anonymous>/<unknown>", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -438,7 +444,9 @@ def test_deepest_unique_path(app, graphql_run, query, expected_path):
 def test_introspection_transactions(app, graphql_run, capture_introspection_setting):
     txn_ct = 1 if capture_introspection_setting else 0
 
-    @override_application_settings({"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting})
+    @override_application_settings(
+        {"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting}
+    )
     @validate_transaction_count(txn_ct)
     @background_task()
     def _test():

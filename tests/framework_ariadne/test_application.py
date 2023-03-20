@@ -524,7 +524,9 @@ def test_deepest_unique_path(app, graphql_run, query, expected_path):
 def test_introspection_transactions(app, graphql_run, capture_introspection_setting):
     txn_ct = 1 if capture_introspection_setting else 0
 
-    @override_application_settings({"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting})
+    @override_application_settings(
+        {"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting}
+    )
     @validate_transaction_count(txn_ct)
     @background_task()
     def _test():

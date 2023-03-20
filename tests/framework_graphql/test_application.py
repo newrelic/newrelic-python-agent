@@ -14,13 +14,19 @@
 
 import pytest
 from testing_support.fixtures import dt_enabled, override_application_settings
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -99,9 +105,9 @@ def test_basic(app, graphql_run):
     )
     @background_task()
     def _test():
-        response = graphql_run(app, '{ hello }')
+        response = graphql_run(app, "{ hello }")
         assert not response.errors
-    
+
     _test()
 
 
@@ -376,9 +382,7 @@ def test_operation_metrics_and_attrs(app, graphql_run):
     @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
-        response = graphql_run(
-            app, "query MyQuery { library(index: 0) { branch, book { id, name } } }"
-        )
+        response = graphql_run(app, "query MyQuery { library(index: 0) { branch, book { id, name } } }")
         assert not response.errors
 
     _test()
@@ -511,7 +515,9 @@ def test_deepest_unique_path(app, graphql_run, query, expected_path):
 def test_introspection_transactions(app, graphql_run, capture_introspection_setting):
     txn_ct = 1 if capture_introspection_setting else 0
 
-    @override_application_settings({"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting})
+    @override_application_settings(
+        {"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting}
+    )
     @validate_transaction_count(txn_ct)
     @background_task()
     def _test():

@@ -100,6 +100,7 @@ _instance_info_from_url_tests = [
 if (3, 5, 3) >= REDIS_PY_VERSION >= (2, 7, 5):
     _instance_info_from_url_tests.append((("redis://127.0.0.1",), {}, ("127.0.0.1", "6379", "0")))
 
+
 if REDIS_PY_VERSION >= (2, 10):
     _instance_info_from_url_tests.extend(
         [
@@ -114,6 +115,12 @@ if REDIS_PY_VERSION >= (2, 10):
             (("unix:///path/to/socket.sock",), {"db": 2}, ("localhost", "/path/to/socket.sock", "2")),
         ]
     )
+
+if REDIS_PY_VERSION >= (4, 5, 2):
+    _instance_info_from_url_tests_4_5_2 = _instance_info_from_url_tests[:-3] + \
+            [(("unix:///path/to/socket.sock",), {}, ("localhost", "6379", "0")),
+            (("unix:///path/to/socket.sock?db=2",), {}, ("localhost", "6379", "2")),
+            (("unix:///path/to/socket.sock",), {"db": 2}, ("localhost", "6379", "2")),]
 
 
 @pytest.mark.skipif(REDIS_PY_VERSION < (2, 6), reason="from_url not yet implemented in this redis-py version")
@@ -133,7 +140,7 @@ def test_strict_redis_client_from_url(args, kwargs, expected):
 
 
 @pytest.mark.skipif(REDIS_PY_VERSION < (2, 6), reason="from_url not yet implemented in this redis-py version")
-@pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
+@pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests if REDIS_PY_VERSION < (4, 5, 2) else _instance_info_from_url_tests_4_5_2)
 def test_redis_connection_from_url(args, kwargs, expected):
     r = redis.Redis.from_url(*args, **kwargs)
     if r.connection_pool.connection_class is redis.Connection:
@@ -153,7 +160,7 @@ def test_redis_connection_from_url(args, kwargs, expected):
 
 
 @pytest.mark.skipif(REDIS_PY_VERSION < (2, 6), reason="from_url not yet implemented in this redis-py version")
-@pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
+@pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests if REDIS_PY_VERSION < (4, 5, 2) else _instance_info_from_url_tests_4_5_2)
 def test_strict_redis_connection_from_url(args, kwargs, expected):
     r = redis.StrictRedis.from_url(*args, **kwargs)
     if r.connection_pool.connection_class is redis.Connection:

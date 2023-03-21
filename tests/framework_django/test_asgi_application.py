@@ -16,7 +16,6 @@ import os
 
 import django
 import pytest
-from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import (
     override_application_settings,
     override_generic_settings,
@@ -34,12 +33,15 @@ DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 if DJANGO_VERSION[0] < 3:
     pytest.skip("support for asgi added in django 3", allow_module_level=True)
 
+# Import this here so it is not run if Django is less than 3.0.
+from testing_support.asgi_testing import AsgiTest  # noqa: E402
+
 scoped_metrics = [
     ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1),
-    ("Function/django.middleware.common:CommonMiddleware", 1),
-    ("Function/django.middleware.csrf:CsrfViewMiddleware", 1),
+    ("Function/django.middleware.common:CommonMiddleware", None),
+    ("Function/django.middleware.csrf:CsrfViewMiddleware", None),
     ("Function/django.contrib.auth.middleware:AuthenticationMiddleware", 1),
-    ("Function/django.contrib.messages.middleware:MessageMiddleware", 1),
+    ("Function/django.contrib.messages.middleware:MessageMiddleware", None),
     ("Function/django.middleware.gzip:GZipMiddleware", 1),
     ("Function/middleware:ExceptionTo410Middleware", 1),
     ("Function/django.urls.resolvers:URLResolver.resolve", "present"),

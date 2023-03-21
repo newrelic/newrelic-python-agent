@@ -39,6 +39,19 @@ from newrelic.common.object_wrapper import (
 from newrelic.config import extra_settings
 from newrelic.core.config import global_settings
 
+# These middleware are not useful to wrap as they don't do anything particularly
+# interesting that could cause performance issues.
+MIDDLEWARE_DENY_WRAP = frozenset(
+    {
+        "django.middleware.csrf:CsrfViewMiddleware",
+        "django.middleware.clickjacking:XFrameOptionsMiddleware",
+        "django.contrib.messages.middleware:MessageMiddleware",
+        "django.middleware.csrf:CsrfViewMiddleware",
+        "django.middleware.common:CommonMiddleware",
+        "django.middleware.security:SecurityMiddleware",
+    }
+)
+
 _logger = logging.getLogger(__name__)
 
 _boolean_states = {
@@ -144,6 +157,7 @@ def should_add_browser_timing(response, transaction):
 # Response middleware for automatically inserting RUM header into HTML response returned by application
 
 
+
 def browser_timing_insertion(response, transaction):
     # No point continuing if header is empty. This can occur if RUM is not enabled within the UI. We don't want to
     # generate the header just yet as we want to do that as late as possible so that application server time in header
@@ -174,6 +188,7 @@ def browser_timing_insertion(response, transaction):
 
 # Template tag functions for manually inserting RUM header into HTML response. A template tag library for 'newrelic'
 # will be automatically inserted into set of tag libraries when performing step to instrument the middleware.
+
 
 
 def newrelic_browser_timing_header():
@@ -238,77 +253,12 @@ def wrap_leading_middleware(middleware):
         return FunctionWrapper(wrapped, wrapper)
 
     for wrapped in middleware:
-        yield wrapper(wrapped)
+        do_not_wrap = is_denied_middleware(callable_name(wrapped))
 
-
-# Because this is not being used in any version of Django that is
-# within New Relic's support window, no tests will be added
-# for this.  However, value exists to keeping backwards compatible
-# functionality, so instead of removing this instrumentation, this
-# will be excluded from the coverage analysis.
-def wrap_view_middleware(middleware):  # pragma: no cover
-    # This is no longer being used. The changes to strip the
-    # wrapper from the view handler when passed into the function
-    # urlresolvers.reverse() solves most of the problems. To back
-    # that up, the object wrapper now proxies various special
-    # methods so that comparisons like '==' will work. The object
-    # wrapper can even be used as a standin for the wrapped object
-    # when used as a key in a dictionary and will correctly match
-    # the original wrapped object.
-
-    # Wrapper to be applied to view middleware. Records the time
-    # spent in the middleware as separate function node and also
-    # attempts to name the web transaction after the name of the
-    # middleware with success being determined by the priority.
-    # This wrapper is special in that it must strip the wrapper
-    # from the view handler when being passed to the view
-    # middleware to avoid issues where middleware wants to do
-    # comparisons between the passed middleware and some other
-    # value. It is believed that the view handler should never
-    # actually be called from the view middleware so not an
-    # issue that no longer wrapped at this point.
-
-    def wrapper(wrapped):
-        # The middleware if a class method would already be
-        # bound at this point, so is safe to determine the name
-        # when it is being wrapped rather than on each
-        # invocation.
-
-        name = callable_name(wrapped)
-
-        def wrapper(wrapped, instance, args, kwargs):
-            transaction = current_transaction()
-
-            def _wrapped(request, view_func, view_args, view_kwargs):
-                # This strips the view handler wrapper before call.
-
-                if hasattr(view_func, "_nr_last_object"):
-                    view_func = view_func._nr_last_object
-
-                return wrapped(request, view_func, view_args, view_kwargs)
-
-            if transaction is None:
-                return _wrapped(*args, **kwargs)
-
-            before = (transaction.name, transaction.group)
-
-            with FunctionTrace(name=name, source=wrapped):
-                try:
-                    return _wrapped(*args, **kwargs)
-
-                finally:
-                    # We want to name the transaction after this
-                    # middleware but only if the transaction wasn't
-                    # named from within the middleware itself explicitly.
-
-                    after = (transaction.name, transaction.group)
-                    if before == after:
-                        transaction.set_transaction_name(name, priority=2)
-
-        return FunctionWrapper(wrapped, wrapper)
-
-    for wrapped in middleware:
-        yield wrapper(wrapped)
+        if do_not_wrap:
+            yield wrapped
+        else:
+            yield wrapper(wrapped)
 
 
 def wrap_trailing_middleware(middleware):
@@ -323,7 +273,13 @@ def wrap_trailing_middleware(middleware):
     # invocation.
 
     for wrapped in middleware:
-        yield FunctionTraceWrapper(wrapped, name=callable_name(wrapped))
+        name = callable_name(wrapped)
+        do_not_wrap = is_denied_middleware(name)
+
+        if do_not_wrap:
+            yield wrapped
+        else:
+            yield FunctionTraceWrapper(wrapped, name=name)
 
 
 def insert_and_wrap_middleware(handler, *args, **kwargs):
@@ -1149,6 +1105,13 @@ def _nr_wrap_converted_middleware_(middleware, name):
     return _wrapper(middleware)
 
 
+def is_denied_middleware(callable_name):
+    for middleware in MIDDLEWARE_DENY_WRAP:
+        if middleware in callable_name:
+            return True
+    return False
+
+
 def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args, kwargs):
     def _bind_params(original_middleware, *args, **kwargs):
         return original_middleware
@@ -1156,10 +1119,14 @@ def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args, kwargs):
     original_middleware = _bind_params(*args, **kwargs)
     converted_middleware = wrapped(*args, **kwargs)
     name = callable_name(original_middleware)
+    do_not_wrap = is_denied_middleware(name)
 
-    if is_coroutine_function(converted_middleware) or is_asyncio_coroutine(converted_middleware):
-        return _nr_wrap_converted_middleware_async_(converted_middleware, name)
-    return _nr_wrap_converted_middleware_(converted_middleware, name)
+    if do_not_wrap:
+        return converted_middleware
+    else:
+        if is_coroutine_function(converted_middleware) or is_asyncio_coroutine(converted_middleware):
+            return _nr_wrap_converted_middleware_async_(converted_middleware, name)
+        return _nr_wrap_converted_middleware_(converted_middleware, name)
 
 
 def instrument_django_core_handlers_exception(module):

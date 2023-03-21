@@ -41,10 +41,19 @@ def target_application():
 
 FRAMEWORK_METRIC = ("Python/Framework/Starlette/%s" % starlette.__version__, 1)
 
+if starlette_version >= (0, 20, 1):
+    DEFAULT_MIDDLEWARE_METRICS = [
+        ("Function/starlette.middleware.exceptions:ExceptionMiddleware.__call__", 1),
+    ]
+else:
+    DEFAULT_MIDDLEWARE_METRICS = [
+        ("Function/starlette.exceptions:ExceptionMiddleware.__call__", 1),
+    ]
+
 MIDDLEWARE_METRICS = [
     ("Function/_test_application:middleware_factory.<locals>.middleware", 2),
     ("Function/_test_application:middleware_decorator", 1),
-]
+] + DEFAULT_MIDDLEWARE_METRICS
 
 
 @pytest.mark.parametrize("app_name", ("no_error_handler",))
@@ -80,14 +89,15 @@ def test_application_non_async(target_application, app_name):
 # starlette.exceptions
 version_tweak_string = ".middleware" if starlette_version >= (0, 20, 1) else ""
 
+DEFAULT_MIDDLEWARE_METRICS = [
+    ("Function/starlette%s.exceptions:ExceptionMiddleware.__call__" % version_tweak_string, 1),
+]
+
 middleware_test = (
-    (
-        "no_error_handler",
-        "starlette%s.exceptions:ExceptionMiddleware.http_exception" % (version_tweak_string),
-    ),
+    ("no_error_handler", "starlette%s.exceptions:ExceptionMiddleware.__call__" % version_tweak_string),
     (
         "non_async_error_handler_no_middleware",
-        "_test_application:missing_route_handler",
+        "starlette%s.exceptions:ExceptionMiddleware.__call__" % version_tweak_string,
     ),
 )
 
@@ -124,15 +134,12 @@ def test_exception_in_middleware(target_application, app_name):
         from anyio._backends._asyncio import ExceptionGroup
 
         exc_type = ExceptionGroup
-        expected_transaction = "_test_application:middleware_factory.<locals>.middleware"
     else:
         exc_type = ValueError
 
-        expected_transaction = "starlette.middleware.errors:ServerErrorMiddleware.error_response"
-
     @validate_transaction_metrics(
-        expected_transaction,
-        scoped_metrics=[("Function/" + expected_transaction, 1)],
+        "_test_application:middleware_factory.<locals>.middleware",
+        scoped_metrics=[("Function/_test_application:middleware_factory.<locals>.middleware", 1)],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     @validate_transaction_errors(errors=[callable_name(exc_type)])
@@ -187,7 +194,7 @@ def test_exception_in_middleware(target_application, app_name):
 def test_server_error_middleware(target_application, app_name, transaction_name, path, scoped_metrics):
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=scoped_metrics + [("Function/_test_application:runtime_error", 1)],
+        scoped_metrics=scoped_metrics + [("Function/_test_application:runtime_error", 1)] + DEFAULT_MIDDLEWARE_METRICS,
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():
@@ -278,7 +285,7 @@ def test_starlette_http_exception(target_application, app_name, scoped_metrics):
     @validate_transaction_errors(errors=["starlette.exceptions:HTTPException"])
     @validate_transaction_metrics(
         "_test_application:teapot",
-        scoped_metrics=scoped_metrics,
+        scoped_metrics=scoped_metrics + DEFAULT_MIDDLEWARE_METRICS,
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():

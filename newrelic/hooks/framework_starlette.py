@@ -164,10 +164,6 @@ async def wrap_exception_handler_async(coro, exc):
 
 
 def wrap_exception_handler(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if transaction:
-        transaction.set_transaction_name(callable_name(wrapped), priority=1)
-
     if is_coroutine_function(wrapped):
         return wrap_exception_handler_async(FunctionTraceWrapper(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs))
     else:
@@ -189,6 +185,14 @@ def wrap_add_exception_handler(wrapped, instance, args, kwargs):
     exc_class_or_status_code, handler, args, kwargs = bind_add_exception_handler(*args, **kwargs)
     handler = FunctionWrapper(handler, wrap_exception_handler)
     return wrapped(exc_class_or_status_code, handler, *args, **kwargs)
+
+
+def error_middleware_wrapper(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction:
+        transaction.set_transaction_name(callable_name(wrapped), priority=1)
+
+    return FunctionTraceWrapper(wrapped)(*args, **kwargs)
 
 
 def bind_run_in_threadpool(func, *args, **kwargs):
@@ -235,6 +239,8 @@ def instrument_starlette_middleware_errors(module):
 
 
 def instrument_starlette_middleware_exceptions(module):
+    wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
+
     wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
 
     wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)
@@ -244,6 +250,9 @@ def instrument_starlette_exceptions(module):
     # ExceptionMiddleware was moved to starlette.middleware.exceptions, need to check
     # that it isn't being imported through a deprecation and double wrapped.
     if not hasattr(module, "__deprecated__"):
+
+        wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
+
         wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
 
         wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)

@@ -51,14 +51,16 @@ if six.PY3:
 
 # These middleware are not useful to wrap as they don't do anything particularly
 # interesting that could cause performance issues.
-MIDDLEWARE_DENY_WRAP = [
-    "django.middleware.csrf:CsrfViewMiddleware",
-    "django.middleware.clickjacking:XFrameOptionsMiddleware",
-    "django.contrib.messages.middleware:MessageMiddleware",
-    "django.middleware.csrf:CsrfViewMiddleware",
-    "django.middleware.common:CommonMiddleware",
-    "django.middleware.security:SecurityMiddleware",
-]
+MIDDLEWARE_DENY_WRAP = frozenset(
+    {
+        "django.middleware.csrf:CsrfViewMiddleware",
+        "django.middleware.clickjacking:XFrameOptionsMiddleware",
+        "django.contrib.messages.middleware:MessageMiddleware",
+        "django.middleware.csrf:CsrfViewMiddleware",
+        "django.middleware.common:CommonMiddleware",
+        "django.middleware.security:SecurityMiddleware",
+    }
+)
 
 _logger = logging.getLogger(__name__)
 

@@ -126,7 +126,7 @@ def test_redis_execute_command_as_two_args_disable(client, loop):  # noqa
 
 
 @background_task()
-def test_pubsub(client, loop):
+def test_pubsub(client, loop):  # noqa
     async def exercise():
         pubsub = client.pubsub()
         return await pubsub.psubscribe("channel:*")
@@ -137,14 +137,14 @@ def test_pubsub(client, loop):
 
 
 @background_task()
-def test_monitor(client, loop):
+def test_monitor(client, loop):  # noqa
     async def exercise():
         monitor = client.monitor()
         try:
             async with asyncio.timeout(0.1):
                 async for _ in monitor.listen():
                     break
-        except asyncio.CancelledError:
+        except (asyncio.CancelledError, TimeoutError):
             # that's ok, we are just testing sync/async wrapping
             pass
 

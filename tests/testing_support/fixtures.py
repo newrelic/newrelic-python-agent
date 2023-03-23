@@ -742,6 +742,8 @@ def validate_error_trace_attributes_outside_transaction(
     forgone_params = forgone_params or {}
     exact_attrs = exact_attrs or {}
 
+    target_error = []
+
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
     def _validate_error_trace_attributes_outside_transaction(wrapped, instance, args, kwargs):
         try:
@@ -749,15 +751,22 @@ def validate_error_trace_attributes_outside_transaction(
         except:
             raise
         else:
-            target_error = core_application_stats_engine_error(err_name)
-
-            check_error_attributes(
-                target_error.parameters, required_params, forgone_params, exact_attrs, is_transaction=False
-            )
+            target_error.append(core_application_stats_engine_error(err_name))
 
         return result
 
-    return _validate_error_trace_attributes_outside_transaction
+
+    @function_wrapper
+    def _validator_wrapper(wrapped, instance, args, kwargs):
+        result = _validate_error_trace_attributes_outside_transaction(wrapped)(*args, **kwargs)
+
+        assert target_error and target_error[0] is not None, "No error found with name %s" % err_name
+        check_error_attributes(target_error[0].parameters, required_params, forgone_params, exact_attrs)
+
+        return result
+
+
+    return _validator_wrapper
 
 
 def validate_error_event_attributes_outside_transaction(

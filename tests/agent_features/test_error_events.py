@@ -297,6 +297,7 @@ def test_error_event_outside_transaction_collect_error_events_false():
         app = application()
         notice_error(sys.exc_info(), application=app)
 
+
 _callback_called = threading.Event()
 
 def error_group_callback(exc, data):
@@ -330,16 +331,19 @@ def test_error_group_name_callback(exc_class, group_name):
     @validate_error_event_attributes(forgone_params=forgone, exact_attrs=exact)
     @background_task()
     def _test():
-        set_error_group_callback(error_group_callback)
 
         try:
             raise exc_class()
         except Exception:
             notice_error()
 
-        assert _callback_called
+        assert _callback_called.is_set()
 
-    _test()
+    try:
+        set_error_group_callback(error_group_callback)
+        _test()
+    finally:
+        set_error_group_callback(None)
 
 
 @pytest.mark.parametrize("exc_class,group_name", [
@@ -358,19 +362,21 @@ def test_error_group_name_callback_outside_transaction(exc_class, group_name):
         exact = None
         forgone = {"user": [], "intrinsic": [], "agent": ["error.group.name"]}
 
-    @validate_error_trace_attributes(
+    @validate_error_trace_attributes_outside_transaction(
         callable_name(exc_class), forgone_params=forgone, exact_attrs=exact
     )
-    @validate_error_event_attributes(forgone_params=forgone, exact_attrs=exact)
+    @validate_error_event_attributes_outside_transaction(forgone_params=forgone, exact_attrs=exact)
     def _test():
-        set_error_group_callback(error_group_callback)
-
         try:
             raise exc_class()
         except Exception:
             app = application()
             notice_error(application=app)
         
-        assert _callback_called
+        assert _callback_called.is_set()
 
-    _test()
+    try:
+        set_error_group_callback(error_group_callback)
+        _test()
+    finally:
+        set_error_group_callback(None)

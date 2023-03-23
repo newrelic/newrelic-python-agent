@@ -3103,7 +3103,7 @@ def _setup_security_module():
     callback to agent startup to propagate NR config
     """
     try:
-        if _settings.security.force_complete_disable:
+        if not _settings.security.agent.enabled:
             return
         from newrelic_security.api.agent import Agent as SecurityAgent
         # initialize security agent

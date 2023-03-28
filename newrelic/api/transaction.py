@@ -1813,6 +1813,13 @@ def add_custom_parameters(items):
     return add_custom_attributes(items)
 
 
+def set_user_id(user_id):
+    transaction = current_transaction()
+    if not user_id or not transaction:
+        return
+
+    transaction._add_agent_attribute("enduser.id", user_id)
+
 def add_framework_info(name, version=None):
     transaction = current_transaction()
     if transaction:

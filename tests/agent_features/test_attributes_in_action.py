@@ -43,7 +43,7 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.message_transaction import message_transaction
 from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import add_custom_attribute, current_transaction
+from newrelic.api.transaction import add_custom_attribute, current_transaction, set_user_id
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_names import callable_name
 
@@ -930,6 +930,7 @@ _required_agent_attributes = ["enduser.id"]
 _forgone_agent_attributes = []
 
 
+@reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": "1234"}}
 )
@@ -938,10 +939,27 @@ _forgone_agent_attributes = []
 @background_task()
 def test_enduser_id_attribute_api():
     """Validate enduser.id attribute set by API ends up on transaction events, error events, and traced errors."""
-    txn = current_transaction()
-    txn._add_agent_attribute("enduser.id", "1234")  # TODO Replace this with an API call
+    set_user_id("1234")
 
     try:
         raise ValueError()
     except Exception:
         notice_error()
+
+
+@reset_core_stats_engine()
+@validate_error_trace_attributes_outside_transaction(
+    callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {}}
+)
+@validate_error_event_attributes_outside_transaction(exact_attrs={"user": {}, "intrinsic": {}, "agent": {}})
+@validate_attributes("agent", [], _forgone_agent_attributes)
+def test_enduser_id_attribute_api_outside_txn():
+    """Validate enduser.id attribute set by API ends up on transaction events, error events, and traced errors."""
+    set_user_id("1234")
+
+    try:
+        raise ValueError()
+    except Exception:
+        application_instance = application()
+        application_instance.notice_error()
+

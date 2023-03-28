@@ -736,7 +736,7 @@ class StatsEngine(object):
                         "custom_params": attributes,
                         # Transaction specific items should be set to None
                         "transactionName": None,
-                        "response.status_code": None,
+                        "response.status": None,
                         "request.method": None,
                         "request.uri": None,
                     })

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import threading
+import traceback
 import sys
 import time
 
@@ -43,7 +44,9 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.application import application_settings
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import notice_error
+from newrelic.api.transaction import current_transaction
 from newrelic.api.settings import set_error_group_callback
+from newrelic.api.web_transaction import web_transaction
 from newrelic.common.object_names import callable_name
 
 # Error in test app hard-coded as a ValueError
@@ -390,6 +393,79 @@ def test_error_group_name_callback_outside_transaction(exc_class, group_name, hi
 
     try:
         set_error_group_callback(error_group_callback)
+        _test()
+    finally:
+        set_error_group_callback(None)
+
+
+@pytest.mark.parametrize("transaction_decorator", [
+    background_task(name="TestBackgroundTask"),
+    web_transaction(name="TestWebTransaction", host="localhost", port=1234, request_method="GET", request_path="/", headers=[],),
+    None,
+], ids=("background_task", "web_transation", "outside_transaction"))
+@reset_core_stats_engine()
+def test_error_group_name_callback_attributes(transaction_decorator):
+    attribute_errors = []
+    _data = []
+
+    def callback(error, data):
+        def _callback():
+            import types
+            _data.append(data)
+            txn = current_transaction()
+
+            # Standard attributes
+            assert isinstance(error, Exception)
+            assert isinstance(data["traceback"], types.TracebackType)
+            assert data["error.class"] is type(error)
+            assert data["error.message"] == "text"
+            assert data["error.expected"] is False
+
+            # All attributes should always be included, but set to None when not relevant.
+            if txn is None:  # Outside transaction
+                assert data["transactionName"] is None
+                assert data["custom_params"] == {'notice_error_attribute': 1}
+                assert data["response.status"] is None
+                assert data["request.method"] is None
+                assert data["request.uri"] is None
+            elif txn.background_task:  # Background task
+                assert data["transactionName"] == "TestBackgroundTask"
+                assert data["custom_params"] == {'notice_error_attribute': 1, 'txn_attribute': 2}
+                assert data["response.status"] is None
+                assert data["request.method"] is None
+                assert data["request.uri"] is None
+            else:  # Web transaction
+                assert data["transactionName"] == "TestWebTransaction"
+                assert data["custom_params"] == {'notice_error_attribute': 1, 'txn_attribute': 2}
+                assert data["response.status"] == 200
+                assert data["request.method"] == "GET"
+                assert data["request.uri"] == "/"
+        
+        try:
+            _callback()
+        except Exception:
+            attribute_errors.append(sys.exc_info())
+            raise
+
+    def _test():
+        try:
+            txn = current_transaction()
+            if txn:
+                txn.add_custom_attribute("txn_attribute", 2)
+                if not txn.background_task:
+                    txn.process_response(200, [])
+            raise Exception("text")
+        except Exception:
+            app = application() if transaction_decorator is None else None  # Only set outside transaction
+            notice_error(application=app, attributes={"notice_error_attribute": 1})
+        
+        assert not attribute_errors, "Attributes failed to validate.\nerror: %s\ndata: %s" % (traceback.format_exception(*attribute_errors[0]), str(_data[0]))
+
+    if transaction_decorator is not None:
+        _test = transaction_decorator(_test)  # Manually decorate test function
+
+    try:
+        set_error_group_callback(callback)
         _test()
     finally:
         set_error_group_callback(None)

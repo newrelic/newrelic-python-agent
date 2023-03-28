@@ -30,8 +30,6 @@ from newrelic.core.code_level_metrics import (
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
 
-from newrelic.packages import six
-
 _logger = logging.getLogger(__name__)
 
 
@@ -419,12 +417,15 @@ class TimeTrace(object):
                 if settings.error_collector and settings.error_collector.error_group_callback is not None:
                     try:
                         # Call callback to obtain error group name
+                        input_attributes = {}
+                        input_attributes.update(transaction._custom_params)
+                        input_attributes.update(attributes)
                         error_group_name_raw = settings.error_collector.error_group_callback(value, {
                             "traceback": tb,
                             "error.class": exc,
                             "error.message": message_raw,
                             "error.expected": is_expected,
-                            "custom_params": attributes,  # TODO Include transaction attributes as well
+                            "custom_params": input_attributes,
                             "transactionName": getattr(transaction, "name", None),
                             "response.status": getattr(transaction, "_response_code", None),
                             "request.method": getattr(transaction, "_request_method", None),

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+import uuid
 import webtest
 from testing_support.fixtures import (
     cat_enabled,
@@ -930,29 +931,52 @@ _required_agent_attributes = ["enduser.id"]
 _forgone_agent_attributes = []
 
 
+@pytest.mark.parametrize('input_user_id, reported_user_id',(
+        ("1234", "1234"),
+        ("a" * 260,  "a" * 255),
+))
+def test_enduser_id_attribute_api_valid_types(input_user_id, reported_user_id):
+    @reset_core_stats_engine()
+    @validate_error_trace_attributes(
+        callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": reported_user_id}}
+    )
+    @validate_error_event_attributes(exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": reported_user_id}})
+    @validate_attributes("agent", _required_agent_attributes, _forgone_agent_attributes)
+    @background_task()
+    def _test():
+        set_user_id(input_user_id)
+
+        try:
+            raise ValueError()
+        except Exception:
+            notice_error()
+    _test()
+
+
+_required_agent_attributes = []
+
+
+@pytest.mark.parametrize('input_user_id',(None, '', 123))
+def test_enduser_id_attribute_api_invalid_types(input_user_id):
+    @reset_core_stats_engine()
+    # Validate that agent attributes dictionary is empty (enduser.id is NOT sent up)
+    @validate_error_trace_attributes(
+        callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {}}
+    )
+    @validate_error_event_attributes(exact_attrs={"user": {}, "intrinsic": {}, "agent": {}})
+    @validate_attributes("agent", _required_agent_attributes, _forgone_agent_attributes)
+    @background_task()
+    def _test():
+        set_user_id(input_user_id)
+
+        try:
+            raise ValueError()
+        except Exception:
+            notice_error()
+    _test()
+
+
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": "1234"}}
-)
-@validate_error_event_attributes(exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": "1234"}})
-@validate_attributes("agent", _required_agent_attributes, _forgone_agent_attributes)
-@background_task()
-def test_enduser_id_attribute_api():
-    """Validate enduser.id attribute set by API ends up on transaction events, error events, and traced errors."""
-    set_user_id("1234")
-
-    try:
-        raise ValueError()
-    except Exception:
-        notice_error()
-
-
-@reset_core_stats_engine()
-@validate_error_trace_attributes_outside_transaction(
-    callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {}}
-)
-@validate_error_event_attributes_outside_transaction(exact_attrs={"user": {}, "intrinsic": {}, "agent": {}})
-@validate_attributes("agent", [], _forgone_agent_attributes)
 def test_enduser_id_attribute_api_outside_txn():
     """Validate enduser.id attribute set by API ends up on transaction events, error events, and traced errors."""
     set_user_id("1234")

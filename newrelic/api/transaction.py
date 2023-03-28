@@ -46,6 +46,7 @@ from newrelic.common.encoding_utils import (
     obfuscate,
 )
 from newrelic.core.attribute import (
+    MAX_ATTRIBUTE_LENGTH,
     MAX_LOG_MESSAGE_LENGTH,
     MAX_NUM_USER_ATTRIBUTES,
     create_agent_attributes,
@@ -1817,6 +1818,11 @@ def set_user_id(user_id):
     transaction = current_transaction()
     if not user_id or not transaction:
         return
+    if not isinstance(user_id, str):
+        _logger.warning("The set_user_id API requires a string-based user ID.")
+        return
+
+    user_id = truncate(user_id, MAX_ATTRIBUTE_LENGTH)
 
     transaction._add_agent_attribute("enduser.id", user_id)
 

@@ -299,23 +299,28 @@ def test_error_event_outside_transaction_collect_error_events_false():
 
 
 _callback_called = threading.Event()
+_truncated_value = "A" * 300
 
 def error_group_callback(exc, data):
     _callback_called.set()
 
     if isinstance(exc, ValueError):
         return "value"
+    elif isinstance(exc, ZeroDivisionError):
+        return _truncated_value
     elif isinstance(exc, TypeError):
         return ""
 
 
-@pytest.mark.parametrize("exc_class,group_name", [
-    (ValueError, "value"),
-    (TypeError, None),
-    (RuntimeError, None),
-])
+@pytest.mark.parametrize("exc_class,group_name,high_security", [
+    (ValueError, "value", False),
+    (ValueError, "value", True),
+    (TypeError, None, False),
+    (RuntimeError, None, False),
+    (ZeroDivisionError, _truncated_value[:255], False),
+], ids=("standard", "high-security", "empty-string", "None-value", "truncated-value"))
 @reset_core_stats_engine()
-def test_error_group_name_callback(exc_class, group_name):
+def test_error_group_name_callback(exc_class, group_name, high_security):
     _callback_called.clear()
 
     if group_name is not None:
@@ -329,6 +334,7 @@ def test_error_group_name_callback(exc_class, group_name):
         callable_name(exc_class), forgone_params=forgone, exact_attrs=exact
     )
     @validate_error_event_attributes(forgone_params=forgone, exact_attrs=exact)
+    @override_application_settings({"high_security": high_security})
     @background_task()
     def _test():
 
@@ -346,13 +352,15 @@ def test_error_group_name_callback(exc_class, group_name):
         set_error_group_callback(None)
 
 
-@pytest.mark.parametrize("exc_class,group_name", [
-    (ValueError, "value"),
-    (TypeError, None),
-    (RuntimeError, None),
-])
+@pytest.mark.parametrize("exc_class,group_name,high_security", [
+    (ValueError, "value", False),
+    (ValueError, "value", True),
+    (TypeError, None, False),
+    (RuntimeError, None, False),
+    (ZeroDivisionError, _truncated_value[:255], False),
+], ids=("standard", "high-security", "empty-string", "None-value", "truncated-value"))
 @reset_core_stats_engine()
-def test_error_group_name_callback_outside_transaction(exc_class, group_name):
+def test_error_group_name_callback_outside_transaction(exc_class, group_name, high_security):
     _callback_called.clear()
 
     if group_name is not None:
@@ -366,6 +374,7 @@ def test_error_group_name_callback_outside_transaction(exc_class, group_name):
         callable_name(exc_class), forgone_params=forgone, exact_attrs=exact
     )
     @validate_error_event_attributes_outside_transaction(forgone_params=forgone, exact_attrs=exact)
+    @override_application_settings({"high_security": high_security})
     def _test():
         try:
             raise exc_class()

@@ -49,4 +49,4 @@ def set_error_group_callback(callback, application=None):
         return
 
     if _settings.error_collector:
-        _settings.error_collector.error_group_callback = callback
+        _settings.error_collector._error_group_callback = callback

@@ -54,6 +54,32 @@ def error_group_callback(exc, data):
         return ""
 
 
+def test_clear_error_group_callback():
+    settings = application().settings
+    set_error_group_callback(lambda x, y: None)
+    assert settings.error_collector.error_group_callback is not None, "Failed to set callback."
+    set_error_group_callback(None)
+    assert settings.error_collector.error_group_callback is None, "Failed to clear callback."
+
+
+@pytest.mark.parametrize("callback,accepted", [
+    (error_group_callback, True),
+    (lambda x, y: None, True),
+    (None, False),
+    ("string", False)
+])
+def test_set_error_group_callback(callback, accepted):
+    try:
+        set_error_group_callback(callback)
+        settings = application().settings
+        if accepted:
+            assert settings.error_collector.error_group_callback is not None, "Failed to set callback."
+        else:
+            assert settings.error_collector.error_group_callback is None, "Accepted bad callback."
+    finally:
+        set_error_group_callback(None)
+
+
 @pytest.mark.parametrize("exc_class,group_name,high_security", [
     (ValueError, "value", False),
     (ValueError, "value", True),

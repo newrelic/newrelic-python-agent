@@ -36,7 +36,8 @@ def set_error_group_callback(callback, application=None):
     from newrelic.api.application import application_instance
 
     if callback is not None and not callable(callback):
-        raise TypeError("Error group callback must be a callable, or None to unset this setting.")
+        _logger.error("Error group callback must be a callable, or None to unset this setting.")
+        return
 
     # Check for activated application if it exists and was not given.
     application = application_instance(activate=False) if application is None else application

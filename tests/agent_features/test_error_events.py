@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import threading
-import traceback
 import sys
 import time
 
-import pytest
 import webtest
 
 from testing_support.fixtures import (
@@ -26,10 +23,7 @@ from testing_support.fixtures import (
     make_synthetics_header,
     override_application_settings,
     reset_core_stats_engine,
-    validate_error_event_attributes,
-    validate_error_event_attributes_outside_transaction,
     validate_error_event_sample_data,
-    validate_error_trace_attributes_outside_transaction,
     validate_transaction_error_event_count,
 )
 from testing_support.sample_applications import fully_featured_app
@@ -42,11 +36,7 @@ from testing_support.validators.validate_non_transaction_error_event import (
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.application import application_settings
-from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import current_transaction
-from newrelic.api.settings import set_error_group_callback
-from newrelic.api.web_transaction import web_transaction
 from newrelic.common.object_names import callable_name
 
 # Error in test app hard-coded as a ValueError
@@ -299,173 +289,3 @@ def test_error_event_outside_transaction_collect_error_events_false():
     except ErrorEventOutsideTransactionError:
         app = application()
         notice_error(sys.exc_info(), application=app)
-
-
-_callback_called = threading.Event()
-_truncated_value = "A" * 300
-
-def error_group_callback(exc, data):
-    _callback_called.set()
-
-    if isinstance(exc, ValueError):
-        return "value"
-    elif isinstance(exc, ZeroDivisionError):
-        return _truncated_value
-    elif isinstance(exc, IndexError):
-        return []
-    elif isinstance(exc, TypeError):
-        return ""
-
-
-@pytest.mark.parametrize("exc_class,group_name,high_security", [
-    (ValueError, "value", False),
-    (ValueError, "value", True),
-    (TypeError, None, False),
-    (RuntimeError, None, False),
-    (IndexError, None, False),
-    (ZeroDivisionError, _truncated_value[:255], False),
-], ids=("standard", "high-security", "empty-string", "None-value", "bad-type", "truncated-value"))
-@reset_core_stats_engine()
-def test_error_group_name_callback(exc_class, group_name, high_security):
-    _callback_called.clear()
-
-    if group_name is not None:
-        exact = {"user": {}, "intrinsic": {}, "agent": {"error.group.name": group_name}}
-        forgone = None
-    else:
-        exact = None
-        forgone = {"user": [], "intrinsic": [], "agent": ["error.group.name"]}
-
-    @validate_error_trace_attributes(
-        callable_name(exc_class), forgone_params=forgone, exact_attrs=exact
-    )
-    @validate_error_event_attributes(forgone_params=forgone, exact_attrs=exact)
-    @override_application_settings({"high_security": high_security})
-    @background_task()
-    def _test():
-
-        try:
-            raise exc_class()
-        except Exception:
-            notice_error()
-
-        assert _callback_called.is_set()
-
-    try:
-        set_error_group_callback(error_group_callback)
-        _test()
-    finally:
-        set_error_group_callback(None)
-
-
-@pytest.mark.parametrize("exc_class,group_name,high_security", [
-    (ValueError, "value", False),
-    (ValueError, "value", True),
-    (TypeError, None, False),
-    (RuntimeError, None, False),
-    (IndexError, None, False),
-    (ZeroDivisionError, _truncated_value[:255], False),
-], ids=("standard", "high-security", "empty-string", "None-value", "bad-type", "truncated-value"))
-@reset_core_stats_engine()
-def test_error_group_name_callback_outside_transaction(exc_class, group_name, high_security):
-    _callback_called.clear()
-
-    if group_name is not None:
-        exact = {"user": {}, "intrinsic": {}, "agent": {"error.group.name": group_name}}
-        forgone = None
-    else:
-        exact = None
-        forgone = {"user": [], "intrinsic": [], "agent": ["error.group.name"]}
-
-    @validate_error_trace_attributes_outside_transaction(
-        callable_name(exc_class), forgone_params=forgone, exact_attrs=exact
-    )
-    @validate_error_event_attributes_outside_transaction(forgone_params=forgone, exact_attrs=exact)
-    @override_application_settings({"high_security": high_security})
-    def _test():
-        try:
-            raise exc_class()
-        except Exception:
-            app = application()
-            notice_error(application=app)
-        
-        assert _callback_called.is_set()
-
-    try:
-        set_error_group_callback(error_group_callback)
-        _test()
-    finally:
-        set_error_group_callback(None)
-
-
-@pytest.mark.parametrize("transaction_decorator", [
-    background_task(name="TestBackgroundTask"),
-    web_transaction(name="TestWebTransaction", host="localhost", port=1234, request_method="GET", request_path="/", headers=[],),
-    None,
-], ids=("background_task", "web_transation", "outside_transaction"))
-@reset_core_stats_engine()
-def test_error_group_name_callback_attributes(transaction_decorator):
-    attribute_errors = []
-    _data = []
-
-    def callback(error, data):
-        def _callback():
-            import types
-            _data.append(data)
-            txn = current_transaction()
-
-            # Standard attributes
-            assert isinstance(error, Exception)
-            assert isinstance(data["traceback"], types.TracebackType)
-            assert data["error.class"] is type(error)
-            assert data["error.message"] == "text"
-            assert data["error.expected"] is False
-
-            # All attributes should always be included, but set to None when not relevant.
-            if txn is None:  # Outside transaction
-                assert data["transactionName"] is None
-                assert data["custom_params"] == {'notice_error_attribute': 1}
-                assert data["response.status"] is None
-                assert data["request.method"] is None
-                assert data["request.uri"] is None
-            elif txn.background_task:  # Background task
-                assert data["transactionName"] == "TestBackgroundTask"
-                assert data["custom_params"] == {'notice_error_attribute': 1, 'txn_attribute': 2}
-                assert data["response.status"] is None
-                assert data["request.method"] is None
-                assert data["request.uri"] is None
-            else:  # Web transaction
-                assert data["transactionName"] == "TestWebTransaction"
-                assert data["custom_params"] == {'notice_error_attribute': 1, 'txn_attribute': 2}
-                assert data["response.status"] == 200
-                assert data["request.method"] == "GET"
-                assert data["request.uri"] == "/"
-        
-        try:
-            _callback()
-        except Exception:
-            attribute_errors.append(sys.exc_info())
-            raise
-
-    def _test():
-        try:
-            txn = current_transaction()
-            if txn:
-                txn.add_custom_attribute("txn_attribute", 2)
-                if not txn.background_task:
-                    txn.process_response(200, [])
-            raise Exception("text")
-        except Exception:
-            app = application() if transaction_decorator is None else None  # Only set outside transaction
-            notice_error(application=app, attributes={"notice_error_attribute": 1})
-        
-        assert not attribute_errors, "Attributes failed to validate.\nerror: %s\ndata: %s" % (traceback.format_exception(*attribute_errors[0]), str(_data[0]))
-
-    if transaction_decorator is not None:
-        _test = transaction_decorator(_test)  # Manually decorate test function
-
-    try:
-        set_error_group_callback(callback)
-        _test()
-    finally:
-        set_error_group_callback(None)

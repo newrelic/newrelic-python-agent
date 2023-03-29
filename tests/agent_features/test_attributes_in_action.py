@@ -953,18 +953,10 @@ def test_enduser_id_attribute_api_valid_types(input_user_id, reported_user_id, h
     _test()
 
 
-_required_agent_attributes = []
-
-
 @pytest.mark.parametrize('input_user_id',(None, '', 123))
 def test_enduser_id_attribute_api_invalid_types(input_user_id):
     @reset_core_stats_engine()
-    # Validate that agent attributes dictionary is empty (enduser.id is NOT sent up)
-    @validate_error_trace_attributes(
-        callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {}}
-    )
-    @validate_error_event_attributes(exact_attrs={"user": {}, "intrinsic": {}, "agent": {}})
-    @validate_attributes("agent", _required_agent_attributes, _forgone_agent_attributes)
+    @validate_attributes("agent", [], ["enduser.id"])
     @background_task()
     def _test():
         set_user_id(input_user_id)

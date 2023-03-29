@@ -50,6 +50,8 @@ def error_group_callback(exc, data):
         return _truncated_value
     elif isinstance(exc, IndexError):
         return []
+    elif isinstance(exc, LookupError):
+        return 123
     elif isinstance(exc, TypeError):
         return ""
 
@@ -86,8 +88,9 @@ def test_set_error_group_callback(callback, accepted):
     (TypeError, None, False),
     (RuntimeError, None, False),
     (IndexError, None, False),
+    (LookupError, None, False),
     (ZeroDivisionError, _truncated_value[:255], False),
-], ids=("standard", "high-security", "empty-string", "None-value", "bad-type", "truncated-value"))
+], ids=("standard", "high-security", "empty-string", "None-value", "list-type", "int-type", "truncated-value"))
 @reset_core_stats_engine()
 def test_error_group_name_callback(exc_class, group_name, high_security):
     _callback_called.clear()
@@ -127,8 +130,9 @@ def test_error_group_name_callback(exc_class, group_name, high_security):
     (TypeError, None, False),
     (RuntimeError, None, False),
     (IndexError, None, False),
+    (LookupError, None, False),
     (ZeroDivisionError, _truncated_value[:255], False),
-], ids=("standard", "high-security", "empty-string", "None-value", "bad-type", "truncated-value"))
+], ids=("standard", "high-security", "empty-string", "None-value", "list-type", "int-type", "truncated-value"))
 @reset_core_stats_engine()
 def test_error_group_name_callback_outside_transaction(exc_class, group_name, high_security):
     _callback_called.clear()

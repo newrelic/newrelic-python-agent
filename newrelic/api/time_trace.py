@@ -30,6 +30,8 @@ from newrelic.core.code_level_metrics import (
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
 
+from newrelic.packages import six
+
 _logger = logging.getLogger(__name__)
 
 
@@ -433,8 +435,8 @@ class TimeTrace(object):
                         })
                         if error_group_name_raw:
                             _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
-                            if error_group_name is None:
-                                raise ValueError("Invalid attribute value for error.group.name: %s" % str(error_group_name_raw))
+                            if error_group_name is None or not isinstance(error_group_name, six.text_type):
+                                raise ValueError("Invalid attribute value for error.group.name. Expected string, got: %s" % str(error_group_name_raw))
                     except Exception:
                         _logger.error("Encountered error when calling error group callback:\n%s", "".join(traceback.format_exception(*sys.exc_info())))
                         error_group_name = None

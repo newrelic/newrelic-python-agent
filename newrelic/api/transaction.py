@@ -1816,8 +1816,10 @@ def add_custom_parameters(items):
 
 def set_user_id(user_id):
     transaction = current_transaction()
+
     if not user_id or not transaction:
         return
+
     if not isinstance(user_id, str):
         _logger.warning("The set_user_id API requires a string-based user ID.")
         return

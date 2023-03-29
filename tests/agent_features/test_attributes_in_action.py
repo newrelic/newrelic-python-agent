@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-import uuid
 import webtest
 from testing_support.fixtures import (
     cat_enabled,
@@ -931,11 +930,11 @@ _required_agent_attributes = ["enduser.id"]
 _forgone_agent_attributes = []
 
 
-@pytest.mark.parametrize('input_user_id, reported_user_id',(
-        ("1234", "1234"),
-        ("a" * 260,  "a" * 255),
+@pytest.mark.parametrize('input_user_id, reported_user_id, high_security',(
+        ("1234", "1234", True),
+        ("a" * 260,  "a" * 255, False),
 ))
-def test_enduser_id_attribute_api_valid_types(input_user_id, reported_user_id):
+def test_enduser_id_attribute_api_valid_types(input_user_id, reported_user_id, high_security):
     @reset_core_stats_engine()
     @validate_error_trace_attributes(
         callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": reported_user_id}}
@@ -943,6 +942,7 @@ def test_enduser_id_attribute_api_valid_types(input_user_id, reported_user_id):
     @validate_error_event_attributes(exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": reported_user_id}})
     @validate_attributes("agent", _required_agent_attributes, _forgone_agent_attributes)
     @background_task()
+    @override_application_settings({"high_security": high_security})
     def _test():
         set_user_id(input_user_id)
 

@@ -79,6 +79,14 @@ def error_middleware(next, root, info, **args):
     raise RuntimeError("Runtime Error!")
 
 
+def test_no_harm_no_transaction(app, graphql_run):
+    def _test():
+        response = graphql_run(app, "{ __schema { types { name } } }")
+        assert not response.errors
+
+    _test()
+
+
 _runtime_error_name = callable_name(RuntimeError)
 _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
 _graphql_base_rollup_metrics = [

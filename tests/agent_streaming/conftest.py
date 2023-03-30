@@ -15,20 +15,14 @@
 import threading
 
 import pytest
-from testing_support.fixtures import collector_available_fixture  # noqa
-from testing_support.fixtures import (
-    code_coverage_fixture,
-    collector_agent_registration_fixture,
-)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
 from newrelic.common.streaming_utils import StreamBuffer
 
 CONDITION_CLS = type(threading.Condition())
 
-_coverage_source = []
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,

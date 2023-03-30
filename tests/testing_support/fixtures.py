@@ -759,6 +759,7 @@ def validate_error_trace_attributes_outside_transaction(
     @function_wrapper
     def _validator_wrapper(wrapped, instance, args, kwargs):
         result = _validate_error_trace_attributes_outside_transaction(wrapped)(*args, **kwargs)
+
         assert target_error and target_error[0] is not None, "No error found with name %s" % err_name
         check_error_attributes(target_error[0].parameters, required_params, forgone_params, exact_attrs)
 
@@ -766,7 +767,6 @@ def validate_error_trace_attributes_outside_transaction(
 
 
     return _validator_wrapper
-
 
 
 def validate_error_event_attributes_outside_transaction(

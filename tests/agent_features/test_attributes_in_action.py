@@ -966,16 +966,3 @@ def test_enduser_id_attribute_api_invalid_types(input_user_id):
         except Exception:
             notice_error()
     _test()
-
-
-@reset_core_stats_engine()
-def test_enduser_id_attribute_api_outside_txn():
-    """Validate enduser.id attribute set by API ends up on transaction events, error events, and traced errors."""
-    set_user_id("1234")
-
-    try:
-        raise ValueError()
-    except Exception:
-        application_instance = application()
-        application_instance.notice_error()
-

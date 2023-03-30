@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (code_coverage_fixture,  # noqa
-        collector_agent_registration_fixture, collector_available_fixture)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 _default_settings = {
@@ -28,12 +28,6 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
         app_name='Python Agent Test (external_feedparser)',
         default_settings=_default_settings)
-
-_coverage_source = [
-    'newrelic.hooks.external_feedparser',
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 
 def create_handler(response):

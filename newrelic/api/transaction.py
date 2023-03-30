@@ -1820,13 +1820,14 @@ def set_user_id(user_id):
     if not user_id or not transaction:
         return
 
-    if not isinstance(user_id, str):
+    if not isinstance(user_id, six.string_types):
         _logger.warning("The set_user_id API requires a string-based user ID.")
         return
 
     user_id = truncate(user_id, MAX_ATTRIBUTE_LENGTH)
 
     transaction._add_agent_attribute("enduser.id", user_id)
+
 
 def add_framework_info(name, version=None):
     transaction = current_transaction()

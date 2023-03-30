@@ -15,8 +15,7 @@
 import pytest
 import webtest
 
-from testing_support.fixtures import (collector_agent_registration_fixture,
-    collector_available_fixture)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 
 _default_settings = {
     'transaction_tracer.explain_threshold': 0.0,

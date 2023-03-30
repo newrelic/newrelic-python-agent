@@ -15,21 +15,13 @@
 import asyncio
 
 import pytest
-from testing_support.fixtures import (  # noqa: F401 pylint: disable=W0611
-    code_coverage_fixture,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 
 from newrelic.common.object_wrapper import (  # noqa: F401 pylint: disable=W0611
     transient_function_wrapper,
 )
 
-_coverage_source = [
-    "newrelic.hooks.framework_sanic",
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,

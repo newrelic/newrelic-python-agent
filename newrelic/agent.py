@@ -155,6 +155,7 @@ from newrelic.api.message_transaction import (
 from newrelic.api.profile_trace import ProfileTraceWrapper as __ProfileTraceWrapper
 from newrelic.api.profile_trace import profile_trace as __profile_trace
 from newrelic.api.profile_trace import wrap_profile_trace as __wrap_profile_trace
+from newrelic.api.settings import set_error_group_callback as __set_error_group_callback
 from newrelic.api.supportability import wrap_api_call as __wrap_api_call
 from newrelic.api.transaction_name import (
     TransactionNameWrapper as __TransactionNameWrapper,
@@ -223,6 +224,7 @@ current_trace = __wrap_api_call(__current_trace, "current_trace")
 get_linking_metadata = __wrap_api_call(__get_linking_metadata, "get_linking_metadata")
 add_custom_span_attribute = __wrap_api_call(__add_custom_span_attribute, "add_custom_span_attribute")
 current_transaction = __wrap_api_call(__current_transaction, "current_transaction")
+set_error_group_callback = __wrap_api_call(__set_error_group_callback, "set_error_group_callback")
 set_transaction_name = __wrap_api_call(__set_transaction_name, "set_transaction_name")
 end_of_transaction = __wrap_api_call(__end_of_transaction, "end_of_transaction")
 set_background_task = __wrap_api_call(__set_background_task, "set_background_task")

@@ -175,7 +175,6 @@ def with_librt():
 
 def run_setup(with_extensions):
     def _run_setup():
-
         # Create a local copy of kwargs, if there is no c compiler run_setup
         # will need to be re-run, and these arguments can not be present.
 
@@ -244,7 +243,6 @@ else:
         run_setup(with_extensions=True)
 
     except BuildExtFailed:
-
         print(75 * "*")
 
         print(WARNING)

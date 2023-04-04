@@ -108,7 +108,6 @@ packages = [
     "newrelic/packages/urllib3/contrib/_securetransport",
     "newrelic/packages/urllib3/packages",
     "newrelic/packages/urllib3/packages/backports",
-    "newrelic/packages/urllib3/packages/ssl_match_hostname",
     "newrelic/packages/wrapt",
     "newrelic.samplers",
 ]

@@ -108,7 +108,6 @@ packages = [
     "newrelic/packages/urllib3/contrib/_securetransport",
     "newrelic/packages/urllib3/packages",
     "newrelic/packages/urllib3/packages/backports",
-    "newrelic/packages/urllib3/packages/ssl_match_hostname",
     "newrelic/packages/wrapt",
     "newrelic.samplers",
 ]
@@ -175,7 +174,6 @@ def with_librt():
 
 def run_setup(with_extensions):
     def _run_setup():
-
         # Create a local copy of kwargs, if there is no c compiler run_setup
         # will need to be re-run, and these arguments can not be present.
 
@@ -244,7 +242,6 @@ else:
         run_setup(with_extensions=True)
 
     except BuildExtFailed:
-
         print(75 * "*")
 
         print(WARNING)

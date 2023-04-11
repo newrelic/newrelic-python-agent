@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import pytest
-
 
 def test_wsgi_application_index(target_application):
     response = target_application.get("/")

@@ -29,5 +29,5 @@ else:
         if unwrap:
             while hasattr(func, "__wrapped__"):
                 func = func.__wrapped__
-        
+
         return getcallargs(func, *args, **kwargs)

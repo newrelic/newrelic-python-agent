@@ -23,11 +23,13 @@ from newrelic.core.config import global_settings
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
 from newrelic.packages import six
 
-_logger = logging.getLogger(__name__) 
+_logger = logging.getLogger(__name__)
 is_pypy = hasattr(sys, "pypy_version_info")
+
 
 def loguru_version():
     from loguru import __version__
+
     return tuple(int(x) for x in __version__.split("."))
 
 
@@ -55,7 +57,7 @@ def _nr_log_forwarder(message_instance):
                 if application and application.enabled:
                     application.record_custom_metric("Logging/lines", {"count": 1})
                     application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
-            
+
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             try:
                 record_log_event(message, level_name, int(record["time"].timestamp()))
@@ -64,6 +66,7 @@ def _nr_log_forwarder(message_instance):
 
 
 ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
+
 
 def wrap_log(wrapped, instance, args, kwargs):
     try:
@@ -93,7 +96,7 @@ def nr_log_patcher(original_patcher=None):
     def _nr_log_patcher(record):
         if original_patcher:
             record = original_patcher(record)
-        
+
         transaction = current_transaction()
 
         if transaction:

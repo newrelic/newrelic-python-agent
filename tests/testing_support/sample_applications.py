@@ -79,7 +79,6 @@ def fully_featured_app(environ, start_response):
     environ["wsgi.input"].readlines()
 
     if use_user_attrs:
-
         for attr, val in _custom_parameters.items():
             add_custom_attribute(attr, val)
 
@@ -97,7 +96,6 @@ def fully_featured_app(environ, start_response):
         n_errors = int(environ.get("n_errors", 1))
         for i in range(n_errors):
             try:
-
                 # append number to stats engine to get unique errors, so they
                 # don't immediately get filtered out.
 
@@ -122,7 +120,6 @@ def fully_featured_app(environ, start_response):
 
 @wsgi_application()
 def simple_exceptional_app(environ, start_response):
-
     start_response("500 :(", [])
 
     raise ValueError("Transaction had bad value")
@@ -181,7 +178,6 @@ def raise_exception_finalize(environ, start_response):
 
 @wsgi_application()
 def simple_custom_event_app(environ, start_response):
-
     params = {"snowman": "\u2603", "foo": "bar"}
     record_custom_event("SimpleAppEvent", params)
 

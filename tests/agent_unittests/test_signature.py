@@ -17,6 +17,7 @@ import functools
 import pytest
 
 from newrelic.common.signature import bind_args
+from newrelic.packages import six
 
 
 @pytest.mark.parametrize(
@@ -49,9 +50,9 @@ def func(x, y=None):
 @pytest.mark.parametrize(
     "unwrap,args,kwargs,expected",
     [
-        (True, (1,), {"y": 2}, {"x": 1, "y": 2}),
+        (True, (1,), {"y": 2}, {"x": 1, "y": 2} if six.PY3 else {"args": (1,), "kwargs": {"y": 2}}),
         (False, (1,), {"y": 2}, {"args": (1,), "kwargs": {"y": 2}}),
-        (True, (1,), {}, {"x": 1, "y": None}),
+        (True, (1,), {}, {"x": 1, "y": None} if six.PY3 else {"args": (1,), "kwargs": {}}),
         (False, (1,), {}, {"args": (1,), "kwargs": {}}),
     ],
     ids=("unwrapped_standard", "wrapped_standard", "unwrapped_default", "wrapped_default"),

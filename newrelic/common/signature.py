@@ -33,7 +33,7 @@ else:
         """
         Bind arguments and apply defaults to missing arugments for a callable.
         Calling with unwrap=True will follow the __wrapped__ chain to the underlying function.
-        
+
         Note: Python 2 does not include a __wrapped__ attribute for functools.wraps decorators.
         Only wrapt decorators will be handled when called with unwrap=True.
         """

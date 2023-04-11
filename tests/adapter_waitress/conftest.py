@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import pytest
+import pytest
+import webtest
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -29,3 +30,11 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Waitress)", default_settings=_default_settings
 )
+
+
+@pytest.fixture(autouse=True, scope="session")
+def target_application():
+    import _application
+
+    port = _application.setup_application()
+    return webtest.TestApp("http://localhost:%d" % port)

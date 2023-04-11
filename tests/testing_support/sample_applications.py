@@ -140,6 +140,45 @@ def simple_app_raw(environ, start_response):
 simple_app = wsgi_application()(simple_app_raw)
 
 
+def raise_exception_application(environ, start_response):
+    raise RuntimeError("raise_exception_application")
+
+    status = "200 OK"
+    output = b"WSGI RESPONSE"
+
+    response_headers = [("Content-type", "text/plain"), ("Content-Length", str(len(output)))]
+    start_response(status, response_headers)
+
+    return [output]
+
+
+def raise_exception_response(environ, start_response):
+    status = "200 OK"
+
+    response_headers = [("Content-type", "text/plain")]
+    start_response(status, response_headers)
+
+    yield b"WSGI"
+
+    raise RuntimeError("raise_exception_response")
+
+    yield b" "
+    yield b"RESPONSE"
+
+
+def raise_exception_finalize(environ, start_response):
+    status = "200 OK"
+
+    response_headers = [("Content-type", "text/plain")]
+    start_response(status, response_headers)
+
+    try:
+        yield b"WSGI RESPONSE"
+
+    finally:
+        raise RuntimeError("raise_exception_finalize")
+
+
 @wsgi_application()
 def simple_custom_event_app(environ, start_response):
 

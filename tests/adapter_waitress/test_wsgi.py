@@ -13,3 +13,20 @@
 # limitations under the License.
 
 # import pytest
+
+
+def test_wsgi_application_index(target_application):
+    response = target_application.get("/")
+    assert response.status == "200 OK"
+
+
+def test_pywsgi_raise_exception_application(target_application):
+    response = target_application.get("/raise-exception-application/", status=500)
+
+
+def test_pywsgi_raise_exception_response(target_application):
+    response = target_application.get("/raise-exception-response/", status=500)
+
+
+def test_pywsgi_raise_exception_finalize(target_application):
+    response = target_application.get("/raise-exception-finalize/", status=500)

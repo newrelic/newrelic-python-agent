@@ -18,6 +18,7 @@ import sys
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
 from newrelic.packages import six
@@ -64,14 +65,12 @@ def _nr_log_forwarder(message_instance):
 
 ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
 
-def bind_log(level_id, static_level_no, from_decorator, options, message, args, kwargs):
-    assert len(options) in ALLOWED_LOGURU_OPTIONS_LENGTHS  # Assert the options signature we expect
-    return level_id, static_level_no, from_decorator, list(options), message, args, kwargs
-
-
 def wrap_log(wrapped, instance, args, kwargs):
     try:
-        level_id, static_level_no, from_decorator, options, message, subargs, subkwargs = bind_log(*args, **kwargs)
+        bound_args = bind_args(wrapped, args, kwargs)
+        options = bound_args["options"] = list(bound_args["options"])
+        assert len(options) in ALLOWED_LOGURU_OPTIONS_LENGTHS  # Assert the options signature we expect
+
         options[-2] = nr_log_patcher(options[-2])
         # Loguru looks into the stack trace to find the caller's module and function names.
         # options[1] tells loguru how far up to look in the stack trace to find the caller.
@@ -87,7 +86,7 @@ def wrap_log(wrapped, instance, args, kwargs):
         _logger.debug("Exception in loguru handling: %s" % str(e))
         return wrapped(*args, **kwargs)
     else:
-        return wrapped(level_id, static_level_no, from_decorator, options, message, subargs, subkwargs)
+        return wrapped(**bound_args)
 
 
 def nr_log_patcher(original_patcher=None):

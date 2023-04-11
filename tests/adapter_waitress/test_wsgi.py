@@ -18,13 +18,16 @@ def test_wsgi_application_index(target_application):
     assert response.status == "200 OK"
 
 
-def test_pywsgi_raise_exception_application(target_application):
+def test_raise_exception_application(target_application):
     response = target_application.get("/raise-exception-application/", status=500)
+    assert response.status == "500 Internal Server Error"
 
 
-def test_pywsgi_raise_exception_response(target_application):
+def test_raise_exception_response(target_application):
     response = target_application.get("/raise-exception-response/", status=500)
+    assert response.status == "500 Internal Server Error"
 
 
-def test_pywsgi_raise_exception_finalize(target_application):
+def test_raise_exception_finalize(target_application):
     response = target_application.get("/raise-exception-finalize/", status=500)
+    assert response.status == "500 Internal Server Error"

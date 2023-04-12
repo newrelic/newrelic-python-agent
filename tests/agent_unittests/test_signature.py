@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
-
 import pytest
 
 from newrelic.common.signature import bind_args
-from newrelic.packages import six
 
 
 @pytest.mark.parametrize(

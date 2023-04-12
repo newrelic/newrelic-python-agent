@@ -32,31 +32,3 @@ from newrelic.packages import six
 def test_signature_binding(func, args, kwargs, expected):
     bound_args = bind_args(func, args, kwargs)
     assert bound_args == expected
-
-
-def decorator(f):
-    @functools.wraps(f)
-    def _decorator(*args, **kwargs):
-        return f(*args, **kwargs)
-
-    return _decorator
-
-
-@decorator
-def func(x, y=None):
-    pass
-
-
-@pytest.mark.parametrize(
-    "unwrap,args,kwargs,expected",
-    [
-        (True, (1,), {"y": 2}, {"x": 1, "y": 2} if six.PY3 else {"args": (1,), "kwargs": {"y": 2}}),
-        (False, (1,), {"y": 2}, {"args": (1,), "kwargs": {"y": 2}}),
-        (True, (1,), {}, {"x": 1, "y": None} if six.PY3 else {"args": (1,), "kwargs": {}}),
-        (False, (1,), {}, {"args": (1,), "kwargs": {}}),
-    ],
-    ids=("unwrapped_standard", "wrapped_standard", "unwrapped_default", "wrapped_default"),
-)
-def test_wrapped_signature_binding(unwrap, args, kwargs, expected):
-    bound_args = bind_args(func, args, kwargs, unwrap=unwrap)
-    assert bound_args == expected

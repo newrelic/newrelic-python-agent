@@ -18,27 +18,10 @@ if six.PY3:
     from inspect import Signature
 
     def bind_args(func, args, kwargs, unwrap=False):
-        """
-        Bind arguments and apply defaults to missing arugments for a callable.
-        Calling with unwrap=True will follow the __wrapped__ chain to the underlying function.
-        """
+        """Bind arguments and apply defaults to missing arugments for a callable."""
         bound_args = Signature.from_callable(func, follow_wrapped=unwrap).bind(*args, **kwargs)
         bound_args.apply_defaults()
         return bound_args.arguments
 
 else:
-    from inspect import getcallargs
-
-    def bind_args(func, args, kwargs, unwrap=False):
-        """
-        Bind arguments and apply defaults to missing arugments for a callable.
-        Calling with unwrap=True will follow the __wrapped__ chain to the underlying function.
-
-        Note: Python 2 does not include a __wrapped__ attribute for functools.wraps decorators.
-        Only wrapt decorators will be handled when called with unwrap=True.
-        """
-        if unwrap:
-            while hasattr(func, "__wrapped__"):
-                func = func.__wrapped__
-
-        return getcallargs(func, *args, **kwargs)
+    from inspect import getcallargs as bind_args

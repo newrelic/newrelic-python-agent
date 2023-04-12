@@ -17,9 +17,9 @@ from newrelic.packages import six
 if six.PY3:
     from inspect import Signature
 
-    def bind_args(func, args, kwargs, unwrap=False):
+    def bind_args(func, args, kwargs):
         """Bind arguments and apply defaults to missing arugments for a callable."""
-        bound_args = Signature.from_callable(func, follow_wrapped=unwrap).bind(*args, **kwargs)
+        bound_args = Signature.from_callable(func).bind(*args, **kwargs)
         bound_args.apply_defaults()
         return bound_args.arguments
 

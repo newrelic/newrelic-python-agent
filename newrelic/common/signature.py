@@ -24,4 +24,8 @@ if six.PY3:
         return bound_args.arguments
 
 else:
-    from inspect import getcallargs as bind_args
+    from inspect import getcallargs
+
+    def bind_args(func, args, kwargs):
+        """Bind arguments and apply defaults to missing arugments for a callable."""
+        return getcallargs(func, *args, **kwargs)

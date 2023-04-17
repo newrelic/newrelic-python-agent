@@ -328,30 +328,13 @@ def _process_configuration(section):
     _process_setting(section, "ca_bundle_path", "get", None)
     _process_setting(section, "audit_log_file", "get", None)
     _process_setting(section, "monitor_mode", "getboolean", None)
-    _process_setting(section, "security.force_complete_disable", "getboolean", None)
-    _process_setting(section, "security.enable", "getboolean", None)
+    _process_setting(section, "security.agent.enabled", "getboolean", None)
+    _process_setting(section, "security.enabled", "getboolean", None)
     _process_setting(section, "security.mode", "get", None)
-    _process_setting(section, "security.validator_service_endpoint_url", "get", None)
-    _process_setting(section, "security.resource_service_endpoint_url", "get", None)
-    _process_setting(section, "security.log_level", "get", None)
-    _process_setting(section, "security.sec_home_path", "get", None)
-    _process_setting(section, "security.detection.disable_rci", "getboolean", None)
-    _process_setting(section, "security.detection.disable_rxss", "getboolean", None)
-    _process_setting(section, "security.detection.disable_deserialization", "getboolean", None)
-    _process_setting(section, "security.policy.enforce", "getboolean", None)
-    _process_setting(section, "security.policy.vulnerabilityScan.enabled", "getboolean", None)
-    _process_setting(section, "security.policy.vulnerabilityScan.iastScan.enabled", "getboolean", None)
-    _process_setting(section, "security.policy.vulnerabilityScan.iastScan.probing.interval", "getint", None)
-    _process_setting(section, "security.policy.vulnerabilityScan.iastScan.probing.batchSize", "getint", None)
-    _process_setting(section, "security.policy.protectionMode.enabled", "getboolean", None)
-    _process_setting(section, "security.policy.protectionMode.ipBlocking.enabled", "getboolean", None)
-    _process_setting(section, "security.policy.protectionMode.ipBlocking.attackerIpBlocking", "getboolean", None)
-    _process_setting(section, "security.policy.protectionMode.ipBlocking.ipDetectViaXFF", "getboolean", None)
-    _process_setting(section, "security.policy.protectionMode.ipBlocking.timeout", "getint", None)
-    _process_setting(section, "security.policy.protectionMode.apiBlocking.enabled", "getboolean", None)
-    _process_setting(section, "security.policy.protectionMode.apiBlocking.protectAllApis", "getboolean", None)
-    _process_setting(section, "security.policy.protectionMode.apiBlocking.protectKnownVulnerableApis", "getboolean", None)
-    _process_setting(section, "security.policy.protectionMode.apiBlocking.protectAttackedApis", "getboolean", None)
+    _process_setting(section, "security.validator_service_url", "get", None)
+    _process_setting(section, "security.detection.rci.enabled", "getboolean", None)
+    _process_setting(section, "security.detection.rxss.enabled", "getboolean", None)
+    _process_setting(section, "security.detection.deserialization.enabled", "getboolean", None)
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)
@@ -3115,79 +3098,18 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
-def _get_linking_metadata_for_security_module():
-    import newrelic.agent
-    context = newrelic.agent.get_linking_metadata()
-    return context
-
-
-def _get_trace_linking_metadata_for_security_module():
-    trace = trace_cache.trace_cache().current_trace()
-    metadata = trace and trace._get_trace_linking_metadata() or {}
-    return metadata
-
-
-def _generate_security_module_policy():
-    return dict(_settings.security.policy)
-
-
-def _generate_security_module_config():
-    from k2_python_agent import AgentConfig
-    config = AgentConfig()
-    config.set_base_config(_settings.security)
-    config.set_acessor_token(_settings.license_key)
-    config.application_name = _settings.app_name
-
-    return config
-
-
-def _update_security_module(agent):
-    """refreshes the security module with latest config and
-    linking metadata
-    """
-    config = _generate_security_module_config()
-    policy = _generate_security_module_policy()
-    metadata = _get_linking_metadata_for_security_module()
-    # propogate app name and id
-    agent_instance = newrelic.core.agent.agent_instance()
-    application = agent_instance.application(_settings.app_name)
-    if application:
-        configuration = application.configuration
-        metadata["agentRunId"] = configuration.agent_run_id
-        metadata["accountId"] = configuration.account_id
-
-    agent.refresh_agent(config, policy, metadata)
-
-
 def _setup_security_module():
     """Initiates k2 security module and adds a
     callback to agent startup to propagate NR config
     """
     try:
-        if _settings.security.force_complete_disable:
+        if not _settings.security.agent.enabled:
             return
-        # run security module
-        from k2_python_agent import AgentConfig, ModuleLoadAgent
-        from functools import partial as Partial
-
-        config =_generate_security_module_config()
-        policy = _generate_security_module_policy()
-
-        security_module_agent = ModuleLoadAgent(config)
-        security_module_agent.initialise()
-        security_module_agent.set_policy_from_flat_dict(policy)
-
-        if not _settings.security.enable:
-            security_module_agent.disable()
-
-        # create a callback to reinitialise the security module
-        callback = Partial(_update_security_module, security_module_agent)
-        newrelic.core.agent.Agent.run_on_startup(callback)
-
-        # set trace_linking_metadata catcher
-        security_module_agent.set_linking_metadata_catcher(
-            _get_trace_linking_metadata_for_security_module
-        )
+        from newrelic_security.api.agent import Agent as SecurityAgent
+        # initialize security agent
+        security_agent = SecurityAgent()
+         # create a callback to reinitialise the security module
+        newrelic.core.agent.Agent.run_on_startup(security_agent.refresh_agent)
     except Exception as k2error:
         _logger.error("K2 Startup failed with error %s", k2error)
 

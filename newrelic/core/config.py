@@ -281,26 +281,18 @@ class SecurityModuleSettings(Settings):
 class SecurityDetectionSettings(Settings):
     pass
 
-class SecurityPolicySettings(Settings):
+class SecurityAgentSettings(Settings):
     pass
 
-class SecurityPolicyVulnerabilityScanSettings(Settings):
+class SecurityDetectionRCISettings(Settings):
     pass
 
-class SecurityPolicyIASTSettings(Settings):
+class SecurityDetectionRXSSSettings(Settings):
     pass
 
-class SecurityPolicyIASTProbingSettings(Settings):
+class SecurityDetectionDeserializationSettings(Settings):
     pass
 
-class SecurityPolicyprotectionModeSettings(Settings):
-    pass
-
-class SecurityPolicyIPBlockingSettings(Settings):
-    pass
-
-class SecurityPolicyAPIBlockingSettings(Settings):
-    pass
 
 
 class InfiniteTracingSettings(Settings):
@@ -848,111 +840,40 @@ _settings.application_logging.local_decorating.enabled = _environ_as_bool(
 )
 
 _settings.security = SecurityModuleSettings()
+_settings.security.agent = SecurityAgentSettings()
 _settings.security.detection = SecurityDetectionSettings()
-_settings.security.policy = SecurityPolicySettings()
-_settings.security.policy.vulnerabilityScan = SecurityPolicyVulnerabilityScanSettings()
-_settings.security.policy.vulnerabilityScan.iastScan = SecurityPolicyIASTSettings()
-_settings.security.policy.vulnerabilityScan.iastScan.probing = SecurityPolicyIASTProbingSettings()
-_settings.security.policy.protectionMode = SecurityPolicyprotectionModeSettings()
-_settings.security.policy.protectionMode.ipBlocking = SecurityPolicyIPBlockingSettings()
-_settings.security.policy.protectionMode.apiBlocking = SecurityPolicyAPIBlockingSettings()
+_settings.security.detection.rci = SecurityDetectionRCISettings()
+_settings.security.detection.rxss = SecurityDetectionRXSSSettings()
+_settings.security.detection.deserialization = SecurityDetectionDeserializationSettings()
 
-_settings.security.force_complete_disable = _environ_as_bool(
-    "NEW_RELIC_SECURITY_FORCE_COMPLETE_DISABLE",
+
+_settings.security.agent.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_AGENT_ENABLED",
     default=False
 )
-_settings.security.enable = _environ_as_bool(
-    "NEW_RELIC_SECURITY_ENABLE",
+_settings.security.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_ENABLED",
     default=False
 )
 _settings.security.mode = os.environ.get(
     "NEW_RELIC_SECURITY_MODE",
-    default="RASP"
+    default="IAST"
 )
-_settings.security.validator_service_endpoint_url = os.environ.get(
-    "NEW_RELIC_SECURITY_VALIDATOR_SERVICE_ENDPOINT_URL",
+_settings.security.validator_service_url = os.environ.get(
+    "NEW_RELIC_SECURITY_VALIDATOR_SERVICE_URL",
     default=None
 )
-_settings.security.resource_service_endpoint_url = os.environ.get(
-    "NEW_RELIC_SECURITY_RESOURCE_SERVICE_ENDPOINT_URL",
-    default=None
+_settings.security.detection.rci.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_DETECTION_RCI_ENABLED",
+    default=True
 )
-_settings.security.log_level = os.environ.get(
-    "NEW_RELIC_SECURITY_LOG_LEVEL",
-    default="INFO"
+_settings.security.detection.rxss.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_DETECTION_RXSS_ENABLED",
+    default=True
 )
-_settings.security.sec_home_path = os.environ.get(
-    "NEW_RELIC_SECURITY_SEC_HOME_PATH",
-    default="/opt"
-)
-_settings.security.detection.disable_rci = _environ_as_bool(
-    "NEW_RELIC_SECURITY_DETECTION_DISABLE_RCI",
-    default=False
-)
-_settings.security.detection.disable_rxss = _environ_as_bool(
-    "NEW_RELIC_SECURITY_DETECTION_DISABLE_RXSS",
-    default=False
-)
-_settings.security.detection.disable_deserialization = _environ_as_bool(
-    "NEW_RELIC_SECURITY_DETECTION_DISABLE_DESERIALIZATION",
-    default=False
-)
-
-_settings.security.policy.enforce = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_ENFORCE",
-    default=False
-)
-_settings.security.policy.vulnerabilityScan.enabled = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_ENABLED",
-    default=None
-)
-_settings.security.policy.vulnerabilityScan.iastScan.enabled = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_IASTSCAN_ENABLED",
-    default=None
-)
-_settings.security.policy.vulnerabilityScan.iastScan.probing.interval = _environ_as_int(
-    "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_IASTSCAN_PROBING_INTERVAL",
-    default=-1
-)
-_settings.security.policy.vulnerabilityScan.iastScan.probing.batchSize = _environ_as_int(
-    "NEW_RELIC_SECURITY_POLICY_VULNERABILITYSCAN_IASTSCAN_PROBING_BATCHSIZE",
-    default=-1
-)
-_settings.security.policy.protectionMode.enabled = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_ENABLED",
-    default=None
-)
-_settings.security.policy.protectionMode.ipBlocking.enabled = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_ENABLED",
-    default=None
-)
-_settings.security.policy.protectionMode.ipBlocking.attackerIpBlocking = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_ATTACKERIPBLOCKING",
-    default=None
-)
-_settings.security.policy.protectionMode.ipBlocking.ipDetectViaXFF = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_IPDETECTVIAXFF",
-    default=None
-)
-_settings.security.policy.protectionMode.ipBlocking.timeout = _environ_as_int(
-    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_IPBLOCKING_TIMEOUT",
-    default=-1
-)
-_settings.security.policy.protectionMode.apiBlocking.enabled = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_ENABLED",
-    default=None
-)
-_settings.security.policy.protectionMode.apiBlocking.protectAllApis = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_PROTECTALLAPIS",
-    default=None
-)
-_settings.security.policy.protectionMode.apiBlocking.protectKnownVulnerableApis = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_PROTECTKNOWNVULNERABLEAPIS",
-    default=None
-)
-_settings.security.policy.protectionMode.apiBlocking.protectAttackedApis = _environ_as_bool(
-    "NEW_RELIC_SECURITY_POLICY_PROTECTIONMODE_APIBLOCKING_PROTECTATTACKEDAPIS",
-    default=None
+_settings.security.detection.deserialization.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_DETECTION_DESERIALIZATION_ENABLED",
+    default=True
 )
 
 

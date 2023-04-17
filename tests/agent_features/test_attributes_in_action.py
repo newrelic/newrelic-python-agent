@@ -24,16 +24,26 @@ from testing_support.fixtures import (
     validate_error_event_attributes,
     validate_error_event_attributes_outside_transaction,
     validate_error_trace_attributes_outside_transaction,
-    validate_transaction_error_trace_attributes,
-    validate_transaction_event_attributes,
-    validate_transaction_trace_attributes,
+)
+from testing_support.validators.validate_error_trace_attributes import (
+    validate_error_trace_attributes,
 )
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_error_trace_attributes import (
+    validate_transaction_error_trace_attributes,
+)
+from testing_support.validators.validate_transaction_event_attributes import (
+    validate_transaction_event_attributes,
+)
+from testing_support.validators.validate_transaction_trace_attributes import (
+    validate_transaction_trace_attributes,
+)
 
 from newrelic.api.application import application_instance as application
+from newrelic.api.background_task import background_task
 from newrelic.api.message_transaction import message_transaction
 from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import add_custom_attribute
+from newrelic.api.transaction import add_custom_attribute, current_transaction, set_user_id
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_names import callable_name
 
@@ -87,7 +97,16 @@ TRACE_ERROR_AGENT_KEYS = [
 
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
 
-TRANS_EVENT_INTRINSICS = ("name", "duration", "type", "timestamp", "totalTime", "error")
+TRANS_EVENT_INTRINSICS = (
+    "name",
+    "duration",
+    "type",
+    "timestamp",
+    "totalTime",
+    "error",
+    "nr.apdexPerfZone",
+    "apdexPerfZone",
+)
 TRANS_EVENT_AGENT_KEYS = [
     "response.status",
     "request.method",
@@ -905,3 +924,45 @@ _forgone_agent_attributes = ["message.routingKey"]
 @message_transaction(library="RabbitMQ", destination_type="Exchange", destination_name="x")
 def test_none_type_routing_key_agent_attribute():
     pass
+
+
+_required_agent_attributes = ["enduser.id"]
+_forgone_agent_attributes = []
+
+
+@pytest.mark.parametrize('input_user_id, reported_user_id, high_security',(
+        ("1234", "1234", True),
+        ("a" * 260,  "a" * 255, False),
+))
+def test_enduser_id_attribute_api_valid_types(input_user_id, reported_user_id, high_security):
+    @reset_core_stats_engine()
+    @validate_error_trace_attributes(
+        callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": reported_user_id}}
+    )
+    @validate_error_event_attributes(exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": reported_user_id}})
+    @validate_attributes("agent", _required_agent_attributes, _forgone_agent_attributes)
+    @background_task()
+    @override_application_settings({"high_security": high_security})
+    def _test():
+        set_user_id(input_user_id)
+
+        try:
+            raise ValueError()
+        except Exception:
+            notice_error()
+    _test()
+
+
+@pytest.mark.parametrize('input_user_id',(None, '', 123))
+def test_enduser_id_attribute_api_invalid_types(input_user_id):
+    @reset_core_stats_engine()
+    @validate_attributes("agent", [], ["enduser.id"])
+    @background_task()
+    def _test():
+        set_user_id(input_user_id)
+
+        try:
+            raise ValueError()
+        except Exception:
+            notice_error()
+    _test()

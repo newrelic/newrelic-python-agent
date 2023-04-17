@@ -19,11 +19,19 @@ from testing_support.fixtures import (
     error_is_saved,
     override_application_settings,
     reset_core_stats_engine,
-    validate_application_error_event_count,
-    validate_application_error_trace_count,
-    validate_application_errors,
     validate_transaction_error_event_count,
     validate_transaction_error_trace_count,
+)
+from testing_support.validators.validate_application_error_event_count import (
+    validate_application_error_event_count,
+)
+from testing_support.validators.validate_application_error_trace_count import (
+    validate_application_error_trace_count,
+)
+from testing_support.validators.validate_application_errors import (
+    validate_application_errors,
+)
+from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
 )
 

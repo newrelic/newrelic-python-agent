@@ -14,12 +14,12 @@
 
 import aiohttp
 import pytest
-from testing_support.fixtures import (
-    override_generic_settings,
-    validate_transaction_metrics,
-)
+from testing_support.fixtures import override_generic_settings
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.core.config import global_settings

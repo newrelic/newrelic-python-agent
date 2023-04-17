@@ -19,14 +19,21 @@ import pytest
 from testing_support.fixtures import (
     count_transactions,
     override_application_settings,
+    override_expected_status_codes,
     override_generic_settings,
     override_ignore_status_codes,
-    validate_transaction_errors,
-    validate_transaction_event_attributes,
-    validate_transaction_metrics,
 )
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_event_attributes import (
+    validate_transaction_event_attributes,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.core.config import global_settings
@@ -58,6 +65,7 @@ BASE_FORGONE_ATTRS = ["request.parameters.hello"]
         ("/error?hello=world", "_target_application:error", "builtins:ValueError", 500),
         ("/non_500_error?hello=world", "_target_application:non_500_error", "aiohttp.web_exceptions:HTTPGone", 410),
         ("/raise_404?hello=world", "_target_application:raise_404", None, 404),
+        ("/raise_403?hello=world", "_target_application:raise_403", "aiohttp.web_exceptions:HTTPForbidden", 403),
     ],
 )
 def test_error_exception(method, uri, metric_name, error, status, nr_enabled, aiohttp_app):
@@ -73,7 +81,9 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled, ai
         if error:
             errors.append(error)
 
-        @validate_transaction_errors(errors=errors)
+        @validate_transaction_errors(
+            errors=errors, expected_errors=["aiohttp.web_exceptions:HTTPForbidden"]
+        )
         @validate_transaction_metrics(
             metric_name,
             scoped_metrics=[
@@ -105,6 +115,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled, ai
         )
         @validate_code_level_metrics(*metric_name.split(":"))
         @override_ignore_status_codes([404])
+        @override_expected_status_codes([403])
         def _test():
             aiohttp_app.loop.run_until_complete(fetch())
 

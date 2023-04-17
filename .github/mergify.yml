@@ -1,0 +1,80 @@
+# For condition grammar see: https://docs.mergify.com/conditions/#grammar
+
+shared:
+  conditions:
+    - and: &pr_ready_checks
+        - "#approved-reviews-by>=1" # A '#' pulls the length of the underlying list
+        - "label=ready-to-merge"
+        - "check-success=tests"
+        - "-draft" # Don't include draft PRs
+        - "-merged"
+        - or: # Only handle branches that target main or develop branches
+            - "base=main"
+            - "base~=^develop"
+
+queue_rules:
+  - name: default
+    conditions:
+      - and: *pr_ready_checks
+    merge_method: squash
+
+pull_request_rules:
+  # Merge Queue PR Rules
+  - name: Regular PRs - Add to merge queue on approval (squash)
+    conditions:
+      - and: *pr_ready_checks
+      - "-head~=^develop" # Don't include PRs from develop branches
+    actions:
+      queue:
+        method: squash
+
+  # Automatic PR Updates
+  - name: Automatic PR branch updates
+    conditions:
+      - "queue-position=-1" # Not queued
+      - "-draft" # Don't include draft PRs
+      - "-merged"
+    actions:
+      update:
+
+  # Automatic Labeling
+  - name: Clean up after merge
+    conditions:
+      - merged
+    actions:
+      delete_head_branch:
+      label:
+        remove:
+          - "merge-conflicts"
+          - "ready-to-merge"
+          - "tests-failing"
+
+  - name: Toggle label on merge conflicts
+    conditions:
+      - "-merged"
+      - conflict
+    actions:
+      label:
+        toggle:
+          - "merge-conflicts"
+
+  # Don't use a toggle for this, as the label constantly gets applied and removed when tests are rerun.
+  - name: Add label on test failures
+    conditions:
+      - "-merged"
+      - or:
+          - check-failure=tests
+          - check-skipped=tests
+    actions:
+      label:
+        add:
+          - "tests-failing"
+
+  - name: Remove label on test success
+    conditions:
+      - "-merged"
+      - check-success=tests
+    actions:
+      label:
+        remove:
+          - "tests-failing"

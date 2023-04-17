@@ -13,20 +13,11 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    code_coverage_fixture,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     newrelic_caplog as caplog,
 )
 
-_coverage_source = [
-    "newrelic.hooks.framework_fastapi",
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,

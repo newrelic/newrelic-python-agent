@@ -41,3 +41,18 @@ def get_open_port():
     port = s.getsockname()[1]
     s.close()
     return port
+
+def conditional_decorator(condition, decorator):
+    """Applies a decorator if the condition is true. Accepts 0 argument callables for the condition."""
+    def _conditional_decorator(func):
+        if callable(condition):
+            condition_eval = condition()
+        else:
+            condition_eval = condition
+        
+        if condition_eval:
+            return decorator(func)
+        else:
+            return func
+
+    return _conditional_decorator

@@ -15,8 +15,7 @@
 from newrelic.api.application import application_instance as __application
 from newrelic.api.application import application_settings as __application_settings
 from newrelic.api.application import register_application as __register_application
-
-# from newrelic.api.log import NewRelicContextFormatter
+from newrelic.api.log import NewRelicContextFormatter  # noqa
 from newrelic.api.time_trace import (
     add_custom_span_attribute as __add_custom_span_attribute,
 )
@@ -59,6 +58,7 @@ from newrelic.api.transaction import (
 from newrelic.api.transaction import record_custom_event as __record_custom_event
 from newrelic.api.transaction import record_custom_metric as __record_custom_metric
 from newrelic.api.transaction import record_custom_metrics as __record_custom_metrics
+from newrelic.api.transaction import record_log_event as __record_log_event
 from newrelic.api.transaction import set_background_task as __set_background_task
 from newrelic.api.transaction import set_transaction_name as __set_transaction_name
 from newrelic.api.transaction import suppress_apdex_metric as __suppress_apdex_metric
@@ -155,7 +155,9 @@ from newrelic.api.message_transaction import (
 from newrelic.api.profile_trace import ProfileTraceWrapper as __ProfileTraceWrapper
 from newrelic.api.profile_trace import profile_trace as __profile_trace
 from newrelic.api.profile_trace import wrap_profile_trace as __wrap_profile_trace
+from newrelic.api.settings import set_error_group_callback as __set_error_group_callback
 from newrelic.api.supportability import wrap_api_call as __wrap_api_call
+from newrelic.api.transaction import set_user_id as __set_user_id
 from newrelic.api.transaction_name import (
     TransactionNameWrapper as __TransactionNameWrapper,
 )
@@ -223,6 +225,8 @@ current_trace = __wrap_api_call(__current_trace, "current_trace")
 get_linking_metadata = __wrap_api_call(__get_linking_metadata, "get_linking_metadata")
 add_custom_span_attribute = __wrap_api_call(__add_custom_span_attribute, "add_custom_span_attribute")
 current_transaction = __wrap_api_call(__current_transaction, "current_transaction")
+set_user_id = __wrap_api_call(__set_user_id, "set_user_id")
+set_error_group_callback = __wrap_api_call(__set_error_group_callback, "set_error_group_callback")
 set_transaction_name = __wrap_api_call(__set_transaction_name, "set_transaction_name")
 end_of_transaction = __wrap_api_call(__end_of_transaction, "end_of_transaction")
 set_background_task = __wrap_api_call(__set_background_task, "set_background_task")
@@ -243,6 +247,7 @@ suppress_transaction_trace = __wrap_api_call(__suppress_transaction_trace, "supp
 record_custom_metric = __wrap_api_call(__record_custom_metric, "record_custom_metric")
 record_custom_metrics = __wrap_api_call(__record_custom_metrics, "record_custom_metrics")
 record_custom_event = __wrap_api_call(__record_custom_event, "record_custom_event")
+record_log_event = __wrap_api_call(__record_log_event, "record_log_event")
 accept_distributed_trace_payload = __wrap_api_call(
     __accept_distributed_trace_payload, "accept_distributed_trace_payload"
 )

@@ -18,15 +18,21 @@ from testing_support.fixtures import (
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
-    validate_transaction_errors,
-    validate_transaction_event_attributes,
-    validate_transaction_metrics,
 )
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_event_attributes import (
+    validate_transaction_event_attributes,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.core.config import global_settings
@@ -206,6 +212,8 @@ def test_nr_disabled(app):
     ),
 )
 def test_web_socket(uri, name, app):
+    # import asyncio
+
     from tornado.websocket import websocket_connect
 
     namespace, func_name = name.split(":")

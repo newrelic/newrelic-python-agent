@@ -28,8 +28,6 @@ from testing_support.external_fixtures import (
 from testing_support.fixtures import (
     cat_enabled,
     override_application_settings,
-    validate_transaction_errors,
-    validate_transaction_metrics,
 )
 from testing_support.util import version2tuple
 from testing_support.validators.validate_cross_process_headers import (
@@ -38,7 +36,8 @@ from testing_support.validators.validate_cross_process_headers import (
 from testing_support.validators.validate_external_node_params import (
     validate_external_node_params,
 )
-
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
 
 

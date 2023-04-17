@@ -13,13 +13,24 @@
 # limitations under the License.
 
 try:
-  from google.protobuf import __version__
-  PROTOBUF_VERSION = tuple(int(v) for v in __version__.split("."))
+    from google.protobuf import __version__
+
+    PROTOBUF_VERSION = tuple(int(v) for v in __version__.split("."))
 except Exception:
-  PROTOBUF_VERSION = (0, 0, 0)
+    PROTOBUF_VERSION = (0, 0, 0)
 
 # Import appropriate generated pb2 file for protobuf version
 if PROTOBUF_VERSION >= (4,):
-  from newrelic.core.infinite_tracing_v4_pb2 import *
+    from newrelic.core.infinite_tracing_v4_pb2 import (  # noqa: F401; pylint: disable=W0611
+        AttributeValue,
+        RecordStatus,
+        Span,
+        SpanBatch,
+    )
 else:
-  from newrelic.core.infinite_tracing_v3_pb2 import *
+    from newrelic.core.infinite_tracing_v3_pb2 import (  # noqa: F401; pylint: disable=W0611
+        AttributeValue,
+        RecordStatus,
+        Span,
+        SpanBatch,
+    )

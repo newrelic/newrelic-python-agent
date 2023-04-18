@@ -32,13 +32,13 @@ def postgresql_settings():
     if "GITHUB_ACTIONS" in os.environ:
         instances = 2
 
-        user = password = db = "postgres"
+        user = password = db = "postgres"  # nosec
         base_port = 8080
     else:
         instances = 1
 
         user = db = USER
-        password = ""
+        password = ""  # nosec
         base_port = 5432
 
     settings = [
@@ -56,7 +56,7 @@ def postgresql_settings():
 
 
 def mysql_settings():
-    """Return a list of dict of settings for connecting to postgresql.
+    """Return a list of dict of settings for connecting to mysql.
 
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
@@ -69,13 +69,13 @@ def mysql_settings():
     if "GITHUB_ACTIONS" in os.environ:
         instances = 2
 
-        user = password = db = "python_agent"
+        user = password = db = "python_agent"  # nosec
         base_port = 8080
     else:
         instances = 1
 
         user = db = USER
-        password = ""
+        password = ""  # nosec
         base_port = 3306
 
     settings = [

@@ -30,8 +30,8 @@ version_info = tuple(int(_) for _ in aiohttp.__version__.split('.')[:2])
         reason='aiohttp app factories were implement in 3.1')
 @pytest.mark.parametrize('nr_enabled', (True, False))
 def test_aiohttp_app_factory(nr_enabled):
-    nr_admin = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'newrelic-admin')
-    gunicorn = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'gunicorn')
+    nr_admin = os.path.join(os.environ['TOX_ENV_DIR'], 'bin', 'newrelic-admin')
+    gunicorn = os.path.join(os.environ['TOX_ENV_DIR'], 'bin', 'gunicorn')
 
     # Restart the server if it dies during testing
     for _ in range(5):

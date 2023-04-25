@@ -42,9 +42,9 @@ import newrelic.api.wsgi_application
 import newrelic.console
 import newrelic.core.agent
 import newrelic.core.config
-import newrelic.core.trace_cache as trace_cache
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import expand_builtin_exception_name
+from newrelic.core import trace_cache
 from newrelic.core.config import (
     Settings,
     apply_config_setting,
@@ -106,7 +106,11 @@ _cache_object = []
 # instrumentation modules and extensions.
 
 
-def extra_settings(section, types={}, defaults={}):
+def extra_settings(section, types=None, defaults=None):
+    if types is None:
+        types = {}
+    if defaults is None:
+        defaults = {}
     settings = {}
 
     if _config_object.has_section(section):
@@ -219,12 +223,12 @@ def _map_default_host_value(license_key):
 def _raise_configuration_error(section, option=None):
     _logger.error("CONFIGURATION ERROR")
     if section:
-        _logger.error("Section = %s" % section)
+        _logger.error("Section = %s", section)
 
     if option is None:
         options = _config_object.options(section)
 
-        _logger.error("Options = %s" % options)
+        _logger.error("Options = %s", options)
         _logger.exception("Exception Details")
 
         if not _ignore_errors:
@@ -234,13 +238,12 @@ def _raise_configuration_error(section, option=None):
                     "Check New Relic agent log file for further "
                     "details." % section
                 )
-            else:
-                raise newrelic.api.exceptions.ConfigurationError(
-                    "Invalid configuration. Check New Relic agent log file for further details."
-                )
+            raise newrelic.api.exceptions.ConfigurationError(
+                "Invalid configuration. Check New Relic agent log file for further details."
+            )
 
     else:
-        _logger.error("Option = %s" % option)
+        _logger.error("Option = %s", option)
         _logger.exception("Exception Details")
 
         if not _ignore_errors:
@@ -250,12 +253,11 @@ def _raise_configuration_error(section, option=None):
                     'section "%s". Check New Relic agent log '
                     "file for further details." % (option, section)
                 )
-            else:
-                raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for option "%s". '
-                    "Check New Relic agent log file for further "
-                    "details." % option
-                )
+            raise newrelic.api.exceptions.ConfigurationError(
+                'Invalid configuration for option "%s". '
+                "Check New Relic agent log file for further "
+                "details." % option
+            )
 
 
 def _process_setting(section, option, getter, mapper):
@@ -285,9 +287,8 @@ def _process_setting(section, option, getter, mapper):
             if len(fields) == 1:
                 setattr(target, fields[0], value)
                 break
-            else:
-                target = getattr(target, fields[0])
-                fields = fields[1].split(".", 1)
+            target = getattr(target, fields[0])
+            fields = fields[1].split(".", 1)
 
         # Cache the configuration so can be dumped out to
         # log file when whole main configuration has been
@@ -530,6 +531,8 @@ def _process_configuration(section):
     _process_setting(section, "event_harvest_config.harvest_limits.log_event_data", "getint", None)
     _process_setting(section, "infinite_tracing.trace_observer_host", "get", None)
     _process_setting(section, "infinite_tracing.trace_observer_port", "getint", None)
+    _process_setting(section, "infinite_tracing.compression", "getboolean", None)
+    _process_setting(section, "infinite_tracing.batching", "getboolean", None)
     _process_setting(section, "infinite_tracing.span_queue_size", "getint", None)
     _process_setting(section, "code_level_metrics.enabled", "getboolean", None)
 
@@ -570,7 +573,7 @@ def _process_app_name_setting():
 
     def _link_applications(application):
         for altname in linked:
-            _logger.debug("link to %s" % ((name, altname),))
+            _logger.debug("link to %s", ((name, altname),))
             application.link_to_application(altname)
 
     if linked:
@@ -596,21 +599,21 @@ def _process_labels_setting(labels=None):
     deduped = {}
 
     for key, value in labels:
-
         if len(key) > length_limit:
             _logger.warning(
-                "Improper configuration. Label key %s is too long. Truncating key to: %s" % (key, key[:length_limit])
+                "Improper configuration. Label key %s is too long. Truncating key to: %s", key, key[:length_limit]
             )
 
         if len(value) > length_limit:
             _logger.warning(
-                "Improper configuration. Label value %s is too "
-                "long. Truncating value to: %s" % (value, value[:length_limit])
+                "Improper configuration. Label value %s is too long. Truncating value to: %s",
+                value,
+                value[:length_limit],
             )
 
         if len(deduped) >= count_limit:
             _logger.warning(
-                "Improper configuration. Maximum number of labels reached. Using first %d labels." % count_limit
+                "Improper configuration. Maximum number of labels reached. Using first %d labels.", count_limit
             )
             break
 
@@ -730,8 +733,7 @@ def translate_deprecated_settings(settings, cached_settings):
         ),
     ]
 
-    for (old_key, new_key) in deprecated_settings_map:
-
+    for old_key, new_key in deprecated_settings_map:
         if old_key in cached:
             _logger.info(
                 "Deprecated setting found: %r. Please use new setting: %r.",
@@ -755,7 +757,6 @@ def translate_deprecated_settings(settings, cached_settings):
     # deprecated settings, so it gets handled separately.
 
     if "ignored_params" in cached:
-
         _logger.info(
             "Deprecated setting found: ignored_params. Please use "
             "new setting: attributes.exclude. For the new setting, an "
@@ -891,7 +892,6 @@ def _load_configuration(
     log_file=None,
     log_level=None,
 ):
-
     global _configuration_done
 
     global _config_file
@@ -914,8 +914,7 @@ def _load_configuration(
                 'Prior configuration file used was "%s" and '
                 'environment "%s".' % (_config_file, _environment)
             )
-        else:
-            return
+        return
 
     _configuration_done = True
 
@@ -929,7 +928,6 @@ def _load_configuration(
     # If no configuration file then nothing more to be done.
 
     if not config_file:
-
         _logger.debug("no agent configuration file")
 
         # Force initialisation of the logging system now in case
@@ -969,7 +967,7 @@ def _load_configuration(
 
         return
 
-    _logger.debug("agent configuration file was %s" % config_file)
+    _logger.debug("agent configuration file was %s", config_file)
 
     # Now read in the configuration file. Cache the config file
     # name in internal settings object as indication of succeeding.
@@ -1020,7 +1018,7 @@ def _load_configuration(
     # against the internal settings object.
 
     for option, value in _cache_object:
-        _logger.debug("agent config %s = %s" % (option, repr(value)))
+        _logger.debug("agent config %s = %s", option, repr(value))
 
     # Validate provided feature flags and log a warning if get one
     # which isn't valid.
@@ -1069,7 +1067,7 @@ def _load_configuration(
             terminal = False
             rollup = None
 
-            _logger.debug("register function-trace %s" % ((module, object_path, name, group),))
+            _logger.debug("register function-trace %s", ((module, object_path, name, group),))
 
             hook = _function_trace_import_hook(object_path, name, group, label, params, terminal, rollup)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1086,7 +1084,7 @@ def _load_configuration(
             name = None
             group = "Function"
 
-            _logger.debug("register generator-trace %s" % ((module, object_path, name, group),))
+            _logger.debug("register generator-trace %s", ((module, object_path, name, group),))
 
             hook = _generator_trace_import_hook(object_path, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1097,10 +1095,10 @@ def _load_configuration(
 # Generic error reporting functions.
 
 
-def _raise_instrumentation_error(type, locals):
+def _raise_instrumentation_error(instrumentation_type, locals_dict):
     _logger.error("INSTRUMENTATION ERROR")
-    _logger.error("Type = %s" % type)
-    _logger.error("Locals = %s" % locals)
+    _logger.error("Type = %s", instrumentation_type)
+    _logger.error("Locals = %s", locals_dict)
     _logger.exception("Exception Details")
 
     if not _ignore_errors:
@@ -1121,7 +1119,7 @@ def module_import_hook_results():
 
 def _module_import_hook(target, module, function):
     def _instrument(target):
-        _logger.debug("instrument module %s" % ((target, module, function),))
+        _logger.debug("instrument module %s", ((target, module, function),))
 
         try:
             instrumented = target._nr_instrumented
@@ -1129,7 +1127,7 @@ def _module_import_hook(target, module, function):
             instrumented = target._nr_instrumented = set()
 
         if (module, function) in instrumented:
-            _logger.debug("instrumentation already run %s" % ((target, module, function),))
+            _logger.debug("instrumentation already run %s", ((target, module, function),))
             return
 
         instrumented.add((module, function))
@@ -1179,7 +1177,7 @@ def _process_module_configuration():
             if target not in _module_import_hook_registry:
                 _module_import_hook_registry[target] = (module, function)
 
-                _logger.debug("register module %s" % ((target, module, function),))
+                _logger.debug("register module %s", ((target, module, function),))
 
                 hook = _module_import_hook(target, module, function)
                 newrelic.api.import_hook.register_import_hook(target, hook)
@@ -1192,7 +1190,7 @@ def _process_module_configuration():
 
 def _module_function_glob(module, object_path):
     """Match functions and class methods in a module to file globbing syntax."""
-    if not any([c in object_path for c in {"*", "?", "["}]):  # Identify globbing patterns
+    if not any((c in object_path for c in ("*", "?", "["))):  # Identify globbing patterns
         return (object_path,)  # Returned value must be iterable
     else:
         # Gather module functions
@@ -1200,7 +1198,7 @@ def _module_function_glob(module, object_path):
             available_functions = {k: v for k, v in module.__dict__.items() if callable(v) and not isinstance(v, type)}
         except Exception:
             # Default to empty dict if no functions available
-            available_functions = dict()
+            available_functions = {}
 
         # Gather module classes and methods
         try:
@@ -1268,7 +1266,7 @@ def _process_wsgi_application_configuration():
             if _config_object.has_option(section, "application"):
                 application = _config_object.get(section, "application")
 
-            _logger.debug("register wsgi-application %s" % ((module, object_path, application),))
+            _logger.debug("register wsgi-application %s", ((module, object_path, application),))
 
             hook = _wsgi_application_import_hook(object_path, application)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1324,10 +1322,10 @@ def _process_background_task_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)  # nosec
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug("register background-task %s" % ((module, object_path, application, name, group),))
+            _logger.debug("register background-task %s", ((module, object_path, application, name, group),))
 
             hook = _background_task_import_hook(object_path, application, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1374,10 +1372,10 @@ def _process_database_trace_configuration():
             sql = _config_object.get(section, "sql")
 
             if sql.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                sql = eval(sql, vars)  # nosec
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                sql = eval(sql, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug("register database-trace %s" % ((module, object_path, sql),))
+            _logger.debug("register database-trace %s", ((module, object_path, sql),))
 
             hook = _database_trace_import_hook(object_path, sql)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1429,14 +1427,14 @@ def _process_external_trace_configuration():
                 method = _config_object.get(section, "method")
 
             if url.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                url = eval(url, vars)  # nosec
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                url = eval(url, callable_vars)  # nosec, pylint: disable=W0123
 
             if method and method.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                method = eval(method, vars)  # nosec
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                method = eval(method, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug("register external-trace %s" % ((module, object_path, library, url, method),))
+            _logger.debug("register external-trace %s", ((module, object_path, library, url, method),))
 
             hook = _external_trace_import_hook(object_path, library, url, method)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1501,11 +1499,11 @@ def _process_function_trace_configuration():
                 rollup = _config_object.get(section, "rollup")
 
             if name and name.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)  # nosec
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug(
-                "register function-trace %s" % ((module, object_path, name, group, label, params, terminal, rollup),)
+                "register function-trace %s", ((module, object_path, name, group, label, params, terminal, rollup),)
             )
 
             hook = _function_trace_import_hook(object_path, name, group, label, params, terminal, rollup)
@@ -1559,10 +1557,10 @@ def _process_generator_trace_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)  # nosec
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug("register generator-trace %s" % ((module, object_path, name, group),))
+            _logger.debug("register generator-trace %s", ((module, object_path, name, group),))
 
             hook = _generator_trace_import_hook(object_path, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1618,10 +1616,10 @@ def _process_profile_trace_configuration():
                 depth = _config_object.get(section, "depth")
 
             if name and name.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)  # nosec
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug("register profile-trace %s" % ((module, object_path, name, group, depth),))
+            _logger.debug("register profile-trace %s", ((module, object_path, name, group, depth),))
 
             hook = _profile_trace_import_hook(object_path, name, group, depth=depth)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1668,8 +1666,8 @@ def _process_memcache_trace_configuration():
             command = _config_object.get(section, "command")
 
             if command.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                command = eval(command, vars)  # nosec
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                command = eval(command, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register memcache-trace %s", (module, object_path, command))
 
@@ -1686,7 +1684,7 @@ def _transaction_name_import_hook(object_path, name, group, priority):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug("wrap transaction-name %s" % ((target, func, name, group, priority),))
+                _logger.debug("wrap transaction-name %s", ((target, func, name, group, priority),))
                 newrelic.api.transaction_name.wrap_transaction_name(target, func, name, group, priority)
         except Exception:
             _raise_instrumentation_error("transaction-name", locals())
@@ -1728,10 +1726,10 @@ def _process_transaction_name_configuration():
                 priority = _config_object.getint(section, "priority")
 
             if name and name.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)  # nosec
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug("register transaction-name %s" % ((module, object_path, name, group, priority),))
+            _logger.debug("register transaction-name %s", ((module, object_path, name, group, priority),))
 
             hook = _transaction_name_import_hook(object_path, name, group, priority)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1889,7 +1887,6 @@ _data_sources_done = False
 
 
 def _setup_data_source():
-
     global _data_sources_done
 
     if _data_sources_done:
@@ -1948,7 +1945,7 @@ def _process_function_profile_configuration():
             if _config_object.has_option(section, "checkpoint"):
                 checkpoint = _config_object.getfloat(section, "checkpoint")
 
-            _logger.debug("register function-profile %s" % ((module, object_path, filename, delay, checkpoint),))
+            _logger.debug("register function-profile %s", ((module, object_path, filename, delay, checkpoint),))
 
             hook = _function_profile_import_hook(object_path, filename, delay, checkpoint)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -3878,7 +3875,6 @@ _instrumentation_done = False
 
 
 def _setup_instrumentation():
-
     global _instrumentation_done
 
     if _instrumentation_done:

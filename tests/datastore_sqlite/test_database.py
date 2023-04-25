@@ -23,7 +23,7 @@ from testing_support.validators.validate_database_trace_inputs import validate_d
 
 from newrelic.api.background_task import background_task
 
-DATABASE_DIR = os.environ.get('TOX_ENVDIR', '.')
+DATABASE_DIR = os.environ.get('TOX_ENV_DIR', '.')
 DATABASE_NAME = ':memory:'
 
 _test_execute_via_cursor_scoped_metrics = [

@@ -12,17 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from newrelic.packages import six
 
+if six.PY3:
+    from inspect import Signature
 
-_default_settings = {
-    "transaction_tracer.explain_threshold": 0.0,
-    "transaction_tracer.transaction_threshold": 0.0,
-    "transaction_tracer.stack_trace_threshold": 0.0,
-    "debug.log_data_collector_payloads": True,
-    "debug.record_transaction_failure": True,
-}
+    def bind_args(func, args, kwargs):
+        """Bind arguments and apply defaults to missing arugments for a callable."""
+        bound_args = Signature.from_callable(func).bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        return bound_args.arguments
 
-collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (adapter_daphne)", default_settings=_default_settings
-)
+else:
+    from inspect import getcallargs
+
+    def bind_args(func, args, kwargs):
+        """Bind arguments and apply defaults to missing arugments for a callable."""
+        return getcallargs(func, *args, **kwargs)

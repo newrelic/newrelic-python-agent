@@ -14,16 +14,18 @@
 
 import pytest
 
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from newrelic.common.signature import bind_args
 
-_default_settings = {
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.transaction_threshold': 0.0,
-    'transaction_tracer.stack_trace_threshold': 0.0,
-    'debug.log_data_collector_payloads': True,
-    'debug.record_transaction_failure': True,
-}
 
-collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (gunicorn)',
-        default_settings=_default_settings)
+@pytest.mark.parametrize(
+    "func,args,kwargs,expected",
+    [
+        (lambda x, y: None, (1,), {"y": 2}, {"x": 1, "y": 2}),
+        (lambda x=1, y=2: None, (1,), {"y": 2}, {"x": 1, "y": 2}),
+        (lambda x=1: None, (), {}, {"x": 1}),
+    ],
+    ids=("posargs", "kwargs", "defaults"),
+)
+def test_signature_binding(func, args, kwargs, expected):
+    bound_args = bind_args(func, args, kwargs)
+    assert bound_args == expected

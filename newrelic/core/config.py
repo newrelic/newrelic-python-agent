@@ -146,7 +146,9 @@ class TransactionTracerAttributesSettings(Settings):
 
 
 class ErrorCollectorSettings(Settings):
-    pass
+    @property
+    def error_group_callback(self):
+        return self._error_group_callback
 
 
 class ErrorCollectorAttributesSettings(Settings):
@@ -342,6 +344,14 @@ class InfiniteTracingSettings(Settings):
         return True
 
 
+class InstrumentationSettings(Settings):
+    pass
+
+
+class InstrumentationGraphQLSettings(Settings):
+    pass
+
+
 class EventHarvestConfigSettings(Settings):
     nested = True
     _lock = threading.Lock()
@@ -363,52 +373,54 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 
 
 _settings = TopLevelSettings()
+_settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
-_settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
+_settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.machine_learning = MachineLearningSettings()
 _settings.machine_learning.inference_event_value = MachineLearningInferenceEventValueSettings()
 _settings.attributes = AttributesSettings()
-_settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
-_settings.code_level_metrics = CodeLevelMetricsSettings()
-_settings.thread_profiler = ThreadProfilerSettings()
-_settings.transaction_tracer = TransactionTracerSettings()
-_settings.transaction_tracer.attributes = TransactionTracerAttributesSettings()
-_settings.error_collector = ErrorCollectorSettings()
-_settings.error_collector.attributes = ErrorCollectorAttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
-_settings.transaction_name = TransactionNameSettings()
-_settings.transaction_metrics = TransactionMetricsSettings()
-_settings.event_loop_visibility = EventLoopVisibilitySettings()
-_settings.rum = RumSettings()
-_settings.slow_sql = SlowSqlSettings()
-_settings.agent_limits = AgentLimitsSettings()
+_settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.console = ConsoleSettings()
-_settings.debug = DebugSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
-_settings.transaction_events = TransactionEventsSettings()
-_settings.transaction_events.attributes = TransactionEventsAttributesSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
-_settings.process_host = ProcessHostSettings()
-_settings.synthetics = SyntheticsSettings()
-_settings.message_tracer = MessageTracerSettings()
-_settings.utilization = UtilizationSettings()
-_settings.strip_exception_messages = StripExceptionMessageSettings()
 _settings.datastore_tracer = DatastoreTracerSettings()
-_settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
 _settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseNameReportingSettings()
-_settings.heroku = HerokuSettings()
-_settings.span_events = SpanEventSettings()
-_settings.span_events.attributes = SpanEventAttributesSettings()
-_settings.transaction_segments = TransactionSegmentSettings()
-_settings.transaction_segments.attributes = TransactionSegmentAttributesSettings()
+_settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
+_settings.debug = DebugSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
-_settings.serverless_mode = ServerlessModeSettings()
-_settings.infinite_tracing = InfiniteTracingSettings()
+_settings.error_collector = ErrorCollectorSettings()
+_settings.error_collector.attributes = ErrorCollectorAttributesSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = EventHarvestConfigHarvestLimitSettings()
+_settings.event_loop_visibility = EventLoopVisibilitySettings()
+_settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
+_settings.heroku = HerokuSettings()
+_settings.infinite_tracing = InfiniteTracingSettings()
+_settings.instrumentation = InstrumentationSettings()
+_settings.instrumentation.graphql = InstrumentationGraphQLSettings()
+_settings.message_tracer = MessageTracerSettings()
+_settings.process_host = ProcessHostSettings()
+_settings.rum = RumSettings()
+_settings.serverless_mode = ServerlessModeSettings()
+_settings.slow_sql = SlowSqlSettings()
+_settings.span_events = SpanEventSettings()
+_settings.span_events.attributes = SpanEventAttributesSettings()
+_settings.strip_exception_messages = StripExceptionMessageSettings()
+_settings.synthetics = SyntheticsSettings()
+_settings.thread_profiler = ThreadProfilerSettings()
+_settings.transaction_events = TransactionEventsSettings()
+_settings.transaction_events.attributes = TransactionEventsAttributesSettings()
+_settings.transaction_metrics = TransactionMetricsSettings()
+_settings.transaction_name = TransactionNameSettings()
+_settings.transaction_segments = TransactionSegmentSettings()
+_settings.transaction_segments.attributes = TransactionSegmentAttributesSettings()
+_settings.transaction_tracer = TransactionTracerSettings()
+_settings.transaction_tracer.attributes = TransactionTracerAttributesSettings()
+_settings.utilization = UtilizationSettings()
 
 
 _settings.log_file = os.environ.get("NEW_RELIC_LOG", None)
@@ -468,7 +480,6 @@ def _environ_as_mapping(name, default=""):
         return result
 
     for item in items.split(";"):
-
         try:
             key, value = item.split(":")
         except ValueError:
@@ -699,6 +710,7 @@ _settings.error_collector.ignore_classes = []
 _settings.error_collector.ignore_status_codes = _parse_status_codes("100-102 200-208 226 300-308 404", set())
 _settings.error_collector.expected_classes = []
 _settings.error_collector.expected_status_codes = set()
+_settings.error_collector._error_group_callback = None
 _settings.error_collector.attributes.enabled = True
 _settings.error_collector.attributes.exclude = []
 _settings.error_collector.attributes.include = []
@@ -741,8 +753,14 @@ _settings.agent_limits.data_compression_level = None
 
 _settings.infinite_tracing.trace_observer_host = os.environ.get("NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_HOST", None)
 _settings.infinite_tracing.trace_observer_port = _environ_as_int("NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_PORT", 443)
+_settings.infinite_tracing.compression = _environ_as_bool("NEW_RELIC_INFINITE_TRACING_COMPRESSION", default=True)
+_settings.infinite_tracing.batching = _environ_as_bool("NEW_RELIC_INFINITE_TRACING_BATCHING", default=True)
 _settings.infinite_tracing.ssl = True
 _settings.infinite_tracing.span_queue_size = _environ_as_int("NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE", 10000)
+
+_settings.instrumentation.graphql.capture_introspection_queries = os.environ.get(
+    "NEW_RELIC_INSTRUMENTATION_GRAPHQL_CAPTURE_INTROSPECTION_QUERIES", False
+)
 
 _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
     "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE
@@ -952,7 +970,6 @@ def global_settings_dump(settings_object=None, serializable=False):
         components = urlparse.urlparse(proxy_host)
 
         if components.scheme:
-
             netloc = create_obfuscated_netloc(components.username, components.password, components.hostname, obfuscated)
 
             if components.port:
@@ -1075,14 +1092,14 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
 
     # Overlay with agent server side configuration settings.
 
-    for (name, value) in agent_config.items():
+    for name, value in agent_config.items():
         apply_config_setting(settings_snapshot, name, value)
 
     # Overlay with global server side configuration settings.
     # global server side configuration always takes precedence over the global
     # server side configuration settings.
 
-    for (name, value) in server_side_config.items():
+    for name, value in server_side_config.items():
         apply_config_setting(settings_snapshot, name, value)
 
     event_harvest_config = server_side_config.get("event_harvest_config", {})

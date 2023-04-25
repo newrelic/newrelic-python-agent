@@ -115,7 +115,7 @@ def initialize_agent(app_name=None, default_settings=None):
     for name, value in default_settings.items():
         apply_config_setting(settings, name, value)
 
-    env_directory = os.environ.get("TOX_ENVDIR", None)
+    env_directory = os.environ.get("TOX_ENV_DIR", None)
 
     if env_directory is not None:
         log_directory = os.path.join(env_directory, "log")
@@ -281,7 +281,7 @@ def collector_agent_registration_fixture(
 
 
 @pytest.fixture(scope="function")
-def collector_available_fixture(request):
+def collector_available_fixture(request, collector_agent_registration):
     application = application_instance()
     active = application.active
     assert active
@@ -742,6 +742,8 @@ def validate_error_trace_attributes_outside_transaction(
     forgone_params = forgone_params or {}
     exact_attrs = exact_attrs or {}
 
+    target_error = []
+
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
     def _validate_error_trace_attributes_outside_transaction(wrapped, instance, args, kwargs):
         try:
@@ -749,15 +751,22 @@ def validate_error_trace_attributes_outside_transaction(
         except:
             raise
         else:
-            target_error = core_application_stats_engine_error(err_name)
-
-            check_error_attributes(
-                target_error.parameters, required_params, forgone_params, exact_attrs, is_transaction=False
-            )
+            target_error.append(core_application_stats_engine_error(err_name))
 
         return result
 
-    return _validate_error_trace_attributes_outside_transaction
+
+    @function_wrapper
+    def _validator_wrapper(wrapped, instance, args, kwargs):
+        result = _validate_error_trace_attributes_outside_transaction(wrapped)(*args, **kwargs)
+
+        assert target_error and target_error[0] is not None, "No error found with name %s" % err_name
+        check_error_attributes(target_error[0].parameters, required_params, forgone_params, exact_attrs)
+
+        return result
+
+
+    return _validator_wrapper
 
 
 def validate_error_event_attributes_outside_transaction(
@@ -1491,48 +1500,6 @@ def override_expected_status_codes(status_codes):
             settings.error_collector.expected_status_codes = original
 
     return _override_expected_status_codes
-
-
-def code_coverage_fixture(source=None):
-    if source is None:
-        source = ["newrelic"]
-
-    github_actions = bool(os.environ.get("GITHUB_ACTIONS", None))
-    tox_env_directory = os.environ.get("TOX_ENVDIR", None)
-
-    if tox_env_directory:
-        data_file = os.path.join(tox_env_directory, ".coverage")
-        data_suffix = os.path.split(tox_env_directory)[-1]
-        coverage_directory = os.path.join(tox_env_directory, "htmlcov")
-        xml_report = os.path.join(tox_env_directory, "coverage.xml")
-    else:
-        data_file = ".coverage"
-        data_suffix = None
-        coverage_directory = "htmlcov"
-        xml_report = "coverage.xml"
-
-    @pytest.fixture(scope="session")
-    def _code_coverage_fixture(request):
-        if not source:
-            yield None  # Required, generator based fixtures must yield 1 value or pytest will throw an exception.
-            return
-
-        from coverage import coverage
-
-        cov = coverage(source=source, data_file=data_file, data_suffix=data_suffix, branch=True)
-        cov.start()
-
-        yield cov
-
-        # At exit, stop coverage and save to data file
-        cov.stop()
-        cov.save()
-        if not github_actions:
-            # Run html and xml reports locally
-            cov.html_report(directory=coverage_directory)
-            cov.xml_report(outfile=xml_report)
-
-    return _code_coverage_fixture
 
 
 def reset_core_stats_engine():

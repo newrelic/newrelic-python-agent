@@ -26,6 +26,7 @@ import operator
 import random
 import sys
 import time
+import traceback
 import warnings
 import zlib
 from heapq import heapify, heapreplace
@@ -36,15 +37,21 @@ from newrelic.api.time_trace import get_linking_metadata
 from newrelic.common.encoding_utils import json_encode
 from newrelic.common.object_names import parse_exc_info
 from newrelic.common.streaming_utils import StreamBuffer
-from newrelic.core.attribute import create_user_attributes, process_user_attribute, truncate, MAX_LOG_MESSAGE_LENGTH
+from newrelic.core.attribute import (
+    MAX_LOG_MESSAGE_LENGTH,
+    create_agent_attributes,
+    create_user_attributes,
+    process_user_attribute,
+    truncate,
+)
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
 from newrelic.core.code_level_metrics import extract_code_from_traceback
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.database_utils import explain_plan
 from newrelic.core.error_collector import TracedError
+from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
-from newrelic.core.log_event_node import LogEventNode
 
 _logger = logging.getLogger(__name__)
 
@@ -605,13 +612,15 @@ class StatsEngine(object):
         if getattr(value, "_nr_ignored", None):
             return
 
-        module, name, fullnames, message = parse_exc_info(error)
+        module, name, fullnames, message_raw = parse_exc_info(error)
         fullname = fullnames[0]
 
         # Check to see if we need to strip the message before recording it.
 
         if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
             message = STRIP_EXCEPTION_MESSAGE
+        else:
+            message = message_raw
 
         # Where expected or ignore are a callable they should return a
         # tri-state variable with the following behavior.
@@ -707,6 +716,42 @@ class StatsEngine(object):
 
             user_attributes = create_user_attributes(custom_attributes, settings.attribute_filter)
 
+
+        # Extract additional details about the exception as agent attributes
+        agent_attributes = {}
+
+        if settings:
+            if settings.code_level_metrics and settings.code_level_metrics.enabled:
+                extract_code_from_traceback(tb).add_attrs(agent_attributes.__setitem__)
+
+            if settings.error_collector and settings.error_collector.error_group_callback is not None:
+                error_group_name = None
+                try:
+                    # Call callback to obtain error group name
+                    error_group_name_raw = settings.error_collector.error_group_callback(value, {
+                        "traceback": tb,
+                        "error.class": exc,
+                        "error.message": message_raw,
+                        "error.expected": is_expected,
+                        "custom_params": attributes,
+                        # Transaction specific items should be set to None
+                        "transactionName": None,
+                        "response.status": None,
+                        "request.method": None,
+                        "request.uri": None,
+                    })
+                    if error_group_name_raw:
+                        _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
+                        if error_group_name is None or not isinstance(error_group_name, six.string_types):
+                            raise ValueError("Invalid attribute value for error.group.name. Expected string, got: %s" % repr(error_group_name_raw))
+                        else:
+                            agent_attributes["error.group.name"] = error_group_name
+
+                except Exception:
+                    _logger.error("Encountered error when calling error group callback:\n%s", "".join(traceback.format_exception(*sys.exc_info())))
+        
+        agent_attributes = create_agent_attributes(agent_attributes, settings.attribute_filter)
+
         # Record the exception details.
 
         attributes = {}
@@ -726,9 +771,10 @@ class StatsEngine(object):
 
         # set source code attributes
         attributes["agentAttributes"] = {}
-        if settings and settings.code_level_metrics and settings.code_level_metrics.enabled:
-            extract_code_from_traceback(tb).add_attrs(attributes["agentAttributes"].__setitem__)
-
+        for attr in agent_attributes:
+            if attr.destinations & DST_ERROR_COLLECTOR:
+                attributes["agentAttributes"][attr.name] = attr.value
+        
         error_details = TracedError(
             start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
         )
@@ -751,7 +797,6 @@ class StatsEngine(object):
             self.record_time_metric(TimeMetric(name="Errors/all", scope="", duration=0.0, exclusive=None))
 
     def _error_event(self, error):
-
         # This method is for recording error events outside of transactions,
         # don't let the poorly named 'type' attribute fool you.
 
@@ -767,12 +812,15 @@ class StatsEngine(object):
 
         # Leave agent attributes field blank since not a transaction
 
-        error_event = [error.parameters["intrinsics"], error.parameters["userAttributes"], {}]
+        error_event = [
+            error.parameters["intrinsics"],
+            error.parameters["userAttributes"],
+            error.parameters["agentAttributes"],
+        ]
 
         return error_event
 
     def record_custom_event(self, event):
-
         settings = self.__settings
 
         if not settings:
@@ -964,7 +1012,6 @@ class StatsEngine(object):
         transaction_tracer = settings.transaction_tracer
 
         if not transaction.suppress_transaction_trace and transaction_tracer.enabled and settings.collect_traces:
-
             # Transactions saved for Synthetics transactions
             # do not depend on the transaction threshold.
 
@@ -987,7 +1034,6 @@ class StatsEngine(object):
             self._synthetics_events.add(event)
 
         elif settings.collect_analytics_events and settings.transaction_events.enabled:
-
             event = transaction.transaction_event(self.__stats_table)
             self._transaction_events.add(event, priority=transaction.priority)
 
@@ -1008,39 +1054,49 @@ class StatsEngine(object):
 
         # Merge in log events
 
-        if settings and settings.application_logging and settings.application_logging.enabled and settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
+        if (
+            settings
+            and settings.application_logging
+            and settings.application_logging.enabled
+            and settings.application_logging.forwarding
+            and settings.application_logging.forwarding.enabled
+        ):
             self._log_events.merge(transaction.log_events, priority=transaction.priority)
-
 
     def record_log_event(self, message, level=None, timestamp=None, priority=None):
         settings = self.__settings
-        if not (settings and settings.application_logging and settings.application_logging.enabled and settings.application_logging.forwarding and settings.application_logging.forwarding.enabled):
+        if not (
+            settings
+            and settings.application_logging
+            and settings.application_logging.enabled
+            and settings.application_logging.forwarding
+            and settings.application_logging.forwarding.enabled
+        ):
             return
-        
+
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
 
         if not message or message.isspace():
             _logger.debug("record_log_event called where message was missing. No log event will be sent.")
             return
-        
+
         message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
 
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=get_linking_metadata(), 
+            attributes=get_linking_metadata(),
         )
 
         if priority is None:
             # Base priority for log events outside transactions is below those inside transactions
-            priority = random.random() - 1
+            priority = random.random() - 1  # nosec
 
         self._log_events.add(event, priority=priority)
 
         return event
-
 
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
@@ -1115,7 +1171,6 @@ class StatsEngine(object):
         return self.__transaction_errors
 
     def slow_sql_data(self, connections):
-
         _logger.debug("Generating slow SQL data.")
 
         if not self.__settings:
@@ -1134,7 +1189,6 @@ class StatsEngine(object):
         result = []
 
         for stats_node in slow_sql_nodes:
-
             slow_sql_node = stats_node.slow_sql_node
 
             params = slow_sql_node.params or {}
@@ -1398,7 +1452,9 @@ class StatsEngine(object):
         self.reset_synthetics_events()
         # streams are never reset after instantiation
         if reset_stream:
-            self._span_stream = StreamBuffer(settings.infinite_tracing.span_queue_size)
+            self._span_stream = StreamBuffer(
+                settings.infinite_tracing.span_queue_size, batching=settings.infinite_tracing.batching
+            )
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1612,7 +1668,6 @@ class StatsEngine(object):
                 stats.merge_stats(other)
 
     def _merge_transaction_events(self, snapshot, rollback=False):
-
         # Merge in transaction events. In the normal case snapshot is a
         # StatsEngine from a single transaction, and should only have one
         # event. Just to avoid issues, if there is more than one, don't merge.
@@ -1631,7 +1686,6 @@ class StatsEngine(object):
                 self._transaction_events.merge(events)
 
     def _merge_synthetics_events(self, snapshot, rollback=False):
-
         # Merge Synthetic analytic events, appending to the list
         # that contains events from previous transactions. In the normal
         # case snapshot is a StatsEngine from a single transaction, and should
@@ -1648,7 +1702,6 @@ class StatsEngine(object):
         self._synthetics_events.merge(events)
 
     def _merge_error_events(self, snapshot):
-
         # Merge in error events. Since we are using reservoir sampling that
         # gives equal probability to keeping each event, merge is the same as
         # rollback. There may be multiple error events per transaction.
@@ -1676,7 +1729,6 @@ class StatsEngine(object):
         self._log_events.merge(events)
 
     def _merge_error_traces(self, snapshot):
-
         # Append snapshot error details at end to maintain time
         # based order and then trim at maximum to be kept. snapshot will
         # always have newer data.
@@ -1686,7 +1738,6 @@ class StatsEngine(object):
         self.__transaction_errors = self.__transaction_errors[:maximum]
 
     def _merge_sql(self, snapshot):
-
         # Add sql traces to the set of existing entries. If over
         # the limit of how many to collect, only merge in if already
         # seen the specific SQL.
@@ -1701,7 +1752,6 @@ class StatsEngine(object):
                 stats.merge_stats(slow_sql_stats)
 
     def _merge_traces(self, snapshot):
-
         # Limit number of Synthetics transactions
 
         maximum = self.__settings.agent_limits.synthetics_transactions

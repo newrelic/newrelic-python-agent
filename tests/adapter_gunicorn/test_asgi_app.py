@@ -27,8 +27,8 @@ from testing_support.util import get_open_port
 
 @pytest.mark.parametrize('nr_enabled', (True, False))
 def test_asgi_app(nr_enabled):
-    nr_admin = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'newrelic-admin')
-    gunicorn = os.path.join(os.environ['TOX_ENVDIR'], 'bin', 'gunicorn')
+    nr_admin = os.path.join(os.environ['TOX_ENV_DIR'], 'bin', 'newrelic-admin')
+    gunicorn = os.path.join(os.environ['TOX_ENV_DIR'], 'bin', 'gunicorn')
 
     PORT = get_open_port()
     cmd = [gunicorn, '-b', '127.0.0.1:%d' % PORT, '--worker-class',

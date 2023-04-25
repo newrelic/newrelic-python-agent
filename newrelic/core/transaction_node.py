@@ -60,6 +60,7 @@ _TransactionNode = namedtuple(
         "errors",
         "slow_sql",
         "custom_events",
+        "ml_events",
         "log_events",
         "apdex_t",
         "suppress_apdex",

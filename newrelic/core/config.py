@@ -51,10 +51,12 @@ except Exception:
 # By default, Transaction Events and Custom Events have the same size
 # reservoir. Error Events have a different default size.
 
+# Slow harvest (Every 60 seconds)
 DEFAULT_RESERVOIR_SIZE = 1200
-CUSTOM_EVENT_RESERVOIR_SIZE = 3600
 ERROR_EVENT_RESERVOIR_SIZE = 100
 SPAN_EVENT_RESERVOIR_SIZE = 2000
+# Fast harvest (Every 5 seconds, so divide by 12 to get average per minute value)
+CUSTOM_EVENT_RESERVOIR_SIZE = 3600
 LOG_EVENT_RESERVOIR_SIZE = 10000
 ML_EVENT_RESERVOIR_SIZE = 100000
 
@@ -126,7 +128,11 @@ class MachineLearningSettings(Settings):
     pass
 
 
-class MachineLearningInferenceEventValueSettings(Settings):
+class MachineLearningInferenceEventsSettings(Settings):
+    pass
+
+
+class MachineLearningInferenceEventsValueSettings(Settings):
     pass
 
 
@@ -380,7 +386,8 @@ _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings(
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.machine_learning = MachineLearningSettings()
-_settings.machine_learning.inference_event_value = MachineLearningInferenceEventValueSettings()
+_settings.machine_learning.inference_events = MachineLearningInferenceEventsSettings()
+_settings.machine_learning.inference_events.value = MachineLearningInferenceEventsValueSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
@@ -850,7 +857,11 @@ _settings.application_logging.metrics.enabled = _environ_as_bool(
 _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
-_settings.machine_learning.inference_event_value.enabled = _environ_as_bool(
+_settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNING_ENABLED", default=True)
+_settings.machine_learning.inference_events.enabled = _environ_as_bool(
+    "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_ENABLED", default=True
+)
+_settings.machine_learning.inference_events.value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=True
 )
 
@@ -1097,11 +1108,18 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         apply_config_setting(settings_snapshot, name, value)
 
     # Overlay with global server side configuration settings.
-    # global server side configuration always takes precedence over the global
-    # server side configuration settings.
+    # global server side configuration always takes precedence over the local
+    # agent configuration settings.
 
     for name, value in server_side_config.items():
         apply_config_setting(settings_snapshot, name, value)
+
+    # TODO: override ml_events / 5 s harvest
+    apply_config_setting(
+        settings_snapshot.event_harvest_config.harvest_limits.ml_event_data,
+        "event_harvest_config.harvest_limits.ml_event_data",
+        event_harvest_config.harvest_limits.ml_event_data / 12,
+    )
 
     event_harvest_config = server_side_config.get("event_harvest_config", {})
     harvest_limits = event_harvest_config.get("harvest_limits", ())

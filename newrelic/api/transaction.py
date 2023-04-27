@@ -334,8 +334,7 @@ class Transaction(object):
             self._custom_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data
             )
-            # TODO Fix this with actual setting
-            self._ml_events = SampledDataSet(capacity=ML_EVENT_RESERVOIR_SIZE)
+            self._ml_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.ml_event_data)
             self._log_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.log_event_data
             )

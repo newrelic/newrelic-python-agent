@@ -62,6 +62,11 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
+        settings = transaction.settings if transaction.settings is not None else global_settings()
+
+        if settings and not settings.machine_learning.enabled:
+            return wrapped(*args, **kwargs)
+
         wrapped_attr_name = "_nr_wrapped_%s" % method
 
         # If the method has already been wrapped do not wrap it again. This happens
@@ -182,23 +187,24 @@ def create_label_event(transaction, _class, inference_id, instance, return_val):
 
         label_names_list = _get_label_names(label_names, labels)
         _calc_prediction_label_stats(labels, _class, label_names_list)
-        for prediction in labels:
-            for index, value in enumerate(prediction):
-                python_value_type = str(type(value))
-                value_type = str(categorize_data_type(python_value_type))
+        if settings and settings.machine_learning.inference_events.enabled:
+            for prediction in labels:
+                for index, value in enumerate(prediction):
+                    python_value_type = str(type(value))
+                    value_type = str(categorize_data_type(python_value_type))
 
-                event = {
-                    "inference_id": inference_id,
-                    "model_name": model_name,
-                    "model_version": model_version,
-                    "label_name": str(label_names_list[index]),
-                    "type": value_type,
-                    "value": str(value),
-                }
-                # Don't include the raw value when inference_event_value is disabled.
-                if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
-                    event["value"] = str(value)
-                transaction.record_custom_event("ML Model Label Event", event)
+                    event = {
+                        "inference_id": inference_id,
+                        "model_name": model_name,
+                        "model_version": model_version,
+                        "label_name": str(label_names_list[index]),
+                        "type": value_type,
+                        "value": str(value),
+                    }
+                    # Don't include the raw value when inference_event_value is disabled.
+                    if settings and settings.machine_learning.inference_events.value.enabled:
+                        event["value"] = str(value)
+                    transaction.record_custom_event("ML Model Label Event", event)
 
 
 def _get_label_names(user_defined_label_names, prediction_array):
@@ -279,21 +285,21 @@ def create_feature_event(transaction, _class, inference_id, instance, args, kwar
     final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
     np_casted_data_set = np.array(data_set)
     _calc_prediction_feature_stats(data_set, _class, final_feature_names)
-
-    for col_index, feature in enumerate(np_casted_data_set):
-        for row_index, value in enumerate(feature):
-            value_type = find_type_category(data_set, row_index, col_index)
-            event = {
-                "inference_id": inference_id,
-                "model_name": model_name,
-                "model_version": model_version,
-                "feature_name": str(final_feature_names[row_index]),
-                "type": value_type,
-            }
-            # Don't include the raw value when inference_event_value is disabled.
-            if settings and settings.machine_learning and settings.machine_learning.inference_event_value.enabled:
-                event["value"] = str(value)
-            transaction.record_custom_event("ML Model Feature Event", event)
+    if settings and settings.machine_learning.inference_events.enabled:
+        for col_index, feature in enumerate(np_casted_data_set):
+            for row_index, value in enumerate(feature):
+                value_type = find_type_category(data_set, row_index, col_index)
+                event = {
+                    "inference_id": inference_id,
+                    "model_name": model_name,
+                    "model_version": model_version,
+                    "feature_name": str(final_feature_names[row_index]),
+                    "type": value_type,
+                }
+                # Don't include the raw value when inference_event_value is disabled.
+                if settings and settings.machine_learning and settings.machine_learning.inference_events.value.enabled:
+                    event["value"] = str(value)
+                transaction.record_custom_event("ML Model Feature Event", event)
 
 
 def _nr_instrument_model(module, model_class):
@@ -318,6 +324,11 @@ def wrap_metric_scorer(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     # If there is no transaction, do not wrap anything.
     if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+
+    if settings and not settings.machine_learning.enabled:
         return wrapped(*args, **kwargs)
 
     score = wrapped(*args, **kwargs)

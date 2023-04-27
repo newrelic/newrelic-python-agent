@@ -526,6 +526,7 @@ def _process_configuration(section):
         None,
     )
     _process_setting(section, "event_harvest_config.harvest_limits.custom_event_data", "getint", None)
+    _process_setting(section, "event_harvest_config.harvest_limits.ml_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.span_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.error_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.log_event_data", "getint", None)
@@ -542,7 +543,9 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.metrics.enabled", "getboolean", None)
     _process_setting(section, "application_logging.local_decorating.enabled", "getboolean", None)
 
-    _process_setting(section, "machine_learning.inference_event_value.enabled", "getboolean", None)
+    _process_setting(section, "machine_learning.enabled", "getboolean", None)
+    _process_setting(section, "machine_learning.inference_events.enabled", "getboolean", None)
+    _process_setting(section, "machine_learning.inference_events.value.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -878,9 +881,9 @@ def apply_local_high_security_mode_setting(settings):
         settings.application_logging.forwarding.enabled = False
         _logger.info(log_template, "application_logging.forwarding.enabled", True, False)
 
-    if settings.machine_learning.inference_event_value.enabled:
-        settings.machine_learning.inference_event_value.enabled = False
-        _logger.info(log_template, "machine_learning.inference_event_value.enabled", True, False)
+    if settings.machine_learning.inference_events.value.enabled:
+        settings.machine_learning.inference_events.value.enabled = False
+        _logger.info(log_template, "machine_learning.inference_events.value.enabled", True, False)
 
     return settings
 
@@ -2890,6 +2893,12 @@ def _process_module_builtin_defaults():
     _process_module_definition("tastypie.api", "newrelic.hooks.component_tastypie", "instrument_tastypie_api")
 
     _process_module_definition(
+        "sklearn.metrics",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_metrics",
+    )
+
+    _process_module_definition(
         "sklearn.tree._classes",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_tree_models",
@@ -2899,11 +2908,6 @@ def _process_module_builtin_defaults():
         "sklearn.tree.tree",
         "newrelic.hooks.mlmodel_sklearn",
         "instrument_sklearn_tree_models",
-    )
-    _process_module_definition(
-        "sklearn.metrics",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_metrics",
     )
 
     _process_module_definition(
@@ -3670,9 +3674,7 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.application_celery",
         "instrument_celery_worker",
     )
-    # _process_module_definition('celery.loaders.base',
-    #        'newrelic.hooks.application_celery',
-    #        'instrument_celery_loaders_base')
+
     _process_module_definition(
         "celery.execute.trace",
         "newrelic.hooks.application_celery",

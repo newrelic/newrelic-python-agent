@@ -278,7 +278,7 @@ class ApplicationLoggingMetricsSettings(Settings):
 class ApplicationLoggingLocalDecoratingSettings(Settings):
     pass
 
-class SecurityModuleSettings(Settings):
+class SecuritySettings(Settings):
     pass
 
 class SecurityDetectionSettings(Settings):
@@ -414,6 +414,12 @@ _settings.instrumentation.graphql = InstrumentationGraphQLSettings()
 _settings.message_tracer = MessageTracerSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.rum = RumSettings()
+_settings.security = SecuritySettings()
+_settings.security.agent = SecurityAgentSettings()
+_settings.security.detection = SecurityDetectionSettings()
+_settings.security.detection.deserialization = SecurityDetectionDeserializationSettings()
+_settings.security.detection.rci = SecurityDetectionRCISettings()
+_settings.security.detection.rxss = SecurityDetectionRXSSSettings()
 _settings.serverless_mode = ServerlessModeSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.span_events = SpanEventSettings()
@@ -857,14 +863,6 @@ _settings.application_logging.metrics.enabled = _environ_as_bool(
 _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
-
-_settings.security = SecurityModuleSettings()
-_settings.security.agent = SecurityAgentSettings()
-_settings.security.detection = SecurityDetectionSettings()
-_settings.security.detection.rci = SecurityDetectionRCISettings()
-_settings.security.detection.rxss = SecurityDetectionRXSSSettings()
-_settings.security.detection.deserialization = SecurityDetectionDeserializationSettings()
-
 
 _settings.security.agent.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_AGENT_ENABLED",

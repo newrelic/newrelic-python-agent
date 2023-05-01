@@ -335,9 +335,6 @@ class Transaction(object):
                 capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data
             )
             # TODO Fix this with actual setting
-            # self._ml_events = SampledDataSet(
-            #     capacity=self._settings.inference_events.max_samples_stored
-            # )
             self._ml_events = SampledDataSet(capacity=ML_EVENT_RESERVOIR_SIZE)
             self._log_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.log_event_data
@@ -1631,8 +1628,8 @@ class Transaction(object):
             return
 
         # TODO Fix settings
-        # if not settings.custom_insights_events.enabled:
-        #    return
+        if not settings.custom_insights_events.enabled:
+            return
 
         event = create_custom_event(event_type, params)
         if event:
@@ -1955,7 +1952,7 @@ def record_ml_event(event_type, params, application=None):
     """Record a machine learning custom event.
 
     Args:
-        event_type (str): The type (name) of the custom event.
+        event_type (str): The type (name) of the ml event.
         params (dict): Attributes to add to the event.
         application (newrelic.api.Application): Application instance.
 

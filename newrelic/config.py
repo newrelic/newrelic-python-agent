@@ -3769,19 +3769,6 @@ def _process_module_builtin_defaults():
         "instrument_cornice_service",
     )
 
-    # _process_module_definition('twisted.web.server',
-    #        'newrelic.hooks.framework_twisted',
-    #        'instrument_twisted_web_server')
-    # _process_module_definition('twisted.web.http',
-    #        'newrelic.hooks.framework_twisted',
-    #        'instrument_twisted_web_http')
-    # _process_module_definition('twisted.web.resource',
-    #        'newrelic.hooks.framework_twisted',
-    #        'instrument_twisted_web_resource')
-    # _process_module_definition('twisted.internet.defer',
-    #        'newrelic.hooks.framework_twisted',
-    #        'instrument_twisted_internet_defer')
-
     _process_module_definition("gevent.monkey", "newrelic.hooks.coroutines_gevent", "instrument_gevent_monkey")
 
     _process_module_definition(

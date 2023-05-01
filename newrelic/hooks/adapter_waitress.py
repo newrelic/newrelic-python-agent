@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import newrelic.api.wsgi_application
-import newrelic.api.in_function
+from newrelic.api.in_function import wrap_in_function
+from newrelic.api.wsgi_application import WSGIApplicationWrapper
+from newrelic.common.package_version_utils import get_package_version
+
 
 def instrument_waitress_server(module):
-
-    def wrap_wsgi_application_entry_point(server, application,
-                                          *args, **kwargs):
-        application = newrelic.api.wsgi_application.WSGIApplicationWrapper(
-                application)
+    def wrap_wsgi_application_entry_point(server, application, *args, **kwargs):
+        dispatcher_details = ("Waitress", get_package_version("waitress"))
+        application = WSGIApplicationWrapper(application, dispatcher=dispatcher_details)
         args = [server, application] + list(args)
         return (args, kwargs)
 
-    newrelic.api.in_function.wrap_in_function(module,
-            'WSGIServer.__init__', wrap_wsgi_application_entry_point)
+    wrap_in_function(module, "WSGIServer.__init__", wrap_wsgi_application_entry_point)

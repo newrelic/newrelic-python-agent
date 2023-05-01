@@ -49,6 +49,11 @@ def transaction_node(request):
         event = create_custom_event("Custom", {})
         custom_events.add(event)
 
+    ml_events = SampledDataSet(capacity=num_events)
+    for _ in range(num_events):
+        event = create_custom_event("Custom", {})
+        ml_events.add(event)
+
     log_events = SampledDataSet(capacity=num_events)
     for _ in range(num_events):
         event = LogEventNode(1653609717, "WARNING", "A", {})
@@ -122,6 +127,7 @@ def transaction_node(request):
         errors=errors,
         slow_sql=(),
         custom_events=custom_events,
+        ml_events=ml_events,
         log_events=log_events,
         apdex_t=0.5,
         suppress_apdex=False,

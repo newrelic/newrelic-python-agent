@@ -34,9 +34,8 @@ def validate_ml_event_count_outside_transaction(count=1):
                 result = wrapped(*args, **kwargs)
             except:
                 raise
-            else:
-                recorded_events[:] = []
-                recorded_events.extend(list(instance._ml_events))
+            recorded_events[:] = []
+            recorded_events.extend(list(instance._ml_events))
 
             return result
 

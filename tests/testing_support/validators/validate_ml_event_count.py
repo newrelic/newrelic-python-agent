@@ -34,8 +34,7 @@ def validate_ml_event_count(count=1):
                 result = wrapped(*args, **kwargs)
             except:
                 raise
-            else:
-                recorded_events.extend(list(instance._ml_events))
+            recorded_events.extend(list(instance._ml_events))
 
             return result
 

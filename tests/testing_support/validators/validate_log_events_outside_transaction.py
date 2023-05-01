@@ -35,9 +35,8 @@ def validate_log_events_outside_transaction(events):
                 result = wrapped(*args, **kwargs)
             except:
                 raise
-            else:
-                recorded_logs[:] = []
-                recorded_logs.extend(list(instance._log_events))
+            recorded_logs[:] = []
+            recorded_logs.extend(list(instance._log_events))
 
             return result
 

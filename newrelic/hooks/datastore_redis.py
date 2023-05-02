@@ -595,6 +595,7 @@ def instrument_asyncio_redis_client(module):
             if hasattr(class_, operation):
                 _wrap_asyncio_Redis_method_wrapper(module, "Redis", operation)
 
+
 def instrument_redis_commands_core(module):
     _instrument_redis_commands_module(module, "CoreCommands")
 

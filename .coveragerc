@@ -1,0 +1,17 @@
+[run]
+branch = True
+omit = "newrelic/packages/*"
+    # newrelic/hooks/adapter_meinheld.py
+    # newrelic/hooks/adapter_flup.py
+    # newrelic/hooks/component_piston.py
+    # newrelic/hooks/external_dropbox.py
+    # newrelic/hooks/external_facepy.py
+    # newrelic/hooks/external_xmlrpclib.py
+    # newrelic/hooks/framework_pylons.py
+    # newrelic/hooks/framework_web2py.py
+parallel = True
+disable_warnings = couldnt-parse
+
+source = 
+    newrelic/
+    .tox/**/site-packages/newrelic/

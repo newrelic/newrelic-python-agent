@@ -882,8 +882,7 @@ class Application(object):
 
         settings = self._stats_engine.settings
 
-        # TODO Fix this with actual settings
-        if settings is None or not settings.custom_insights_events.enabled:
+        if settings is None or not settings.machine_learning.inference_events.enabled:
             return
 
         event = create_custom_event(event_type, params)
@@ -1354,8 +1353,7 @@ class Application(object):
 
                     # Send machine learning events
 
-                    # TODO Fix this with actual settings names
-                    if configuration.collect_custom_events and configuration.custom_insights_events.enabled:
+                    if configuration.machine_learning and configuration.machine_learning.inference_events.enabled:
                         ml_events = stats.ml_events
 
                         if ml_events:

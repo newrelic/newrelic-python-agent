@@ -778,6 +778,10 @@ _settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_in
     "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", CUSTOM_EVENT_RESERVOIR_SIZE
 )
 
+_settings.event_harvest_config.harvest_limits.ml_event_data = _environ_as_int(
+    "NEW_RELIC_ML_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", ML_EVENT_RESERVOIR_SIZE
+)
+
 _settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
     "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", SPAN_EVENT_RESERVOIR_SIZE
 )
@@ -1114,13 +1118,6 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     for name, value in server_side_config.items():
         apply_config_setting(settings_snapshot, name, value)
 
-    # TODO: override ml_events / 5 s harvest
-    apply_config_setting(
-        settings_snapshot.event_harvest_config.harvest_limits.ml_event_data,
-        "event_harvest_config.harvest_limits.ml_event_data",
-        event_harvest_config.harvest_limits.ml_event_data / 12,
-    )
-
     event_harvest_config = server_side_config.get("event_harvest_config", {})
     harvest_limits = event_harvest_config.get("harvest_limits", ())
     apply_config_setting(settings_snapshot, "event_harvest_config.allowlist", frozenset(harvest_limits))
@@ -1132,6 +1129,16 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         apply_config_setting(
             settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
         )
+
+    # Since the server does not override this setting as it's an OTLP setting,
+    # we must override it here manually by converting it into a per harvest cycle
+    # value.
+    # TODO: override ml_events / (60s/5s) harvest
+    apply_config_setting(
+        settings_snapshot,
+        "event_harvest_config.harvest_limits.ml_event_data",
+        settings_snapshot.event_harvest_config.harvest_limits.ml_event_data / 12,
+    )
 
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of

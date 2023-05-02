@@ -1626,8 +1626,7 @@ class Transaction(object):
         if not settings:
             return
 
-        # TODO Fix settings
-        if not settings.custom_insights_events.enabled:
+        if not settings.machine_learning.inference_events.enabled:
             return
 
         event = create_custom_event(event_type, params)

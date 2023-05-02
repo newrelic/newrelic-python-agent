@@ -876,6 +876,23 @@ class Application(object):
                 self._global_events_account += 1
                 self._stats_engine.record_custom_event(event)
 
+    def record_ml_event(self, event_type, params):
+        if not self._active_session:
+            return
+
+        settings = self._stats_engine.settings
+
+        # TODO Fix this with actual settings
+        if settings is None or not settings.custom_insights_events.enabled:
+            return
+
+        event = create_custom_event(event_type, params)
+
+        if event:
+            with self._stats_custom_lock:
+                self._global_events_account += 1
+                self._stats_engine.record_ml_event(event)
+
     def record_log_event(self, message, level=None, timestamp=None, priority=None):
         if not self._active_session:
             return
@@ -1334,6 +1351,27 @@ class Application(object):
                             internal_count_metric("Supportability/Events/Customer/Sent", customs.num_samples)
 
                             stats.reset_custom_events()
+
+                    # Send machine learning events
+
+                    # TODO Fix this with actual settings names
+                    if configuration.collect_custom_events and configuration.custom_insights_events.enabled:
+                        ml_events = stats.ml_events
+
+                        if ml_events:
+                            if ml_events.num_samples > 0:
+                                ml_event_samples = list(ml_events)
+
+                                _logger.debug("Sending machine learning event data for harvest of %r.", self._app_name)
+
+                                self._active_session.send_ml_events(ml_events.sampling_info, ml_event_samples)
+                                ml_event_samples = None
+
+                            # As per spec
+                            internal_count_metric("Supportability/Events/Customer/Seen", ml_events.num_seen)
+                            internal_count_metric("Supportability/Events/Customer/Sent", ml_events.num_samples)
+
+                            stats.reset_ml_events()
 
                     # Send log events
 

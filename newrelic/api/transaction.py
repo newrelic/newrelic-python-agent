@@ -60,7 +60,11 @@ from newrelic.core.attribute_filter import (
     DST_NONE,
     DST_TRANSACTION_TRACER,
 )
-from newrelic.core.config import CUSTOM_EVENT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
+from newrelic.core.config import (
+    CUSTOM_EVENT_RESERVOIR_SIZE,
+    LOG_EVENT_RESERVOIR_SIZE,
+    ML_EVENT_RESERVOIR_SIZE,
+)
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.stack_trace import exception_stack
@@ -330,12 +334,15 @@ class Transaction(object):
             self._custom_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data
             )
+            # TODO Fix this with actual setting
+            self._ml_events = SampledDataSet(capacity=ML_EVENT_RESERVOIR_SIZE)
             self._log_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.log_event_data
             )
         else:
             self._custom_events = SampledDataSet(capacity=CUSTOM_EVENT_RESERVOIR_SIZE)
             self._log_events = SampledDataSet(capacity=LOG_EVENT_RESERVOIR_SIZE)
+            self._ml_events = SampledDataSet(capacity=ML_EVENT_RESERVOIR_SIZE)
 
     def __del__(self):
         self._dead = True
@@ -584,6 +591,7 @@ class Transaction(object):
             errors=tuple(self._errors),
             slow_sql=tuple(self._slow_sql),
             custom_events=self._custom_events,
+            ml_events=self._ml_events,
             log_events=self._log_events,
             apdex_t=self.apdex,
             suppress_apdex=self.suppress_apdex,
@@ -1613,6 +1621,20 @@ class Transaction(object):
         if event:
             self._custom_events.add(event, priority=self.priority)
 
+    def record_ml_event(self, event_type, params):
+        settings = self._settings
+
+        if not settings:
+            return
+
+        # TODO Fix settings
+        if not settings.custom_insights_events.enabled:
+            return
+
+        event = create_custom_event(event_type, params)
+        if event:
+            self._ml_events.add(event, priority=self.priority)
+
     def _intern_string(self, value):
         return self._string_cache.setdefault(value, value)
 
@@ -1924,6 +1946,34 @@ def record_custom_event(event_type, params, application=None):
             )
     elif application.enabled:
         application.record_custom_event(event_type, params)
+
+
+def record_ml_event(event_type, params, application=None):
+    """Record a machine learning custom event.
+
+    Args:
+        event_type (str): The type (name) of the ml event.
+        params (dict): Attributes to add to the event.
+        application (newrelic.api.Application): Application instance.
+
+    """
+
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_ml_event(event_type, params)
+        else:
+            _logger.debug(
+                "record_ml_event has been called but no "
+                "transaction was running. As a result, the following event "
+                "has not been recorded. event_type: %r params: %r. To correct "
+                "this problem, supply an application object as a parameter to "
+                "this record_ml_event call.",
+                event_type,
+                params,
+            )
+    elif application.enabled:
+        application.record_ml_event(event_type, params)
 
 
 def record_log_event(message, level=None, timestamp=None, application=None, priority=None):

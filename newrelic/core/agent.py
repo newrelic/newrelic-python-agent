@@ -531,6 +531,13 @@ class Agent(object):
 
         application.record_custom_event(event_type, params)
 
+    def record_ml_event(self, app_name, event_type, params):
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_ml_event(event_type, params)
+
     def record_log_event(self, app_name, message, level=None, timestamp=None, priority=None):
         application = self._applications.get(app_name, None)
         if application is None or not application.active:

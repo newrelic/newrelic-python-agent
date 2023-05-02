@@ -2675,11 +2675,11 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "redis.asyncio.client", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
+        "redis.asyncio.client", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_client"
     )
 
     _process_module_definition(
-        "redis.asyncio.commands", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
+        "redis.asyncio.commands", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_client"
     )
 
     _process_module_definition(

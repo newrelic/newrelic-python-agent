@@ -39,6 +39,7 @@ def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     else:
         handler = view.http_method_not_allowed
 
+    view_func = getattr(view, '_nr_view_func', None)
     view_func_callable_name = getattr(view, '_nr_view_func_callable_name',
             None)
     if view_func_callable_name:
@@ -56,7 +57,7 @@ def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     view.handle_exception = _nr_wrapper_APIView_handle_exception_(
             view.handle_exception, request)
 
-    with FunctionTrace(name):
+    with FunctionTrace(name=name, source=view_func or handler):
         return wrapped(*args, **kwargs)
 
 
@@ -77,6 +78,7 @@ def _nr_wrapper_api_view_decorator_(wrapped, instance, args, kwargs):
     view = wrapped(*args, **kwargs)
 
     view.cls._nr_view_func_callable_name = callable_name(func)
+    view.cls._nr_view_func = func
 
     return view
 

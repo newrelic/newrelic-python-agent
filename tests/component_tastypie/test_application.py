@@ -16,11 +16,15 @@ import pytest
 import six
 import webtest
 
+from tastypie import VERSION
+
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 
-from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_ignore_status_codes)
+from testing_support.fixtures import override_ignore_status_codes
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 from wsgi import application
 
@@ -39,6 +43,7 @@ _test_application_index_scoped_metrics.append(
         ('Function/views:index', 1))
 
 
+@validate_code_level_metrics("views", "index")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:index',
         scoped_metrics=_test_application_index_scoped_metrics)
@@ -64,7 +69,6 @@ class TastyPieFullDebugMode(object):
 
 _test_api_base_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
-        ('Function/django.urls.resolvers:RegexURLResolver.resolve', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
@@ -76,6 +80,13 @@ if six.PY3:
 else:
     _test_api_base_scoped_metrics.append(
             ('Function/tastypie.resources:wrapper', 1))
+
+# django < 1.12 used the RegexURLResolver class and this was updated to URLResolver in later versions
+if VERSION <= (0, 14, 3) and not six.PY3:
+    _test_api_base_scoped_metrics.append(('Function/django.urls.resolvers:RegexURLResolver.resolve', 1))
+else:
+    _test_api_base_scoped_metrics.append(('Function/django.urls.resolvers:URLResolver.resolve', 1))
+
 
 _test_application_not_found_scoped_metrics = list(
         _test_api_base_scoped_metrics)

@@ -15,14 +15,17 @@
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import ignore_transaction, end_of_transaction
 
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 from tasks import add, tsum
 
+
 @validate_transaction_metrics(
         name='test_celery:test_celery_task_as_function_trace',
-        scoped_metrics=[('Function/tasks:add.__call__', 1)],
+        scoped_metrics=[('Function/tasks.add', 1)],
         background_task=True)
+@validate_code_level_metrics("tasks", "add")
 @background_task()
 def test_celery_task_as_function_trace():
     """
@@ -39,6 +42,7 @@ def test_celery_task_as_function_trace():
         group='Celery',
         scoped_metrics=[],
         background_task=True)
+@validate_code_level_metrics("tasks", "add")
 def test_celery_task_as_background_task():
     """
     Calling add() outside of a transaction means the agent will create
@@ -51,9 +55,10 @@ def test_celery_task_as_background_task():
 
 @validate_transaction_metrics(
         name='test_celery:test_celery_tasks_multiple_function_traces',
-        scoped_metrics=[('Function/tasks:add.__call__', 1),
-                        ('Function/tasks:tsum.__call__', 1)],
+        scoped_metrics=[('Function/tasks.add', 1),
+                        ('Function/tasks.tsum', 1)],
         background_task=True)
+@validate_code_level_metrics("tasks", "tsum")
 @background_task()
 def test_celery_tasks_multiple_function_traces():
     add_result = add(5, 6)
@@ -82,7 +87,7 @@ def test_celery_tasks_ignore_transaction():
 
 @validate_transaction_metrics(
         name='test_celery:test_celery_tasks_end_transaction',
-        scoped_metrics=[('Function/tasks:add.__call__', 1)],
+        scoped_metrics=[('Function/tasks.add', 1)],
         background_task=True)
 @background_task()
 def test_celery_tasks_end_transaction():

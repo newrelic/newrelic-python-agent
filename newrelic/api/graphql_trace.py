@@ -20,14 +20,15 @@ from newrelic.common.async_wrapper import async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.graphql_node import GraphQLOperationNode, GraphQLResolverNode
 
+
 class GraphQLOperationTrace(TimeTrace):
     def __init__(self, **kwargs):
-        parent = None
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs['parent']
-        super(GraphQLOperationTrace, self).__init__(parent)
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(GraphQLOperationTrace, self).__init__(parent=parent, source=source)
 
         self.operation_name = "<anonymous>"
         self.operation_type = "<unknown>"
@@ -35,9 +36,19 @@ class GraphQLOperationTrace(TimeTrace):
         self.graphql = None
         self.graphql_format = None
         self.statement = None
+        self.product = "GraphQL"
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict())
+        return "<%s object at 0x%x %s>" % (
+            self.__class__.__name__,
+            id(self),
+            dict(
+                operation_name=self.operation_name,
+                operation_type=self.operation_type,
+                deepest_path=self.deepest_path,
+                graphql=self.graphql,
+            ),
+        )
 
     @property
     def formatted(self):
@@ -58,8 +69,13 @@ class GraphQLOperationTrace(TimeTrace):
         self._add_agent_attribute("graphql.operation.type", self.operation_type)
         self._add_agent_attribute("graphql.operation.name", self.operation_name)
 
+        settings = transaction.settings
+        if settings and settings.agent_limits and settings.agent_limits.sql_query_length_maximum:
+            limit = transaction.settings.agent_limits.sql_query_length_maximum
+        else:
+            limit = 0
+
         # Attach formatted graphql
-        limit = transaction.settings.agent_limits.sql_query_length_maximum
         self.graphql = graphql = self.formatted[:limit]
         self._add_agent_attribute("graphql.operation.query", graphql)
 
@@ -79,7 +95,18 @@ class GraphQLOperationTrace(TimeTrace):
             operation_type=self.operation_type,
             deepest_path=self.deepest_path,
             graphql=self.graphql,
+            product=self.product,
         )
+
+    def set_transaction_name(self, priority=None):
+        transaction = current_transaction()
+        if transaction:
+            name = (
+                "%s/%s/%s" % (self.operation_type, self.operation_name, self.deepest_path)
+                if self.deepest_path
+                else "%s/%s" % (self.operation_type, self.operation_name)
+            )
+            transaction.set_transaction_name(name, "GraphQL", priority=priority)
 
 
 def GraphQLOperationTraceWrapper(wrapped):
@@ -92,9 +119,9 @@ def GraphQLOperationTraceWrapper(wrapped):
         else:
             parent = None
 
-        trace = GraphQLOperationTrace(parent=parent)
+        trace = GraphQLOperationTrace(parent=parent, source=wrapped)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
@@ -106,17 +133,45 @@ def GraphQLOperationTraceWrapper(wrapped):
 def graphql_operation_trace():
     return functools.partial(GraphQLOperationTraceWrapper)
 
+
 def wrap_graphql_operation_trace(module, object_path):
     wrap_object(module, object_path, GraphQLOperationTraceWrapper)
 
 
 class GraphQLResolverTrace(TimeTrace):
     def __init__(self, field_name=None, **kwargs):
-        super(GraphQLResolverTrace, self).__init__(**kwargs)
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
+        if kwargs:
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(GraphQLResolverTrace, self).__init__(parent=parent, source=source)
+
         self.field_name = field_name
+        self._product = None
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict())
+        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), dict(field_name=self.field_name))
+
+    def __enter__(self):
+        super(GraphQLResolverTrace, self).__enter__()
+        _ = self.product  # Cache product value
+        return self
+
+    @property
+    def product(self):
+        if not self._product:
+            # Find GraphQLOperationTrace to obtain stored product info
+            parent = self  # init to self for loop start
+            while parent is not None and not isinstance(parent, GraphQLOperationTrace):
+                parent = getattr(parent, "parent", None)
+
+            if parent is not None:
+                self._product = getattr(parent, "product", "GraphQL")
+            else:
+                self._product = "GraphQL"
+
+        return self._product
 
     def finalize_data(self, *args, **kwargs):
         self._add_agent_attribute("graphql.field.name", self.field_name)
@@ -134,6 +189,7 @@ class GraphQLResolverTrace(TimeTrace):
             guid=self.guid,
             agent_attributes=self.agent_attributes,
             user_attributes=self.user_attributes,
+            product=self.product,
         )
 
 
@@ -147,9 +203,9 @@ def GraphQLResolverTraceWrapper(wrapped):
         else:
             parent = None
 
-        trace = GraphQLResolverTrace(parent=parent)
+        trace = GraphQLResolverTrace(parent=parent, source=wrapped)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
@@ -160,6 +216,7 @@ def GraphQLResolverTraceWrapper(wrapped):
 
 def graphql_resolver_trace():
     return functools.partial(GraphQLResolverTraceWrapper)
+
 
 def wrap_graphql_resolver_trace(module, object_path):
     wrap_object(module, object_path, GraphQLResolverTraceWrapper)

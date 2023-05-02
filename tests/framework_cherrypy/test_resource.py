@@ -14,7 +14,8 @@
 
 import webtest
 
-from testing_support.fixtures import validate_transaction_errors
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 import cherrypy
 
@@ -32,6 +33,7 @@ conf = { '/': { 'request.dispatch': dispatcher } }
 application = cherrypy.Application(Resource(), '/', conf)
 test_application = webtest.TestApp(application)
 
+@validate_code_level_metrics("test_resource.Resource", "GET")
 @validate_transaction_errors(errors=[])
 def test_resource_get():
     response = test_application.get('')

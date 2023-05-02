@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_application_settings,
+from testing_support.fixtures import (
+    override_application_settings,
     override_generic_settings, override_ignore_status_codes)
-
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from newrelic.hooks.framework_django import django_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
 import os
 
@@ -118,6 +120,7 @@ elif DJANGO_VERSION < (1, 10):
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:index',
         scoped_metrics=_test_application_index_scoped_metrics)
+@validate_code_level_metrics("views", "index")
 def test_application_index():
     test_application = target_application()
     response = test_application.get('')
@@ -125,6 +128,7 @@ def test_application_index():
 
 
 @validate_transaction_metrics('views:exception')
+@validate_code_level_metrics("views", "exception")
 def test_application_exception():
     test_application = target_application()
     test_application.get('/exception', status=500)
@@ -179,6 +183,7 @@ def test_application_not_found():
 @override_ignore_status_codes([403])
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:permission_denied')
+@validate_code_level_metrics("views", "permission_denied")
 def test_ignored_status_code():
     test_application = target_application()
     test_application.get('/permission_denied', status=403)
@@ -187,6 +192,7 @@ def test_ignored_status_code():
 @override_ignore_status_codes([410])
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:middleware_410')
+@validate_code_level_metrics("views", "middleware_410")
 def test_middleware_ignore_status_codes():
     test_application = target_application()
     test_application.get('/middleware_410', status=410)
@@ -229,6 +235,7 @@ elif DJANGO_VERSION < (1, 10):
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:MyView.get',
         scoped_metrics=_test_application_cbv_scoped_metrics)
+@validate_code_level_metrics("views.MyView", "get")
 def test_application_cbv():
     test_application = target_application()
     response = test_application.get('/cbv')
@@ -272,6 +279,7 @@ elif DJANGO_VERSION < (1, 10):
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:deferred_cbv',
         scoped_metrics=_test_application_deferred_cbv_scoped_metrics)
+@validate_code_level_metrics("views", "deferred_cbv")
 def test_application_deferred_cbv():
     test_application = target_application()
     response = test_application.get('/deferred_cbv')
@@ -450,6 +458,7 @@ except ValueError:
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',
         scoped_metrics=_test_application_inclusion_tag_scoped_metrics)
+@validate_code_level_metrics("views", "inclusion_tag")
 def test_application_inclusion_tag():
     test_application = target_application()
     response = test_application.get('/inclusion_tag')
@@ -507,6 +516,7 @@ except ValueError:
 @validate_transaction_metrics('views:inclusion_tag',
         scoped_metrics=_test_inclusion_tag_template_tags_scoped_metrics)
 @override_generic_settings(django_settings, _test_inclusion_tag_settings)
+@validate_code_level_metrics("views", "inclusion_tag")
 def test_inclusion_tag_template_tag_metric():
     test_application = target_application()
     response = test_application.get('/inclusion_tag')
@@ -567,6 +577,7 @@ _test_template_render_exception_function_scoped_metrics.extend([
 @validate_transaction_errors(errors=_test_template_render_exception_errors)
 @validate_transaction_metrics('views:render_exception_function',
         scoped_metrics=_test_template_render_exception_function_scoped_metrics)
+@validate_code_level_metrics("views", "render_exception_function")
 def test_template_render_exception_function():
     test_application = target_application()
     test_application.get('/render_exception_function', status=500)
@@ -583,6 +594,7 @@ _test_template_render_exception_class_scoped_metrics.extend([
 @validate_transaction_errors(errors=_test_template_render_exception_errors)
 @validate_transaction_metrics('views:RenderExceptionClass.get',
         scoped_metrics=_test_template_render_exception_class_scoped_metrics)
+@validate_code_level_metrics("views.RenderExceptionClass", "get")
 def test_template_render_exception_class():
     test_application = target_application()
     test_application.get('/render_exception_class', status=500)

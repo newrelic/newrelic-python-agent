@@ -24,8 +24,7 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_function_wrapper,
 )
-from newrelic.core.config import should_ignore_error
-from newrelic.core.trace_cache import trace_cache
+from newrelic.core.context import ContextOf, context_wrapper
 
 
 def framework_details():
@@ -42,30 +41,10 @@ def bind_exc(request, exc, *args, **kwargs):
     return exc
 
 
-class RequestContext(object):
-    def __init__(self, request):
-        self.request = request
-        self.force_propagate = False
-        self.thread_id = None
-
-    def __enter__(self):
-        trace = getattr(self.request, "_nr_trace", None)
-        self.force_propagate = trace and current_trace() is None
-
-        # Propagate trace context onto the current task
-        if self.force_propagate:
-            self.thread_id = trace_cache().thread_start(trace)
-
-    def __exit__(self, exc, value, tb):
-        # Remove any context from the current thread as it was force propagated above
-        if self.force_propagate:
-            trace_cache().thread_stop(self.thread_id)
-
-
 @function_wrapper
 def route_naming_wrapper(wrapped, instance, args, kwargs):
 
-    with RequestContext(bind_request(*args, **kwargs)):
+    with ContextOf(request=bind_request(*args, **kwargs)):
         transaction = current_transaction()
         if transaction:
             transaction.set_transaction_name(callable_name(wrapped), priority=2)
@@ -82,7 +61,20 @@ def bind_add_exception_handler(exc_class_or_status_code, handler, *args, **kwarg
 
 def wrap_route(wrapped, instance, args, kwargs):
     path, endpoint, args, kwargs = bind_endpoint(*args, **kwargs)
-    endpoint = route_naming_wrapper(FunctionTraceWrapper(endpoint))
+    endpoint = FunctionTraceWrapper(endpoint)
+
+    # Starlette name detection gets a bit confused with our wrappers
+    # so the get_name function should be called and the result should
+    # be cached on the wrapper.
+    try:
+        if not hasattr(endpoint, "__name__"):
+            from starlette.routing import get_name
+
+            endpoint.__name__ = get_name(endpoint.__wrapped__)
+    except Exception:
+        pass
+
+    endpoint = route_naming_wrapper(endpoint)
     return wrapped(path, endpoint, *args, **kwargs)
 
 
@@ -135,16 +127,14 @@ def wrap_add_middleware(wrapped, instance, args, kwargs):
     return wrapped(wrap_middleware(middleware), *args, **kwargs)
 
 
-def bind_middleware_starlette(
-    debug=False, routes=None, middleware=None, *args, **kwargs
-):
+def bind_middleware_starlette(debug=False, routes=None, middleware=None, *args, **kwargs):  # pylint: disable=W1113
     return middleware
 
 
 def wrap_starlette(wrapped, instance, args, kwargs):
     middlewares = bind_middleware_starlette(*args, **kwargs)
     if middlewares:
-        for middleware in middlewares:
+        for middleware in middlewares:  # pylint: disable=E1133
             cls = getattr(middleware, "cls", None)
             if cls and not hasattr(cls, "__wrapped__"):
                 middleware.cls = wrap_middleware(cls)
@@ -152,14 +142,20 @@ def wrap_starlette(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def status_code(response):
+    code = getattr(response, "status_code", None)
+
+    def _status_code(exc, value, tb):
+        return code
+
+    return _status_code
+
+
 def record_response_error(response, value):
-    status_code = getattr(response, "status_code", None)
     exc = getattr(value, "__class__", None)
     tb = getattr(value, "__traceback__", None)
-    if should_ignore_error((exc, value, tb), status_code):
-        value._nr_ignored = True
-    else:
-        notice_error((exc, value, tb))
+
+    notice_error((exc, value, tb), status_code=status_code(response))
 
 
 async def wrap_exception_handler_async(coro, exc):
@@ -170,11 +166,9 @@ async def wrap_exception_handler_async(coro, exc):
 
 def wrap_exception_handler(wrapped, instance, args, kwargs):
     if is_coroutine_function(wrapped):
-        return wrap_exception_handler_async(
-            FunctionTraceWrapper(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs)
-        )
+        return wrap_exception_handler_async(FunctionTraceWrapper(wrapped)(*args, **kwargs), bind_exc(*args, **kwargs))
     else:
-        with RequestContext(bind_request(*args, **kwargs)):
+        with ContextOf(request=bind_request(*args, **kwargs)):
             response = FunctionTraceWrapper(wrapped)(*args, **kwargs)
             record_response_error(response, bind_exc(*args, **kwargs))
             return response
@@ -189,9 +183,7 @@ def wrap_server_error_handler(wrapped, instance, args, kwargs):
 
 
 def wrap_add_exception_handler(wrapped, instance, args, kwargs):
-    exc_class_or_status_code, handler, args, kwargs = bind_add_exception_handler(
-        *args, **kwargs
-    )
+    exc_class_or_status_code, handler, args, kwargs = bind_add_exception_handler(*args, **kwargs)
     handler = FunctionWrapper(handler, wrap_exception_handler)
     return wrapped(exc_class_or_status_code, handler, *args, **kwargs)
 
@@ -202,6 +194,23 @@ def error_middleware_wrapper(wrapped, instance, args, kwargs):
         transaction.set_transaction_name(callable_name(wrapped), priority=1)
 
     return FunctionTraceWrapper(wrapped)(*args, **kwargs)
+
+
+def bind_run_in_threadpool(func, *args, **kwargs):
+    return func, args, kwargs
+
+
+async def wrap_run_in_threadpool(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    trace = current_trace()
+
+    if not transaction or not trace:
+        return await wrapped(*args, **kwargs)
+
+    func, args, kwargs = bind_run_in_threadpool(*args, **kwargs)
+    func = context_wrapper(func, trace)
+
+    return await wrapped(func, *args, **kwargs)
 
 
 def instrument_starlette_applications(module):
@@ -223,36 +232,38 @@ def instrument_starlette_requests(module):
 
 
 def instrument_starlette_middleware_errors(module):
-    wrap_function_wrapper(
-        module, "ServerErrorMiddleware.__call__", error_middleware_wrapper
-    )
+    wrap_function_wrapper(module, "ServerErrorMiddleware.__call__", error_middleware_wrapper)
 
-    wrap_function_wrapper(
-        module, "ServerErrorMiddleware.__init__", wrap_server_error_handler
-    )
+    wrap_function_wrapper(module, "ServerErrorMiddleware.__init__", wrap_server_error_handler)
 
-    wrap_function_wrapper(
-        module, "ServerErrorMiddleware.error_response", wrap_exception_handler
-    )
+    wrap_function_wrapper(module, "ServerErrorMiddleware.error_response", wrap_exception_handler)
 
-    wrap_function_wrapper(
-        module, "ServerErrorMiddleware.debug_response", wrap_exception_handler
-    )
+    wrap_function_wrapper(module, "ServerErrorMiddleware.debug_response", wrap_exception_handler)
+
+
+def instrument_starlette_middleware_exceptions(module):
+    wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
+
+    wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
+
+    wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)
 
 
 def instrument_starlette_exceptions(module):
-    wrap_function_wrapper(
-        module, "ExceptionMiddleware.__call__", error_middleware_wrapper
-    )
+    # ExceptionMiddleware was moved to starlette.middleware.exceptions, need to check
+    # that it isn't being imported through a deprecation and double wrapped.
+    if not hasattr(module, "__deprecated__"):
 
-    wrap_function_wrapper(
-        module, "ExceptionMiddleware.http_exception", wrap_exception_handler
-    )
+        wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
 
-    wrap_function_wrapper(
-        module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler
-    )
+        wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)
+
+        wrap_function_wrapper(module, "ExceptionMiddleware.add_exception_handler", wrap_add_exception_handler)
 
 
 def instrument_starlette_background_task(module):
     wrap_function_wrapper(module, "BackgroundTask.__call__", wrap_background_method)
+
+
+def instrument_starlette_concurrency(module):
+    wrap_function_wrapper(module, "run_in_threadpool", wrap_run_in_threadpool)

@@ -18,10 +18,10 @@ import moto
 import pytest
 
 from newrelic.api.background_task import background_task
-from testing_support.fixtures import (validate_transaction_metrics,
+from testing_support.fixtures import (
         validate_tt_segment_params, override_application_settings)
-from testing_support.validators.validate_span_events import (
-        validate_span_events)
+from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 MOTO_VERSION = tuple(int(v) for v in moto.__version__.split('.')[:3])
 

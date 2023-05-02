@@ -12,25 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import logging
+
 import pytest
+from testing_support.asgi_testing import AsgiTest
+from testing_support.fixtures import override_application_settings
 from testing_support.sample_asgi_applications import (
-    simple_app_v2_raw,
-    simple_app_v3_raw,
-    simple_app_v2,
-    simple_app_v3,
     AppWithDescriptor,
+    simple_app_v2,
     simple_app_v2_init_exc,
+    simple_app_v2_raw,
+    simple_app_v3,
+    simple_app_v3_raw,
 )
-from testing_support.fixtures import (
-    validate_transaction_metrics,
-    override_application_settings,
-    function_not_called,
+from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
 )
-from newrelic.api.asgi_application import asgi_application, ASGIApplicationWrapper
-from testing_support.asgi_testing import AsgiTest
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.asgi_application import ASGIApplicationWrapper, asgi_application
 
 # Setup test apps from sample_asgi_applications.py
 simple_app_v2_original = AsgiTest(simple_app_v2_raw)
@@ -89,9 +91,7 @@ def test_double_callable_raw():
 
 
 # Test asgi_application decorator with parameters passed in on a single callable
-@pytest.mark.parametrize(
-    "name, group", ((None, "group"), ("name", "group"), ("", "group"))
-)
+@pytest.mark.parametrize("name, group", ((None, "group"), ("name", "group"), ("", "group")))
 def test_asgi_application_decorator_single_callable(name, group):
     if name:
         expected_name = name
@@ -125,14 +125,31 @@ def test_asgi_application_decorator_no_params_double_callable():
     assert response.body == b""
 
 
-# Test for presence of framework info based on whether framework is specified
+# Test for presence of framework and dispatcher info based on whether framework is specified
 @validate_transaction_metrics(
-    name="test", custom_metrics=[("Python/Framework/framework/v1", 1)]
+    name="test", custom_metrics=[("Python/Framework/framework/v1", 1), ("Python/Dispatcher/dispatcher/v1.0.0", 1)]
 )
-def test_framework_metrics():
-    asgi_decorator = asgi_application(name="test", framework=("framework", "v1"))
+def test_dispatcher_and_framework_metrics():
+    asgi_decorator = asgi_application(name="test", framework=("framework", "v1"), dispatcher=("dispatcher", "v1.0.0"))
     decorated_application = asgi_decorator(simple_app_v2_raw)
     application = AsgiTest(decorated_application)
+    application.make_request("GET", "/")
+
+
+# Test for presence of framework and dispatcher info under existing transaction
+@validate_transaction_metrics(
+    name="test", custom_metrics=[("Python/Framework/framework/v1", 1), ("Python/Dispatcher/dispatcher/v1.0.0", 1)]
+)
+def test_double_wrapped_dispatcher_and_framework_metrics():
+    inner_asgi_decorator = asgi_application(
+        name="test", framework=("framework", "v1"), dispatcher=("dispatcher", "v1.0.0")
+    )
+    decorated_application = inner_asgi_decorator(simple_app_v2_raw)
+
+    outer_asgi_decorator = asgi_application(name="double_wrapped")
+    double_decorated_application = outer_asgi_decorator(decorated_application)
+
+    application = AsgiTest(double_decorated_application)
     application.make_request("GET", "/")
 
 
@@ -158,28 +175,24 @@ def test_multiple_calls_to_asgi_wrapper(caplog):
     assert not caplog.records
 
 
-def test_non_http_scope_v3():
+def test_non_http_scope_v3(event_loop):
     async def _test():
         await simple_app_v3({"type": "cookies"}, None, None)
 
-    loop = asyncio.get_event_loop()
     with pytest.raises(ValueError):
-        loop.run_until_complete(_test())
+        event_loop.run_until_complete(_test())
 
 
-def test_non_http_scope_v2():
+def test_non_http_scope_v2(event_loop):
     async def _test():
         call_me = simple_app_v2({"type": "cookies"})
         await call_me(None, None)
 
-    loop = asyncio.get_event_loop()
     with pytest.raises(ValueError):
-        loop.run_until_complete(_test())
+        event_loop.run_until_complete(_test())
 
 
-@pytest.mark.parametrize(
-    "app", (simple_app_v3_wrapped, simple_app_v2_wrapped, simple_app_v2_init_exc)
-)
+@pytest.mark.parametrize("app", (simple_app_v3_wrapped, simple_app_v2_wrapped, simple_app_v2_init_exc))
 @validate_transaction_errors(errors=["builtins:ValueError"])
 def test_exception_capture(app):
     with pytest.raises(ValueError):

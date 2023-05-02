@@ -19,7 +19,7 @@ import six
 from newrelic.api.background_task import background_task
 
 from conftest import QUEUE, BODY
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.db_settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()[0]

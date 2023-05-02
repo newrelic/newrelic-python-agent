@@ -1,0 +1,18 @@
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint.messages_control]
+disable = "C0103,C0114,C0115,C0116,C0209,C0302,C0415,E0401,E1120,R0205,R0401,R0801,R0902,R0903,R0904,R0911,R0912,R0913,R0914,R0915,R1705,R1710,R1725,W0201,W0212,W0223,W0402,W0603,W0612,W0613,W0702,W0703,W0706,line-too-long,redefined-outer-name"
+
+[tool.pylint.format]
+max-line-length = "120"
+
+[tool.pylint.basic]
+good-names = "exc,val,tb"
+
+[tool.bandit]
+skips = ["B110", "B101", "B404"]

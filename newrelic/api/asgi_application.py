@@ -12,22 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import functools
+import sys
 
-import newrelic.packages.asgiref_compatibility as asgiref_compatibility
-import newrelic.packages.six as six
-from newrelic.api.transaction import current_transaction
 from newrelic.api.application import application_instance
+from newrelic.api.html_insertion import insert_html_snippet, verify_body_exists
+from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
+from newrelic.common.async_proxy import CoroutineProxy, LoopContext
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (
-    wrap_object,
     FunctionWrapper,
     function_wrapper,
+    wrap_object,
 )
-from newrelic.common.async_proxy import CoroutineProxy, LoopContext
-from newrelic.api.html_insertion import insert_html_snippet, verify_body_exists
+from newrelic.packages import asgiref_compatibility, six
 
 
 def _bind_scope(scope, *args, **kwargs):
@@ -120,10 +119,7 @@ class ASGIBrowserMiddleware(object):
         if content_type is None:
             return False
 
-        if (
-            content_disposition is not None
-            and content_disposition.split(b";", 1)[0].strip().lower() == b"attachment"
-        ):
+        if content_disposition is not None and content_disposition.split(b";", 1)[0].strip().lower() == b"attachment":
             return False
 
         allowed_content_type = self.transaction.settings.browser_monitoring.content_type
@@ -168,9 +164,7 @@ class ASGIBrowserMiddleware(object):
                 footer = self.transaction.browser_timing_footer()
                 browser_agent_data = six.b(header) + six.b(footer)
 
-                body = insert_html_snippet(
-                    self.body, lambda: browser_agent_data, self.search_maximum
-                )
+                body = insert_html_snippet(self.body, lambda: browser_agent_data, self.search_maximum)
 
                 # If we have inserted the browser agent
                 if len(body) != len(self.body):
@@ -182,7 +176,7 @@ class ASGIBrowserMiddleware(object):
                         if header_name.lower() == b"content-length":
                             break
                     else:
-                        header_value = None
+                        header_value, header_index = None, None
 
                     try:
                         content_length = int(header_value)
@@ -221,7 +215,7 @@ class ASGIBrowserMiddleware(object):
 
 
 class ASGIWebTransaction(WebTransaction):
-    def __init__(self, application, scope, receive, send):
+    def __init__(self, application, scope, receive, send, source=None):
         self.receive = receive
         self._send = send
         scheme = scope.get("scheme", "http")
@@ -243,21 +237,14 @@ class ASGIWebTransaction(WebTransaction):
             request_path=request_path,
             query_string=query_string,
             headers=headers,
+            source=source,
         )
 
         if self._settings:
             self.capture_params = self._settings.capture_params
 
-    def __exit__(self, exc, value, tb):
-        if getattr(value, "_nr_ignored", False):
-            exc, value, tb = None, None, None
-        return super(ASGIWebTransaction, self).__exit__(exc, value, tb)
-
     async def send(self, event):
-        if (
-                event["type"] == "http.response.body"
-                and not event.get("more_body", False)
-        ):
+        if event["type"] == "http.response.body" and not event.get("more_body", False):
             try:
                 return await self._send(event)
             finally:
@@ -267,9 +254,7 @@ class ASGIWebTransaction(WebTransaction):
         return await self._send(event)
 
 
-def ASGIApplicationWrapper(
-    wrapped, application=None, name=None, group=None, framework=None
-):
+def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None, dispatcher=None):
     def nr_asgi_wrapper(wrapped, instance, args, kwargs):
         double_callable = asgiref_compatibility.is_double_callable(wrapped)
         if double_callable:
@@ -286,9 +271,7 @@ def ASGIApplicationWrapper(
             # Check to see if any transaction is present, even an inactive
             # one which has been marked to be ignored or which has been
             # stopped already.
-
             transaction = current_transaction(active_only=False)
-
             if transaction:
                 # If there is any active transaction we will return without
                 # applying a new ASGI application wrapper context. In the
@@ -303,9 +286,10 @@ def ASGIApplicationWrapper(
                 # supportability metrics.
 
                 if framework:
-                    transaction.add_framework_info(
-                        name=framework[0], version=framework[1]
-                    )
+                    transaction.add_framework_info(name=framework[0], version=framework[1])
+
+                if dispatcher:
+                    transaction.add_dispatcher_info(name=dispatcher[0], version=dispatcher[1])
 
                 # Also override the web transaction name to be the name of
                 # the wrapped callable if not explicitly named, and we want
@@ -320,9 +304,7 @@ def ASGIApplicationWrapper(
                     if framework is not None:
                         naming_scheme = settings.transaction_name.naming_scheme
                         if naming_scheme in (None, "framework"):
-                            transaction.set_transaction_name(
-                                callable_name(wrapped), priority=1
-                            )
+                            transaction.set_transaction_name(callable_name(wrapped), priority=1)
 
                 elif name:
                     transaction.set_transaction_name(name, group, priority=1)
@@ -334,14 +316,16 @@ def ASGIApplicationWrapper(
                 scope=scope,
                 receive=receive,
                 send=send,
+                source=wrapped,
             ) as transaction:
 
                 # Record details of framework against the transaction for later
                 # reporting as supportability metrics.
                 if framework:
-                    transaction.add_framework_info(
-                        name=framework[0], version=framework[1]
-                    )
+                    transaction.add_framework_info(name=framework[0], version=framework[1])
+
+                if dispatcher:
+                    transaction.add_dispatcher_info(name=dispatcher[0], version=dispatcher[1])
 
                 # Override the initial web transaction name to be the supplied
                 # name, or the name of the wrapped callable if wanting to use
@@ -362,23 +346,15 @@ def ASGIApplicationWrapper(
 
                     if framework is not None:
                         if naming_scheme in (None, "framework"):
-                            transaction.set_transaction_name(
-                                callable_name(wrapped), priority=1
-                            )
+                            transaction.set_transaction_name(callable_name(wrapped), priority=1)
 
                     elif naming_scheme in ("component", "framework"):
-                        transaction.set_transaction_name(
-                            callable_name(wrapped), priority=1
-                        )
+                        transaction.set_transaction_name(callable_name(wrapped), priority=1)
 
                 elif name:
                     transaction.set_transaction_name(name, group, priority=1)
 
-                if (
-                    settings
-                    and settings.browser_monitoring.enabled
-                    and not transaction.autorum_disabled
-                ):
+                if settings and settings.browser_monitoring.enabled and not transaction.autorum_disabled:
                     app = ASGIBrowserMiddleware(wrapped, transaction)
                 else:
                     app = wrapped
@@ -395,22 +371,23 @@ def ASGIApplicationWrapper(
     return FunctionWrapper(wrapped, nr_asgi_wrapper)
 
 
-def asgi_application(application=None, name=None, group=None, framework=None):
+def asgi_application(application=None, name=None, group=None, framework=None, dispatcher=None):
     return functools.partial(
         ASGIApplicationWrapper,
         application=application,
         name=name,
         group=group,
         framework=framework,
+        dispatcher=dispatcher,
     )
 
 
 def wrap_asgi_application(
-    module, object_path, application=None, name=None, group=None, framework=None
+    module, object_path, application=None, name=None, group=None, framework=None, dispatcher=None
 ):
     wrap_object(
         module,
         object_path,
         ASGIApplicationWrapper,
-        (application, name, group, framework),
+        (application, name, group, framework, dispatcher),
     )

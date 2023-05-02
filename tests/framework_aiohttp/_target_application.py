@@ -14,53 +14,51 @@
 
 import asyncio
 import sys
-from aiohttp import web, WSMsgType, ClientSession
+
+from aiohttp import ClientSession, WSMsgType, web
+
 from newrelic.api.function_trace import function_trace
 
 
-@asyncio.coroutine
-def index(request):
-    yield
-    resp = web.Response(text='Hello Aiohttp!')
-    resp.set_cookie('ExampleCookie', 'ExampleValue')
+async def index(request):
+    await asyncio.sleep(0)
+    resp = web.Response(text="Hello Aiohttp!")
+    resp.set_cookie("ExampleCookie", "ExampleValue")
     return resp
 
 
-@asyncio.coroutine
-def hang(request):
+async def hang(request):
     while True:
-        yield
+        await asyncio.sleep(0)
 
 
-@asyncio.coroutine
-def error(request):
+async def error(request):
     raise ValueError("Value Error")
 
 
-@asyncio.coroutine
-def non_500_error(request):
+async def non_500_error(request):
     raise web.HTTPGone()
 
 
-@asyncio.coroutine
-def raise_404(request):
+async def raise_403(request):
+    raise web.HTTPForbidden()
+
+
+async def raise_404(request):
     raise web.HTTPNotFound()
 
 
-@asyncio.coroutine
 @function_trace()
-def wait():
-    yield from asyncio.sleep(0.1)
+async def wait():
+    await asyncio.sleep(0.1)
 
 
-@asyncio.coroutine
-def run_task(loop):
-    yield from wait()
+async def run_task(loop):
+    await wait()
     loop.stop()
 
 
-@asyncio.coroutine
-def background(request):
+async def background(request):
     try:
         loop = request.loop
     except AttributeError:
@@ -68,16 +66,14 @@ def background(request):
 
     asyncio.set_event_loop(loop)
     asyncio.tasks.ensure_future(run_task(loop))
-    return web.Response(text='Background Task Scheduled')
+    return web.Response(text="Background Task Scheduled")
 
 
 class HelloWorldView(web.View):
-
-    @asyncio.coroutine
-    def _respond(self):
-        yield
-        resp = web.Response(text='Hello Aiohttp!')
-        resp.set_cookie('ExampleCookie', 'ExampleValue')
+    async def _respond(self):
+        await asyncio.sleep(0)
+        resp = web.Response(text="Hello Aiohttp!")
+        resp.set_cookie("ExampleCookie", "ExampleValue")
         return resp
 
     get = _respond
@@ -92,15 +88,13 @@ class KnownException(Exception):
 
 
 class KnownErrorView(web.View):
-
-    @asyncio.coroutine
-    def _respond(self):
+    async def _respond(self):
         try:
-            yield
+            await asyncio.sleep(0)
         except KnownException:
             pass
         finally:
-            return web.Response(text='Hello Aiohttp!')
+            return web.Response(text="Hello Aiohttp!")
 
     get = _respond
     post = _respond
@@ -109,78 +103,80 @@ class KnownErrorView(web.View):
     delete = _respond
 
 
-@asyncio.coroutine
-def websocket_handler(request):
+async def websocket_handler(request):
 
     ws = web.WebSocketResponse()
-    yield from ws.prepare(request)
+    await ws.prepare(request)
 
     # receive messages for all eternity!
     # (or until the client closes the socket)
     while not ws.closed:
-        msg = yield from ws.receive()
+        msg = await ws.receive()
         if msg.type == WSMsgType.TEXT:
-            result = ws.send_str('/' + msg.data)
-            if hasattr(result, '__await__'):
-                yield from result.__await__()
+            result = ws.send_str("/" + msg.data)
+            if hasattr(result, "__await__"):
+                await result
 
     return ws
 
 
-@asyncio.coroutine
-def fetch(method, url, loop):
+async def fetch(method, url, loop):
     session = ClientSession(loop=loop)
 
-    if hasattr(session, '__aenter__'):
-        yield from session.__aenter__()
+    if hasattr(session, "__aenter__"):
+        await session.__aenter__()
     else:
         session.__enter__()
 
     try:
         _method = getattr(session, method)
-        response = yield from asyncio.wait_for(
-                _method(url), timeout=None, loop=loop)
-        text = yield from response.text()
+        try:
+            response = await asyncio.wait_for(_method(url), timeout=None, loop=loop)
+        except TypeError:
+            response = await asyncio.wait_for(_method(url), timeout=None)
+        text = await response.text()
 
     finally:
-        if hasattr(session, '__aexit__'):
-            yield from session.__aexit__(*sys.exc_info())
+        if hasattr(session, "__aexit__"):
+            await session.__aexit__(*sys.exc_info())
         else:
             session.__exit__(*sys.exc_info())
 
     return text
 
 
-@asyncio.coroutine
-def fetch_multiple(method, loop, url):
+async def fetch_multiple(method, loop, url):
     coros = [fetch(method, url, loop) for _ in range(2)]
-    responses = yield from asyncio.gather(*coros, loop=loop)
-    return '\n'.join(responses)
+    try:
+        responses = await asyncio.gather(*coros, loop=loop)
+    except TypeError:
+        responses = await asyncio.gather(*coros)
+    return "\n".join(responses)
 
 
-@asyncio.coroutine
-def multi_fetch_handler(request):
+async def multi_fetch_handler(request):
     try:
         loop = request.loop
     except AttributeError:
         loop = request.task._loop
 
-    responses = yield from fetch_multiple('get', loop, request.query['url'])
-    return web.Response(text=responses, content_type='text/html')
+    responses = await fetch_multiple("get", loop, request.query["url"])
+    return web.Response(text=responses, content_type="text/html")
 
 
-def make_app(middlewares=None, loop=None):
-    app = web.Application(middlewares=middlewares, loop=loop)
-    app.router.add_route('*', '/coro', index)
-    app.router.add_route('*', '/class', HelloWorldView)
-    app.router.add_route('*', '/error', error)
-    app.router.add_route('*', '/known_error', KnownErrorView)
-    app.router.add_route('*', '/non_500_error', non_500_error)
-    app.router.add_route('*', '/raise_404', raise_404)
-    app.router.add_route('*', '/hang', hang)
-    app.router.add_route('*', '/background', background)
-    app.router.add_route('*', '/ws', websocket_handler)
-    app.router.add_route('*', '/multi_fetch', multi_fetch_handler)
+def make_app(middlewares=None):
+    app = web.Application(middlewares=middlewares)
+    app.router.add_route("*", "/coro", index)
+    app.router.add_route("*", "/class", HelloWorldView)
+    app.router.add_route("*", "/error", error)
+    app.router.add_route("*", "/known_error", KnownErrorView)
+    app.router.add_route("*", "/non_500_error", non_500_error)
+    app.router.add_route("*", "/raise_403", raise_403)
+    app.router.add_route("*", "/raise_404", raise_404)
+    app.router.add_route("*", "/hang", hang)
+    app.router.add_route("*", "/background", background)
+    app.router.add_route("*", "/ws", websocket_handler)
+    app.router.add_route("*", "/multi_fetch", multi_fetch_handler)
 
     for route in app.router.routes():
         handler = route.handler
@@ -194,5 +190,5 @@ def make_app(middlewares=None, loop=None):
     return app
 
 
-if __name__ == '__main__':
-    web.run_app(make_app(), host='127.0.0.1')
+if __name__ == "__main__":
+    web.run_app(make_app(), host="127.0.0.1")

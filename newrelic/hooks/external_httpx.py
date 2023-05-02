@@ -74,7 +74,7 @@ def bind_request(request, *args, **kwargs):
 def sync_send_wrapper(wrapped, instance, args, kwargs):
     request = bind_request(*args, **kwargs)
 
-    with ExternalTrace("httpx", str(request.url), request.method) as tracer:
+    with ExternalTrace("httpx", str(request.url), request.method, source=wrapped) as tracer:
         if hasattr(tracer, "generate_request_headers"):
             request._nr_trace = tracer
             outgoing_headers = tracer.generate_request_headers(tracer.transaction)
@@ -89,7 +89,7 @@ def sync_send_wrapper(wrapped, instance, args, kwargs):
 async def async_send_wrapper(wrapped, instance, args, kwargs):
     request = bind_request(*args, **kwargs)
 
-    with ExternalTrace("httpx", str(request.url), request.method) as tracer:
+    with ExternalTrace("httpx", str(request.url), request.method, source=wrapped) as tracer:
         if hasattr(tracer, "generate_request_headers"):
             request._nr_trace = tracer
             outgoing_headers = tracer.generate_request_headers(tracer.transaction)

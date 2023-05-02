@@ -13,7 +13,8 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 
 pytestmark = pytest.mark.custom_app
 
@@ -25,6 +26,7 @@ def test_custom_handler(app):
         name='_target_application:CustomApplication',
         rollup_metrics=((FRAMEWORK_METRIC, 1),),
     )
+    @validate_code_level_metrics("_target_application", "CustomApplication")
     def _test():
         response = app.fetch('/')
         assert response.code == 200

@@ -1,3 +1,9 @@
+.DS_Store
+.DS_Store/
+
+# Linter
+megalinter-reports/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -20,6 +26,7 @@ parts/
 sdist/
 var/
 wheels/
+wheelhouse/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
@@ -137,3 +144,5 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+.idea/

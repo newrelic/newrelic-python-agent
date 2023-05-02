@@ -14,46 +14,44 @@
 
 import functools
 
-from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.time_trace import TimeTrace, current_trace
-from newrelic.core.memcache_node import MemcacheNode
+from newrelic.common.async_wrapper import async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+from newrelic.core.memcache_node import MemcacheNode
 
 
 class MemcacheTrace(TimeTrace):
-
     def __init__(self, command, **kwargs):
-        parent = None
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs['parent']
-        super(MemcacheTrace, self).__init__(parent)
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(MemcacheTrace, self).__init__(parent=parent, source=source)
 
         self.command = command
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict(
-                command=self.command))
+        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), dict(command=self.command))
 
     def terminal_node(self):
         return True
 
     def create_node(self):
         return MemcacheNode(
-                command=self.command,
-                children=self.children,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                duration=self.duration,
-                exclusive=self.exclusive,
-                guid=self.guid,
-                agent_attributes=self.agent_attributes,
-                user_attributes=self.user_attributes)
+            command=self.command,
+            children=self.children,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            duration=self.duration,
+            exclusive=self.exclusive,
+            guid=self.guid,
+            agent_attributes=self.agent_attributes,
+            user_attributes=self.user_attributes,
+        )
 
 
 def MemcacheTraceWrapper(wrapped, command):
-
     def _nr_wrapper_memcache_trace_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -71,9 +69,9 @@ def MemcacheTraceWrapper(wrapped, command):
         else:
             _command = command
 
-        trace = MemcacheTrace(_command, parent=parent)
+        trace = MemcacheTrace(_command, parent=parent, source=wrapped)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

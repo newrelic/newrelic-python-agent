@@ -12,23 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import sys
 import tempfile
+
+import pytest
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    newrelic_caplog as caplog,
+)
+
 from newrelic.core.agent import agent_instance
-from testing_support.fixtures import collector_agent_registration_fixture
 
 _default_settings = {
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.transaction_threshold': 0.0,
-    'transaction_tracer.stack_trace_threshold': 0.0,
-    'debug.log_data_collector_payloads': True,
-    'debug.record_transaction_failure': True,
+    "transaction_tracer.explain_threshold": 0.0,
+    "transaction_tracer.transaction_threshold": 0.0,
+    "transaction_tracer.stack_trace_threshold": 0.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (agent_unittests)',
-        default_settings=_default_settings)
+    app_name="Python Agent Test (agent_unittests)", default_settings=_default_settings
+)
 
 
 try:
@@ -36,31 +42,32 @@ try:
     reload
 except NameError:
     # python 3.x
-    from imp import reload
+    from importlib import reload
 
 
 class FakeProtos(object):
     Span = object()
+    SpanBatch = object()
 
 
-sys.modules['grpc'] = object()
-sys.modules['newrelic.core.infinite_tracing_pb2'] = FakeProtos
+sys.modules["grpc"] = object()
+sys.modules["newrelic.core.infinite_tracing_pb2"] = FakeProtos
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def global_settings(request, monkeypatch):
-    ini_contents = request.getfixturevalue('ini')
+    ini_contents = request.getfixturevalue("ini")
 
-    monkeypatch.delenv('NEW_RELIC_HOST', raising=False)
-    monkeypatch.delenv('NEW_RELIC_LICENSE_KEY', raising=False)
+    monkeypatch.delenv("NEW_RELIC_HOST", raising=False)
+    monkeypatch.delenv("NEW_RELIC_LICENSE_KEY", raising=False)
 
-    if 'env' in request.funcargnames:
-        env = request.getfixturevalue('env')
+    if "env" in request.fixturenames:
+        env = request.getfixturevalue("env")
         for k, v in env.items():
             monkeypatch.setenv(k, v)
 
-    import newrelic.config as config
-    import newrelic.core.config as core_config
+    import newrelic.config as config  # pylint: disable=R0402
+    import newrelic.core.config as core_config  # pylint: disable=R0402
 
     original = {}
     for attr in dir(core_config):
@@ -72,11 +79,11 @@ def global_settings(request, monkeypatch):
     reload(core_config)
     reload(config)
 
-    ini_file = tempfile.NamedTemporaryFile()
-    ini_file.write(ini_contents)
-    ini_file.seek(0)
+    with tempfile.NamedTemporaryFile() as ini_file:
+        ini_file.write(ini_contents)
+        ini_file.seek(0)
 
-    config.initialize(ini_file.name)
+        config.initialize(ini_file.name)
 
     agent._config = core_config.global_settings()
 

@@ -21,12 +21,11 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.common.encoding_utils import (
         DistributedTracePayload, W3CTraceParent, W3CTraceState, NrTraceState)
 
-from testing_support.fixtures import (override_application_settings,
-        validate_transaction_metrics)
+from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_span_events import (
         validate_span_events)
 from _test_common import create_request, wait_for_transaction_completion
-
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 _test_matrix = ('method_name,streaming_request', (
     ('DoUnaryUnary', False),

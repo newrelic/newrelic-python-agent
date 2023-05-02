@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import asyncio
-import functools
 import logging
 import socket
 import threading
@@ -21,24 +20,22 @@ from urllib.request import HTTPError, urlopen
 
 import pytest
 import uvicorn
-from uvicorn.config import Config
-from uvicorn.main import Server
-
-from newrelic.api.asgi_application import ASGIApplicationWrapper
-from newrelic.common.object_names import callable_name
 from testing_support.fixtures import (
     override_application_settings,
-    validate_transaction_errors,
-    validate_transaction_metrics,
     raise_background_exceptions,
     wait_for_background_threads,
 )
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.sample_asgi_applications import (
-    simple_app_v2_raw,
     AppWithCall,
     AppWithCallRaw,
+    simple_app_v2_raw,
 )
+from uvicorn.config import Config
+from uvicorn.main import Server
 
+from newrelic.common.object_names import callable_name
 
 UVICORN_VERSION = tuple(int(v) for v in uvicorn.__version__.split(".")[:2])
 
@@ -56,15 +53,11 @@ def get_open_port():
         simple_app_v2_raw,
         pytest.param(
             AppWithCallRaw(),
-            marks=pytest.mark.skipif(
-                UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"
-            ),
+            marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"),
         ),
         pytest.param(
             AppWithCall(),
-            marks=pytest.mark.skipif(
-                UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"
-            ),
+            marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"),
         ),
     ),
     ids=("raw", "class_with_call", "class_with_call_double_wrapped"),
@@ -102,12 +95,15 @@ def port(app):
             pass
         server.run()
 
-    thread = threading.Thread(target=server_run)
+    thread = threading.Thread(target=server_run, daemon=True)
     thread.start()
-    ready.wait()
+    assert ready.wait(timeout=10)
     yield port
-    loops[0].stop()
-    thread.join(timeout=0.2)
+    _ = [loop.stop() for loop in loops]  # Stop all loops
+    thread.join(timeout=1)
+
+    if thread.is_alive():
+        raise RuntimeError("Thread failed to exit in time.")
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})

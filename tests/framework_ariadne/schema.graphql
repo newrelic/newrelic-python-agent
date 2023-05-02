@@ -1,0 +1,51 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Author {
+  first_name: String
+  last_name: String
+}
+
+type Book {
+  id: Int
+  name: String
+  isbn: String
+  author: Author
+  branch: String
+}
+
+union Item = Book | Magazine
+
+type Library {
+  id: Int
+  branch: String
+  magazine: [Magazine]
+  book: [Book]
+}
+
+type Magazine {
+  id: Int
+  name: String
+  issue: Int
+  branch: String
+}
+
+type Mutation {
+  storage_add(string: String!): StorageAdd
+}
+
+type Query {
+  storage: [String]
+  library(index: Int!): Library
+  hello: String
+  search(contains: String!): [Item]
+  echo(echo: String!): String
+  error: String
+  error_non_null: String!
+}
+
+type StorageAdd {
+  string: String
+}

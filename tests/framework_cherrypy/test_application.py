@@ -17,8 +17,11 @@ import webtest
 
 from newrelic.packages import six
 
-from testing_support.fixtures import (validate_transaction_errors,
-        override_application_settings, override_ignore_status_codes)
+from testing_support.fixtures import (
+        override_application_settings, 
+        override_ignore_status_codes)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
 import cherrypy
 
@@ -80,6 +83,7 @@ application = cherrypy.Application(Application())
 test_application = webtest.TestApp(application)
 
 
+@validate_code_level_metrics("test_application.Application", "index")
 @validate_transaction_errors(errors=[])
 def test_application_index():
     response = test_application.get('')

@@ -18,7 +18,7 @@ import pytest
 
 from newrelic.common.utilization import AWSUtilization
 from testing_support.mock_http_client import create_client_cls
-from testing_support.fixtures import validate_internal_metrics
+from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -57,12 +57,17 @@ def test_aws(monkeypatch, testname, uri,
             body = json.dumps(api_result['response'])
             return 200, body.encode('utf-8')
 
+    @classmethod
+    def fake_token(cls):
+        return "FakeToken"
+
     url, api_result = uri.popitem()
     status, data = _get_mock_return_value(api_result)
 
     client_cls = create_client_cls(status, data, url)
 
     monkeypatch.setattr(AWSUtilization, "CLIENT_CLS", client_cls)
+    monkeypatch.setattr(AWSUtilization, "fetchAuthToken", fake_token)
 
     metrics = []
     if expected_metrics:

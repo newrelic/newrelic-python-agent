@@ -12,23 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import grpc
-import threading
 import functools
+import threading
+
 from newrelic.api.application import application_instance
 
 
 def create_request(streaming_request, count=1, timesout=False):
-    from sample_application.sample_application_pb2 import Message
+    from sample_application import Message
 
     def _message_stream():
         for i in range(count):
-            yield Message(text='Hello World', count=count, timesout=timesout)
+            yield Message(text="Hello World", count=count, timesout=timesout)
 
     if streaming_request:
         request = _message_stream()
     else:
-        request = Message(text='Hello World', count=count, timesout=timesout)
+        request = Message(text="Hello World", count=count, timesout=timesout)
 
     return request
 

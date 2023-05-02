@@ -1,7 +1,21 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTraceWrapper
 
 
 def _bind_get_response(request, *args, **kwargs):
@@ -35,7 +49,6 @@ def _nr_wrap_converted_middleware_async_(middleware, name):
 
         transaction.set_transaction_name(name, priority=2)
 
-        with FunctionTrace(name=name):
-            return await wrapped(*args, **kwargs)
+        return await FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
     return _wrapper(middleware)

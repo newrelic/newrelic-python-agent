@@ -18,7 +18,6 @@ import os
 from newrelic import version
 from newrelic.common import system_info
 from newrelic.common.agent_http import ApplicationModeClient, ServerlessModeClient
-from newrelic.core.internal_metrics import internal_count_metric
 from newrelic.common.encoding_utils import (
     json_decode,
     json_encode,
@@ -32,11 +31,13 @@ from newrelic.common.utilization import (
     KubernetesUtilization,
     PCFUtilization,
 )
+from newrelic.core.attribute import truncate
 from newrelic.core.config import (
     fetch_config_setting,
     finalize_application_settings,
     global_settings_dump,
 )
+from newrelic.core.internal_metrics import internal_count_metric
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
@@ -135,15 +136,14 @@ class AgentProtocol(object):
             ),
         ),
     }
-    PARAMS_ALLOWLIST = frozenset(
-        ("method", "protocol_version", "marshal_format", "run_id")
-    )
+    PARAMS_ALLOWLIST = frozenset(("method", "protocol_version", "marshal_format", "run_id"))
 
     SECURITY_SETTINGS = (
         "capture_params",
         "transaction_tracer.record_sql",
         "strip_exception_messages.enabled",
         "custom_insights_events.enabled",
+        "application_logging.forwarding.enabled",
     )
 
     LOGGER_FUNC_MAPPING = {
@@ -219,9 +219,7 @@ class AgentProtocol(object):
         params, headers, payload = self._to_http(method, payload)
 
         try:
-            response = self.client.send_request(
-                params=params, headers=headers, payload=payload
-            )
+            response = self.client.send_request(params=params, headers=headers, payload=payload)
         except NetworkInterfaceException:
             # All HTTP errors are currently retried
             raise RetryDataForRequest
@@ -245,10 +243,8 @@ class AgentProtocol(object):
                     "method": method,
                     "status_code": status,
                     "headers": headers,
-                    "params": {
-                        k: v for k, v in params.items() if k in self.PARAMS_ALLOWLIST
-                    },
-                    "content": data,
+                    "params": {k: v for k, v in params.items() if k in self.PARAMS_ALLOWLIST},
+                    "content": truncate(data, 1024),
                     "agent_run_id": self._run_token,
                 },
             )
@@ -277,26 +273,18 @@ class AgentProtocol(object):
         ip_address = system_info.getips()
 
         connect_settings = {}
-        connect_settings["browser_monitoring.loader"] = settings[
-            "browser_monitoring.loader"
-        ]
-        connect_settings["browser_monitoring.debug"] = settings[
-            "browser_monitoring.debug"
-        ]
+        connect_settings["browser_monitoring.loader"] = settings["browser_monitoring.loader"]
+        connect_settings["browser_monitoring.debug"] = settings["browser_monitoring.debug"]
 
         security_settings = {}
         security_settings["capture_params"] = settings["capture_params"]
         security_settings["transaction_tracer"] = {}
-        security_settings["transaction_tracer"]["record_sql"] = settings[
-            "transaction_tracer.record_sql"
-        ]
+        security_settings["transaction_tracer"]["record_sql"] = settings["transaction_tracer.record_sql"]
 
         utilization_settings = {}
         # metadata_version corresponds to the utilization spec being used.
         utilization_settings["metadata_version"] = 5
-        utilization_settings[
-            "logical_processors"
-        ] = system_info.logical_processor_count()
+        utilization_settings["logical_processors"] = system_info.logical_processor_count()
         utilization_settings["total_ram_mib"] = system_info.total_physical_memory()
         utilization_settings["hostname"] = hostname
         if ip_address:
@@ -451,9 +439,7 @@ class AgentProtocol(object):
         with cls(settings, host=redirect_host, client_cls=client_cls) as protocol:
             configuration = protocol.send(
                 "connect",
-                cls._connect_payload(
-                    app_name, linked_applications, environment, settings
-                ),
+                cls._connect_payload(app_name, linked_applications, environment, settings),
             )
 
         # Apply High Security Mode to server_config, so the local
@@ -487,9 +473,7 @@ class AgentProtocol(object):
 
 class ServerlessModeProtocol(AgentProtocol):
     def __init__(self, settings, host=None, client_cls=ServerlessModeClient):
-        super(ServerlessModeProtocol, self).__init__(
-            settings, host=host, client_cls=client_cls
-        )
+        super(ServerlessModeProtocol, self).__init__(settings, host=host, client_cls=client_cls)
         self._metadata = {
             "protocol_version": self.VERSION,
             "execution_environment": os.environ.get("AWS_EXECUTION_ENV", None),
@@ -525,9 +509,7 @@ class ServerlessModeProtocol(AgentProtocol):
         client_cls=ServerlessModeClient,
     ):
         aws_lambda_metadata = settings.aws_lambda_metadata
-        settings = finalize_application_settings(
-            {"cross_application_tracer.enabled": False}, settings
-        )
+        settings = finalize_application_settings({"cross_application_tracer.enabled": False}, settings)
         # Metadata must come from the original settings object since it
         # can be modified later
         settings.aws_lambda_metadata = aws_lambda_metadata

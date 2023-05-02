@@ -12,16 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import six
 import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    validate_transaction_errors,
-    validate_transaction_metrics,
-)
+import six
+from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
@@ -39,9 +41,12 @@ def is_graphql_2():
 @pytest.fixture(scope="session")
 def graphql_run():
     """Wrapper function to simulate framework_graphql test behavior."""
+
     def execute(schema, *args, **kwargs):
         return schema.execute(*args, **kwargs)
+
     return execute
+
 
 def to_graphql_source(query):
     def delay_import():
@@ -63,12 +68,12 @@ def to_graphql_source(query):
     return delay_import
 
 
-def example_middleware(next, root, info, **args):
+def example_middleware(next, root, info, **args):  # pylint: disable=W0622
     return_value = next(root, info, **args)
     return return_value
 
 
-def error_middleware(next, root, info, **args):
+def error_middleware(next, root, info, **args):  # pylint: disable=W0622
     raise RuntimeError("Runtime Error!")
 
 
@@ -78,15 +83,18 @@ _graphql_base_rollup_metrics = [
     ("OtherTransaction/all", 1),
     ("GraphQL/all", 1),
     ("GraphQL/allOther", 1),
-    ("GraphQL/GraphQL/all", 1),
-    ("GraphQL/GraphQL/allOther", 1),
+    ("GraphQL/Graphene/all", 1),
+    ("GraphQL/Graphene/allOther", 1),
 ]
 
 
 def test_basic(app, graphql_run):
     from graphql import __version__ as version
 
+    from newrelic.hooks.framework_graphene import framework_details
+
     FRAMEWORK_METRICS = [
+        ("Python/Framework/Graphene/%s" % framework_details()[1], 1),
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
 
@@ -98,31 +106,31 @@ def test_basic(app, graphql_run):
     )
     @background_task()
     def _test():
-        response = graphql_run(app, '{ hello }')
+        response = graphql_run(app, "{ hello }")
         assert not response.errors
-    
+
     _test()
 
 
 @dt_enabled
-def test_basic(app, graphql_run):
+def test_query_and_mutation(app, graphql_run):
     from graphql import __version__ as version
 
     FRAMEWORK_METRICS = [
         ("Python/Framework/GraphQL/%s" % version, 1),
     ]
     _test_mutation_scoped_metrics = [
-        ("GraphQL/resolve/GraphQL/storage", 1),
-        ("GraphQL/resolve/GraphQL/storage_add", 1),
-        ("GraphQL/operation/GraphQL/query/<anonymous>/storage", 1),
-        ("GraphQL/operation/GraphQL/mutation/<anonymous>/storage_add.string", 1),
+        ("GraphQL/resolve/Graphene/storage", 1),
+        ("GraphQL/resolve/Graphene/storage_add", 1),
+        ("GraphQL/operation/Graphene/query/<anonymous>/storage", 1),
+        ("GraphQL/operation/Graphene/mutation/<anonymous>/storage_add.string", 1),
     ]
     _test_mutation_unscoped_metrics = [
         ("OtherTransaction/all", 1),
         ("GraphQL/all", 2),
-        ("GraphQL/GraphQL/all", 2),
+        ("GraphQL/Graphene/all", 2),
         ("GraphQL/allOther", 2),
-        ("GraphQL/GraphQL/allOther", 2),
+        ("GraphQL/Graphene/allOther", 2),
     ] + _test_mutation_scoped_metrics
 
     _expected_mutation_operation_attributes = {
@@ -174,8 +182,8 @@ def test_basic(app, graphql_run):
 @dt_enabled
 def test_middleware(app, graphql_run, is_graphql_2):
     _test_middleware_metrics = [
-        ("GraphQL/operation/GraphQL/query/<anonymous>/hello", 1),
-        ("GraphQL/resolve/GraphQL/hello", 1),
+        ("GraphQL/operation/Graphene/query/<anonymous>/hello", 1),
+        ("GraphQL/resolve/Graphene/hello", 1),
         ("Function/test_application:example_middleware", 1),
     ]
 
@@ -186,8 +194,8 @@ def test_middleware(app, graphql_run, is_graphql_2):
         rollup_metrics=_test_middleware_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
-    # Span count 4: Transaction, Operation, Middleware, and 1 Resolver
-    @validate_span_events(count=4)
+    # Span count 5: Transaction, Operation, Middleware, and 1 Resolver and 1 Resolver Function
+    @validate_span_events(count=5)
     @background_task()
     def _test():
         response = graphql_run(app, "{ hello }", middleware=[example_middleware])
@@ -204,8 +212,8 @@ def test_exception_in_middleware(app, graphql_run):
 
     # Metrics
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/GraphQL/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/GraphQL/%s" % field, 1),
+        ("GraphQL/operation/Graphene/query/MyQuery/%s" % field, 1),
+        ("GraphQL/resolve/Graphene/%s" % field, 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -256,8 +264,8 @@ def test_exception_in_resolver(app, graphql_run, field):
 
     # Metrics
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/GraphQL/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/GraphQL/%s" % field, 1),
+        ("GraphQL/operation/Graphene/query/MyQuery/%s" % field, 1),
+        ("GraphQL/resolve/Graphene/%s" % field, 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -320,7 +328,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-        #    ('GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>', 1),
+        ("GraphQL/operation/Graphene/<unknown>/<anonymous>/<unknown>", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -354,7 +362,7 @@ def test_exception_in_validation(app, graphql_run, is_graphql_2, query, exc_clas
 
 @dt_enabled
 def test_operation_metrics_and_attrs(app, graphql_run):
-    operation_metrics = [("GraphQL/operation/GraphQL/query/MyQuery/library", 1)]
+    operation_metrics = [("GraphQL/operation/Graphene/query/MyQuery/library", 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
@@ -367,16 +375,14 @@ def test_operation_metrics_and_attrs(app, graphql_run):
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
-    # Span count 7: Transaction, Operation, and 7 Resolvers
+    # Span count 16: Transaction, Operation, and 7 Resolvers and Resolver functions
     # library, library.name, library.book
     # library.book.name and library.book.id for each book resolved (in this case 2)
-    @validate_span_events(count=9)
+    @validate_span_events(count=16)
     @validate_span_events(exact_agents=operation_attrs)
     @background_task()
     def _test():
-        response = graphql_run(
-            app, "query MyQuery { library(index: 0) { branch, book { id, name } } }"
-        )
+        response = graphql_run(app, "query MyQuery { library(index: 0) { branch, book { id, name } } }")
         assert not response.errors
 
     _test()
@@ -384,7 +390,7 @@ def test_operation_metrics_and_attrs(app, graphql_run):
 
 @dt_enabled
 def test_field_resolver_metrics_and_attrs(app, graphql_run):
-    field_resolver_metrics = [("GraphQL/resolve/GraphQL/hello", 1)]
+    field_resolver_metrics = [("GraphQL/resolve/Graphene/hello", 1)]
     graphql_attrs = {
         "graphql.field.name": "hello",
         "graphql.field.parentType": "Query",
@@ -399,8 +405,8 @@ def test_field_resolver_metrics_and_attrs(app, graphql_run):
         rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics,
         background_task=True,
     )
-    # Span count 3: Transaction, Operation, and 1 Resolver
-    @validate_span_events(count=3)
+    # Span count 4: Transaction, Operation, and 1 Resolver and Resolver function
+    @validate_span_events(count=4)
     @validate_span_events(exact_agents=graphql_attrs)
     @background_task()
     def _test():
@@ -508,8 +514,17 @@ def test_deepest_unique_path(app, graphql_run, query, expected_path):
     _test()
 
 
-@validate_transaction_count(0)
-@background_task()
-def test_ignored_introspection_transactions(app, graphql_run):
-    response = graphql_run(app, "{ __schema { types { name } } }")
-    assert not response.errors
+@pytest.mark.parametrize("capture_introspection_setting", (True, False))
+def test_introspection_transactions(app, graphql_run, capture_introspection_setting):
+    txn_ct = 1 if capture_introspection_setting else 0
+
+    @override_application_settings(
+        {"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting}
+    )
+    @validate_transaction_count(txn_ct)
+    @background_task()
+    def _test():
+        response = graphql_run(app, "{ __schema { types { name } } }")
+        assert not response.errors
+
+    _test()

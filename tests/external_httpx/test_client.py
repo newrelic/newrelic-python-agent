@@ -16,11 +16,10 @@ import asyncio
 
 import pytest
 from testing_support.fixtures import (
+    dt_enabled,
     override_application_settings,
-    validate_transaction_errors,
-    validate_transaction_metrics,
+    override_generic_settings,
     validate_tt_segment_params,
-    override_generic_settings
 )
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer,
@@ -29,10 +28,12 @@ from testing_support.validators.validate_cross_process_headers import (
     validate_cross_process_headers,
 )
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import current_trace
+from newrelic.api.transaction import current_transaction
 from newrelic.core.config import global_settings
 
 ENCODING_KEY = "1234567890123456789012345678901234567890"
@@ -56,8 +57,7 @@ def cat_response_handler(self):
     # )
     cat_response_header = (
         "X-NewRelic-App-Data",
-        "ahACFwQUGxpuVVNmQVVbRVZbTVleXBxyQFhUTFBfXx1SREUMV"
-        "V1cQBMeAxgEGAULFR0AHhFQUQJWAAgAUwVQVgJQDgsOEh1UUlhGU2o=",
+        "ahACFwQUGxpuVVNmQVVbRVZbTVleXBxyQFhUTFBfXx1SREUMVV1cQBMeAxgEGAULFR0AHhFQUQJWAAgAUwVQVgJQDgsOEh1UUlhGU2o=",
     )
     self.send_response(CAT_RESPONSE_CODE)
     self.send_header(*cat_response_header)
@@ -161,10 +161,14 @@ def test_async_client(httpx, server, loop, method):
     ),
 )
 def test_sync_cross_process_request(httpx, server, distributed_tracing, span_events):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
     @override_application_settings(
         {
             "distributed_tracing.enabled": distributed_tracing,
             "span_events.enabled": span_events,
+            "cross_application_tracer.enabled": not distributed_tracing,
         }
     )
     @validate_transaction_errors(errors=[])
@@ -194,9 +198,10 @@ def test_sync_cross_process_request(httpx, server, distributed_tracing, span_eve
 @validate_transaction_errors(errors=[])
 @background_task(name="test_async_cross_process_request")
 @validate_cross_process_headers
-def test_async_cross_process_request(
-    httpx, server, loop, distributed_tracing, span_events
-):
+def test_async_cross_process_request(httpx, server, loop, distributed_tracing, span_events):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
     @override_application_settings(
         {
             "distributed_tracing.enabled": distributed_tracing,
@@ -220,17 +225,19 @@ def test_async_cross_process_request(
     {
         "distributed_tracing.enabled": True,
         "span_events.enabled": True,
+        "cross_application_tracer.enabled": True,
     }
 )
 @validate_transaction_errors(errors=[])
 @background_task(name="test_sync_cross_process_override_headers")
 def test_sync_cross_process_override_headers(httpx, server, loop):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
     transaction = current_transaction()
 
     with httpx.Client() as client:
-        response = client.get(
-            "http://localhost:%s" % server.port, headers={"newrelic": "1234"}
-        )
+        response = client.get("http://localhost:%s" % server.port, headers={"newrelic": "1234"})
 
     transaction._test_request_headers = response.request.headers
 
@@ -247,11 +254,12 @@ def test_sync_cross_process_override_headers(httpx, server, loop):
 @validate_transaction_errors(errors=[])
 @background_task(name="test_async_cross_process_override_headers")
 def test_async_cross_process_override_headers(httpx, server, loop):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
     async def _test():
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "http://localhost:%s" % server.port, headers={"newrelic": "1234"}
-            )
+            response = await client.get("http://localhost:%s" % server.port, headers={"newrelic": "1234"})
 
         return response
 
@@ -278,8 +286,7 @@ def test_sync_client_cat_response_processing(cat_enabled, response_code, server,
 
     expected_metrics = [
         (
-            "ExternalTransaction/localhost:%s/1#1/WebTransaction/"
-            "Function/app:beep" % server.port,
+            "ExternalTransaction/localhost:%s/1#1/WebTransaction/Function/app:beep" % server.port,
             1 if cat_enabled else None,
         ),
     ]
@@ -302,9 +309,7 @@ def test_sync_client_cat_response_processing(cat_enabled, response_code, server,
 
 @pytest.mark.parametrize("cat_enabled", [True, False])
 @pytest.mark.parametrize("response_code", [200, 500])
-def test_async_client_cat_response_processing(
-    cat_enabled, response_code, httpx, server, loop
-):
+def test_async_client_cat_response_processing(cat_enabled, response_code, httpx, server, loop):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = response_code
 
@@ -319,8 +324,7 @@ def test_async_client_cat_response_processing(
 
     expected_metrics = [
         (
-            "ExternalTransaction/localhost:%s/1#1/WebTransaction/"
-            "Function/app:beep" % server.port,
+            "ExternalTransaction/localhost:%s/1#1/WebTransaction/Function/app:beep" % server.port,
             1 if cat_enabled else None,
         ),
     ]
@@ -346,9 +350,7 @@ def test_async_client_cat_response_processing(
     _test()
 
 
-@override_application_settings(
-    {"distributed_tracing.enabled": True, "span_events.enabled": True}
-)
+@dt_enabled
 def test_sync_client_event_hook_exception(httpx, server):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 500
@@ -394,9 +396,7 @@ def test_sync_client_event_hook_exception(httpx, server):
         make_request(client, exc_expected=False)
 
 
-@override_application_settings(
-    {"distributed_tracing.enabled": True, "span_events.enabled": True}
-)
+@override_application_settings({"distributed_tracing.enabled": True, "span_events.enabled": True})
 def test_async_client_event_hook_exception(httpx, server, loop):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 500
@@ -425,9 +425,7 @@ def test_async_client_event_hook_exception(httpx, server, loop):
         loop.run_until_complete(coro())
 
     def _test():
-        with httpx.AsyncClient(
-            event_hooks={"response": [exception_event_hook]}
-        ) as client:
+        with httpx.AsyncClient(event_hooks={"response": [exception_event_hook]}) as client:
             # Test client init
             make_request(client)
 
@@ -448,9 +446,12 @@ def test_async_client_event_hook_exception(httpx, server, loop):
             make_request(client, exc_expected=False)
 
 
-@override_generic_settings(global_settings(), {
-    'enabled': False,
-})
+@override_generic_settings(
+    global_settings(),
+    {
+        "enabled": False,
+    },
+)
 def test_sync_nr_disabled(httpx, server):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
@@ -463,9 +464,12 @@ def test_sync_nr_disabled(httpx, server):
         assert trace is None
 
 
-@override_generic_settings(global_settings(), {
-    'enabled': False,
-})
+@override_generic_settings(
+    global_settings(),
+    {
+        "enabled": False,
+    },
+)
 def test_async_nr_disabled(httpx, server, loop):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
@@ -482,15 +486,18 @@ def test_async_nr_disabled(httpx, server, loop):
     assert trace is None
 
 
-@pytest.mark.parametrize('client', (
-    'Client',
-    'AsyncClient',
-))
+@pytest.mark.parametrize(
+    "client",
+    (
+        "Client",
+        "AsyncClient",
+    ),
+)
 def test_invalid_import_order_client(monkeypatch, httpx, server, loop, client):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
-    if 'Async' in client:
+    if "Async" in client:
         is_async = True
     else:
         is_async = False
@@ -498,7 +505,7 @@ def test_invalid_import_order_client(monkeypatch, httpx, server, loop, client):
     client = getattr(httpx, client)
 
     # Force the client class into the state as if instrumentation had not run
-    monkeypatch.setattr(client, '_event_hooks', None)
+    monkeypatch.setattr(client, "_event_hooks", None)
 
     # Instantiate a client
     client = client()

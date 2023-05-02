@@ -1,18 +1,32 @@
-import asyncio
-import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_span_events import validate_span_events
-from newrelic.api.background_task import background_task
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+import asyncio
+
+import pytest
 from test_application import is_graphql_2
+from testing_support.fixtures import dt_enabled
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_span_events import validate_span_events
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(scope="session")
 def graphql_run_async():
-    from graphql import graphql, __version__ as version
+    from graphql import __version__ as version
+    from graphql import graphql
 
     major_version = int(version.split(".")[0])
     if major_version == 2:
@@ -81,9 +95,7 @@ def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
     @background_task()
     def _test():
         async def coro():
-            response = await graphql_run_async(
-                app, 'mutation { storage_add(string: "abc") }'
-            )
+            response = await graphql_run_async(app, 'mutation { storage_add(string: "abc") }')
             assert not response.errors
             response = await graphql_run_async(app, "query { storage }")
             assert not response.errors
@@ -92,7 +104,7 @@ def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
             assert "storage" in str(response.data)
             assert "abc" in str(response.data)
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
         loop.run_until_complete(coro())
 
     _test()

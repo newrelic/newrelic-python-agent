@@ -24,7 +24,7 @@ from collections import namedtuple
 import newrelic.core.error_collector
 import newrelic.core.trace_node
 from newrelic.common.streaming_utils import SpanProtoAttrs
-from newrelic.core.attribute import create_user_attributes
+from newrelic.core.attribute import create_agent_attributes, create_user_attributes
 from newrelic.core.attribute_filter import (
     DST_ERROR_COLLECTOR,
     DST_TRANSACTION_EVENTS,
@@ -63,6 +63,7 @@ _TransactionNode = namedtuple(
         "errors",
         "slow_sql",
         "custom_events",
+        "log_events",
         "apdex_t",
         "suppress_apdex",
         "custom_metrics",
@@ -157,12 +158,7 @@ class TransactionNode(_TransactionNode):
             # and how the exclusive component would appear in
             # the overview graphs.
 
-            yield TimeMetric(
-                name="HttpDispatcher",
-                scope="",
-                duration=self.response_time,
-                exclusive=None,
-            )
+            yield TimeMetric(name="HttpDispatcher", scope="", duration=self.response_time, exclusive=None)
 
             # Upstream queue time within any web server front end.
 
@@ -177,21 +173,11 @@ class TransactionNode(_TransactionNode):
                 if queue_wait < 0:
                     queue_wait = 0
 
-                yield TimeMetric(
-                    name="WebFrontend/QueueTime",
-                    scope="",
-                    duration=queue_wait,
-                    exclusive=None,
-                )
+                yield TimeMetric(name="WebFrontend/QueueTime", scope="", duration=queue_wait, exclusive=None)
 
         # Generate the full transaction metric.
 
-        yield TimeMetric(
-            name=self.path,
-            scope="",
-            duration=self.response_time,
-            exclusive=self.exclusive,
-        )
+        yield TimeMetric(name=self.path, scope="", duration=self.response_time, exclusive=self.exclusive)
 
         # Generate the rollup metric.
 
@@ -200,9 +186,7 @@ class TransactionNode(_TransactionNode):
         else:
             rollup = self.type
 
-        yield TimeMetric(
-            name=rollup, scope="", duration=self.response_time, exclusive=self.exclusive
-        )
+        yield TimeMetric(name=rollup, scope="", duration=self.response_time, exclusive=self.exclusive)
 
         # Generate Unscoped Total Time metrics.
 
@@ -220,12 +204,7 @@ class TransactionNode(_TransactionNode):
             exclusive=self.total_time,
         )
 
-        yield TimeMetric(
-            name=metric_prefix,
-            scope="",
-            duration=self.total_time,
-            exclusive=self.total_time,
-        )
+        yield TimeMetric(name=metric_prefix, scope="", duration=self.total_time, exclusive=self.total_time)
 
         # Generate Distributed Tracing metrics
 
@@ -255,10 +234,7 @@ class TransactionNode(_TransactionNode):
 
                 if self.errors:
                     yield TimeMetric(
-                        name="ErrorsByCaller/%s%s" % (dt_tag, bonus_tag),
-                        scope="",
-                        duration=0.0,
-                        exclusive=None,
+                        name="ErrorsByCaller/%s%s" % (dt_tag, bonus_tag), scope="", duration=0.0, exclusive=None
                     )
 
         # Generate Error metrics
@@ -266,26 +242,15 @@ class TransactionNode(_TransactionNode):
         if self.errors:
             if False in (error.expected for error in self.errors):
                 # Generate overall rollup metric indicating if errors present.
-                yield TimeMetric(
-                    name="Errors/all", scope="", duration=0.0, exclusive=None
-                )
+                yield TimeMetric(name="Errors/all", scope="", duration=0.0, exclusive=None)
 
                 # Generate individual error metric for transaction.
-                yield TimeMetric(
-                    name="Errors/%s" % self.path, scope="", duration=0.0, exclusive=None
-                )
+                yield TimeMetric(name="Errors/%s" % self.path, scope="", duration=0.0, exclusive=None)
 
                 # Generate rollup metric for WebTransaction errors.
-                yield TimeMetric(
-                    name="Errors/all%s" % metric_suffix,
-                    scope="",
-                    duration=0.0,
-                    exclusive=None,
-                )
+                yield TimeMetric(name="Errors/all%s" % metric_suffix, scope="", duration=0.0, exclusive=None)
             else:
-                yield TimeMetric(
-                    name="ErrorsExpected/all", scope="", duration=0.0, exclusive=None
-                )
+                yield TimeMetric(name="ErrorsExpected/all", scope="", duration=0.0, exclusive=None)
 
         # Now for the children.
         for child in self.root.children:
@@ -338,11 +303,7 @@ class TransactionNode(_TransactionNode):
         # Generate the rollup metric.
 
         yield ApdexMetric(
-            name="Apdex",
-            satisfying=satisfying,
-            tolerating=tolerating,
-            frustrating=frustrating,
-            apdex_t=self.apdex_t,
+            name="Apdex", satisfying=satisfying, tolerating=tolerating, frustrating=frustrating, apdex_t=self.apdex_t
         )
 
     def error_details(self):
@@ -382,21 +343,34 @@ class TransactionNode(_TransactionNode):
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params["userAttributes"][attr.name] = attr.value
 
-            # add error specific custom params to this error's userAttributes
+            # add error specific agent attributes to this error's agentAttributes
 
-            err_attrs = create_user_attributes(
-                error.custom_params, self.settings.attribute_filter
-            )
+            err_agent_attrs = {}
+            error_group_name = error.error_group_name
+            if error_group_name:
+                err_agent_attrs["error.group.name"] = error_group_name
+
+            # add source context attrs for error
+            if (
+                self.settings
+                and self.settings.code_level_metrics
+                and self.settings.code_level_metrics.enabled
+                and getattr(error, "source", None)
+            ):
+                error.source.add_attrs(err_agent_attrs.__setitem__)
+
+            err_agent_attrs = create_agent_attributes(err_agent_attrs, self.settings.attribute_filter)
+            for attr in err_agent_attrs:
+                if attr.destinations & DST_ERROR_COLLECTOR:
+                    params["agentAttributes"][attr.name] = attr.value
+
+            err_attrs = create_user_attributes(error.custom_params, self.settings.attribute_filter)
             for attr in err_attrs:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params["userAttributes"][attr.name] = attr.value
 
             yield newrelic.core.error_collector.TracedError(
-                start_time=error.timestamp,
-                path=self.path,
-                message=error.message,
-                type=error.type,
-                parameters=params,
+                start_time=error.timestamp, path=self.path, message=error.message, type=error.type, parameters=params
             )
 
     def transaction_trace(self, stats, limit, connections):
@@ -439,11 +413,7 @@ class TransactionNode(_TransactionNode):
         )
 
         return newrelic.core.trace_node.RootNode(
-            start_time=start_time,
-            empty0={},
-            empty1={},
-            root=root,
-            attributes=attributes,
+            start_time=start_time, empty0={}, empty1={}, root=root, attributes=attributes
         )
 
     def slow_sql_nodes(self, stats):
@@ -503,6 +473,10 @@ class TransactionNode(_TransactionNode):
             if value:
                 intrinsics[key] = value
 
+        apdex_perf_zone = self.apdex_perf_zone()
+        _add_if_not_empty("apdexPerfZone", apdex_perf_zone)
+        _add_if_not_empty("nr.apdexPerfZone", apdex_perf_zone)
+
         if self.errors:
             intrinsics["error"] = True
 
@@ -512,13 +486,8 @@ class TransactionNode(_TransactionNode):
             intrinsics["nr.pathHash"] = self.path_hash
 
             _add_if_not_empty("nr.referringPathHash", self.referring_path_hash)
-            _add_if_not_empty(
-                "nr.alternatePathHashes", ",".join(self.alternate_path_hashes)
-            )
-            _add_if_not_empty(
-                "nr.referringTransactionGuid", self.referring_transaction_guid
-            )
-            _add_if_not_empty("nr.apdexPerfZone", self.apdex_perf_zone())
+            _add_if_not_empty("nr.alternatePathHashes", ",".join(self.alternate_path_hashes))
+            _add_if_not_empty("nr.referringTransactionGuid", self.referring_transaction_guid)
 
         if self.synthetics_resource_id:
             intrinsics["nr.guid"] = self.guid
@@ -550,11 +519,21 @@ class TransactionNode(_TransactionNode):
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     user_attributes[attr.name] = attr.value
 
+            # add error specific agent attributes to this error's agentAttributes
+
+            err_agent_attrs = {}
+            error_group_name = error.error_group_name
+            if error_group_name:
+                err_agent_attrs["error.group.name"] = error_group_name
+
+            err_agent_attrs = create_agent_attributes(err_agent_attrs, self.settings.attribute_filter)
+            for attr in err_agent_attrs:
+                if attr.destinations & DST_ERROR_COLLECTOR:
+                    agent_attributes[attr.name] = attr.value
+
             # add error specific custom params to this error's userAttributes
 
-            err_attrs = create_user_attributes(
-                error.custom_params, self.settings.attribute_filter
-            )
+            err_attrs = create_user_attributes(error.custom_params, self.settings.attribute_filter)
             for attr in err_attrs:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     user_attributes[attr.name] = attr.value
@@ -646,9 +625,7 @@ class TransactionNode(_TransactionNode):
         return intrinsics
 
     def span_protos(self, settings):
-        for i_attrs, u_attrs, a_attrs in self.span_events(
-            settings, attr_class=SpanProtoAttrs
-        ):
+        for i_attrs, u_attrs, a_attrs in self.span_events(settings, attr_class=SpanProtoAttrs):
             yield Span(
                 trace_id=self.trace_id,
                 intrinsics=i_attrs,
@@ -676,17 +653,11 @@ class TransactionNode(_TransactionNode):
                 trace_state=None,
                 parent_span_id=parent_id,
                 name=i_attrs["name"],
-                kind="SPAN_KIND_CLIENT"
-                if i_attrs.get("span.kind") == "client"
-                else "SPAN_KIND_INTERNAL",
+                kind="SPAN_KIND_CLIENT" if i_attrs.get("span.kind") == "client" else "SPAN_KIND_INTERNAL",
                 start_time_unix_nano=start_time_ns,
                 end_time_unix_nano=end_time_ns,
                 attributes=None,  # TODO: convert u_attrs to attributes
-                status=Status(
-                    code="STATUS_CODE_OK"
-                    if "error.class" not in a_attrs
-                    else "STATUS_CODE_ERROR"
-                ),
+                status=Status(code="STATUS_CODE_OK" if "error.class" not in a_attrs else "STATUS_CODE_ERROR"),
             )
 
     def span_events(self, settings, attr_class=dict):

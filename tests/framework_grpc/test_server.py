@@ -18,11 +18,13 @@ import pytest
 from conftest import create_stub_and_channel
 from _test_common import create_request, wait_for_transaction_completion
 from newrelic.core.config import global_settings
-from testing_support.fixtures import (validate_transaction_metrics,
-        validate_transaction_event_attributes, override_application_settings,
-        override_generic_settings, function_not_called,
-        validate_transaction_errors)
-
+from testing_support.fixtures import (
+        override_application_settings,
+        override_generic_settings, function_not_called)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
@@ -49,6 +51,7 @@ def test_simple(method_name, streaming_request, mock_grpc_server, stub):
         "sample_application:SampleApplicationServicer.{}".format(method_name)
     method = getattr(stub, method_name)
 
+    @validate_code_level_metrics("sample_application.SampleApplicationServicer", method_name)
     @validate_transaction_metrics(_transaction_name)
     @override_application_settings({'attributes.include': ['request.*']})
     @validate_transaction_event_attributes(
@@ -89,6 +92,7 @@ def test_raises_response_status(method_name, streaming_request,
 
     status_code = str(grpc.StatusCode.UNKNOWN.value[0])
 
+    @validate_code_level_metrics("sample_application.SampleApplicationServicer", method_name)
     @validate_transaction_errors(errors=[select_python_version(
         py2='exceptions:AssertionError', py3='builtins:AssertionError')])
     @validate_transaction_metrics(_transaction_name)
@@ -118,10 +122,12 @@ def test_raises_response_status(method_name, streaming_request,
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_abort(method_name, streaming_request, mock_grpc_server, stub):
+    method_name += 'Abort'
     port = mock_grpc_server
     request = create_request(streaming_request)
-    method = getattr(stub, method_name + 'Abort')
+    method = getattr(stub, method_name)
 
+    @validate_code_level_metrics("sample_application.SampleApplicationServicer", method_name)
     @validate_transaction_errors(errors=[select_python_version(
         py2='exceptions:Exception', py3='builtins:Exception')])
     @wait_for_transaction_completion
@@ -138,10 +144,12 @@ def test_abort(method_name, streaming_request, mock_grpc_server, stub):
 
 @pytest.mark.parametrize(*_test_matrix)
 def test_abort_with_status(method_name, streaming_request, mock_grpc_server, stub):
+    method_name += 'AbortWithStatus'
     port = mock_grpc_server
     request = create_request(streaming_request)
-    method = getattr(stub, method_name + 'AbortWithStatus')
+    method = getattr(stub, method_name)
 
+    @validate_code_level_metrics("sample_application.SampleApplicationServicer", method_name)
     @validate_transaction_errors(errors=[select_python_version(
         py2='exceptions:Exception', py3='builtins:Exception')])
     @wait_for_transaction_completion

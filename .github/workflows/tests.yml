@@ -19,237 +19,222 @@ on:
     branches:
       - main
     tags-ignore:
-      - '**'
+      - "**"
   pull_request:
-    branches:
-      - main
-      - feature/*
-      - feature-*
+  schedule:
+    - cron: "0 15 * * *"
+
+concurrency:
+  group: ${{ github.ref || github.run_id }}-${{ github.workflow }}
+  cancel-in-progress: true
 
 jobs:
+  # Aggregate job that provides a single check for all tests passing
+  tests:
+    runs-on: ubuntu-20.04
+    needs:
+      - python
+      - elasticsearchserver07
+      - elasticsearchserver08
+      - gearman
+      - grpc
+      #- kafka
+      - libcurl
+      - memcached
+      - mongodb
+      - mysql
+      - postgres
+      - rabbitmq
+      - redis
+      - solr
+
+    steps:
+      - name: Success
+        run: echo "Success!"
+
+  # Combine and upload coverage data
+  coverage:
+    if: success() || failure() # Does not run on cancelled workflows
+    runs-on: ubuntu-20.04
+    needs:
+      - tests
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          architecture: x64
+
+      - name: Download Coverage Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./
+
+      - name: Combine Coverage
+        run: |
+          pip install coverage
+          find . -name ".coverage.*" -exec mv {} ./ \;
+          coverage combine
+          coverage xml
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: coverage.xml
+          fail_ci_if_error: true
+
+  # Tests
   python:
-    env: 
+    env:
       TOTAL_GROUPS: 20
 
     strategy:
+      fail-fast: false
       matrix:
-        group-number: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+        group-number:
+          [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+          ]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
-
-    # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   grpc:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }}
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
-
-    # Setup pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }}
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   libcurl:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      # Special case packages
+      - name: Install libcurl-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install libcurl4-openssl-dev
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    # Special case packages
-    - name: Install libcurl-dev
-      run: |
-        sudo apt-get update
-        sudo apt-get install libcurl4-openssl-dev
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   postgres:
-    env: 
+    env:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -267,74 +252,49 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - name: Install odbc driver for postgresql
+        run: |
+          sudo apt-get update
+          sudo sudo apt-get install odbc-postgresql
+          sudo sed -i 's/Driver=psqlodbca.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psqlodbca.so/g' /etc/odbcinst.ini
+          sudo sed -i 's/Driver=psqlodbcw.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psqlodbcw.so/g' /etc/odbcinst.ini
+          sudo sed -i 's/Setup=libodbcpsqlS.so/Setup=\/usr\/lib\/x86_64-linux-gnu\/odbc\/libodbcpsqlS.so/g' /etc/odbcinst.ini
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   mysql:
-    env: 
+    env:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     services:
       mysql:
@@ -355,74 +315,41 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   redis:
-    env: 
-      TOTAL_GROUPS: 1
+    env:
+      TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
-        group-number: [1]
+        group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     services:
       redis:
@@ -438,74 +365,41 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   solr:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     services:
       solr:
@@ -523,74 +417,41 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   memcached:
-    env: 
+    env:
       TOTAL_GROUPS: 2
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     services:
       memcached:
@@ -606,74 +467,41 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   rabbitmq:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     services:
       rabbitmq:
@@ -690,74 +518,113 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
+  #kafka:
+  #  env:
+  #    TOTAL_GROUPS: 4
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
+  #  strategy:
+  #    fail-fast: false
+  #    matrix:
+  #      group-number: [1, 2, 3, 4]
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
+  #  runs-on: ubuntu-20.04
+  #  timeout-minutes: 30
 
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
+  #  services:
+  #    zookeeper:
+  #      image: bitnami/zookeeper:3.7
+  #      env:
+  #        ALLOW_ANONYMOUS_LOGIN: yes
 
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
+  #      ports:
+  #        - 2181:2181
 
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
+  #    kafka:
+  #      image: bitnami/kafka:3.2
+  #      ports:
+  #        - 8080:8080
+  #        - 8081:8081
+  #      env:
+  #        ALLOW_PLAINTEXT_LISTENER: yes
+  #        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  #        KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+  #        KAFKA_CFG_LISTENERS: L1://:8080,L2://:8081
+  #        KAFKA_CFG_ADVERTISED_LISTENERS: L1://127.0.0.1:8080,L2://kafka:8081,
+  #        KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT
+  #        KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L2
 
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+  #  steps:
+  #    - uses: actions/checkout@v3
+  #    - uses: ./.github/actions/setup-python-matrix
+
+  #    # Special case packages
+  #    - name: Install librdkafka-dev
+  #      run: |
+  #        # Use lsb-release to find the codename of Ubuntu to use to install the correct library name
+  #        sudo apt-get update
+  #        sudo ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+  #        sudo apt-get install -y wget gnupg2 software-properties-common
+  #        sudo wget -qO - https://packages.confluent.io/deb/7.2/archive.key | sudo apt-key add -
+  #        sudo add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
+  #        sudo apt-get update
+  #        sudo apt-get install -y librdkafka-dev/$(lsb_release -c | cut -f 2)
+
+  #    - name: Get Environments
+  #      id: get-envs
+  #      run: |
+  #        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+  #      env:
+  #        GROUP_NUMBER: ${{ matrix.group-number }}
+
+  #    - name: Test
+  #      run: |
+  #        tox -vv -e ${{ steps.get-envs.outputs.envs }}
+  #      env:
+  #        TOX_PARALLEL_NO_SPINNER: 1
+  #        PY_COLORS: 0
+
+  #    - name: Upload Coverage Artifacts
+  #      uses: actions/upload-artifact@v3
+  #      with:
+  #        name: coverage-${{ github.job }}-${{ strategy.job-index }}
+  #        path: ./**/.coverage.*
+  #        retention-days: 1
 
   mongodb:
-    env: 
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     services:
       mongodb:
@@ -773,78 +640,45 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
-
-  elasticsearch:
-    env: 
+  elasticsearchserver07:
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     services:
-      es01:
-        image: elasticsearch:1.4.4
+      es07:
+        image: elasticsearch:7.17.8
         env:
           "discovery.type": "single-node"
         ports:
@@ -858,74 +692,94 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
-
-  gearman:
-    env: 
+  elasticsearchserver08:
+    env:
       TOTAL_GROUPS: 1
 
     strategy:
+      fail-fast: false
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
+
+    services:
+      es08:
+        image: elasticsearch:8.6.0
+        env:
+          "xpack.security.enabled": "false"
+          "discovery.type": "single-node"
+        ports:
+          - 8080:9200
+          - 8081:9200
+        # Set health checks to wait until elasticsearch has started
+        options: >-
+          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
+  gearman:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
 
     services:
       gearman:
@@ -940,61 +794,26 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-python-matrix
 
-    # Set up all versions of python
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy3
-        architecture: x64
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-    # Set up pypy2 after pypy3 to ensure pypy isn't aliased to pypy3
-    - uses: actions/setup-python@v2
-      with:
-        python-version: pypy2
-        architecture: x64
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 2.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.6
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-        architecture: x64
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-        architecture: x64
-
-    # Set up python 3.9 last to ensure tox runs CPython
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        architecture: x64
-
-    - name: Install Dependencies
-      run: |
-        pip install -U pip
-        pip install -U wheel setuptools tox virtualenv!=20.0.24
-
-    - name: Get Environments
-      id: get-envs
-      run: |
-        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-      env:
-        GROUP_NUMBER: ${{ matrix.group-number }}
-
-    - name: Test
-      run: |
-        tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-      env:
-        TOX_PARALLEL_NO_SPINNER: 1
-        PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1

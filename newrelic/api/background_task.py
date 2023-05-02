@@ -24,11 +24,11 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 class BackgroundTask(Transaction):
 
-    def __init__(self, application, name, group=None):
+    def __init__(self, application, name, group=None, source=None):
 
         # Initialise the common transaction base class.
 
-        super(BackgroundTask, self).__init__(application)
+        super(BackgroundTask, self).__init__(application, source=source)
 
         # Mark this as a background task even if disabled.
 
@@ -97,7 +97,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
                 return None
 
-            return BackgroundTask(_application, _name, _group)
+            return BackgroundTask(_application, _name, _group, source=wrapped)
 
         proxy = async_proxy(wrapped)
 

@@ -1,0 +1,38 @@
+# Configuration file for Mega-Linter
+# See all available variables at https://oxsecurity.github.io/megalinter/configuration/ and in linters documentation
+
+APPLY_FIXES: none # all, none, or list of linter keys
+DEFAULT_BRANCH: main # Usually master or main
+SHOW_ELAPSED_TIME: true
+FILEIO_REPORTER: false
+PRINT_ALPACA: false
+VALIDATE_ALL_CODEBASE: false # only lint new and edited files
+IGNORE_GITIGNORED_FILES: true
+FILTER_REGEX_EXCLUDE: "(.*/?packages/.*)" # Ignore packages directories
+
+ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be disabled by default
+  - MARKDOWN_MARKDOWN_LINK_CHECK
+  - MARKDOWN_MARKDOWNLINT
+  - PYTHON_BANDIT
+  - PYTHON_BLACK
+  - PYTHON_FLAKE8
+  - PYTHON_ISORT
+  - PYTHON_PYLINT
+  - RST_RST_LINT
+  - RST_RSTCHECK
+  - RST_RSTFMT
+  - YAML_PRETTIER
+  - YAML_V8R
+  - YAML_YAMLLINT
+
+PYTHON_FLAKE8_CONFIG_FILE: setup.cfg
+PYTHON_BLACK_CONFIG_FILE: pyproject.toml
+PYTHON_PYLINT_CONFIG_FILE: pyproject.toml
+PYTHON_ISORT_CONFIG_FILE: pyproject.toml
+PYTHON_BANDIT_CONFIG_FILE: pyproject.toml
+PYTHON_BANDIT_FILTER_REGEX_EXCLUDE: "tests"
+PYTHON_BANDIT_PRE_COMMANDS:
+  - command: "pip install bandit[toml]"
+    cwd: "workspace"
+
+PYTHON_PYLINT_ARGUMENTS: "--fail-under=0 --fail-on=E"

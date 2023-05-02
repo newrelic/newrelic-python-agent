@@ -16,17 +16,18 @@
 
 """
 
-from newrelic.api.wsgi_application import wrap_wsgi_application
+from inspect import isclass
+
 from newrelic.api.function_trace import (
     FunctionTrace,
-    wrap_function_trace,
     FunctionTraceWrapper,
+    wrap_function_trace,
 )
-from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
-
-from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
+from newrelic.api.transaction import current_transaction
+from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 
 
 def framework_details():
@@ -54,13 +55,30 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     name = getattr(wrapped, "_nr_view_func_name", callable_name(wrapped))
+    view = getattr(wrapped, "view_class", wrapped)
+
+    try:
+        # Attempt to narrow down class based views to the correct method
+        from flask import request
+        from flask.views import MethodView
+
+        if isclass(view):
+            if issubclass(view, MethodView):
+                # For method based views, use the corresponding method if available
+                method = request.method.lower()
+                view = getattr(view, method, view)
+            else:
+                # For class based views, use the dispatch_request function if available
+                view = getattr(view, "dispatch_request", view)
+    except ImportError:
+        pass
 
     # Set priority=2 so this will take precedence over any error
     # handler which will be at priority=1.
 
     transaction.set_transaction_name(name, priority=2)
 
-    with FunctionTrace(name):
+    with FunctionTrace(name=name, source=view):
         return wrapped(*args, **kwargs)
 
 
@@ -110,8 +128,7 @@ def _nr_wrapper_Flask_handle_http_exception_(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name, priority=1)
 
-    with FunctionTrace(name):
-        return wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Flask_handle_exception_(wrapped, instance, args, kwargs):
@@ -128,8 +145,7 @@ def _nr_wrapper_Flask_handle_exception_(wrapped, instance, args, kwargs):
 
     name = callable_name(wrapped)
 
-    with FunctionTrace(name):
-        return wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 @function_wrapper
@@ -147,8 +163,7 @@ def _nr_wrapper_error_handler_(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name, priority=1)
 
-    with FunctionTrace(name):
-        return wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Flask__register_error_handler_(wrapped, instance, args, kwargs):
@@ -173,9 +188,7 @@ def _nr_wrapper_Flask_register_error_handler_(wrapped, instance, args, kwargs):
     return wrapped(code_or_exception, f)
 
 
-def _nr_wrapper_Flask_try_trigger_before_first_request_functions_(
-    wrapped, instance, args, kwargs
-):
+def _nr_wrapper_Flask_try_trigger_before_first_request_functions_(wrapped, instance, args, kwargs):
 
     transaction = current_transaction()
 
@@ -192,8 +205,7 @@ def _nr_wrapper_Flask_try_trigger_before_first_request_functions_(
 
     transaction.set_transaction_name(name)
 
-    with FunctionTrace(name):
-        return wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Flask_before_first_request_(wrapped, instance, args, kwargs):
@@ -217,8 +229,7 @@ def _nr_wrapper_Flask_before_request_wrapped_(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name)
 
-    with FunctionTrace(name):
-        return wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Flask_before_request_(wrapped, instance, args, kwargs):
@@ -266,30 +277,22 @@ def instrument_flask_views(module):
 
 
 def instrument_flask_app(module):
-    wrap_wsgi_application(module, "Flask.wsgi_app", framework=framework_details())
+    wrap_wsgi_application(module, "Flask.wsgi_app", framework=framework_details)
 
-    wrap_function_wrapper(
-        module, "Flask.add_url_rule", _nr_wrapper_Flask_add_url_rule_input_
-    )
+    wrap_function_wrapper(module, "Flask.add_url_rule", _nr_wrapper_Flask_add_url_rule_input_)
 
     if hasattr(module.Flask, "endpoint"):
         wrap_function_wrapper(module, "Flask.endpoint", _nr_wrapper_Flask_endpoint_)
 
-    wrap_function_wrapper(
-        module, "Flask.handle_http_exception", _nr_wrapper_Flask_handle_http_exception_
-    )
+    wrap_function_wrapper(module, "Flask.handle_http_exception", _nr_wrapper_Flask_handle_http_exception_)
 
     # Use the same wrapper for initial user exception processing and
     # fallback for unhandled exceptions.
 
     if hasattr(module.Flask, "handle_user_exception"):
-        wrap_function_wrapper(
-            module, "Flask.handle_user_exception", _nr_wrapper_Flask_handle_exception_
-        )
+        wrap_function_wrapper(module, "Flask.handle_user_exception", _nr_wrapper_Flask_handle_exception_)
 
-    wrap_function_wrapper(
-        module, "Flask.handle_exception", _nr_wrapper_Flask_handle_exception_
-    )
+    wrap_function_wrapper(module, "Flask.handle_exception", _nr_wrapper_Flask_handle_exception_)
 
     # The _register_error_handler() method was only introduced in
     # Flask version 0.7.0.
@@ -326,27 +329,19 @@ def instrument_flask_app(module):
 
     if hasattr(module.Flask, "preprocess_request"):
         wrap_function_trace(module, "Flask.preprocess_request")
-        wrap_function_wrapper(
-            module, "Flask.before_request", _nr_wrapper_Flask_before_request_
-        )
+        wrap_function_wrapper(module, "Flask.before_request", _nr_wrapper_Flask_before_request_)
 
     if hasattr(module.Flask, "process_response"):
         wrap_function_trace(module, "Flask.process_response")
-        wrap_function_wrapper(
-            module, "Flask.after_request", _nr_wrapper_Flask_after_request_
-        )
+        wrap_function_wrapper(module, "Flask.after_request", _nr_wrapper_Flask_after_request_)
 
     if hasattr(module.Flask, "do_teardown_request"):
         wrap_function_trace(module, "Flask.do_teardown_request")
-        wrap_function_wrapper(
-            module, "Flask.teardown_request", _nr_wrapper_Flask_teardown_request_
-        )
+        wrap_function_wrapper(module, "Flask.teardown_request", _nr_wrapper_Flask_teardown_request_)
 
     if hasattr(module.Flask, "do_teardown_appcontext"):
         wrap_function_trace(module, "Flask.do_teardown_appcontext")
-        wrap_function_wrapper(
-            module, "Flask.teardown_appcontext", _nr_wrapper_Flask_teardown_appcontext_
-        )
+        wrap_function_wrapper(module, "Flask.teardown_appcontext", _nr_wrapper_Flask_teardown_appcontext_)
 
 
 def instrument_flask_templating(module):
@@ -370,8 +365,7 @@ def _nr_wrapper_Blueprint_before_request_wrapped_(wrapped, instance, args, kwarg
 
     transaction.set_transaction_name(name)
 
-    with FunctionTrace(name):
-        return wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
 def _nr_wrapper_Blueprint_before_request_(wrapped, instance, args, kwargs):
@@ -448,9 +442,7 @@ def instrument_flask_blueprints(module):
     wrap_function_wrapper(module, "Blueprint.endpoint", _nr_wrapper_Blueprint_endpoint_)
 
     if hasattr(module.Blueprint, "before_request"):
-        wrap_function_wrapper(
-            module, "Blueprint.before_request", _nr_wrapper_Blueprint_before_request_
-        )
+        wrap_function_wrapper(module, "Blueprint.before_request", _nr_wrapper_Blueprint_before_request_)
     if hasattr(module.Blueprint, "before_app_request"):
         wrap_function_wrapper(
             module,
@@ -465,9 +457,7 @@ def instrument_flask_blueprints(module):
         )
 
     if hasattr(module.Blueprint, "after_request"):
-        wrap_function_wrapper(
-            module, "Blueprint.after_request", _nr_wrapper_Blueprint_after_request_
-        )
+        wrap_function_wrapper(module, "Blueprint.after_request", _nr_wrapper_Blueprint_after_request_)
     if hasattr(module.Blueprint, "after_app_request"):
         wrap_function_wrapper(
             module,

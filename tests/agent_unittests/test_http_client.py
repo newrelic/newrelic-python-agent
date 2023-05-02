@@ -19,6 +19,10 @@ import ssl
 import zlib
 
 import pytest
+from testing_support.mock_external_http_server import (
+    BaseHTTPServer,
+    MockExternalHTTPServer,
+)
 
 from newrelic.common import certs
 from newrelic.common.agent_http import (
@@ -34,10 +38,6 @@ from newrelic.core.internal_metrics import InternalTraceContext
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import NetworkInterfaceException
 from newrelic.packages.urllib3.util import Url
-from testing_support.mock_external_http_server import (
-    BaseHTTPServer,
-    MockExternalHTTPServer,
-)
 
 try:
     from StringIO import StringIO
@@ -80,7 +80,10 @@ class InsecureServer(MockExternalHTTPServer):
 
         handler = type(
             "ResponseHandler",
-            (BaseHTTPServer.BaseHTTPRequestHandler, object,),
+            (
+                BaseHTTPServer.BaseHTTPRequestHandler,
+                object,
+            ),
             {"do_GET": handler, "do_POST": handler, "do_CONNECT": do_CONNECT},
         )
         self.httpd = BaseHTTPServer.HTTPServer(("localhost", self.port), handler)
@@ -99,13 +102,22 @@ class InsecureServer(MockExternalHTTPServer):
 class SecureServer(InsecureServer):
     def __init__(self, *args, **kwargs):
         super(SecureServer, self).__init__(*args, **kwargs)
-        self.httpd.socket = ssl.wrap_socket(
-            self.httpd.socket,
-            server_side=True,
-            keyfile=SERVER_CERT,
-            certfile=SERVER_CERT,
-            do_handshake_on_connect=False,
-        )
+        try:
+            self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            self.context.load_cert_chain(certfile=SERVER_CERT, keyfile=SERVER_CERT)
+            self.httpd.socket = self.context.wrap_socket(
+                sock=self.httpd.socket,
+                server_side=True,
+                do_handshake_on_connect=False,
+            )
+        except (AttributeError, TypeError):
+            self.httpd.socket = ssl.wrap_socket(
+                self.httpd.socket,
+                server_side=True,
+                keyfile=SERVER_CERT,
+                certfile=SERVER_CERT,
+                do_handshake_on_connect=False,
+            )
 
 
 @pytest.fixture(scope="module")
@@ -126,7 +138,14 @@ def insecure_server():
         (None, "host", 0, None, None, None),
         ("http", None, 8080, None, None, None),
         ("http", "host", 0, None, None, Url(scheme="http", host="host", port=None)),
-        ("http", "host", 8080, None, None, Url(scheme="http", host="host", port=8080),),
+        (
+            "http",
+            "host",
+            8080,
+            None,
+            None,
+            Url(scheme="http", host="host", port=8080),
+        ),
         (
             "http",
             "https://host:8081",
@@ -167,9 +186,7 @@ def test_proxy_parsing(scheme, host, port, username, password, expected):
 
 @pytest.mark.parametrize("method", ("GET", "POST"))
 def test_http_no_payload(server, method):
-    with HttpClient(
-        "localhost", server.port, disable_certificate_validation=True
-    ) as client:
+    with HttpClient("localhost", server.port, disable_certificate_validation=True) as client:
         connection = client._connection_attr
         status, data = client.send_request(method=method, headers={"foo": "bar"})
 
@@ -206,9 +223,7 @@ def test_http_no_payload(server, method):
 def test_non_ok_response(client_cls, server):
     internal_metrics = CustomMetrics()
 
-    with client_cls(
-        "localhost", server.port, disable_certificate_validation=True
-    ) as client:
+    with client_cls("localhost", server.port, disable_certificate_validation=True) as client:
         with InternalTraceContext(internal_metrics):
             status, _ = client.send_request(method="PUT")
 
@@ -226,7 +241,11 @@ def test_non_ok_response(client_cls, server):
 
 
 def test_http_close_connection(server):
-    client = HttpClient("localhost", server.port, disable_certificate_validation=True,)
+    client = HttpClient(
+        "localhost",
+        server.port,
+        disable_certificate_validation=True,
+    )
 
     status, _ = client.send_request()
     assert status == 200
@@ -270,45 +289,47 @@ def test_http_payload_compression(server, client_cls, method, threshold):
         compression_threshold=threshold,
     ) as client:
         with InternalTraceContext(internal_metrics):
-            status, data = client.send_request(
-                payload=payload, params={"method": "test"}
-            )
+            status, data = client.send_request(payload=payload, params={"method": "method1"})
+
+    # Sending one additional request to valid metric aggregation for top level data usage supportability metrics
+    with client_cls(
+        "localhost",
+        server.port,
+        disable_certificate_validation=True,
+        compression_method=method,
+        compression_threshold=threshold,
+    ) as client:
+        with InternalTraceContext(internal_metrics):
+            status, data = client.send_request(payload=payload, params={"method": "method2"})
 
     assert status == 200
     data = data.split(b"\n")
     sent_payload = data[-1]
     payload_byte_len = len(sent_payload)
-
     internal_metrics = dict(internal_metrics.metrics())
     if client_cls is ApplicationModeClient:
-        assert internal_metrics["Supportability/Python/Collector/Output/Bytes/test"][
-            :2
-        ] == [1, payload_byte_len,]
+        assert internal_metrics["Supportability/Python/Collector/method1/Output/Bytes"][:2] == [
+            1,
+            len(payload),
+        ]
+        assert internal_metrics["Supportability/Python/Collector/Output/Bytes"][:2] == [
+            2,
+            len(payload)*2,
+        ]
 
         if threshold < 20:
             # Verify compression time is recorded
-            assert (
-                internal_metrics["Supportability/Python/Collector/ZLIB/Compress/test"][
-                    0
-                ]
-                == 1
-            )
-            assert (
-                internal_metrics["Supportability/Python/Collector/ZLIB/Compress/test"][
-                    1
-                ]
-                > 0
-            )
+            assert internal_metrics["Supportability/Python/Collector/method1/ZLIB/Compress"][0] == 1
+            assert internal_metrics["Supportability/Python/Collector/method1/ZLIB/Compress"][1] > 0
 
-            # Verify the original payload length is recorded
-            assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes/test"][
-                :2
-            ] == [1, len(payload)]
-
-            assert len(internal_metrics) == 3
+            # Verify the compressed payload length is recorded
+            assert internal_metrics["Supportability/Python/Collector/method1/ZLIB/Bytes"][:2] == [1, payload_byte_len]
+            assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes"][:2] == [2, payload_byte_len*2]
+            
+            assert len(internal_metrics) == 8
         else:
             # Verify no ZLIB compression metrics were sent
-            assert len(internal_metrics) == 1
+            assert len(internal_metrics) == 3
     else:
         assert not internal_metrics
 
@@ -369,9 +390,7 @@ def test_default_cert_path(monkeypatch, system_certs_available):
         assert internal_metrics[cert_metric][-3:-1] == [1, 1]
 
 
-@pytest.mark.parametrize(
-    "auth", ((None, None), ("username", None), ("username", "password"))
-)
+@pytest.mark.parametrize("auth", ((None, None), ("username", None), ("username", "password")))
 def test_ssl_via_ssl_proxy(server, auth):
     proxy_user, proxy_pass = auth
     with HttpClient(
@@ -389,9 +408,7 @@ def test_ssl_via_ssl_proxy(server, auth):
     assert status == 200
     data = data.decode("utf-8")
     data = data.split("\n")
-    assert data[0].startswith(
-        "POST https://localhost:1/agent_listener/invoke_raw_method "
-    )
+    assert data[0].startswith("POST https://localhost:1/agent_listener/invoke_raw_method ")
 
     proxy_auth = None
     for header in data[1:-1]:
@@ -404,9 +421,7 @@ def test_ssl_via_ssl_proxy(server, auth):
         auth_expected = proxy_user
         if proxy_pass:
             auth_expected = auth_expected + ":" + proxy_pass
-        auth_expected = "Basic " + base64.b64encode(
-            auth_expected.encode("utf-8")
-        ).decode("utf-8")
+        auth_expected = "Basic " + base64.b64encode(auth_expected.encode("utf-8")).decode("utf-8")
         assert proxy_auth == auth_expected
     else:
         assert not proxy_auth
@@ -428,9 +443,7 @@ def test_non_ssl_via_ssl_proxy(server):
     assert status == 200
     data = data.decode("utf-8")
     data = data.split("\n")
-    assert data[0].startswith(
-        "POST http://localhost:1/agent_listener/invoke_raw_method "
-    )
+    assert data[0].startswith("POST http://localhost:1/agent_listener/invoke_raw_method ")
 
     assert server.httpd.connect_host is None
 
@@ -448,16 +461,12 @@ def test_non_ssl_via_non_ssl_proxy(insecure_server):
     assert status == 200
     data = data.decode("utf-8")
     data = data.split("\n")
-    assert data[0].startswith(
-        "POST http://localhost:1/agent_listener/invoke_raw_method "
-    )
+    assert data[0].startswith("POST http://localhost:1/agent_listener/invoke_raw_method ")
 
     assert insecure_server.httpd.connect_host is None
 
 
-@pytest.mark.parametrize(
-    "auth", ((None, None), ("username", None), ("username", "password"))
-)
+@pytest.mark.parametrize("auth", ((None, None), ("username", None), ("username", "password")))
 def test_ssl_via_non_ssl_proxy(insecure_server, auth):
     proxy_user, proxy_pass = auth
     with HttpClient(
@@ -480,13 +489,8 @@ def test_ssl_via_non_ssl_proxy(insecure_server, auth):
             auth_expected = proxy_user
             if proxy_pass:
                 auth_expected = auth_expected + ":" + proxy_pass
-            auth_expected = "Basic " + base64.b64encode(
-                auth_expected.encode("utf-8")
-            ).decode("utf-8")
-            assert (
-                insecure_server.httpd.connect_headers["proxy-authorization"]
-                == auth_expected
-            )
+            auth_expected = "Basic " + base64.b64encode(auth_expected.encode("utf-8")).decode("utf-8")
+            assert insecure_server.httpd.connect_headers["proxy-authorization"] == auth_expected
         else:
             assert "proxy-authorization" not in insecure_server.httpd.connect_headers
         assert insecure_server.httpd.connect_host == "localhost"
@@ -496,9 +500,7 @@ def test_ssl_via_non_ssl_proxy(insecure_server, auth):
 
 
 def test_max_payload_does_not_send(insecure_server):
-    with InsecureHttpClient(
-        "localhost", insecure_server.port, max_payload_size_in_bytes=0
-    ) as client:
+    with InsecureHttpClient("localhost", insecure_server.port, max_payload_size_in_bytes=0) as client:
         status, data = client.send_request(payload=b"*")
 
     assert status == 413
@@ -556,7 +558,8 @@ def test_serverless_mode_client():
         for method in methods:
             params = {"method": method}
             status, data = client.send_request(
-                params=params, payload=json.dumps({"method": method}).encode("utf-8"),
+                params=params,
+                payload=json.dumps({"method": method}).encode("utf-8"),
             )
 
             assert status == 200
@@ -626,8 +629,7 @@ def test_audit_logging(server, insecure_server, client_cls, proxy_host, exceptio
             connection = "direct"
         assert internal_metrics == {
             "Supportability/Python/Collector/Failures": [1, 0, 0, 0, 0, 0],
-            "Supportability/Python/Collector/Failures/%s"
-            % connection: [1, 0, 0, 0, 0, 0],
+            "Supportability/Python/Collector/Failures/%s" % connection: [1, 0, 0, 0, 0, 0],
             "Supportability/Python/Collector/Exception/%s" % exc: [1, 0, 0, 0, 0, 0],
         }
     else:

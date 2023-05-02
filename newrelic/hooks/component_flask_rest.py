@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
 from newrelic.common.object_wrapper import wrap_function_wrapper
 

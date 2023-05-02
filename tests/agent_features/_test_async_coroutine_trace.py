@@ -14,42 +14,41 @@
 
 import asyncio
 import functools
-import pytest
+import sys
 import time
+
+import pytest
+from testing_support.fixtures import capture_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import database_trace
 from newrelic.api.datastore_trace import datastore_trace
-from newrelic.api.function_trace import function_trace
 from newrelic.api.external_trace import external_trace
+from newrelic.api.function_trace import function_trace
 from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
 
-from testing_support.fixtures import (validate_transaction_metrics,
-        capture_transaction_metrics)
 
-
-@pytest.mark.parametrize('trace,metric', [
-    (functools.partial(function_trace, name='simple_gen'),
-            'Function/simple_gen'),
-    (functools.partial(external_trace, library='lib', url='http://foo.com'),
-            'External/foo.com/lib/'),
-    (functools.partial(database_trace, 'select * from foo'),
-            'Datastore/statement/None/foo/select'),
-    (functools.partial(datastore_trace, 'lib', 'foo', 'bar'),
-            'Datastore/statement/lib/foo/bar'),
-    (functools.partial(message_trace, 'lib', 'op', 'typ', 'name'),
-            'MessageBroker/lib/typ/op/Named/name'),
-    (functools.partial(memcache_trace, 'cmd'),
-            'Memcache/cmd'),
-])
-def test_awaitable_timing(trace, metric):
-
+@pytest.mark.parametrize(
+    "trace,metric",
+    [
+        (functools.partial(function_trace, name="simple_gen"), "Function/simple_gen"),
+        (functools.partial(external_trace, library="lib", url="http://foo.com"), "External/foo.com/lib/"),
+        (functools.partial(database_trace, "select * from foo"), "Datastore/statement/None/foo/select"),
+        (functools.partial(datastore_trace, "lib", "foo", "bar"), "Datastore/statement/lib/foo/bar"),
+        (functools.partial(message_trace, "lib", "op", "typ", "name"), "MessageBroker/lib/typ/op/Named/name"),
+        (functools.partial(memcache_trace, "cmd"), "Memcache/cmd"),
+    ],
+)
+def test_awaitable_timing(event_loop, trace, metric):
     @trace()
     async def coro():
         await asyncio.sleep(0.1)
 
-    @background_task(name='test_awaitable')
+    @background_task(name="test_awaitable")
     async def parent():
         await coro()
 
@@ -58,45 +57,42 @@ def test_awaitable_timing(trace, metric):
 
     @capture_transaction_metrics(metrics, full_metrics)
     @validate_transaction_metrics(
-            'test_awaitable',
-            background_task=True,
-            scoped_metrics=[(metric, 1)],
-            rollup_metrics=[(metric, 1)])
+        "test_awaitable", background_task=True, scoped_metrics=[(metric, 1)], rollup_metrics=[(metric, 1)]
+    )
     def _test():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(parent())
+        event_loop.run_until_complete(parent())
 
     _test()
 
     # Check that coroutines time the total call time (including pauses)
-    metric_key = (metric, '')
+    metric_key = (metric, "")
     assert full_metrics[metric_key].total_call_time >= 0.1
 
 
-@pytest.mark.parametrize('trace,metric', [
-    (functools.partial(function_trace, name='simple_gen'),
-            'Function/simple_gen'),
-    (functools.partial(external_trace, library='lib', url='http://foo.com'),
-            'External/foo.com/lib/'),
-    (functools.partial(database_trace, 'select * from foo'),
-            'Datastore/statement/None/foo/select'),
-    (functools.partial(datastore_trace, 'lib', 'foo', 'bar'),
-            'Datastore/statement/lib/foo/bar'),
-    (functools.partial(message_trace, 'lib', 'op', 'typ', 'name'),
-            'MessageBroker/lib/typ/op/Named/name'),
-    (functools.partial(memcache_trace, 'cmd'),
-            'Memcache/cmd'),
-])
-@pytest.mark.parametrize('yield_from', [True, False])
-@pytest.mark.parametrize('use_await', [True, False])
-@pytest.mark.parametrize('coro_decorator_first', [True, False])
-def test_asyncio_decorator_timing(trace, metric, yield_from,
-        use_await, coro_decorator_first):
+@pytest.mark.skipif(sys.version_info >= (3, 11), reason="Asyncio decorator was removed in Python 3.11+.")
+@pytest.mark.parametrize(
+    "trace,metric",
+    [
+        (functools.partial(function_trace, name="simple_gen"), "Function/simple_gen"),
+        (functools.partial(external_trace, library="lib", url="http://foo.com"), "External/foo.com/lib/"),
+        (functools.partial(database_trace, "select * from foo"), "Datastore/statement/None/foo/select"),
+        (functools.partial(datastore_trace, "lib", "foo", "bar"), "Datastore/statement/lib/foo/bar"),
+        (functools.partial(message_trace, "lib", "op", "typ", "name"), "MessageBroker/lib/typ/op/Named/name"),
+        (functools.partial(memcache_trace, "cmd"), "Memcache/cmd"),
+    ],
+)
+@pytest.mark.parametrize("yield_from", [True, False])
+@pytest.mark.parametrize("use_await", [True, False])
+@pytest.mark.parametrize("coro_decorator_first", [True, False])
+def test_asyncio_decorator_timing(event_loop, trace, metric, yield_from, use_await, coro_decorator_first):
 
     if yield_from:
+
         def coro():
             yield from asyncio.sleep(0.1)
+
     else:
+
         def coro():
             time.sleep(0.1)
 
@@ -106,30 +102,30 @@ def test_asyncio_decorator_timing(trace, metric, yield_from,
         coro = asyncio.coroutine(trace()(coro))
 
     if use_await:
+
         async def parent():
             await coro()
+
     else:
+
         @asyncio.coroutine
         def parent():
             yield from coro()
 
-    parent = background_task(name='test_awaitable')(parent)
+    parent = background_task(name="test_awaitable")(parent)
 
     metrics = []
     full_metrics = {}
 
     @capture_transaction_metrics(metrics, full_metrics)
     @validate_transaction_metrics(
-            'test_awaitable',
-            background_task=True,
-            scoped_metrics=[(metric, 1)],
-            rollup_metrics=[(metric, 1)])
+        "test_awaitable", background_task=True, scoped_metrics=[(metric, 1)], rollup_metrics=[(metric, 1)]
+    )
     def _test():
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(parent())
+        event_loop.run_until_complete(parent())
 
     _test()
 
     # Check that coroutines time the total call time (including pauses)
-    metric_key = (metric, '')
+    metric_key = (metric, "")
     assert full_metrics[metric_key].total_call_time >= 0.1

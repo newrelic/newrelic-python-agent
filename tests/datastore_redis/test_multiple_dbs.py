@@ -17,8 +17,8 @@ import redis
 
 from newrelic.api.background_task import background_task
 
-from testing_support.fixtures import (validate_transaction_metrics,
-    override_application_settings)
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.db_settings import redis_settings
 from testing_support.util import instance_hostname
 
@@ -47,7 +47,7 @@ _base_rollup_metrics = (
         ('Datastore/Redis/all', 3),
         ('Datastore/Redis/allOther', 3),
         ('Datastore/operation/Redis/get', 1),
-        ('Datastore/operation/Redis/get', 1),
+        ('Datastore/operation/Redis/set', 1),
         ('Datastore/operation/Redis/client_list', 1),
 )
 

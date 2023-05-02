@@ -18,7 +18,7 @@
 
 import functools
 
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import (function_wrapper,
@@ -37,8 +37,7 @@ def wrapper_Resource_method(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name)
 
-    with FunctionTrace(name):
-        return wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 def wrapper_Resource(view):
     @function_wrapper

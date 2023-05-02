@@ -14,8 +14,10 @@
 
 import pytest
 
-from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_application_settings)
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
 from newrelic.packages import six
 
@@ -59,6 +61,13 @@ _test_blueprints_index_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_blueprints:index_page',
         scoped_metrics=_test_blueprints_index_scoped_metrics)
+@validate_code_level_metrics("_test_blueprints", "index_page")
+@validate_code_level_metrics("_test_blueprints", "before_app_request")
+@validate_code_level_metrics("_test_blueprints", "before_request")
+@validate_code_level_metrics("_test_blueprints", "after_request")
+@validate_code_level_metrics("_test_blueprints", "after_app_request")
+@validate_code_level_metrics("_test_blueprints", "teardown_app_request")
+@validate_code_level_metrics("_test_blueprints", "teardown_request")
 def test_blueprints_index():
     application = target_application()
     response = application.get('/index')
@@ -82,6 +91,10 @@ _test_blueprints_endpoint_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_blueprints:endpoint_page',
         scoped_metrics=_test_blueprints_endpoint_scoped_metrics)
+@validate_code_level_metrics("_test_blueprints", "endpoint_page")
+@validate_code_level_metrics("_test_blueprints", "before_app_request")
+@validate_code_level_metrics("_test_blueprints", "after_app_request")
+@validate_code_level_metrics("_test_blueprints", "teardown_app_request")
 def test_blueprints_endpoint():
     application = target_application()
     response = application.get('/endpoint')
@@ -109,6 +122,7 @@ _test_blueprints_nested_scoped_metrics = [
 @skip_if_not_nested_blueprint_support
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_blueprints:nested_page')
+@validate_code_level_metrics("_test_blueprints", "nested_page")
 def test_blueprints_nested():
         application = target_application()
         response = application.get('/parent/child/nested')

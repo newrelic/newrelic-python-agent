@@ -52,6 +52,7 @@ class ProtocolProxy(ObjectProxy):
             state.query,
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
+            source=self.__wrapped__.bind_execute,
         ):
             return await self.__wrapped__.bind_execute(state, *args, **kwargs)
 
@@ -60,6 +61,7 @@ class ProtocolProxy(ObjectProxy):
             state.query,
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
+            source=self.__wrapped__.bind_execute_many,
         ):
             return await self.__wrapped__.bind_execute_many(state, *args, **kwargs)
 
@@ -68,6 +70,7 @@ class ProtocolProxy(ObjectProxy):
             state.query,
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
+            source=self.__wrapped__.bind,
         ):
             return await self.__wrapped__.bind(state, *args, **kwargs)
 
@@ -76,6 +79,7 @@ class ProtocolProxy(ObjectProxy):
             state.query,
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
+            source=self.__wrapped__.execute,
         ):
             return await self.__wrapped__.execute(state, *args, **kwargs)
 
@@ -84,6 +88,7 @@ class ProtocolProxy(ObjectProxy):
             query,
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
+            source=self.__wrapped__.query,
         ):
             return await self.__wrapped__.query(query, *args, **kwargs)
 
@@ -94,6 +99,7 @@ class ProtocolProxy(ObjectProxy):
             ),
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
+            source=self.__wrapped__.prepare,
         ):
             return await self.__wrapped__.prepare(stmt_name, query, *args, **kwargs)
 
@@ -102,6 +108,7 @@ class ProtocolProxy(ObjectProxy):
             copy_stmt,
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
+            source=self.__wrapped__.copy_in,
         ):
             return await self.__wrapped__.copy_in(copy_stmt, *args, **kwargs)
 
@@ -110,6 +117,7 @@ class ProtocolProxy(ObjectProxy):
             copy_stmt,
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
+            source=self.__wrapped__.copy_out,
         ):
             return await self.__wrapped__.copy_out(copy_stmt, *args, **kwargs)
 

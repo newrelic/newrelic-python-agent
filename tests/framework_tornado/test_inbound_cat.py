@@ -15,8 +15,9 @@
 import json
 import pytest
 from testing_support.fixtures import (make_cross_agent_headers,
-        override_application_settings, validate_transaction_event_attributes,
-        validate_transaction_metrics)
+        override_application_settings)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 

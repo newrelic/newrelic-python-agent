@@ -14,22 +14,21 @@
 
 import functools
 
-from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace, current_trace
-from newrelic.core.external_node import ExternalNode
+from newrelic.common.async_wrapper import async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+from newrelic.core.external_node import ExternalNode
 
 
 class ExternalTrace(CatHeaderMixin, TimeTrace):
-
     def __init__(self, library, url, method=None, **kwargs):
-        parent = None
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs['parent']
-        super(ExternalTrace, self).__init__(parent)
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(ExternalTrace, self).__init__(parent=parent, source=source)
 
         self.library = library
         self.url = url
@@ -37,11 +36,14 @@ class ExternalTrace(CatHeaderMixin, TimeTrace):
         self.params = {}
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict(
-                library=self.library, url=self.url, method=self.method))
+        return "<%s object at 0x%x %s>" % (
+            self.__class__.__name__,
+            id(self),
+            dict(library=self.library, url=self.url, method=self.method),
+        )
 
     def process_response(self, status_code, headers):
-        self._add_agent_attribute('http.statusCode', status_code)
+        self._add_agent_attribute("http.statusCode", status_code)
         self.process_response_headers(headers)
 
     def terminal_node(self):
@@ -49,22 +51,22 @@ class ExternalTrace(CatHeaderMixin, TimeTrace):
 
     def create_node(self):
         return ExternalNode(
-                library=self.library,
-                url=self.url,
-                method=self.method,
-                children=self.children,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                duration=self.duration,
-                exclusive=self.exclusive,
-                params=self.params,
-                guid=self.guid,
-                agent_attributes=self.agent_attributes,
-                user_attributes=self.user_attributes)
+            library=self.library,
+            url=self.url,
+            method=self.method,
+            children=self.children,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            duration=self.duration,
+            exclusive=self.exclusive,
+            params=self.params,
+            guid=self.guid,
+            agent_attributes=self.agent_attributes,
+            user_attributes=self.user_attributes,
+        )
 
 
 def ExternalTraceWrapper(wrapped, library, url, method=None):
-
     def dynamic_wrapper(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -92,9 +94,9 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
         else:
             _method = method
 
-        trace = ExternalTrace(library, _url, _method, parent=parent)
+        trace = ExternalTrace(library, _url, _method, parent=parent, source=wrapped)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
@@ -109,10 +111,9 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
         else:
             parent = None
 
-        trace = ExternalTrace(library, url, method, parent=parent)
+        trace = ExternalTrace(library, url, method, parent=parent, source=wrapped)
 
-        wrapper = async_wrapper(wrapped)
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
@@ -125,10 +126,8 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
 
 
 def external_trace(library, url, method=None):
-    return functools.partial(ExternalTraceWrapper, library=library,
-            url=url, method=method)
+    return functools.partial(ExternalTraceWrapper, library=library, url=url, method=method)
 
 
 def wrap_external_trace(module, object_path, library, url, method=None):
-    wrap_object(module, object_path, ExternalTraceWrapper,
-            (library, url, method))
+    wrap_object(module, object_path, ExternalTraceWrapper, (library, url, method))

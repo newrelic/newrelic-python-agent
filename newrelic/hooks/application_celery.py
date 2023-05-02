@@ -91,11 +91,11 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
             return wrapped(*args, **kwargs)
 
         elif transaction:
-            with FunctionTrace(callable_name(wrapped)):
+            with FunctionTrace(_name, source=instance):
                 return wrapped(*args, **kwargs)
 
         else:
-            with BackgroundTask(_application(), _name, 'Celery'):
+            with BackgroundTask(_application(), _name, 'Celery', source=instance):
                 return wrapped(*args, **kwargs)
 
     # Start Hotfix v2.2.1.

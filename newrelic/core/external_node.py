@@ -32,6 +32,8 @@ _ExternalNode = namedtuple('_ExternalNode',
 
 
 class ExternalNode(_ExternalNode, GenericNodeMixin):
+    cross_process_id = None
+    external_txn_name = None
 
     @property
     def details(self):

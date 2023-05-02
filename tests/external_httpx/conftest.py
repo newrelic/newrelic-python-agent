@@ -15,18 +15,9 @@
 import asyncio
 
 import pytest
-from testing_support.fixtures import (
-    code_coverage_fixture,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 
-_coverage_source = [
-    "newrelic.api.external_trace",
-    "newrelic.hooks.external_httpx",
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -46,8 +37,3 @@ def httpx():
     import httpx
 
     return httpx
-
-
-@pytest.fixture(scope="session")
-def loop():
-    return asyncio.get_event_loop()

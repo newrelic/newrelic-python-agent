@@ -13,50 +13,45 @@
 # limitations under the License.
 
 import fnmatch
+import logging
 import os
 import sys
-import logging
 import traceback
-import warnings
 
 try:
     import ConfigParser
 except ImportError:
     import configparser as ConfigParser
 
-from newrelic.packages import six
-
+import newrelic.api.application
+import newrelic.api.background_task
+import newrelic.api.database_trace
+import newrelic.api.error_trace
+import newrelic.api.exceptions
+import newrelic.api.external_trace
+import newrelic.api.function_profile
+import newrelic.api.function_trace
+import newrelic.api.generator_trace
+import newrelic.api.import_hook
+import newrelic.api.memcache_trace
+import newrelic.api.object_wrapper
+import newrelic.api.profile_trace
+import newrelic.api.settings
+import newrelic.api.transaction_name
+import newrelic.api.wsgi_application
+import newrelic.console
+import newrelic.core.agent
+import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import expand_builtin_exception_name
+from newrelic.core import trace_cache
 from newrelic.core.config import (
     Settings,
     apply_config_setting,
-    fetch_config_setting,
     default_host,
+    fetch_config_setting,
 )
-
-import newrelic.core.agent
-import newrelic.core.config
-import newrelic.core.trace_cache as trace_cache
-
-import newrelic.api.settings
-import newrelic.api.import_hook
-import newrelic.api.exceptions
-import newrelic.api.wsgi_application
-import newrelic.api.background_task
-import newrelic.api.database_trace
-import newrelic.api.external_trace
-import newrelic.api.function_trace
-import newrelic.api.generator_trace
-import newrelic.api.profile_trace
-import newrelic.api.memcache_trace
-import newrelic.api.transaction_name
-import newrelic.api.error_trace
-import newrelic.api.function_profile
-import newrelic.api.object_wrapper
-import newrelic.api.application
-
-import newrelic.console
+from newrelic.packages import six
 
 __all__ = ["initialize", "filter_app_factory"]
 
@@ -111,7 +106,11 @@ _cache_object = []
 # instrumentation modules and extensions.
 
 
-def extra_settings(section, types={}, defaults={}):
+def extra_settings(section, types=None, defaults=None):
+    if types is None:
+        types = {}
+    if defaults is None:
+        defaults = {}
     settings = {}
 
     if _config_object.has_section(section):
@@ -190,21 +189,18 @@ def _map_console_listener_socket(s):
 
 
 def _merge_ignore_status_codes(s):
-    return newrelic.core.config._parse_status_codes(
-        s, _settings.error_collector.ignore_status_codes
-    )
+    return newrelic.core.config._parse_status_codes(s, _settings.error_collector.ignore_status_codes)
+
 
 def _merge_expected_status_codes(s):
-    return newrelic.core.config._parse_status_codes(
-        s, _settings.error_collector.expected_status_codes
-    )
+    return newrelic.core.config._parse_status_codes(s, _settings.error_collector.expected_status_codes)
 
 
 def _map_browser_monitoring_content_type(s):
     return s.split()
 
 
-def _map_strip_exception_messages_whitelist(s):
+def _map_strip_exception_messages_allowlist(s):
     return [expand_builtin_exception_name(item) for item in s.split()]
 
 
@@ -227,12 +223,12 @@ def _map_default_host_value(license_key):
 def _raise_configuration_error(section, option=None):
     _logger.error("CONFIGURATION ERROR")
     if section:
-        _logger.error("Section = %s" % section)
+        _logger.error("Section = %s", section)
 
     if option is None:
         options = _config_object.options(section)
 
-        _logger.error("Options = %s" % options)
+        _logger.error("Options = %s", options)
         _logger.exception("Exception Details")
 
         if not _ignore_errors:
@@ -242,14 +238,12 @@ def _raise_configuration_error(section, option=None):
                     "Check New Relic agent log file for further "
                     "details." % section
                 )
-            else:
-                raise newrelic.api.exceptions.ConfigurationError(
-                    "Invalid configuration. Check New Relic agent "
-                    "log file for further details."
-                )
+            raise newrelic.api.exceptions.ConfigurationError(
+                "Invalid configuration. Check New Relic agent log file for further details."
+            )
 
     else:
-        _logger.error("Option = %s" % option)
+        _logger.error("Option = %s", option)
         _logger.exception("Exception Details")
 
         if not _ignore_errors:
@@ -259,12 +253,11 @@ def _raise_configuration_error(section, option=None):
                     'section "%s". Check New Relic agent log '
                     "file for further details." % (option, section)
                 )
-            else:
-                raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for option "%s". '
-                    "Check New Relic agent log file for further "
-                    "details." % option
-                )
+            raise newrelic.api.exceptions.ConfigurationError(
+                'Invalid configuration for option "%s". '
+                "Check New Relic agent log file for further "
+                "details." % option
+            )
 
 
 def _process_setting(section, option, getter, mapper):
@@ -294,9 +287,8 @@ def _process_setting(section, option, getter, mapper):
             if len(fields) == 1:
                 setattr(target, fields[0], value)
                 break
-            else:
-                target = getattr(target, fields[0])
-                fields = fields[1].split(".", 1)
+            target = getattr(target, fields[0])
+            fields = fields[1].split(".", 1)
 
         # Cache the configuration so can be dumped out to
         # log file when whole main configuration has been
@@ -346,17 +338,13 @@ def _process_configuration(section):
     _process_setting(section, "max_stack_trace_lines", "getint", None)
     _process_setting(section, "startup_timeout", "getfloat", None)
     _process_setting(section, "shutdown_timeout", "getfloat", None)
-    _process_setting(
-        section, "compressed_content_encoding", "get", _map_compressed_content_encoding
-    )
+    _process_setting(section, "compressed_content_encoding", "get", _map_compressed_content_encoding)
     _process_setting(section, "attributes.enabled", "getboolean", None)
     _process_setting(section, "attributes.exclude", "get", _map_inc_excl_attributes)
     _process_setting(section, "attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "transaction_name.naming_scheme", "get", None)
     _process_setting(section, "gc_runtime_metrics.enabled", "getboolean", None)
-    _process_setting(
-        section, "gc_runtime_metrics.top_object_count_limit", "getint", None
-    )
+    _process_setting(section, "gc_runtime_metrics.top_object_count_limit", "getint", None)
     _process_setting(section, "thread_profiler.enabled", "getboolean", None)
     _process_setting(section, "transaction_tracer.enabled", "getboolean", None)
     _process_setting(
@@ -366,21 +354,13 @@ def _process_configuration(section):
         _map_transaction_threshold,
     )
     _process_setting(section, "transaction_tracer.record_sql", "get", _map_record_sql)
-    _process_setting(
-        section, "transaction_tracer.stack_trace_threshold", "getfloat", None
-    )
+    _process_setting(section, "transaction_tracer.stack_trace_threshold", "getfloat", None)
     _process_setting(section, "transaction_tracer.explain_enabled", "getboolean", None)
     _process_setting(section, "transaction_tracer.explain_threshold", "getfloat", None)
-    _process_setting(
-        section, "transaction_tracer.function_trace", "get", _map_split_strings
-    )
-    _process_setting(
-        section, "transaction_tracer.generator_trace", "get", _map_split_strings
-    )
+    _process_setting(section, "transaction_tracer.function_trace", "get", _map_split_strings)
+    _process_setting(section, "transaction_tracer.generator_trace", "get", _map_split_strings)
     _process_setting(section, "transaction_tracer.top_n", "getint", None)
-    _process_setting(
-        section, "transaction_tracer.attributes.enabled", "getboolean", None
-    )
+    _process_setting(section, "transaction_tracer.attributes.enabled", "getboolean", None)
     _process_setting(
         section,
         "transaction_tracer.attributes.exclude",
@@ -395,25 +375,17 @@ def _process_configuration(section):
     )
     _process_setting(section, "error_collector.enabled", "getboolean", None)
     _process_setting(section, "error_collector.capture_events", "getboolean", None)
-    _process_setting(
-        section, "error_collector.max_event_samples_stored", "getint", None
-    )
+    _process_setting(section, "error_collector.max_event_samples_stored", "getint", None)
     _process_setting(section, "error_collector.capture_source", "getboolean", None)
-    _process_setting(
-        section, "error_collector.ignore_errors", "get", _map_split_strings
-    )
-    _process_setting(
-        section, "error_collector.ignore_classes", "get", _map_split_strings
-    )
+    _process_setting(section, "error_collector.ignore_errors", "get", _map_split_strings)
+    _process_setting(section, "error_collector.ignore_classes", "get", _map_split_strings)
     _process_setting(
         section,
         "error_collector.ignore_status_codes",
         "get",
         _merge_ignore_status_codes,
     )
-    _process_setting(
-        section, "error_collector.expected_classes", "get", _map_split_strings
-    )
+    _process_setting(section, "error_collector.expected_classes", "get", _map_split_strings)
     _process_setting(
         section,
         "error_collector.expected_status_codes",
@@ -421,23 +393,15 @@ def _process_configuration(section):
         _merge_expected_status_codes,
     )
     _process_setting(section, "error_collector.attributes.enabled", "getboolean", None)
-    _process_setting(
-        section, "error_collector.attributes.exclude", "get", _map_inc_excl_attributes
-    )
-    _process_setting(
-        section, "error_collector.attributes.include", "get", _map_inc_excl_attributes
-    )
+    _process_setting(section, "error_collector.attributes.exclude", "get", _map_inc_excl_attributes)
+    _process_setting(section, "error_collector.attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "browser_monitoring.enabled", "getboolean", None)
     _process_setting(section, "browser_monitoring.auto_instrument", "getboolean", None)
     _process_setting(section, "browser_monitoring.loader", "get", None)
     _process_setting(section, "browser_monitoring.debug", "getboolean", None)
     _process_setting(section, "browser_monitoring.ssl_for_http", "getboolean", None)
-    _process_setting(
-        section, "browser_monitoring.content_type", "get", _map_split_strings
-    )
-    _process_setting(
-        section, "browser_monitoring.attributes.enabled", "getboolean", None
-    )
+    _process_setting(section, "browser_monitoring.content_type", "get", _map_split_strings)
+    _process_setting(section, "browser_monitoring.attributes.enabled", "getboolean", None)
     _process_setting(
         section,
         "browser_monitoring.attributes.exclude",
@@ -454,9 +418,7 @@ def _process_configuration(section):
     _process_setting(section, "synthetics.enabled", "getboolean", None)
     _process_setting(section, "transaction_events.enabled", "getboolean", None)
     _process_setting(section, "transaction_events.max_samples_stored", "getint", None)
-    _process_setting(
-        section, "transaction_events.attributes.enabled", "getboolean", None
-    )
+    _process_setting(section, "transaction_events.attributes.enabled", "getboolean", None)
     _process_setting(
         section,
         "transaction_events.attributes.exclude",
@@ -470,25 +432,15 @@ def _process_configuration(section):
         _map_inc_excl_attributes,
     )
     _process_setting(section, "custom_insights_events.enabled", "getboolean", None)
-    _process_setting(
-        section, "custom_insights_events.max_samples_stored", "getint", None
-    )
+    _process_setting(section, "custom_insights_events.max_samples_stored", "getint", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
-    _process_setting(
-        section, "distributed_tracing.exclude_newrelic_header", "getboolean", None
-    )
+    _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
     _process_setting(section, "span_events.enabled", "getboolean", None)
     _process_setting(section, "span_events.max_samples_stored", "getint", None)
     _process_setting(section, "span_events.attributes.enabled", "getboolean", None)
-    _process_setting(
-        section, "span_events.attributes.exclude", "get", _map_inc_excl_attributes
-    )
-    _process_setting(
-        section, "span_events.attributes.include", "get", _map_inc_excl_attributes
-    )
-    _process_setting(
-        section, "transaction_segments.attributes.enabled", "getboolean", None
-    )
+    _process_setting(section, "span_events.attributes.exclude", "get", _map_inc_excl_attributes)
+    _process_setting(section, "span_events.attributes.include", "get", _map_inc_excl_attributes)
+    _process_setting(section, "transaction_segments.attributes.enabled", "getboolean", None)
     _process_setting(
         section,
         "transaction_segments.attributes.exclude",
@@ -508,28 +460,20 @@ def _process_configuration(section):
     _process_setting(section, "agent_limits.slow_sql_stack_trace", "getint", None)
     _process_setting(section, "agent_limits.max_sql_connections", "getint", None)
     _process_setting(section, "agent_limits.sql_explain_plans", "getint", None)
-    _process_setting(
-        section, "agent_limits.sql_explain_plans_per_harvest", "getint", None
-    )
+    _process_setting(section, "agent_limits.sql_explain_plans_per_harvest", "getint", None)
     _process_setting(section, "agent_limits.slow_sql_data", "getint", None)
     _process_setting(section, "agent_limits.merge_stats_maximum", "getint", None)
     _process_setting(section, "agent_limits.errors_per_transaction", "getint", None)
     _process_setting(section, "agent_limits.errors_per_harvest", "getint", None)
-    _process_setting(
-        section, "agent_limits.slow_transaction_dry_harvests", "getint", None
-    )
+    _process_setting(section, "agent_limits.slow_transaction_dry_harvests", "getint", None)
     _process_setting(section, "agent_limits.thread_profiler_nodes", "getint", None)
     _process_setting(section, "agent_limits.synthetics_events", "getint", None)
     _process_setting(section, "agent_limits.synthetics_transactions", "getint", None)
     _process_setting(section, "agent_limits.data_compression_threshold", "getint", None)
     _process_setting(section, "agent_limits.data_compression_level", "getint", None)
-    _process_setting(
-        section, "console.listener_socket", "get", _map_console_listener_socket
-    )
+    _process_setting(section, "console.listener_socket", "get", _map_console_listener_socket)
     _process_setting(section, "console.allow_interpreter_cmd", "getboolean", None)
-    _process_setting(
-        section, "debug.disable_api_supportability_metrics", "getboolean", None
-    )
+    _process_setting(section, "debug.disable_api_supportability_metrics", "getboolean", None)
     _process_setting(section, "debug.log_data_collector_calls", "getboolean", None)
     _process_setting(section, "debug.log_data_collector_payloads", "getboolean", None)
     _process_setting(section, "debug.log_malformed_json_data", "getboolean", None)
@@ -541,25 +485,15 @@ def _process_configuration(section):
     _process_setting(section, "debug.log_agent_initialization", "getboolean", None)
     _process_setting(section, "debug.log_explain_plan_queries", "getboolean", None)
     _process_setting(section, "debug.log_autorum_middleware", "getboolean", None)
-    _process_setting(
-        section, "debug.log_untrusted_distributed_trace_keys", "getboolean", None
-    )
+    _process_setting(section, "debug.log_untrusted_distributed_trace_keys", "getboolean", None)
     _process_setting(section, "debug.enable_coroutine_profiling", "getboolean", None)
     _process_setting(section, "debug.record_transaction_failure", "getboolean", None)
     _process_setting(section, "debug.explain_plan_obfuscation", "get", None)
-    _process_setting(
-        section, "debug.disable_certificate_validation", "getboolean", None
-    )
-    _process_setting(
-        section, "debug.disable_harvest_until_shutdown", "getboolean", None
-    )
-    _process_setting(
-        section, "debug.connect_span_stream_in_developer_mode", "getboolean", None
-    )
+    _process_setting(section, "debug.disable_certificate_validation", "getboolean", None)
+    _process_setting(section, "debug.disable_harvest_until_shutdown", "getboolean", None)
+    _process_setting(section, "debug.connect_span_stream_in_developer_mode", "getboolean", None)
     _process_setting(section, "cross_application_tracer.enabled", "getboolean", None)
-    _process_setting(
-        section, "message_tracer.segment_parameters_enabled", "getboolean", None
-    )
+    _process_setting(section, "message_tracer.segment_parameters_enabled", "getboolean", None)
     _process_setting(section, "process_host.display_name", "get", None)
     _process_setting(section, "utilization.detect_aws", "getboolean", None)
     _process_setting(section, "utilization.detect_azure", "getboolean", None)
@@ -573,45 +507,41 @@ def _process_configuration(section):
     _process_setting(section, "strip_exception_messages.enabled", "getboolean", None)
     _process_setting(
         section,
-        "strip_exception_messages.whitelist",
+        "strip_exception_messages.allowlist",
         "get",
-        _map_strip_exception_messages_whitelist,
+        _map_strip_exception_messages_allowlist,
     )
-    _process_setting(
-        section, "datastore_tracer.instance_reporting.enabled", "getboolean", None
-    )
-    _process_setting(
-        section, "datastore_tracer.database_name_reporting.enabled", "getboolean", None
-    )
+    _process_setting(section, "datastore_tracer.instance_reporting.enabled", "getboolean", None)
+    _process_setting(section, "datastore_tracer.database_name_reporting.enabled", "getboolean", None)
     _process_setting(section, "heroku.use_dyno_names", "getboolean", None)
-    _process_setting(
-        section, "heroku.dyno_name_prefixes_to_shorten", "get", _map_split_strings
-    )
+    _process_setting(section, "heroku.dyno_name_prefixes_to_shorten", "get", _map_split_strings)
     _process_setting(section, "serverless_mode.enabled", "getboolean", None)
     _process_setting(section, "apdex_t", "getfloat", None)
     _process_setting(section, "event_loop_visibility.enabled", "getboolean", None)
-    _process_setting(
-        section, "event_loop_visibility.blocking_threshold", "getfloat", None
-    )
+    _process_setting(section, "event_loop_visibility.blocking_threshold", "getfloat", None)
     _process_setting(
         section,
         "event_harvest_config.harvest_limits.analytic_event_data",
         "getint",
         None,
     )
-    _process_setting(
-        section, "event_harvest_config.harvest_limits.custom_event_data", "getint", None
-    )
-    _process_setting(
-        section, "event_harvest_config.harvest_limits.span_event_data", "getint", None
-    )
-    _process_setting(
-        section, "event_harvest_config.harvest_limits.error_event_data", "getint", None
-    )
+    _process_setting(section, "event_harvest_config.harvest_limits.custom_event_data", "getint", None)
+    _process_setting(section, "event_harvest_config.harvest_limits.span_event_data", "getint", None)
+    _process_setting(section, "event_harvest_config.harvest_limits.error_event_data", "getint", None)
+    _process_setting(section, "event_harvest_config.harvest_limits.log_event_data", "getint", None)
     _process_setting(section, "infinite_tracing.trace_observer_host", "get", None)
     _process_setting(section, "infinite_tracing.trace_observer_port", "getint", None)
     _process_setting(section, "infinite_tracing.otlp_enabled", "getboolean", None)
+    _process_setting(section, "infinite_tracing.compression", "getboolean", None)
+    _process_setting(section, "infinite_tracing.batching", "getboolean", None)
     _process_setting(section, "infinite_tracing.span_queue_size", "getint", None)
+    _process_setting(section, "code_level_metrics.enabled", "getboolean", None)
+
+    _process_setting(section, "application_logging.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
+    _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.metrics.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.local_decorating.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -642,13 +572,11 @@ def _process_app_name_setting():
 
     def _link_applications(application):
         for altname in linked:
-            _logger.debug("link to %s" % ((name, altname),))
+            _logger.debug("link to %s", ((name, altname),))
             application.link_to_application(altname)
 
     if linked:
-        newrelic.api.application.Application.run_on_initialization(
-            name, _link_applications
-        )
+        newrelic.api.application.Application.run_on_initialization(name, _link_applications)
         _settings.linked_applications = linked
 
     _settings.app_name = name
@@ -670,23 +598,21 @@ def _process_labels_setting(labels=None):
     deduped = {}
 
     for key, value in labels:
-
         if len(key) > length_limit:
             _logger.warning(
-                "Improper configuration. Label key %s is too "
-                "long. Truncating key to: %s" % (key, key[:length_limit])
+                "Improper configuration. Label key %s is too long. Truncating key to: %s", key, key[:length_limit]
             )
 
         if len(value) > length_limit:
             _logger.warning(
-                "Improper configuration. Label value %s is too "
-                "long. Truncating value to: %s" % (value, value[:length_limit])
+                "Improper configuration. Label value %s is too long. Truncating value to: %s",
+                value,
+                value[:length_limit],
             )
 
         if len(deduped) >= count_limit:
             _logger.warning(
-                "Improper configuration. Maximum number of labels "
-                "reached. Using first %d labels." % count_limit
+                "Improper configuration. Maximum number of labels reached. Using first %d labels.", count_limit
             )
             break
 
@@ -793,31 +719,36 @@ def translate_deprecated_settings(settings, cached_settings):
             "event_harvest_config.harvest_limits.custom_event_data",
         ),
         (
+            "application_logging.forwarding.max_samples_stored",
+            "event_harvest_config.harvest_limits.log_event_data",
+        ),
+        (
             "error_collector.ignore_errors",
             "error_collector.ignore_classes",
         ),
+        (
+            "strip_exception_messages.whitelist",
+            "strip_exception_messages.allowlist",
+        ),
     ]
 
-    for (old_key, new_key) in deprecated_settings_map:
-
+    for old_key, new_key in deprecated_settings_map:
         if old_key in cached:
             _logger.info(
-                "Deprecated setting found: %r. Please use new " "setting: %r.",
+                "Deprecated setting found: %r. Please use new setting: %r.",
                 old_key,
                 new_key,
             )
 
             if new_key in cached:
                 _logger.info(
-                    "Ignoring deprecated setting: %r. Using new " "setting: %r.",
+                    "Ignoring deprecated setting: %r. Using new setting: %r.",
                     old_key,
                     new_key,
                 )
             else:
                 apply_config_setting(settings, new_key, cached[old_key])
-                _logger.info(
-                    "Applying value of deprecated setting %r to %r.", old_key, new_key
-                )
+                _logger.info("Applying value of deprecated setting %r to %r.", old_key, new_key)
 
             delete_setting(settings, old_key)
 
@@ -825,7 +756,6 @@ def translate_deprecated_settings(settings, cached_settings):
     # deprecated settings, so it gets handled separately.
 
     if "ignored_params" in cached:
-
         _logger.info(
             "Deprecated setting found: ignored_params. Please use "
             "new setting: attributes.exclude. For the new setting, an "
@@ -840,10 +770,7 @@ def translate_deprecated_settings(settings, cached_settings):
         # and ignore 'ignored_params' settings.
 
         if "attributes.exclude" in cached:
-            _logger.info(
-                "Ignoring deprecated setting: ignored_params. Using "
-                "new setting: attributes.exclude."
-            )
+            _logger.info("Ignoring deprecated setting: ignored_params. Using new setting: attributes.exclude.")
 
         else:
             ignored_params = fetch_config_setting(settings, "ignored_params")
@@ -855,8 +782,7 @@ def translate_deprecated_settings(settings, cached_settings):
                 if attr_value not in excluded_attrs:
                     settings.attributes.exclude.append(attr_value)
                     _logger.info(
-                        "Applying value of deprecated setting "
-                        "ignored_params to attributes.exclude: %r.",
+                        "Applying value of deprecated setting ignored_params to attributes.exclude: %r.",
                         attr_value,
                     )
 
@@ -877,12 +803,18 @@ def translate_deprecated_settings(settings, cached_settings):
             "attributes.exclude."
         )
 
+    if "cross_application_tracer.enabled" in cached:
+        # CAT Deprecation Warning
+        _logger.info(
+            "Deprecated setting found: cross_application_tracer.enabled. Please replace Cross Application Tracing "
+            "(CAT) with the newer Distributed Tracing by setting 'distributed_tracing.enabled' to True in your agent "
+            "configuration. For further details on distributed tracing, please refer to our documentation: "
+            "https://docs.newrelic.com/docs/distributed-tracing/concepts/distributed-tracing-planning-guide/#changes."
+        )
+
     if not settings.ssl:
         settings.ssl = True
-        _logger.info(
-            "Ignoring deprecated setting: ssl. Enabling ssl is now "
-            "mandatory. Setting ssl=true."
-        )
+        _logger.info("Ignoring deprecated setting: ssl. Enabling ssl is now mandatory. Setting ssl=true.")
 
     if settings.agent_limits.merge_stats_maximum is not None:
         _logger.info(
@@ -939,9 +871,11 @@ def apply_local_high_security_mode_setting(settings):
 
     if settings.message_tracer.segment_parameters_enabled:
         settings.message_tracer.segment_parameters_enabled = False
-        _logger.info(
-            log_template, "message_tracer.segment_parameters_enabled", True, False
-        )
+        _logger.info(log_template, "message_tracer.segment_parameters_enabled", True, False)
+
+    if settings.application_logging.forwarding.enabled:
+        settings.application_logging.forwarding.enabled = False
+        _logger.info(log_template, "application_logging.forwarding.enabled", True, False)
 
     return settings
 
@@ -953,7 +887,6 @@ def _load_configuration(
     log_file=None,
     log_level=None,
 ):
-
     global _configuration_done
 
     global _config_file
@@ -976,8 +909,7 @@ def _load_configuration(
                 'Prior configuration file used was "%s" and '
                 'environment "%s".' % (_config_file, _environment)
             )
-        else:
-            return
+        return
 
     _configuration_done = True
 
@@ -991,7 +923,6 @@ def _load_configuration(
     # If no configuration file then nothing more to be done.
 
     if not config_file:
-
         _logger.debug("no agent configuration file")
 
         # Force initialisation of the logging system now in case
@@ -1031,15 +962,13 @@ def _load_configuration(
 
         return
 
-    _logger.debug("agent configuration file was %s" % config_file)
+    _logger.debug("agent configuration file was %s", config_file)
 
     # Now read in the configuration file. Cache the config file
     # name in internal settings object as indication of succeeding.
 
     if not _config_object.read([config_file]):
-        raise newrelic.api.exceptions.ConfigurationError(
-            "Unable to open configuration file %s." % config_file
-        )
+        raise newrelic.api.exceptions.ConfigurationError("Unable to open configuration file %s." % config_file)
 
     _settings.config_file = config_file
 
@@ -1057,9 +986,7 @@ def _load_configuration(
     _process_setting("newrelic", "log_level", "get", _map_log_level)
 
     if environment:
-        _process_setting(
-            "newrelic:%s" % environment, "log_level", "get", _map_log_level
-        )
+        _process_setting("newrelic:%s" % environment, "log_level", "get", _map_log_level)
 
     if log_level is None:
         log_level = _settings.log_level
@@ -1086,7 +1013,7 @@ def _load_configuration(
     # against the internal settings object.
 
     for option, value in _cache_object:
-        _logger.debug("agent config %s = %s" % (option, repr(value)))
+        _logger.debug("agent config %s = %s", option, repr(value))
 
     # Validate provided feature flags and log a warning if get one
     # which isn't valid.
@@ -1135,18 +1062,12 @@ def _load_configuration(
             terminal = False
             rollup = None
 
-            _logger.debug(
-                "register function-trace %s" % ((module, object_path, name, group),)
-            )
+            _logger.debug("register function-trace %s", ((module, object_path, name, group),))
 
-            hook = _function_trace_import_hook(
-                object_path, name, group, label, params, terminal, rollup
-            )
+            hook = _function_trace_import_hook(object_path, name, group, label, params, terminal, rollup)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
-            _raise_configuration_error(
-                section=None, option="transaction_tracer.function_trace"
-            )
+            _raise_configuration_error(section=None, option="transaction_tracer.function_trace")
 
     # Instrument with generator trace any callables supplied by the
     # user in the configuration.
@@ -1158,31 +1079,26 @@ def _load_configuration(
             name = None
             group = "Function"
 
-            _logger.debug(
-                "register generator-trace %s" % ((module, object_path, name, group),)
-            )
+            _logger.debug("register generator-trace %s", ((module, object_path, name, group),))
 
             hook = _generator_trace_import_hook(object_path, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
-            _raise_configuration_error(
-                section=None, option="transaction_tracer.generator_trace"
-            )
+            _raise_configuration_error(section=None, option="transaction_tracer.generator_trace")
 
 
 # Generic error reporting functions.
 
 
-def _raise_instrumentation_error(type, locals):
+def _raise_instrumentation_error(instrumentation_type, locals_dict):
     _logger.error("INSTRUMENTATION ERROR")
-    _logger.error("Type = %s" % type)
-    _logger.error("Locals = %s" % locals)
+    _logger.error("Type = %s", instrumentation_type)
+    _logger.error("Locals = %s", locals_dict)
     _logger.exception("Exception Details")
 
     if not _ignore_errors:
         raise newrelic.api.exceptions.InstrumentationError(
-            "Failure when instrumenting code. Check New Relic "
-            "agent log file for further details."
+            "Failure when instrumenting code. Check New Relic agent log file for further details."
         )
 
 
@@ -1198,7 +1114,7 @@ def module_import_hook_results():
 
 def _module_import_hook(target, module, function):
     def _instrument(target):
-        _logger.debug("instrument module %s" % ((target, module, function),))
+        _logger.debug("instrument module %s", ((target, module, function),))
 
         try:
             instrumented = target._nr_instrumented
@@ -1206,9 +1122,7 @@ def _module_import_hook(target, module, function):
             instrumented = target._nr_instrumented = set()
 
         if (module, function) in instrumented:
-            _logger.debug(
-                "instrumentation already run %s" % ((target, module, function),)
-            )
+            _logger.debug("instrumentation already run %s", ((target, module, function),))
             return
 
         instrumented.add((module, function))
@@ -1219,9 +1133,9 @@ def _module_import_hook(target, module, function):
             _module_import_hook_results[(target.__name__, module, function)] = ""
 
         except Exception:
-            _module_import_hook_results[
-                (target.__name__, module, function)
-            ] = traceback.format_exception(*sys.exc_info())
+            _module_import_hook_results[(target.__name__, module, function)] = traceback.format_exception(
+                *sys.exc_info()
+            )
 
             _raise_instrumentation_error("import-hook", locals())
 
@@ -1258,7 +1172,7 @@ def _process_module_configuration():
             if target not in _module_import_hook_registry:
                 _module_import_hook_registry[target] = (module, function)
 
-                _logger.debug("register module %s" % ((target, module, function),))
+                _logger.debug("register module %s", ((target, module, function),))
 
                 hook = _module_import_hook(target, module, function)
                 newrelic.api.import_hook.register_import_hook(target, hook)
@@ -1271,7 +1185,7 @@ def _process_module_configuration():
 
 def _module_function_glob(module, object_path):
     """Match functions and class methods in a module to file globbing syntax."""
-    if not any([c in object_path for c in {"*", "?", "["}]):  # Identify globbing patterns
+    if not any((c in object_path for c in ("*", "?", "["))):  # Identify globbing patterns
         return (object_path,)  # Returned value must be iterable
     else:
         # Gather module functions
@@ -1279,7 +1193,7 @@ def _module_function_glob(module, object_path):
             available_functions = {k: v for k, v in module.__dict__.items() if callable(v) and not isinstance(v, type)}
         except Exception:
             # Default to empty dict if no functions available
-            available_functions = dict()
+            available_functions = {}
 
         # Gather module classes and methods
         try:
@@ -1287,7 +1201,13 @@ def _module_function_glob(module, object_path):
             for cls in available_classes:
                 try:
                     # Skip adding individual class's methods on failure
-                    available_functions.update({"%s.%s" % (cls, k): v for k, v in available_classes.get(cls).__dict__.items() if callable(v) and not isinstance(v, type)})
+                    available_functions.update(
+                        {
+                            "%s.%s" % (cls, k): v
+                            for k, v in available_classes.get(cls).__dict__.items()
+                            if callable(v) and not isinstance(v, type)
+                        }
+                    )
                 except Exception:
                     pass
         except Exception:
@@ -1307,12 +1227,8 @@ def _wsgi_application_import_hook(object_path, application):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug(
-                    "wrap wsgi-application %s" % ((target, func, application),)
-                )
-                newrelic.api.wsgi_application.wrap_wsgi_application(
-                    target, func, application
-                )
+                _logger.debug("wrap wsgi-application %s", (target, func, application))
+                newrelic.api.wsgi_application.wrap_wsgi_application(target, func, application)
         except Exception:
             _raise_instrumentation_error("wsgi-application", locals())
 
@@ -1345,9 +1261,7 @@ def _process_wsgi_application_configuration():
             if _config_object.has_option(section, "application"):
                 application = _config_object.get(section, "application")
 
-            _logger.debug(
-                "register wsgi-application %s" % ((module, object_path, application),)
-            )
+            _logger.debug("register wsgi-application %s", ((module, object_path, application),))
 
             hook = _wsgi_application_import_hook(object_path, application)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1362,13 +1276,8 @@ def _background_task_import_hook(object_path, application, name, group):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug(
-                    "wrap background-task %s"
-                    % ((target, func, application, name, group),)
-                )
-                newrelic.api.background_task.wrap_background_task(
-                    target, func, application, name, group
-                )
+                _logger.debug("wrap background-task %s", (target, func, application, name, group))
+                newrelic.api.background_task.wrap_background_task(target, func, application, name, group)
         except Exception:
             _raise_instrumentation_error("background-task", locals())
 
@@ -1408,13 +1317,10 @@ def _process_background_task_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug(
-                "register background-task %s"
-                % ((module, object_path, application, name, group),)
-            )
+            _logger.debug("register background-task %s", ((module, object_path, application, name, group),))
 
             hook = _background_task_import_hook(object_path, application, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1429,7 +1335,7 @@ def _database_trace_import_hook(object_path, sql):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug("wrap database-trace %s" % ((target, func, sql),))
+                _logger.debug("wrap database-trace %s", (target, func, sql))
                 newrelic.api.database_trace.wrap_database_trace(target, func, sql)
         except Exception:
             _raise_instrumentation_error("database-trace", locals())
@@ -1461,10 +1367,10 @@ def _process_database_trace_configuration():
             sql = _config_object.get(section, "sql")
 
             if sql.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                sql = eval(sql, vars)
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                sql = eval(sql, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug("register database-trace %s" % ((module, object_path, sql),))
+            _logger.debug("register database-trace %s", ((module, object_path, sql),))
 
             hook = _database_trace_import_hook(object_path, sql)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1479,12 +1385,8 @@ def _external_trace_import_hook(object_path, library, url, method):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug(
-                    "wrap external-trace %s" % ((target, func, library, url, method),)
-                )
-                newrelic.api.external_trace.wrap_external_trace(
-                    target, func, library, url, method
-                )
+                _logger.debug("wrap external-trace %s", (target, func, library, url, method))
+                newrelic.api.external_trace.wrap_external_trace(target, func, library, url, method)
         except Exception:
             _raise_instrumentation_error("external-trace", locals())
 
@@ -1520,17 +1422,14 @@ def _process_external_trace_configuration():
                 method = _config_object.get(section, "method")
 
             if url.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                url = eval(url, vars)
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                url = eval(url, callable_vars)  # nosec, pylint: disable=W0123
 
             if method and method.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                method = eval(method, vars)
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                method = eval(method, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug(
-                "register external-trace %s"
-                % ((module, object_path, library, url, method),)
-            )
+            _logger.debug("register external-trace %s", ((module, object_path, library, url, method),))
 
             hook = _external_trace_import_hook(object_path, library, url, method)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1541,16 +1440,11 @@ def _process_external_trace_configuration():
 # Setup function traces defined in configuration file.
 
 
-def _function_trace_import_hook(
-    object_path, name, group, label, params, terminal, rollup
-):
+def _function_trace_import_hook(object_path, name, group, label, params, terminal, rollup):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug(
-                    "wrap function-trace %s"
-                    % ((target, func, name, group, label, params, terminal, rollup),)
-                )
+                _logger.debug("wrap function-trace %s", (target, func, name, group, label, params, terminal, rollup))
                 newrelic.api.function_trace.wrap_function_trace(
                     target, func, name, group, label, params, terminal, rollup
                 )
@@ -1600,17 +1494,14 @@ def _process_function_trace_configuration():
                 rollup = _config_object.get(section, "rollup")
 
             if name and name.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug(
-                "register function-trace %s"
-                % ((module, object_path, name, group, label, params, terminal, rollup),)
+                "register function-trace %s", ((module, object_path, name, group, label, params, terminal, rollup),)
             )
 
-            hook = _function_trace_import_hook(
-                object_path, name, group, label, params, terminal, rollup
-            )
+            hook = _function_trace_import_hook(object_path, name, group, label, params, terminal, rollup)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)
@@ -1623,10 +1514,8 @@ def _generator_trace_import_hook(object_path, name, group):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug("wrap generator-trace %s" % ((target, func, name, group),))
-                newrelic.api.generator_trace.wrap_generator_trace(
-                    target, func, name, group
-                )
+                _logger.debug("wrap generator-trace %s", (target, func, name, group))
+                newrelic.api.generator_trace.wrap_generator_trace(target, func, name, group)
         except Exception:
             _raise_instrumentation_error("generator-trace", locals())
 
@@ -1663,12 +1552,10 @@ def _process_generator_trace_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug(
-                "register generator-trace %s" % ((module, object_path, name, group),)
-            )
+            _logger.debug("register generator-trace %s", ((module, object_path, name, group),))
 
             hook = _generator_trace_import_hook(object_path, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1683,12 +1570,8 @@ def _profile_trace_import_hook(object_path, name, group, depth):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug(
-                    "wrap profile-trace %s" % ((target, func, name, group, depth),)
-                )
-                newrelic.api.profile_trace.wrap_profile_trace(
-                    target, func, name, group, depth=depth
-                )
+                _logger.debug("wrap profile-trace %s", (target, func, name, group, depth))
+                newrelic.api.profile_trace.wrap_profile_trace(target, func, name, group, depth=depth)
         except Exception:
             _raise_instrumentation_error("profile-trace", locals())
 
@@ -1728,13 +1611,10 @@ def _process_profile_trace_configuration():
                 depth = _config_object.get(section, "depth")
 
             if name and name.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug(
-                "register profile-trace %s"
-                % ((module, object_path, name, group, depth),)
-            )
+            _logger.debug("register profile-trace %s", ((module, object_path, name, group, depth),))
 
             hook = _profile_trace_import_hook(object_path, name, group, depth=depth)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1749,10 +1629,8 @@ def _memcache_trace_import_hook(object_path, command):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug("wrap memcache-trace %s" % ((target, func, command),))
-                newrelic.api.memcache_trace.wrap_memcache_trace(
-                    target, func, command
-                )
+                _logger.debug("wrap memcache-trace %s", (target, func, command))
+                newrelic.api.memcache_trace.wrap_memcache_trace(target, func, command)
         except Exception:
             _raise_instrumentation_error("memcache-trace", locals())
 
@@ -1783,12 +1661,10 @@ def _process_memcache_trace_configuration():
             command = _config_object.get(section, "command")
 
             if command.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                command = eval(command, vars)
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                command = eval(command, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug(
-                "register memcache-trace %s" % ((module, object_path, command),)
-            )
+            _logger.debug("register memcache-trace %s", (module, object_path, command))
 
             hook = _memcache_trace_import_hook(object_path, command)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1803,12 +1679,8 @@ def _transaction_name_import_hook(object_path, name, group, priority):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug(
-                    "wrap transaction-name %s" % ((target, func, name, group, priority),)
-                )
-                newrelic.api.transaction_name.wrap_transaction_name(
-                    target, func, name, group, priority
-                )
+                _logger.debug("wrap transaction-name %s", ((target, func, name, group, priority),))
+                newrelic.api.transaction_name.wrap_transaction_name(target, func, name, group, priority)
         except Exception:
             _raise_instrumentation_error("transaction-name", locals())
 
@@ -1818,9 +1690,7 @@ def _transaction_name_import_hook(object_path, name, group, priority):
 def _process_transaction_name_configuration():
     for section in _config_object.sections():
         # Support 'name-transaction' for backward compatibility.
-        if not section.startswith("transaction-name:") and not section.startswith(
-            "name-transaction:"
-        ):
+        if not section.startswith("transaction-name:") and not section.startswith("name-transaction:"):
             continue
 
         enabled = False
@@ -1851,13 +1721,10 @@ def _process_transaction_name_configuration():
                 priority = _config_object.getint(section, "priority")
 
             if name and name.startswith("lambda "):
-                vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
-                name = eval(name, vars)
+                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
-            _logger.debug(
-                "register transaction-name %s"
-                % ((module, object_path, name, group, priority),)
-            )
+            _logger.debug("register transaction-name %s", ((module, object_path, name, group, priority),))
 
             hook = _transaction_name_import_hook(object_path, name, group, priority)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1872,10 +1739,8 @@ def _error_trace_import_hook(object_path, ignore, expected):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug("wrap error-trace %s" % ((target, func, ignore, expected),))
-                newrelic.api.error_trace.wrap_error_trace(
-                    target, func, ignore, expected, None
-                )
+                _logger.debug("wrap error-trace %s", (target, func, ignore, expected))
+                newrelic.api.error_trace.wrap_error_trace(target, func, ignore, expected, None)
         except Exception:
             _raise_instrumentation_error("error-trace", locals())
 
@@ -1919,9 +1784,7 @@ def _process_error_trace_configuration():
             if _config_object.has_option(section, "expected_classes"):
                 expected_classes = _config_object.get(section, "expected_classes").split()
 
-            _logger.debug(
-                "register error-trace %s" % ((module, object_path, ignore_classes, expected_classes),)
-            )
+            _logger.debug("register error-trace %s", (module, object_path, ignore_classes, expected_classes))
 
             hook = _error_trace_import_hook(object_path, ignore_classes, expected_classes)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -1977,11 +1840,9 @@ def _process_data_source_configuration():
             properties.pop("name", None)
             properties.pop("settings", None)
 
-            _logger.debug("register data-source %s" % ((module, object_path, name),))
+            _logger.debug("register data-source %s", (module, object_path, name))
 
-            _data_sources.append(
-                (section, module, object_path, application, name, settings, properties)
-            )
+            _data_sources.append((section, module, object_path, application, name, settings, properties))
         except Exception:
             _raise_configuration_error(section)
 
@@ -2001,13 +1862,9 @@ def _startup_data_source():
         properties,
     ) in _data_sources:
         try:
-            source = getattr(
-                newrelic.api.import_hook.import_module(module), object_path
-            )
+            source = getattr(newrelic.api.import_hook.import_module(module), object_path)
 
-            agent_instance.register_data_source(
-                source, application, name, settings, **properties
-            )
+            agent_instance.register_data_source(source, application, name, settings, **properties)
 
         except Exception:
             _logger.exception(
@@ -2025,7 +1882,6 @@ _data_sources_done = False
 
 
 def _setup_data_source():
-
     global _data_sources_done
 
     if _data_sources_done:
@@ -2044,13 +1900,8 @@ def _function_profile_import_hook(object_path, filename, delay, checkpoint):
     def _instrument(target):
         try:
             for func in _module_function_glob(target, object_path):
-                _logger.debug(
-                    "wrap function-profile %s"
-                    % ((target, func, filename, delay, checkpoint),)
-                )
-                newrelic.api.function_profile.wrap_function_profile(
-                    target, func, filename, delay, checkpoint
-                )
+                _logger.debug("wrap function-profile %s", (target, func, filename, delay, checkpoint))
+                newrelic.api.function_profile.wrap_function_profile(target, func, filename, delay, checkpoint)
         except Exception:
             _raise_instrumentation_error("function-profile", locals())
 
@@ -2089,14 +1940,9 @@ def _process_function_profile_configuration():
             if _config_object.has_option(section, "checkpoint"):
                 checkpoint = _config_object.getfloat(section, "checkpoint")
 
-            _logger.debug(
-                "register function-profile %s"
-                % ((module, object_path, filename, delay, checkpoint),)
-            )
+            _logger.debug("register function-profile %s", ((module, object_path, filename, delay, checkpoint),))
 
-            hook = _function_profile_import_hook(
-                object_path, filename, delay, checkpoint
-            )
+            hook = _function_profile_import_hook(object_path, filename, delay, checkpoint)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)
@@ -2133,11 +1979,9 @@ def _process_module_definition(target, module, function="instrument"):
         if enabled and not execute:
             _module_import_hook_registry[target] = (module, function)
 
-            _logger.debug("register module %s" % ((target, module, function),))
+            _logger.debug("register module %s", (target, module, function))
 
-            newrelic.api.import_hook.register_import_hook(
-                target, _module_import_hook(target, module, function)
-            )
+            newrelic.api.import_hook.register_import_hook(target, _module_import_hook(target, module, function))
 
             _module_import_hook_results.setdefault((target, module, function), None)
 
@@ -2177,9 +2021,7 @@ def _process_module_builtin_defaults():
         "instrument_asyncio_events",
     )
 
-    _process_module_definition(
-        "asgiref.sync", "newrelic.hooks.adapter_asgiref", "instrument_asgiref_sync"
-    )
+    _process_module_definition("asgiref.sync", "newrelic.hooks.adapter_asgiref", "instrument_asgiref_sync")
 
     _process_module_definition(
         "django.core.handlers.base",
@@ -2284,12 +2126,8 @@ def _process_module_builtin_defaults():
         "instrument_django_core_handlers_exception",
     )
 
-    _process_module_definition(
-        "falcon.api", "newrelic.hooks.framework_falcon", "instrument_falcon_api"
-    )
-    _process_module_definition(
-        "falcon.app", "newrelic.hooks.framework_falcon", "instrument_falcon_app"
-    )
+    _process_module_definition("falcon.api", "newrelic.hooks.framework_falcon", "instrument_falcon_api")
+    _process_module_definition("falcon.app", "newrelic.hooks.framework_falcon", "instrument_falcon_app")
     _process_module_definition(
         "falcon.routing.util",
         "newrelic.hooks.framework_falcon",
@@ -2302,9 +2140,7 @@ def _process_module_builtin_defaults():
         "instrument_fastapi_routing",
     )
 
-    _process_module_definition(
-        "flask.app", "newrelic.hooks.framework_flask", "instrument_flask_app"
-    )
+    _process_module_definition("flask.app", "newrelic.hooks.framework_flask", "instrument_flask_app")
     _process_module_definition(
         "flask.templating",
         "newrelic.hooks.framework_flask",
@@ -2315,9 +2151,7 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.framework_flask",
         "instrument_flask_blueprints",
     )
-    _process_module_definition(
-        "flask.views", "newrelic.hooks.framework_flask", "instrument_flask_views"
-    )
+    _process_module_definition("flask.views", "newrelic.hooks.framework_flask", "instrument_flask_views")
 
     _process_module_definition(
         "flask_compress",
@@ -2325,9 +2159,7 @@ def _process_module_builtin_defaults():
         "instrument_flask_compress",
     )
 
-    _process_module_definition(
-        "flask_restful", "newrelic.hooks.component_flask_rest", "instrument_flask_rest"
-    )
+    _process_module_definition("flask_restful", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
     _process_module_definition(
         "flask_restplus.api",
         "newrelic.hooks.component_flask_rest",
@@ -2337,6 +2169,16 @@ def _process_module_builtin_defaults():
         "flask_restx.api",
         "newrelic.hooks.component_flask_rest",
         "instrument_flask_rest",
+    )
+
+    _process_module_definition(
+        "graphql_server",
+        "newrelic.hooks.component_graphqlserver",
+        "instrument_graphqlserver",
+    )
+
+    _process_module_definition(
+        "sentry_sdk.integrations.asgi", "newrelic.hooks.component_sentry", "instrument_sentry_sdk_integrations_asgi"
     )
 
     # _process_module_definition('web.application',
@@ -2354,28 +2196,20 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.framework_web2py",
         "instrument_gluon_restricted",
     )
-    _process_module_definition(
-        "gluon.main", "newrelic.hooks.framework_web2py", "instrument_gluon_main"
-    )
-    _process_module_definition(
-        "gluon.template", "newrelic.hooks.framework_web2py", "instrument_gluon_template"
-    )
-    _process_module_definition(
-        "gluon.tools", "newrelic.hooks.framework_web2py", "instrument_gluon_tools"
-    )
-    _process_module_definition(
-        "gluon.http", "newrelic.hooks.framework_web2py", "instrument_gluon_http"
-    )
+    _process_module_definition("gluon.main", "newrelic.hooks.framework_web2py", "instrument_gluon_main")
+    _process_module_definition("gluon.template", "newrelic.hooks.framework_web2py", "instrument_gluon_template")
+    _process_module_definition("gluon.tools", "newrelic.hooks.framework_web2py", "instrument_gluon_tools")
+    _process_module_definition("gluon.http", "newrelic.hooks.framework_web2py", "instrument_gluon_http")
+
+    _process_module_definition("httpx._client", "newrelic.hooks.external_httpx", "instrument_httpx_client")
+
+    _process_module_definition("gluon.contrib.feedparser", "newrelic.hooks.external_feedparser")
+    _process_module_definition("gluon.contrib.memcache.memcache", "newrelic.hooks.memcache_memcache")
 
     _process_module_definition(
-        "httpx._client", "newrelic.hooks.external_httpx", "instrument_httpx_client"
-    )
-
-    _process_module_definition(
-        "gluon.contrib.feedparser", "newrelic.hooks.external_feedparser"
-    )
-    _process_module_definition(
-        "gluon.contrib.memcache.memcache", "newrelic.hooks.memcache_memcache"
+        "graphene.types.schema",
+        "newrelic.hooks.framework_graphene",
+        "instrument_graphene_types_schema",
     )
 
     _process_module_definition(
@@ -2425,21 +2259,29 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel"
+        "ariadne.asgi",
+        "newrelic.hooks.framework_ariadne",
+        "instrument_ariadne_asgi",
     )
     _process_module_definition(
-        "grpc._server", "newrelic.hooks.framework_grpc", "instrument_grpc_server"
+        "ariadne.graphql",
+        "newrelic.hooks.framework_ariadne",
+        "instrument_ariadne_execute",
     )
+    _process_module_definition(
+        "ariadne.wsgi",
+        "newrelic.hooks.framework_ariadne",
+        "instrument_ariadne_wsgi",
+    )
+
+    _process_module_definition("grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel")
+    _process_module_definition("grpc._server", "newrelic.hooks.framework_grpc", "instrument_grpc_server")
 
     _process_module_definition("pylons.wsgiapp", "newrelic.hooks.framework_pylons")
-    _process_module_definition(
-        "pylons.controllers.core", "newrelic.hooks.framework_pylons"
-    )
+    _process_module_definition("pylons.controllers.core", "newrelic.hooks.framework_pylons")
     _process_module_definition("pylons.templating", "newrelic.hooks.framework_pylons")
 
-    _process_module_definition(
-        "bottle", "newrelic.hooks.framework_bottle", "instrument_bottle"
-    )
+    _process_module_definition("bottle", "newrelic.hooks.framework_bottle", "instrument_bottle")
 
     _process_module_definition(
         "cherrypy._cpreqbody",
@@ -2468,6 +2310,60 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "confluent_kafka.cimpl",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_cimpl",
+    )
+    _process_module_definition(
+        "confluent_kafka.serializing_producer",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_serializing_producer",
+    )
+    _process_module_definition(
+        "confluent_kafka.deserializing_consumer",
+        "newrelic.hooks.messagebroker_confluentkafka",
+        "instrument_confluentkafka_deserializing_consumer",
+    )
+
+    _process_module_definition(
+        "kafka.consumer.group",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_consumer_group",
+    )
+    _process_module_definition(
+        "kafka.producer.kafka",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_producer",
+    )
+    _process_module_definition(
+        "kafka.coordinator.heartbeat",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_heartbeat",
+    )
+    _process_module_definition(
+        "kafka.consumer.group",
+        "newrelic.hooks.messagebroker_kafkapython",
+        "instrument_kafka_consumer_group",
+    )
+
+    _process_module_definition(
+        "logging",
+        "newrelic.hooks.logger_logging",
+        "instrument_logging",
+    )
+
+    _process_module_definition(
+        "loguru",
+        "newrelic.hooks.logger_loguru",
+        "instrument_loguru",
+    )
+    _process_module_definition(
+        "loguru._logger",
+        "newrelic.hooks.logger_loguru",
+        "instrument_loguru_logger",
+    )
+
+    _process_module_definition(
         "paste.httpserver",
         "newrelic.hooks.adapter_paste",
         "instrument_paste_httpserver",
@@ -2479,38 +2375,20 @@ def _process_module_builtin_defaults():
         "instrument_gunicorn_app_base",
     )
 
-    _process_module_definition(
-        "cx_Oracle", "newrelic.hooks.database_cx_oracle", "instrument_cx_oracle"
-    )
+    _process_module_definition("cx_Oracle", "newrelic.hooks.database_cx_oracle", "instrument_cx_oracle")
 
-    _process_module_definition(
-        "ibm_db_dbi", "newrelic.hooks.database_ibm_db_dbi", "instrument_ibm_db_dbi"
-    )
+    _process_module_definition("ibm_db_dbi", "newrelic.hooks.database_ibm_db_dbi", "instrument_ibm_db_dbi")
 
-    _process_module_definition(
-        "mysql.connector", "newrelic.hooks.database_mysql", "instrument_mysql_connector"
-    )
-    _process_module_definition(
-        "MySQLdb", "newrelic.hooks.database_mysqldb", "instrument_mysqldb"
-    )
-    _process_module_definition(
-        "oursql", "newrelic.hooks.database_oursql", "instrument_oursql"
-    )
-    _process_module_definition(
-        "pymysql", "newrelic.hooks.database_pymysql", "instrument_pymysql"
-    )
+    _process_module_definition("mysql.connector", "newrelic.hooks.database_mysql", "instrument_mysql_connector")
+    _process_module_definition("MySQLdb", "newrelic.hooks.database_mysqldb", "instrument_mysqldb")
+    _process_module_definition("oursql", "newrelic.hooks.database_oursql", "instrument_oursql")
+    _process_module_definition("pymysql", "newrelic.hooks.database_pymysql", "instrument_pymysql")
 
-    _process_module_definition(
-        "pyodbc", "newrelic.hooks.database_pyodbc", "instrument_pyodbc"
-    )
+    _process_module_definition("pyodbc", "newrelic.hooks.database_pyodbc", "instrument_pyodbc")
 
-    _process_module_definition(
-        "pymssql", "newrelic.hooks.database_pymssql", "instrument_pymssql"
-    )
+    _process_module_definition("pymssql", "newrelic.hooks.database_pymssql", "instrument_pymssql")
 
-    _process_module_definition(
-        "psycopg2", "newrelic.hooks.database_psycopg2", "instrument_psycopg2"
-    )
+    _process_module_definition("psycopg2", "newrelic.hooks.database_psycopg2", "instrument_psycopg2")
     _process_module_definition(
         "psycopg2._psycopg2",
         "newrelic.hooks.database_psycopg2",
@@ -2531,13 +2409,9 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.database_psycopg2",
         "instrument_psycopg2__range",
     )
-    _process_module_definition(
-        "psycopg2.sql", "newrelic.hooks.database_psycopg2", "instrument_psycopg2_sql"
-    )
+    _process_module_definition("psycopg2.sql", "newrelic.hooks.database_psycopg2", "instrument_psycopg2_sql")
 
-    _process_module_definition(
-        "psycopg2ct", "newrelic.hooks.database_psycopg2ct", "instrument_psycopg2ct"
-    )
+    _process_module_definition("psycopg2ct", "newrelic.hooks.database_psycopg2ct", "instrument_psycopg2ct")
     _process_module_definition(
         "psycopg2ct.extensions",
         "newrelic.hooks.database_psycopg2ct",
@@ -2578,28 +2452,18 @@ def _process_module_builtin_defaults():
         "instrument_postgresql_interface_proboscis_dbapi2",
     )
 
-    _process_module_definition(
-        "sqlite3", "newrelic.hooks.database_sqlite", "instrument_sqlite3"
-    )
-    _process_module_definition(
-        "sqlite3.dbapi2", "newrelic.hooks.database_sqlite", "instrument_sqlite3_dbapi2"
-    )
+    _process_module_definition("sqlite3", "newrelic.hooks.database_sqlite", "instrument_sqlite3")
+    _process_module_definition("sqlite3.dbapi2", "newrelic.hooks.database_sqlite", "instrument_sqlite3_dbapi2")
 
-    _process_module_definition(
-        "pysqlite2", "newrelic.hooks.database_sqlite", "instrument_sqlite3"
-    )
+    _process_module_definition("pysqlite2", "newrelic.hooks.database_sqlite", "instrument_sqlite3")
     _process_module_definition(
         "pysqlite2.dbapi2",
         "newrelic.hooks.database_sqlite",
         "instrument_sqlite3_dbapi2",
     )
 
-    _process_module_definition(
-        "memcache", "newrelic.hooks.datastore_memcache", "instrument_memcache"
-    )
-    _process_module_definition(
-        "umemcache", "newrelic.hooks.datastore_umemcache", "instrument_umemcache"
-    )
+    _process_module_definition("memcache", "newrelic.hooks.datastore_memcache", "instrument_memcache")
+    _process_module_definition("umemcache", "newrelic.hooks.datastore_umemcache", "instrument_umemcache")
     _process_module_definition(
         "pylibmc.client",
         "newrelic.hooks.datastore_pylibmc",
@@ -2618,12 +2482,8 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("jinja2.environment", "newrelic.hooks.template_jinja2")
 
-    _process_module_definition(
-        "mako.runtime", "newrelic.hooks.template_mako", "instrument_mako_runtime"
-    )
-    _process_module_definition(
-        "mako.template", "newrelic.hooks.template_mako", "instrument_mako_template"
-    )
+    _process_module_definition("mako.runtime", "newrelic.hooks.template_mako", "instrument_mako_runtime")
+    _process_module_definition("mako.template", "newrelic.hooks.template_mako", "instrument_mako_template")
 
     _process_module_definition("genshi.template.base", "newrelic.hooks.template_genshi")
 
@@ -2679,6 +2539,11 @@ def _process_module_builtin_defaults():
         "instrument_starlette_middleware_errors",
     )
     _process_module_definition(
+        "starlette.middleware.exceptions",
+        "newrelic.hooks.framework_starlette",
+        "instrument_starlette_middleware_exceptions",
+    )
+    _process_module_definition(
         "starlette.exceptions",
         "newrelic.hooks.framework_starlette",
         "instrument_starlette_exceptions",
@@ -2688,24 +2553,50 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.framework_starlette",
         "instrument_starlette_background_task",
     )
-
     _process_module_definition(
-        "uvicorn.config", "newrelic.hooks.adapter_uvicorn", "instrument_uvicorn_config"
+        "starlette.concurrency",
+        "newrelic.hooks.framework_starlette",
+        "instrument_starlette_concurrency",
     )
 
     _process_module_definition(
-        "sanic.app", "newrelic.hooks.framework_sanic", "instrument_sanic_app"
-    )
-    _process_module_definition(
-        "sanic.response", "newrelic.hooks.framework_sanic", "instrument_sanic_response"
+        "strawberry.asgi",
+        "newrelic.hooks.framework_strawberry",
+        "instrument_strawberry_asgi",
     )
 
     _process_module_definition(
-        "aiohttp.wsgi", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_wsgi"
+        "strawberry.schema.schema",
+        "newrelic.hooks.framework_strawberry",
+        "instrument_strawberry_schema",
+    )
+
+    _process_module_definition(
+        "strawberry.schema.schema_converter",
+        "newrelic.hooks.framework_strawberry",
+        "instrument_strawberry_schema_converter",
+    )
+
+    _process_module_definition("uvicorn.config", "newrelic.hooks.adapter_uvicorn", "instrument_uvicorn_config")
+
+    _process_module_definition(
+        "hypercorn.asyncio.run", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_asyncio_run"
     )
     _process_module_definition(
-        "aiohttp.web", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web"
+        "hypercorn.trio.run", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_trio_run"
     )
+    _process_module_definition("hypercorn.utils", "newrelic.hooks.adapter_hypercorn", "instrument_hypercorn_utils")
+
+    _process_module_definition("daphne.server", "newrelic.hooks.adapter_daphne", "instrument_daphne_server")
+
+    _process_module_definition("sanic.app", "newrelic.hooks.framework_sanic", "instrument_sanic_app")
+    _process_module_definition("sanic.response", "newrelic.hooks.framework_sanic", "instrument_sanic_response")
+    _process_module_definition(
+        "sanic.touchup.service", "newrelic.hooks.framework_sanic", "instrument_sanic_touchup_service"
+    )
+
+    _process_module_definition("aiohttp.wsgi", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_wsgi")
+    _process_module_definition("aiohttp.web", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web")
     _process_module_definition(
         "aiohttp.web_reqrep",
         "newrelic.hooks.framework_aiohttp",
@@ -2737,9 +2628,7 @@ def _process_module_builtin_defaults():
         "instrument_aiohttp_protocol",
     )
 
-    _process_module_definition(
-        "requests.api", "newrelic.hooks.external_requests", "instrument_requests_api"
-    )
+    _process_module_definition("requests.api", "newrelic.hooks.external_requests", "instrument_requests_api")
     _process_module_definition(
         "requests.sessions",
         "newrelic.hooks.external_requests",
@@ -2754,74 +2643,171 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("facepy.graph_api", "newrelic.hooks.external_facepy")
 
+    _process_module_definition("pysolr", "newrelic.hooks.datastore_pysolr", "instrument_pysolr")
+
+    _process_module_definition("solr", "newrelic.hooks.datastore_solrpy", "instrument_solrpy")
+
+    _process_module_definition("aredis.client", "newrelic.hooks.datastore_aredis", "instrument_aredis_client")
+
     _process_module_definition(
-        "pysolr", "newrelic.hooks.datastore_pysolr", "instrument_pysolr"
+        "aredis.connection",
+        "newrelic.hooks.datastore_aredis",
+        "instrument_aredis_connection",
+    )
+
+    _process_module_definition("aioredis.client", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client")
+
+    _process_module_definition("aioredis.commands", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client")
+
+    _process_module_definition(
+        "aioredis.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
     )
 
     _process_module_definition(
-        "solr", "newrelic.hooks.datastore_solrpy", "instrument_solrpy"
+        "redis.asyncio.client", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
     )
 
+    _process_module_definition(
+        "redis.asyncio.commands", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
+    )
+
+    _process_module_definition(
+        "redis.asyncio.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.cat",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_cat",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.cat",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_cat_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.cluster",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_cluster",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.cluster",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_cluster_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.indices",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_indices",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.indices",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_indices_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.nodes",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_nodes",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.nodes",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_nodes_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.snapshot",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_snapshot",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.snapshot",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_snapshot_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.tasks",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_tasks",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.tasks",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_tasks_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.client.ingest",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_client_ingest",
     )
+    # v8 and above
+    _process_module_definition(
+        "elasticsearch._sync.client.ingest",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elasticsearch_client_ingest_v8",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.connection.base",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_connection_base",
     )
+    # v8 and above
+    _process_module_definition(
+        "elastic_transport._node._base",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elastic_transport__node__base",
+    )
+
+    # v7 and below
     _process_module_definition(
         "elasticsearch.transport",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_elasticsearch_transport",
     )
+    # v8 and above
+    _process_module_definition(
+        "elastic_transport._transport",
+        "newrelic.hooks.datastore_elasticsearch",
+        "instrument_elastic_transport__transport",
+    )
 
-    _process_module_definition(
-        "pika.adapters", "newrelic.hooks.messagebroker_pika", "instrument_pika_adapters"
-    )
-    _process_module_definition(
-        "pika.channel", "newrelic.hooks.messagebroker_pika", "instrument_pika_channel"
-    )
-    _process_module_definition(
-        "pika.spec", "newrelic.hooks.messagebroker_pika", "instrument_pika_spec"
-    )
+    _process_module_definition("pika.adapters", "newrelic.hooks.messagebroker_pika", "instrument_pika_adapters")
+    _process_module_definition("pika.channel", "newrelic.hooks.messagebroker_pika", "instrument_pika_channel")
+    _process_module_definition("pika.spec", "newrelic.hooks.messagebroker_pika", "instrument_pika_spec")
 
     _process_module_definition(
         "pyelasticsearch.client",
@@ -2850,8 +2836,36 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.datastore_redis",
         "instrument_redis_connection",
     )
+    _process_module_definition("redis.client", "newrelic.hooks.datastore_redis", "instrument_redis_client")
+
     _process_module_definition(
-        "redis.client", "newrelic.hooks.datastore_redis", "instrument_redis_client"
+        "redis.commands.core", "newrelic.hooks.datastore_redis", "instrument_redis_commands_core"
+    )
+
+    _process_module_definition(
+        "redis.commands.sentinel", "newrelic.hooks.datastore_redis", "instrument_redis_commands_sentinel"
+    )
+
+    _process_module_definition(
+        "redis.commands.json.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_json_commands"
+    )
+
+    _process_module_definition(
+        "redis.commands.search.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_search_commands"
+    )
+
+    _process_module_definition(
+        "redis.commands.timeseries.commands",
+        "newrelic.hooks.datastore_redis",
+        "instrument_redis_commands_timeseries_commands",
+    )
+
+    _process_module_definition(
+        "redis.commands.bf.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_bf_commands"
+    )
+
+    _process_module_definition(
+        "redis.commands.graph.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_graph_commands"
     )
 
     _process_module_definition("motor", "newrelic.hooks.datastore_motor", "patch_motor")
@@ -2861,18 +2875,14 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.component_piston",
         "instrument_piston_resource",
     )
-    _process_module_definition(
-        "piston.doc", "newrelic.hooks.component_piston", "instrument_piston_doc"
-    )
+    _process_module_definition("piston.doc", "newrelic.hooks.component_piston", "instrument_piston_doc")
 
     _process_module_definition(
         "tastypie.resources",
         "newrelic.hooks.component_tastypie",
         "instrument_tastypie_resources",
     )
-    _process_module_definition(
-        "tastypie.api", "newrelic.hooks.component_tastypie", "instrument_tastypie_api"
-    )
+    _process_module_definition("tastypie.api", "newrelic.hooks.component_tastypie", "instrument_tastypie_api")
 
     _process_module_definition(
         "rest_framework.views",
@@ -2895,9 +2905,7 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.application_celery",
         "instrument_celery_app_task",
     )
-    _process_module_definition(
-        "celery.worker", "newrelic.hooks.application_celery", "instrument_celery_worker"
-    )
+    _process_module_definition("celery.worker", "newrelic.hooks.application_celery", "instrument_celery_worker")
     _process_module_definition(
         "celery.concurrency.processes",
         "newrelic.hooks.application_celery",
@@ -2926,13 +2934,9 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.application_celery",
         "instrument_celery_execute_trace",
     )
-    _process_module_definition(
-        "billiard.pool", "newrelic.hooks.application_celery", "instrument_billiard_pool"
-    )
+    _process_module_definition("billiard.pool", "newrelic.hooks.application_celery", "instrument_billiard_pool")
 
-    _process_module_definition(
-        "flup.server.cgi", "newrelic.hooks.adapter_flup", "instrument_flup_server_cgi"
-    )
+    _process_module_definition("flup.server.cgi", "newrelic.hooks.adapter_flup", "instrument_flup_server_cgi")
     _process_module_definition(
         "flup.server.ajp_base",
         "newrelic.hooks.adapter_flup",
@@ -2949,9 +2953,7 @@ def _process_module_builtin_defaults():
         "instrument_flup_server_scgi_base",
     )
 
-    _process_module_definition(
-        "pywapi", "newrelic.hooks.external_pywapi", "instrument_pywapi"
-    )
+    _process_module_definition("pywapi", "newrelic.hooks.external_pywapi", "instrument_pywapi")
 
     _process_module_definition(
         "meinheld.server",
@@ -2965,12 +2967,8 @@ def _process_module_builtin_defaults():
         "instrument_waitress_server",
     )
 
-    _process_module_definition(
-        "gevent.wsgi", "newrelic.hooks.adapter_gevent", "instrument_gevent_wsgi"
-    )
-    _process_module_definition(
-        "gevent.pywsgi", "newrelic.hooks.adapter_gevent", "instrument_gevent_pywsgi"
-    )
+    _process_module_definition("gevent.wsgi", "newrelic.hooks.adapter_gevent", "instrument_gevent_wsgi")
+    _process_module_definition("gevent.pywsgi", "newrelic.hooks.adapter_gevent", "instrument_gevent_pywsgi")
 
     _process_module_definition(
         "wsgiref.simple_server",
@@ -3017,22 +3015,7 @@ def _process_module_builtin_defaults():
         "instrument_cornice_service",
     )
 
-    # _process_module_definition('twisted.web.server',
-    #        'newrelic.hooks.framework_twisted',
-    #        'instrument_twisted_web_server')
-    # _process_module_definition('twisted.web.http',
-    #        'newrelic.hooks.framework_twisted',
-    #        'instrument_twisted_web_http')
-    # _process_module_definition('twisted.web.resource',
-    #        'newrelic.hooks.framework_twisted',
-    #        'instrument_twisted_web_resource')
-    # _process_module_definition('twisted.internet.defer',
-    #        'newrelic.hooks.framework_twisted',
-    #        'instrument_twisted_internet_defer')
-
-    _process_module_definition(
-        "gevent.monkey", "newrelic.hooks.coroutines_gevent", "instrument_gevent_monkey"
-    )
+    _process_module_definition("gevent.monkey", "newrelic.hooks.coroutines_gevent", "instrument_gevent_monkey")
 
     _process_module_definition(
         "weberror.errormiddleware",
@@ -3045,9 +3028,7 @@ def _process_module_builtin_defaults():
         "instrument_weberror_reporter",
     )
 
-    _process_module_definition(
-        "thrift.transport.TSocket", "newrelic.hooks.external_thrift"
-    )
+    _process_module_definition("thrift.transport.TSocket", "newrelic.hooks.external_thrift")
 
     _process_module_definition(
         "gearman.client",
@@ -3096,9 +3077,7 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.framework_tornado",
         "instrument_tornado_routing",
     )
-    _process_module_definition(
-        "tornado.web", "newrelic.hooks.framework_tornado", "instrument_tornado_web"
-    )
+    _process_module_definition("tornado.web", "newrelic.hooks.framework_tornado", "instrument_tornado_web")
 
 
 def _process_module_entry_points():
@@ -3129,7 +3108,6 @@ _instrumentation_done = False
 
 
 def _setup_instrumentation():
-
     global _instrumentation_done
 
     if _instrumentation_done:
@@ -3206,9 +3184,7 @@ def initialize(
         environment = os.environ.get("NEW_RELIC_ENVIRONMENT", None)
 
     if ignore_errors is None:
-        ignore_errors = newrelic.core.config._environ_as_bool(
-            "NEW_RELIC_IGNORE_STARTUP_ERRORS", True
-        )
+        ignore_errors = newrelic.core.config._environ_as_bool("NEW_RELIC_IGNORE_STARTUP_ERRORS", True)
 
     _load_configuration(config_file, environment, ignore_errors, log_file, log_level)
 

@@ -20,7 +20,7 @@ import functools
 from newrelic.packages import six
 
 from newrelic.api.application import register_application
-from newrelic.api.background_task import BackgroundTask
+from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace,
         FunctionTraceWrapper)
@@ -237,7 +237,7 @@ def wrap_leading_middleware(middleware):
 
             before = (transaction.name, transaction.group)
 
-            with FunctionTrace(name=name):
+            with FunctionTrace(name=name, source=wrapped):
                 try:
                     return wrapped(*args, **kwargs)
 
@@ -303,7 +303,7 @@ def wrap_view_middleware(middleware):
 
             before = (transaction.name, transaction.group)
 
-            with FunctionTrace(name=name):
+            with FunctionTrace(name=name, source=wrapped):
                 try:
                     return _wrapped(*args, **kwargs)
 
@@ -328,23 +328,14 @@ def wrap_trailing_middleware(middleware):
     # after the view handler. Records the time spent in the
     # middleware as separate function node. Transaction is never
     # named after these middleware.
-
-    def wrapper(wrapped):
-        # The middleware if a class method would already be
-        # bound at this point, so is safe to determine the name
-        # when it is being wrapped rather than on each
-        # invocation.
-
-        name = callable_name(wrapped)
-
-        def wrapper(wrapped, instance, args, kwargs):
-            with FunctionTrace(name=name):
-                return wrapped(*args, **kwargs)
-
-        return FunctionWrapper(wrapped, wrapper)
+    #
+    # The middleware if a class method would already be
+    # bound at this point, so is safe to determine the name
+    # when it is being wrapped rather than on each
+    # invocation.
 
     for wrapped in middleware:
-        yield wrapper(wrapped)
+        yield FunctionTraceWrapper(wrapped, name=callable_name(wrapped))
 
 
 def insert_and_wrap_middleware(handler, *args, **kwargs):
@@ -422,12 +413,10 @@ def _nr_wrapper_GZipMiddleware_process_response_(wrapped, instance, args,
     request, response = _bind_params(*args, **kwargs)
 
     if should_add_browser_timing(response, transaction):
-        with FunctionTrace(
-                name=callable_name(browser_timing_insertion)):
-            response_with_browser = browser_timing_insertion(
-                    response, transaction)
+        with FunctionTrace(name=callable_name(browser_timing_insertion), source=wrapped):
+            response_with_browser = browser_timing_insertion(response, transaction)
 
-        return wrapped(request, response_with_browser)
+        wrapped(request, response_with_browser)
 
     return wrapped(request, response)
 
@@ -504,8 +493,7 @@ def wrap_handle_uncaught_exception(middleware):
                 notice_error()
                 raise
 
-        with FunctionTrace(name=name):
-            return _wrapped(*args, **kwargs)
+        return FunctionTraceWrapper(_wrapped, name=name)(*args, **kwargs)
 
     return FunctionWrapper(middleware, wrapper)
 
@@ -547,7 +535,10 @@ def wrap_view_handler(wrapped, priority=3):
     if hasattr(wrapped, '_nr_django_view_handler'):
         return wrapped
 
-    name = callable_name(wrapped)
+    if hasattr(wrapped, "view_class"):
+        name = callable_name(wrapped.view_class)
+    else:
+        name = callable_name(wrapped)
 
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -556,8 +547,7 @@ def wrap_view_handler(wrapped, priority=3):
             return wrapped(*args, **kwargs)
 
         transaction.set_transaction_name(name, priority=priority)
-
-        with FunctionTrace(name=name):
+        with FunctionTrace(name=name, source=wrapped):
             try:
                 return wrapped(*args, **kwargs)
 
@@ -607,7 +597,7 @@ def wrap_url_resolver(wrapped):
             # XXX This can raise a Resolver404. If this is not dealt
             # with, is this the source of our unnamed 404 requests.
 
-            with FunctionTrace(name=name, label=path):
+            with FunctionTrace(name=name, label=path, source=wrapped):
                 result = wrapped(path)
 
                 if type(result) is tuple:
@@ -640,7 +630,7 @@ def wrap_url_resolver_nnn(wrapped, priority=1):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        with FunctionTrace(name=name):
+        with FunctionTrace(name=name, source=wrapped):
             result = wrapped(*args, **kwargs)
             if callable(result):
                 return wrap_view_handler(result, priority=priority)
@@ -781,9 +771,7 @@ def instrument_django_template(module):
 
 def wrap_template_block(wrapped):
     def wrapper(wrapped, instance, args, kwargs):
-        with FunctionTrace(name=instance.name,
-                group='Template/Block'):
-            return wrapped(*args, **kwargs)
+        return FunctionTraceWrapper(wrapped, name=instance.name, group='Template/Block')(*args, **kwargs)
 
     return FunctionWrapper(wrapped, wrapper)
 
@@ -896,6 +884,20 @@ def instrument_django_views_debug(module):
             module.technical_500_response, priority=1)
 
 
+def resolve_view_handler(view, request):
+    # We can't intercept the delegated view handler when it
+    # is looked up by the dispatch() method so we need to
+    # duplicate the lookup mechanism.
+
+    if request.method.lower() in view.http_method_names:
+        handler = getattr(view, request.method.lower(),
+                view.http_method_not_allowed)
+    else:
+        handler = view.http_method_not_allowed
+
+    return handler
+
+
 def wrap_view_dispatch(wrapped):
 
     # Wrapper to be applied to dispatcher for class based views.
@@ -912,15 +914,7 @@ def wrap_view_dispatch(wrapped):
         view = instance
         request = _args(*args, **kwargs)
 
-        # We can't intercept the delegated view handler when it
-        # is looked up by the dispatch() method so we need to
-        # duplicate the lookup mechanism.
-
-        if request.method.lower() in view.http_method_names:
-            handler = getattr(view, request.method.lower(),
-                    view.http_method_not_allowed)
-        else:
-            handler = view.http_method_not_allowed
+        handler = resolve_view_handler(view, request)
 
         name = callable_name(handler)
 
@@ -948,7 +942,7 @@ def wrap_view_dispatch(wrapped):
 
         transaction.set_transaction_name(name, priority=priority)
 
-        with FunctionTrace(name=name):
+        with FunctionTrace(name=name, source=handler):
             return wrapped(*args, **kwargs)
 
     return FunctionWrapper(wrapped, wrapper)
@@ -996,8 +990,7 @@ def _nr_wrapper_BaseCommand_run_from_argv_(wrapped, instance, args, kwargs):
 
     application = register_application(timeout=startup_timeout)
 
-    with BackgroundTask(application, subcommand, 'Django'):
-        return wrapped(*args, **kwargs)
+    return BackgroundTaskWrapper(wrapped, application, subcommand, 'Django')(*args, **kwargs)
 
 
 def instrument_django_core_management_base(module):
@@ -1023,8 +1016,7 @@ def _nr_wrapper_django_inclusion_tag_wrapper_(wrapped, instance,
     if '*' not in tags and name not in tags and qualname not in tags:
         return wrapped(*args, **kwargs)
 
-    with FunctionTrace(name, group='Template/Tag'):
-        return wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name, group='Template/Tag')(*args, **kwargs)
 
 
 @function_wrapper
@@ -1062,8 +1054,7 @@ def _nr_wrapper_django_template_base_InclusionNode_render_(wrapped,
 
     name = wrapped.__self__._nr_file_name
 
-    with FunctionTrace(name, 'Template/Include'):
-        return wrapped(*args, **kwargs)
+    return FunctionTraceWrapper(wrapped, name=name, group='Template/Include')(*args, **kwargs)
 
 
 def _nr_wrapper_django_template_base_generic_tag_compiler_(wrapped, instance,
@@ -1201,8 +1192,7 @@ def _nr_wrap_converted_middleware_(middleware, name):
 
         transaction.set_transaction_name(name, priority=2)
 
-        with FunctionTrace(name=name):
-            return wrapped(*args, **kwargs)
+        return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
     return _wrapper(middleware)
 

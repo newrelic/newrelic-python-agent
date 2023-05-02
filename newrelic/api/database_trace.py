@@ -15,8 +15,8 @@
 import functools
 import logging
 
-from newrelic.common.async_wrapper import async_wrapper
 from newrelic.api.time_trace import TimeTrace, current_trace
+from newrelic.common.async_wrapper import async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.database_node import DatabaseNode
 from newrelic.core.stack_trace import current_stack
@@ -24,15 +24,20 @@ from newrelic.core.stack_trace import current_stack
 _logger = logging.getLogger(__name__)
 
 
-def register_database_client(dbapi2_module, database_product,
-        quoting_style='single', explain_query=None, explain_stmts=[],
-        instance_info=None):
+def register_database_client(
+    dbapi2_module, database_product, quoting_style="single", explain_query=None, explain_stmts=[], instance_info=None
+):
 
-    _logger.debug('Registering database client module %r where database '
-            'is %r, quoting style is %r, explain query statement is %r and '
-            'the SQL statements on which explain plans can be run are %r.',
-            dbapi2_module, database_product, quoting_style, explain_query,
-            explain_stmts)
+    _logger.debug(
+        "Registering database client module %r where database "
+        "is %r, quoting style is %r, explain query statement is %r and "
+        "the SQL statements on which explain plans can be run are %r.",
+        dbapi2_module,
+        database_product,
+        quoting_style,
+        explain_query,
+        explain_stmts,
+    )
 
     dbapi2_module._nr_database_product = database_product
     dbapi2_module._nr_quoting_style = quoting_style
@@ -50,17 +55,25 @@ class DatabaseTrace(TimeTrace):
 
     __async_explain_plan_logged = False
 
-    def __init__(self, sql, dbapi2_module=None,
-                 connect_params=None, cursor_params=None,
-                 sql_parameters=None, execute_params=None,
-                 host=None, port_path_or_id=None, database_name=None,
-                 **kwargs):
-        parent = None
+    def __init__(
+        self,
+        sql,
+        dbapi2_module=None,
+        connect_params=None,
+        cursor_params=None,
+        sql_parameters=None,
+        execute_params=None,
+        host=None,
+        port_path_or_id=None,
+        database_name=None,
+        **kwargs
+    ):
+        parent = kwargs.pop("parent", None)
+        source = kwargs.pop("source", None)
         if kwargs:
-            if len(kwargs) > 1:
-                raise TypeError("Invalid keyword arguments:", kwargs)
-            parent = kwargs['parent']
-        super(DatabaseTrace, self).__init__(parent)
+            raise TypeError("Invalid keyword arguments:", kwargs)
+
+        super(DatabaseTrace, self).__init__(parent=parent, source=source)
 
         self.sql = sql
 
@@ -81,8 +94,11 @@ class DatabaseTrace(TimeTrace):
         return result
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, dict(
-                sql=self.sql, dbapi2_module=self.dbapi2_module))
+        return "<%s object at 0x%x %s>" % (
+            self.__class__.__name__,
+            id(self),
+            dict(sql=self.sql, dbapi2_module=self.dbapi2_module),
+        )
 
     @property
     def is_async_mode(self):
@@ -98,19 +114,20 @@ class DatabaseTrace(TimeTrace):
         except TypeError:
             return False
         else:
-            return ('async' in kwargs and kwargs['async']) \
-                or ('async_' in kwargs and kwargs['async_'])
+            return ("async" in kwargs and kwargs["async"]) or ("async_" in kwargs and kwargs["async_"])
 
     def _log_async_warning(self):
         # Only log the warning the first time.
 
         if not DatabaseTrace.__async_explain_plan_logged:
             DatabaseTrace.__async_explain_plan_logged = True
-            _logger.warning('Explain plans are not supported for queries '
-                    'made over database connections in asynchronous mode.')
+            _logger.warning(
+                "Explain plans are not supported for queries made over database connections in asynchronous mode."
+            )
 
     def finalize_data(self, transaction, exc=None, value=None, tb=None):
         self.stack_trace = None
+        self.sql_format = "off"
 
         connect_params = None
         cursor_params = None
@@ -121,6 +138,10 @@ class DatabaseTrace(TimeTrace):
         database_name = None
 
         settings = transaction.settings
+
+        if not settings:
+            return
+
         tt = settings.transaction_tracer
         agent_limits = settings.agent_limits
         ds_tracer = settings.datastore_tracer
@@ -132,13 +153,14 @@ class DatabaseTrace(TimeTrace):
 
         if instance_enabled or db_name_enabled:
 
-            if (self.dbapi2_module and
-                    self.connect_params and
-                    self.dbapi2_module._nr_datastore_instance_feature_flag and
-                    self.dbapi2_module._nr_instance_info is not None):
+            if (
+                self.dbapi2_module
+                and self.connect_params
+                and self.dbapi2_module._nr_datastore_instance_feature_flag
+                and self.dbapi2_module._nr_instance_info is not None
+            ):
 
-                instance_info = self.dbapi2_module._nr_instance_info(
-                        *self.connect_params)
+                instance_info = self.dbapi2_module._nr_instance_info(*self.connect_params)
 
                 if instance_enabled:
                     host, port_path_or_id, _ = instance_info
@@ -154,13 +176,10 @@ class DatabaseTrace(TimeTrace):
                 if db_name_enabled:
                     database_name = self.database_name
 
-        if (tt.enabled and settings.collect_traces and
-                tt.record_sql != 'off'):
+        if tt.enabled and settings.collect_traces and tt.record_sql != "off":
             if self.duration >= tt.stack_trace_threshold:
-                if (transaction._stack_trace_count <
-                        agent_limits.slow_sql_stack_trace):
-                    self.stack_trace = [transaction._intern_string(x) for
-                                        x in current_stack(skip=2)]
+                if transaction._stack_trace_count < agent_limits.slow_sql_stack_trace:
+                    self.stack_trace = [transaction._intern_string(x) for x in current_stack(skip=2)]
                     transaction._stack_trace_count += 1
 
             if self.is_async_mode and tt.explain_enabled:
@@ -173,21 +192,23 @@ class DatabaseTrace(TimeTrace):
                 # doing the explain plan with the same inputs could
                 # cause further problems.
 
-                if (exc is None and
-                        not self.is_async_mode and
-                        tt.explain_enabled and
-                        self.duration >= tt.explain_threshold and
-                        self.connect_params is not None):
-                    if (transaction._explain_plan_count <
-                           agent_limits.sql_explain_plans):
+                if (
+                    exc is None
+                    and not self.is_async_mode
+                    and tt.explain_enabled
+                    and self.duration >= tt.explain_threshold
+                    and self.connect_params is not None
+                ):
+                    if transaction._explain_plan_count < agent_limits.sql_explain_plans:
                         connect_params = self.connect_params
                         cursor_params = self.cursor_params
                         sql_parameters = self.sql_parameters
                         execute_params = self.execute_params
                         transaction._explain_plan_count += 1
 
-        self.sql_format = tt.record_sql
-
+        self.sql_format = (
+            tt.record_sql if tt.record_sql else "off"
+        )  # If tt.record_sql is None, then default to sql being off
         self.connect_params = connect_params
         self.cursor_params = cursor_params
         self.sql_parameters = sql_parameters
@@ -201,29 +222,29 @@ class DatabaseTrace(TimeTrace):
 
     def create_node(self):
         return DatabaseNode(
-                dbapi2_module=self.dbapi2_module,
-                sql=self.sql,
-                children=self.children,
-                start_time=self.start_time,
-                end_time=self.end_time,
-                duration=self.duration,
-                exclusive=self.exclusive,
-                stack_trace=self.stack_trace,
-                sql_format=self.sql_format,
-                connect_params=self.connect_params,
-                cursor_params=self.cursor_params,
-                sql_parameters=self.sql_parameters,
-                execute_params=self.execute_params,
-                host=self.host,
-                port_path_or_id=self.port_path_or_id,
-                database_name=self.database_name,
-                guid=self.guid,
-                agent_attributes=self.agent_attributes,
-                user_attributes=self.user_attributes)
+            dbapi2_module=self.dbapi2_module,
+            sql=self.sql,
+            children=self.children,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            duration=self.duration,
+            exclusive=self.exclusive,
+            stack_trace=self.stack_trace,
+            sql_format=self.sql_format,
+            connect_params=self.connect_params,
+            cursor_params=self.cursor_params,
+            sql_parameters=self.sql_parameters,
+            execute_params=self.execute_params,
+            host=self.host,
+            port_path_or_id=self.port_path_or_id,
+            database_name=self.database_name,
+            guid=self.guid,
+            agent_attributes=self.agent_attributes,
+            user_attributes=self.user_attributes,
+        )
 
 
 def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
-
     def _nr_database_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper(wrapped)
         if not wrapper:
@@ -241,9 +262,9 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
         else:
             _sql = sql
 
-        trace = DatabaseTrace(_sql, dbapi2_module, parent=parent)
+        trace = DatabaseTrace(_sql, dbapi2_module, parent=parent, source=wrapped)
 
-        if wrapper:
+        if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
@@ -253,10 +274,8 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
 
 def database_trace(sql, dbapi2_module=None):
-    return functools.partial(DatabaseTraceWrapper, sql=sql,
-            dbapi2_module=dbapi2_module)
+    return functools.partial(DatabaseTraceWrapper, sql=sql, dbapi2_module=dbapi2_module)
 
 
 def wrap_database_trace(module, object_path, sql, dbapi2_module=None):
-    wrap_object(module, object_path, DatabaseTraceWrapper,
-            (sql, dbapi2_module))
+    wrap_object(module, object_path, DatabaseTraceWrapper, (sql, dbapi2_module))

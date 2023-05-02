@@ -15,10 +15,9 @@
 import threading
 import warnings
 
-import newrelic.core.config
-import newrelic.core.agent
 import newrelic.api.import_hook
-
+import newrelic.core.agent
+import newrelic.core.config
 import newrelic.packages.six as six
 
 
@@ -30,22 +29,22 @@ class Application(object):
     _delayed_callables = {}
 
     @staticmethod
-    def _instance(name):
+    def _instance(name, activate=True):
         if name is None:
             name = newrelic.core.config.global_settings().app_name
-
-        # Ensure we grab a reference to the agent before grabbing
-        # the lock, else startup callback on agent initialisation
-        # could deadlock as it tries to create a application when
-        # we already have the lock held.
-
-        agent = newrelic.core.agent.agent_instance()
 
         # Try first without lock. If we find it we can return.
 
         instance = Application._instances.get(name, None)
 
-        if not instance:
+        if not instance and activate:
+            # Ensure we grab a reference to the agent before grabbing
+            # the lock, else startup callback on agent initialisation
+            # could deadlock as it tries to create a application when
+            # we already have the lock held.
+
+            agent = newrelic.core.agent.agent_instance()
+
             with Application._lock:
                 # Now try again with lock so that only one gets
                 # to create and add it.
@@ -99,8 +98,9 @@ class Application(object):
         # configuration will later be used. Note that the timeout only
         # applies on the first call to activate the application.
 
-        self._agent.activate_application(self._name, self._linked, timeout,
-                newrelic.api.import_hook._uninstrumented_modules)
+        self._agent.activate_application(
+            self._name, self._linked, timeout, newrelic.api.import_hook._uninstrumented_modules
+        )
 
     def shutdown(self):
         pass
@@ -112,17 +112,16 @@ class Application(object):
     def link_to_application(self, name):
         self._linked[name] = True
 
-    def record_exception(self, exc=None, value=None, tb=None, params={},
-            ignore_errors=[]):
+    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
         # Deprecation Warning
-        warnings.warn((
-            'The record_exception function is deprecated. Please use the '
-            'new api named notice_error instead.'
-        ), DeprecationWarning)
+        warnings.warn(
+            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
+            DeprecationWarning,
+        )
 
         self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
-    def notice_error(self, error=None, attributes={}, expected=None, ignore=None, status_code=None):
+    def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         if not self.active:
             return
 
@@ -151,7 +150,11 @@ class Application(object):
         if self.active:
             self._agent.record_transaction(self._name, data)
 
-    def normalize_name(self, name, rule_type='url'):
+    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+        if self.active:
+            self._agent.record_log_event(self._name, message, level, timestamp, priority=priority)
+
+    def normalize_name(self, name, rule_type="url"):
         if self.active:
             return self._agent.normalize_name(self._name, name, rule_type)
         return name, False
@@ -163,8 +166,8 @@ class Application(object):
         return self._agent.compute_sampled(self._name)
 
 
-def application_instance(name=None):
-    return Application._instance(name)
+def application_instance(name=None, activate=True):
+    return Application._instance(name, activate=activate)
 
 
 def register_application(name=None, timeout=None):

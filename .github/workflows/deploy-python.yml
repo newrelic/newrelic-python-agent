@@ -1,0 +1,82 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Deploy
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  deploy-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+          architecture: x64
+
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U wheel setuptools twine
+
+      - name: Build Source Package
+        run: python setup.py sdist
+
+      - name: Build Manylinux Wheels (Python 2)
+        uses: pypa/cibuildwheel@v1.12.0
+        env:
+          CIBW_PLATFORM: linux
+          CIBW_BUILD: cp27-manylinux_x86_64
+          CIBW_ARCHS: x86_64
+          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/=vtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
+
+      - name: Build Manylinux Wheels (Python 3)
+        uses: pypa/cibuildwheel@v2.11.1
+        env:
+          CIBW_PLATFORM: linux
+          CIBW_BUILD: cp37-manylinux* cp38-manylinux* cp39-manylinux* cp310-manylinux* cp311-manylinux*
+          CIBW_ARCHS: x86_64 aarch64
+          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
+
+      - name: Upload Package to S3
+        run: |
+          tarball="$(python setup.py --fullname).tar.gz"
+          md5_file=$(mktemp)
+          openssl md5 -binary dist/$tarball | xxd -p | tr -d '\n' > $md5_file
+          aws s3 cp $md5_file $S3_DST/${tarball}.md5
+          aws s3 cp dist/$tarball $S3_DST/$tarball
+        env:
+          S3_DST: s3://nr-downloads-main/python_agent/release
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-west-2
+
+      - name: Upload Package to PyPI
+        run: |
+          twine upload --non-interactive dist/*.tar.gz wheelhouse/*-manylinux*.whl
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}

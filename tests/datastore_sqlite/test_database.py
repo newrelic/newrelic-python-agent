@@ -18,12 +18,12 @@ import sys
 
 is_pypy = hasattr(sys, 'pypy_version_info')
 
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
 
 from newrelic.api.background_task import background_task
 
-DATABASE_DIR = os.environ.get('TOX_ENVDIR', '.')
+DATABASE_DIR = os.environ.get('TOX_ENV_DIR', '.')
 DATABASE_NAME = ':memory:'
 
 _test_execute_via_cursor_scoped_metrics = [

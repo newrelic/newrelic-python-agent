@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import imp
 import logging
 import sys
+
+from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -26,26 +27,45 @@ except ImportError:
 _import_hooks = {}
 
 _ok_modules = (
-        # These modules are imported by the newrelic package and/or do not do
-        # nested imports, so they're ok to import before newrelic.
-        'urllib', 'urllib2', 'httplib', 'http.client', 'urllib.request',
-        'newrelic.agent', 'asyncio','asyncio.events',
-
-        # These modules should not be added to the _uninstrumented_modules set
-        # because they have been deemed okay to import before initialization by
-        # the customer.
-        'gunicorn.app.base', 'wsgiref.simple_server', 'gevent.wsgi',
-        'gevent.pywsgi', 'cheroot.wsgi', 'cherrypy.wsgiserver',
-        'flup.server.cgi', 'flup.server.ajp_base', 'flup.server.fcgi_base',
-        'flup.server.scgi_base', 'meinheld.server', 'paste.httpserver',
-        'waitress.server', 'gevent.monkey', 'asyncio.base_events',
+    # These modules are imported by the newrelic package and/or do not do
+    # nested imports, so they're ok to import before newrelic.
+    "urllib",
+    "urllib2",
+    "httplib",
+    "http.client",
+    "urllib.request",
+    "newrelic.agent",
+    "asyncio",
+    "asyncio.events",
+    # These modules should not be added to the _uninstrumented_modules set
+    # because they have been deemed okay to import before initialization by
+    # the customer.
+    "logging",
+    "gunicorn.app.base",
+    "wsgiref.simple_server",
+    "gevent.wsgi",
+    "gevent.pywsgi",
+    "cheroot.wsgi",
+    "cherrypy.wsgiserver",
+    "flup.server.cgi",
+    "flup.server.ajp_base",
+    "flup.server.fcgi_base",
+    "flup.server.scgi_base",
+    "meinheld.server",
+    "paste.httpserver",
+    "waitress.server",
+    "gevent.monkey",
+    "asyncio.base_events",
 )
 
 _uninstrumented_modules = set()
 
 
-def register_import_hook(name, callable):
-    imp.acquire_lock()
+def register_import_hook(name, callable):  # pylint: disable=redefined-builtin
+    if six.PY2:
+        import imp
+
+        imp.acquire_lock()
 
     try:
         hooks = _import_hooks.get(name, None)
@@ -66,11 +86,14 @@ def register_import_hook(name, callable):
                 # immediately.
 
                 if module.__name__ not in _ok_modules:
-                    _logger.debug('Module %s has been imported before the '
-                            'newrelic.agent.initialize call. Import and '
-                            'initialize the New Relic agent before all '
-                            'other modules for best monitoring '
-                            'results.' % module)
+                    _logger.debug(
+                        "Module %s has been imported before the "
+                        "newrelic.agent.initialize call. Import and "
+                        "initialize the New Relic agent before all "
+                        "other modules for best monitoring "
+                        "results.",
+                        module,
+                    )
 
                     # Add the module name to the set of uninstrumented modules.
                     # During harvest, this set will be used to produce metrics.
@@ -102,7 +125,8 @@ def register_import_hook(name, callable):
             _import_hooks[name].append(callable)
 
     finally:
-        imp.release_lock()
+        if six.PY2:
+            imp.release_lock()
 
 
 def _notify_import_hooks(name, module):
@@ -116,12 +140,11 @@ def _notify_import_hooks(name, module):
     if hooks is not None:
         _import_hooks[name] = None
 
-        for callable in hooks:
-            callable(module)
+        for hook in hooks:
+            hook(module)
 
 
 class _ImportHookLoader:
-
     def load_module(self, fullname):
 
         # Call the import hooks on the module being handled.
@@ -133,7 +156,6 @@ class _ImportHookLoader:
 
 
 class _ImportHookChainedLoader:
-
     def __init__(self, loader):
         self.loader = loader
 
@@ -141,18 +163,32 @@ class _ImportHookChainedLoader:
         module = self.loader.load_module(fullname)
 
         # Call the import hooks on the module being handled.
-
         _notify_import_hooks(fullname, module)
 
         return module
 
+    def create_module(self, spec):
+        return self.loader.create_module(spec)
+
+    def exec_module(self, module):
+        self.loader.exec_module(module)
+
+        # Call the import hooks on the module being handled.
+        _notify_import_hooks(module.__name__, module)
+
 
 class ImportHookFinder:
-
     def __init__(self):
         self._skip = {}
 
     def find_module(self, fullname, path=None):
+        """
+        Find spec and patch import hooks into loader before returning.
+
+        Required for Python 2.
+
+        https://docs.python.org/3/library/importlib.html#importlib.abc.MetaPathFinder.find_module
+        """
 
         # If not something we are interested in we can return.
 
@@ -178,9 +214,9 @@ class ImportHookFinder:
 
             if find_spec:
                 spec = find_spec(fullname)
-                loader = getattr(spec, 'loader', None)
+                loader = getattr(spec, "loader", None)
 
-                if loader:
+                if loader and not isinstance(loader, (_ImportHookChainedLoader, _ImportHookLoader)):
                     return _ImportHookChainedLoader(loader)
 
             else:
@@ -196,11 +232,59 @@ class ImportHookFinder:
         finally:
             del self._skip[fullname]
 
+    def find_spec(self, fullname, path=None, target=None):
+        """
+        Find spec and patch import hooks into loader before returning.
+
+        Required for Python 3.10+ to avoid warnings.
+
+        https://docs.python.org/3/library/importlib.html#importlib.abc.MetaPathFinder.find_spec
+        """
+
+        # If not something we are interested in we can return.
+
+        if fullname not in _import_hooks:
+            return None
+
+        # Check whether this is being called on the second time
+        # through and return.
+
+        if fullname in self._skip:
+            return None
+
+        # We are now going to call back into import. We set a
+        # flag to see we are handling the module so that check
+        # above drops out on subsequent pass and we don't go
+        # into an infinite loop.
+
+        self._skip[fullname] = True
+
+        try:
+            # For Python 3 we need to use find_spec() from the importlib
+            # module.
+
+            if find_spec:
+                spec = find_spec(fullname)
+                loader = getattr(spec, "loader", None)
+
+                if loader and not isinstance(loader, (_ImportHookChainedLoader, _ImportHookLoader)):
+                    spec.loader = _ImportHookChainedLoader(loader)
+
+                return spec
+
+            else:
+                # Not possible, Python 3 defines find_spec and Python 2 does not have find_spec on Finders
+                return None
+
+        finally:
+            del self._skip[fullname]
+
 
 def import_hook(name):
     def decorator(wrapped):
         register_import_hook(name, wrapped)
         return wrapped
+
     return decorator
 
 

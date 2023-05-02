@@ -14,13 +14,14 @@
 
 import json
 import logging
+
 import pytest
 
-from newrelic.api.log import NewRelicContextFormatter
+from newrelic.agent import get_linking_metadata
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.agent import get_linking_metadata
-import newrelic.packages.six as six
+from newrelic.api.log import NewRelicContextFormatter
+from newrelic.packages import six
 
 if six.PY2:
     from io import BytesIO as Buffer
@@ -80,13 +81,14 @@ def test_newrelic_logger_no_error(log_buffer):
     filename = message.pop("file.name")
     line_number = message.pop("line.number")
 
-    assert type(timestamp) is int
-    assert type(thread_id) is int
-    assert type(process_id) is int
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
-    assert type(line_number) is int
+    assert isinstance(line_number, int)
 
-    assert message == {
+    expected = {
+        u"entity.name": u"Python Agent Test (agent_features)",
         u"entity.type": u"SERVICE",
         u"message": u"Hello World",
         u"log.level": u"INFO",
@@ -106,13 +108,24 @@ def test_newrelic_logger_no_error(log_buffer):
             u"second": u"baz",
         },
     }
+    expected_extra_txn_keys = (
+        "entity.guid",
+        "hostname",
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
 
 
 class ExceptionForTest(ValueError):
     pass
 
 
-def test_newrelic_logger_error(log_buffer):
+@background_task()
+def test_newrelic_logger_error_inside_transaction(log_buffer):
     try:
         raise ExceptionForTest
     except ExceptionForTest:
@@ -127,13 +140,14 @@ def test_newrelic_logger_error(log_buffer):
     filename = message.pop("file.name")
     line_number = message.pop("line.number")
 
-    assert type(timestamp) is int
-    assert type(thread_id) is int
-    assert type(process_id) is int
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
-    assert type(line_number) is int
+    assert isinstance(line_number, int)
 
-    assert message == {
+    expected = {
+        u"entity.name": u"Python Agent Test (agent_features)",
         u"entity.type": u"SERVICE",
         u"message": u"oops",
         u"log.level": u"ERROR",
@@ -144,6 +158,61 @@ def test_newrelic_logger_error(log_buffer):
         u"error.message": u"",
         u"error.expected": False,
     }
+    expected_extra_txn_keys = (
+        "trace.id",
+        "span.id",
+        "entity.guid",
+        "hostname",
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
+
+def test_newrelic_logger_error_outside_transaction(log_buffer):
+    try:
+        raise ExceptionForTest
+    except ExceptionForTest:
+        _logger.exception(u"oops")
+
+    log_buffer.seek(0)
+    message = json.load(log_buffer)
+
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    process_id = message.pop("process.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
+    assert filename.endswith("/test_logs_in_context.py")
+    assert isinstance(line_number, int)
+
+    expected = {
+        u"entity.name": u"Python Agent Test (agent_features)",
+        u"entity.type": u"SERVICE",
+        u"message": u"oops",
+        u"log.level": u"ERROR",
+        u"logger.name": u"test_logs_in_context",
+        u"thread.name": u"MainThread",
+        u"process.name": u"MainProcess",
+        u"error.class": u"test_logs_in_context:ExceptionForTest",
+        u"error.message": u"",
+    }
+    expected_extra_txn_keys = (
+        "entity.guid",
+        "hostname",
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
 
 
 EXPECTED_KEYS_TXN = (
@@ -152,9 +221,15 @@ EXPECTED_KEYS_TXN = (
     "entity.name",
     "entity.type",
     "entity.guid",
+        "hostname",
 )
 
-EXPECTED_KEYS_NO_TXN = EXPECTED_KEYS_TRACE_ENDED = ("entity.type",)
+EXPECTED_KEYS_NO_TXN = EXPECTED_KEYS_TRACE_ENDED = (
+    "entity.name",
+    "entity.type",
+    "entity.guid",
+    "hostname",
+)
 
 
 def validate_metadata(metadata, expected):

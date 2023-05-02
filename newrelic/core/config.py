@@ -40,8 +40,11 @@ except ImportError:
 
 try:
     import grpc
-    from newrelic.core.infinite_tracing_pb2 import Span as _  # NOQA
-except ImportError:
+
+    from newrelic.core.infinite_tracing_pb2 import (  # pylint: disable=W0611,C0412  # noqa: F401
+        Span,
+    )
+except Exception:
     grpc = None
 
 
@@ -49,8 +52,10 @@ except ImportError:
 # reservoir. Error Events have a different default size.
 
 DEFAULT_RESERVOIR_SIZE = 1200
+CUSTOM_EVENT_RESERVOIR_SIZE = 3600
 ERROR_EVENT_RESERVOIR_SIZE = 100
-SPAN_EVENT_RESERVOIR_SIZE = 1000
+SPAN_EVENT_RESERVOIR_SIZE = 2000
+LOG_EVENT_RESERVOIR_SIZE = 10000
 
 # settings that should be completely ignored if set server side
 IGNORED_SERVER_SIDE_SETTINGS = [
@@ -101,8 +106,7 @@ class TopLevelSettings(Settings):
     def host(self):
         if self._host:
             return self._host
-        else:
-            return default_host(self.license_key)
+        return default_host(self.license_key)
 
     @host.setter
     def host(self, value):
@@ -114,6 +118,10 @@ class AttributesSettings(Settings):
 
 
 class GCRuntimeMetricsSettings(Settings):
+    enabled = False
+
+
+class CodeLevelMetricsSettings(Settings):
     pass
 
 
@@ -130,7 +138,9 @@ class TransactionTracerAttributesSettings(Settings):
 
 
 class ErrorCollectorSettings(Settings):
-    pass
+    @property
+    def error_group_callback(self):
+        return self._error_group_callback
 
 
 class ErrorCollectorAttributesSettings(Settings):
@@ -253,6 +263,22 @@ class EventLoopVisibilitySettings(Settings):
     pass
 
 
+class ApplicationLoggingSettings(Settings):
+    pass
+
+
+class ApplicationLoggingForwardingSettings(Settings):
+    pass
+
+
+class ApplicationLoggingMetricsSettings(Settings):
+    pass
+
+
+class ApplicationLoggingLocalDecoratingSettings(Settings):
+    pass
+
+
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
 
@@ -310,6 +336,14 @@ class InfiniteTracingSettings(Settings):
         return True
 
 
+class InstrumentationSettings(Settings):
+    pass
+
+
+class InstrumentationGraphQLSettings(Settings):
+    pass
+
+
 class EventHarvestConfigSettings(Settings):
     nested = True
     _lock = threading.Lock()
@@ -317,9 +351,7 @@ class EventHarvestConfigSettings(Settings):
     @property
     def report_period_ms(self):
         with self._lock:
-            return vars(_settings.event_harvest_config).get(
-                "report_period_ms", 60 * 1000
-            )
+            return vars(_settings.event_harvest_config).get("report_period_ms", 60 * 1000)
 
     @report_period_ms.setter
     def report_period_ms(self, value):
@@ -333,49 +365,52 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 
 
 _settings = TopLevelSettings()
+_settings.agent_limits = AgentLimitsSettings()
+_settings.application_logging = ApplicationLoggingSettings()
+_settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
+_settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
+_settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.attributes = AttributesSettings()
-_settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
-_settings.thread_profiler = ThreadProfilerSettings()
-_settings.transaction_tracer = TransactionTracerSettings()
-_settings.transaction_tracer.attributes = TransactionTracerAttributesSettings()
-_settings.error_collector = ErrorCollectorSettings()
-_settings.error_collector.attributes = ErrorCollectorAttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
-_settings.transaction_name = TransactionNameSettings()
-_settings.transaction_metrics = TransactionMetricsSettings()
-_settings.event_loop_visibility = EventLoopVisibilitySettings()
-_settings.rum = RumSettings()
-_settings.slow_sql = SlowSqlSettings()
-_settings.agent_limits = AgentLimitsSettings()
+_settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.console = ConsoleSettings()
-_settings.debug = DebugSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
-_settings.transaction_events = TransactionEventsSettings()
-_settings.transaction_events.attributes = TransactionEventsAttributesSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
-_settings.process_host = ProcessHostSettings()
-_settings.synthetics = SyntheticsSettings()
-_settings.message_tracer = MessageTracerSettings()
-_settings.utilization = UtilizationSettings()
-_settings.strip_exception_messages = StripExceptionMessageSettings()
 _settings.datastore_tracer = DatastoreTracerSettings()
-_settings.datastore_tracer.instance_reporting = (
-    DatastoreTracerInstanceReportingSettings()
-)
-_settings.datastore_tracer.database_name_reporting = (
-    DatastoreTracerDatabaseNameReportingSettings()
-)
-_settings.heroku = HerokuSettings()
-_settings.span_events = SpanEventSettings()
-_settings.span_events.attributes = SpanEventAttributesSettings()
-_settings.transaction_segments = TransactionSegmentSettings()
-_settings.transaction_segments.attributes = TransactionSegmentAttributesSettings()
+_settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseNameReportingSettings()
+_settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
+_settings.debug = DebugSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
-_settings.serverless_mode = ServerlessModeSettings()
-_settings.infinite_tracing = InfiniteTracingSettings()
+_settings.error_collector = ErrorCollectorSettings()
+_settings.error_collector.attributes = ErrorCollectorAttributesSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = EventHarvestConfigHarvestLimitSettings()
+_settings.event_loop_visibility = EventLoopVisibilitySettings()
+_settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
+_settings.heroku = HerokuSettings()
+_settings.infinite_tracing = InfiniteTracingSettings()
+_settings.instrumentation = InstrumentationSettings()
+_settings.instrumentation.graphql = InstrumentationGraphQLSettings()
+_settings.message_tracer = MessageTracerSettings()
+_settings.process_host = ProcessHostSettings()
+_settings.rum = RumSettings()
+_settings.serverless_mode = ServerlessModeSettings()
+_settings.slow_sql = SlowSqlSettings()
+_settings.span_events = SpanEventSettings()
+_settings.span_events.attributes = SpanEventAttributesSettings()
+_settings.strip_exception_messages = StripExceptionMessageSettings()
+_settings.synthetics = SyntheticsSettings()
+_settings.thread_profiler = ThreadProfilerSettings()
+_settings.transaction_events = TransactionEventsSettings()
+_settings.transaction_events.attributes = TransactionEventsAttributesSettings()
+_settings.transaction_metrics = TransactionMetricsSettings()
+_settings.transaction_name = TransactionNameSettings()
+_settings.transaction_segments = TransactionSegmentSettings()
+_settings.transaction_segments.attributes = TransactionSegmentAttributesSettings()
+_settings.transaction_tracer = TransactionTracerSettings()
+_settings.transaction_tracer.attributes = TransactionTracerAttributesSettings()
+_settings.utilization = UtilizationSettings()
 
 
 _settings.log_file = os.environ.get("NEW_RELIC_LOG", None)
@@ -435,14 +470,11 @@ def _environ_as_mapping(name, default=""):
         return result
 
     for item in items.split(";"):
-
         try:
             key, value = item.split(":")
         except ValueError:
             _logger.warning(
-                "Invalid configuration. Cannot parse: %r."
-                "Expected format 'key1:value1;key2:value2 ... '.",
-                items,
+                "Invalid configuration. Cannot parse: %r. Expected format 'key1:value1;key2:value2 ... '.", items
             )
             result = []
             break
@@ -454,9 +486,7 @@ def _environ_as_mapping(name, default=""):
             result.append((key, value))
         else:
             _logger.warning(
-                "Invalid configuration. Cannot parse: %r."
-                "Expected format 'key1:value1;key2:value2 ... '.",
-                items,
+                "Invalid configuration. Cannot parse: %r. Expected format 'key1:value1;key2:value2 ... '.", items
             )
             result = []
             break
@@ -554,9 +584,7 @@ _settings.ca_bundle_path = os.environ.get("NEW_RELIC_CA_BUNDLE_PATH", None)
 _settings.app_name = os.environ.get("NEW_RELIC_APP_NAME", "Python Application")
 _settings.linked_applications = []
 
-_settings.process_host.display_name = os.environ.get(
-    "NEW_RELIC_PROCESS_HOST_DISPLAY_NAME", None
-)
+_settings.process_host.display_name = os.environ.get("NEW_RELIC_PROCESS_HOST_DISPLAY_NAME", None)
 
 _settings.labels = _environ_as_mapping("NEW_RELIC_LABELS", "")
 
@@ -614,9 +642,7 @@ _settings.transaction_segment_terms = []
 
 _settings.account_id = os.environ.get("NEW_RELIC_ACCOUNT_ID")
 _settings.cross_process_id = None
-_settings.primary_application_id = os.environ.get(
-    "NEW_RELIC_PRIMARY_APPLICATION_ID", "Unknown"
-)
+_settings.primary_application_id = os.environ.get("NEW_RELIC_PRIMARY_APPLICATION_ID", "Unknown")
 _settings.trusted_account_ids = []
 _settings.trusted_account_key = os.environ.get("NEW_RELIC_TRUSTED_ACCOUNT_KEY")
 _settings.encoding_key = None
@@ -631,7 +657,7 @@ _settings.attributes.exclude = []
 _settings.attributes.include = []
 
 _settings.thread_profiler.enabled = True
-_settings.cross_application_tracer.enabled = True
+_settings.cross_application_tracer.enabled = False
 
 _settings.gc_runtime_metrics.enabled = False
 _settings.gc_runtime_metrics.top_object_count_limit = 5
@@ -643,13 +669,9 @@ _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
 
-_settings.distributed_tracing.enabled = _environ_as_bool(
-    "NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=False
-)
+_settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
 _settings.distributed_tracing.exclude_newrelic_header = False
-_settings.span_events.enabled = _environ_as_bool(
-    "NEW_RELIC_SPAN_EVENTS_ENABLED", default=True
-)
+_settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)
 _settings.span_events.attributes.enabled = True
 _settings.span_events.attributes.exclude = []
 _settings.span_events.attributes.include = []
@@ -675,11 +697,10 @@ _settings.error_collector.enabled = True
 _settings.error_collector.capture_events = True
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_classes = []
-_settings.error_collector.ignore_status_codes = _parse_status_codes(
-    "100-102 200-208 226 300-308 404", set()
-)
+_settings.error_collector.ignore_status_codes = _parse_status_codes("100-102 200-208 226 300-308 404", set())
 _settings.error_collector.expected_classes = []
 _settings.error_collector.expected_status_codes = set()
+_settings.error_collector._error_group_callback = None
 _settings.error_collector.attributes.enabled = True
 _settings.error_collector.attributes.exclude = []
 _settings.error_collector.attributes.include = []
@@ -696,9 +717,7 @@ _settings.browser_monitoring.attributes.exclude = []
 _settings.browser_monitoring.attributes.include = []
 
 _settings.transaction_name.limit = None
-_settings.transaction_name.naming_scheme = os.environ.get(
-    "NEW_RELIC_TRANSACTION_NAMING_SCHEME"
-)
+_settings.transaction_name.naming_scheme = os.environ.get("NEW_RELIC_TRANSACTION_NAMING_SCHEME")
 
 _settings.slow_sql.enabled = True
 
@@ -721,28 +740,36 @@ _settings.agent_limits.synthetics_events = 200
 _settings.agent_limits.synthetics_transactions = 20
 _settings.agent_limits.data_compression_threshold = 64 * 1024
 _settings.agent_limits.data_compression_level = None
-
-_settings.infinite_tracing.trace_observer_host = os.environ.get(
-    "NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_HOST", None
-)
-_settings.infinite_tracing.trace_observer_port = _environ_as_int(
-    "NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_PORT", 443
-)
-_settings.infinite_tracing.ssl = False
 _settings.infinite_tracing.otlp_enabled = False
-_settings.infinite_tracing.span_queue_size = _environ_as_int(
-    "NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE", 10000
+_settings.infinite_tracing.trace_observer_host = os.environ.get("NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_HOST", None)
+_settings.infinite_tracing.trace_observer_port = _environ_as_int("NEW_RELIC_INFINITE_TRACING_TRACE_OBSERVER_PORT", 443)
+_settings.infinite_tracing.compression = _environ_as_bool("NEW_RELIC_INFINITE_TRACING_COMPRESSION", default=True)
+_settings.infinite_tracing.batching = _environ_as_bool("NEW_RELIC_INFINITE_TRACING_BATCHING", default=True)
+_settings.infinite_tracing.ssl = True
+_settings.infinite_tracing.span_queue_size = _environ_as_int("NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE", 10000)
+
+_settings.instrumentation.graphql.capture_introspection_queries = os.environ.get(
+    "NEW_RELIC_INSTRUMENTATION_GRAPHQL_CAPTURE_INTROSPECTION_QUERIES", False
 )
 
-_settings.event_harvest_config.harvest_limits.analytic_event_data = (
-    DEFAULT_RESERVOIR_SIZE
+_settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
+    "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE
 )
-_settings.event_harvest_config.harvest_limits.custom_event_data = DEFAULT_RESERVOIR_SIZE
-_settings.event_harvest_config.harvest_limits.span_event_data = (
-    SPAN_EVENT_RESERVOIR_SIZE
+
+_settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_int(
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", CUSTOM_EVENT_RESERVOIR_SIZE
 )
-_settings.event_harvest_config.harvest_limits.error_event_data = (
-    ERROR_EVENT_RESERVOIR_SIZE
+
+_settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
+    "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", SPAN_EVENT_RESERVOIR_SIZE
+)
+
+_settings.event_harvest_config.harvest_limits.error_event_data = _environ_as_int(
+    "NEW_RELIC_ERROR_COLLECTOR_MAX_EVENT_SAMPLES_STORED", ERROR_EVENT_RESERVOIR_SIZE
+)
+
+_settings.event_harvest_config.harvest_limits.log_event_data = _environ_as_int(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED", LOG_EVENT_RESERVOIR_SIZE
 )
 
 _settings.console.listener_socket = None
@@ -780,36 +807,38 @@ _settings.utilization.detect_kubernetes = True
 _settings.utilization.detect_gcp = True
 _settings.utilization.detect_pcf = True
 
-_settings.utilization.logical_processors = _environ_as_int(
-    "NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS"
-)
-_settings.utilization.total_ram_mib = _environ_as_int(
-    "NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB"
-)
-_settings.utilization.billing_hostname = os.environ.get(
-    "NEW_RELIC_UTILIZATION_BILLING_HOSTNAME"
-)
+_settings.utilization.logical_processors = _environ_as_int("NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS")
+_settings.utilization.total_ram_mib = _environ_as_int("NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB")
+_settings.utilization.billing_hostname = os.environ.get("NEW_RELIC_UTILIZATION_BILLING_HOSTNAME")
 
 _settings.strip_exception_messages.enabled = False
-_settings.strip_exception_messages.whitelist = []
+_settings.strip_exception_messages.allowlist = []
 
 _settings.datastore_tracer.instance_reporting.enabled = True
 _settings.datastore_tracer.database_name_reporting.enabled = True
 
-_settings.heroku.use_dyno_names = _environ_as_bool(
-    "NEW_RELIC_HEROKU_USE_DYNO_NAMES", default=True
-)
+_settings.heroku.use_dyno_names = _environ_as_bool("NEW_RELIC_HEROKU_USE_DYNO_NAMES", default=True)
 _settings.heroku.dyno_name_prefixes_to_shorten = list(
     _environ_as_set("NEW_RELIC_HEROKU_DYNO_NAME_PREFIXES_TO_SHORTEN", "scheduler run")
 )
 
-_settings.serverless_mode.enabled = _environ_as_bool(
-    "NEW_RELIC_SERVERLESS_MODE_ENABLED", default=False
-)
+_settings.serverless_mode.enabled = _environ_as_bool("NEW_RELIC_SERVERLESS_MODE_ENABLED", default=False)
 _settings.aws_lambda_metadata = {}
 
 _settings.event_loop_visibility.enabled = True
 _settings.event_loop_visibility.blocking_threshold = 0.1
+_settings.code_level_metrics.enabled = True
+
+_settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_LOGGING_ENABLED", default=True)
+_settings.application_logging.forwarding.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=True
+)
+_settings.application_logging.metrics.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED", default=True
+)
+_settings.application_logging.local_decorating.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
+)
 
 
 def global_settings():
@@ -928,21 +957,10 @@ def global_settings_dump(settings_object=None, serializable=False):
         components = urlparse.urlparse(proxy_host)
 
         if components.scheme:
-
-            netloc = create_obfuscated_netloc(
-                components.username,
-                components.password,
-                components.hostname,
-                obfuscated,
-            )
+            netloc = create_obfuscated_netloc(components.username, components.password, components.hostname, obfuscated)
 
             if components.port:
-                uri = "%s://%s:%s%s" % (
-                    components.scheme,
-                    netloc,
-                    components.port,
-                    components.path,
-                )
+                uri = "%s://%s:%s%s" % (components.scheme, netloc, components.port, components.path)
             else:
                 uri = "%s://%s%s" % (components.scheme, netloc, components.path)
 
@@ -1023,7 +1041,7 @@ def fetch_config_setting(settings_object, name):
     return target
 
 
-def apply_server_side_settings(server_side_config={}, settings=_settings):
+def apply_server_side_settings(server_side_config=None, settings=_settings):
     """Create a snapshot of the global default settings and overlay it
     with any server side configuration settings. Any local settings
     overrides to take precedence over server side configuration settings
@@ -1036,6 +1054,7 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
     >>> settings_snapshot = apply_server_side_settings(server_config)
 
     """
+    server_side_config = server_side_config if server_side_config is not None else {}
 
     settings_snapshot = copy.deepcopy(settings)
 
@@ -1053,31 +1072,34 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
 
     # If ignore_errors exists, and either ignore_classes is not set or it is empty
     if "error_collector.ignore_errors" in agent_config and (
-        "error_collector.ignore_classes" not in agent_config
-        or not agent_config["error_collector.ignore_classes"]
+        "error_collector.ignore_classes" not in agent_config or not agent_config["error_collector.ignore_classes"]
     ):
         # Remap to newer config key
-        agent_config["error_collector.ignore_classes"] = agent_config.pop(
-            "error_collector.ignore_errors"
-        )
+        agent_config["error_collector.ignore_classes"] = agent_config.pop("error_collector.ignore_errors")
 
     # Overlay with agent server side configuration settings.
 
-    for (name, value) in agent_config.items():
+    for name, value in agent_config.items():
         apply_config_setting(settings_snapshot, name, value)
 
     # Overlay with global server side configuration settings.
     # global server side configuration always takes precedence over the global
     # server side configuration settings.
 
-    for (name, value) in server_side_config.items():
+    for name, value in server_side_config.items():
         apply_config_setting(settings_snapshot, name, value)
 
     event_harvest_config = server_side_config.get("event_harvest_config", {})
     harvest_limits = event_harvest_config.get("harvest_limits", ())
-    apply_config_setting(
-        settings_snapshot, "event_harvest_config.whitelist", frozenset(harvest_limits)
-    )
+    apply_config_setting(settings_snapshot, "event_harvest_config.allowlist", frozenset(harvest_limits))
+
+    # Override span event harvest config
+    span_event_harvest_config = server_side_config.get("span_event_harvest_config", {})
+    span_event_harvest_limit = span_event_harvest_config.get("harvest_limit", None)
+    if span_event_harvest_limit is not None:
+        apply_config_setting(
+            settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
+        )
 
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of
@@ -1106,8 +1128,9 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
     return settings_snapshot
 
 
-def finalize_application_settings(server_side_config={}, settings=_settings):
+def finalize_application_settings(server_side_config=None, settings=_settings):
     """Overlay server-side settings and add attribute filter."""
+    server_side_config = server_side_config if server_side_config is not None else {}
 
     # Remove values from server_config that should not overwrite the
     # ones set locally
@@ -1115,9 +1138,7 @@ def finalize_application_settings(server_side_config={}, settings=_settings):
 
     application_settings = apply_server_side_settings(server_side_config, settings)
 
-    application_settings.attribute_filter = AttributeFilter(
-        flatten_settings(application_settings)
-    )
+    application_settings.attribute_filter = AttributeFilter(flatten_settings(application_settings))
 
     return application_settings
 
@@ -1141,22 +1162,28 @@ def ignore_status_code(status):
 def is_expected_error(
     exc_info,
     status_code=None,
+    settings=None,
 ):
+    """Check if an error is expected based on rules matching. Default is False when settings lookup fails."""
     return error_matches_rules(
         "expected",
         exc_info,
         status_code=status_code,
+        settings=settings,
     )
 
 
 def should_ignore_error(
     exc_info,
     status_code=None,
+    settings=None,
 ):
+    """Check if an error should be ignored based on rules matching. Default is True when settings lookup fails."""
     return error_matches_rules(
         "ignore",
         exc_info,
         status_code=status_code,
+        settings=settings,
     )
 
 
@@ -1164,34 +1191,42 @@ def error_matches_rules(
     rules_prefix,
     exc_info,
     status_code=None,
+    settings=None,
 ):
+    """
+    Attempt to match exception to rules based on prefix.
+
+    rules_prefix is one of [ignore, expected]
+    exc_info is an exception tuple of (exc, val, tb)
+    status_code is an optional value or callable taking in exc_info that returns an int-like object
+    origin is either the current application or trace.
+    """
     # Delay imports to prevent lockups
-    from newrelic.api.application import application_instance
     from newrelic.core.trace_cache import trace_cache
 
-    trace = trace_cache().current_trace()
-    settings = trace and trace.settings
-
     if not settings:
-        # Retrieve application settings
-        application = application_instance()
-        settings = application and application.settings
+        # Pull from current transaction if no settings provided
+        tc = trace_cache()
+        transaction = tc.current_transaction()
+        settings = transaction and transaction.settings
 
-    # Default to global settings
-    settings = settings or global_settings()
+        if not settings:
+            # Pull from active trace if no settings on transaction
+            trace = tc.current_trace()
+            settings = trace and trace.settings
 
-    if not settings:
-        return False
+            if not settings:
+                # Unable to find rules to match with
+                _logger.debug(
+                    "Failed to retrieve exception rules: No settings supplied, or found on transaction or trace."
+                )
+                return None
 
     # Retrieve settings based on prefix
-    classes_rules = getattr(
-        settings.error_collector, "%s_classes" % rules_prefix, set()
-    )
-    status_codes_rules = getattr(
-        settings.error_collector, "%s_status_codes" % rules_prefix, set()
-    )
+    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())
+    status_codes_rules = getattr(settings.error_collector, "%s_status_codes" % rules_prefix, set())
 
-    module, name, fullnames, message = parse_exc_info(exc_info)
+    _, _, fullnames, _ = parse_exc_info(exc_info)
     fullname = fullnames[0]
 
     # Check class names
@@ -1211,10 +1246,7 @@ def error_matches_rules(
             # Coerce into integer
             status_code = int(status_code)
         except:
-            _logger.error(
-                "Failed to coerce status code into integer. "
-                "status_code: %s" % str(status_code)
-            )
+            _logger.error("Failed to coerce status code into integer. status_code: %s" % str(status_code))
         else:
             if status_code in status_codes_rules:
                 return True

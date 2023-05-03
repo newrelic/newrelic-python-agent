@@ -16,6 +16,8 @@ import time
 
 import pytest
 from testing_support.fixtures import (  # function_not_called,; override_application_settings,
+    function_not_called,
+    override_application_settings,
     reset_core_stats_engine,
 )
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
@@ -101,21 +103,22 @@ def test_record_ml_event_outside_transaction_params_not_a_dict():
 
 # Tests for ML Events configuration settings
 
-# TODO Test config settings here
 
-# @override_application_settings({'collect_ml_events': False})
-# @reset_core_stats_engine()
-# @validate_ml_event_count(count=0)
-# @background_task()
-# def test_ml_event_settings_check_collector_flag():
-#     record_ml_event('FooEvent', _user_params)
+@override_application_settings({"collect_ml_events": False})
+@reset_core_stats_engine()
+@validate_ml_event_count(count=0)
+@background_task()
+def test_ml_event_settings_check_collector_flag():
+    record_ml_event("FooEvent", {"foo": "bar"})
 
-# @override_application_settings({'ml_insights_events.enabled': False})
-# @reset_core_stats_engine()
-# @validate_ml_event_count(count=0)
-# @background_task()
-# def test_ml_event_settings_check_ml_insights_enabled():
-#     record_ml_event('FooEvent', _user_params)
+
+@override_application_settings({"ml_insights_events.enabled": False})
+@reset_core_stats_engine()
+@validate_ml_event_count(count=0)
+@background_task()
+def test_ml_event_settings_check_ml_insights_enabled():
+    record_ml_event("FooEvent", {"foo": "bar"})
+
 
 # Test that record_ml_event() methods will short-circuit.
 #
@@ -123,15 +126,17 @@ def test_record_ml_event_outside_transaction_params_not_a_dict():
 # `create_ml_event()` function is not called, in order to avoid the
 # event_type and attribute processing.
 
-# @override_application_settings({'ml_insights_events.enabled': False})
-# @function_not_called('newrelic.api.transaction', 'create_ml_event')
-# @background_task()
-# def test_transaction_create_ml_event_not_called():
-#     record_ml_event('FooEvent', _user_params)
 
-# @override_application_settings({'ml_insights_events.enabled': False})
-# @function_not_called('newrelic.core.application', 'create_ml_event')
-# @background_task()
-# def test_application_create_ml_event_not_called():
-#     app = application()
-#     record_ml_event('FooEvent', _user_params, application=app)
+@override_application_settings({"ml_insights_events.enabled": False})
+@function_not_called("newrelic.api.transaction", "create_custom_event")
+@background_task()
+def test_transaction_create_ml_event_not_called():
+    record_ml_event("FooEvent", {"foo": "bar"})
+
+
+@override_application_settings({"ml_insights_events.enabled": False})
+@function_not_called("newrelic.core.application", "create_custom_event")
+@background_task()
+def test_application_create_ml_event_not_called():
+    app = application()
+    record_ml_event("FooEvent", {"foo": "bar"}, application=app)

@@ -143,6 +143,7 @@ class AgentProtocol(object):
         "transaction_tracer.record_sql",
         "strip_exception_messages.enabled",
         "custom_insights_events.enabled",
+        "ml_insights_events.enabled",
         "application_logging.forwarding.enabled",
         "machine_learning.inference_events.value.enabled",
     )

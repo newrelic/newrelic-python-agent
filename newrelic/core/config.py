@@ -214,6 +214,10 @@ class CustomInsightsEventsSettings(Settings):
     pass
 
 
+class MlInsightsEventsSettings(Settings):
+    pass
+
+
 class ProcessHostSettings(Settings):
     pass
 
@@ -395,6 +399,7 @@ _settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.console = ConsoleSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
+_settings.ml_insights_events = MlInsightsEventsSettings()
 _settings.datastore_tracer = DatastoreTracerSettings()
 _settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseNameReportingSettings()
 _settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
@@ -620,6 +625,7 @@ _settings.collect_traces = True
 _settings.collect_span_events = True
 _settings.collect_analytics_events = True
 _settings.collect_custom_events = True
+_settings.collect_ml_events = True
 
 _settings.apdex_t = _environ_as_float("NEW_RELIC_APDEX_T", 0.5)
 _settings.web_transactions_apdex = {}
@@ -686,6 +692,7 @@ _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
+_settings.ml_insights_events.enabled = True
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
 _settings.distributed_tracing.exclude_newrelic_header = False

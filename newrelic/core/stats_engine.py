@@ -848,7 +848,7 @@ class StatsEngine(object):
         if not settings:
             return
 
-        if settings.machine_learning and settings.machine_learning.inference_events.enabled:
+        if settings.collect_ml_events and settings.ml_insights_events.enabled:
             self._ml_events.add(event)
 
     def record_custom_metric(self, name, value):
@@ -1066,7 +1066,7 @@ class StatsEngine(object):
 
         # Merge in machine learning events
 
-        if settings.machine_learning and settings.machine_learning.inference_events.enabled:
+        if settings.collect_ml_events and settings.ml_insights_events.enabled:
             self.ml_events.merge(transaction.ml_events)
 
         # Merge in span events

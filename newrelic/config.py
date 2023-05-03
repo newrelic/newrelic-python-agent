@@ -433,6 +433,7 @@ def _process_configuration(section):
     )
     _process_setting(section, "custom_insights_events.enabled", "getboolean", None)
     _process_setting(section, "custom_insights_events.max_samples_stored", "getint", None)
+    _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
     _process_setting(section, "span_events.enabled", "getboolean", None)
@@ -872,6 +873,10 @@ def apply_local_high_security_mode_setting(settings):
     if settings.custom_insights_events.enabled:
         settings.custom_insights_events.enabled = False
         _logger.info(log_template, "custom_insights_events.enabled", True, False)
+
+    if settings.ml_insights_events.enabled:
+        settings.ml_insights_events.enabled = False
+        _logger.info(log_template, "ml_insights_events.enabled", True, False)
 
     if settings.message_tracer.segment_parameters_enabled:
         settings.message_tracer.segment_parameters_enabled = False

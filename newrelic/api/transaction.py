@@ -163,13 +163,11 @@ class CachedPath(object):
 
 
 class Transaction(object):
-
     STATE_PENDING = 0
     STATE_RUNNING = 1
     STATE_STOPPED = 2
 
     def __init__(self, application, enabled=None, source=None):
-
         self._application = application
 
         self._source = source
@@ -349,7 +347,6 @@ class Transaction(object):
             self.__exit__(None, None, None)
 
     def __enter__(self):
-
         assert self._state == self.STATE_PENDING
 
         # Bail out if the transaction is not enabled.
@@ -409,7 +406,6 @@ class Transaction(object):
         return self
 
     def __exit__(self, exc, value, tb):
-
         # Bail out if the transaction is not enabled.
 
         if not self.enabled:
@@ -643,7 +639,6 @@ class Transaction(object):
         # new samples can cause an error.
 
         if not self.ignore_transaction:
-
             self._application.record_transaction(node)
 
     @property
@@ -936,9 +931,7 @@ class Transaction(object):
     @property
     def request_parameters(self):
         if (self.capture_params is None) or self.capture_params:
-
             if self._request_params:
-
                 r_attrs = {}
 
                 for k, v in self._request_params.items():
@@ -1102,7 +1095,6 @@ class Transaction(object):
         try:
             data = data or self._create_distributed_trace_data()
             if data:
-
                 traceparent = W3CTraceParent(data).text()
                 yield ("traceparent", traceparent)
 
@@ -1389,7 +1381,6 @@ class Transaction(object):
         # process web external calls.
 
         if self.client_cross_process_id is not None:
-
             # Need to work out queueing time and duration up to this
             # point for inclusion in metrics and response header. If the
             # recording of the transaction had been prematurely stopped
@@ -1454,7 +1445,6 @@ class Transaction(object):
         return self._process_incoming_cat_headers(encoded_cross_process_id, encoded_txn_header)
 
     def set_transaction_name(self, name, group=None, priority=None):
-
         # Always perform this operation even if the transaction
         # is not active at the time as will be called from
         # constructor. If path has been frozen do not allow

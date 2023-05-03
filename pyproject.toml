@@ -1,7 +1,7 @@
 [tool.black]
 line-length = 120
 include = '\.pyi?$'
-force-exclude = "*_pb2.py"
+force-exclude = "newrelic/core/.*_pb2.py"
 
 [tool.isort]
 profile = "black"
@@ -14,7 +14,7 @@ max-line-length = "120"
 
 [tool.pylint.basic]
 good-names = "exc,val,tb"
-ignore-paths = "*_pb2.py"
+ignore-paths = "newrelic/core/.*_pb2.py"
 
 [tool.bandit]
 skips = ["B110", "B101", "B404"]

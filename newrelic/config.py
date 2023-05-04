@@ -3223,6 +3223,8 @@ def initialize(
 
     _load_configuration(config_file, environment, ignore_errors, log_file, log_level)
 
+    _setup_security_module()
+
     if _settings.monitor_mode or _settings.developer_mode:
         _settings.enabled = True
         _setup_instrumentation()
@@ -3231,8 +3233,6 @@ def initialize(
         _setup_agent_console()
     else:
         _settings.enabled = False
-
-    _setup_security_module()
 
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

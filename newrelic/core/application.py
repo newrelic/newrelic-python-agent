@@ -1353,7 +1353,7 @@ class Application(object):
 
                     # Send machine learning events
 
-                    if configuration.collect_ml_events and configuration.ml_insights_events.enabled:
+                    if configuration.ml_insights_events.enabled:
                         ml_events = stats.ml_events
 
                         if ml_events:

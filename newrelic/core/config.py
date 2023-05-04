@@ -625,7 +625,6 @@ _settings.collect_traces = True
 _settings.collect_span_events = True
 _settings.collect_analytics_events = True
 _settings.collect_custom_events = True
-_settings.collect_ml_events = True
 
 _settings.apdex_t = _environ_as_float("NEW_RELIC_APDEX_T", 0.5)
 _settings.web_transactions_apdex = {}
@@ -869,9 +868,6 @@ _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
 _settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNING_ENABLED", default=True)
-_settings.machine_learning.inference_events.enabled = _environ_as_bool(
-    "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_ENABLED", default=True
-)
 _settings.machine_learning.inference_events.value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=True
 )

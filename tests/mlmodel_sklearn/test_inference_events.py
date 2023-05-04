@@ -423,8 +423,12 @@ def test_does_not_include_value_when_inference_event_value_enabled_is_false():
 
 
 @reset_core_stats_engine()
-@override_application_settings({"machine_learning.inference_events.enabled": False})
+@override_application_settings({"custom_insights_events.enabled": False})
 def test_does_not_include_events_when_inference_event_enabled_is_false():
+    """
+    Verifies that all ml events can be disabled by setting custom_insights_events.enabled.
+    """
+
     @validate_custom_event_count(count=0)
     @background_task()
     def _test():

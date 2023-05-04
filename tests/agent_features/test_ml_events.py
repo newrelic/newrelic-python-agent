@@ -104,14 +104,6 @@ def test_record_ml_event_outside_transaction_params_not_a_dict():
 # Tests for ML Events configuration settings
 
 
-@override_application_settings({"collect_ml_events": False})
-@reset_core_stats_engine()
-@validate_ml_event_count(count=0)
-@background_task()
-def test_ml_event_settings_check_collector_flag():
-    record_ml_event("FooEvent", {"foo": "bar"})
-
-
 @override_application_settings({"ml_insights_events.enabled": False})
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)

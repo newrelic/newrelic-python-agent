@@ -545,7 +545,6 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.local_decorating.enabled", "getboolean", None)
 
     _process_setting(section, "machine_learning.enabled", "getboolean", None)
-    _process_setting(section, "machine_learning.inference_events.enabled", "getboolean", None)
     _process_setting(section, "machine_learning.inference_events.value.enabled", "getboolean", None)
 
 

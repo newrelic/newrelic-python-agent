@@ -401,7 +401,7 @@ numpy_str_recorded_custom_events_no_value = [
 
 
 @reset_core_stats_engine()
-@override_application_settings({"machine_learning.inference_events.value.enabled": False})
+@override_application_settings({"machine_learning.inference_events_value.enabled": False})
 def test_does_not_include_value_when_inference_event_value_enabled_is_false():
     @validate_custom_events(numpy_str_recorded_custom_events_no_value)
     @validate_custom_event_count(count=3)

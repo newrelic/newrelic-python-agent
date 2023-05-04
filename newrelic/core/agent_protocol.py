@@ -145,7 +145,7 @@ class AgentProtocol(object):
         "custom_insights_events.enabled",
         "ml_insights_events.enabled",
         "application_logging.forwarding.enabled",
-        "machine_learning.inference_events.value.enabled",
+        "machine_learning.inference_events_value.enabled",
     )
 
     LOGGER_FUNC_MAPPING = {

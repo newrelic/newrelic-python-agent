@@ -545,7 +545,7 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.local_decorating.enabled", "getboolean", None)
 
     _process_setting(section, "machine_learning.enabled", "getboolean", None)
-    _process_setting(section, "machine_learning.inference_events.value.enabled", "getboolean", None)
+    _process_setting(section, "machine_learning.inference_events_value.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -885,9 +885,9 @@ def apply_local_high_security_mode_setting(settings):
         settings.application_logging.forwarding.enabled = False
         _logger.info(log_template, "application_logging.forwarding.enabled", True, False)
 
-    if settings.machine_learning.inference_events.value.enabled:
-        settings.machine_learning.inference_events.value.enabled = False
-        _logger.info(log_template, "machine_learning.inference_events.value.enabled", True, False)
+    if settings.machine_learning.inference_events_value.enabled:
+        settings.machine_learning.inference_events_value.enabled = False
+        _logger.info(log_template, "machine_learning.inference_events_value.enabled", True, False)
 
     return settings
 

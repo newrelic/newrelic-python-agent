@@ -1131,10 +1131,10 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     # Since the server does not override this setting as it's an OTLP setting,
     # we must override it here manually by converting it into a per harvest cycle
     # value.
-    # TODO: override ml_events / (60s/5s) harvest
     apply_config_setting(
         settings_snapshot,
         "event_harvest_config.harvest_limits.ml_event_data",
+        # override ml_events / (60s/5s) harvest
         settings_snapshot.event_harvest_config.harvest_limits.ml_event_data / 12,
     )
 

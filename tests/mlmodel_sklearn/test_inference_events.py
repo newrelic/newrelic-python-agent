@@ -401,10 +401,57 @@ numpy_str_recorded_custom_events_no_value = [
 
 
 @reset_core_stats_engine()
-@override_application_settings({"machine_learning.inference_event_value.enabled": False})
+@override_application_settings({"machine_learning.inference_events_value.enabled": False})
 def test_does_not_include_value_when_inference_event_value_enabled_is_false():
     @validate_custom_events(numpy_str_recorded_custom_events_no_value)
     @validate_custom_event_count(count=3)
+    @background_task()
+    def _test():
+        import sklearn.tree
+
+        x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
+        y_train = np.array([20, 21], dtype="<U4")
+        x_test = np.array([[20, 21]], dtype="<U4")
+        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+
+        model = clf.fit(x_train, y_train)
+        labels = model.predict(x_test)
+
+        return model
+
+    _test()
+
+
+@reset_core_stats_engine()
+@override_application_settings({"custom_insights_events.enabled": False})
+def test_does_not_include_events_when_custom_insights_events_enabled_is_false():
+    """
+    Verifies that all ml events can be disabled by setting
+    custom_insights_events.enabled.
+    """
+
+    @validate_custom_event_count(count=0)
+    @background_task()
+    def _test():
+        import sklearn.tree
+
+        x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
+        y_train = np.array([20, 21], dtype="<U4")
+        x_test = np.array([[20, 21]], dtype="<U4")
+        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+
+        model = clf.fit(x_train, y_train)
+        labels = model.predict(x_test)
+
+        return model
+
+    _test()
+
+
+@reset_core_stats_engine()
+@override_application_settings({"machine_learning.enabled": False})
+def test_does_not_include_events_when_machine_learning_enabled_is_false():
+    @validate_custom_event_count(count=0)
     @background_task()
     def _test():
         import sklearn.tree

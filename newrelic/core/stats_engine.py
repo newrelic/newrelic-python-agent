@@ -848,8 +848,7 @@ class StatsEngine(object):
         if not settings:
             return
 
-        # TODO Fix this with actual settings
-        if settings.collect_custom_events and settings.custom_insights_events.enabled:
+        if settings.ml_insights_events.enabled:
             self._ml_events.add(event)
 
     def record_custom_metric(self, name, value):
@@ -1067,8 +1066,7 @@ class StatsEngine(object):
 
         # Merge in machine learning events
 
-        # TODO Fix this with actual settings
-        if settings.collect_custom_events and settings.custom_insights_events.enabled:
+        if settings.ml_insights_events.enabled:
             self.ml_events.merge(transaction.ml_events)
 
         # Merge in span events
@@ -1521,8 +1519,7 @@ class StatsEngine(object):
 
     def reset_ml_events(self):
         if self.__settings is not None:
-            # TODO fix this with the actual setting
-            self._ml_events = SampledDataSet(8333)
+            self._ml_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.ml_event_data)
         else:
             self._ml_events = SampledDataSet()
 

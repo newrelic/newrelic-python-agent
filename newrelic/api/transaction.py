@@ -64,7 +64,7 @@ from newrelic.core.config import CUSTOM_EVENT_RESERVOIR_SIZE, LOG_EVENT_RESERVOI
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.stack_trace import exception_stack
-from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
+from newrelic.core.stats_engine import CustomMetrics, DimensionalMetrics, SampledDataSet
 from newrelic.core.thread_utilization import utilization_tracker
 from newrelic.core.trace_cache import (
     TraceCacheActiveTraceError,
@@ -307,6 +307,7 @@ class Transaction(object):
         self.synthetics_header = None
 
         self._custom_metrics = CustomMetrics()
+        self._dimensional_metrics = DimensionalMetrics()
 
         global_settings = application.global_settings
 
@@ -588,6 +589,7 @@ class Transaction(object):
             apdex_t=self.apdex,
             suppress_apdex=self.suppress_apdex,
             custom_metrics=self._custom_metrics,
+            dimensional_metrics=self._dimensional_metrics,
             guid=self.guid,
             cpu_time=self._cpu_user_time_value,
             suppress_transaction_trace=self.suppress_transaction_trace,
@@ -1600,6 +1602,16 @@ class Transaction(object):
         for name, value in metrics:
             self._custom_metrics.record_custom_metric(name, value)
 
+    def record_dimensional_metric(self, name, value, tags=None):
+        self._dimensional_metrics.record_dimensional_metric(name, value, tags)
+
+    def record_dimensional_metrics(self, metrics):
+        for metric in metrics:
+            name, value = metric[:2]
+            tags = metric[2] if len(metric) >= 3 else None
+
+            self._dimensional_metrics.record_dimensional_metric(name, value, tags)
+
     def record_custom_event(self, event_type, params):
         settings = self._settings
 
@@ -1896,6 +1908,44 @@ def record_custom_metrics(metrics, application=None):
             )
     elif application.enabled:
         application.record_custom_metrics(metrics)
+
+
+def record_dimensional_metric(name, value, tags=None, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_dimensional_metric(name, value, tags)
+        else:
+            _logger.debug(
+                "record_dimensional_metric has been called but no "
+                "transaction was running. As a result, the following metric "
+                "has not been recorded. Name: %r Value: %r Tags: %r. To correct this "
+                "problem, supply an application object as a parameter to this "
+                "record_dimensional_metrics call.",
+                name,
+                value,
+                tags,
+            )
+    elif application.enabled:
+        application.record_dimensional_metric(name, value, tags)
+
+
+def record_dimensional_metrics(metrics, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_dimensional_metrics(metrics)
+        else:
+            _logger.debug(
+                "record_dimensional_metrics has been called but no "
+                "transaction was running. As a result, the following metrics "
+                "have not been recorded: %r. To correct this problem, "
+                "supply an application object as a parameter to this "
+                "record_dimensional_metric call.",
+                list(metrics),
+            )
+    elif application.enabled:
+        application.record_dimensional_metrics(metrics)
 
 
 def record_custom_event(event_type, params, application=None):

@@ -524,6 +524,33 @@ class Agent(object):
 
         application.record_custom_metrics(metrics)
 
+    def record_dimensional_metric(self, app_name, name, value, tags=None):
+        """Records a basic metric for the named application. If there has
+        been no prior request to activate the application, the metric is
+        discarded.
+
+        """
+
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_dimensional_metric(name, value, tags)
+
+    def record_dimensional_metrics(self, app_name, metrics):
+        """Records the metrics for the named application. If there has
+        been no prior request to activate the application, the metric is
+        discarded. The metrics should be an iterable yielding tuples
+        consisting of the name and value.
+
+        """
+
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_dimensional_metrics(metrics)
+
     def record_custom_event(self, app_name, event_type, params):
         application = self._applications.get(app_name, None)
         if application is None or not application.active:

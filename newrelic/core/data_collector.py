@@ -25,7 +25,11 @@ from newrelic.common.agent_http import (
     DeveloperModeClient,
     ServerlessModeClient,
 )
-from newrelic.core.agent_protocol import AgentProtocol, ServerlessModeProtocol
+from newrelic.core.agent_protocol import (
+    AgentProtocol,
+    OtlpProtocol,
+    ServerlessModeProtocol,
+)
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.config import global_settings
 
@@ -34,10 +38,14 @@ _logger = logging.getLogger(__name__)
 
 class Session(object):
     PROTOCOL = AgentProtocol
+    OTLP_PROTOCOL = OtlpProtocol
     CLIENT = ApplicationModeClient
 
     def __init__(self, app_name, linked_applications, environment, settings):
         self._protocol = self.PROTOCOL.connect(
+            app_name, linked_applications, environment, settings, client_cls=self.CLIENT
+        )
+        self._otlp_protocol = self.OTLP_PROTOCOL.connect(
             app_name, linked_applications, environment, settings, client_cls=self.CLIENT
         )
         self._rpc = None

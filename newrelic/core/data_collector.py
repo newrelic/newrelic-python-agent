@@ -28,6 +28,7 @@ from newrelic.common.agent_http import (
 from newrelic.core.agent_protocol import AgentProtocol, ServerlessModeProtocol
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.config import global_settings
+from newrelic.core.otlp_common_pb2 import AnyValue, KeyValue
 from newrelic.core.otlp_rpc import OtlpRpc
 
 _logger = logging.getLogger(__name__)
@@ -55,21 +56,46 @@ class Session(object):
     def close_connection(self):
         self._protocol.close_connection()
 
-    def connect_otlp_rpc(self):
-        host = self.configuration.infinite_tracing.trace_observer_host
-        if not host:
-            return
+    def connect_otlp_rpc(self, record_metric):
+        if not self._otlp_rpc:
+            host = self.configuration.infinite_tracing.trace_observer_host
+            if not host:
+                return
 
-        port = self.configuration.infinite_tracing.trace_observer_port
-        ssl = self.configuration.infinite_tracing.ssl
-        endpoint = "{}:{}".format(host, port)
+            port = self.configuration.infinite_tracing.trace_observer_port
+            ssl = self.configuration.infinite_tracing.ssl
+            endpoint = "{}:{}".format(host, port)
+            compression_setting = self.configuration.infinite_tracing.compression
 
-        self._otlp_rpc = OtlpRpc(
-            endpoint,
-            self.configuration.entity_guid,
-            self.configuration.agent_run_id,
-            ssl,
-        )
+            if (
+                self.configuration.distributed_tracing.enabled
+                and self.configuration.span_events.enabled
+                and self.configuration.collect_span_events
+            ):
+                metadata = (
+                    KeyValue(
+                        key="entity.guid",
+                        value=AnyValue(string_value=self.configuration.entity_guid),
+                    ),
+                    KeyValue(
+                        key="agent_run_id",
+                        value=AnyValue(string_value=self.configuration.agent_run_id),
+                    ),
+                    KeyValue(
+                        key="license_key",
+                        value=AnyValue(string_value=self.configuration.license_key),
+                    ),
+                )
+
+                rpc = self._otlp_rpc = OtlpRpc(
+                    endpoint,
+                    metadata,
+                    record_metric,
+                    ssl,
+                    compression_setting,
+                )
+                rpc.connect()
+                return rpc
 
     def connect_span_stream(self, span_iterator, record_metric):
         if not self._rpc:
@@ -103,6 +129,9 @@ class Session(object):
             self._rpc.close()
 
     def send_otlp_spans(self, otlp_spans):
+        if not otlp_spans:
+            return
+
         if self._otlp_rpc:
             self._otlp_rpc.send_spans(otlp_spans)
 

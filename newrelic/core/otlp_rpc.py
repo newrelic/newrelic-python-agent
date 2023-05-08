@@ -13,28 +13,35 @@ try:
 
 except ImportError:
     grpc = None
+    AnyValue, InstrumentationScope, KeyValue = None, None, None
+    Resource = None
+    ResourceSpans, ScopeSpans, Span = None, None, None
+    ExportTraceServiceRequest, ExportTraceServiceResponse = None, None
 
 
 class OtlpRpc(object):
     PATH = "/opentelemetry.proto.collector.trace.v1.TraceService/Export"
 
-    def __init__(self, endpoint, entity_guid, agent_run_id, ssl=True):
-        if ssl:
+    # def __init__(self, endpoint, entity_guid, agent_run_id, ssl=True, compression=None):
+    def __init__(self, endpoint, metadata, record_metric, ssl=True, compression=None):
+        self.endpoint = endpoint
+        self.metadata = metadata
+        self.record_metric = record_metric
+        self.ssl = ssl
+        self.compression_setting = grpc.Compression.Gzip if compression else grpc.Compression.NoCompression
+
+        self.create_channel()
+
+    def create_channel(self):
+        if self.ssl:
             credentials = grpc.ssl_channel_credentials()
-            channel = grpc.secure_channel(endpoint, credentials)
+            channel = grpc.secure_channel(self.endpoint, credentials, compression=self.compression_setting)
         else:
-            channel = grpc.insecure_channel(endpoint)
-        self.resource_attributes = (
-            KeyValue(
-                key="entity.guid",
-                value=AnyValue(string_value=entity_guid),
-            ),
-            KeyValue(
-                key="agent_run_id",
-                value=AnyValue(string_value=agent_run_id),
-            ),
-        )
+            channel = grpc.insecure_channel(self.endpoint, compression=self.compression_setting)
+
         self.channel = channel
+
+        # self.rpc = self.channel.stream_stream(
         self.rpc = self.channel.unary_unary(
             self.PATH,
             ExportTraceServiceRequest.SerializeToString,
@@ -46,7 +53,7 @@ class OtlpRpc(object):
             resource_spans=(
                 ResourceSpans(
                     resource=Resource(
-                        attributes=self.resource_attributes,
+                        attributes=self.metadata,
                         dropped_attributes_count=0,
                     ),
                     scope_spans=ScopeSpans(
@@ -62,26 +69,26 @@ class OtlpRpc(object):
         return self.rpc(request)
 
 
-if __name__ == "__main__":
-    rpc = OtlpRpc("localhost:4317", "looks_guid", ssl=False)
-    rpc.send_spans(
-        [
-            Span(
-                trace_id=None,
-                span_id=None,
-                trace_state=None,
-                parent_span_id=None,
-                name=None,
-                kind=None,
-                start_time_unix_nano=None,
-                end_time_unix_nano=None,
-                attributes=None,
-                dropped_attributes_count=None,
-                events=None,
-                dropped_events_count=None,
-                links=None,
-                dropped_links_count=None,
-                status=None,
-            )
-        ]
-    )
+# if __name__ == "__main__":
+#     rpc = OtlpRpc("localhost:4317", "looks_guid", ssl=False)
+#     rpc.send_spans(
+#         [
+#             Span(
+#                 trace_id=None,
+#                 span_id=None,
+#                 trace_state=None,
+#                 parent_span_id=None,
+#                 name=None,
+#                 kind=None,
+#                 start_time_unix_nano=None,
+#                 end_time_unix_nano=None,
+#                 attributes=None,
+#                 dropped_attributes_count=None,
+#                 events=None,
+#                 dropped_events_count=None,
+#                 links=None,
+#                 dropped_links_count=None,
+#                 status=None,
+#             )
+#         ]
+#     )

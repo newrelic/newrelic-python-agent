@@ -506,7 +506,7 @@ class Application(object):
             self.adaptive_sampler = AdaptiveSampler(configuration.sampling_target, sampling_target_period)
 
         if configuration.infinite_tracing.otlp_enabled:
-            active_session.connect_otlp_rpc()
+            active_session.connect_otlp_rpc(self.record_custom_metric)  # Change this to OTel convention?
         else:
             active_session.connect_span_stream(self._stats_engine.span_stream, self.record_custom_metric)
 

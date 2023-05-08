@@ -12,3 +12,6 @@ ignore:
   - "newrelic/hooks/framework_pylons.py"
   - "newrelic/hooks/framework_web2py.py"
   - "newrelic/hooks/middleware_weberror.py"
+  # Temporarily disable kafka
+  - "newrelic/hooks/messagebroker_kafkapython.py"
+  - "newrelic/hooks/messagebroker_confluentkafka.py"

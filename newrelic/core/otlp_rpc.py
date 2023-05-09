@@ -3,9 +3,11 @@ from newrelic import version
 try:
     import grpc
 
-    from newrelic.core.otlp_common_pb2 import AnyValue, InstrumentationScope, KeyValue
+    from newrelic.core.otlp_common_pb2 import (  # AnyValue,; KeyValue,; KeyValueList,
+        InstrumentationScope,
+    )
     from newrelic.core.otlp_resource_pb2 import Resource
-    from newrelic.core.otlp_trace_pb2 import ResourceSpans, ScopeSpans, Span
+    from newrelic.core.otlp_trace_pb2 import ResourceSpans, ScopeSpans  # , Span
     from newrelic.core.otlp_trace_service_pb2 import (
         ExportTraceServiceRequest,
         ExportTraceServiceResponse,
@@ -13,9 +15,9 @@ try:
 
 except ImportError:
     grpc = None
-    AnyValue, InstrumentationScope, KeyValue = None, None, None
+    InstrumentationScope = None
     Resource = None
-    ResourceSpans, ScopeSpans, Span = None, None, None
+    ResourceSpans, ScopeSpans = None, None
     ExportTraceServiceRequest, ExportTraceServiceResponse = None, None
 
 

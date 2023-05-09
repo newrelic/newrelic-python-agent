@@ -19,6 +19,7 @@ IGNORED_METHODS = {
     "channels",
     "client_tracking_off",
     "client_tracking_on",
+    "client_no_touch",
     "close",
     "closed",
     "connection_pool",

@@ -35,6 +35,7 @@ from newrelic.core.string_table import StringTable
 
 try:
     from newrelic.core.infinite_tracing_pb2 import Span
+    from newrelic.core.otlp_common_pb2 import AnyValue, KeyValue, KeyValueList
     from newrelic.core.otlp_trace_pb2 import Span as OtlpSpan
     from newrelic.core.otlp_trace_pb2 import Status
 except:
@@ -647,6 +648,18 @@ class TransactionNode(_TransactionNode):
             if parent_id is not None:
                 parent_id = int(parent_id, 16)
                 parent_id = struct.pack("!Q", parent_id)
+            # combine u_attrs and a_attrs:
+            attrs_combined = u_attrs | a_attrs
+            attrs_list = []
+            for key, value in attrs_combined.items():
+                # otel_attrs = KeyValueList()
+                attrs_list.append(
+                    KeyValue(
+                        key=AnyValue(string_value=key),
+                        value=AnyValue(string_value=value),
+                    )
+                )
+            otel_attrs = KeyValueList(attrs_list)
             yield OtlpSpan(
                 trace_id=trace_id,
                 span_id=span_id,
@@ -656,7 +669,7 @@ class TransactionNode(_TransactionNode):
                 kind="SPAN_KIND_CLIENT" if i_attrs.get("span.kind") == "client" else "SPAN_KIND_INTERNAL",
                 start_time_unix_nano=start_time_ns,
                 end_time_unix_nano=end_time_ns,
-                attributes=None,  # TODO: convert u_attrs to attributes
+                attributes=otel_attrs,  # TODO: convert u_attrs to attributes.  KeyValue type
                 status=Status(code="STATUS_CODE_OK" if "error.class" not in a_attrs else "STATUS_CODE_ERROR"),
             )
 

@@ -79,7 +79,6 @@ def fully_featured_app(environ, start_response):
     environ["wsgi.input"].readlines()
 
     if use_user_attrs:
-
         for attr, val in _custom_parameters.items():
             add_custom_attribute(attr, val)
 
@@ -97,7 +96,6 @@ def fully_featured_app(environ, start_response):
         n_errors = int(environ.get("n_errors", 1))
         for i in range(n_errors):
             try:
-
                 # append number to stats engine to get unique errors, so they
                 # don't immediately get filtered out.
 
@@ -122,7 +120,6 @@ def fully_featured_app(environ, start_response):
 
 @wsgi_application()
 def simple_exceptional_app(environ, start_response):
-
     start_response("500 :(", [])
 
     raise ValueError("Transaction had bad value")
@@ -140,9 +137,47 @@ def simple_app_raw(environ, start_response):
 simple_app = wsgi_application()(simple_app_raw)
 
 
+def raise_exception_application(environ, start_response):
+    raise RuntimeError("raise_exception_application")
+
+    status = "200 OK"
+    output = b"WSGI RESPONSE"
+
+    response_headers = [("Content-type", "text/plain"), ("Content-Length", str(len(output)))]
+    start_response(status, response_headers)
+
+    return [output]
+
+
+def raise_exception_response(environ, start_response):
+    status = "200 OK"
+
+    response_headers = [("Content-type", "text/plain")]
+    start_response(status, response_headers)
+
+    yield b"WSGI"
+
+    raise RuntimeError("raise_exception_response")
+
+    yield b" "
+    yield b"RESPONSE"
+
+
+def raise_exception_finalize(environ, start_response):
+    status = "200 OK"
+
+    response_headers = [("Content-type", "text/plain")]
+    start_response(status, response_headers)
+
+    try:
+        yield b"WSGI RESPONSE"
+
+    finally:
+        raise RuntimeError("raise_exception_finalize")
+
+
 @wsgi_application()
 def simple_custom_event_app(environ, start_response):
-
     params = {"snowman": "\u2603", "foo": "bar"}
     record_custom_event("SimpleAppEvent", params)
 

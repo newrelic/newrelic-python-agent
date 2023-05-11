@@ -32,7 +32,7 @@ from newrelic.core.error_node import ErrorNode
 from newrelic.core.function_node import FunctionNode
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.root_node import RootNode
-from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
+from newrelic.core.stats_engine import CustomMetrics, SampledDataSet, DimensionalMetrics
 from newrelic.core.transaction_node import TransactionNode
 from newrelic.network.exceptions import RetryDataForRequest
 
@@ -126,6 +126,7 @@ def transaction_node(request):
         apdex_t=0.5,
         suppress_apdex=False,
         custom_metrics=CustomMetrics(),
+        dimensional_metrics=DimensionalMetrics(),
         guid="4485b89db608aece",
         cpu_time=0.0,
         suppress_transaction_trace=False,
@@ -818,6 +819,7 @@ def test_flexible_events_harvested(allowlist_event):
     app._stats_engine.log_events.add(LogEventNode(1653609717, "WARNING", "A", {}))
     app._stats_engine.span_events.add("span event")
     app._stats_engine.record_custom_metric("CustomMetric/Int", 1)
+    app._stats_engine.record_dimensional_metric("DimensionalMetric/Int", 1, tags={"tag": "tag"})
 
     assert app._stats_engine.transaction_events.num_seen == 1
     assert app._stats_engine.error_events.num_seen == 1
@@ -825,6 +827,7 @@ def test_flexible_events_harvested(allowlist_event):
     assert app._stats_engine.log_events.num_seen == 1
     assert app._stats_engine.span_events.num_seen == 1
     assert app._stats_engine.record_custom_metric("CustomMetric/Int", 1)
+    assert app._stats_engine.record_dimensional_metric("DimensionalMetric/Int", 1, tags={"tag": "tag"})
 
     app.harvest(flexible=True)
 
@@ -844,7 +847,8 @@ def test_flexible_events_harvested(allowlist_event):
     assert app._stats_engine.span_events.num_seen == num_seen
 
     assert ("CustomMetric/Int", "") in app._stats_engine.stats_table
-    assert app._stats_engine.metrics_count() > 1
+    assert ("DimensionalMetric/Int", frozenset({("tag", "tag")})) in app._stats_engine.dimensional_stats_table
+    assert app._stats_engine.metrics_count() > 3
 
 
 @pytest.mark.parametrize(

@@ -109,6 +109,7 @@ packages = [
     "newrelic/packages/urllib3/packages",
     "newrelic/packages/urllib3/packages/backports",
     "newrelic/packages/wrapt",
+    "newrelic/packages/opentelemetry_proto",
     "newrelic.samplers",
 ]
 

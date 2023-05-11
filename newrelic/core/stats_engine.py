@@ -247,7 +247,7 @@ class DimensionalMetrics(CustomMetrics):
     def __contains__(self, key):
         if not isinstance(key[1], frozenset):
             # Convert tags dict to a frozen set for proper comparisons
-            create_metric_identity(*key)
+            key = create_metric_identity(*key)
         return key in self.__stats_table
 
     def record_dimensional_metric(self, name, value, tags=None):
@@ -258,6 +258,16 @@ class DimensionalMetrics(CustomMetrics):
 
         key = create_metric_identity(name, tags)
         self.record_custom_metric(key, value)
+
+class DimensionalStatsTable(dict):
+
+    """Extends dict to coerce a set of tags to a hashable identity."""
+
+    def __contains__(self, key):
+        if key[1] is not None and not isinstance(key[1], frozenset):
+            # Convert tags dict to a frozen set for proper comparisons
+            key = create_metric_identity(*key)
+        return super(DimensionalStatsTable, self).__contains__(key)
 
 
 class SlowSqlStats(list):
@@ -458,7 +468,7 @@ class StatsEngine(object):
     def __init__(self):
         self.__settings = None
         self.__stats_table = {}
-        self.__dimensional_stats_table = {}
+        self.__dimensional_stats_table = DimensionalStatsTable()
         self._transaction_events = SampledDataSet()
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
@@ -908,7 +918,7 @@ class StatsEngine(object):
         else:
             new_stats = TimeStats(1, value, value, value, value, value**2)
 
-        key = create_metric_identity(name, tags=None)
+        key = create_metric_identity(name, tags)
         stats = self.__dimensional_stats_table.get(key)
         if stats is None:
             self.__dimensional_stats_table[key] = new_stats
@@ -1568,6 +1578,7 @@ class StatsEngine(object):
 
         self.__settings = settings
         self.__stats_table = {}
+        self.__dimensional_stats_table = {}
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -1594,6 +1605,7 @@ class StatsEngine(object):
         """
 
         self.__stats_table = {}
+        self.__dimensional_stats_table = {}
 
     def reset_transaction_events(self):
         """Resets the accumulated statistics back to initial state for

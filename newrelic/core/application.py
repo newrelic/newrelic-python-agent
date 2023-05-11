@@ -106,9 +106,6 @@ class Application(object):
         self._stats_custom_lock = threading.RLock()
         self._stats_custom_engine = StatsEngine()
 
-        self._stats_dimensional_lock = threading.RLock()
-        self._stats_dimensional_engine = StatsEngine()
-
         self._agent_commands_lock = threading.Lock()
         self._data_samplers_lock = threading.Lock()
         self._data_samplers_started = False
@@ -513,8 +510,8 @@ class Application(object):
         with self._stats_custom_lock:
             self._stats_custom_engine.reset_stats(configuration)
 
-        with self._stats_dimensional_lock:
-            self._stats_dimensional_engine.reset_stats(configuration)
+        with self._stats_lock:
+            self._stats_engine.reset_stats(configuration)
 
         # Record an initial start time for the reporting period and
         # clear record of last transaction processed.
@@ -882,9 +879,9 @@ class Application(object):
         if not self._active_session:
             return
 
-        with self._stats_dimensional_lock:
+        with self._stats_lock:
             self._global_events_account += 1
-            self._stats_dimensional_engine.record_dimensional_metric(name, value, tags)
+            self._stats_engine.record_dimensional_metric(name, value, tags)
 
     def record_dimensional_metrics(self, metrics):
         """Record a set of dimensional metrics against the application
@@ -902,13 +899,13 @@ class Application(object):
         if not self._active_session:
             return
 
-        with self._stats_dimensional_lock:
+        with self._stats_lock:
             for metric in metrics:
                 name, value = metric[:2]
                 tags = metric[2] if len(metric) >= 3 else None
 
                 self._global_events_account += 1
-                self._stats_dimensional_engine.record_dimensional_metric(name, value, tags)
+                self._stats_engine.record_dimensional_metric(name, value, tags)
 
     def record_custom_event(self, event_type, params):
         if not self._active_session:

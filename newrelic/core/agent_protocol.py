@@ -516,3 +516,94 @@ class ServerlessModeProtocol(AgentProtocol):
         # can be modified later
         settings.aws_lambda_metadata = aws_lambda_metadata
         return cls(settings, client_cls=client_cls)
+
+
+class OtlpProtocol(AgentProtocol):
+    def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
+        self.HOST_MAP = {
+            "collector.newrelic.com": "otlp.nr-data.net",
+            "collector.eu.newrelic.com": "otlp.eu01.nr-data.net",
+            "gov-collector.newrelic.com": "gov-otlp.nr-data.net",
+            "staging-collector.newrelic.com": "staging-otlp.nr-data.net",
+            "staging-collector.eu.newrelic.com": "staging-otlp.eu01.nr-data.net",
+            "staging-gov-collector.newrelic.com": "staging-gov-otlp.nr-data.net",
+            "fake-collector.newrelic.com": "fake-otlp.nr-data.net",
+        }
+
+        if settings.audit_log_file:
+            audit_log_fp = open(settings.audit_log_file, "a")
+        else:
+            audit_log_fp = None
+
+        otlp_host = self.HOST_MAP.get(host or settings.host, None)
+        if not otlp_host:
+            default = self.HOST_MAP["collector.newrelic.com"]
+            _logger.warn("Unable to find corresponding OTLP host using default %s" % default)
+            otlp_host = default
+
+        self.client = client_cls(
+            host=otlp_host,
+            port=4318,
+            proxy_scheme=settings.proxy_scheme,
+            proxy_host=settings.proxy_host,
+            proxy_port=settings.proxy_port,
+            proxy_user=settings.proxy_user,
+            proxy_pass=settings.proxy_pass,
+            timeout=settings.agent_limits.data_collector_timeout,
+            ca_bundle_path=settings.ca_bundle_path,
+            disable_certificate_validation=settings.debug.disable_certificate_validation,
+            compression_threshold=settings.agent_limits.data_compression_threshold,
+            compression_level=settings.agent_limits.data_compression_level,
+            compression_method=settings.compressed_content_encoding,
+            max_payload_size_in_bytes=1000000,
+            audit_log_fp=audit_log_fp,
+        )
+
+        self._params = {
+            "protocol_version": self.VERSION,
+            "license_key": settings.license_key,
+            "marshal_format": "json",
+        }
+        self._headers = {}
+
+        # In Python 2, the JSON is loaded with unicode keys and values;
+        # however, the header name must be a non-unicode value when given to
+        # the HTTP library. This code converts the header name from unicode to
+        # non-unicode.
+        if settings.request_headers_map:
+            for k, v in settings.request_headers_map.items():
+                if not isinstance(k, str):
+                    k = k.encode("utf-8")
+                self._headers[k] = v
+
+        self._headers["Content-Type"] = "application/x-protobuf"
+        self._run_token = settings.agent_run_id
+
+        # Logging
+        self._proxy_host = settings.proxy_host
+        self._proxy_port = settings.proxy_port
+        self._proxy_user = settings.proxy_user
+
+        # Do not access configuration anywhere inside the class
+        self.configuration = settings
+
+    @classmethod
+    def connect(
+        cls,
+        app_name,
+        linked_applications,
+        environment,
+        settings,
+        client_cls=ApplicationModeClient,
+    ):
+        with cls(settings, client_cls=client_cls) as protocol:
+            pass
+
+        return protocol
+
+    def _to_http(self, method, payload=()):
+        params = dict(self._params)
+        params["method"] = method
+        if self._run_token:
+            params["run_id"] = self._run_token
+        return params, self._headers, payload.SerializeToString()

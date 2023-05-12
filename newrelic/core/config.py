@@ -1134,6 +1134,9 @@ def finalize_application_settings(server_side_config=None, settings=_settings):
 
     # Remove values from server_config that should not overwrite the
     # ones set locally
+    _logger.warning(
+        "Auto instrument set to: %s" % str(server_side_config.get("browser_monitoring.auto_instrument", None))
+    )
     server_side_config = _remove_ignored_configs(server_side_config)
 
     application_settings = apply_server_side_settings(server_side_config, settings)

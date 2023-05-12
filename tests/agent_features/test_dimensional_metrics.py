@@ -34,6 +34,7 @@ _test_tags_examples = [
     ({"bool": True}, frozenset({("bool", True)})),
     ({"list": [1]}, frozenset({("list", "[1]")})),
     ({"dict": {"subtag": 1}}, frozenset({("dict", "{'subtag': 1}")})),
+    ([("tags-as-list", 1)], frozenset({("tags-as-list", 1)})),
 ]
 
 

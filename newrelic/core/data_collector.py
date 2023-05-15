@@ -45,9 +45,13 @@ class Session(object):
         self._protocol = self.PROTOCOL.connect(
             app_name, linked_applications, environment, settings, client_cls=self.CLIENT
         )
-        self._otlp_protocol = self.OTLP_PROTOCOL.connect(
-            app_name, linked_applications, environment, settings, client_cls=self.CLIENT
-        )
+        breakpoint()
+        try:
+            self._otlp_protocol = self.OTLP_PROTOCOL.connect(
+                app_name, linked_applications, environment, settings, client_cls=self.CLIENT
+            )
+        except Exception as e:
+            _logger.warn(str(e))
         self._rpc = None
 
     @property
@@ -122,10 +126,9 @@ class Session(object):
 
     def send_ml_events(self, sampling_info, custom_event_data):
         """Called to submit sample set for machine learning events."""
-
-        # TODO Make this send to MELT/OTLP endpoint instead of agent listener
-        payload = (self.agent_run_id, sampling_info, custom_event_data)  # TODO this payload will be different
-        return self._protocol.send("custom_event_data", payload)
+        breakpoint()
+        payload = (self.agent_run_id, sampling_info, custom_event_data)
+        return self._otlp_protocol.send("custom_event_data", payload)
 
     def send_span_events(self, sampling_info, span_event_data):
         """Called to submit sample set for span events."""

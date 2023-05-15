@@ -16,11 +16,11 @@ import sys
 
 import numpy as np
 import pandas
-from _validate_custom_events import validate_custom_events
+from testing_support.validators.validate_ml_events import validate_ml_events
+from testing_support.validators.validate_ml_event_count import validate_ml_event_count as _event_count
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
-    validate_custom_event_count,
 )
 
 from newrelic.api.background_task import background_task
@@ -61,8 +61,8 @@ pandas_df_category_recorded_custom_events = [
 
 @reset_core_stats_engine()
 def test_pandas_df_categorical_feature_event():
-    @validate_custom_events(pandas_df_category_recorded_custom_events)
-    @validate_custom_event_count(count=3)
+    @_events(pandas_df_category_recorded_custom_events)
+    @_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
@@ -118,8 +118,8 @@ pandas_df_bool_recorded_custom_events = [
 
 @reset_core_stats_engine()
 def test_pandas_df_bool_feature_event():
-    @validate_custom_events(pandas_df_bool_recorded_custom_events)
-    @validate_custom_event_count(count=3)
+    @_events(pandas_df_bool_recorded_custom_events)
+    @_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
@@ -174,8 +174,8 @@ pandas_df_float_recorded_custom_events = [
 
 @reset_core_stats_engine()
 def test_pandas_df_float_feature_event():
-    @validate_custom_events(pandas_df_float_recorded_custom_events)
-    @validate_custom_event_count(count=3)
+    @_events(pandas_df_float_recorded_custom_events)
+    @_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
@@ -230,8 +230,8 @@ int_list_recorded_custom_events = [
 
 @reset_core_stats_engine()
 def test_int_list():
-    @validate_custom_events(int_list_recorded_custom_events)
-    @validate_custom_event_count(count=3)
+    @_events(int_list_recorded_custom_events)
+    @_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
@@ -285,8 +285,8 @@ numpy_int_recorded_custom_events = [
 
 @reset_core_stats_engine()
 def test_numpy_int_array():
-    @validate_custom_events(numpy_int_recorded_custom_events)
-    @validate_custom_event_count(count=3)
+    @_events(numpy_int_recorded_custom_events)
+    @_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
@@ -350,8 +350,8 @@ numpy_str_recorded_custom_events = [
 
 @reset_core_stats_engine()
 def test_numpy_str_array_multiple_features():
-    @validate_custom_events(numpy_str_recorded_custom_events)
-    @validate_custom_event_count(count=6)
+    @_events(numpy_str_recorded_custom_events)
+    @_event_count(count=6)
     @background_task()
     def _test():
         import sklearn.tree
@@ -403,8 +403,8 @@ numpy_str_recorded_custom_events_no_value = [
 @reset_core_stats_engine()
 @override_application_settings({"machine_learning.inference_events_value.enabled": False})
 def test_does_not_include_value_when_inference_event_value_enabled_is_false():
-    @validate_custom_events(numpy_str_recorded_custom_events_no_value)
-    @validate_custom_event_count(count=3)
+    @_events(numpy_str_recorded_custom_events_no_value)
+    @_event_count(count=3)
     @background_task()
     def _test():
         import sklearn.tree
@@ -430,7 +430,7 @@ def test_does_not_include_events_when_custom_insights_events_enabled_is_false():
     custom_insights_events.enabled.
     """
 
-    @validate_custom_event_count(count=0)
+    @_event_count(count=0)
     @background_task()
     def _test():
         import sklearn.tree
@@ -451,7 +451,7 @@ def test_does_not_include_events_when_custom_insights_events_enabled_is_false():
 @reset_core_stats_engine()
 @override_application_settings({"machine_learning.enabled": False})
 def test_does_not_include_events_when_machine_learning_enabled_is_false():
-    @validate_custom_event_count(count=0)
+    @_event_count(count=0)
     @background_task()
     def _test():
         import sklearn.tree
@@ -505,9 +505,9 @@ multilabel_output_label_events = [
 
 @reset_core_stats_engine()
 def test_custom_event_count_multilabel_output():
-    @validate_custom_events(multilabel_output_label_events)
+    @_events(multilabel_output_label_events)
     # The expected count of 23 comes from 20 feature events + 3 label events to be generated
-    @validate_custom_event_count(count=23)
+    @_event_count(count=23)
     @background_task()
     def _test():
         from sklearn.datasets import make_multilabel_classification

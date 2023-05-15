@@ -32,7 +32,7 @@ from newrelic.common.utilization import (
     PCFUtilization,
 )
 from newrelic.core.attribute import truncate
-from newrelic.core.common import AnyValue, KeyValue
+from newrelic.core.common_pb2 import AnyValue, KeyValue
 from newrelic.core.config import (
     fetch_config_setting,
     finalize_application_settings,
@@ -521,13 +521,75 @@ class ServerlessModeProtocol(AgentProtocol):
 
 
 class OtlpProtocol(AgentProtocol):
+    HOST_MAP = {
+        "collector.newrelic.com": "https://otlp.nr-data.net",
+        "collector.eu.newrelic.com": "https://otlp.eu01.nr-data.net",
+        "gov-collector.newrelic.com": "https://gov-otlp.nr-data.net",
+        "staging-collector.newrelic.com": "staging-otlp.nr-data.net",
+        "staging-collector.eu.newrelic.com": "https://staging-otlp.eu01.nr-data.net",
+        "staging-gov-collector.newrelic.com": "https://staging-gov-otlp.nr-data.net",
+    }
+
+    def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
+        if settings.audit_log_file:
+            audit_log_fp = open(settings.audit_log_file, "a")
+        else:
+            audit_log_fp = None
+
+        self.client = client_cls(
+            host=HOST_MAP[host or settings.host],
+            port=4318,
+            proxy_scheme=settings.proxy_scheme,
+            proxy_host=settings.proxy_host,
+            proxy_port=settings.proxy_port,
+            proxy_user=settings.proxy_user,
+            proxy_pass=settings.proxy_pass,
+            timeout=settings.agent_limits.data_collector_timeout,
+            ca_bundle_path=settings.ca_bundle_path,
+            disable_certificate_validation=settings.debug.disable_certificate_validation,
+            compression_threshold=settings.agent_limits.data_compression_threshold,
+            compression_level=settings.agent_limits.data_compression_level,
+            compression_method=settings.compressed_content_encoding,
+            max_payload_size_in_bytes=1000000,
+            audit_log_fp=audit_log_fp,
+        )
+
+        self._params = {
+            "protocol_version": self.VERSION,
+            "license_key": settings.license_key,
+            "marshal_format": "json",
+        }
+        self._headers = {}
+
+        # In Python 2, the JSON is loaded with unicode keys and values;
+        # however, the header name must be a non-unicode value when given to
+        # the HTTP library. This code converts the header name from unicode to
+        # non-unicode.
+        if settings.request_headers_map:
+            for k, v in settings.request_headers_map.items():
+                if not isinstance(k, str):
+                    k = k.encode("utf-8")
+                self._headers[k] = v
+
+        self._headers["Content-Type"] = "application/json"
+        self._run_token = settings.agent_run_id
+
+        # Logging
+        self._proxy_host = settings.proxy_host
+        self._proxy_port = settings.proxy_port
+        self._proxy_user = settings.proxy_user
+
+        # Do not access configuration anywhere inside the class
+        self.configuration = settings
+
     def _to_http(self, method, payload=()):
         params = dict(self._params)
         params["method"] = method
         if self._run_token:
             params["run_id"] = self._run_token
         payload = LogsData(payload)
-        payload = {
-            attributes = {KeyValue(key=, value=AnyValue(string_value=value)) for key, value in event.attributes}
-        }
+        #payload = {
+        #    attributes = {KeyValue(key=key, value=AnyValue(string_value=value)) for key, value in event.attributes}
+        #}
         return params, self._headers, json_encode(payload).encode("utf-8")
+

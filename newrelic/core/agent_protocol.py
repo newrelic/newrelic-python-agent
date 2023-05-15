@@ -521,23 +521,27 @@ class ServerlessModeProtocol(AgentProtocol):
 
 
 class OtlpProtocol(AgentProtocol):
-    HOST_MAP = {
-        "collector.newrelic.com": "https://otlp.nr-data.net",
-        "collector.eu.newrelic.com": "https://otlp.eu01.nr-data.net",
-        "gov-collector.newrelic.com": "https://gov-otlp.nr-data.net",
-        "staging-collector.newrelic.com": "staging-otlp.nr-data.net",
-        "staging-collector.eu.newrelic.com": "https://staging-otlp.eu01.nr-data.net",
-        "staging-gov-collector.newrelic.com": "https://staging-gov-otlp.nr-data.net",
-    }
-
     def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
+        self.HOST_MAP = {
+            "collector.newrelic.com": "otlp.nr-data.net",
+            "collector.eu.newrelic.com": "otlp.eu01.nr-data.net",
+            "gov-collector.newrelic.com": "gov-otlp.nr-data.net",
+            "staging-collector.newrelic.com": "staging-otlp.nr-data.net",
+            "staging-collector.eu.newrelic.com": "staging-otlp.eu01.nr-data.net",
+            "staging-gov-collector.newrelic.com": "staging-gov-otlp.nr-data.net",
+            "fake-collector.newrelic.com": "fake-otlp.nr-data.net",
+        }
+
         if settings.audit_log_file:
             audit_log_fp = open(settings.audit_log_file, "a")
         else:
             audit_log_fp = None
-
+        otlp_host = self.HOST_MAP.get(host or settings.host, None)
+        if not otlp_host:
+            _logger.warn("Unable to find corresponding OTLP host")
+            otlp_host = host or settings.host
         self.client = client_cls(
-            host=HOST_MAP[host or settings.host],
+            host=otlp_host,
             port=4318,
             proxy_scheme=settings.proxy_scheme,
             proxy_host=settings.proxy_host,
@@ -587,9 +591,8 @@ class OtlpProtocol(AgentProtocol):
         params["method"] = method
         if self._run_token:
             params["run_id"] = self._run_token
-        payload = LogsData(payload)
-        #payload = {
+        # payload = LogsData(payload)
+        # payload = {
         #    attributes = {KeyValue(key=key, value=AnyValue(string_value=value)) for key, value in event.attributes}
-        #}
+        # }
         return params, self._headers, json_encode(payload).encode("utf-8")
-

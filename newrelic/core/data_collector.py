@@ -45,13 +45,9 @@ class Session(object):
         self._protocol = self.PROTOCOL.connect(
             app_name, linked_applications, environment, settings, client_cls=self.CLIENT
         )
-        breakpoint()
-        try:
-            self._otlp_protocol = self.OTLP_PROTOCOL.connect(
-                app_name, linked_applications, environment, settings, client_cls=self.CLIENT
-            )
-        except Exception as e:
-            _logger.warn(str(e))
+        self._otlp_protocol = self.OTLP_PROTOCOL.connect(
+            app_name, linked_applications, environment, settings, client_cls=self.CLIENT
+        )
         self._rpc = None
 
     @property

@@ -866,31 +866,31 @@ _settings.application_logging.local_decorating.enabled = _environ_as_bool(
 
 _settings.security.agent.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_AGENT_ENABLED",
-    default=False
+    False
 )
 _settings.security.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_ENABLED",
-    default=False
+    False
 )
 _settings.security.mode = os.environ.get(
     "NEW_RELIC_SECURITY_MODE",
-    default="IAST"
+    "IAST"
 )
 _settings.security.validator_service_url = os.environ.get(
     "NEW_RELIC_SECURITY_VALIDATOR_SERVICE_URL",
-    default=None
+    None
 )
 _settings.security.detection.rci.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_DETECTION_RCI_ENABLED",
-    default=True
+    True
 )
 _settings.security.detection.rxss.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_DETECTION_RXSS_ENABLED",
-    default=True
+    True
 )
 _settings.security.detection.deserialization.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_DETECTION_DESERIALIZATION_ENABLED",
-    default=True
+    True
 )
 
 

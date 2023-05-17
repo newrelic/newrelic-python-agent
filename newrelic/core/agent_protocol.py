@@ -32,14 +32,14 @@ from newrelic.common.utilization import (
     PCFUtilization,
 )
 from newrelic.core.attribute import truncate
-from newrelic.core.common_pb2 import AnyValue, KeyValue
+from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
 from newrelic.core.config import (
     fetch_config_setting,
     finalize_application_settings,
     global_settings_dump,
 )
 from newrelic.core.internal_metrics import internal_count_metric
-from newrelic.core.logs_pb2 import LogsData
+from newrelic.packages.opentelemetry_proto.logs_pb2 import LogsData
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,

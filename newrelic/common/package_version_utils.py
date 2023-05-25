@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+from functools import lru_cache
 
 # Need to account for 4 possible variations of version declaration specified in (rejected) PEP 396
 VERSION_ATTRS = ("__version__", "version", "__version_tuple__", "version_tuple")  # nosec
@@ -67,6 +68,7 @@ def get_package_version_tuple(name):
     return version
 
 
+@lru_cache
 def _get_package_version(name):
     module = sys.modules.get(name, None)
     version = None

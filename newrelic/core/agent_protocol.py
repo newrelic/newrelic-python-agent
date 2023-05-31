@@ -613,7 +613,8 @@ class OtlpProtocol(AgentProtocol):
                     }
                 )
             payload = LogsData(resource_logs=[ResourceLogs(scope_logs=[ScopeLogs(log_records=ml_events)])])
-        return params, self._headers, payload.SerializeToString()  # json_encode(payload).encode("utf-8")
+            return params, self._headers, payload.SerializeToString()
+        return params, self._headers, json_encode(payload).encode("utf-8")
 
     def _create_key_value(self, key, value):
         if isinstance(value, bool):

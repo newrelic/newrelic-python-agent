@@ -122,7 +122,6 @@ class Session(object):
 
     def send_ml_events(self, sampling_info, custom_event_data):
         """Called to submit sample set for machine learning events."""
-        breakpoint()
         payload = (self.agent_run_id, sampling_info, custom_event_data)
         return self._otlp_protocol.send("custom_event_data", payload)
 

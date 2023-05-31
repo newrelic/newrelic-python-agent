@@ -32,20 +32,24 @@ from newrelic.common.utilization import (
     PCFUtilization,
 )
 from newrelic.core.attribute import truncate
-from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
 from newrelic.core.config import (
     fetch_config_setting,
     finalize_application_settings,
     global_settings_dump,
 )
 from newrelic.core.internal_metrics import internal_count_metric
-from newrelic.packages.opentelemetry_proto.logs_pb2 import LogsData
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
     ForceAgentRestart,
     NetworkInterfaceException,
     RetryDataForRequest,
+)
+from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
+from newrelic.packages.opentelemetry_proto.logs_pb2 import (
+    LogsData,
+    ResourceLogs,
+    ScopeLogs,
 )
 
 _logger = logging.getLogger(__name__)
@@ -591,8 +595,37 @@ class OtlpProtocol(AgentProtocol):
         params["method"] = method
         if self._run_token:
             params["run_id"] = self._run_token
-        # payload = LogsData(payload)
-        # payload = {
-        #    attributes = {KeyValue(key=key, value=AnyValue(string_value=value)) for key, value in event.attributes}
-        # }
-        return params, self._headers, json_encode(payload).encode("utf-8")
+
+        # ('1234567', {'reservoir_size': 8333.333333333334, 'events_seen': 3}, [[{'type': 'ML Model Feature Event', 'timestamp': 1685465359831}, {'inference_id': 'bd25c196-06bd-438c-a630-416f7ed9625b', 'model_name': 'DecisionTreeClassifier', 'model_version': '0.0.0', 'feature_name': 'col1', 'type': 'bool', 'value': 'True'}], [{'type': 'ML Model Feature Event', 'timestamp': 1685465359831}, {'inference_id': 'bd25c196-06bd-438c-a630-416f7ed9625b', 'model_name': 'DecisionTreeClassifier', 'model_version': '0.0.0', 'feature_name': 'col2', 'type': 'bool', 'value': 'True'}], [{'type': 'ML Model Label Event', 'timestamp': 1685465359832}, {'inference_id': 'bd25c196-06bd-438c-a630-416f7ed9625b', 'model_name': 'DecisionTreeClassifier', 'model_version': '0.0.0', 'label_name': '0', 'type': 'numerical', 'value': '1.0'}]])
+        if len(payload) == 3:
+            agent_run_id, sampling_info, event_data = payload
+            ml_events = []
+            for event in event_data:
+                event_info, event_attrs = event
+                event_attrs.update({"event.domain": "newrelic.ml_events", "event.name": event_info["type"]})
+                ml_attrs = [self._create_key_value(key, value) for key, value in event_attrs.items()]
+                ml_attrs = [key_value for key_value in ml_attrs if key_value]
+                ml_events.append(
+                    {
+                        "time_unix_nano": event_info["timestamp"],
+                        "observed_time_unix_nano": event_info["timestamp"],
+                        "attributes": ml_attrs,
+                    }
+                )
+            payload = LogsData(resource_logs=[ResourceLogs(scope_logs=[ScopeLogs(log_records=ml_events)])])
+        return params, self._headers, payload.SerializeToString()  # json_encode(payload).encode("utf-8")
+
+    def _create_key_value(self, key, value):
+        if isinstance(value, bool):
+            return KeyValue(key=key, value=AnyValue(bool_value=value))
+        elif isinstance(value, int):
+            return KeyValue(key=key, value=AnyValue(int_value=value))
+        elif isinstance(value, float):
+            return KeyValue(key=key, value=AnyValue(double_value=value))
+        elif isinstance(value, str):
+            return KeyValue(key=key, value=AnyValue(string_value=value))
+        # Techincally AnyValue accepts array, kvlist, and bytes however, since
+        # those are not valid custom attribute types according to our api spec,
+        # we will not bother to support them here either.
+        else:
+            _logger.warn("Unsupported ML event attribute value type %s: %s." % (key, value))

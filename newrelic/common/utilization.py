@@ -265,13 +265,16 @@ class PCFUtilization(CommonUtilization):
 class DockerUtilization(CommonUtilization):
     VENDOR_NAME = 'docker'
     EXPECTED_KEYS = ('id',)
-    METADATA_FILE = '/proc/self/cgroup'
-    DOCKER_RE = re.compile(r'([0-9a-f]{64,})')
+    METADATA_FILE_CGROUPS = '/proc/self/cgroup'
+    DOCKER_RE_CGROUPS = re.compile(r'([0-9a-f]{64,})')
+    METADATA_FILE_MOUNTINFO = '/proc/self/mountinfo'
+    DOCKER_RE_MOUNTINFO = re.compile(r'/docker/containers/([0-9a-f]{64,})')
 
     @classmethod
     def fetch(cls):
+        # Try to read from cgroups
         try:
-            with open(cls.METADATA_FILE, 'rb') as f:
+            with open(cls.METADATA_FILE_CGROUPS, 'rb') as f:
                 for line in f:
                     stripped = line.decode('utf-8').strip()
                     cgroup = stripped.split(':')
@@ -285,16 +288,33 @@ class DockerUtilization(CommonUtilization):
             # (i.e. permissions, non-existent file, etc)
             pass
 
+        # Fallback to reading from mountinfo
+        try:
+            with open(cls.METADATA_FILE_MOUNTINFO, 'rb') as f:
+                for line in f:
+                    stripped = line.decode('utf-8').strip()
+                    if '/docker/containers/' in stripped:
+                        return stripped
+        except:
+            # There are all sorts of exceptions that can occur here
+            # (i.e. permissions, non-existent file, etc)
+            pass
+
     @classmethod
     def get_values(cls, contents):
         if contents is None:
             return
 
-        value = contents.split('/')[-1]
-        match = cls.DOCKER_RE.search(value)
+        # Try to match the format in mountinfo file
+        match = cls.DOCKER_RE_MOUNTINFO.search(contents)
         if match:
-            value = match.group(0)
-            return {'id': value}
+            return {'id': match.group(1)}
+        else:
+            # Try again searching for cgroup file format
+            value = contents.split('/')[-1]
+            match = cls.DOCKER_RE.search(value)
+            if match:
+                return {'id': match.group(0)}
 
     @classmethod
     def valid_chars(cls, data):

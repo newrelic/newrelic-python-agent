@@ -45,6 +45,12 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
+from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
+from newrelic.packages.opentelemetry_proto.logs_pb2 import (
+    LogsData,
+    ResourceLogs,
+    ScopeLogs,
+)
 
 _logger = logging.getLogger(__name__)
 

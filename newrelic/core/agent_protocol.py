@@ -235,6 +235,7 @@ class AgentProtocol(object):
         status, data = response
 
         if not 200 <= status < 300:
+            breakpoint()
             if status == 413:
                 internal_count_metric(
                     "Supportability/Python/Collector/MaxPayloadSizeLimit/%s" % method,
@@ -590,13 +591,29 @@ class OtlpProtocol(AgentProtocol):
         # Do not access configuration anywhere inside the class
         self.configuration = settings
 
+    @classmethod
+    def connect(
+        cls,
+        app_name,
+        linked_applications,
+        environment,
+        settings,
+        client_cls=ApplicationModeClient,
+    ):
+        # with cls(settings, client_cls=client_cls) as preconnect:
+        #    redirect_host = preconnect.send("preconnect")["redirect_host"]
+
+        with cls(settings, client_cls=client_cls) as protocol:
+            pass
+
+        return protocol
+
     def _to_http(self, method, payload=()):
         params = dict(self._params)
         params["method"] = method
         if self._run_token:
             params["run_id"] = self._run_token
 
-        # ('1234567', {'reservoir_size': 8333.333333333334, 'events_seen': 3}, [[{'type': 'ML Model Feature Event', 'timestamp': 1685465359831}, {'inference_id': 'bd25c196-06bd-438c-a630-416f7ed9625b', 'model_name': 'DecisionTreeClassifier', 'model_version': '0.0.0', 'feature_name': 'col1', 'type': 'bool', 'value': 'True'}], [{'type': 'ML Model Feature Event', 'timestamp': 1685465359831}, {'inference_id': 'bd25c196-06bd-438c-a630-416f7ed9625b', 'model_name': 'DecisionTreeClassifier', 'model_version': '0.0.0', 'feature_name': 'col2', 'type': 'bool', 'value': 'True'}], [{'type': 'ML Model Label Event', 'timestamp': 1685465359832}, {'inference_id': 'bd25c196-06bd-438c-a630-416f7ed9625b', 'model_name': 'DecisionTreeClassifier', 'model_version': '0.0.0', 'label_name': '0', 'type': 'numerical', 'value': '1.0'}]])
         if len(payload) == 3:
             agent_run_id, sampling_info, event_data = payload
             ml_events = []

@@ -16,12 +16,12 @@ import sys
 
 import numpy as np
 import pandas
-from testing_support.validators.validate_ml_events import validate_ml_events
-from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
 )
+from testing_support.validators.validate_ml_event_count import validate_ml_event_count
+from testing_support.validators.validate_ml_events import validate_ml_events
 
 from newrelic.api.background_task import background_task
 

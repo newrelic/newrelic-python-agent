@@ -152,7 +152,9 @@ kwargs = dict(
         "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
     },
     extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
-    install_requires=["newrelic_security @ git+https://github.com/newrelic/csec-python-agent.git@develop#egg=newrelic_security"],
+    install_requires=[
+        "newrelic_security @ git+https://github.com/newrelic/csec-python-agent.git@develop#egg=newrelic_security"
+    ],
 )
 
 if with_setuptools:

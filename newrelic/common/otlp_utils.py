@@ -15,7 +15,6 @@
 """This module provides common utilities for interacting with OTLP protocol buffers."""
 
 import logging
-
 _logger = logging.getLogger(__name__)
 
 try:
@@ -23,7 +22,6 @@ try:
 except ImportError:
     create_key_value, create_key_values_from_iterable = None, None
 else:
-
     def create_key_value(key, value):
         if isinstance(value, bool):
             return KeyValue(key=key, value=AnyValue(bool_value=value))

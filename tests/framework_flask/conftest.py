@@ -19,7 +19,6 @@ from flask import __version__ as flask_version
 
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 
-
 _default_settings = {
     'transaction_tracer.explain_threshold': 0.0,
     'transaction_tracer.transaction_threshold': 0.0,
@@ -27,6 +26,10 @@ _default_settings = {
     'debug.log_data_collector_payloads': True,
     'debug.record_transaction_failure': True,
     'debug.log_autorum_middleware': True,
+    "security.agent.enabled": True,
+    "security.enabled": True,
+    "security.mode": "IAST",
+    "security.validator_service_url": "wss://csec-staging.nr-data.net"
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

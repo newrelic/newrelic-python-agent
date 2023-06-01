@@ -329,6 +329,13 @@ def _process_configuration(section):
     _process_setting(section, "ca_bundle_path", "get", None)
     _process_setting(section, "audit_log_file", "get", None)
     _process_setting(section, "monitor_mode", "getboolean", None)
+    _process_setting(section, "security.agent.enabled", "getboolean", None)
+    _process_setting(section, "security.enabled", "getboolean", None)
+    _process_setting(section, "security.mode", "get", None)
+    _process_setting(section, "security.validator_service_url", "get", None)
+    _process_setting(section, "security.detection.rci.enabled", "getboolean", None)
+    _process_setting(section, "security.detection.rxss.enabled", "getboolean", None)
+    _process_setting(section, "security.detection.deserialization.enabled", "getboolean", None)
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)
@@ -3169,6 +3176,22 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
+def _setup_security_module():
+    """Initiates k2 security module and adds a
+    callback to agent startup to propagate NR config
+    """
+    try:
+        if not _settings.security.agent.enabled:
+            return
+        from newrelic_security.api.agent import Agent as SecurityAgent
+        # initialize security agent
+        security_agent = SecurityAgent()
+         # create a callback to reinitialise the security module
+        newrelic.core.agent.Agent.run_on_startup(security_agent.refresh_agent)
+    except Exception as k2error:
+        _logger.error("K2 Startup failed with error %s", k2error)
+
+
 def initialize(
     config_file=None,
     environment=None,
@@ -3186,6 +3209,8 @@ def initialize(
         ignore_errors = newrelic.core.config._environ_as_bool("NEW_RELIC_IGNORE_STARTUP_ERRORS", True)
 
     _load_configuration(config_file, environment, ignore_errors, log_file, log_level)
+
+    _setup_security_module()
 
     if _settings.monitor_mode or _settings.developer_mode:
         _settings.enabled = True

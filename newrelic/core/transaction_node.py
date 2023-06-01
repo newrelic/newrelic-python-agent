@@ -65,6 +65,7 @@ _TransactionNode = namedtuple(
         "apdex_t",
         "suppress_apdex",
         "custom_metrics",
+        "dimensional_metrics",
         "guid",
         "cpu_time",
         "suppress_transaction_trace",

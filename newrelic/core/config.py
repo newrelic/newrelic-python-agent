@@ -278,24 +278,29 @@ class ApplicationLoggingMetricsSettings(Settings):
 class ApplicationLoggingLocalDecoratingSettings(Settings):
     pass
 
+
 class SecuritySettings(Settings):
     pass
+
 
 class SecurityDetectionSettings(Settings):
     pass
 
+
 class SecurityAgentSettings(Settings):
     pass
+
 
 class SecurityDetectionRCISettings(Settings):
     pass
 
+
 class SecurityDetectionRXSSSettings(Settings):
     pass
 
+
 class SecurityDetectionDeserializationSettings(Settings):
     pass
-
 
 
 class InfiniteTracingSettings(Settings):
@@ -864,33 +869,14 @@ _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
 
-_settings.security.agent.enabled = _environ_as_bool(
-    "NEW_RELIC_SECURITY_AGENT_ENABLED",
-    False
-)
-_settings.security.enabled = _environ_as_bool(
-    "NEW_RELIC_SECURITY_ENABLED",
-    False
-)
-_settings.security.mode = os.environ.get(
-    "NEW_RELIC_SECURITY_MODE",
-    "IAST"
-)
-_settings.security.validator_service_url = os.environ.get(
-    "NEW_RELIC_SECURITY_VALIDATOR_SERVICE_URL",
-    None
-)
-_settings.security.detection.rci.enabled = _environ_as_bool(
-    "NEW_RELIC_SECURITY_DETECTION_RCI_ENABLED",
-    True
-)
-_settings.security.detection.rxss.enabled = _environ_as_bool(
-    "NEW_RELIC_SECURITY_DETECTION_RXSS_ENABLED",
-    True
-)
+_settings.security.agent.enabled = _environ_as_bool("NEW_RELIC_SECURITY_AGENT_ENABLED", False)
+_settings.security.enabled = _environ_as_bool("NEW_RELIC_SECURITY_ENABLED", False)
+_settings.security.mode = os.environ.get("NEW_RELIC_SECURITY_MODE", "IAST")
+_settings.security.validator_service_url = os.environ.get("NEW_RELIC_SECURITY_VALIDATOR_SERVICE_URL", None)
+_settings.security.detection.rci.enabled = _environ_as_bool("NEW_RELIC_SECURITY_DETECTION_RCI_ENABLED", True)
+_settings.security.detection.rxss.enabled = _environ_as_bool("NEW_RELIC_SECURITY_DETECTION_RXSS_ENABLED", True)
 _settings.security.detection.deserialization.enabled = _environ_as_bool(
-    "NEW_RELIC_SECURITY_DETECTION_DESERIALIZATION_ENABLED",
-    True
+    "NEW_RELIC_SECURITY_DETECTION_DESERIALIZATION_ENABLED", True
 )
 
 

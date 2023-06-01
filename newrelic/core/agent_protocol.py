@@ -579,7 +579,7 @@ class OtlpProtocol(AgentProtocol):
                     k = k.encode("utf-8")
                 self._headers[k] = v
 
-        self._headers["Content-Type"] = "application/json"
+        self._headers["Content-Type"] = "application/x-protobuf"
         self._run_token = settings.agent_run_id
 
         # Logging

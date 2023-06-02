@@ -45,12 +45,6 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
-from newrelic.packages.opentelemetry_proto.logs_pb2 import (
-    LogsData,
-    ResourceLogs,
-    ScopeLogs,
-)
 
 _logger = logging.getLogger(__name__)
 
@@ -235,7 +229,6 @@ class AgentProtocol(object):
         status, data = response
 
         if not 200 <= status < 300:
-            breakpoint()
             if status == 413:
                 internal_count_metric(
                     "Supportability/Python/Collector/MaxPayloadSizeLimit/%s" % method,
@@ -541,10 +534,13 @@ class OtlpProtocol(AgentProtocol):
             audit_log_fp = open(settings.audit_log_file, "a")
         else:
             audit_log_fp = None
+
         otlp_host = self.HOST_MAP.get(host or settings.host, None)
         if not otlp_host:
-            _logger.warn("Unable to find corresponding OTLP host")
-            otlp_host = host or settings.host
+            default = self.HOST_MAP["collector.newrelic.com"]
+            _logger.warn("Unable to find corresponding OTLP host using default %s" % default)
+            otlp_host = default
+
         self.client = client_cls(
             host=otlp_host,
             port=4318,
@@ -600,9 +596,6 @@ class OtlpProtocol(AgentProtocol):
         settings,
         client_cls=ApplicationModeClient,
     ):
-        # with cls(settings, client_cls=client_cls) as preconnect:
-        #    redirect_host = preconnect.send("preconnect")["redirect_host"]
-
         with cls(settings, client_cls=client_cls) as protocol:
             pass
 
@@ -613,22 +606,4 @@ class OtlpProtocol(AgentProtocol):
         params["method"] = method
         if self._run_token:
             params["run_id"] = self._run_token
-
-        if len(payload) == 3:
-            agent_run_id, sampling_info, event_data = payload
-            ml_events = []
-            for event in event_data:
-                event_info, event_attrs = event
-                event_attrs.update({"event.domain": "newrelic.ml_events", "event.name": event_info["type"]})
-                ml_attrs = [create_key_value(key, value) for key, value in event_attrs.items()]
-                ml_attrs = [key_value for key_value in ml_attrs if key_value]
-                ml_events.append(
-                    {
-                        "time_unix_nano": event_info["timestamp"],
-                        "observed_time_unix_nano": event_info["timestamp"],
-                        "attributes": ml_attrs,
-                    }
-                )
-            payload = LogsData(resource_logs=[ResourceLogs(scope_logs=[ScopeLogs(log_records=ml_events)])])
-            return params, self._headers, payload.SerializeToString()
-        return params, self._headers, json_encode(payload).encode("utf-8")
+        return params, self._headers, payload.SerializeToString()

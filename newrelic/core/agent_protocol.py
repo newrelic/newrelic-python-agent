@@ -580,7 +580,7 @@ class OtlpProtocol(AgentProtocol):
                     k = k.encode("utf-8")
                 self._headers[k] = v
 
-        self._headers["Content-Type"] = "application/json"
+        self._headers["Content-Type"] = "application/x-protobuf"
         self._run_token = settings.agent_run_id
 
         # Logging
@@ -620,7 +620,7 @@ class OtlpProtocol(AgentProtocol):
             for event in event_data:
                 event_info, event_attrs = event
                 event_attrs.update({"event.domain": "newrelic.ml_events", "event.name": event_info["type"]})
-                ml_attrs = [self._create_key_value(key, value) for key, value in event_attrs.items()]
+                ml_attrs = [create_key_value(key, value) for key, value in event_attrs.items()]
                 ml_attrs = [key_value for key_value in ml_attrs if key_value]
                 ml_events.append(
                     {
@@ -632,18 +632,3 @@ class OtlpProtocol(AgentProtocol):
             payload = LogsData(resource_logs=[ResourceLogs(scope_logs=[ScopeLogs(log_records=ml_events)])])
             return params, self._headers, payload.SerializeToString()
         return params, self._headers, json_encode(payload).encode("utf-8")
-
-    def _create_key_value(self, key, value):
-        if isinstance(value, bool):
-            return KeyValue(key=key, value=AnyValue(bool_value=value))
-        elif isinstance(value, int):
-            return KeyValue(key=key, value=AnyValue(int_value=value))
-        elif isinstance(value, float):
-            return KeyValue(key=key, value=AnyValue(double_value=value))
-        elif isinstance(value, str):
-            return KeyValue(key=key, value=AnyValue(string_value=value))
-        # Techincally AnyValue accepts array, kvlist, and bytes however, since
-        # those are not valid custom attribute types according to our api spec,
-        # we will not bother to support them here either.
-        else:
-            _logger.warn("Unsupported ML event attribute value type %s: %s." % (key, value))

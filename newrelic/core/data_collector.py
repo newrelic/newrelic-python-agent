@@ -122,8 +122,10 @@ class Session(object):
 
     def send_ml_events(self, sampling_info, custom_event_data):
         """Called to submit sample set for machine learning events."""
-        payload = (self.agent_run_id, sampling_info, custom_event_data)
-        return self._otlp_protocol.send("custom_event_data", payload)
+
+        # TODO Make this send to MELT/OTLP endpoint instead of agent listener
+        payload = (self.agent_run_id, sampling_info, custom_event_data)  # TODO this payload will be different
+        return self._protocol.send("custom_event_data", payload)
 
     def send_span_events(self, sampling_info, span_event_data):
         """Called to submit sample set for span events."""

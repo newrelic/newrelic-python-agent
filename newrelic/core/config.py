@@ -55,7 +55,7 @@ except Exception:
 DEFAULT_RESERVOIR_SIZE = 1200
 ERROR_EVENT_RESERVOIR_SIZE = 100
 SPAN_EVENT_RESERVOIR_SIZE = 2000
-# Fast harvest (Every 5 seconds, so divide by 12 to get average per minute value)
+# Fast harvest (Every 5 seconds, so divide by 12 to get average per harvest value.)
 CUSTOM_EVENT_RESERVOIR_SIZE = 3600
 LOG_EVENT_RESERVOIR_SIZE = 10000
 ML_EVENT_RESERVOIR_SIZE = 100000

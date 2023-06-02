@@ -15,6 +15,7 @@
 """This module provides common utilities for interacting with OTLP protocol buffers."""
 
 import logging
+
 _logger = logging.getLogger(__name__)
 
 try:
@@ -22,6 +23,7 @@ try:
 except ImportError:
     create_key_value, create_key_values_from_iterable = None, None
 else:
+
     def create_key_value(key, value):
         if isinstance(value, bool):
             return KeyValue(key=key, value=AnyValue(bool_value=value))
@@ -37,11 +39,12 @@ else:
         else:
             _logger.warn("Unsupported ML event attribute value type %s: %s." % (key, value))
 
-
     def create_key_values_from_iterable(iterable):
         if isinstance(iterable, dict):
             iterable = iterable.items()
 
+        # The create_key_value list may return None if the value is an unsupported type
+        # so filter None values out before returning.
         return list(
             filter(
                 lambda i: i is not None,

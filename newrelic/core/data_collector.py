@@ -32,11 +32,18 @@ from newrelic.core.agent_protocol import (
 )
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.config import global_settings
-from newrelic.core.otlp_utils import encode_metric_data
+from newrelic.core.otlp_utils import (
+    LogsData,
+    ResourceLogs,
+    ScopeLogs,
+    create_key_values_from_iterable,
+    create_resource,
+    encode_metric_data,
+)
 
 _logger = logging.getLogger(__name__)
 
-DIMENSIONAL_METRIC_DATA_TEMP = []  # TODO: REMOVE THIS
+MS_TO_NS = 10e6
 
 
 class Session(object):
@@ -125,10 +132,32 @@ class Session(object):
 
     def send_ml_events(self, sampling_info, custom_event_data):
         """Called to submit sample set for machine learning events."""
+        resource = create_resource()
+        ml_events = []
+        for event in custom_event_data:
+            event_info, event_attrs = event
+            event_attrs.update(
+                {
+                    "real_agent_id": self.agent_run_id,
+                    "event.domain": "newrelic.ml_events",
+                    "event.name": event_info["type"],
+                }
+            )
+            ml_attrs = create_key_values_from_iterable(event_attrs)
+            unix_nano_timestamp = event_info["timestamp"] * MS_TO_NS
+            ml_events.append(
+                {
+                    "time_unix_nano": unix_nano_timestamp,
+                    "observed_time_unix_nano": unix_nano_timestamp,
+                    "attributes": ml_attrs,
+                }
+            )
 
-        # TODO Make this send to MELT/OTLP endpoint instead of agent listener
-        payload = (self.agent_run_id, sampling_info, custom_event_data)  # TODO this payload will be different
-        return self._protocol.send("custom_event_data", payload)
+        payload = LogsData(
+            resource_logs=[ResourceLogs(resource=resource, scope_logs=[ScopeLogs(log_records=ml_events)])]
+        )
+
+        return self._otlp_protocol.send("custom_event_data", payload, path="/v1/logs")
 
     def send_span_events(self, sampling_info, span_event_data):
         """Called to submit sample set for span events."""

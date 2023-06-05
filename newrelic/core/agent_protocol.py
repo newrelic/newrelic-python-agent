@@ -595,11 +595,7 @@ class OtlpProtocol(AgentProtocol):
         return protocol
 
     def _to_http(self, method, payload=()):
-        params = dict(self._params)
-        params["method"] = method
-        if self._run_token:
-            params["run_id"] = self._run_token
-        return params, self._headers, otlp_encode(payload)
+        return {}, self._headers, otlp_encode(payload)
 
     def decode_response(self, response):
         return response.decode("utf-8")

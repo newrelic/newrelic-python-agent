@@ -37,7 +37,7 @@ else:
         # those are not valid custom attribute types according to our api spec,
         # we will not bother to support them here either.
         else:
-            _logger.warn("Unsupported ML event attribute value type %s: %s." % (key, value))
+            _logger.warn("Unsupported attribute value type %s: %s." % (key, value))
 
     def create_key_values_from_iterable(iterable):
         if isinstance(iterable, dict):

@@ -54,6 +54,8 @@ from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
 
+from newrelic.common.otlp_utils import TimeStats_to_otlp_data_point, CountStats_to_otlp_data_point
+
 _logger = logging.getLogger(__name__)
 
 EVENT_HARVEST_METHODS = {
@@ -140,6 +142,8 @@ class TimeStats(list):
     max_call_time = property(operator.itemgetter(4))
     sum_of_squares = property(operator.itemgetter(5))
 
+    to_otlp_data_point = TimeStats_to_otlp_data_point
+
     def merge_stats(self, other):
         """Merge data from another instance of this object."""
 
@@ -188,6 +192,8 @@ class TimeStats(list):
 
 
 class CountStats(TimeStats):
+    to_otlp_data_point = CountStats_to_otlp_data_point
+
     def merge_stats(self, other):
         self[0] += other[0]
 

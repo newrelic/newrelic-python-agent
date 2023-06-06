@@ -19,8 +19,14 @@ _logger = logging.getLogger(__name__)
 
 try:
     from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
+    from newrelic.packages.opentelemetry_proto.metrics_pb2 import NumberDataPoint, SummaryDataPoint, Sum, Summary, AggregationTemporality, Metric
 except ImportError:
-    create_key_value, create_key_values_from_iterable = None, None
+    noop = lambda *args, **kwargs: None
+    
+    create_key_value = noop
+    create_key_values_from_iterable = noop
+    TimeStats_to_otlp_data_point = noop
+    CountStats_to_otlp_data_point = noop
 else:
     def create_key_value(key, value):
         if isinstance(value, bool):
@@ -49,3 +55,31 @@ else:
                 (create_key_value(key, value) for key, value in iterable),
             )
         )
+
+    def TimeStats_to_otlp_data_point(time_stats, start_time, end_time, metric_name, attributes=None):
+        data = SummaryDataPoint(
+            time_unix_nano=end_time,  # Time of harvest
+            attributes=attributes,
+            count=int(time_stats[0]),
+            sum=float(time_stats[1]),
+            # start_time_unix_nano=_to_nano(NOW - 10)  # Time of last harvest
+            quantile_values=[
+                SummaryDataPoint.ValueAtQuantile(
+                    quantile=0.0, value=float(time_stats[3])
+                ),  # Min Value
+                SummaryDataPoint.ValueAtQuantile(
+                    quantile=1.0, value=float(time_stats[4])
+                ),  # Max Value
+            ],
+        )
+        return data
+        # return Metric(name=metric_name, unit="s", summary=Summary(data_points=[data]))
+
+    def CountStats_to_otlp_data_point(count_stats, start_time, end_time, metric_name, attributes=None):
+        data = NumberDataPoint(
+            time_unix_nano=end_time,  # Time of harvest
+            attributes=attributes,
+            as_int=int(count_stats[0]),
+        )
+        return data
+        # return Metric(name=metric_name, unit="number", sum=Sum(data_points=[data], aggregation_temporality=AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA, is_monotonic=True))

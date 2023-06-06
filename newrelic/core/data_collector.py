@@ -35,8 +35,6 @@ from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
-DIMENSIONAL_METRIC_DATA_TEMP = []  # TODO: REMOVE THIS
-
 
 class Session(object):
     PROTOCOL = AgentProtocol
@@ -157,12 +155,9 @@ class Session(object):
         """
 
         payload = (self.agent_run_id, start_time, end_time, metric_data)
-        # return self._protocol.send("metric_data", payload)
-
-        # TODO: REMOVE THIS. Replace with actual protocol.
-        DIMENSIONAL_METRIC_DATA_TEMP.append(payload)
-        _logger.debug("Dimensional Metrics: %r" % metric_data)
-        return 200  
+        
+        
+        return self._otlp_protocol.send("dimensional_metric_data", payload)
 
     def send_log_events(self, sampling_info, log_event_data):
         """Called to submit sample set for log events."""

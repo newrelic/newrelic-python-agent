@@ -150,13 +150,11 @@ class Session(object):
         specific metrics.
 
         NOTE: This data is sent not sent to the normal agent endpoints but is sent
-        to the MELT API endpoints to keep the entity separate. This is for use
+        to the OTLP API endpoints to keep the entity separate. This is for use
         with the machine learning integration only.
         """
 
         payload = (self.agent_run_id, start_time, end_time, metric_data)
-        
-        
         return self._otlp_protocol.send("dimensional_metric_data", payload)
 
     def send_log_events(self, sampling_info, log_event_data):

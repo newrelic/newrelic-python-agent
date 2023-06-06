@@ -217,11 +217,16 @@ class AgentProtocol(object):
     def close_connection(self):
         self.client.close_connection()
 
-    def send(self, method, payload=()):
+    def send(
+        self,
+        method,
+        payload=(),
+        path="/agent_listener/invoke_raw_method",
+    ):
         params, headers, payload = self._to_http(method, payload)
 
         try:
-            response = self.client.send_request(params=params, headers=headers, payload=payload)
+            response = self.client.send_request(path=path, params=params, headers=headers, payload=payload)
         except NetworkInterfaceException:
             # All HTTP errors are currently retried
             raise RetryDataForRequest
@@ -559,12 +564,10 @@ class OtlpProtocol(AgentProtocol):
             audit_log_fp=audit_log_fp,
         )
 
-        self._params = {
-            "protocol_version": self.VERSION,
-            "license_key": settings.license_key,
-            "marshal_format": "json",
+        self._params = {}
+        self._headers = {
+            "api-key": settings.license_key,
         }
-        self._headers = {}
 
         # In Python 2, the JSON is loaded with unicode keys and values;
         # however, the header name must be a non-unicode value when given to

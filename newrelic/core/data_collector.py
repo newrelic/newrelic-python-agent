@@ -32,6 +32,7 @@ from newrelic.core.agent_protocol import (
 )
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.config import global_settings
+from newrelic.common.otlp_utils import encode_metric_data
 
 _logger = logging.getLogger(__name__)
 
@@ -154,7 +155,7 @@ class Session(object):
         with the machine learning integration only.
         """
 
-        payload = (self.agent_run_id, start_time, end_time, metric_data)
+        payload = encode_metric_data(metric_data, start_time, end_time)
         return self._otlp_protocol.send("dimensional_metric_data", payload)
 
     def send_log_events(self, sampling_info, log_event_data):

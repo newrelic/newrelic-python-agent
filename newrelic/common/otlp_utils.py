@@ -15,71 +15,174 @@
 """This module provides common utilities for interacting with OTLP protocol buffers."""
 
 import logging
+
+from newrelic.core.stats_engine import CountStats, TimeStats
+
 _logger = logging.getLogger(__name__)
+
 
 try:
     from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
-    from newrelic.packages.opentelemetry_proto.metrics_pb2 import NumberDataPoint, SummaryDataPoint, Sum, Summary, AggregationTemporality, Metric
-except ImportError:
-    noop = lambda *args, **kwargs: None
-    
-    create_key_value = noop
-    create_key_values_from_iterable = noop
-    TimeStats_to_otlp_data_point = noop
-    CountStats_to_otlp_data_point = noop
-else:
-    def create_key_value(key, value):
-        if isinstance(value, bool):
-            return KeyValue(key=key, value=AnyValue(bool_value=value))
-        elif isinstance(value, int):
-            return KeyValue(key=key, value=AnyValue(int_value=value))
-        elif isinstance(value, float):
-            return KeyValue(key=key, value=AnyValue(double_value=value))
-        elif isinstance(value, str):
-            return KeyValue(key=key, value=AnyValue(string_value=value))
-        # Technically AnyValue accepts array, kvlist, and bytes however, since
-        # those are not valid custom attribute types according to our api spec,
-        # we will not bother to support them here either.
-        else:
-            _logger.warn("Unsupported attribute value type %s: %s." % (key, value))
+    from newrelic.packages.opentelemetry_proto.metrics_pb2 import (
+        AggregationTemporality,
+        Metric,
+        MetricsData,
+        NumberDataPoint,
+        ResourceMetrics,
+        ScopeMetrics,
+        Sum,
+        Summary,
+        SummaryDataPoint,
+    )
+    from newrelic.packages.opentelemetry_proto.resource_pb2 import Resource
 
-    def create_key_values_from_iterable(iterable):
-        if isinstance(iterable, dict):
-            iterable = iterable.items()
+    AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
+    ValueAtQuantile = SummaryDataPoint.ValueAtQuantile
 
-        # The create_key_value list may return None if the value is an unsupported type
-        # so filter None values out before returning.
-        return list(
-            filter(
-                lambda i: i is not None,
-                (create_key_value(key, value) for key, value in iterable),
+    encode = lambda payload: (payload.SerializeToString(), "application/x-protobuf")
+
+except Exception:
+    from newrelic.common.encoding_utils import json_encode
+
+    encode = lambda payload: (json_encode(payload), "application/json")
+
+    Resource = dict
+    ValueAtQuantile = dict
+    AnyValue = dict
+    KeyValue = dict
+    NumberDataPoint = dict
+    SummaryDataPoint = dict
+    Sum = dict
+    Summary = dict
+    Metric = dict
+    MetricsData = dict
+    ScopeMetrics = dict
+    ResourceMetrics = dict
+    AGGREGATION_TEMPORALITY_DELTA = 1
+
+
+def create_key_value(key, value):
+    if isinstance(value, bool):
+        return KeyValue(key=key, value=AnyValue(bool_value=value))
+    elif isinstance(value, int):
+        return KeyValue(key=key, value=AnyValue(int_value=value))
+    elif isinstance(value, float):
+        return KeyValue(key=key, value=AnyValue(double_value=value))
+    elif isinstance(value, str):
+        return KeyValue(key=key, value=AnyValue(string_value=value))
+    # Technically AnyValue accepts array, kvlist, and bytes however, since
+    # those are not valid custom attribute types according to our api spec,
+    # we will not bother to support them here either.
+    else:
+        _logger.warn("Unsupported attribute value type %s: %s." % (key, value))
+
+
+def create_key_values_from_iterable(iterable):
+    if isinstance(iterable, dict):
+        iterable = iterable.items()
+
+    # The create_key_value list may return None if the value is an unsupported type
+    # so filter None values out before returning.
+    return list(
+        filter(
+            lambda i: i is not None,
+            (create_key_value(key, value) for key, value in iterable),
+        )
+    )
+
+
+def TimeStats_to_otlp_data_point(self, start_time, end_time, attributes=None):
+    data = SummaryDataPoint(
+        time_unix_nano=int(end_time * 1e9),  # Time of current harvest
+        start_time_unix_nano=int(start_time * 1e9),  # Time of last harvest
+        attributes=attributes,
+        count=int(self[0]),
+        sum=float(self[1]),
+        quantile_values=[
+            ValueAtQuantile(quantile=0.0, value=float(self[3])),  # Min Value
+            ValueAtQuantile(quantile=1.0, value=float(self[4])),  # Max Value
+        ],
+    )
+    return data
+
+
+def CountStats_to_otlp_data_point(self, start_time, end_time, attributes=None):
+    data = NumberDataPoint(
+        time_unix_nano=int(end_time * 1e9),  # Time of current harvest
+        start_time_unix_nano=int(start_time * 1e9),  # Time of last harvest
+        attributes=attributes,
+        as_int=int(self[0]),
+    )
+    return data
+
+
+def stats_to_otlp_metrics(metric_data, start_time, end_time):
+    """
+    Generator producing protos for Summary and Sum metrics, for CountStats and TimeStats respectively.
+
+    Individual Metric protos must be entirely one type of metric data point. For mixed metric types we have to
+    separate the types and report multiple metrics, one for each type.
+    """
+    for name, metric_container in metric_data:
+        if any(isinstance(metric, CountStats) for metric in metric_container.values()):
+            # Metric contains Sum metric data points.
+            yield Metric(
+                name=name,
+                aggregation_temporality=AGGREGATION_TEMPORALITY_DELTA,
+                is_monotonic=True,
+                sum=Sum(
+                    data_points=[
+                        CountStats_to_otlp_data_point(
+                            value,
+                            start_time=start_time,
+                            end_time=end_time,
+                            attributes=create_key_values_from_iterable(tags),
+                        )
+                        for tags, value in metric_container.items()
+                        if isinstance(value, CountStats)
+                    ],
+                ),
             )
-        )
+        if any(isinstance(metric, TimeStats) for metric in metric_container.values()):
+            # Metric contains Summary metric data points.
+            yield Metric(
+                name=name,
+                summary=Summary(
+                    data_points=[
+                        TimeStats_to_otlp_data_point(
+                            value,
+                            start_time=start_time,
+                            end_time=end_time,
+                            attributes=create_key_values_from_iterable(tags),
+                        )
+                        for tags, value in metric_container.items()
+                        if isinstance(value, TimeStats)
+                    ]
+                ),
+            )
 
-    def TimeStats_to_otlp_data_point(time_stats, start_time, end_time, metric_name, attributes=None):
-        data = SummaryDataPoint(
-            time_unix_nano=end_time,  # Time of harvest
-            attributes=attributes,
-            count=int(time_stats[0]),
-            sum=float(time_stats[1]),
-            # start_time_unix_nano=_to_nano(NOW - 10)  # Time of last harvest
-            quantile_values=[
-                SummaryDataPoint.ValueAtQuantile(
-                    quantile=0.0, value=float(time_stats[3])
-                ),  # Min Value
-                SummaryDataPoint.ValueAtQuantile(
-                    quantile=1.0, value=float(time_stats[4])
-                ),  # Max Value
-            ],
-        )
-        return data
-        # return Metric(name=metric_name, unit="s", summary=Summary(data_points=[data]))
 
-    def CountStats_to_otlp_data_point(count_stats, start_time, end_time, metric_name, attributes=None):
-        data = NumberDataPoint(
-            time_unix_nano=end_time,  # Time of harvest
-            attributes=attributes,
-            as_int=int(count_stats[0]),
+def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=None):
+    resource = resource or Resource(
+        attributes=create_key_values_from_iterable(
+            {
+                "service.name": "TestOTLPService",
+            }
         )
-        return data
-        # return Metric(name=metric_name, unit="number", sum=Sum(data_points=[data], aggregation_temporality=AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA, is_monotonic=True))
+    )
+
+    payload = MetricsData(
+        resource_metrics=[
+            ResourceMetrics(
+                resource=resource,
+                scope_metrics=[
+                    ScopeMetrics(
+                        scope=scope,
+                        metrics=list(stats_to_otlp_metrics(metric_data, start_time, end_time)),
+                    )
+                ],
+            )
+        ]
+    )
+
+    return encode(payload)

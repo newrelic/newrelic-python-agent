@@ -36,11 +36,11 @@ def validate_dimensional_metrics_outside_transaction(dimensional_metrics=None):
             except:
                 raise
             else:
-                metrics = instance.dimensional_stats_table
+                metrics = instance.dimensional_stats_table.metrics()
                 # Record a copy of the metric value so that the values aren't
                 # merged in the future
                 _metrics = {}
-                for k, v in metrics.items():
+                for k, v in metrics:
                     _metrics[k] = copy.copy(v)
                 recorded_metrics[0] = _metrics
 
@@ -48,13 +48,19 @@ def validate_dimensional_metrics_outside_transaction(dimensional_metrics=None):
 
         def _validate(metrics, name, tags, count):
             key = (name, tags)
-            metric = metrics.get(key)
+            # Dimensional metric lookup
+            metric_container = metrics.get(name, {})
+            metric = metric_container.get(tags)
 
             def _metrics_table():
                 out = [""]
                 out.append("Expected: {0}: {1}".format(key, count))
-                for metric_key, metric_value in metrics.items():
-                    out.append("{0}: {1}".format(metric_key, metric_value[0]))
+                for metric_key, metric_container in metrics.items():
+                    if isinstance(metric_container, dict):
+                        for metric_tags, metric_value in metric_container.items():
+                            out.append("{0}: {1}".format((metric_key, metric_tags), metric_value[0]))
+                    else:
+                        out.append("{0}: {1}".format(metric_key, metric_container[0]))
                 return "\n".join(out)
 
             def _metric_details():

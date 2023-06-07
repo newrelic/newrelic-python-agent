@@ -60,7 +60,11 @@ from newrelic.core.attribute_filter import (
     DST_NONE,
     DST_TRANSACTION_TRACER,
 )
-from newrelic.core.config import CUSTOM_EVENT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
+from newrelic.core.config import (
+    CUSTOM_EVENT_RESERVOIR_SIZE,
+    LOG_EVENT_RESERVOIR_SIZE,
+    ML_EVENT_RESERVOIR_SIZE,
+)
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.stack_trace import exception_stack
@@ -159,13 +163,11 @@ class CachedPath(object):
 
 
 class Transaction(object):
-
     STATE_PENDING = 0
     STATE_RUNNING = 1
     STATE_STOPPED = 2
 
     def __init__(self, application, enabled=None, source=None):
-
         self._application = application
 
         self._source = source
@@ -331,12 +333,14 @@ class Transaction(object):
             self._custom_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data
             )
+            self._ml_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.ml_event_data)
             self._log_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.log_event_data
             )
         else:
             self._custom_events = SampledDataSet(capacity=CUSTOM_EVENT_RESERVOIR_SIZE)
             self._log_events = SampledDataSet(capacity=LOG_EVENT_RESERVOIR_SIZE)
+            self._ml_events = SampledDataSet(capacity=ML_EVENT_RESERVOIR_SIZE)
 
     def __del__(self):
         self._dead = True
@@ -344,7 +348,6 @@ class Transaction(object):
             self.__exit__(None, None, None)
 
     def __enter__(self):
-
         assert self._state == self.STATE_PENDING
 
         # Bail out if the transaction is not enabled.
@@ -404,7 +407,6 @@ class Transaction(object):
         return self
 
     def __exit__(self, exc, value, tb):
-
         # Bail out if the transaction is not enabled.
 
         if not self.enabled:
@@ -585,6 +587,7 @@ class Transaction(object):
             errors=tuple(self._errors),
             slow_sql=tuple(self._slow_sql),
             custom_events=self._custom_events,
+            ml_events=self._ml_events,
             log_events=self._log_events,
             apdex_t=self.apdex,
             suppress_apdex=self.suppress_apdex,
@@ -638,7 +641,6 @@ class Transaction(object):
         # new samples can cause an error.
 
         if not self.ignore_transaction:
-
             self._application.record_transaction(node)
 
     @property
@@ -931,9 +933,7 @@ class Transaction(object):
     @property
     def request_parameters(self):
         if (self.capture_params is None) or self.capture_params:
-
             if self._request_params:
-
                 r_attrs = {}
 
                 for k, v in self._request_params.items():
@@ -1097,7 +1097,6 @@ class Transaction(object):
         try:
             data = data or self._create_distributed_trace_data()
             if data:
-
                 traceparent = W3CTraceParent(data).text()
                 yield ("traceparent", traceparent)
 
@@ -1384,7 +1383,6 @@ class Transaction(object):
         # process web external calls.
 
         if self.client_cross_process_id is not None:
-
             # Need to work out queueing time and duration up to this
             # point for inclusion in metrics and response header. If the
             # recording of the transaction had been prematurely stopped
@@ -1449,7 +1447,6 @@ class Transaction(object):
         return self._process_incoming_cat_headers(encoded_cross_process_id, encoded_txn_header)
 
     def set_transaction_name(self, name, group=None, priority=None):
-
         # Always perform this operation even if the transaction
         # is not active at the time as will be called from
         # constructor. If path has been frozen do not allow
@@ -1624,6 +1621,19 @@ class Transaction(object):
         event = create_custom_event(event_type, params)
         if event:
             self._custom_events.add(event, priority=self.priority)
+
+    def record_ml_event(self, event_type, params):
+        settings = self._settings
+
+        if not settings:
+            return
+
+        if not settings.ml_insights_events.enabled:
+            return
+
+        event = create_custom_event(event_type, params)
+        if event:
+            self._ml_events.add(event, priority=self.priority)
 
     def _intern_string(self, value):
         return self._string_cache.setdefault(value, value)
@@ -1974,6 +1984,34 @@ def record_custom_event(event_type, params, application=None):
             )
     elif application.enabled:
         application.record_custom_event(event_type, params)
+
+
+def record_ml_event(event_type, params, application=None):
+    """Record a machine learning custom event.
+
+    Args:
+        event_type (str): The type (name) of the ml event.
+        params (dict): Attributes to add to the event.
+        application (newrelic.api.Application): Application instance.
+
+    """
+
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_ml_event(event_type, params)
+        else:
+            _logger.debug(
+                "record_ml_event has been called but no "
+                "transaction was running. As a result, the following event "
+                "has not been recorded. event_type: %r params: %r. To correct "
+                "this problem, supply an application object as a parameter to "
+                "this record_ml_event call.",
+                event_type,
+                params,
+            )
+    elif application.enabled:
+        application.record_ml_event(event_type, params)
 
 
 def record_log_event(message, level=None, timestamp=None, application=None, priority=None):

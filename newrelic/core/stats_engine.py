@@ -62,7 +62,7 @@ EVENT_HARVEST_METHODS = {
         "reset_synthetics_events",
     ),
     "span_event_data": ("reset_span_events",),
-    "custom_event_data": ("reset_custom_events",),
+    "custom_event_data": ("reset_custom_events", "reset_ml_events"),
     "error_event_data": ("reset_error_events",),
     "log_event_data": ("reset_log_events",),
 }
@@ -472,6 +472,7 @@ class StatsEngine(object):
         self._transaction_events = SampledDataSet()
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
+        self._ml_events = SampledDataSet()
         self._span_events = SampledDataSet()
         self._log_events = SampledDataSet()
         self._span_stream = None
@@ -503,6 +504,10 @@ class StatsEngine(object):
     @property
     def custom_events(self):
         return self._custom_events
+
+    @property
+    def ml_events(self):
+        return self._ml_events
 
     @property
     def span_events(self):
@@ -756,7 +761,6 @@ class StatsEngine(object):
 
             user_attributes = create_user_attributes(custom_attributes, settings.attribute_filter)
 
-
         # Extract additional details about the exception as agent attributes
         agent_attributes = {}
 
@@ -768,28 +772,37 @@ class StatsEngine(object):
                 error_group_name = None
                 try:
                     # Call callback to obtain error group name
-                    error_group_name_raw = settings.error_collector.error_group_callback(value, {
-                        "traceback": tb,
-                        "error.class": exc,
-                        "error.message": message_raw,
-                        "error.expected": is_expected,
-                        "custom_params": attributes,
-                        # Transaction specific items should be set to None
-                        "transactionName": None,
-                        "response.status": None,
-                        "request.method": None,
-                        "request.uri": None,
-                    })
+                    error_group_name_raw = settings.error_collector.error_group_callback(
+                        value,
+                        {
+                            "traceback": tb,
+                            "error.class": exc,
+                            "error.message": message_raw,
+                            "error.expected": is_expected,
+                            "custom_params": attributes,
+                            # Transaction specific items should be set to None
+                            "transactionName": None,
+                            "response.status": None,
+                            "request.method": None,
+                            "request.uri": None,
+                        },
+                    )
                     if error_group_name_raw:
                         _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
                         if error_group_name is None or not isinstance(error_group_name, six.string_types):
-                            raise ValueError("Invalid attribute value for error.group.name. Expected string, got: %s" % repr(error_group_name_raw))
+                            raise ValueError(
+                                "Invalid attribute value for error.group.name. Expected string, got: %s"
+                                % repr(error_group_name_raw)
+                            )
                         else:
                             agent_attributes["error.group.name"] = error_group_name
 
                 except Exception:
-                    _logger.error("Encountered error when calling error group callback:\n%s", "".join(traceback.format_exception(*sys.exc_info())))
-        
+                    _logger.error(
+                        "Encountered error when calling error group callback:\n%s",
+                        "".join(traceback.format_exception(*sys.exc_info())),
+                    )
+
         agent_attributes = create_agent_attributes(agent_attributes, settings.attribute_filter)
 
         # Record the exception details.
@@ -814,7 +827,7 @@ class StatsEngine(object):
         for attr in agent_attributes:
             if attr.destinations & DST_ERROR_COLLECTOR:
                 attributes["agentAttributes"][attr.name] = attr.value
-        
+
         error_details = TracedError(
             start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
         )
@@ -868,6 +881,15 @@ class StatsEngine(object):
 
         if settings.collect_custom_events and settings.custom_insights_events.enabled:
             self._custom_events.add(event)
+
+    def record_ml_event(self, event):
+        settings = self.__settings
+
+        if not settings:
+            return
+
+        if settings.ml_insights_events.enabled:
+            self._ml_events.add(event)
 
     def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data
@@ -1121,6 +1143,11 @@ class StatsEngine(object):
 
         if settings.collect_custom_events and settings.custom_insights_events.enabled:
             self.custom_events.merge(transaction.custom_events)
+
+        # Merge in machine learning events
+
+        if settings.ml_insights_events.enabled:
+            self.ml_events.merge(transaction.ml_events)
 
         # Merge in span events
 
@@ -1589,6 +1616,7 @@ class StatsEngine(object):
         self.reset_transaction_events()
         self.reset_error_events()
         self.reset_custom_events()
+        self.reset_ml_events()
         self.reset_span_events()
         self.reset_log_events()
         self.reset_synthetics_events()
@@ -1631,6 +1659,12 @@ class StatsEngine(object):
             self._custom_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.custom_event_data)
         else:
             self._custom_events = SampledDataSet()
+
+    def reset_ml_events(self):
+        if self.__settings is not None:
+            self._ml_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.ml_event_data)
+        else:
+            self._ml_events = SampledDataSet()
 
     def reset_span_events(self):
         if self.__settings is not None:
@@ -1765,6 +1799,7 @@ class StatsEngine(object):
         self._merge_error_events(snapshot)
         self._merge_error_traces(snapshot)
         self._merge_custom_events(snapshot)
+        self._merge_ml_events(snapshot)
         self._merge_span_events(snapshot)
         self._merge_log_events(snapshot)
         self._merge_sql(snapshot)
@@ -1790,6 +1825,7 @@ class StatsEngine(object):
         self._merge_synthetics_events(snapshot, rollback=True)
         self._merge_error_events(snapshot)
         self._merge_custom_events(snapshot, rollback=True)
+        self._merge_ml_events(snapshot, rollback=True)
         self._merge_span_events(snapshot, rollback=True)
         self._merge_log_events(snapshot, rollback=True)
 
@@ -1858,6 +1894,12 @@ class StatsEngine(object):
         if not events:
             return
         self._custom_events.merge(events)
+
+    def _merge_ml_events(self, snapshot, rollback=False):
+        events = snapshot.ml_events
+        if not events:
+            return
+        self._ml_events.merge(events)
 
     def _merge_span_events(self, snapshot, rollback=False):
         events = snapshot.span_events
@@ -1958,6 +2000,9 @@ class StatsEngineSnapshot(StatsEngine):
 
     def reset_custom_events(self):
         self._custom_events = None
+
+    def reset_ml_events(self):
+        self._ml_events = None
 
     def reset_span_events(self):
         self._span_events = None

@@ -156,7 +156,7 @@ class Session(object):
         """
 
         payload = encode_metric_data(metric_data, start_time, end_time)
-        return self._otlp_protocol.send("dimensional_metric_data", payload)
+        return self._otlp_protocol.send("dimensional_metric_data", payload, path="/v1/metrics")
 
     def send_log_events(self, sampling_info, log_event_data):
         """Called to submit sample set for log events."""

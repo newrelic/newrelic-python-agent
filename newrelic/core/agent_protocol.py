@@ -51,6 +51,7 @@ from newrelic.packages.opentelemetry_proto.logs_pb2 import (
     ResourceLogs,
     ScopeLogs,
 )
+from newrelic.common.otlp_utils import OTLP_CONTENT_TYPE
 
 _logger = logging.getLogger(__name__)
 
@@ -585,7 +586,8 @@ class OtlpProtocol(AgentProtocol):
                     k = k.encode("utf-8")
                 self._headers[k] = v
 
-        self._headers["Content-Type"] = "application/x-protobuf"
+        # Content-Type should be protobuf, but falls back to JSON if protobuf is not installed.
+        self._headers["Content-Type"] = OTLP_CONTENT_TYPE
         self._run_token = settings.agent_run_id
 
         # Logging
@@ -615,4 +617,4 @@ class OtlpProtocol(AgentProtocol):
         params["method"] = method
         if self._run_token:
             params["run_id"] = self._run_token
-        return params, self._headers, payload.SerializeToString()
+        return params, self._headers, payload

@@ -36,29 +36,30 @@ try:
     )
     from newrelic.packages.opentelemetry_proto.resource_pb2 import Resource
 
-    AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
     ValueAtQuantile = SummaryDataPoint.ValueAtQuantile
+    AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
+    OTLP_CONTENT_TYPE = "application/x-protobuf"
 
-    encode = lambda payload: (payload.SerializeToString(), "application/x-protobuf")
+    encode = lambda payload: payload.SerializeToString()
 
 except Exception:
-    from newrelic.common.encoding_utils import json_encode
+    from newrelic.common.encoding_utils import json_encode as encode
 
-    encode = lambda payload: (json_encode(payload), "application/json")
-
-    Resource = dict
-    ValueAtQuantile = dict
     AnyValue = dict
     KeyValue = dict
-    NumberDataPoint = dict
-    SummaryDataPoint = dict
-    Sum = dict
-    Summary = dict
     Metric = dict
     MetricsData = dict
-    ScopeMetrics = dict
+    NumberDataPoint = dict
+    Resource = dict
     ResourceMetrics = dict
+    ScopeMetrics = dict
+    Sum = dict
+    Summary = dict
+    SummaryDataPoint = dict
+    ValueAtQuantile = dict
+
     AGGREGATION_TEMPORALITY_DELTA = 1
+    OTLP_CONTENT_TYPE = "application/json"
 
 
 def create_key_value(key, value):

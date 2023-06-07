@@ -525,30 +525,14 @@ class ServerlessModeProtocol(AgentProtocol):
 
 class OtlpProtocol(AgentProtocol):
     def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
-        self.HOST_MAP = {
-            "collector.newrelic.com": "otlp.nr-data.net",
-            "collector.eu.newrelic.com": "otlp.eu01.nr-data.net",
-            "gov-collector.newrelic.com": "gov-otlp.nr-data.net",
-            "staging-collector.newrelic.com": "staging-otlp.nr-data.net",
-            "staging-collector.eu.newrelic.com": "staging-otlp.eu01.nr-data.net",
-            "staging-gov-collector.newrelic.com": "staging-gov-otlp.nr-data.net",
-            "fake-collector.newrelic.com": "fake-otlp.nr-data.net",
-        }
-
         if settings.audit_log_file:
             audit_log_fp = open(settings.audit_log_file, "a")
         else:
             audit_log_fp = None
 
-        otlp_host = self.HOST_MAP.get(host or settings.host, None)
-        if not otlp_host:
-            default = self.HOST_MAP["collector.newrelic.com"]
-            _logger.warn("Unable to find corresponding OTLP host using default %s" % default)
-            otlp_host = default
-
         self.client = client_cls(
-            host=otlp_host,
-            port=4318,
+            host=host or settings.otlp_host,
+            port=settings.otlp_port or 4318,
             proxy_scheme=settings.proxy_scheme,
             proxy_host=settings.proxy_host,
             proxy_port=settings.proxy_port,

@@ -320,6 +320,8 @@ def _process_configuration(section):
     _process_setting(section, "api_key", "get", None)
     _process_setting(section, "host", "get", None)
     _process_setting(section, "port", "getint", None)
+    _process_setting(section, "otlp_host", "get", None)
+    _process_setting(section, "otlp_port", "getint", None)
     _process_setting(section, "ssl", "getboolean", None)
     _process_setting(section, "proxy_scheme", "get", None)
     _process_setting(section, "proxy_host", "get", None)

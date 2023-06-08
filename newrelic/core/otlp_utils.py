@@ -35,14 +35,14 @@ try:
     AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
     ValueAtQuantile = SummaryDataPoint.ValueAtQuantile
 
-    encode = lambda payload: payload.SerializeToString()
+    otlp_encode = lambda payload: payload.SerializeToString()
 
 except ImportError:
-    from newrelic.common.encoding_utils import json_encode as _encode
+    from newrelic.common.encoding_utils import json_encode
 
-    def encode(*args, **kwargs):
-        _logger.warn("protobuf is not installed. This may result in larger payload sizes and data loss.")
-        return _encode(*args, **kwargs)
+    def otlp_encode(*args, **kwargs):
+        _logger.warn("Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss.")
+        return json_encode(*args, **kwargs)
 
     ValueAtQuantile = dict
     AnyValue = dict

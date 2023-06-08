@@ -38,7 +38,7 @@ from newrelic.core.config import (
     global_settings_dump,
 )
 from newrelic.core.internal_metrics import internal_count_metric
-from newrelic.core.otlp_utils import encode
+from newrelic.core.otlp_utils import otlp_encode
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
@@ -46,6 +46,7 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
+from newrelic.common.otlp_utils import OTLP_CONTENT_TYPE, Resource, create_key_values_from_iterable
 
 _logger = logging.getLogger(__name__)
 
@@ -259,7 +260,10 @@ class AgentProtocol(object):
             exception = self.STATUS_CODE_RESPONSE.get(status, DiscardDataForRequest)
             raise exception
         if status == 200:
-            return json_decode(data.decode("utf-8"))["return_value"]
+            return self.decode_response(data)
+
+    def decode_response(self, response):
+        return json_decode(response.decode("utf-8"))["return_value"]
 
     def _to_http(self, method, payload=()):
         params = dict(self._params)
@@ -525,7 +529,7 @@ class ServerlessModeProtocol(AgentProtocol):
 
 
 class OtlpProtocol(AgentProtocol):
-    def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
+    def __init__(self, settings, host=None, resource=None, client_cls=ApplicationModeClient):
         if settings.audit_log_file:
             audit_log_fp = open(settings.audit_log_file, "a")
         else:
@@ -547,12 +551,14 @@ class OtlpProtocol(AgentProtocol):
             compression_method=settings.compressed_content_encoding,
             max_payload_size_in_bytes=1000000,
             audit_log_fp=audit_log_fp,
+            default_content_encoding_header=None,
         )
 
         self._params = {}
         self._headers = {
             "api-key": settings.license_key,
         }
+        self._resource = resource
 
         # In Python 2, the JSON is loaded with unicode keys and values;
         # however, the header name must be a non-unicode value when given to
@@ -564,7 +570,8 @@ class OtlpProtocol(AgentProtocol):
                     k = k.encode("utf-8")
                 self._headers[k] = v
 
-        self._headers["Content-Type"] = "application/x-protobuf"
+        # Content-Type should be protobuf, but falls back to JSON if protobuf is not installed.
+        self._headers["Content-Type"] = OTLP_CONTENT_TYPE
         self._run_token = settings.agent_run_id
 
         # Logging
@@ -584,7 +591,9 @@ class OtlpProtocol(AgentProtocol):
         settings,
         client_cls=ApplicationModeClient,
     ):
-        with cls(settings, client_cls=client_cls) as protocol:
+        resource = Resource(attributes=create_key_values_from_iterable({"service.name": app_name}))
+        
+        with cls(settings, resource=resource, client_cls=client_cls) as protocol:
             pass
 
         return protocol
@@ -594,4 +603,7 @@ class OtlpProtocol(AgentProtocol):
         params["method"] = method
         if self._run_token:
             params["run_id"] = self._run_token
-        return params, self._headers, encode(payload)
+        return params, self._headers, otlp_encode(payload)
+
+    def decode_response(self, response):
+        return response.decode("utf-8")

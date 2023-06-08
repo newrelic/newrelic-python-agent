@@ -38,7 +38,7 @@ from newrelic.core.config import (
     global_settings_dump,
 )
 from newrelic.core.internal_metrics import internal_count_metric
-from newrelic.core.otlp_utils import otlp_encode
+from newrelic.core.otlp_utils import OTLP_CONTENT_TYPE, otlp_encode
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
@@ -46,7 +46,6 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.common.otlp_utils import OTLP_CONTENT_TYPE, Resource, create_key_values_from_iterable
 
 _logger = logging.getLogger(__name__)
 
@@ -529,7 +528,7 @@ class ServerlessModeProtocol(AgentProtocol):
 
 
 class OtlpProtocol(AgentProtocol):
-    def __init__(self, settings, host=None, resource=None, client_cls=ApplicationModeClient):
+    def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
         if settings.audit_log_file:
             audit_log_fp = open(settings.audit_log_file, "a")
         else:
@@ -558,7 +557,6 @@ class OtlpProtocol(AgentProtocol):
         self._headers = {
             "api-key": settings.license_key,
         }
-        self._resource = resource
 
         # In Python 2, the JSON is loaded with unicode keys and values;
         # however, the header name must be a non-unicode value when given to
@@ -591,9 +589,7 @@ class OtlpProtocol(AgentProtocol):
         settings,
         client_cls=ApplicationModeClient,
     ):
-        resource = Resource(attributes=create_key_values_from_iterable({"service.name": app_name}))
-        
-        with cls(settings, resource=resource, client_cls=client_cls) as protocol:
+        with cls(settings, client_cls=client_cls) as protocol:
             pass
 
         return protocol

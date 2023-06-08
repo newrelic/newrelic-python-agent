@@ -20,6 +20,11 @@ _logger = logging.getLogger(__name__)
 
 try:
     from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
+    from newrelic.packages.opentelemetry_proto.logs_pb2 import (
+        LogRecord,
+        ResourceLogs,
+        ScopeLogs,
+    )
     from newrelic.packages.opentelemetry_proto.metrics_pb2 import (
         AggregationTemporality,
         Metric,
@@ -31,19 +36,24 @@ try:
         Summary,
         SummaryDataPoint,
     )
+    from newrelic.packages.opentelemetry_proto.resource_pb2 import Resource
 
     AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
     ValueAtQuantile = SummaryDataPoint.ValueAtQuantile
 
     otlp_encode = lambda payload: payload.SerializeToString()
+    OTLP_CONTENT_TYPE = "application/x-protobuf"
 
 except ImportError:
     from newrelic.common.encoding_utils import json_encode
 
     def otlp_encode(*args, **kwargs):
-        _logger.warn("Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss.")
+        _logger.warn(
+            "Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss."
+        )
         return json_encode(*args, **kwargs)
 
+    Resource = dict
     ValueAtQuantile = dict
     AnyValue = dict
     KeyValue = dict
@@ -56,6 +66,10 @@ except ImportError:
     ScopeMetrics = dict
     ResourceMetrics = dict
     AGGREGATION_TEMPORALITY_DELTA = 1
+    ResourceLogs = dict
+    ScopeLogs = dict
+    LogRecord = dict
+    OTLP_CONTENT_TYPE = "application/json"
 
 
 def create_key_value(key, value):
@@ -86,3 +100,8 @@ def create_key_values_from_iterable(iterable):
             (create_key_value(key, value) for key, value in iterable),
         )
     )
+
+
+def create_resource(attributes=None):
+    attributes = attributes or {"instrumentation.provider": "nr_performance_monitoring"}
+    return Resource(attributes=create_key_values_from_iterable(attributes))

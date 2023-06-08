@@ -155,7 +155,7 @@ class Session(object):
         with the machine learning integration only.
         """
 
-        payload = encode_metric_data(metric_data, start_time, end_time)
+        payload = encode_metric_data(metric_data, start_time, end_time, resource=self._otlp_protocol._resource)
         return self._otlp_protocol.send("dimensional_metric_data", payload, path="/v1/metrics")
 
     def send_log_events(self, sampling_info, log_event_data):

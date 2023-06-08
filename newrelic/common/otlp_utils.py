@@ -125,13 +125,13 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
     separate the types and report multiple metrics, one for each type.
     """
     for name, metric_container in metric_data:
-        if any(isinstance(metric, CountStats) for metric in metric_container.values()):
+        if any(type(metric) is CountStats for metric in metric_container.values()):
             # Metric contains Sum metric data points.
             yield Metric(
                 name=name,
-                aggregation_temporality=AGGREGATION_TEMPORALITY_DELTA,
-                is_monotonic=True,
                 sum=Sum(
+                    aggregation_temporality=AGGREGATION_TEMPORALITY_DELTA,
+                    is_monotonic=True,
                     data_points=[
                         CountStats_to_otlp_data_point(
                             value,
@@ -144,7 +144,7 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
                     ],
                 ),
             )
-        if any(isinstance(metric, TimeStats) for metric in metric_container.values()):
+        if any(type(metric) is TimeStats for metric in metric_container.values()):
             # Metric contains Summary metric data points.
             yield Metric(
                 name=name,

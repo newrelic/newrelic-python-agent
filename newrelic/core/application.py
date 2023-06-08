@@ -510,6 +510,9 @@ class Application(object):
         with self._stats_custom_lock:
             self._stats_custom_engine.reset_stats(configuration)
 
+        with self._stats_lock:
+            self._stats_engine.reset_stats(configuration)
+
         # Record an initial start time for the reporting period and
         # clear record of last transaction processed.
 
@@ -859,6 +862,50 @@ class Application(object):
             for name, value in metrics:
                 self._global_events_account += 1
                 self._stats_custom_engine.record_custom_metric(name, value)
+
+    def record_dimensional_metric(self, name, value, tags=None):
+        """Record a dimensional metric against the application independent
+        of a specific transaction.
+
+        NOTE that this will require locking of the stats engine for
+        dimensional metrics and so under heavy use will have performance
+        issues. It is better to record the dimensional metric against an
+        active transaction as they will then be aggregated at the end of
+        the transaction when all other metrics are aggregated and so no
+        additional locking will be required.
+
+        """
+
+        if not self._active_session:
+            return
+
+        with self._stats_lock:
+            self._global_events_account += 1
+            self._stats_engine.record_dimensional_metric(name, value, tags)
+
+    def record_dimensional_metrics(self, metrics):
+        """Record a set of dimensional metrics against the application
+        independent of a specific transaction.
+
+        NOTE that this will require locking of the stats engine for
+        dimensional metrics and so under heavy use will have performance
+        issues. It is better to record the dimensional metric against an
+        active transaction as they will then be aggregated at the end of
+        the transaction when all other metrics are aggregated and so no
+        additional locking will be required.
+
+        """
+
+        if not self._active_session:
+            return
+
+        with self._stats_lock:
+            for metric in metrics:
+                name, value = metric[:2]
+                tags = metric[2] if len(metric) >= 3 else None
+
+                self._global_events_account += 1
+                self._stats_engine.record_dimensional_metric(name, value, tags)
 
     def record_custom_event(self, event_type, params):
         if not self._active_session:
@@ -1452,11 +1499,14 @@ class Application(object):
                         _logger.debug("Normalizing metrics for harvest of %r.", self._app_name)
 
                         metric_data = stats.metric_data(metric_normalizer)
+                        dimensional_metric_data = stats.dimensional_metric_data(metric_normalizer)
 
                         _logger.debug("Sending metric data for harvest of %r.", self._app_name)
 
                         # Send metrics
                         self._active_session.send_metric_data(self._period_start, period_end, metric_data)
+                        if dimensional_metric_data:
+                            self._active_session.send_dimensional_metric_data(self._period_start, period_end, dimensional_metric_data)
 
                         _logger.debug("Done sending data for harvest of %r.", self._app_name)
 

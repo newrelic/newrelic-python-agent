@@ -31,6 +31,8 @@ from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
+DIMENSIONAL_METRIC_DATA_TEMP = []  # TODO: REMOVE THIS
+
 
 class Session(object):
     PROTOCOL = AgentProtocol
@@ -134,6 +136,25 @@ class Session(object):
 
         payload = (self.agent_run_id, start_time, end_time, metric_data)
         return self._protocol.send("metric_data", payload)
+
+    def send_dimensional_metric_data(self, start_time, end_time, metric_data):
+        """Called to submit dimensional metric data for specified period of time.
+        Time values are seconds since UNIX epoch as returned by the
+        time.time() function. The metric data should be iterable of
+        specific metrics.
+
+        NOTE: This data is sent not sent to the normal agent endpoints but is sent
+        to the MELT API endpoints to keep the entity separate. This is for use
+        with the machine learning integration only.
+        """
+
+        payload = (self.agent_run_id, start_time, end_time, metric_data)
+        # return self._protocol.send("metric_data", payload)
+
+        # TODO: REMOVE THIS. Replace with actual protocol.
+        DIMENSIONAL_METRIC_DATA_TEMP.append(payload)
+        _logger.debug("Dimensional Metrics: %r" % metric_data)
+        return 200  
 
     def send_log_events(self, sampling_info, log_event_data):
         """Called to submit sample set for log events."""

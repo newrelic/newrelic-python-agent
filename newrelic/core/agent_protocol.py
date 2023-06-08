@@ -45,13 +45,7 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
-from newrelic.packages.opentelemetry_proto.logs_pb2 import (
-    LogsData,
-    ResourceLogs,
-    ScopeLogs,
-)
-from newrelic.common.otlp_utils import OTLP_CONTENT_TYPE
+from newrelic.common.otlp_utils import OTLP_CONTENT_TYPE, Resource, create_key_values_from_iterable
 
 _logger = logging.getLogger(__name__)
 
@@ -265,7 +259,10 @@ class AgentProtocol(object):
             exception = self.STATUS_CODE_RESPONSE.get(status, DiscardDataForRequest)
             raise exception
         if status == 200:
-            return json_decode(data.decode("utf-8"))["return_value"]
+            return self.decode_response(data)
+
+    def decode_response(self, response):
+        return json_decode(response.decode("utf-8"))["return_value"]
 
     def _to_http(self, method, payload=()):
         params = dict(self._params)
@@ -531,7 +528,7 @@ class ServerlessModeProtocol(AgentProtocol):
 
 
 class OtlpProtocol(AgentProtocol):
-    def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
+    def __init__(self, settings, host=None, resource=None, client_cls=ApplicationModeClient):
         self.HOST_MAP = {
             "collector.newrelic.com": "otlp.nr-data.net",
             "collector.eu.newrelic.com": "otlp.eu01.nr-data.net",
@@ -564,6 +561,7 @@ class OtlpProtocol(AgentProtocol):
             timeout=settings.agent_limits.data_collector_timeout,
             ca_bundle_path=settings.ca_bundle_path,
             disable_certificate_validation=settings.debug.disable_certificate_validation,
+            default_content_encoding_header=None,
             compression_threshold=settings.agent_limits.data_compression_threshold,
             compression_level=settings.agent_limits.data_compression_level,
             compression_method=settings.compressed_content_encoding,
@@ -575,6 +573,7 @@ class OtlpProtocol(AgentProtocol):
         self._headers = {
             "api-key": settings.license_key,
         }
+        self._resource = resource
 
         # In Python 2, the JSON is loaded with unicode keys and values;
         # however, the header name must be a non-unicode value when given to
@@ -607,7 +606,9 @@ class OtlpProtocol(AgentProtocol):
         settings,
         client_cls=ApplicationModeClient,
     ):
-        with cls(settings, client_cls=client_cls) as protocol:
+        resource = Resource(attributes=create_key_values_from_iterable({"service.name": app_name}))
+        
+        with cls(settings, resource=resource, client_cls=client_cls) as protocol:
             pass
 
         return protocol
@@ -618,3 +619,6 @@ class OtlpProtocol(AgentProtocol):
         if self._run_token:
             params["run_id"] = self._run_token
         return params, self._headers, payload
+
+    def decode_response(self, response):
+        return response.decode("utf-8")

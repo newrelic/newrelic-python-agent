@@ -92,6 +92,7 @@ class BaseClient(object):
         compression_method="gzip",
         max_payload_size_in_bytes=1000000,
         audit_log_fp=None,
+        default_content_encoding_header="Identity",
     ):
         self._audit_log_fp = audit_log_fp
 
@@ -240,6 +241,7 @@ class HttpClient(BaseClient):
         compression_method="gzip",
         max_payload_size_in_bytes=1000000,
         audit_log_fp=None,
+        default_content_encoding_header="Identity",
     ):
         self._host = host
         port = self._port = port
@@ -248,6 +250,7 @@ class HttpClient(BaseClient):
         self._compression_method = compression_method
         self._max_payload_size_in_bytes = max_payload_size_in_bytes
         self._audit_log_fp = audit_log_fp
+        self._default_content_encoding_header = default_content_encoding_header
 
         self._prefix = ""
 
@@ -419,11 +422,9 @@ class HttpClient(BaseClient):
                     method=self._compression_method,
                     level=self._compression_level,
                 )
-                content_encoding = self._compression_method
-            else:
-                content_encoding = "Identity"
-
-            merged_headers["Content-Encoding"] = content_encoding
+                merged_headers["Content-Encoding"] = self._compression_method
+            elif self._default_content_encoding_header:
+                merged_headers["Content-Encoding"] = self._default_content_encoding_header
 
         request_id = self.log_request(
             self._audit_log_fp,
@@ -489,6 +490,7 @@ class InsecureHttpClient(HttpClient):
         compression_method="gzip",
         max_payload_size_in_bytes=1000000,
         audit_log_fp=None,
+        default_content_encoding_header="Identity",
     ):
         proxy = self._parse_proxy(proxy_scheme, proxy_host, None, None, None)
         if proxy and proxy.scheme == "https":
@@ -515,6 +517,7 @@ class InsecureHttpClient(HttpClient):
             compression_method,
             max_payload_size_in_bytes,
             audit_log_fp,
+            default_content_encoding_header,
         )
 
 

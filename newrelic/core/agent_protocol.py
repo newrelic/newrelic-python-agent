@@ -38,6 +38,7 @@ from newrelic.core.config import (
     global_settings_dump,
 )
 from newrelic.core.internal_metrics import internal_count_metric
+from newrelic.core.otlp_utils import encode
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
@@ -593,4 +594,4 @@ class OtlpProtocol(AgentProtocol):
         params["method"] = method
         if self._run_token:
             params["run_id"] = self._run_token
-        return params, self._headers, payload.SerializeToString()
+        return params, self._headers, encode(payload)

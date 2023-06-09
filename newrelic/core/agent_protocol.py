@@ -45,7 +45,7 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.common.otlp_utils import OTLP_CONTENT_TYPE, Resource, create_key_values_from_iterable
+from newrelic.common.otlp_utils import OTLP_CONTENT_TYPE, Resource, create_key_values_from_iterable, otlp_encode
 
 _logger = logging.getLogger(__name__)
 
@@ -618,7 +618,7 @@ class OtlpProtocol(AgentProtocol):
         params["method"] = method
         if self._run_token:
             params["run_id"] = self._run_token
-        return params, self._headers, payload
+        return params, self._headers, otlp_encode(payload)
 
     def decode_response(self, response):
         return response.decode("utf-8")

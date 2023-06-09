@@ -40,10 +40,10 @@ try:
     AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
     OTLP_CONTENT_TYPE = "application/x-protobuf"
 
-    encode = lambda payload: payload.SerializeToString()
+    otlp_encode = lambda payload: payload.SerializeToString()
 
 except Exception:
-    from newrelic.common.encoding_utils import json_encode as encode
+    from newrelic.common.encoding_utils import json_encode as otlp_encode
 
     AnyValue = dict
     KeyValue = dict
@@ -79,7 +79,9 @@ def create_key_value(key, value):
 
 
 def create_key_values_from_iterable(iterable):
-    if isinstance(iterable, dict):
+    if not iterable:
+        return None
+    elif isinstance(iterable, dict):
         iterable = iterable.items()
 
     # The create_key_value list may return None if the value is an unsupported type
@@ -164,15 +166,7 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
 
 
 def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=None):
-    resource = resource or Resource(
-        attributes=create_key_values_from_iterable(
-            {
-                "service.name": "TestOTLPService",
-            }
-        )
-    )
-
-    payload = MetricsData(
+    return MetricsData(
         resource_metrics=[
             ResourceMetrics(
                 resource=resource,
@@ -185,5 +179,3 @@ def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=N
             )
         ]
     )
-
-    return encode(payload)

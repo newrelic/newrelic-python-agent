@@ -104,6 +104,7 @@ def create_settings(nested):
 
 class TopLevelSettings(Settings):
     _host = None
+    _otlp_host = None
 
     @property
     def host(self):
@@ -114,6 +115,16 @@ class TopLevelSettings(Settings):
     @host.setter
     def host(self, value):
         self._host = value
+
+    @property
+    def otlp_host(self):
+        if self._otlp_host:
+            return self._otlp_host
+        return default_otlp_host(self.host)
+
+    @otlp_host.setter
+    def otlp_host(self, value):
+        self._otlp_host = value
 
 
 class AttributesSettings(Settings):
@@ -560,6 +571,24 @@ def default_host(license_key):
     return host
 
 
+def default_otlp_host(host):
+    HOST_MAP = {
+        "collector.newrelic.com": "otlp.nr-data.net",
+        "collector.eu.newrelic.com": "otlp.eu01.nr-data.net",
+        "gov-collector.newrelic.com": "gov-otlp.nr-data.net",
+        "staging-collector.newrelic.com": "staging-otlp.nr-data.net",
+        "staging-collector.eu.newrelic.com": "staging-otlp.eu01.nr-data.net",
+        "staging-gov-collector.newrelic.com": "staging-gov-otlp.nr-data.net",
+        "fake-collector.newrelic.com": "fake-otlp.nr-data.net",
+    }
+    otlp_host = HOST_MAP.get(host, None)
+    if not otlp_host:
+        default = HOST_MAP["collector.newrelic.com"]
+        _logger.warn("Unable to find corresponding OTLP host using default %s" % default)
+        otlp_host = default
+    return otlp_host
+
+
 _LOG_LEVEL = {
     "CRITICAL": logging.CRITICAL,
     "ERROR": logging.ERROR,
@@ -585,7 +614,9 @@ _settings.api_key = os.environ.get("NEW_RELIC_API_KEY", None)
 _settings.ssl = _environ_as_bool("NEW_RELIC_SSL", True)
 
 _settings.host = os.environ.get("NEW_RELIC_HOST")
+_settings.otlp_host = os.environ.get("NEW_RELIC_OTLP_HOST")
 _settings.port = int(os.environ.get("NEW_RELIC_PORT", "0"))
+_settings.otlp_port = int(os.environ.get("NEW_RELIC_OTLP_PORT", "0"))
 
 _settings.agent_run_id = None
 _settings.entity_guid = None

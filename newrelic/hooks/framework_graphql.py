@@ -298,9 +298,9 @@ def wrap_get_field_def(wrapped, instance, args, kwargs):
 
     if hasattr(result, "resolve"):
         if not hasattr(result.resolve, "_nr_wrapped"):
-            print("hi", flush=True)
             result.resolve = wrap_resolver(result.resolve)
             result.resolve._nr_wrapped = True
+            print(result.resolve._nr_wrapped, flush=True)
 
     return result
 

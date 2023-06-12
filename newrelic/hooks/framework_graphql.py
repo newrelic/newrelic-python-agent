@@ -103,6 +103,7 @@ def bind_operation_v2(exe_context, operation, root_value):
 
 
 def wrap_execute_operation(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
     transaction = current_transaction()
     trace = current_trace()
 

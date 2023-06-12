@@ -374,6 +374,7 @@ def bind_resolve_field_v2(exe_context, parent_type, source, field_asts, parent_i
 
 
 def wrap_resolve_field(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)

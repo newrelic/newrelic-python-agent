@@ -317,6 +317,9 @@ def wrap_executor_execute(wrapped, instance, args, kwargs):
 
 @function_wrapper
 def wrap_resolver(wrapped, instance, args, kwargs):
+    name = callable_name(wrapped)
+    print(name)
+    print(wrapped, flush=True)
     return wrapped(*args, **kwargs)
     transaction = current_transaction()
     if transaction is None:

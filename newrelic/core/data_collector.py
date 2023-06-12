@@ -32,7 +32,7 @@ from newrelic.core.agent_protocol import (
 )
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.config import global_settings
-from newrelic.common.otlp_utils import encode_metric_data
+from newrelic.core.otlp_utils import encode_metric_data
 
 _logger = logging.getLogger(__name__)
 

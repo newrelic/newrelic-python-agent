@@ -16,7 +16,10 @@
 
 import logging
 
+from newrelic.core.stats_engine import CountStats, TimeStats
+
 _logger = logging.getLogger(__name__)
+
 
 try:
     from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
@@ -38,13 +41,13 @@ try:
     )
     from newrelic.packages.opentelemetry_proto.resource_pb2 import Resource
 
-    AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
     ValueAtQuantile = SummaryDataPoint.ValueAtQuantile
-
-    otlp_encode = lambda payload: payload.SerializeToString()
+    AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
     OTLP_CONTENT_TYPE = "application/x-protobuf"
 
-except ImportError:
+    otlp_encode = lambda payload: payload.SerializeToString()
+
+except Exception:
     from newrelic.common.encoding_utils import json_encode
 
     def otlp_encode(*args, **kwargs):
@@ -53,22 +56,23 @@ except ImportError:
         )
         return json_encode(*args, **kwargs)
 
-    Resource = dict
-    ValueAtQuantile = dict
     AnyValue = dict
     KeyValue = dict
-    NumberDataPoint = dict
-    SummaryDataPoint = dict
-    Sum = dict
-    Summary = dict
     Metric = dict
     MetricsData = dict
-    ScopeMetrics = dict
+    NumberDataPoint = dict
+    Resource = dict
     ResourceMetrics = dict
-    AGGREGATION_TEMPORALITY_DELTA = 1
+    ScopeMetrics = dict
+    Sum = dict
+    Summary = dict
+    SummaryDataPoint = dict
+    ValueAtQuantile = dict
     ResourceLogs = dict
     ScopeLogs = dict
     LogRecord = dict
+
+    AGGREGATION_TEMPORALITY_DELTA = 1
     OTLP_CONTENT_TYPE = "application/json"
 
 
@@ -89,7 +93,9 @@ def create_key_value(key, value):
 
 
 def create_key_values_from_iterable(iterable):
-    if isinstance(iterable, dict):
+    if not iterable:
+        return None
+    elif isinstance(iterable, dict):
         iterable = iterable.items()
 
     # The create_key_value list may return None if the value is an unsupported type
@@ -105,3 +111,90 @@ def create_key_values_from_iterable(iterable):
 def create_resource(attributes=None):
     attributes = attributes or {"instrumentation.provider": "nr_performance_monitoring"}
     return Resource(attributes=create_key_values_from_iterable(attributes))
+
+def TimeStats_to_otlp_data_point(self, start_time, end_time, attributes=None):
+    data = SummaryDataPoint(
+        time_unix_nano=int(end_time * 1e9),  # Time of current harvest
+        start_time_unix_nano=int(start_time * 1e9),  # Time of last harvest
+        attributes=attributes,
+        count=int(self[0]),
+        sum=float(self[1]),
+        quantile_values=[
+            ValueAtQuantile(quantile=0.0, value=float(self[3])),  # Min Value
+            ValueAtQuantile(quantile=1.0, value=float(self[4])),  # Max Value
+        ],
+    )
+    return data
+
+
+def CountStats_to_otlp_data_point(self, start_time, end_time, attributes=None):
+    data = NumberDataPoint(
+        time_unix_nano=int(end_time * 1e9),  # Time of current harvest
+        start_time_unix_nano=int(start_time * 1e9),  # Time of last harvest
+        attributes=attributes,
+        as_int=int(self[0]),
+    )
+    return data
+
+
+def stats_to_otlp_metrics(metric_data, start_time, end_time):
+    """
+    Generator producing protos for Summary and Sum metrics, for CountStats and TimeStats respectively.
+
+    Individual Metric protos must be entirely one type of metric data point. For mixed metric types we have to
+    separate the types and report multiple metrics, one for each type.
+    """
+    for name, metric_container in metric_data:
+        if any(type(metric) is CountStats for metric in metric_container.values()):
+            # Metric contains Sum metric data points.
+            yield Metric(
+                name=name,
+                sum=Sum(
+                    aggregation_temporality=AGGREGATION_TEMPORALITY_DELTA,
+                    is_monotonic=True,
+                    data_points=[
+                        CountStats_to_otlp_data_point(
+                            value,
+                            start_time=start_time,
+                            end_time=end_time,
+                            attributes=create_key_values_from_iterable(tags),
+                        )
+                        for tags, value in metric_container.items()
+                        if isinstance(value, CountStats)
+                    ],
+                ),
+            )
+        if any(type(metric) is TimeStats for metric in metric_container.values()):
+            # Metric contains Summary metric data points.
+            yield Metric(
+                name=name,
+                summary=Summary(
+                    data_points=[
+                        TimeStats_to_otlp_data_point(
+                            value,
+                            start_time=start_time,
+                            end_time=end_time,
+                            attributes=create_key_values_from_iterable(tags),
+                        )
+                        for tags, value in metric_container.items()
+                        if isinstance(value, TimeStats)
+                    ]
+                ),
+            )
+
+
+def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=None):
+    resource = resource or create_resource()
+    return MetricsData(
+        resource_metrics=[
+            ResourceMetrics(
+                resource=resource,
+                scope_metrics=[
+                    ScopeMetrics(
+                        scope=scope,
+                        metrics=list(stats_to_otlp_metrics(metric_data, start_time, end_time)),
+                    )
+                ],
+            )
+        ]
+    )

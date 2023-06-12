@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import pytest
 
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -67,3 +68,7 @@ def client(request, loop):
             pytest.skip("StrictRedis not implemented.")
         else:
             raise NotImplementedError()
+
+@pytest.fixture(scope="session")
+def key():
+    return "AIOREDIS-TEST-" + str(os.getpid())

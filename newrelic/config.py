@@ -2211,16 +2211,16 @@ def _process_module_builtin_defaults():
         # "instrument_graphene_types_schema",
     # )
 
-    _process_module_definition(
-        "graphql.graphql",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql",
-    )
     # _process_module_definition(
-        # "graphql.execution.execute",
+        # "graphql.graphql",
         # "newrelic.hooks.framework_graphql",
-        # "instrument_graphql_execute",
+        # "instrument_graphql",
     # )
+    _process_module_definition(
+        "graphql.execution.execute",
+        "newrelic.hooks.framework_graphql",
+        "instrument_graphql_execute",
+    )
     # _process_module_definition(
         # "graphql.execution.executor",
         # "newrelic.hooks.framework_graphql",

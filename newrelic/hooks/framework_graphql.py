@@ -317,10 +317,10 @@ def wrap_executor_execute(wrapped, instance, args, kwargs):
 
 @function_wrapper
 def wrap_resolver(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
-    return wrapped(*args, **kwargs)
 
     name = callable_name(wrapped)
     transaction.set_transaction_name(name, "GraphQL", priority=13)
@@ -374,10 +374,10 @@ def bind_resolve_field_v2(exe_context, parent_type, source, field_asts, parent_i
 
 
 def wrap_resolve_field(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
-    return wrapped(*args, **kwargs)
 
     if graphql_version() < (3, 0):
         bind_resolve_field = bind_resolve_field_v2

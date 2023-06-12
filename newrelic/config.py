@@ -2216,11 +2216,11 @@ def _process_module_builtin_defaults():
         # "newrelic.hooks.framework_graphql",
         # "instrument_graphql",
     # )
-    # _process_module_definition(
-        # "graphql.execution.execute",
-        # "newrelic.hooks.framework_graphql",
-        # "instrument_graphql_execute",
-    # )
+    _process_module_definition(
+        "graphql.execution.execute",
+        "newrelic.hooks.framework_graphql",
+        "instrument_graphql_execute",
+    )
     # _process_module_definition(
         # "graphql.execution.executor",
         # "newrelic.hooks.framework_graphql",
@@ -2236,26 +2236,26 @@ def _process_module_builtin_defaults():
         # "newrelic.hooks.framework_graphql",
         # "instrument_graphql_execution_utils",
     # )
-    _process_module_definition(
-        "graphql.error.located_error",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_error_located_error",
-    )
-    _process_module_definition(
-        "graphql.language.parser",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_parser",
-    )
-    _process_module_definition(
-        "graphql.validation.validate",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_validate",
-    )
-    _process_module_definition(
-        "graphql.validation.validation",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_validate",
-    )
+    # _process_module_definition(
+        # "graphql.error.located_error",
+        # "newrelic.hooks.framework_graphql",
+        # "instrument_graphql_error_located_error",
+    # )
+    # _process_module_definition(
+        # "graphql.language.parser",
+        # "newrelic.hooks.framework_graphql",
+        # "instrument_graphql_parser",
+    # )
+    # _process_module_definition(
+        # "graphql.validation.validate",
+        # "newrelic.hooks.framework_graphql",
+        # "instrument_graphql_validate",
+    # )
+    # _process_module_definition(
+        # "graphql.validation.validation",
+        # "newrelic.hooks.framework_graphql",
+        # "instrument_graphql_validate",
+    # )
 
     _process_module_definition(
         "ariadne.asgi",

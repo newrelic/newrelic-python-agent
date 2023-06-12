@@ -103,7 +103,6 @@ def bind_operation_v2(exe_context, operation, root_value):
 
 
 def wrap_execute_operation(wrapped, instance, args, kwargs):
-    return wrapped(*args, **kwargs)
     transaction = current_transaction()
     trace = current_trace()
 
@@ -318,7 +317,6 @@ def wrap_executor_execute(wrapped, instance, args, kwargs):
 
 @function_wrapper
 def wrap_resolver(wrapped, instance, args, kwargs):
-    return wrapped(*args, **kwargs)
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
@@ -375,7 +373,6 @@ def bind_resolve_field_v2(exe_context, parent_type, source, field_asts, parent_i
 
 
 def wrap_resolve_field(wrapped, instance, args, kwargs):
-    return wrapped(*args, **kwargs)
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
@@ -462,6 +459,7 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
 
 
 def instrument_graphql_execute(module):
+    return
     if hasattr(module, "get_field_def"):
         wrap_function_wrapper(module, "get_field_def", wrap_get_field_def)
     if hasattr(module, "ExecutionContext"):

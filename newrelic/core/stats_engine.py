@@ -253,6 +253,8 @@ class DimensionalMetrics(object):
             if not isinstance(key[1], frozenset):
                 # Convert tags dict to a frozen set for proper comparisons
                 name, tags = create_metric_identity(*key)
+            else:
+                name, tags = key
 
             # Check that both metric name and tags are already present.
             stats_container = self.__stats_table.get(name)
@@ -288,6 +290,8 @@ class DimensionalMetrics(object):
             else:
                 # Existing data points found, merge stats.
                 stats.merge_stats(new_stats)
+
+        return (name, tags)
 
     def metrics(self):
         """Returns an iterator over the set of value metrics. 

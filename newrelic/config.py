@@ -2216,16 +2216,16 @@ def _process_module_builtin_defaults():
         # "newrelic.hooks.framework_graphql",
         # "instrument_graphql",
     # )
-    _process_module_definition(
-        "graphql.execution.execute",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_execute",
-    )
     # _process_module_definition(
-        # "graphql.execution.executor",
+        # "graphql.execution.execute",
         # "newrelic.hooks.framework_graphql",
         # "instrument_graphql_execute",
     # )
+    _process_module_definition(
+        "graphql.execution.executor",
+        "newrelic.hooks.framework_graphql",
+        "instrument_graphql_execute",
+    )
     # _process_module_definition(
         # "graphql.execution.middleware",
         # "newrelic.hooks.framework_graphql",

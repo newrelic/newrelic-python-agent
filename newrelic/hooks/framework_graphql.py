@@ -133,7 +133,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     trace.operation_type = get_node_value(operation, "operation", "name").lower() or "<unknown>"
 
     if operation.selection_set is not None:
-        fields = operation.selection_set.selections
+        fields = [f for f in operation.selection_set.selections if f]
         # Ignore transactions for introspection queries
         if not (transaction.settings and transaction.settings.instrumentation.graphql.capture_introspection_queries):
             # If all selected fields are introspection fields
@@ -141,7 +141,8 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
                 ignore_transaction()
 
         fragments = execution_context.fragments
-        trace.deepest_path = ".".join(traverse_deepest_unique_path(fields, fragments)) or ""
+        path_parts = [p for p in traverse_deepest_unique_path(fields, fragments) if p]
+        trace.deepest_path = ".".join(path_parts) if path_parts else ""
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
     result = wrapped(*args, **kwargs)
@@ -417,7 +418,7 @@ def bind_execute_graphql_query(
     operation_name=None,
     middleware=None,
     backend=None,
-    **execute_options
+    **execute_options,
 ):
     return schema, request_string
 

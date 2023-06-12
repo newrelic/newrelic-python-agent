@@ -13,17 +13,18 @@
 # limitations under the License.
 
 from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
+from newrelic.core.otlp_utils import OTLP_CONTENT_TYPE
 
-try:
+if OTLP_CONTENT_TYPE == "application/x-protobuf":
     from google.protobuf.json_format import MessageToDict
-except ImportError:
+else:
     MessageToDict = lambda obj, *a, **k: obj
 
 
 def data_points_to_dict(data_points):
     return {
         frozenset(
-            {attr["key"]: attribute_to_value(attr["value"]) for attr in data_point.get("attributes", [])}.items()
+            {attr["key"]: attribute_to_value(attr["value"]) for attr in (data_point.get("attributes") or [])}.items()
         )
         or None: data_point
         for data_point in data_points
@@ -41,6 +42,35 @@ def attribute_to_value(attribute):
         return str(attribute_value)
     else:
         raise TypeError("Invalid attribute type: %s" % attribute_type)
+
+def payload_to_metrics(payload):
+    message = MessageToDict(payload, use_integers_for_enums=True, preserving_proto_field_name=True)
+
+    resource_metrics = message.get("resource_metrics")
+    assert len(resource_metrics) == 1
+    resource_metrics = resource_metrics[0]
+
+    resource = resource_metrics.get("resource")
+    scope_metrics = resource_metrics.get("scope_metrics")
+    assert len(scope_metrics) == 1
+    scope_metrics = scope_metrics[0]
+
+    scope = scope_metrics.get("scope")
+    assert scope is None
+    metrics = scope_metrics.get("metrics")
+
+    sent_summary_metrics = {}
+    sent_count_metrics = {}
+    for metric in metrics:
+        metric_name = metric["name"]
+        if metric.get("sum"):
+            sent_count_metrics[metric_name] = metric
+        elif metric.get("summary"):
+            sent_summary_metrics[metric_name] = metric
+        else:
+            raise TypeError("Unknown metrics type for metric: %s" % metric)
+
+    return sent_summary_metrics, sent_count_metrics
 
 
 def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None):
@@ -61,33 +91,7 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
             method, payload = _bind_params(*args, **kwargs)
 
             if method == "dimensional_metric_data" and payload:
-                message = MessageToDict(payload, use_integers_for_enums=True, preserving_proto_field_name=True)
-
-                resource_metrics = message.get("resource_metrics")
-                assert len(resource_metrics) == 1
-                resource_metrics = resource_metrics[0]
-
-                resource = resource_metrics.get("resource")
-                scope_metrics = resource_metrics.get("scope_metrics")
-                assert len(scope_metrics) == 1
-                scope_metrics = scope_metrics[0]
-
-                scope = scope_metrics.get("scope")
-                assert scope is None
-                metrics = scope_metrics.get("metrics")
-
-                sent_summary_metrics = {}
-                sent_count_metrics = {}
-                for metric in metrics:
-                    metric_name = metric["name"]
-                    if metric.get("sum"):
-                        sent_count_metrics[metric_name] = metric
-                    elif metric.get("summary"):
-                        sent_summary_metrics[metric_name] = metric
-                    else:
-                        raise TypeError("Unknown metrics type for metric: %s" % metric)
-
-                recorded_metrics.append((sent_summary_metrics, sent_count_metrics))
+                recorded_metrics.append(payload)
 
             return wrapped(*args, **kwargs)
 
@@ -95,7 +99,8 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
         val = wrapped(*args, **kwargs)
         assert recorded_metrics
 
-        for sent_summary_metrics, sent_count_metrics in recorded_metrics:
+        decoded_payloads = [payload_to_metrics(payload) for payload in recorded_metrics]
+        for sent_summary_metrics, sent_count_metrics in decoded_payloads:
             for metric, tags, count in summary_metrics:
                 if isinstance(tags, dict):
                     tags = frozenset(tags.items())

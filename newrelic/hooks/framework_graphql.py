@@ -317,13 +317,13 @@ def wrap_executor_execute(wrapped, instance, args, kwargs):
 
 @function_wrapper
 def wrap_resolver(wrapped, instance, args, kwargs):
-    return wrapped(*args, **kwargs)
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
 
     name = callable_name(wrapped)
     transaction.set_transaction_name(name, "GraphQL", priority=13)
+    return wrapped(*args, **kwargs)
 
     with FunctionTrace(name, source=wrapped):
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
@@ -392,6 +392,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     field_def = parent_type.fields.get(field_name)
     field_return_type = str(field_def.type) if field_def else "<unknown>"
 
+    return wrapped(*args, **kwargs)
     with GraphQLResolverTrace(field_name) as trace:
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             trace._add_agent_attribute("graphql.field.parentType", parent_type.name)

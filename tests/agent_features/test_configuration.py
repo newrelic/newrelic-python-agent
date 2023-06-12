@@ -33,6 +33,8 @@ from newrelic.core.config import (
     global_settings_dump,
 )
 
+from testing_support.fixtures import override_generic_settings
+
 
 def parameterize_local_config(settings_list):
     settings_object_list = []
@@ -581,6 +583,7 @@ def test_translate_deprecated_ignored_params_with_new_setting():
         ("otlp_port", 0),
     ),
 )
+@override_generic_settings(global_settings(), {"host": None})
 def test_default_values(name, expected_value):
     settings = global_settings()
     value = fetch_config_setting(settings, name)

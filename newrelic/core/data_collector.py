@@ -36,6 +36,8 @@ from newrelic.common.otlp_utils import encode_metric_data
 
 _logger = logging.getLogger(__name__)
 
+DIMENSIONAL_METRIC_DATA_TEMP = []  # TODO: REMOVE THIS
+
 
 class Session(object):
     PROTOCOL = AgentProtocol

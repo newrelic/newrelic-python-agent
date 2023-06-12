@@ -3177,7 +3177,7 @@ def _setup_agent_console():
 
 
 def _setup_security_module():
-    """Initiates k2 security module and adds a
+    """Initiates security module and adds a
     callback to agent startup to propagate NR config
     """
     try:
@@ -3188,8 +3188,8 @@ def _setup_security_module():
         security_agent = SecurityAgent()
          # create a callback to reinitialise the security module
         newrelic.core.agent.Agent.run_on_startup(security_agent.refresh_agent)
-    except Exception as k2error:
-        _logger.error("K2 Startup failed with error %s", k2error)
+    except Exception as csec_error:
+        _logger.error("Security Agent Startup failed with error %s", csec_error)
 
 
 def initialize(

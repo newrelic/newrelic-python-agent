@@ -469,8 +469,8 @@ def instrument_graphql_execute(module):
         # elif hasattr(module.ExecutionContext, "execute_field"):
             # wrap_function_wrapper(module, "ExecutionContext.execute_field", wrap_resolve_field)
 
-        if hasattr(module.ExecutionContext, "execute_operation"):
-            wrap_function_wrapper(module, "ExecutionContext.execute_operation", wrap_execute_operation)
+        # if hasattr(module.ExecutionContext, "execute_operation"):
+            # wrap_function_wrapper(module, "ExecutionContext.execute_operation", wrap_execute_operation)
 
     # if hasattr(module, "resolve_field"):
         # wrap_function_wrapper(module, "resolve_field", wrap_resolve_field)

@@ -300,7 +300,6 @@ def wrap_get_field_def(wrapped, instance, args, kwargs):
         if not hasattr(result.resolve, "_nr_wrapped"):
             result.resolve = wrap_resolver(result.resolve)
             result.resolve._nr_wrapped = True
-            print(result.resolve._nr_wrapped, flush=True)
 
     return result
 
@@ -318,6 +317,7 @@ def wrap_executor_execute(wrapped, instance, args, kwargs):
 
 @function_wrapper
 def wrap_resolver(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)

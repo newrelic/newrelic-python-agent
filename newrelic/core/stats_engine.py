@@ -330,6 +330,9 @@ class DimensionalMetrics(object):
     def __repr__(self):
         return "%s(%s)" % (__class__.__name__, repr(self.__stats_table))
 
+    def items(self):
+        return self.metrics()
+
 
 class SlowSqlStats(list):
     def __init__(self):
@@ -1358,7 +1361,7 @@ class StatsEngine(object):
                 list(normalized_stats.metrics()),
             )
 
-        for key, value in normalized_stats.metrics():
+        for key, value in normalized_stats.items():
             result.append((key, value))
 
         return result

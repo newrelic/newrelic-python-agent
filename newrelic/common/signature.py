@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import namedtuple
+from newrelic.packages import six
 
-ErrorNode = namedtuple(
-    "ErrorNode",
-    [
-        "timestamp",
-        "type",
-        "message",
-        "expected",
-        "span_id",
-        "stack_trace",
-        "custom_params",
-        "source",
-        "error_group_name",
-    ],
-)
+if six.PY3:
+    from inspect import Signature
+
+    def bind_args(func, args, kwargs):
+        """Bind arguments and apply defaults to missing arugments for a callable."""
+        bound_args = Signature.from_callable(func).bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        return bound_args.arguments
+
+else:
+    from inspect import getcallargs
+
+    def bind_args(func, args, kwargs):
+        """Bind arguments and apply defaults to missing arugments for a callable."""
+        return getcallargs(func, *args, **kwargs)

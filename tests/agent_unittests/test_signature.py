@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import namedtuple
+import pytest
 
-ErrorNode = namedtuple(
-    "ErrorNode",
+from newrelic.common.signature import bind_args
+
+
+@pytest.mark.parametrize(
+    "func,args,kwargs,expected",
     [
-        "timestamp",
-        "type",
-        "message",
-        "expected",
-        "span_id",
-        "stack_trace",
-        "custom_params",
-        "source",
-        "error_group_name",
+        (lambda x, y: None, (1,), {"y": 2}, {"x": 1, "y": 2}),
+        (lambda x=1, y=2: None, (1,), {"y": 2}, {"x": 1, "y": 2}),
+        (lambda x=1: None, (), {}, {"x": 1}),
     ],
+    ids=("posargs", "kwargs", "defaults"),
 )
+def test_signature_binding(func, args, kwargs, expected):
+    bound_args = bind_args(func, args, kwargs)
+    assert bound_args == expected

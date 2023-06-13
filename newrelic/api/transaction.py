@@ -46,6 +46,7 @@ from newrelic.common.encoding_utils import (
     obfuscate,
 )
 from newrelic.core.attribute import (
+    MAX_ATTRIBUTE_LENGTH,
     MAX_LOG_MESSAGE_LENGTH,
     MAX_NUM_USER_ATTRIBUTES,
     create_agent_attributes,
@@ -1547,7 +1548,9 @@ class Transaction(object):
                 status_code=status_code,
             )
 
-    def _create_error_node(self, settings, fullname, message, expected, custom_params, span_id, tb, source):
+    def _create_error_node(
+        self, settings, fullname, message, expected, error_group_name, custom_params, span_id, tb, source
+    ):
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
         # later if there are already recorded errors and would
@@ -1576,9 +1579,8 @@ class Transaction(object):
             span_id=span_id,
             stack_trace=exception_stack(tb),
             custom_params=custom_params,
-            file_name=None,
-            line_number=None,
             source=source,
+            error_group_name=error_group_name,
         )
 
         # TODO: Errors are recorded in time order. If
@@ -1810,6 +1812,21 @@ def add_custom_parameters(items):
         DeprecationWarning,
     )
     return add_custom_attributes(items)
+
+
+def set_user_id(user_id):
+    transaction = current_transaction()
+
+    if not user_id or not transaction:
+        return
+
+    if not isinstance(user_id, six.string_types):
+        _logger.warning("The set_user_id API requires a string-based user ID.")
+        return
+
+    user_id = truncate(user_id, MAX_ATTRIBUTE_LENGTH)
+
+    transaction._add_agent_attribute("enduser.id", user_id)
 
 
 def add_framework_info(name, version=None):

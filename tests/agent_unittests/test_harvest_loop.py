@@ -61,9 +61,8 @@ def transaction_node(request):
         expected=False,
         span_id=None,
         stack_trace="",
+        error_group_name=None,
         custom_params={},
-        file_name=None,
-        line_number=None,
         source=None,
     )
 

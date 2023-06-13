@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mako.template import Template
+from genshi.template import MarkupTemplate
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -23,16 +23,16 @@ from newrelic.api.background_task import background_task
 @validate_transaction_metrics(
     "test_render",
     background_task=True,
-    scoped_metrics=(("Template/Render/<template>", 1),),
+    scoped_metrics=(("Template/Render/genshi.core:Stream.render", 1),),
 )
 @background_task(name="test_render")
 def test_render():
-    template = Template("hello, ${name}!")
-    result = template.render(name="NR")
-    assert result == "hello, NR!"
+    template_to_render = MarkupTemplate("<h1>hello, $name!</h1>")
+    result = template_to_render.generate(name="NR").render("xhtml")
+    assert result == "<h1>hello, NR!</h1>"
 
 
 def test_render_outside_txn():
-    template = Template("hello, ${name}!")
-    result = template.render(name="NR")
-    assert result == "hello, NR!"
+    template_to_render = MarkupTemplate("<h1>hello, $name!</h1>")
+    result = template_to_render.generate(name="NR").render("xhtml")
+    assert result == "<h1>hello, NR!</h1>"

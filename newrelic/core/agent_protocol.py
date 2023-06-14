@@ -46,7 +46,6 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.core.otlp_utils import OTLP_CONTENT_TYPE, otlp_encode
 
 _logger = logging.getLogger(__name__)
 

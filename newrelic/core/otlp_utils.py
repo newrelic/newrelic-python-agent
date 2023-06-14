@@ -51,7 +51,7 @@ except Exception:
     from newrelic.common.encoding_utils import json_encode
 
     def otlp_encode(*args, **kwargs):
-        _logger.warn(
+        _logger.warning(
             "Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss."
         )
         return json_encode(*args, **kwargs)
@@ -89,7 +89,7 @@ def create_key_value(key, value):
     # those are not valid custom attribute types according to our api spec,
     # we will not bother to support them here either.
     else:
-        _logger.warn("Unsupported attribute value type %s: %s." % (key, value))
+        _logger.warning("Unsupported attribute value type %s: %s." % (key, value))
 
 
 def create_key_values_from_iterable(iterable):
@@ -111,6 +111,7 @@ def create_key_values_from_iterable(iterable):
 def create_resource(attributes=None):
     attributes = attributes or {"instrumentation.provider": "nr_performance_monitoring"}
     return Resource(attributes=create_key_values_from_iterable(attributes))
+
 
 def TimeStats_to_otlp_data_point(self, start_time, end_time, attributes=None):
     data = SummaryDataPoint(
@@ -145,7 +146,7 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
     separate the types and report multiple metrics, one for each type.
     """
     for name, metric_container in metric_data:
-        if any(type(metric) is CountStats for metric in metric_container.values()):
+        if any(isinstance(metric, CountStats) for metric in metric_container.values()):
             # Metric contains Sum metric data points.
             yield Metric(
                 name=name,
@@ -164,7 +165,7 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
                     ],
                 ),
             )
-        if any(type(metric) is TimeStats for metric in metric_container.values()):
+        if any(isinstance(metric, TimeStats) for metric in metric_container.values()):
             # Metric contains Summary metric data points.
             yield Metric(
                 name=name,

@@ -21,6 +21,8 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+from testing_support.fixtures import override_generic_settings
+
 from newrelic.common.object_names import callable_name
 from newrelic.config import delete_setting, translate_deprecated_settings
 from newrelic.core.config import (
@@ -32,8 +34,6 @@ from newrelic.core.config import (
     global_settings,
     global_settings_dump,
 )
-
-from testing_support.fixtures import override_generic_settings
 
 
 def parameterize_local_config(settings_list):

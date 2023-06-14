@@ -19,7 +19,6 @@ from testing_support.fixtures import (
     dt_enabled,
     function_not_called,
     override_application_settings,
-    validate_tt_segment_params,
 )
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_event_attributes import (
@@ -27,6 +26,9 @@ from testing_support.validators.validate_transaction_event_attributes import (
 )
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
+)
+from testing_support.validators.validate_tt_segment_params import (
+    validate_tt_segment_params,
 )
 
 from newrelic.api.background_task import background_task
@@ -725,7 +727,7 @@ def test_span_event_notice_error_overrides_observed(trace_type, args):
                 raise ERROR
             except Exception:
                 notice_error()
-                raise ValueError  # pylint: disable
+                raise ValueError  # pylint: disable (Py2/Py3 compatibility)
     except ValueError:
         pass
 

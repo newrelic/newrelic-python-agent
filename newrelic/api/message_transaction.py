@@ -39,7 +39,6 @@ class MessageTransaction(BackgroundTask):
         transport_type="AMQP",
         source=None,
     ):
-
         name, group = self.get_transaction_name(library, destination_type, destination_name)
 
         super(MessageTransaction, self).__init__(application, name, group=group, source=source)

@@ -24,7 +24,6 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 class BackgroundTask(Transaction):
     def __init__(self, application, name, group=None, source=None):
-
         # Initialise the common transaction base class.
 
         super(BackgroundTask, self).__init__(application, source=source)

@@ -12,42 +12,57 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module provides common utilities for interacting with OTLP protocol buffers."""
+"""
+This module provides common utilities for interacting with OTLP protocol buffers.
+
+The serialization implemented here attempts to use protobuf as an encoding, but falls
+back to JSON when encoutering exceptions unless the content type is explicitly set in debug settings.
+"""
 
 import logging
 
 from newrelic.core.stats_engine import CountStats, TimeStats
+from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
+_settings = global_settings()
+otlp_content_setting = _settings.debug.otlp_encoding or ""
+if not otlp_content_setting or otlp_content_setting == "protobuf":
+    try:
+        from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
+        from newrelic.packages.opentelemetry_proto.logs_pb2 import (
+            LogRecord,
+            ResourceLogs,
+            ScopeLogs,
+        )
+        from newrelic.packages.opentelemetry_proto.metrics_pb2 import (
+            AggregationTemporality,
+            Metric,
+            MetricsData,
+            NumberDataPoint,
+            ResourceMetrics,
+            ScopeMetrics,
+            Sum,
+            Summary,
+            SummaryDataPoint,
+        )
+        from newrelic.packages.opentelemetry_proto.resource_pb2 import Resource
 
-try:
-    from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
-    from newrelic.packages.opentelemetry_proto.logs_pb2 import (
-        LogRecord,
-        ResourceLogs,
-        ScopeLogs,
-    )
-    from newrelic.packages.opentelemetry_proto.metrics_pb2 import (
-        AggregationTemporality,
-        Metric,
-        MetricsData,
-        NumberDataPoint,
-        ResourceMetrics,
-        ScopeMetrics,
-        Sum,
-        Summary,
-        SummaryDataPoint,
-    )
-    from newrelic.packages.opentelemetry_proto.resource_pb2 import Resource
+        ValueAtQuantile = SummaryDataPoint.ValueAtQuantile
+        AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
+        OTLP_CONTENT_TYPE = "application/x-protobuf"
 
-    ValueAtQuantile = SummaryDataPoint.ValueAtQuantile
-    AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
-    OTLP_CONTENT_TYPE = "application/x-protobuf"
+        otlp_encode = lambda payload: payload.SerializeToString()
+        otlp_content_setting = "protobuf"  # Explicitly set to overwrite None values
+    except Exception:
+        if otlp_content_setting == "protobuf":
+            raise  # Reraise exception if content type explicitly set
+        else:  # Fallback to JSON
+            otlp_content_setting = "json"
 
-    otlp_encode = lambda payload: payload.SerializeToString()
 
-except Exception:
+if otlp_content_setting == "json":
     from newrelic.common.encoding_utils import json_encode
 
     def otlp_encode(*args, **kwargs):

@@ -21,13 +21,14 @@ back to JSON when encoutering exceptions unless the content type is explicitly s
 
 import logging
 
+from newrelic.common.encoding_utils import json_encode
 from newrelic.core.stats_engine import CountStats, TimeStats
 from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
 _settings = global_settings()
-otlp_content_setting = _settings.debug.otlp_encoding or ""
+otlp_content_setting = _settings.debug.otlp_content_encoding
 if not otlp_content_setting or otlp_content_setting == "protobuf":
     try:
         from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
@@ -53,7 +54,6 @@ if not otlp_content_setting or otlp_content_setting == "protobuf":
         AGGREGATION_TEMPORALITY_DELTA = AggregationTemporality.AGGREGATION_TEMPORALITY_DELTA
         OTLP_CONTENT_TYPE = "application/x-protobuf"
 
-        otlp_encode = lambda payload: payload.SerializeToString()
         otlp_content_setting = "protobuf"  # Explicitly set to overwrite None values
     except Exception:
         if otlp_content_setting == "protobuf":
@@ -63,14 +63,6 @@ if not otlp_content_setting or otlp_content_setting == "protobuf":
 
 
 if otlp_content_setting == "json":
-    from newrelic.common.encoding_utils import json_encode
-
-    def otlp_encode(*args, **kwargs):
-        _logger.warning(
-            "Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss."
-        )
-        return json_encode(*args, **kwargs)
-
     AnyValue = dict
     KeyValue = dict
     Metric = dict
@@ -89,6 +81,16 @@ if otlp_content_setting == "json":
 
     AGGREGATION_TEMPORALITY_DELTA = 1
     OTLP_CONTENT_TYPE = "application/json"
+
+
+def otlp_encode(payload):
+    if type(payload) is dict:
+        _logger.warning(
+            "Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss."
+        )
+        return json_encode(payload)
+    else:
+        return payload.SerializeToString()
 
 
 def create_key_value(key, value):

@@ -241,7 +241,7 @@ def MessageTransactionWrapper(
 
                 old_transaction = current_transaction()
                 if old_transaction is not None:
-                    old_transaction.drop_transaction()
+                    old_transaction.complete_root()
 
     return FunctionWrapper(wrapped, wrapper)
 

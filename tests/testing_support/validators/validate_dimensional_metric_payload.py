@@ -13,12 +13,12 @@
 # limitations under the License.
 
 from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
-from newrelic.core.otlp_utils import OTLP_CONTENT_TYPE
+from newrelic.core.otlp_utils import otlp_content_setting
 
-if OTLP_CONTENT_TYPE == "application/x-protobuf":
+if otlp_content_setting == "protobuf":
     from google.protobuf.json_format import MessageToDict
 else:
-    MessageToDict = lambda obj, *a, **k: obj
+    MessageToDict = None
 
 
 def data_points_to_dict(data_points):
@@ -44,7 +44,10 @@ def attribute_to_value(attribute):
         raise TypeError("Invalid attribute type: %s" % attribute_type)
 
 def payload_to_metrics(payload):
-    message = MessageToDict(payload, use_integers_for_enums=True, preserving_proto_field_name=True)
+    if type(payload) is not dict:
+        message = MessageToDict(payload, use_integers_for_enums=True, preserving_proto_field_name=True)
+    else:
+        message = payload
 
     resource_metrics = message.get("resource_metrics")
     assert len(resource_metrics) == 1

@@ -31,6 +31,31 @@ from newrelic.api.transaction import (
     record_dimensional_metrics,
 )
 from newrelic.common.metric_utils import create_metric_identity
+    
+import newrelic.core.otlp_utils
+from newrelic.core.config import global_settings
+
+
+try:
+    # python 2.x
+    reload
+except NameError:
+    # python 3.x
+    from importlib import reload
+
+
+@pytest.fixture(scope="module", autouse=True, params=["protobuf", "json"])
+def otlp_content_encoding(request):
+    _settings = global_settings()
+    prev = _settings.debug.otlp_content_encoding
+    _settings.debug.otlp_content_encoding = request.param
+    reload(newrelic.core.otlp_utils)
+    assert newrelic.core.otlp_utils.otlp_content_setting == request.param, "Content encoding mismatch."
+    
+    yield
+
+    _settings.debug.otlp_content_encoding = prev
+
 
 _test_tags_examples = [
     (None, None),

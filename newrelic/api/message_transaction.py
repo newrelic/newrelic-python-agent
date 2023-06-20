@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import functools
-import sys
 
 from newrelic.api.application import Application, application_instance
 from newrelic.api.background_task import BackgroundTask
@@ -217,30 +216,12 @@ def MessageTransactionWrapper(
 
         manager = create_transaction(current_transaction(active_only=False))
 
+        # This means that transaction already exists and we want to return
         if not manager:
             return wrapped(*args, **kwargs)
 
-        success = True
-
-        try:
-            manager.__enter__()
-            try:
-                return wrapped(*args, **kwargs)
-            except:  # Catch all
-                success = False
-                if not manager.__exit__(*sys.exc_info()):
-                    raise
-        finally:
-            if success and manager._ref_count == 0:
-                manager._is_finalized = True
-                manager.__exit__(None, None, None)
-            else:
-                manager._request_handler_finalize = True
-                manager._server_adapter_finalize = True
-
-                old_transaction = current_transaction()
-                if old_transaction is not None:
-                    old_transaction.complete_root()
+        with manager:
+            return wrapped(*args, **kwargs)
 
     return FunctionWrapper(wrapped, wrapper)
 

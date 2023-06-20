@@ -8,10 +8,10 @@ runs:
         python-version: "pypy-3.7"
         architecture: x64
 
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "pypy-2.7"
-        architecture: x64
+    # - uses: actions/setup-python@v4
+    #   with:
+    #     python-version: "pypy-2.7"
+    #     architecture: x64
 
     - uses: actions/setup-python@v4
       with:
@@ -38,10 +38,10 @@ runs:
         python-version: "3.11"
         architecture: x64
 
-    - uses: actions/setup-python@v2
-      with:
-        python-version: "2.7"
-        architecture: x64
+    # - uses: actions/setup-python@v4
+    #   with:
+    #     python-version: "2.7"
+    #     architecture: x64
 
     - name: Install Dependencies
       shell: bash

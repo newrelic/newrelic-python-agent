@@ -48,13 +48,11 @@ main() {
     done
     wait
 
-    # Install dependencies for each version
-    for v in "${PYENV_VERSIONS[@]}"; do
-        PYENV_VERSION=$v pyenv exec pip install --upgrade $PIP_REQUIREMENTS
-    done
-
     # Set all installed versions as globally accessible
     pyenv global ${PYENV_VERSIONS[@]}
+    
+    # Install dependencies for main python installation
+    pyenv exec pip install --upgrade $PIP_REQUIREMENTS
 }
 
 get_latest_patch_version() {

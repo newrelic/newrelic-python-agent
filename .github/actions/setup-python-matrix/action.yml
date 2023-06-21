@@ -47,4 +47,4 @@ runs:
       shell: bash
       run: |
         python3.10 -m pip install -U pip
-        python3.10 -m pip install -U wheel setuptools 'tox<4' virtualenv!=20.0.24
+        python3.10 -m pip install -U wheel setuptools tox 'virtualenv<20.22.0'

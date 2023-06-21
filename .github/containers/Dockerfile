@@ -28,6 +28,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         gcc \
         git \
         libbz2-dev \
+        libcurl4-openssl-dev \
         libffi-dev \
         libgmp-dev \
         liblzma-dev \
@@ -44,6 +45,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         python3-dev \
         python3-pip \
         sudo \
+        odbc-postgresql \
         unzip \
         vim \
         wget \
@@ -52,6 +54,11 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         zlib1g-dev \
         zsh && \
     rm -rf /var/lib/apt/lists/*
+
+# Setup ODBC config
+RUN sed -i 's/Driver=psqlodbca.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psqlodbca.so/g' /etc/odbcinst.ini && \
+    sed -i 's/Driver=psqlodbcw.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psqlodbcw.so/g' /etc/odbcinst.ini && \
+    sed -i 's/Setup=libodbcpsqlS.so/Setup=\/usr\/lib\/x86_64-linux-gnu\/odbc\/libodbcpsqlS.so/g' /etc/odbcinst.ini
 
 # Set the locale
 RUN locale-gen --no-purge en_US.UTF-8

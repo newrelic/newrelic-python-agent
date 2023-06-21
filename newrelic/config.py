@@ -3792,21 +3792,21 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("thrift.transport.TSocket", "newrelic.hooks.external_thrift")
 
-    _process_module_definition(
-        "gearman.client",
-        "newrelic.hooks.application_gearman",
-        "instrument_gearman_client",
-    )
-    _process_module_definition(
-        "gearman.connection_manager",
-        "newrelic.hooks.application_gearman",
-        "instrument_gearman_connection_manager",
-    )
-    _process_module_definition(
-        "gearman.worker",
-        "newrelic.hooks.application_gearman",
-        "instrument_gearman_worker",
-    )
+    # _process_module_definition(
+    #     "gearman.client",
+    #     "newrelic.hooks.application_gearman",
+    #     "instrument_gearman_client",
+    # )
+    # _process_module_definition(
+    #     "gearman.connection_manager",
+    #     "newrelic.hooks.application_gearman",
+    #     "instrument_gearman_connection_manager",
+    # )
+    # _process_module_definition(
+    #     "gearman.worker",
+    #     "newrelic.hooks.application_gearman",
+    #     "instrument_gearman_worker",
+    # )
 
     _process_module_definition(
         "botocore.endpoint",

@@ -16,14 +16,6 @@ name: Build CI Image
 
 on:
   workflow_dispatch:  # Allow manual trigger
-  schedule:
-    - cron: "0 6 * * 1"  # 06:00-UTC every Monday
-  push:
-    branches:
-      - 'main'
-  pull_request:
-    branches:
-      - 'main'
 
 concurrency: 
   group: ${{ github.ref || github.run_id }}

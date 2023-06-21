@@ -23,8 +23,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         build-essential \
         curl \
         expat \
-        fish \
-        fontconfig \
         gcc \
         git \
         libbz2-dev \
@@ -44,15 +42,12 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         python2-dev \
         python3-dev \
         python3-pip \
-        sudo \
         odbc-postgresql \
         unzip \
-        vim \
         wget \
         zip \
         zlib1g \
-        zlib1g-dev \
-        zsh && \
+        zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Setup ODBC config

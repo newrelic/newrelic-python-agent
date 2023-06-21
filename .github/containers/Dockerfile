@@ -61,7 +61,8 @@ ENV LANG=en_US.UTF-8 \ LANGUAGE=en_US:en \ LC_ALL=en_US.UTF-8
 
 # Set user to non-root
 ENV HOME /home/github
-RUN useradd -rm -d "${HOME}" -s /bin/bash -u 1000 github
+RUN groupadd -g 1000 github && \
+    useradd -m -d "${HOME}" -s /bin/bash -u 1000 -g 1000 github
 USER 1000:1000
 WORKDIR "${HOME}"
 

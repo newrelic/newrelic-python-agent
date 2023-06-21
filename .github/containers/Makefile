@@ -36,6 +36,7 @@ test: build
 run: build
 	@docker run --rm -it \
 		--mount type=bind,source="$(REPO_ROOT)",target=/home/github/python-agent \
+		--workdir=/home/github/python-agent \
 		-e NEW_RELIC_HOST="${NEW_RELIC_HOST}" \
 		-e NEW_RELIC_LICENSE_KEY="${NEW_RELIC_LICENSE_KEY}" \
 		-e NEW_RELIC_DEVELOPER_MODE="${NEW_RELIC_DEVELOPER_MODE}" \

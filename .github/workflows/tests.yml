@@ -32,8 +32,6 @@ jobs:
   # Aggregate job that provides a single check for all tests passing
   tests:
     runs-on: ubuntu-20.04
-    container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     needs:
       - python
       - elasticsearchserver07
@@ -58,8 +56,6 @@ jobs:
   coverage:
     if: success() || failure() # Does not run on cancelled workflows
     runs-on: ubuntu-20.04
-    container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     needs:
       - tests
 
@@ -122,12 +118,11 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -161,12 +156,11 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -200,12 +194,11 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       # Special case packages
       - name: Install libcurl-dev
@@ -245,7 +238,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     services:
@@ -265,7 +258,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Install odbc driver for postgresql
         run: |
@@ -307,7 +299,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     services:
@@ -330,7 +322,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -364,7 +355,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     services:
@@ -382,7 +373,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -416,7 +406,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     services:
@@ -436,7 +426,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -470,7 +459,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     services:
@@ -488,7 +477,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -522,7 +510,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     services:
@@ -541,7 +529,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -647,7 +634,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     services:
@@ -665,7 +652,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -699,7 +685,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     services:
@@ -719,7 +705,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -753,7 +738,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     services:
@@ -774,7 +759,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -808,7 +792,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
+      image: ghcr.io/newrelic/python-agent-ci:latest
     timeout-minutes: 30
 
     services:
@@ -825,7 +809,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs

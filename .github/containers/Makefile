@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: default 
-default: build test
+# Repository root for mounting into container.
+REPO_ROOT:=$(realpath $(dir $(realpath $(firstword $(MAKEFILE_LIST))))../../)
+
+.PHONY: default
+default: test
 
 .PHONY: build
 build:
@@ -21,10 +24,19 @@ build:
 	@docker build --build-arg='PYTHON_VERSIONS=3.10 2.7' . -t ghcr.io/newrelic/python-agent-ci:local
 
 .PHONY: test
-test:
+test: build
 	@# Ensure python versions are usable
 	@docker run --rm ghcr.io/newrelic/python-agent-ci:local /bin/bash -c '\
 		python3.10 --version && \
 		python2.7 --version && \
 		touch tox.ini && tox --version && \
 		echo "Success! Python versions installed."'
+
+.PHONY: run
+run: build
+	@docker run --rm -it \
+		--mount type=bind,source="$(REPO_ROOT)",target=/home/github/python-agent \
+		-e NEW_RELIC_HOST="${NEW_RELIC_HOST}" \
+		-e NEW_RELIC_LICENSE_KEY="${NEW_RELIC_LICENSE_KEY}" \
+		-e NEW_RELIC_DEVELOPER_MODE="${NEW_RELIC_DEVELOPER_MODE}" \
+		ghcr.io/newrelic/python-agent-ci:local /bin/bash

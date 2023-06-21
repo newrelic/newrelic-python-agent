@@ -32,6 +32,8 @@ jobs:
   # Aggregate job that provides a single check for all tests passing
   tests:
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     needs:
       - python
       - elasticsearchserver07
@@ -56,6 +58,8 @@ jobs:
   coverage:
     if: success() || failure() # Does not run on cancelled workflows
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     needs:
       - tests
 
@@ -117,6 +121,8 @@ jobs:
           ]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     steps:
@@ -154,6 +160,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     steps:
@@ -191,6 +199,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     steps:
@@ -234,6 +244,8 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     services:
@@ -294,6 +306,8 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     services:
@@ -349,6 +363,8 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     services:
@@ -399,6 +415,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     services:
@@ -451,6 +469,8 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     services:
@@ -501,6 +521,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     services:
@@ -624,6 +646,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     services:
@@ -674,6 +698,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     services:
@@ -726,6 +752,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     services:
@@ -779,6 +807,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic-experimental/pyenv-devcontainer:latest
     timeout-minutes: 30
 
     services:

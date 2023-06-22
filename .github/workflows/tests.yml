@@ -117,7 +117,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     steps:
@@ -155,7 +155,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     steps:
@@ -193,7 +193,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     services:
@@ -246,7 +246,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     services:
@@ -302,7 +302,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     services:
@@ -353,7 +353,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     services:
@@ -406,7 +406,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     services:
@@ -457,7 +457,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     services:
@@ -581,7 +581,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     services:
@@ -632,7 +632,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     services:
@@ -685,7 +685,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     services:
@@ -739,7 +739,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/${{ github.repository }}-ci:sha-89f5dd62bd2d9167e51962c305b9b57a1a7cdb75
     timeout-minutes: 30
 
     services:

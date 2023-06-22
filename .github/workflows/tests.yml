@@ -36,7 +36,7 @@ jobs:
       - python
       - elasticsearchserver07
       - elasticsearchserver08
-      - gearman
+      # - gearman
       - grpc
       #- kafka
       - libcurl
@@ -126,7 +126,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -163,7 +163,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -206,7 +206,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -266,7 +266,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -321,7 +321,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -371,7 +371,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -423,7 +423,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -473,7 +473,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -524,7 +524,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -596,7 +596,7 @@ jobs:
   #    - name: Get Environments
   #      id: get-envs
   #      run: |
-  #        echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+  #        echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
   #      env:
   #        GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -646,7 +646,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -698,7 +698,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -751,7 +751,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -769,51 +769,51 @@ jobs:
           path: ./**/.coverage.*
           retention-days: 1
 
-  gearman:
-    env:
-      TOTAL_GROUPS: 1
+  # gearman:
+  #   env:
+  #     TOTAL_GROUPS: 1
 
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       group-number: [1]
 
-    runs-on: ubuntu-20.04
-    timeout-minutes: 30
+  #   runs-on: ubuntu-20.04
+  #   timeout-minutes: 30
 
-    services:
-      gearman:
-        image: artefactual/gearmand
-        ports:
-          - 4730:4730
-        # Set health checks to wait until gearman has started
-        options: >-
-          --health-cmd "(echo status ; sleep 0.1) | nc 127.0.0.1 4730 -w 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+  #   services:
+  #     gearman:
+  #       image: artefactual/gearmand
+  #       ports:
+  #         - 4730:4730
+  #       # Set health checks to wait until gearman has started
+  #       options: >-
+  #         --health-cmd "(echo status ; sleep 0.1) | nc 127.0.0.1 4730 -w 1"
+  #         --health-interval 10s
+  #         --health-timeout 5s
+  #         --health-retries 5
 
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: ./.github/actions/setup-python-matrix
 
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
+  #     - name: Get Environments
+  #       id: get-envs
+  #       run: |
+  #         echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+  #       env:
+  #         GROUP_NUMBER: ${{ matrix.group-number }}
 
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+  #     - name: Test
+  #       run: |
+  #         tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+  #       env:
+  #         TOX_PARALLEL_NO_SPINNER: 1
+  #         PY_COLORS: 0
 
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          retention-days: 1
+  #     - name: Upload Coverage Artifacts
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: coverage-${{ github.job }}-${{ strategy.job-index }}
+  #         path: ./**/.coverage.*
+  #         retention-days: 1

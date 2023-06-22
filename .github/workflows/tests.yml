@@ -60,6 +60,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
@@ -122,6 +123,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -160,6 +163,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -213,6 +218,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -269,6 +276,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -320,6 +329,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -373,6 +384,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -424,6 +437,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -476,6 +491,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -498,7 +515,7 @@ jobs:
           path: ./**/.coverage.*
           retention-days: 1
 
-  #kafka:
+  # kafka:
   #  env:
   #    TOTAL_GROUPS: 4
 
@@ -534,41 +551,42 @@ jobs:
   #        KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L2
 
   #  steps:
-  #    - uses: actions/checkout@v3
-  #    - uses: ./.github/actions/setup-python-matrix
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       fetch-depth: 0
 
-  #    # Special case packages
-  #    - name: Install librdkafka-dev
-  #      run: |
-  #        # Use lsb-release to find the codename of Ubuntu to use to install the correct library name
-  #        sudo apt-get update
-  #        sudo ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
-  #        sudo apt-get install -y wget gnupg2 software-properties-common
-  #        sudo wget -qO - https://packages.confluent.io/deb/7.2/archive.key | sudo apt-key add -
-  #        sudo add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
-  #        sudo apt-get update
-  #        sudo apt-get install -y librdkafka-dev/$(lsb_release -c | cut -f 2)
+  #   # Special case packages
+  #   - name: Install librdkafka-dev
+  #     run: |
+  #       # Use lsb-release to find the codename of Ubuntu to use to install the correct library name
+  #       sudo apt-get update
+  #       sudo ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+  #       sudo apt-get install -y wget gnupg2 software-properties-common
+  #       sudo wget -qO - https://packages.confluent.io/deb/7.2/archive.key | sudo apt-key add -
+  #       sudo add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
+  #       sudo apt-get update
+  #       sudo apt-get install -y librdkafka-dev/$(lsb_release -c | cut -f 2)
 
-  #    - name: Get Environments
-  #      id: get-envs
-  #      run: |
-  #        echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
-  #      env:
-  #        GROUP_NUMBER: ${{ matrix.group-number }}
+  #   - name: Get Environments
+  #     id: get-envs
+  #     run: |
+  #       echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+  #     env:
+  #       GROUP_NUMBER: ${{ matrix.group-number }}
 
-  #    - name: Test
-  #      run: |
-  #        tox -vv -e ${{ steps.get-envs.outputs.envs }}
-  #      env:
-  #        TOX_PARALLEL_NO_SPINNER: 1
-  #        PY_COLORS: 0
+  #   - name: Test
+  #     run: |
+  #       tox -vv -e ${{ steps.get-envs.outputs.envs }}
+  #     env:
+  #       TOX_PARALLEL_NO_SPINNER: 1
+  #       PY_COLORS: 0
 
-  #    - name: Upload Coverage Artifacts
-  #      uses: actions/upload-artifact@v3
-  #      with:
-  #        name: coverage-${{ github.job }}-${{ strategy.job-index }}
-  #        path: ./**/.coverage.*
-  #        retention-days: 1
+  #   - name: Upload Coverage Artifacts
+  #     uses: actions/upload-artifact@v3
+  #     with:
+  #       name: coverage-${{ github.job }}-${{ strategy.job-index }}
+  #       path: ./**/.coverage.*
+  #       retention-days: 1
 
   mongodb:
     env:
@@ -599,6 +617,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -652,6 +672,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -706,6 +728,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs
@@ -756,6 +780,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Get Environments
         id: get-envs

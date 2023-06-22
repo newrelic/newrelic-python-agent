@@ -126,7 +126,7 @@ def create_key_values_from_iterable(iterable):
 
 
 def create_resource(attributes=None):
-    attributes = attributes or {"instrumentation.provider": "nr_performance_monitoring"}
+    attributes = attributes or {"instrumentation.provider": "newrelic-opentelemetry-python-ml"}
     return Resource(attributes=create_key_values_from_iterable(attributes))
 
 

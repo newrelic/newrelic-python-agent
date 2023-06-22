@@ -54,6 +54,7 @@ def payload_to_metrics(payload):
     resource_metrics = resource_metrics[0]
 
     resource = resource_metrics.get("resource")
+    assert resource and resource.get("service.provider") == "newrelic-opentelemetry-python-ml", "Resource not configured."
     scope_metrics = resource_metrics.get("scope_metrics")
     assert len(scope_metrics) == 1
     scope_metrics = scope_metrics[0]

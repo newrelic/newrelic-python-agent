@@ -21,8 +21,6 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-from testing_support.fixtures import override_generic_settings
-
 from newrelic.common.object_names import callable_name
 from newrelic.config import delete_setting, translate_deprecated_settings
 from newrelic.core.config import (
@@ -583,7 +581,6 @@ def test_translate_deprecated_ignored_params_with_new_setting():
         ("otlp_port", 0),
     ),
 )
-@override_generic_settings(global_settings(), {"host": None})
 def test_default_values(name, expected_value):
     settings = global_settings()
     value = fetch_config_setting(settings, name)

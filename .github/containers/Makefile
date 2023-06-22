@@ -13,7 +13,8 @@
 # limitations under the License.
 
 # Repository root for mounting into container.
-REPO_ROOT:=$(realpath $(dir $(realpath $(firstword $(MAKEFILE_LIST))))../../)
+MAKEFILE_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+REPO_ROOT:=$(realpath $(MAKEFILE_DIR)../../)
 
 .PHONY: default
 default: test
@@ -21,7 +22,7 @@ default: test
 .PHONY: build
 build:
 	@# Perform a shortened build for testing
-	@docker build --build-arg='PYTHON_VERSIONS=3.10 2.7' . -t ghcr.io/newrelic/python-agent-ci:local
+	@docker build --build-arg='PYTHON_VERSIONS=3.10 2.7' $(MAKEFILE_DIR) -t ghcr.io/newrelic/newrelic-python-agent-ci:local
 
 .PHONY: test
 test: build
@@ -40,4 +41,4 @@ run: build
 		-e NEW_RELIC_HOST="${NEW_RELIC_HOST}" \
 		-e NEW_RELIC_LICENSE_KEY="${NEW_RELIC_LICENSE_KEY}" \
 		-e NEW_RELIC_DEVELOPER_MODE="${NEW_RELIC_DEVELOPER_MODE}" \
-		ghcr.io/newrelic/python-agent-ci:local /bin/bash
+		ghcr.io/newrelic/newrelic-python-agent-ci:local /bin/bash

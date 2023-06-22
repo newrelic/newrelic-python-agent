@@ -683,7 +683,7 @@ jobs:
     timeout-minutes: 30
 
     services:
-      es07:
+      elasticsearch:
         image: elasticsearch:7.17.8
         env:
           "discovery.type": "single-node"
@@ -741,7 +741,7 @@ jobs:
     timeout-minutes: 30
 
     services:
-      es08:
+      elasticsearch:
         image: elasticsearch:8.6.0
         env:
           "xpack.security.enabled": "false"

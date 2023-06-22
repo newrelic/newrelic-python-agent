@@ -36,10 +36,9 @@ jobs:
       - python
       - elasticsearchserver07
       - elasticsearchserver08
-      # - gearman
+      - gearman
       - grpc
       #- kafka
-      - libcurl
       - memcached
       - mongodb
       - mysql
@@ -117,11 +116,12 @@ jobs:
           ]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -154,11 +154,12 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -181,49 +182,6 @@ jobs:
           path: ./**/.coverage.*
           retention-days: 1
 
-  libcurl:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-20.04
-    timeout-minutes: 30
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
-
-      # Special case packages
-      - name: Install libcurl-dev
-        run: |
-          sudo apt-get update
-          sudo apt-get install libcurl4-openssl-dev
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          retention-days: 1
-
   postgres:
     env:
       TOTAL_GROUPS: 2
@@ -234,6 +192,8 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -253,15 +213,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
-
-      - name: Install odbc driver for postgresql
-        run: |
-          sudo apt-get update
-          sudo sudo apt-get install odbc-postgresql
-          sudo sed -i 's/Driver=psqlodbca.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psqlodbca.so/g' /etc/odbcinst.ini
-          sudo sed -i 's/Driver=psqlodbcw.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psqlodbcw.so/g' /etc/odbcinst.ini
-          sudo sed -i 's/Setup=libodbcpsqlS.so/Setup=\/usr\/lib\/x86_64-linux-gnu\/odbc\/libodbcpsqlS.so/g' /etc/odbcinst.ini
 
       - name: Get Environments
         id: get-envs
@@ -294,6 +245,8 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -316,7 +269,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -349,6 +301,8 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -366,7 +320,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -399,6 +352,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -418,7 +373,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -451,6 +405,8 @@ jobs:
         group-number: [1, 2]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -468,7 +424,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -501,6 +456,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -519,7 +476,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -624,6 +580,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -641,7 +599,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -674,6 +631,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -693,7 +652,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -726,6 +684,8 @@ jobs:
         group-number: [1]
 
     runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -746,7 +706,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
       - name: Get Environments
         id: get-envs
@@ -769,51 +728,52 @@ jobs:
           path: ./**/.coverage.*
           retention-days: 1
 
-  # gearman:
-  #   env:
-  #     TOTAL_GROUPS: 1
+  gearman:
+    env:
+      TOTAL_GROUPS: 1
 
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       group-number: [1]
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
 
-  #   runs-on: ubuntu-20.04
-  #   timeout-minutes: 30
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci
+    timeout-minutes: 30
 
-  #   services:
-  #     gearman:
-  #       image: artefactual/gearmand
-  #       ports:
-  #         - 4730:4730
-  #       # Set health checks to wait until gearman has started
-  #       options: >-
-  #         --health-cmd "(echo status ; sleep 0.1) | nc 127.0.0.1 4730 -w 1"
-  #         --health-interval 10s
-  #         --health-timeout 5s
-  #         --health-retries 5
+    services:
+      gearman:
+        image: artefactual/gearmand
+        ports:
+          - 4730:4730
+        # Set health checks to wait until gearman has started
+        options: >-
+          --health-cmd "(echo status ; sleep 0.1) | nc 127.0.0.1 4730 -w 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: ./.github/actions/setup-python-matrix
+    steps:
+      - uses: actions/checkout@v3
 
-  #     - name: Get Environments
-  #       id: get-envs
-  #       run: |
-  #         echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
-  #       env:
-  #         GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
-  #     - name: Test
-  #       run: |
-  #         tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-  #       env:
-  #         TOX_PARALLEL_NO_SPINNER: 1
-  #         PY_COLORS: 0
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
 
-  #     - name: Upload Coverage Artifacts
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: coverage-${{ github.job }}-${{ strategy.job-index }}
-  #         path: ./**/.coverage.*
-  #         retention-days: 1
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1

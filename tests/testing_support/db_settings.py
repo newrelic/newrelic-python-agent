@@ -29,25 +29,15 @@ def postgresql_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-
-        user = password = db = "postgres"
-        base_port = 8080
-    else:
-        instances = 1
-
-        user = db = USER
-        password = ""
-        base_port = 5432
-
+    host = "postgres" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 2
     settings = [
         {
-            "user": user,
-            "password": password,
-            "name": db,
-            "host": "localhost",
-            "port": base_port + instance_num,
+            "user": "postgres",
+            "password": "postgres",
+            "name": "postgres",
+            "host": host,
+            "port": 8080 + instance_num,
             "table_name": "postgres_table_" + str(os.getpid()),
         }
         for instance_num in range(instances)
@@ -66,25 +56,15 @@ def mysql_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-
-        user = password = db = "python_agent"
-        base_port = 8080
-    else:
-        instances = 1
-
-        user = db = USER
-        password = ""
-        base_port = 3306
-
+    host = "mysql" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 2
     settings = [
         {
-            "user": user,
-            "password": password,
-            "name": db,
-            "host": "127.0.0.1",
-            "port": base_port + instance_num,
+            "user": "python_agent",
+            "password": "python_agent",
+            "name": "python_agent",
+            "host": host,
+            "port": 8080 + instance_num,
             "namespace": str(os.getpid()),
         }
         for instance_num in range(instances)
@@ -103,17 +83,12 @@ def redis_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 6379
-
+    host = "redis" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 2
     settings = [
         {
-            "host": "localhost",
-            "port": base_port + instance_num,
+            "host": host,
+            "port": 8080 + instance_num,
         }
         for instance_num in range(instances)
     ]
@@ -131,17 +106,12 @@ def memcached_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 11211
-
+    host = "rabbitmq" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 2
     settings = [
         {
-            "host": "127.0.0.1",
-            "port": base_port + instance_num,
+            "host": host,
+            "port": 8080 + instance_num,
             "namespace": str(os.getpid()),
         }
         for instance_num in range(instances)
@@ -160,15 +130,10 @@ def mongodb_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 27017
-
+    host = "rabbitmq" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 2
     settings = [
-        {"host": "127.0.0.1", "port": base_port + instance_num, "collection": "mongodb_collection_" + str(os.getpid())}
+        {"host": host, "port": 8080 + instance_num, "collection": "mongodb_collection_" + str(os.getpid())}
         for instance_num in range(instances)
     ]
     return settings
@@ -185,17 +150,12 @@ def elasticsearch_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 9200
-
+    host = "elasticsearch" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 2
     settings = [
         {
-            "host": "localhost",
-            "port": str(base_port + instance_num),
+            "host": host,
+            "port": str(8080 + instance_num),
             "namespace": str(os.getpid()),
         }
         for instance_num in range(instances)
@@ -214,17 +174,12 @@ def solr_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 8983
-
+    host = "solr" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 2
     settings = [
         {
-            "host": "127.0.0.1",
-            "port": base_port + instance_num,
+            "host": host,
+            "port": 8080 + instance_num,
             "namespace": str(os.getpid()),
         }
         for instance_num in range(instances)
@@ -243,13 +198,12 @@ def rabbitmq_settings():
         2. Github Actions
     """
 
+    host = "rabbitmq" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 1
-    base_port = 5672
-
     settings = [
         {
-            "host": "localhost",
-            "port": base_port + instance_num,
+            "host": host,
+            "port": 5672 + instance_num,
         }
         for instance_num in range(instances)
     ]
@@ -267,17 +221,13 @@ def kafka_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 9092
-
+    
+    host = "kafka" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 2
     settings = [
         {
-            "host": "localhost",
-            "port": base_port + instance_num,
+            "host": host,
+            "port": 8080 + instance_num,
         }
         for instance_num in range(instances)
     ]

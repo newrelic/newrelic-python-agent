@@ -23,9 +23,11 @@ from newrelic.api.background_task import background_task
 @validate_transaction_metrics(
     "test_render",
     background_task=True,
-    scoped_metrics=(("Template/Render/<template>", 1),
-                    ("Template/Compile/<template>", 1),)
-    )
+    scoped_metrics=(
+        ("Template/Render/<template>", 1),
+        ("Template/Compile/<template>", 1),
+    ),
+)
 @background_task(name="test_render")
 def test_render():
     template_to_render = Template("hello, {{ name }}!")

@@ -117,7 +117,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     steps:
@@ -155,7 +155,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     steps:
@@ -193,7 +193,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -246,7 +246,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -302,7 +302,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -353,7 +353,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -406,7 +406,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -457,7 +457,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -581,7 +581,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -632,7 +632,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -685,7 +685,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:
@@ -739,7 +739,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/python-agent-ci:latest
+      image: ghcr.io/${{ github.repository }}-ci
     timeout-minutes: 30
 
     services:

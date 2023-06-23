@@ -194,16 +194,16 @@ def create_label_event(transaction, _class, inference_id, instance, return_val):
 
                 event = {
                     "inference_id": inference_id,
-                    "model_name": model_name,
                     "model_version": model_version,
                     "label_name": str(label_names_list[index]),
-                    "type": value_type,
-                    "value": str(value),
+                    "label_type": value_type,
+                    # The following are used for entity synthesis.
+                    "modelName": model_name,
                 }
                 # Don't include the raw value when inference_event_value is disabled.
                 if settings and settings.machine_learning.inference_events_value.enabled:
-                    event["value"] = str(value)
-                transaction.record_custom_event("ML Model Label Event", event)
+                    event["label_value"] = str(value)
+                transaction.record_custom_event("inferenceData", event)
 
 
 def _get_label_names(user_defined_label_names, prediction_array):
@@ -234,7 +234,7 @@ def find_type_category(data_set, row_index, column_index):
 
 def categorize_data_type(python_type):
     if "int" in python_type or "float" in python_type or "complex" in python_type:
-        return "numerical"
+        return "numeric"
     if "bool" in python_type:
         return "bool"
     if "str" in python_type or "unicode" in python_type:
@@ -289,15 +289,16 @@ def create_feature_event(transaction, _class, inference_id, instance, args, kwar
             value_type = find_type_category(data_set, row_index, col_index)
             event = {
                 "inference_id": inference_id,
-                "model_name": model_name,
                 "model_version": model_version,
                 "feature_name": str(final_feature_names[row_index]),
-                "type": value_type,
+                "feature_type": value_type,
+                # The following are used for entity synthesis.
+                "modelName": model_name,
             }
             # Don't include the raw value when inference_event_value is disabled.
             if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:
-                event["value"] = str(value)
-            transaction.record_custom_event("ML Model Feature Event", event)
+                event["feature_value"] = str(value)
+            transaction.record_custom_event("inferenceData", event)
 
 
 def _nr_instrument_model(module, model_class):

@@ -118,7 +118,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -163,7 +163,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -208,7 +208,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -268,7 +268,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -331,7 +331,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -389,7 +389,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -449,7 +449,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -507,7 +507,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -566,7 +566,7 @@ jobs:
 
   #   runs-on: ubuntu-20.04
   #   container:
-  #     image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+  #     image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
   #     options: >-
   #       --add-host=host.docker.internal:host-gateway
   #   timeout-minutes: 30
@@ -646,7 +646,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -704,7 +704,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -764,7 +764,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -825,7 +825,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci:sha-507d27a18fef37659d9a8f95a7fef6aa72397d34
+      image: ghcr.io/${{ github.repository }}-ci:sha-907633f0ad01a0338c6131edb8b1e0ed89b57406
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30

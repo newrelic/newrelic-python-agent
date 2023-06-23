@@ -29,7 +29,7 @@ def postgresql_settings():
         2. Github Actions
     """
 
-    host = "postgres" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 2
     settings = [
         {
@@ -56,8 +56,8 @@ def mysql_settings():
         2. Github Actions
     """
 
-    host = "mysql" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
-    instances = 2
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 1
     settings = [
         {
             "user": "python_agent",
@@ -83,7 +83,7 @@ def redis_settings():
         2. Github Actions
     """
 
-    host = "redis" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 2
     settings = [
         {
@@ -106,7 +106,7 @@ def memcached_settings():
         2. Github Actions
     """
 
-    host = "rabbitmq" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
     settings = [
         {
@@ -130,7 +130,7 @@ def mongodb_settings():
         2. Github Actions
     """
 
-    host = "rabbitmq" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
     settings = [
         {"host": host, "port": 8080 + instance_num, "collection": "mongodb_collection_" + str(os.getpid())}
@@ -150,7 +150,7 @@ def elasticsearch_settings():
         2. Github Actions
     """
 
-    host = "elasticsearch" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 2
     settings = [
         {
@@ -174,7 +174,7 @@ def solr_settings():
         2. Github Actions
     """
 
-    host = "solr" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
     settings = [
         {
@@ -198,7 +198,7 @@ def rabbitmq_settings():
         2. Github Actions
     """
 
-    host = "rabbitmq" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 1
     settings = [
         {
@@ -221,7 +221,7 @@ def kafka_settings():
         2. Github Actions
     """
 
-    host = "kafka" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 2
     settings = [
         {

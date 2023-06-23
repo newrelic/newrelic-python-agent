@@ -90,7 +90,7 @@ def otlp_encode(payload):
         _logger.warning(
             "Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss."
         )
-        return json_encode(payload)
+        return json_encode(payload).encode("utf-8")
     else:
         return payload.SerializeToString()
 

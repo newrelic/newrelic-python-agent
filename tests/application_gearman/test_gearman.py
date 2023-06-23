@@ -27,7 +27,7 @@ worker_event = threading.Event()
 
 gm_client = None
 
-GEARMAND_SETTINGS = gearman_settings()
+GEARMAND_SETTINGS = gearman_settings()[0]
 GEARMAND_HOST = GEARMAND_SETTINGS["host"]
 GEARMAND_PORT = GEARMAND_SETTINGS["port"]
 

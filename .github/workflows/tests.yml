@@ -834,7 +834,7 @@ jobs:
       gearman:
         image: artefactual/gearmand
         ports:
-          - 4730:4730
+          - 8080:4730
         # Set health checks to wait until gearman has started
         options: >-
           --health-cmd "(echo status ; sleep 0.1) | nc 127.0.0.1 4730 -w 1"

@@ -36,7 +36,7 @@ def test_connection_default():
     else:
         conn = Connection(**HOST)
 
-    assert conn._nr_host_port == ("localhost", ES_SETTINGS["port"])
+    assert conn._nr_host_port == (ES_SETTINGS["host"], ES_SETTINGS["port"])
 
 
 @SKIP_IF_V7

@@ -121,7 +121,7 @@ int_list_recorded_custom_events = [
             "model_name": "MyCustomModel",
             "model_version": "1.2.3",
             "feature_name": "0",
-            "type": "numerical",
+            "type": "numeric",
             "value": "1.0",
         }
     },
@@ -131,7 +131,7 @@ int_list_recorded_custom_events = [
             "model_name": "MyCustomModel",
             "model_version": "1.2.3",
             "feature_name": "1",
-            "type": "numerical",
+            "type": "numeric",
             "value": "2.0",
         }
     },
@@ -141,7 +141,7 @@ int_list_recorded_custom_events = [
             "model_name": "MyCustomModel",
             "model_version": "1.2.3",
             "label_name": "0",
-            "type": "numerical",
+            "type": "numeric",
             "value": label_value,
         }
     },
@@ -205,7 +205,7 @@ pandas_df_recorded_custom_events = [
             "model_name": "PandasTestModel",
             "model_version": "1.5.0b1",
             "label_name": "label1",
-            "type": "numerical",
+            "type": "numeric",
             "value": "0.5" if six.PY3 else "0.0",
         }
     },
@@ -243,7 +243,7 @@ pandas_df_recorded_builtin_events = [
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature_name": "feature1",
-            "type": "numerical",
+            "type": "numeric",
             "value": "12",
         }
     },
@@ -253,7 +253,7 @@ pandas_df_recorded_builtin_events = [
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature_name": "feature2",
-            "type": "numerical",
+            "type": "numeric",
             "value": "14",
         }
     },
@@ -263,7 +263,7 @@ pandas_df_recorded_builtin_events = [
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "label_name": "label1",
-            "type": "numerical",
+            "type": "numeric",
             "value": "0",
         }
     },
@@ -306,7 +306,7 @@ pandas_df_mismatched_custom_events = [
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature_name": "col1",
-            "type": "numerical",
+            "type": "numeric",
             "value": "12",
         }
     },
@@ -316,7 +316,7 @@ pandas_df_mismatched_custom_events = [
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature_name": "col2",
-            "type": "numerical",
+            "type": "numeric",
             "value": "14",
         }
     },
@@ -326,7 +326,7 @@ pandas_df_mismatched_custom_events = [
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature_name": "col3",
-            "type": "numerical",
+            "type": "numeric",
             "value": "16",
         }
     },
@@ -336,7 +336,7 @@ pandas_df_mismatched_custom_events = [
             "model_name": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "label_name": "0",
-            "type": "numerical",
+            "type": "numeric",
             "value": "1",
         }
     },

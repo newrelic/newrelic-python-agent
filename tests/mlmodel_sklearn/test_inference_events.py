@@ -52,7 +52,7 @@ pandas_df_category_recorded_custom_events = [
             "model_name": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numerical",
+            "type": "numeric",
             "value": "27.0",
         }
     },
@@ -79,7 +79,7 @@ def test_pandas_df_categorical_feature_event():
     _test()
 
 
-label_type = "bool" if sys.version_info < (3, 8) else "numerical"
+label_type = "bool" if sys.version_info < (3, 8) else "numeric"
 true_label_value = "True" if sys.version_info < (3, 8) else "1.0"
 false_label_value = "False" if sys.version_info < (3, 8) else "0.0"
 pandas_df_bool_recorded_custom_events = [
@@ -145,7 +145,7 @@ pandas_df_float_recorded_custom_events = [
             "model_name": "DecisionTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "col1",
-            "type": "numerical",
+            "type": "numeric",
             "value": "100.0",
         }
     },
@@ -155,7 +155,7 @@ pandas_df_float_recorded_custom_events = [
             "model_name": "DecisionTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "col2",
-            "type": "numerical",
+            "type": "numeric",
             "value": "300.0",
         }
     },
@@ -165,7 +165,7 @@ pandas_df_float_recorded_custom_events = [
             "model_name": "DecisionTreeRegressor",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numerical",
+            "type": "numeric",
             "value": "345.6",
         }
     },
@@ -201,7 +201,7 @@ int_list_recorded_custom_events = [
             "model_name": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "0",
-            "type": "numerical",
+            "type": "numeric",
             "value": "1",
         }
     },
@@ -211,7 +211,7 @@ int_list_recorded_custom_events = [
             "model_name": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "1",
-            "type": "numerical",
+            "type": "numeric",
             "value": "2",
         }
     },
@@ -221,7 +221,7 @@ int_list_recorded_custom_events = [
             "model_name": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numerical",
+            "type": "numeric",
             "value": "1.0",
         }
     },
@@ -256,7 +256,7 @@ numpy_int_recorded_custom_events = [
             "model_name": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "0",
-            "type": "numerical",
+            "type": "numeric",
             "value": "12",
         }
     },
@@ -266,7 +266,7 @@ numpy_int_recorded_custom_events = [
             "model_name": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "1",
-            "type": "numerical",
+            "type": "numeric",
             "value": "13",
         }
     },
@@ -276,7 +276,7 @@ numpy_int_recorded_custom_events = [
             "model_name": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numerical",
+            "type": "numeric",
             "value": "11.0",
         }
     },
@@ -476,7 +476,7 @@ multilabel_output_label_events = [
             "model_name": "MultiOutputClassifier",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numerical",
+            "type": "numeric",
             "value": "1",
         }
     },
@@ -486,7 +486,7 @@ multilabel_output_label_events = [
             "model_name": "MultiOutputClassifier",
             "model_version": "0.0.0",
             "label_name": "1",
-            "type": "numerical",
+            "type": "numeric",
             "value": "0",
         }
     },
@@ -496,7 +496,7 @@ multilabel_output_label_events = [
             "model_name": "MultiOutputClassifier",
             "model_version": "0.0.0",
             "label_name": "2",
-            "type": "numerical",
+            "type": "numeric",
             "value": "1",
         }
     },

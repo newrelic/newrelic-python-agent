@@ -234,7 +234,7 @@ def find_type_category(data_set, row_index, column_index):
 
 def categorize_data_type(python_type):
     if "int" in python_type or "float" in python_type or "complex" in python_type:
-        return "numerical"
+        return "numeric"
     if "bool" in python_type:
         return "bool"
     if "str" in python_type or "unicode" in python_type:

@@ -851,6 +851,7 @@ _settings.debug.disable_certificate_validation = False
 _settings.debug.log_untrusted_distributed_trace_keys = False
 _settings.debug.disable_harvest_until_shutdown = False
 _settings.debug.connect_span_stream_in_developer_mode = False
+_settings.debug.otlp_content_encoding = None
 
 _settings.message_tracer.segment_parameters_enabled = True
 

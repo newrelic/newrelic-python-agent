@@ -188,6 +188,7 @@ class TimeStats(list):
 
 
 class CountStats(TimeStats):
+
     def merge_stats(self, other):
         self[0] += other[0]
 
@@ -240,34 +241,97 @@ class CustomMetrics(object):
         """
         self.__stats_table = {}
 
-class DimensionalMetrics(CustomMetrics):
+class DimensionalMetrics(object):
 
-    """Extends CustomMetrics to allow a set of tags for metrics."""
+    """Nested dictionary table for collecting a set of metrics broken down by tags."""
+
+    def __init__(self):
+        self.__stats_table = {}
 
     def __contains__(self, key):
-        if not isinstance(key[1], frozenset):
-            # Convert tags dict to a frozen set for proper comparisons
-            key = create_metric_identity(*key)
-        return key in self.__stats_table
+        if isinstance(key, tuple):
+            if not isinstance(key[1], frozenset):
+                # Convert tags dict to a frozen set for proper comparisons
+                name, tags = create_metric_identity(*key)
+            else:
+                name, tags = key
+
+            # Check that both metric name and tags are already present.
+            stats_container = self.__stats_table.get(name)
+            return stats_container and tags in stats_container
+        else:
+            # Only look for metric name
+            return key in self.__stats_table
 
     def record_dimensional_metric(self, name, value, tags=None):
         """Record a single value metric, merging the data with any data
-        from prior value metrics with the same name.
+        from prior value metrics with the same name and tags.
+        """
+        name, tags = create_metric_identity(name, tags)
 
+        if isinstance(value, dict):
+            if len(value) == 1 and "count" in value:
+                new_stats = CountStats(call_count=value["count"])
+            else:
+                new_stats = TimeStats(*c2t(**value))
+        else:
+            new_stats = TimeStats(1, value, value, value, value, value**2)
+
+        stats_container = self.__stats_table.get(name)
+        if stats_container is None:
+            # No existing metrics with this name. Set up new stats container.
+            self.__stats_table[name] = {tags: new_stats}
+        else:
+            # Existing metric container found.
+            stats = stats_container.get(tags)
+            if stats is None:
+                # No data points for this set of tags. Add new data.
+                stats_container[tags] = new_stats
+            else:
+                # Existing data points found, merge stats.
+                stats.merge_stats(new_stats)
+
+        return (name, tags)
+
+    def metrics(self):
+        """Returns an iterator over the set of value metrics. 
+        The items returned are a dictionary of tags for each metric value.
+        Metric values are each a tuple consisting of the metric name and accumulated
+        stats for the metric.
         """
 
-        key = create_metric_identity(name, tags)
-        self.record_custom_metric(key, value)
+        return six.iteritems(self.__stats_table)
 
-class DimensionalStatsTable(dict):
+    def metrics_count(self):
+        """Returns a count of the number of unique metrics currently
+        recorded for apdex, time and value metrics.
+        """
 
-    """Extends dict to coerce a set of tags to a hashable identity."""
+        return sum(len(metric) for metric in self.__stats_table.values())
 
-    def __contains__(self, key):
-        if key[1] is not None and not isinstance(key[1], frozenset):
-            # Convert tags dict to a frozen set for proper comparisons
-            key = create_metric_identity(*key)
-        return super(DimensionalStatsTable, self).__contains__(key)
+    def reset_metric_stats(self):
+        """Resets the accumulated statistics back to initial state for
+        metric data.
+        """
+        self.__stats_table = {}
+
+    def get(self, key, default=None):
+        return self.__stats_table.get(key, default)
+
+    def __setitem__(self, key, value):
+        self.__stats_table[key] = value
+
+    def __getitem__(self, key):
+        return self.__stats_table[key]
+
+    def __str__(self):
+        return str(self.__stats_table)
+    
+    def __repr__(self):
+        return "%s(%s)" % (__class__.__name__, repr(self.__stats_table))
+
+    def items(self):
+        return self.metrics()
 
 
 class SlowSqlStats(list):
@@ -468,7 +532,7 @@ class StatsEngine(object):
     def __init__(self):
         self.__settings = None
         self.__stats_table = {}
-        self.__dimensional_stats_table = DimensionalStatsTable()
+        self.__dimensional_stats_table = DimensionalMetrics()
         self._transaction_events = SampledDataSet()
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
@@ -539,7 +603,7 @@ class StatsEngine(object):
 
         """
 
-        return len(self.__stats_table) + len(self.__dimensional_stats_table)
+        return len(self.__stats_table) + self.__dimensional_stats_table.metrics_count()
 
     def record_apdex_metric(self, metric):
         """Record a single apdex metric, merging the data with any data
@@ -929,25 +993,9 @@ class StatsEngine(object):
 
     def record_dimensional_metric(self, name, value, tags=None):
         """Record a single value metric, merging the data with any data
-        from prior value metrics with the same name.
-
+        from prior value metrics with the same name and tags.
         """
-        if isinstance(value, dict):
-            if len(value) == 1 and "count" in value:
-                new_stats = CountStats(call_count=value["count"])
-            else:
-                new_stats = TimeStats(*c2t(**value))
-        else:
-            new_stats = TimeStats(1, value, value, value, value, value**2)
-
-        key = create_metric_identity(name, tags)
-        stats = self.__dimensional_stats_table.get(key)
-        if stats is None:
-            self.__dimensional_stats_table[key] = new_stats
-        else:
-            stats.merge_stats(new_stats)
-
-        return key
+        return self.__dimensional_stats_table.record_dimensional_metric(name, value, tags)
 
     def record_dimensional_metrics(self, metrics):
         """Record the value metrics supplied by the iterable, merging
@@ -1292,12 +1340,12 @@ class StatsEngine(object):
             _logger.info(
                 "Raw dimensional metric data for harvest of %r is %r.",
                 self.__settings.app_name,
-                list(six.iteritems(self.__dimensional_stats_table)),
+                list(self.__dimensional_stats_table.metrics()),
             )
 
         if normalizer is not None:
-            for key, value in six.iteritems(self.__dimensional_stats_table):
-                key = (normalizer(key[0])[0], key[1])
+            for key, value in self.__dimensional_stats_table.metrics():
+                key = normalizer(key)[0]
                 stats = normalized_stats.get(key)
                 if stats is None:
                     normalized_stats[key] = copy.copy(value)
@@ -1310,11 +1358,10 @@ class StatsEngine(object):
             _logger.info(
                 "Normalized metric data for harvest of %r is %r.",
                 self.__settings.app_name,
-                list(six.iteritems(normalized_stats)),
+                list(normalized_stats.metrics()),
             )
 
-        for key, value in six.iteritems(normalized_stats):
-            key = dict(name=key[0], scope=key[1])
+        for key, value in normalized_stats.items():
             result.append((key, value))
 
         return result
@@ -1325,7 +1372,7 @@ class StatsEngine(object):
         if not self.__settings:
             return 0
 
-        return len(self.__dimensional_stats_table)
+        return self.__dimensional_stats_table.metrics_count()
 
     def error_data(self):
         """Returns a to a list containing any errors collected during
@@ -1604,8 +1651,6 @@ class StatsEngine(object):
         """
 
         self.__settings = settings
-        self.__stats_table = {}
-        self.__dimensional_stats_table = {}
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -1613,6 +1658,7 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__synthetics_transactions = []
 
+        self.reset_metric_stats()
         self.reset_transaction_events()
         self.reset_error_events()
         self.reset_custom_events()
@@ -1633,7 +1679,7 @@ class StatsEngine(object):
         """
 
         self.__stats_table = {}
-        self.__dimensional_stats_table = {}
+        self.__dimensional_stats_table.reset_metric_stats()
 
     def reset_transaction_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1982,11 +2028,16 @@ class StatsEngine(object):
             return
 
         for key, other in metrics:
-            stats = self.__dimensional_stats_table.get(key)
-            if not stats:
+            stats_container = self.__dimensional_stats_table.get(key)
+            if not stats_container:
                 self.__dimensional_stats_table[key] = other
             else:
-                stats.merge_stats(other)
+                for tags, other_value in other.items():
+                    stats = stats_container.get(tags)
+                    if not stats:
+                        stats_container[tags] = other_value
+                    else:
+                        stats.merge_stats(other_value)
 
     def _snapshot(self):
         copy = object.__new__(StatsEngineSnapshot)

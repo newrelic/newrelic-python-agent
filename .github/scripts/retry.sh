@@ -25,4 +25,4 @@ for i in $(seq 1 $retries); do
 done
 
 # Exit with status code of wrapped command
-exit $?
+exit $result

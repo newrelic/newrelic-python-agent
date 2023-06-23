@@ -38,11 +38,12 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         libssl-dev \
         locales \
         make \
+        odbc-postgresql \
         openssl \
         python2-dev \
         python3-dev \
         python3-pip \
-        odbc-postgresql \
+        tzdata \
         unzip \
         wget \
         zip \
@@ -58,6 +59,9 @@ RUN sed -i 's/Driver=psqlodbca.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psq
 # Set the locale
 RUN locale-gen --no-purge en_US.UTF-8
 ENV LANG=en_US.UTF-8 \ LANGUAGE=en_US:en \ LC_ALL=en_US.UTF-8
+ENV TZ="Etc/UTC"
+RUN ln -fs "/usr/share/zoneinfo/${TZ}" /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
 
 # Use root user
 ENV HOME /root

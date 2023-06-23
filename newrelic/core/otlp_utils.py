@@ -22,8 +22,8 @@ back to JSON when encoutering exceptions unless the content type is explicitly s
 import logging
 
 from newrelic.common.encoding_utils import json_encode
-from newrelic.core.stats_engine import CountStats, TimeStats
 from newrelic.core.config import global_settings
+from newrelic.core.stats_engine import CountStats, TimeStats
 
 _logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ if not otlp_content_setting or otlp_content_setting == "protobuf":
         from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
         from newrelic.packages.opentelemetry_proto.logs_pb2 import (
             LogRecord,
+            LogsData,
             ResourceLogs,
             ScopeLogs,
         )
@@ -78,6 +79,7 @@ if otlp_content_setting == "json":
     ResourceLogs = dict
     ScopeLogs = dict
     LogRecord = dict
+    LogsData = dict
 
     AGGREGATION_TEMPORALITY_DELTA = 1
     OTLP_CONTENT_TYPE = "application/json"

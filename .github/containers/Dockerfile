@@ -44,6 +44,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         python3-dev \
         python3-pip \
         tzdata \
+        unixodbc-dev \
         unzip \
         wget \
         zip \

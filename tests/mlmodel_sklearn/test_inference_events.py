@@ -29,31 +29,31 @@ pandas_df_category_recorded_custom_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "col1",
-            "type": "categorical",
-            "value": "2.0",
+            "feature_type": "categorical",
+            "feature_value": "2.0",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "col2",
-            "type": "categorical",
-            "value": "4.0",
+            "feature_type": "categorical",
+            "feature_value": "4.0",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numeric",
-            "value": "27.0",
+            "label_type": "numeric",
+            "label_value": "27.0",
         }
     },
 ]
@@ -86,31 +86,31 @@ pandas_df_bool_recorded_custom_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "col1",
-            "type": "bool",
-            "value": "True",
+            "feature_type": "bool",
+            "feature_value": "True",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "col2",
-            "type": "bool",
-            "value": "True",
+            "feature_type": "bool",
+            "feature_value": "True",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": label_type,
-            "value": true_label_value,
+            "label_type": label_type,
+            "label_value": true_label_value,
         }
     },
 ]
@@ -142,31 +142,31 @@ pandas_df_float_recorded_custom_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeRegressor",
+            "modelName": "DecisionTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "col1",
-            "type": "numeric",
-            "value": "100.0",
+            "feature_type": "numeric",
+            "feature_value": "100.0",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeRegressor",
+            "modelName": "DecisionTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "col2",
-            "type": "numeric",
-            "value": "300.0",
+            "feature_type": "numeric",
+            "feature_value": "300.0",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeRegressor",
+            "modelName": "DecisionTreeRegressor",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numeric",
-            "value": "345.6",
+            "label_type": "numeric",
+            "label_value": "345.6",
         }
     },
 ]
@@ -198,31 +198,31 @@ int_list_recorded_custom_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
+            "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "0",
-            "type": "numeric",
-            "value": "1",
+            "feature_type": "numeric",
+            "feature_value": "1",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
+            "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "1",
-            "type": "numeric",
-            "value": "2",
+            "feature_type": "numeric",
+            "feature_value": "2",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
+            "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numeric",
-            "value": "1.0",
+            "label_type": "numeric",
+            "label_value": "1.0",
         }
     },
 ]
@@ -253,31 +253,31 @@ numpy_int_recorded_custom_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
+            "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "0",
-            "type": "numeric",
-            "value": "12",
+            "feature_type": "numeric",
+            "feature_value": "12",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
+            "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "1",
-            "type": "numeric",
-            "value": "13",
+            "feature_type": "numeric",
+            "feature_value": "13",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "ExtraTreeRegressor",
+            "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numeric",
-            "value": "11.0",
+            "label_type": "numeric",
+            "label_value": "11.0",
         }
     },
 ]
@@ -308,41 +308,41 @@ numpy_str_recorded_custom_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "0",
-            "type": "str",
-            "value": "20",
+            "feature_type": "str",
+            "feature_value": "20",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "1",
-            "type": "str",
-            "value": "21",
+            "feature_type": "str",
+            "feature_value": "21",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "0",
-            "type": "str",
-            "value": "22",
+            "feature_type": "str",
+            "feature_value": "22",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "1",
-            "type": "str",
-            "value": "23",
+            "feature_type": "str",
+            "feature_value": "23",
         }
     },
 ]
@@ -373,28 +373,28 @@ numpy_str_recorded_custom_events_no_value = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "0",
-            "type": "str",
+            "feature_type": "str",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "1",
-            "type": "str",
+            "feature_type": "str",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "DecisionTreeClassifier",
+            "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "str",
+            "label_type": "str",
         }
     },
 ]
@@ -473,31 +473,31 @@ multilabel_output_label_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "MultiOutputClassifier",
+            "modelName": "MultiOutputClassifier",
             "model_version": "0.0.0",
             "label_name": "0",
-            "type": "numeric",
-            "value": "1",
+            "label_type": "numeric",
+            "label_value": "1",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MultiOutputClassifier",
+            "modelName": "MultiOutputClassifier",
             "model_version": "0.0.0",
             "label_name": "1",
-            "type": "numeric",
-            "value": "0",
+            "label_type": "numeric",
+            "label_value": "0",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MultiOutputClassifier",
+            "modelName": "MultiOutputClassifier",
             "model_version": "0.0.0",
             "label_name": "2",
-            "type": "numeric",
-            "value": "1",
+            "label_type": "numeric",
+            "label_value": "1",
         }
     },
 ]

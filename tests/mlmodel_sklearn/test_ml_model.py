@@ -118,31 +118,31 @@ int_list_recorded_custom_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyCustomModel",
+            "modelName": "MyCustomModel",
             "model_version": "1.2.3",
             "feature_name": "0",
-            "type": "numeric",
-            "value": "1.0",
+            "feature_type": "numeric",
+            "feature_value": "1.0",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyCustomModel",
+            "modelName": "MyCustomModel",
             "model_version": "1.2.3",
             "feature_name": "1",
-            "type": "numeric",
-            "value": "2.0",
+            "feature_type": "numeric",
+            "feature_value": "2.0",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyCustomModel",
+            "modelName": "MyCustomModel",
             "model_version": "1.2.3",
             "label_name": "0",
-            "type": "numeric",
-            "value": label_value,
+            "label_type": "numeric",
+            "label_value": label_value,
         }
     },
 ]
@@ -172,41 +172,41 @@ pandas_df_recorded_custom_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "PandasTestModel",
+            "modelName": "PandasTestModel",
             "model_version": "1.5.0b1",
             "feature_name": "feature1",
-            "type": "categorical",
-            "value": "0",
+            "feature_type": "categorical",
+            "feature_value": "0",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "PandasTestModel",
+            "modelName": "PandasTestModel",
             "model_version": "1.5.0b1",
             "feature_name": "feature2",
-            "type": "categorical",
-            "value": "0",
+            "feature_type": "categorical",
+            "feature_value": "0",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "PandasTestModel",
+            "modelName": "PandasTestModel",
             "model_version": "1.5.0b1",
             "feature_name": "feature3",
-            "type": "categorical",
-            "value": "1",
+            "feature_type": "categorical",
+            "feature_value": "1",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "PandasTestModel",
+            "modelName": "PandasTestModel",
             "model_version": "1.5.0b1",
             "label_name": "label1",
-            "type": "numeric",
-            "value": "0.5" if six.PY3 else "0.0",
+            "label_type": "numeric",
+            "label_value": "0.5" if six.PY3 else "0.0",
         }
     },
 ]
@@ -240,31 +240,31 @@ pandas_df_recorded_builtin_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
+            "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature_name": "feature1",
-            "type": "numeric",
-            "value": "12",
+            "feature_type": "numeric",
+            "feature_value": "12",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
+            "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature_name": "feature2",
-            "type": "numeric",
-            "value": "14",
+            "feature_type": "numeric",
+            "feature_value": "14",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
+            "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "label_name": "label1",
-            "type": "numeric",
-            "value": "0",
+            "label_type": "numeric",
+            "label_value": "0",
         }
     },
 ]
@@ -303,41 +303,41 @@ pandas_df_mismatched_custom_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
+            "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature_name": "col1",
-            "type": "numeric",
-            "value": "12",
+            "feature_type": "numeric",
+            "feature_value": "12",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
+            "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature_name": "col2",
-            "type": "numeric",
-            "value": "14",
+            "feature_type": "numeric",
+            "feature_value": "14",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
+            "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature_name": "col3",
-            "type": "numeric",
-            "value": "16",
+            "feature_type": "numeric",
+            "feature_value": "16",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
+            "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "label_name": "0",
-            "type": "numeric",
-            "value": "1",
+            "label_type": "numeric",
+            "label_value": "1",
         }
     },
 ]
@@ -375,31 +375,31 @@ numpy_str_mismatched_custom_events = [
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
+            "modelName": "MyDecisionTreeClassifier",
             "model_version": "0.0.1",
             "feature_name": "0",
-            "type": "str",
-            "value": "20",
+            "feature_type": "str",
+            "feature_value": "20",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
+            "modelName": "MyDecisionTreeClassifier",
             "model_version": "0.0.1",
             "feature_name": "1",
-            "type": "str",
-            "value": "21",
+            "feature_type": "str",
+            "feature_value": "21",
         }
     },
     {
         "users": {
             "inference_id": None,
-            "model_name": "MyDecisionTreeClassifier",
+            "modelName": "MyDecisionTreeClassifier",
             "model_version": "0.0.1",
             "label_name": "0",
-            "type": "str",
-            "value": "21",
+            "label_type": "str",
+            "label_value": "21",
         }
     },
 ]

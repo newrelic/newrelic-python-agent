@@ -221,7 +221,6 @@ def kafka_settings():
         2. Github Actions
     """
 
-    
     host = "kafka" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 2
     settings = [

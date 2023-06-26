@@ -26,36 +26,39 @@ from testing_support.validators.validate_ml_events import validate_ml_events
 from newrelic.api.background_task import background_task
 
 pandas_df_category_recorded_custom_events = [
-    {
-        "users": {
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "col1",
             "feature_type": "categorical",
             "feature_value": "2.0",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "col2",
             "feature_type": "categorical",
             "feature_value": "4.0",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "label_name": "0",
             "label_type": "numeric",
             "label_value": "27.0",
-        }
-    },
+        },
+    ),
 ]
 
 
@@ -83,36 +86,39 @@ label_type = "bool" if sys.version_info < (3, 8) else "numeric"
 true_label_value = "True" if sys.version_info < (3, 8) else "1.0"
 false_label_value = "False" if sys.version_info < (3, 8) else "0.0"
 pandas_df_bool_recorded_custom_events = [
-    {
-        "users": {
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "col1",
             "feature_type": "bool",
             "feature_value": "True",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "col2",
             "feature_type": "bool",
             "feature_value": "True",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "label_name": "0",
             "label_type": label_type,
             "label_value": true_label_value,
-        }
-    },
+        },
+    ),
 ]
 
 
@@ -139,36 +145,39 @@ def test_pandas_df_bool_feature_event():
 
 
 pandas_df_float_recorded_custom_events = [
-    {
-        "users": {
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "col1",
             "feature_type": "numeric",
             "feature_value": "100.0",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "col2",
             "feature_type": "numeric",
             "feature_value": "300.0",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeRegressor",
             "model_version": "0.0.0",
             "label_name": "0",
             "label_type": "numeric",
             "label_value": "345.6",
-        }
-    },
+        },
+    ),
 ]
 
 
@@ -195,36 +204,39 @@ def test_pandas_df_float_feature_event():
 
 
 int_list_recorded_custom_events = [
-    {
-        "users": {
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "0",
             "feature_type": "numeric",
             "feature_value": "1",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "1",
             "feature_type": "numeric",
             "feature_value": "2",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "label_name": "0",
             "label_type": "numeric",
             "label_value": "1.0",
-        }
-    },
+        },
+    ),
 ]
 
 
@@ -250,36 +262,39 @@ def test_int_list():
 
 
 numpy_int_recorded_custom_events = [
-    {
-        "users": {
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "0",
             "feature_type": "numeric",
             "feature_value": "12",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature_name": "1",
             "feature_type": "numeric",
             "feature_value": "13",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "label_name": "0",
             "label_type": "numeric",
             "label_value": "11.0",
-        }
-    },
+        },
+    ),
 ]
 
 
@@ -305,46 +320,50 @@ def test_numpy_int_array():
 
 
 numpy_str_recorded_custom_events = [
-    {
-        "users": {
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "0",
             "feature_type": "str",
             "feature_value": "20",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "1",
             "feature_type": "str",
             "feature_value": "21",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "0",
             "feature_type": "str",
             "feature_value": "22",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "1",
             "feature_type": "str",
             "feature_value": "23",
-        }
-    },
+        },
+    ),
 ]
 
 
@@ -370,33 +389,36 @@ def test_numpy_str_array_multiple_features():
 
 
 numpy_str_recorded_custom_events_no_value = [
-    {
-        "users": {
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "0",
             "feature_type": "str",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature_name": "1",
             "feature_type": "str",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "label_name": "0",
             "label_type": "str",
-        }
-    },
+        },
+    ),
 ]
 
 
@@ -423,8 +445,8 @@ def test_does_not_include_value_when_inference_event_value_enabled_is_false():
 
 
 @reset_core_stats_engine()
-@override_application_settings({"custom_insights_events.enabled": False})
-def test_does_not_include_events_when_custom_insights_events_enabled_is_false():
+@override_application_settings({"ml_insights_events.enabled": False})
+def test_does_not_include_events_when_ml_insights_events_enabled_is_false():
     """
     Verifies that all ml events can be disabled by setting
     custom_insights_events.enabled.
@@ -470,36 +492,39 @@ def test_does_not_include_events_when_machine_learning_enabled_is_false():
 
 
 multilabel_output_label_events = [
-    {
-        "users": {
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "MultiOutputClassifier",
             "model_version": "0.0.0",
             "label_name": "0",
             "label_type": "numeric",
             "label_value": "1",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "MultiOutputClassifier",
             "model_version": "0.0.0",
             "label_name": "1",
             "label_type": "numeric",
             "label_value": "0",
-        }
-    },
-    {
-        "users": {
+        },
+    ),
+    (
+        {"type": "InferenceData"},
+        {
             "inference_id": None,
             "modelName": "MultiOutputClassifier",
             "model_version": "0.0.0",
             "label_name": "2",
             "label_type": "numeric",
             "label_value": "1",
-        }
-    },
+        },
+    ),
 ]
 
 

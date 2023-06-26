@@ -89,7 +89,6 @@ def mssql_settings():
         {
             "user": "SA",
             "password": "python_agent#1234",
-            "name": "python_agent",
             "host": host,
             "port": 8080 + instance_num,
             "namespace": str(os.getpid()),

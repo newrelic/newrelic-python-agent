@@ -89,7 +89,7 @@ def validate_ml_event_payload(ml_events=None):
         all_logs = []
         for sent_logs in decoded_payloads:
             for data_point in sent_logs:
-                for key in ("observed_time_unix_nano", "time_unix_nano"):
+                for key in ("time_unix_nano",):
                     assert key in data_point, "Invalid log format. Missing key: %s" % key
 
                 all_logs.append(

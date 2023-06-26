@@ -218,3 +218,27 @@ def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=N
             )
         ]
     )
+
+
+def encode_ml_event_data(custom_event_data, agent_run_id):
+    resource = create_resource()
+    ml_events = []
+    for event in custom_event_data:
+        event_info, event_attrs = event
+        event_attrs.update(
+            {
+                "real_agent_id": agent_run_id,
+                "event.domain": "newrelic.ml_events",
+                "event.name": event_info["type"],
+            }
+        )
+        ml_attrs = create_key_values_from_iterable(event_attrs)
+        unix_nano_timestamp = event_info["timestamp"] * 1e6
+        ml_events.append(
+            {
+                "time_unix_nano": int(unix_nano_timestamp),
+                "attributes": ml_attrs,
+            }
+        )
+
+    return LogsData(resource_logs=[ResourceLogs(resource=resource, scope_logs=[ScopeLogs(log_records=ml_events)])])

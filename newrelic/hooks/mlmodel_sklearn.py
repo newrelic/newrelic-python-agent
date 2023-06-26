@@ -187,12 +187,17 @@ def create_label_event(transaction, class_, inference_id, instance, return_val):
             labels = np.reshape(labels, (len(labels) // 1, 1))
 
         label_names_list = _get_label_names(label_names, labels)
-        _calc_prediction_label_stats(labels, class_, label_names_list, tags={
-            "inference_id": inference_id,
-            "model_version": model_version,
-            # The following are used for entity synthesis.
-            "modelName": model_name,
-        })
+        _calc_prediction_label_stats(
+            labels,
+            class_,
+            label_names_list,
+            tags={
+                "inference_id": inference_id,
+                "model_version": model_version,
+                # The following are used for entity synthesis.
+                "modelName": model_name,
+            },
+        )
         for prediction in labels:
             for index, value in enumerate(prediction):
                 python_value_type = str(type(value))
@@ -289,12 +294,17 @@ def create_feature_event(transaction, class_, inference_id, instance, args, kwar
 
     final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
     np_casted_data_set = np.array(data_set)
-    _calc_prediction_feature_stats(data_set, class_, final_feature_names, tags={
-        "inference_id": inference_id,
-        "model_version": model_version,
-        # The following are used for entity synthesis.
-        "modelName": model_name,
-    })
+    _calc_prediction_feature_stats(
+        data_set,
+        class_,
+        final_feature_names,
+        tags={
+            "inference_id": inference_id,
+            "model_version": model_version,
+            # The following are used for entity synthesis.
+            "modelName": model_name,
+        },
+    )
     for col_index, feature in enumerate(np_casted_data_set):
         for row_index, value in enumerate(feature):
             value_type = find_type_category(data_set, row_index, col_index)

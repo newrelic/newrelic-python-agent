@@ -494,6 +494,11 @@ _test_queries = [
         "{ library(index: 0) { book { ...MyFragment } magazine { ...MagFragment } } } fragment MyFragment on Book { author { first_name } } fragment MagFragment on Magazine { name }",
         "/library",
     ),
+    # fragement on type union
+    (
+        '{ search(contains: "A") { ...MyFragment } fragment MyFragment on Item { __typename ... on Book { name } } }',
+        "/search<Book>.name",
+    ),
 ]
 
 

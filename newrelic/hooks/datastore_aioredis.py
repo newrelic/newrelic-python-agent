@@ -15,13 +15,13 @@
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.hooks.datastore_redis import (
     _redis_client_methods,
     _redis_multipart_commands,
     _redis_operation_re,
 )
-from newrelic.common.package_version_utils import get_package_version_tuple
 
 
 def _conn_attrs_to_dict(connection):
@@ -46,7 +46,6 @@ def _instance_info(kwargs):
 
 
 def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
-
     @function_wrapper
     async def _nr_wrapper_AioRedis_async_method_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -55,7 +54,7 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
 
         with DatastoreTrace(product="Redis", target=None, operation=operation):
             return await wrapped(*args, **kwargs)
-    
+
     def _nr_wrapper_AioRedis_method_(wrapped, instance, args, kwargs):
         # Check for transaction and return early if found.
         # Method will return synchronously without executing,
@@ -64,6 +63,7 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
         if aioredis_version and aioredis_version < (2,):
             # AioRedis v1 uses a RedisBuffer instead of a real connection for queueing up pipeline commands
             from aioredis.commands.transaction import _RedisBuffer
+
             if isinstance(instance._pool_or_conn, _RedisBuffer):
                 # Method will return synchronously without executing,
                 # it will be added to the command stack and run later.
@@ -79,7 +79,6 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
 
         # Method should be run when awaited, therefore we wrap in an async wrapper.
         return _nr_wrapper_AioRedis_async_method_(wrapped)(*args, **kwargs)
-
 
     name = "%s.%s" % (instance_class_name, operation)
     wrap_function_wrapper(module, name, _nr_wrapper_AioRedis_method_)
@@ -109,7 +108,9 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
     # If it's not a multi part command, there's no need to trace it, so
     # we can return early.
 
-    if operation.split()[0] not in _redis_multipart_commands:        # Set the datastore info on the DatastoreTrace containing this function call.
+    if (
+        operation.split()[0] not in _redis_multipart_commands
+    ):  # Set the datastore info on the DatastoreTrace containing this function call.
         trace = current_trace()
 
         # Find DatastoreTrace no matter how many other traces are inbetween
@@ -161,7 +162,9 @@ def wrap_RedisConnection_execute(wrapped, instance, args, kwargs):
     # If it's not a multi part command, there's no need to trace it, so
     # we can return early.
 
-    if operation.split()[0] not in _redis_multipart_commands:        # Set the datastore info on the DatastoreTrace containing this function call.
+    if (
+        operation.split()[0] not in _redis_multipart_commands
+    ):  # Set the datastore info on the DatastoreTrace containing this function call.
         trace = current_trace()
 
         # Find DatastoreTrace no matter how many other traces are inbetween

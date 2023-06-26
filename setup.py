@@ -102,6 +102,8 @@ packages = [
     "newrelic.hooks",
     "newrelic.network",
     "newrelic/packages",
+    "newrelic/packages/isort",
+    "newrelic/packages/isort/stdlibs",
     "newrelic/packages/urllib3",
     "newrelic/packages/urllib3/util",
     "newrelic/packages/urllib3/contrib",

@@ -8,3 +8,4 @@ include newrelic/common/cacert.pem
 include newrelic/packages/wrapt/LICENSE
 include newrelic/packages/wrapt/README
 include newrelic/packages/urllib3/LICENSE.txt
+include newrelic/packages/isort/LICENSE

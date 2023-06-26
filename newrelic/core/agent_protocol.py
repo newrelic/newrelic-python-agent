@@ -506,8 +506,6 @@ class ServerlessModeProtocol(AgentProtocol):
         encoded = serverless_payload_encode(payload)
         payload = json_encode((1, "NR_LAMBDA_MONITORING", encoded))
 
-        print(payload)
-
         return payload
 
     @classmethod

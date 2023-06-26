@@ -56,23 +56,27 @@ def core_app(collector_agent_registration):
     return app._agent.application(app.name)
 
 
-@validate_ml_event_payload([{"foo": "bar", "type": "LabelEvent", "timestamp": _now}])
+@validate_ml_event_payload(
+    [{"foo": "bar", "real_agent_id": "1234567", "event.domain": "newrelic.ml_events", "event.name": "InferenceEvent"}]
+)
 @reset_core_stats_engine()
 def test_ml_event_payload_inside_transaction(core_app):
     @background_task(name="test_ml_event_payload_inside_transaction")
     def _test():
-        record_ml_event({"foo": "bar"}, [(_intrinsics, {"foo": "bar"})])
+        record_ml_event("InferenceEvent", {"foo": "bar"})
 
     _test()
     core_app.harvest()
 
 
-@validate_ml_event_payload([{"foo": "bar", "type": "LabelEvent", "timestamp": _now}])
+@validate_ml_event_payload(
+    [{"foo": "bar", "real_agent_id": "1234567", "event.domain": "newrelic.ml_events", "event.name": "InferenceEvent"}]
+)
 @reset_core_stats_engine()
-def test_metric_normalization_outside_transaction(core_app):
+def test_ml_event_payload_outside_transaction(core_app):
     def _test():
         app = application()
-        record_ml_event({"foo": "bar"}, [(_intrinsics, {"foo": "bar"})], application=app)
+        record_ml_event("InferenceEvent", {"foo": "bar"}, application=app)
 
     _test()
     core_app.harvest()

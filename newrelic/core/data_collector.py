@@ -157,7 +157,7 @@ class Session(object):
             resource_logs=[ResourceLogs(resource=resource, scope_logs=[ScopeLogs(log_records=ml_events)])]
         )
 
-        return self._otlp_protocol.send("custom_event_data", payload, path="/v1/logs")
+        return self._otlp_protocol.send("ml_event_data", payload, path="/v1/logs")
 
     def send_span_events(self, sampling_info, span_event_data):
         """Called to submit sample set for span events."""

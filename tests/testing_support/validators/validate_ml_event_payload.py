@@ -29,7 +29,7 @@ def attribute_to_value(attribute):
         return float(attribute_value)
     elif attribute_type == "bool_value":
         return bool(attribute_value)
-    elif attribute_type == "str_value":
+    elif attribute_type == "string_value":
         return str(attribute_value)
     else:
         raise TypeError("Invalid attribute type: %s" % attribute_type)
@@ -44,8 +44,11 @@ def payload_to_ml_events(payload):
     resource_logs = message.get("resource_logs")
     assert len(resource_logs) == 1
     resource_logs = resource_logs[0]
-
     resource = resource_logs.get("resource")
+    assert resource and resource.get("attributes")[0] == {
+        "key": "instrumentation.provider",
+        "value": {"string_value": "newrelic-opentelemetry-python-ml"},
+    }
     scope_logs = resource_logs.get("scope_logs")
     assert len(scope_logs) == 1
     scope_logs = scope_logs[0]
@@ -57,7 +60,7 @@ def payload_to_ml_events(payload):
     return logs
 
 
-def validate_ml_events_payload(ml_events=None):
+def validate_ml_event_payload(ml_events=None):
     # Validates OTLP events as they are sent to the collector.
 
     ml_events = ml_events or []
@@ -73,7 +76,7 @@ def validate_ml_events_payload(ml_events=None):
 
             method, payload = _bind_params(*args, **kwargs)
 
-            if method == "ml_events" and payload:
+            if method == "ml_event_data" and payload:
                 recorded_ml_events.append(payload)
 
             return wrapped(*args, **kwargs)
@@ -82,14 +85,16 @@ def validate_ml_events_payload(ml_events=None):
         val = wrapped(*args, **kwargs)
         assert recorded_ml_events
 
-        decoded_payloads = [payload_to_ml_events(payload) for payload in ml_events]
+        decoded_payloads = [payload_to_ml_events(payload) for payload in recorded_ml_events]
         all_logs = []
         for sent_logs in decoded_payloads:
-            for l in sent_logs:
+            for data_point in sent_logs:
                 for key in ("observed_time_unix_nano", "time_unix_nano"):
-                    assert key in l, "Invalid log format. Missing key: %s" % key
+                    assert key in data_point, "Invalid log format. Missing key: %s" % key
 
-                all_logs.append(l["attributes"])
+                all_logs.append(
+                    {attr["key"]: attribute_to_value(attr["value"]) for attr in (data_point.get("attributes") or [])}
+                )
 
         for expected_event in ml_events:
             assert expected_event in all_logs, "%s Not Found. Got: %s" % (expected_event, all_logs)

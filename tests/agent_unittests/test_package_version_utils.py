@@ -58,6 +58,20 @@ def test_get_package_version(attr, value, expected_value):
     delattr(pytest, attr)
 
 
+def test_skips_version_callables():
+    # There is no file/module here, so we monkeypatch
+    # pytest instead for our purposes
+    setattr(pytest, "version", lambda x: "1.2.3.4")
+    setattr(pytest, "version_tuple", [3, 1, "0b2"])
+
+    version = get_package_version("pytest")
+
+    assert version == "3.1.0b2"
+
+    delattr(pytest, "version")
+    delattr(pytest, "version_tuple")
+
+
 @pytest.mark.parametrize(
     "attr,value,expected_value",
     (

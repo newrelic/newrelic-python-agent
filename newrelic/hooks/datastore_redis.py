@@ -394,6 +394,7 @@ _redis_client_methods = {
     "unsubscribe",
     "unwatch",
     "wait",
+    "waitaof",
     "watch",
     "xack",
     "xadd",

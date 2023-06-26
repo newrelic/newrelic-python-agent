@@ -41,6 +41,7 @@ jobs:
       #- kafka
       - memcached
       - mongodb
+      - mssql
       - mysql
       - postgres
       - rabbitmq
@@ -224,6 +225,69 @@ jobs:
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
+  mssql:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/${{ github.repository }}-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+
+    services:
+      mysql:
+        image: mcr.microsoft.com/azure-sql-edge:latest
+        env:
+          MSSQL_USER: python_agent
+          MSSQL_PASSWORD: python_agent
+          MSSQL_SA_PASSWORD: "python_agent#1234"
+          ACCEPT_EULA: "Y"
+        ports:
+          - 8080:1433
+          - 8081:1433
+        # Set health checks to wait until mysql has started
+        options: >-
+          --health-cmd "sqlcmd -q 'SELECT 1;'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

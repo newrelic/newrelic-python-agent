@@ -46,7 +46,7 @@ def postgresql_settings():
 
 
 def mysql_settings():
-    """Return a list of dict of settings for connecting to postgresql.
+    """Return a list of dict of settings for connecting to MySQL.
 
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
@@ -62,6 +62,33 @@ def mysql_settings():
         {
             "user": "python_agent",
             "password": "python_agent",
+            "name": "python_agent",
+            "host": host,
+            "port": 8080 + instance_num,
+            "namespace": str(os.getpid()),
+        }
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
+def mssql_settings():
+    """Return a list of dict of settings for connecting to MS SQL.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 1
+    settings = [
+        {
+            "user": "SA",
+            "password": "python_agent#1234",
             "name": "python_agent",
             "host": host,
             "port": 8080 + instance_num,

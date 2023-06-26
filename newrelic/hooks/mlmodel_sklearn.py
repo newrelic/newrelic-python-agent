@@ -158,7 +158,7 @@ def _record_stats(data, column_names, class_, column_type, tags):
                 ("%s/%s" % (metric_name, "StandardDeviation"), float(standard_deviation[index]), tags),
                 ("%s/%s" % (metric_name, "Min"), float(_min[index]), tags),
                 ("%s/%s" % (metric_name, "Max"), float(_max[index]), tags),
-                ("%s/%s" % (metric_name, "Count"), {_count}, tags),
+                ("%s/%s" % (metric_name, "Count"), _count, tags),
             ]
         )
 

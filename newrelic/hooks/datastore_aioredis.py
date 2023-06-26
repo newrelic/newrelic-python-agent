@@ -39,7 +39,7 @@ def _conn_attrs_to_dict(connection):
 
 def _instance_info(kwargs):
     host = kwargs.get("host") or "localhost"
-    port_path_or_id = str(kwargs.get("port") or kwargs.get("path", 6379))
+    port_path_or_id = str(kwargs.get("path") or kwargs.get("port", "unknown"))
     db = str(kwargs.get("db") or 0)
 
     return (host, port_path_or_id, db)

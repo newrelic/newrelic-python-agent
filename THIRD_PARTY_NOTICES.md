@@ -17,6 +17,15 @@ Distributed under the following license(s):
   * [The BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause)
 
 
+## [isort](https://pypi.org/project/isort)
+
+Copyright (c) 2013 Timothy Edmund Crosley
+
+Distributed under the following license(s):
+
+  * [The MIT License](http://opensource.org/licenses/MIT)
+
+
 ## [six](https://pypi.org/project/six)
 
 Copyright (c) 2010-2013 Benjamin Peterson

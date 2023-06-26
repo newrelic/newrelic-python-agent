@@ -147,8 +147,8 @@ class Session(object):
             unix_nano_timestamp = event_info["timestamp"] * MS_TO_NS
             ml_events.append(
                 {
-                    "time_unix_nano": unix_nano_timestamp,
-                    "observed_time_unix_nano": unix_nano_timestamp,
+                    "time_unix_nano": int(unix_nano_timestamp),
+                    "observed_time_unix_nano": int(unix_nano_timestamp),
                     "attributes": ml_attrs,
                 }
             )

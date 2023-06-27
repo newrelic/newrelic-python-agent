@@ -162,7 +162,7 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
     separate the types and report multiple metrics, one for each type.
     """
     for name, metric_container in metric_data:
-        if any(type(metric) is CountStats for metric in metric_container.values()):
+        if any(type(metric) is CountStats for metric in metric_container.values()):  # pylint: disable=C0123
             # Metric contains Sum metric data points.
             yield Metric(
                 name=name,
@@ -177,11 +177,11 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
                             attributes=create_key_values_from_iterable(tags),
                         )
                         for tags, value in metric_container.items()
-                        if type(value) is CountStats
+                        if type(value) is CountStats  # pylint: disable=C0123
                     ],
                 ),
             )
-        if any(type(metric) is TimeStats for metric in metric_container.values()):
+        if any(type(metric) is TimeStats for metric in metric_container.values()):  # pylint: disable=C0123
             # Metric contains Summary metric data points.
             yield Metric(
                 name=name,
@@ -194,7 +194,7 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
                             attributes=create_key_values_from_iterable(tags),
                         )
                         for tags, value in metric_container.items()
-                        if type(value) is TimeStats
+                        if type(value) is TimeStats  # pylint: disable=C0123
                     ]
                 ),
             )

@@ -162,6 +162,8 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
     separate the types and report multiple metrics, one for each type.
     """
     for name, metric_container in metric_data:
+        # Types are checked here using type() instead of isinstance, as CountStats is a subclass of TimeStats.
+        # Imporperly checking with isinstance will lead to count metrics being encoded and reported twice.
         if any(type(metric) is CountStats for metric in metric_container.values()):  # pylint: disable=C0123
             # Metric contains Sum metric data points.
             yield Metric(

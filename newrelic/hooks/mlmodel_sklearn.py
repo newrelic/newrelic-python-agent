@@ -54,7 +54,7 @@ class PredictReturnTypeProxy(ObjectProxy):
         self._nr_training_step = training_step
 
 
-def _wrap_method_trace(module, _class, method, name=None, group=None):
+def _wrap_method_trace(module, class_, method, name=None, group=None):
     def _nr_wrapper_method(wrapped, instance, args, kwargs):
         transaction = current_transaction()
         trace = current_trace()
@@ -96,15 +96,15 @@ def _wrap_method_trace(module, _class, method, name=None, group=None):
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
             inference_id = uuid.uuid4()
-            create_feature_event(transaction, _class, inference_id, instance, args, kwargs)
-            create_label_event(transaction, _class, inference_id, instance, return_val)
-            return PredictReturnTypeProxy(return_val, model_name=_class, training_step=training_step)
+            create_feature_event(transaction, class_, inference_id, instance, args, kwargs)
+            create_label_event(transaction, class_, inference_id, instance, return_val)
+            return PredictReturnTypeProxy(return_val, model_name=class_, training_step=training_step)
         return return_val
 
-    wrap_function_wrapper(module, "%s.%s" % (_class, method), _nr_wrapper_method)
+    wrap_function_wrapper(module, "%s.%s" % (class_, method), _nr_wrapper_method)
 
 
-def _calc_prediction_feature_stats(prediction_input, _class, feature_column_names):
+def _calc_prediction_feature_stats(prediction_input, class_, feature_column_names, tags):
     import numpy as np
 
     # Drop any feature columns that are not numeric since we can't compute stats
@@ -126,10 +126,10 @@ def _calc_prediction_feature_stats(prediction_input, _class, feature_column_name
         features = np.reshape(numeric_features, (len(numeric_features) // num_cols, num_cols))
         features = features.astype(dtype=np.float64)
 
-        _record_stats(features, feature_column_names, _class, "Feature")
+        _record_stats(features, feature_column_names, class_, "Feature", tags)
 
 
-def _record_stats(data, column_names, _class, column_type):
+def _record_stats(data, column_names, class_, column_type, tags):
     import numpy as np
 
     mean = np.mean(data, axis=0)
@@ -147,30 +147,31 @@ def _record_stats(data, column_names, _class, column_type):
     # to upload them one at a time instead of as a dictionary of stats per
     # feature column.
     for index, col_name in enumerate(column_names):
-        metric_name = "MLModel/Sklearn/Named/%s/Predict/%s/%s" % (_class, column_type, col_name)
-        transaction.record_custom_metrics(
+        metric_name = "MLModel/Sklearn/Named/%s/Predict/%s/%s" % (class_, column_type, col_name)
+
+        transaction.record_dimensional_metrics(
             [
-                ("%s/%s" % (metric_name, "Mean"), float(mean[index])),
-                ("%s/%s" % (metric_name, "Percentile25"), float(percentile25[index])),
-                ("%s/%s" % (metric_name, "Percentile50"), float(percentile50[index])),
-                ("%s/%s" % (metric_name, "Percentile75"), float(percentile75[index])),
-                ("%s/%s" % (metric_name, "StandardDeviation"), float(standard_deviation[index])),
-                ("%s/%s" % (metric_name, "Min"), float(_min[index])),
-                ("%s/%s" % (metric_name, "Max"), float(_max[index])),
-                ("%s/%s" % (metric_name, "Count"), _count),
+                ("%s/%s" % (metric_name, "Mean"), float(mean[index]), tags),
+                ("%s/%s" % (metric_name, "Percentile25"), float(percentile25[index]), tags),
+                ("%s/%s" % (metric_name, "Percentile50"), float(percentile50[index]), tags),
+                ("%s/%s" % (metric_name, "Percentile75"), float(percentile75[index]), tags),
+                ("%s/%s" % (metric_name, "StandardDeviation"), float(standard_deviation[index]), tags),
+                ("%s/%s" % (metric_name, "Min"), float(_min[index]), tags),
+                ("%s/%s" % (metric_name, "Max"), float(_max[index]), tags),
+                ("%s/%s" % (metric_name, "Count"), _count, tags),
             ]
         )
 
 
-def _calc_prediction_label_stats(labels, _class, label_column_names):
+def _calc_prediction_label_stats(labels, class_, label_column_names, tags):
     import numpy as np
 
     labels = np.array(labels, dtype=np.float64)
-    _record_stats(labels, label_column_names, _class, "Label")
+    _record_stats(labels, label_column_names, class_, "Label", tags)
 
 
-def create_label_event(transaction, _class, inference_id, instance, return_val):
-    model_name = getattr(instance, "_nr_wrapped_name", _class)
+def create_label_event(transaction, class_, inference_id, instance, return_val):
+    model_name = getattr(instance, "_nr_wrapped_name", class_)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     label_names = getattr(instance, "_nr_wrapped_label_names", None)
 
@@ -186,7 +187,17 @@ def create_label_event(transaction, _class, inference_id, instance, return_val):
             labels = np.reshape(labels, (len(labels) // 1, 1))
 
         label_names_list = _get_label_names(label_names, labels)
-        _calc_prediction_label_stats(labels, _class, label_names_list)
+        _calc_prediction_label_stats(
+            labels,
+            class_,
+            label_names_list,
+            tags={
+                "inference_id": inference_id,
+                "model_version": model_version,
+                # The following are used for entity synthesis.
+                "modelName": model_name,
+            },
+        )
         for prediction in labels:
             for index, value in enumerate(prediction):
                 python_value_type = str(type(value))
@@ -272,18 +283,28 @@ def bind_predict(X, *args, **kwargs):
     return X
 
 
-def create_feature_event(transaction, _class, inference_id, instance, args, kwargs):
+def create_feature_event(transaction, class_, inference_id, instance, args, kwargs):
     import numpy as np
 
     data_set = bind_predict(*args, **kwargs)
-    model_name = getattr(instance, "_nr_wrapped_name", _class)
+    model_name = getattr(instance, "_nr_wrapped_name", class_)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
     np_casted_data_set = np.array(data_set)
-    _calc_prediction_feature_stats(data_set, _class, final_feature_names)
+    _calc_prediction_feature_stats(
+        data_set,
+        class_,
+        final_feature_names,
+        tags={
+            "inference_id": inference_id,
+            "model_version": model_version,
+            # The following are used for entity synthesis.
+            "modelName": model_name,
+        },
+    )
     for col_index, feature in enumerate(np_casted_data_set):
         for row_index, value in enumerate(feature):
             value_type = find_type_category(data_set, row_index, col_index)

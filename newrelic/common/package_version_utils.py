@@ -73,6 +73,10 @@ def _get_package_version(name):
     for attr in VERSION_ATTRS:
         try:
             version = getattr(module, attr, None)
+            # In certain cases like importlib_metadata.version, version is a callable
+            # function.
+            if callable(version):
+                continue
             # Cast any version specified as a list into a tuple.
             version = tuple(version) if isinstance(version, list) else version
             if version not in NULL_VERSIONS:

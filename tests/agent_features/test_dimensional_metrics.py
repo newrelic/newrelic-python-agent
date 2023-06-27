@@ -177,7 +177,7 @@ def test_dimensional_metrics_different_tags():
         ("Metric.NotPresent", None, None),
     ],
 )
-def test_dimensional_metric_payload():
+def test_dimensional_metrics_payload():
     @background_task(name="test_dimensional_metric_payload")
     def _test():
         record_dimensional_metrics(
@@ -190,6 +190,33 @@ def test_dimensional_metric_payload():
                 ("Metric.Count", {"count": 3}),  # No tags
                 ("Metric.Mixed", 1, {"tag": 1}),
                 ("Metric.Mixed", {"count": 2}, {"tag": 2}),
+            ]
+        )
+
+    _test()
+    app = application_instance()
+    core_app = app._agent.application(app.name)
+    core_app.harvest()
+
+
+@reset_core_stats_engine()
+@validate_dimensional_metric_payload(
+    summary_metrics=[
+        ("Metric.Summary", None, 1),
+        ("Metric.Count", None, None),  # Should NOT be present
+    ],
+    count_metrics=[
+        ("Metric.Count", None, 1),
+        ("Metric.Summary", None, None),  # Should NOT be present
+    ],
+)
+def test_dimensional_metrics_no_duplicate_encodings():
+    @background_task(name="test_dimensional_metric_payload")
+    def _test():
+        record_dimensional_metrics(
+            [
+                ("Metric.Summary", 1),
+                ("Metric.Count", {"count": 1}),
             ]
         )
 

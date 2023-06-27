@@ -194,7 +194,6 @@ def test_trace_context(
     intrinsics,
     expected_metrics,
 ):
-
     if test_name in XFAIL_TESTS:
         pytest.xfail("Waiting on cross agent tests update.")
     # Prepare assertions

@@ -322,7 +322,6 @@ TRACESTATE = "rojo=f06a0ba902b7,congo=t61rcWkgMzE"
 )
 @override_application_settings(_override_settings)
 def test_distributed_tracing_backwards_compatibility(traceparent, tracestate, newrelic, metrics):
-
     headers = []
     if traceparent:
         headers.append(("traceparent", TRACEPARENT))

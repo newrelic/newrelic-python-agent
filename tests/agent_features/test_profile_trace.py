@@ -13,56 +13,60 @@
 # limitations under the License.
 
 
-from newrelic.api.background_task import background_task
-from newrelic.api.profile_trace import profile_trace, ProfileTraceWrapper
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from newrelic.api.background_task import background_task
+from newrelic.api.profile_trace import ProfileTraceWrapper, profile_trace
 
 
 def test_profile_trace_wrapper():
     def _test():
         def nested_fn():
             pass
+
         nested_fn()
 
     wrapped_test = ProfileTraceWrapper(_test)
     wrapped_test()
 
 
-@validate_transaction_metrics(
-        'test_profile_trace:test_profile_trace_empty_args',
-        background_task=True)
+@validate_transaction_metrics("test_profile_trace:test_profile_trace_empty_args", background_task=True)
 @background_task()
 def test_profile_trace_empty_args():
     @profile_trace()
     def _test():
         pass
+
     _test()
 
 
-_test_profile_trace_defined_args_scoped_metrics = [
-        ('Custom/TestTrace', 1)]
+_test_profile_trace_defined_args_scoped_metrics = [("Custom/TestTrace", 1)]
 
 
 @validate_transaction_metrics(
-        'test_profile_trace:test_profile_trace_defined_args',
-        scoped_metrics=_test_profile_trace_defined_args_scoped_metrics,
-        background_task=True)
+    "test_profile_trace:test_profile_trace_defined_args",
+    scoped_metrics=_test_profile_trace_defined_args_scoped_metrics,
+    background_task=True,
+)
 @background_task()
 def test_profile_trace_defined_args():
     @profile_trace(name="TestTrace", group="Custom", label="Label", params={"key": "value"}, depth=7)
     def _test():
         pass
+
     _test()
 
 
-_test_profile_trace_callable_args_scoped_metrics = [
-        ('Function/TestProfileTrace', 1)]
+_test_profile_trace_callable_args_scoped_metrics = [("Function/TestProfileTrace", 1)]
+
 
 @validate_transaction_metrics(
-        'test_profile_trace:test_profile_trace_callable_args',
-        scoped_metrics=_test_profile_trace_callable_args_scoped_metrics,
-        background_task=True)
+    "test_profile_trace:test_profile_trace_callable_args",
+    scoped_metrics=_test_profile_trace_callable_args_scoped_metrics,
+    background_task=True,
+)
 @background_task()
 def test_profile_trace_callable_args():
     def name_callable():
@@ -77,10 +81,8 @@ def test_profile_trace_callable_args():
     def params_callable():
         return {"account_id": "12345"}
 
-
     @profile_trace(name=name_callable, group=group_callable, label=label_callable, params=params_callable, depth=0)
     def _test():
         pass
+
     _test()
-
-

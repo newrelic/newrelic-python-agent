@@ -33,7 +33,6 @@ if not otlp_content_setting or otlp_content_setting == "protobuf":
     try:
         from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
         from newrelic.packages.opentelemetry_proto.logs_pb2 import (
-            LogRecord,
             LogsData,
             ResourceLogs,
             ScopeLogs,
@@ -59,8 +58,8 @@ if not otlp_content_setting or otlp_content_setting == "protobuf":
     except Exception:
         if otlp_content_setting == "protobuf":
             raise  # Reraise exception if content type explicitly set
-        else:  # Fallback to JSON
-            otlp_content_setting = "json"
+        # Fallback to JSON
+        otlp_content_setting = "json"
 
 
 if otlp_content_setting == "json":
@@ -78,7 +77,6 @@ if otlp_content_setting == "json":
     ValueAtQuantile = dict
     ResourceLogs = dict
     ScopeLogs = dict
-    LogRecord = dict
     LogsData = dict
 
     AGGREGATION_TEMPORALITY_DELTA = 1
@@ -91,8 +89,7 @@ def otlp_encode(payload):
             "Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss."
         )
         return json_encode(payload).encode("utf-8")
-    else:
-        return payload.SerializeToString()
+    return payload.SerializeToString()
 
 
 def create_key_value(key, value):

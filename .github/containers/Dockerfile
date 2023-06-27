@@ -23,12 +23,15 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         build-essential \
         curl \
         expat \
+        freetds-common \
+        freetds-dev \
         gcc \
         git \
         libbz2-dev \
         libcurl4-openssl-dev \
         libffi-dev \
         libgmp-dev \
+        libkrb5-dev \
         liblzma-dev \
         libmpfr-dev \
         libncurses-dev \

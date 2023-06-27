@@ -216,7 +216,15 @@ def environment_settings():
 
         # If the module isn't actually loaded (such as failed relative imports
         # in Python 2.7), the module will be None and should not be reported.
-        if not module:
+        try:
+            if not module:
+                continue
+        except Exception:
+            # if the application uses generalimport to manage optional depedencies,
+            # it's possible that generalimport.MissingOptionalDependency is raised.
+            # In this case, we should not report the module as it is not actually loaded and
+            # is not a runtime dependency of the application.
+            #
             continue
 
         # Exclude standard library/built-in modules.

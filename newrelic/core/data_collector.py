@@ -123,7 +123,7 @@ class Session(object):
 
     def send_ml_events(self, sampling_info, custom_event_data):
         """Called to submit sample set for machine learning events."""
-        payload = encode_ml_event_data(custom_event_data, self.agent_run_id)
+        payload = encode_ml_event_data(custom_event_data, str(self.agent_run_id))
         return self._otlp_protocol.send("ml_event_data", payload, path="/v1/logs")
 
     def send_span_events(self, sampling_info, span_event_data):

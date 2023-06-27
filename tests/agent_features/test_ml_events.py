@@ -34,6 +34,7 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import record_ml_event
 from newrelic.core.config import global_settings
+from newrelic.packages import six
 
 try:
     # python 2.x
@@ -185,6 +186,9 @@ def test_application_create_ml_event_not_called():
 
 @pytest.fixture(scope="module", autouse=True, params=["protobuf", "json"])
 def otlp_content_encoding(request):
+    if six.PY2 and request.param == "protobuf":
+        pytest.skip("OTLP protos are not compatible with Python 2.")
+
     _settings = global_settings()
     prev = _settings.debug.otlp_content_encoding
     _settings.debug.otlp_content_encoding = request.param

@@ -41,6 +41,7 @@ jobs:
       #- kafka
       - memcached
       - mongodb
+      - mssql
       - mysql
       - postgres
       - rabbitmq
@@ -60,6 +61,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
@@ -117,11 +119,18 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -155,11 +164,18 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -193,7 +209,9 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -213,6 +231,74 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
+  mssql:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/azure-sql-edge:latest
+        env:
+          MSSQL_USER: python_agent
+          MSSQL_PASSWORD: python_agent
+          MSSQL_SA_PASSWORD: "python_agent#1234"
+          ACCEPT_EULA: "Y"
+        ports:
+          - 8080:1433
+          - 8081:1433
+        # Set health checks to wait until mysql has started
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -U SA -P $MSSQL_SA_PASSWORD -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -246,7 +332,9 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -269,6 +357,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -302,7 +395,9 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -320,6 +415,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -353,7 +453,9 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -373,6 +475,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -406,7 +513,9 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -424,6 +533,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -457,7 +571,9 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -476,6 +592,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -498,77 +619,85 @@ jobs:
           path: ./**/.coverage.*
           retention-days: 1
 
-  #kafka:
-  #  env:
-  #    TOTAL_GROUPS: 4
+  # kafka:
+  #   env:
+  #     TOTAL_GROUPS: 4
 
-  #  strategy:
-  #    fail-fast: false
-  #    matrix:
-  #      group-number: [1, 2, 3, 4]
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       group-number: [1, 2, 3, 4]
 
-  #  runs-on: ubuntu-20.04
-  #  timeout-minutes: 30
+  #   runs-on: ubuntu-20.04
+  #   container:
+  #     image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+  #     options: >-
+  #       --add-host=host.docker.internal:host-gateway
+  #   timeout-minutes: 30
 
-  #  services:
-  #    zookeeper:
-  #      image: bitnami/zookeeper:3.7
-  #      env:
-  #        ALLOW_ANONYMOUS_LOGIN: yes
+  #   services:
+  #     zookeeper:
+  #       image: bitnami/zookeeper:3.7
+  #       env:
+  #         ALLOW_ANONYMOUS_LOGIN: yes
 
-  #      ports:
-  #        - 2181:2181
+  #       ports:
+  #         - 2181:2181
 
-  #    kafka:
-  #      image: bitnami/kafka:3.2
-  #      ports:
-  #        - 8080:8080
-  #        - 8081:8081
-  #      env:
-  #        ALLOW_PLAINTEXT_LISTENER: yes
-  #        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-  #        KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
-  #        KAFKA_CFG_LISTENERS: L1://:8080,L2://:8081
-  #        KAFKA_CFG_ADVERTISED_LISTENERS: L1://127.0.0.1:8080,L2://kafka:8081,
-  #        KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT
-  #        KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L2
+  #     kafka:
+  #       image: bitnami/kafka:3.2
+  #       ports:
+  #         - 8080:8080
+  #         - 8081:8081
+  #       env:
+  #         ALLOW_PLAINTEXT_LISTENER: yes
+  #         KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  #         KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+  #         KAFKA_CFG_LISTENERS: L1://:8080,L2://:8081
+  #         KAFKA_CFG_ADVERTISED_LISTENERS: L1://127.0.0.1:8080,L2://kafka:8081,
+  #         KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT
+  #         KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L2
 
-  #  steps:
-  #    - uses: actions/checkout@v3
-  #    - uses: ./.github/actions/setup-python-matrix
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-  #    # Special case packages
-  #    - name: Install librdkafka-dev
-  #      run: |
-  #        # Use lsb-release to find the codename of Ubuntu to use to install the correct library name
-  #        sudo apt-get update
-  #        sudo ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
-  #        sudo apt-get install -y wget gnupg2 software-properties-common
-  #        sudo wget -qO - https://packages.confluent.io/deb/7.2/archive.key | sudo apt-key add -
-  #        sudo add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
-  #        sudo apt-get update
-  #        sudo apt-get install -y librdkafka-dev/$(lsb_release -c | cut -f 2)
+  #     - name: Fetch git tags
+  #       run: |
+  #         git config --global --add safe.directory "$GITHUB_WORKSPACE"
+  #         git fetch --tags origin
 
-  #    - name: Get Environments
-  #      id: get-envs
-  #      run: |
-  #        echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
-  #      env:
-  #        GROUP_NUMBER: ${{ matrix.group-number }}
+  #     # Special case packages
+  #     - name: Install librdkafka-dev
+  #       run: |
+  #         # Use lsb-release to find the codename of Ubuntu to use to install the correct library name
+  #         sudo apt-get update
+  #         sudo ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
+  #         sudo apt-get install -y wget gnupg2 software-properties-common
+  #         sudo wget -qO - https://packages.confluent.io/deb/7.2/archive.key | sudo apt-key add -
+  #         sudo add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
+  #         sudo apt-get update
+  #         sudo apt-get install -y librdkafka-dev/$(lsb_release -c | cut -f 2)
 
-  #    - name: Test
-  #      run: |
-  #        tox -vv -e ${{ steps.get-envs.outputs.envs }}
-  #      env:
-  #        TOX_PARALLEL_NO_SPINNER: 1
-  #        PY_COLORS: 0
+  #     - name: Get Environments
+  #       id: get-envs
+  #       run: |
+  #         echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+  #       env:
+  #         GROUP_NUMBER: ${{ matrix.group-number }}
 
-  #    - name: Upload Coverage Artifacts
-  #      uses: actions/upload-artifact@v3
-  #      with:
-  #        name: coverage-${{ github.job }}-${{ strategy.job-index }}
-  #        path: ./**/.coverage.*
-  #        retention-days: 1
+  #     - name: Test
+  #       run: |
+  #         tox -vv -e ${{ steps.get-envs.outputs.envs }}
+  #       env:
+  #         TOX_PARALLEL_NO_SPINNER: 1
+  #         PY_COLORS: 0
+
+  #     - name: Upload Coverage Artifacts
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: coverage-${{ github.job }}-${{ strategy.job-index }}
+  #         path: ./**/.coverage.*
+  #         retention-days: 1
 
   mongodb:
     env:
@@ -581,7 +710,9 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -599,6 +730,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -632,11 +768,13 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
-      es07:
+      elasticsearch:
         image: elasticsearch:7.17.8
         env:
           "discovery.type": "single-node"
@@ -652,6 +790,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -685,11 +828,13 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
-      es08:
+      elasticsearch:
         image: elasticsearch:8.6.0
         env:
           "xpack.security.enabled": "false"
@@ -706,6 +851,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
@@ -739,14 +889,16 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/${{ github.repository }}-ci
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
       gearman:
         image: artefactual/gearmand
         ports:
-          - 4730:4730
+          - 8080:4730
         # Set health checks to wait until gearman has started
         options: >-
           --health-cmd "(echo status ; sleep 0.1) | nc 127.0.0.1 4730 -w 1"
@@ -756,6 +908,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs

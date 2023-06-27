@@ -17,10 +17,10 @@ system, Python and hosting environment.
 
 """
 
+import logging
 import os
 import platform
 import sys
-import sysconfig
 
 import newrelic
 from newrelic.common.package_version_utils import get_package_version
@@ -29,11 +29,14 @@ from newrelic.common.system_info import (
     physical_processor_count,
     total_physical_memory,
 )
+from newrelic.packages.isort import stdlibs as isort_stdlibs
 
 try:
     import newrelic.core._thread_utilization
 except ImportError:
     pass
+
+_logger = logging.getLogger(__name__)
 
 
 def environment_settings():
@@ -195,8 +198,7 @@ def environment_settings():
     env.extend(dispatcher)
 
     # Module information.
-    purelib = sysconfig.get_path("purelib")
-    platlib = sysconfig.get_path("platlib")
+    stdlib_builtin_module_names = _get_stdlib_builtin_module_names()
 
     plugins = []
 
@@ -208,29 +210,50 @@ def environment_settings():
     # list
     for name, module in sys.modules.copy().items():
         # Exclude lib.sub_paths as independent modules except for newrelic.hooks.
-        if "." in name and not name.startswith("newrelic.hooks."):
+        nr_hook = name.startswith("newrelic.hooks.")
+        if "." in name and not nr_hook or name.startswith("_"):
             continue
+
         # If the module isn't actually loaded (such as failed relative imports
         # in Python 2.7), the module will be None and should not be reported.
         if not module:
             continue
+
         # Exclude standard library/built-in modules.
-        # Third-party modules can be installed in either purelib or platlib directories.
-        # See https://docs.python.org/3/library/sysconfig.html#installation-paths.
-        if (
-            not hasattr(module, "__file__")
-            or not module.__file__
-            or not module.__file__.startswith(purelib)
-            or not module.__file__.startswith(platlib)
-        ):
+        if name in stdlib_builtin_module_names:
             continue
 
         try:
             version = get_package_version(name)
-            plugins.append("%s (%s)" % (name, version))
         except Exception:
-            plugins.append(name)
+            version = None
+
+        # If it has no version it's likely not a real package so don't report it unless
+        # it's a new relic hook.
+        if version or nr_hook:
+            plugins.append("%s (%s)" % (name, version))
 
     env.append(("Plugin List", plugins))
 
     return env
+
+
+def _get_stdlib_builtin_module_names():
+    builtins = set(sys.builtin_module_names)
+    # Since sys.stdlib_module_names is not available in versions of python below 3.10,
+    # use isort's hardcoded stdlibs instead.
+    python_version = sys.version_info[0:2]
+    if python_version < (3,):
+        stdlibs = isort_stdlibs.py27.stdlib
+    elif (3, 7) <= python_version < (3, 8):
+        stdlibs = isort_stdlibs.py37.stdlib
+    elif python_version < (3, 9):
+        stdlibs = isort_stdlibs.py38.stdlib
+    elif python_version < (3, 10):
+        stdlibs = isort_stdlibs.py39.stdlib
+    elif python_version >= (3, 10):
+        stdlibs = sys.stdlib_module_names
+    else:
+        _logger.warn("Unsupported Python version. Unable to determine stdlibs.")
+        return builtins
+    return builtins | stdlibs

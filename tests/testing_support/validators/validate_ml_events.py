@@ -44,7 +44,7 @@ def validate_ml_events(events):
         _new_wrapper = _validate_ml_events(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_called
-        events = copy.copy(recorded_events)
+        found_events = copy.copy(recorded_events)
 
         record_called[:] = []
         recorded_events[:] = []
@@ -52,7 +52,7 @@ def validate_ml_events(events):
         for expected in events:
             matching_ml_events = 0
             mismatches = []
-            for captured in events:
+            for captured in found_events:
                 if _check_event_attributes(expected, captured, mismatches):
                     matching_ml_events += 1
             assert matching_ml_events == 1, _event_details(matching_ml_events, events, mismatches)
@@ -82,7 +82,7 @@ def _check_event_attributes(expected, captured, mismatches):
     extra_keys = captured_keys - expected_keys
 
     if extra_keys:
-        mismatches.append("extra_keys: %s" % tuple(extra_keys))
+        mismatches.append("extra_keys: %s" % str(tuple(extra_keys)))
         return False
 
     for key, value in six.iteritems(expected[1]):

@@ -22,8 +22,8 @@ back to JSON when encoutering exceptions unless the content type is explicitly s
 import logging
 
 from newrelic.common.encoding_utils import json_encode
-from newrelic.core.stats_engine import CountStats, TimeStats
 from newrelic.core.config import global_settings
+from newrelic.core.stats_engine import CountStats, TimeStats
 
 _logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ if not otlp_content_setting or otlp_content_setting == "protobuf":
     try:
         from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
         from newrelic.packages.opentelemetry_proto.logs_pb2 import (
-            LogRecord,
+            LogsData,
             ResourceLogs,
             ScopeLogs,
         )
@@ -58,8 +58,8 @@ if not otlp_content_setting or otlp_content_setting == "protobuf":
     except Exception:
         if otlp_content_setting == "protobuf":
             raise  # Reraise exception if content type explicitly set
-        else:  # Fallback to JSON
-            otlp_content_setting = "json"
+        # Fallback to JSON
+        otlp_content_setting = "json"
 
 
 if otlp_content_setting == "json":
@@ -77,7 +77,7 @@ if otlp_content_setting == "json":
     ValueAtQuantile = dict
     ResourceLogs = dict
     ScopeLogs = dict
-    LogRecord = dict
+    LogsData = dict
 
     AGGREGATION_TEMPORALITY_DELTA = 1
     OTLP_CONTENT_TYPE = "application/json"
@@ -88,9 +88,8 @@ def otlp_encode(payload):
         _logger.warning(
             "Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss."
         )
-        return json_encode(payload)
-    else:
-        return payload.SerializeToString()
+        return json_encode(payload).encode("utf-8")
+    return payload.SerializeToString()
 
 
 def create_key_value(key, value):
@@ -216,3 +215,27 @@ def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=N
             )
         ]
     )
+
+
+def encode_ml_event_data(custom_event_data, agent_run_id):
+    resource = create_resource()
+    ml_events = []
+    for event in custom_event_data:
+        event_info, event_attrs = event
+        event_attrs.update(
+            {
+                "real_agent_id": agent_run_id,
+                "event.domain": "newrelic.ml_events",
+                "event.name": event_info["type"],
+            }
+        )
+        ml_attrs = create_key_values_from_iterable(event_attrs)
+        unix_nano_timestamp = event_info["timestamp"] * 1e6
+        ml_events.append(
+            {
+                "time_unix_nano": int(unix_nano_timestamp),
+                "attributes": ml_attrs,
+            }
+        )
+
+    return LogsData(resource_logs=[ResourceLogs(resource=resource, scope_logs=[ScopeLogs(log_records=ml_events)])])

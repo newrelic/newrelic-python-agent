@@ -39,7 +39,7 @@ def attribute_to_value(attribute):
         return float(attribute_value)
     elif attribute_type == "bool_value":
         return bool(attribute_value)
-    elif attribute_type == "str_value":
+    elif attribute_type == "string_value":
         return str(attribute_value)
     else:
         raise TypeError("Invalid attribute type: %s" % attribute_type)

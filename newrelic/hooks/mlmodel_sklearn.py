@@ -214,7 +214,7 @@ def create_label_event(transaction, class_, inference_id, instance, return_val):
                 # Don't include the raw value when inference_event_value is disabled.
                 if settings and settings.machine_learning.inference_events_value.enabled:
                     event["label_value"] = str(value)
-                transaction.record_custom_event("inferenceData", event)
+                transaction.record_ml_event("InferenceData", event)
 
 
 def _get_label_names(user_defined_label_names, prediction_array):
@@ -319,7 +319,7 @@ def create_feature_event(transaction, class_, inference_id, instance, args, kwar
             # Don't include the raw value when inference_event_value is disabled.
             if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:
                 event["feature_value"] = str(value)
-            transaction.record_custom_event("inferenceData", event)
+            transaction.record_ml_event("InferenceData", event)
 
 
 def _nr_instrument_model(module, model_class):

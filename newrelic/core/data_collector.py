@@ -32,11 +32,9 @@ from newrelic.core.agent_protocol import (
 )
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.config import global_settings
-from newrelic.core.otlp_utils import encode_metric_data
+from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data
 
 _logger = logging.getLogger(__name__)
-
-DIMENSIONAL_METRIC_DATA_TEMP = []  # TODO: REMOVE THIS
 
 
 class Session(object):
@@ -125,10 +123,8 @@ class Session(object):
 
     def send_ml_events(self, sampling_info, custom_event_data):
         """Called to submit sample set for machine learning events."""
-
-        # TODO Make this send to MELT/OTLP endpoint instead of agent listener
-        payload = (self.agent_run_id, sampling_info, custom_event_data)  # TODO this payload will be different
-        return self._protocol.send("custom_event_data", payload)
+        payload = encode_ml_event_data(custom_event_data, str(self.agent_run_id))
+        return self._otlp_protocol.send("ml_event_data", payload, path="/v1/logs")
 
     def send_span_events(self, sampling_info, span_event_data):
         """Called to submit sample set for span events."""

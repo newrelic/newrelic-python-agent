@@ -22,3 +22,5 @@ ignore:
   # Temporarily disable kafka
   - "newrelic/hooks/messagebroker_kafkapython.py"
   - "newrelic/hooks/messagebroker_confluentkafka.py"
+  - "newrelic/admin/*"
+  - "newrelic/console.py"

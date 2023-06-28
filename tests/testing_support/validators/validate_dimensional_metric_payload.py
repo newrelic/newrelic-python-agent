@@ -117,7 +117,7 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
                 if not count:
                     if metric in sent_summary_metrics:
                         data_points = data_points_to_dict(sent_summary_metrics[metric]["summary"]["data_points"])
-                        assert tags not in data_points, "(%s, %s) Found." % (metric, tags and dict(tags))
+                        assert tags not in data_points, "(%s, %s) Unexpected but found." % (metric, tags and dict(tags))
                 else:
                     assert metric in sent_summary_metrics, "%s Not Found. Got: %s" % (
                         metric,
@@ -153,7 +153,7 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
                 if not count:
                     if metric in sent_count_metrics:
                         data_points = data_points_to_dict(sent_count_metrics[metric]["sum"]["data_points"])
-                        assert tags not in data_points, "(%s, %s) Found." % (metric, tags and dict(tags))
+                        assert tags not in data_points, "(%s, %s) Unexpected but found." % (metric, tags and dict(tags))
                 else:
                     assert metric in sent_count_metrics, "%s Not Found. Got: %s" % (
                         metric,

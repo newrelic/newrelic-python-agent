@@ -84,7 +84,7 @@ if otlp_content_setting == "json":
 
 
 def otlp_encode(payload):
-    if type(payload) is dict:
+    if type(payload) is dict:  # pylint: disable=C0123
         _logger.warning(
             "Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss."
         )
@@ -162,7 +162,9 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
     separate the types and report multiple metrics, one for each type.
     """
     for name, metric_container in metric_data:
-        if any(isinstance(metric, CountStats) for metric in metric_container.values()):
+        # Types are checked here using type() instead of isinstance, as CountStats is a subclass of TimeStats.
+        # Imporperly checking with isinstance will lead to count metrics being encoded and reported twice.
+        if any(type(metric) is CountStats for metric in metric_container.values()):  # pylint: disable=C0123
             # Metric contains Sum metric data points.
             yield Metric(
                 name=name,
@@ -177,11 +179,11 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
                             attributes=create_key_values_from_iterable(tags),
                         )
                         for tags, value in metric_container.items()
-                        if isinstance(value, CountStats)
+                        if type(value) is CountStats  # pylint: disable=C0123
                     ],
                 ),
             )
-        if any(isinstance(metric, TimeStats) for metric in metric_container.values()):
+        if any(type(metric) is TimeStats for metric in metric_container.values()):  # pylint: disable=C0123
             # Metric contains Summary metric data points.
             yield Metric(
                 name=name,
@@ -194,7 +196,7 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
                             attributes=create_key_values_from_iterable(tags),
                         )
                         for tags, value in metric_container.items()
-                        if isinstance(value, TimeStats)
+                        if type(value) is TimeStats  # pylint: disable=C0123
                     ]
                 ),
             )

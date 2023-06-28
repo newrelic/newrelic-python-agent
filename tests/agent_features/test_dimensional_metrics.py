@@ -24,6 +24,7 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+import newrelic.core.otlp_utils
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import (
@@ -31,11 +32,8 @@ from newrelic.api.transaction import (
     record_dimensional_metrics,
 )
 from newrelic.common.metric_utils import create_metric_identity
-    
-import newrelic.core.otlp_utils
 from newrelic.core.config import global_settings
 from newrelic.packages import six
-
 
 try:
     # python 2.x
@@ -55,7 +53,7 @@ def otlp_content_encoding(request):
     _settings.debug.otlp_content_encoding = request.param
     reload(newrelic.core.otlp_utils)
     assert newrelic.core.otlp_utils.otlp_content_setting == request.param, "Content encoding mismatch."
-    
+
     yield
 
     _settings.debug.otlp_content_encoding = prev
@@ -177,7 +175,7 @@ def test_dimensional_metrics_different_tags():
         ("Metric.NotPresent", None, None),
     ],
 )
-def test_dimensional_metric_payload():
+def test_dimensional_metrics_payload():
     @background_task(name="test_dimensional_metric_payload")
     def _test():
         record_dimensional_metrics(
@@ -190,6 +188,33 @@ def test_dimensional_metric_payload():
                 ("Metric.Count", {"count": 3}),  # No tags
                 ("Metric.Mixed", 1, {"tag": 1}),
                 ("Metric.Mixed", {"count": 2}, {"tag": 2}),
+            ]
+        )
+
+    _test()
+    app = application_instance()
+    core_app = app._agent.application(app.name)
+    core_app.harvest()
+
+
+@reset_core_stats_engine()
+@validate_dimensional_metric_payload(
+    summary_metrics=[
+        ("Metric.Summary", None, 1),
+        ("Metric.Count", None, None),  # Should NOT be present
+    ],
+    count_metrics=[
+        ("Metric.Count", None, 1),
+        ("Metric.Summary", None, None),  # Should NOT be present
+    ],
+)
+def test_dimensional_metrics_no_duplicate_encodings():
+    @background_task(name="test_dimensional_metric_payload")
+    def _test():
+        record_dimensional_metrics(
+            [
+                ("Metric.Summary", 1),
+                ("Metric.Count", {"count": 1}),
             ]
         )
 

@@ -84,7 +84,7 @@ if otlp_content_setting == "json":
 
 
 def otlp_encode(payload):
-    if type(payload) is dict:
+    if type(payload) is dict:  # pylint: disable=C0123
         _logger.warning(
             "Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss."
         )

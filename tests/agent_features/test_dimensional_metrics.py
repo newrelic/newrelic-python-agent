@@ -24,6 +24,7 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+import newrelic.core.otlp_utils
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import (
@@ -31,11 +32,8 @@ from newrelic.api.transaction import (
     record_dimensional_metrics,
 )
 from newrelic.common.metric_utils import create_metric_identity
-    
-import newrelic.core.otlp_utils
 from newrelic.core.config import global_settings
 from newrelic.packages import six
-
 
 try:
     # python 2.x
@@ -55,7 +53,7 @@ def otlp_content_encoding(request):
     _settings.debug.otlp_content_encoding = request.param
     reload(newrelic.core.otlp_utils)
     assert newrelic.core.otlp_utils.otlp_content_setting == request.param, "Content encoding mismatch."
-    
+
     yield
 
     _settings.debug.otlp_content_encoding = prev

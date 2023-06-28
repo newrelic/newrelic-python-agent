@@ -1186,7 +1186,7 @@ class Transaction(object):
 
             try:
                 data["pr"] = float(data["pr"])
-            except:
+            except Exception:
                 data["pr"] = None
 
             self._accept_distributed_trace_data(data, transport_type)

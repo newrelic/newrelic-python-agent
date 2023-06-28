@@ -1425,11 +1425,17 @@ class Transaction(object):
 
         return nr_headers
 
-    def get_response_metadata(self):
+    # This function is CAT related and has been deprecated.
+    # Eventually, this will be removed.  Until then, coverage
+    # does not need to factor this function into its analysis.
+    def get_response_metadata(self):  # pragma: no cover
         nr_headers = dict(self._generate_response_headers())
         return convert_to_cat_metadata_value(nr_headers)
 
-    def process_request_metadata(self, cat_linking_value):
+    # This function is CAT related and has been deprecated.
+    # Eventually, this will be removed.  Until then, coverage
+    # does not need to factor this function into its analysis.
+    def process_request_metadata(self, cat_linking_value):  # pragma: no cover
         try:
             payload = base64_decode(cat_linking_value)
         except:
@@ -1516,7 +1522,9 @@ class Transaction(object):
 
         self._log_events.add(event, priority=priority)
 
-    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
+    # This function has been deprecated (and will be removed eventually)
+    # and therefore does not need to be included in coverage analysis
+    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):  # pragma: no cover
         # Deprecation Warning
         warnings.warn(
             ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
@@ -1683,7 +1691,9 @@ class Transaction(object):
 
         return result
 
-    def add_custom_parameter(self, name, value):
+    # This function has been deprecated (and will be removed eventually)
+    # and therefore does not need to be included in coverage analysis
+    def add_custom_parameter(self, name, value):  # pragma: no cover
         # Deprecation warning
         warnings.warn(
             ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
@@ -1691,7 +1701,9 @@ class Transaction(object):
         )
         return self.add_custom_attribute(name, value)
 
-    def add_custom_parameters(self, items):
+    # This function has been deprecated (and will be removed eventually)
+    # and therefore does not need to be included in coverage analysis
+    def add_custom_parameters(self, items):  # pragma: no cover
         # Deprecation warning
         warnings.warn(
             ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
@@ -1795,19 +1807,23 @@ def add_custom_attributes(items):
         return False
 
 
-def add_custom_parameter(key, value):
+# This function has been deprecated (and will be removed eventually)
+# and therefore does not need to be included in coverage analysis
+def add_custom_parameter(key, value):  # pragma: no cover
     # Deprecation warning
     warnings.warn(
-        ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
+        ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
         DeprecationWarning,
     )
     return add_custom_attribute(key, value)
 
 
-def add_custom_parameters(items):
+# This function has been deprecated (and will be removed eventually)
+# and therefore does not need to be included in coverage analysis
+def add_custom_parameters(items):  # pragma: no cover
     # Deprecation warning
     warnings.warn(
-        ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
+        ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
         DeprecationWarning,
     )
     return add_custom_attributes(items)

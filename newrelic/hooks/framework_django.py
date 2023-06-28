@@ -1074,7 +1074,7 @@ def _nr_wrapper_django_template_base_generic_tag_compiler_(wrapped, instance, ar
 
 
 def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance, args, kwargs):
-    def _bind_params(*args, name=None, compile_function=None, **kwargs):
+    def _bind_params(name=None, compile_function=None, *args, **kwargs):
         return compile_function
 
     compile_function = _bind_params(*args, **kwargs)

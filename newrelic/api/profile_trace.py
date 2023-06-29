@@ -34,7 +34,7 @@ class ProfileTrace(object):
         self.maximum_depth = depth
         self.current_depth = 0
 
-    def __call__(self, frame, event, arg):
+    def __call__(self, frame, event, arg):  # pragma: no cover
 
         if event not in ['call', 'c_call', 'return', 'c_return',
                 'exception', 'c_exception']:

@@ -188,7 +188,7 @@ def browser_timing_insertion(response, transaction):
     if result is not None:
         if transaction.settings.debug.log_autorum_middleware:
             _logger.debug(
-                "RUM insertion from Django middleware " "triggered. Bytes added was %r.",
+                "RUM insertion from Django middleware triggered. Bytes added was %r.",
                 len(result) - len(response.content),
             )
 

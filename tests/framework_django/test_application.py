@@ -298,7 +298,7 @@ _test_application_inclusion_tag_scoped_metrics.extend(_test_django_url_resolver_
 
 try:
     _test_application_inclusion_tag_scoped_metrics.remove(
-        (("Function/newrelic.hooks.framework_django:" "browser_timing_insertion"), 1)
+        (("Function/newrelic.hooks.framework_django:browser_timing_insertion"), 1)
     )
 except ValueError:
     pass
@@ -328,7 +328,7 @@ _test_inclusion_tag_template_tags_scoped_metrics.extend(_test_django_url_resolve
 
 try:
     _test_inclusion_tag_template_tags_scoped_metrics.remove(
-        (("Function/newrelic.hooks.framework_django:" "browser_timing_insertion"), 1)
+        (("Function/newrelic.hooks.framework_django:browser_timing_insertion"), 1)
     )
 except ValueError:
     pass

@@ -120,10 +120,15 @@ def should_add_browser_timing(response, transaction):
     if transaction.autorum_disabled:
         return False
 
-    if hasattr(django_settings, "browser_monitoring") and not hasattr(
-        django_settings.browser_monitoring, "auto_instrument"
-    ):
+    try:
+        _ = django_settings.browser_monitoring.auto_instrument if hasattr(django_settings, "browser_monitoring") else 0
+    except:
         return False
+
+    # if hasattr(django_settings, "browser_monitoring") and not hasattr(
+    #     django_settings.browser_monitoring, "auto_instrument"
+    # ):
+    #     return False
 
     if transaction.rum_header_generated:
         return False
@@ -909,21 +914,21 @@ def _nr_wrapper_BaseCommand_run_from_argv_(wrapped, instance, args, kwargs):
 
     subcommand = _argv[1]
 
-    commands = ()
-    if (
-        hasattr(django_settings, "instrumentation")
-        and hasattr(django_settings.instrumentation, "scripts")
-        and hasattr(django_settings.instrumentation.scripts, "django_admin")
-    ):
-        commands = django_settings.instrumentation.scripts.django_admin
+    try:
+        # Equivalent to `commands = django_settings.instrumentation.scripts.django_admin`
+        commands = getattr(
+            getattr(getattr(django_settings, "instrumentation", None), "scripts", None), "django_admin", None
+        )
+    except:
+        commands = ()
 
-    startup_timeout = 0.0
-    if (
-        hasattr(django_settings, "instrumentation")
-        and hasattr(django_settings.instrumentation, "background_task")
-        and hasattr(django_settings.instrumentation.background_task, "startup_timeout")
-    ):
-        startup_timeout = django_settings.instrumentation.background_task.startup_timeout
+    try:
+        # Equivalent to `startup_timeout = django_settings.instrumentation.background_task.startup_timeout`
+        startup_timeout = getattr(
+            getattr(getattr(django_settings, "instrumentation", None), "background_task", None), "startup_timeout", None
+        )
+    except:
+        startup_timeout = 0.0
 
     if subcommand not in commands:
         return wrapped(*args, **kwargs)
@@ -948,13 +953,13 @@ def _nr_wrapper_django_inclusion_tag_wrapper_(wrapped, instance, args, kwargs):
 
     qualname = callable_name(wrapped)
 
-    tags = ()
-    if (
-        hasattr(django_settings, "instrumentation")
-        and hasattr(django_settings.instrumentation, "templates")
-        and hasattr(django_settings.instrumentation.templates, "inclusion_tag")
-    ):
-        tags = django_settings.instrumentation.templates.inclusion_tag
+    try:
+        # Equivalent to `tags = django_settings.instrumentation.templates.inclusion_tag`
+        tags = getattr(
+            getattr(getattr(django_settings, "instrumentation", None), "templates", None), "inclusion_tag", None
+        )
+    except:
+        tags = ()
 
     if "*" not in tags and name not in tags and qualname not in tags:
         return wrapped(*args, **kwargs)

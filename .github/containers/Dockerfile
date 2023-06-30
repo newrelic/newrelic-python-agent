@@ -36,6 +36,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         libmpfr-dev \
         libncurses-dev \
         libpq-dev \
+        librdkafka-dev \
         libreadline-dev \
         libsqlite3-dev \
         libssl-dev \
@@ -56,9 +57,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     rm -rf /var/lib/apt/lists/*
 
 # Setup ODBC config
-RUN sed -i 's/Driver=psqlodbca.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psqlodbca.so/g' /etc/odbcinst.ini && \
-    sed -i 's/Driver=psqlodbcw.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psqlodbcw.so/g' /etc/odbcinst.ini && \
-    sed -i 's/Setup=libodbcpsqlS.so/Setup=\/usr\/lib\/x86_64-linux-gnu\/odbc\/libodbcpsqlS.so/g' /etc/odbcinst.ini
+RUN sed -i 's|Driver=psqlodbca.so|Driver=/usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so|g' /etc/odbcinst.ini && \
+    sed -i 's|Driver=psqlodbcw.so|Driver=/usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so|g' /etc/odbcinst.ini && \
+    sed -i 's|Setup=libodbcpsqlS.so|Setup=/usr/lib/x86_64-linux-gnu/odbc/libodbcpsqlS.so|g' /etc/odbcinst.ini
 
 # Set the locale
 RUN locale-gen --no-purge en_US.UTF-8

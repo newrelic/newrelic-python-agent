@@ -957,7 +957,7 @@ def _nr_wrapper_django_inclusion_tag_decorator_(wrapped, instance, args, kwargs)
     return wrapped(func, *_args, **_kwargs)
 
 
-def _nr_wrapper_django_template_base_Library_inclusion_tag_(wrapped, instance, args, kwargs):
+def _nr_wrapper_django_template_library_Library_inclusion_tag_(wrapped, instance, args, kwargs):
     return _nr_wrapper_django_inclusion_tag_decorator_(wrapped(*args, **kwargs))
 
 
@@ -1003,7 +1003,7 @@ def _nr_wrapper_django_template_base_generic_tag_compiler_(wrapped, instance, ar
     return wrapped(*args, **kwargs)
 
 
-def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance, args, kwargs):
+def _nr_wrapper_django_template_library_Library_tag_(wrapped, instance, args, kwargs):
     def _bind_params(name=None, compile_function=None, *args, **kwargs):
         return compile_function
 
@@ -1075,6 +1075,23 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance, args, kwarg
     return wrapped(*args, **kwargs)
 
 
+def instrument_django_template_library(module):
+    settings = global_settings()
+
+    if "django.instrumentation.inclusion-tags.r1" in settings.feature_flag:
+        # if hasattr(module, "generic_tag_compiler"):
+        #     wrap_function_wrapper(
+        #         module, "generic_tag_compiler", _nr_wrapper_django_template_base_generic_tag_compiler_
+        #     )
+
+        if hasattr(module, "Library"):
+            wrap_function_wrapper(module, "Library.tag", _nr_wrapper_django_template_library_Library_tag_)
+
+            wrap_function_wrapper(
+                module, "Library.inclusion_tag", _nr_wrapper_django_template_library_Library_inclusion_tag_
+            )
+
+
 def instrument_django_template_base(module):
     global module_django_template_base
     module_django_template_base = module
@@ -1085,13 +1102,6 @@ def instrument_django_template_base(module):
         if hasattr(module, "generic_tag_compiler"):
             wrap_function_wrapper(
                 module, "generic_tag_compiler", _nr_wrapper_django_template_base_generic_tag_compiler_
-            )
-
-        if hasattr(module, "Library"):
-            wrap_function_wrapper(module, "Library.tag", _nr_wrapper_django_template_base_Library_tag_)
-
-            wrap_function_wrapper(
-                module, "Library.inclusion_tag", _nr_wrapper_django_template_base_Library_inclusion_tag_
             )
 
 

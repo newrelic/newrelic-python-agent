@@ -883,7 +883,9 @@ def _nr_wrapper_BaseCommand___init___(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-def _nr_wrapper_BaseCommand_run_from_argv_(wrapped, instance, args, kwargs):
+# Run from argv requires separate process.  Exclude
+# from coverage analysis for now
+def _nr_wrapper_BaseCommand_run_from_argv_(wrapped, instance, args, kwargs):  # pragma: no cover
     def _args(argv, *args, **kwargs):
         return argv
 

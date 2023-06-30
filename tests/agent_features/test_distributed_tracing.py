@@ -32,6 +32,9 @@ from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask, background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import (
+    accept_distributed_trace_headers,
+    accept_distributed_trace_payload,
+    create_distributed_trace_payload,
     current_span_id,
     current_trace_id,
     current_transaction,
@@ -185,10 +188,10 @@ def test_distributed_trace_attributes(span_events, accept_payload):
         payload["d"]["pa"] = "5e5733a911cfbc73"
 
         if accept_payload:
-            result = txn.accept_distributed_trace_payload(payload)
+            result = accept_distributed_trace_payload(payload)
             assert result
         else:
-            txn._create_distributed_trace_payload()
+            create_distributed_trace_payload()
 
         try:
             raise ValueError("cookies")
@@ -319,7 +322,6 @@ TRACESTATE = "rojo=f06a0ba902b7,congo=t61rcWkgMzE"
 )
 @override_application_settings(_override_settings)
 def test_distributed_tracing_backwards_compatibility(traceparent, tracestate, newrelic, metrics):
-
     headers = []
     if traceparent:
         headers.append(("traceparent", TRACEPARENT))
@@ -333,8 +335,7 @@ def test_distributed_tracing_backwards_compatibility(traceparent, tracestate, ne
     )
     @background_task(name="test_distributed_tracing_backwards_compatibility")
     def _test():
-        transaction = current_transaction()
-        transaction.accept_distributed_trace_headers(headers)
+        accept_distributed_trace_headers(headers)
 
     _test()
 

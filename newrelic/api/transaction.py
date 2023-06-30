@@ -159,13 +159,11 @@ class CachedPath(object):
 
 
 class Transaction(object):
-
     STATE_PENDING = 0
     STATE_RUNNING = 1
     STATE_STOPPED = 2
 
     def __init__(self, application, enabled=None, source=None):
-
         self._application = application
 
         self._source = source
@@ -343,7 +341,6 @@ class Transaction(object):
             self.__exit__(None, None, None)
 
     def __enter__(self):
-
         assert self._state == self.STATE_PENDING
 
         # Bail out if the transaction is not enabled.
@@ -403,7 +400,6 @@ class Transaction(object):
         return self
 
     def __exit__(self, exc, value, tb):
-
         # Bail out if the transaction is not enabled.
 
         if not self.enabled:
@@ -636,7 +632,6 @@ class Transaction(object):
         # new samples can cause an error.
 
         if not self.ignore_transaction:
-
             self._application.record_transaction(node)
 
     @property
@@ -929,9 +924,7 @@ class Transaction(object):
     @property
     def request_parameters(self):
         if (self.capture_params is None) or self.capture_params:
-
             if self._request_params:
-
                 r_attrs = {}
 
                 for k, v in self._request_params.items():
@@ -1095,7 +1088,6 @@ class Transaction(object):
         try:
             data = data or self._create_distributed_trace_data()
             if data:
-
                 traceparent = W3CTraceParent(data).text()
                 yield ("traceparent", traceparent)
 
@@ -1192,11 +1184,10 @@ class Transaction(object):
             except:
                 return False
 
-            if "pr" in data:
-                try:
-                    data["pr"] = float(data["pr"])
-                except:
-                    data["pr"] = None
+            try:
+                data["pr"] = float(data["pr"])
+            except Exception:
+                data["pr"] = None
 
             self._accept_distributed_trace_data(data, transport_type)
             self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Success")
@@ -1382,7 +1373,6 @@ class Transaction(object):
         # process web external calls.
 
         if self.client_cross_process_id is not None:
-
             # Need to work out queueing time and duration up to this
             # point for inclusion in metrics and response header. If the
             # recording of the transaction had been prematurely stopped
@@ -1426,11 +1416,17 @@ class Transaction(object):
 
         return nr_headers
 
-    def get_response_metadata(self):
+    # This function is CAT related and has been deprecated.
+    # Eventually, this will be removed.  Until then, coverage
+    # does not need to factor this function into its analysis.
+    def get_response_metadata(self):  # pragma: no cover
         nr_headers = dict(self._generate_response_headers())
         return convert_to_cat_metadata_value(nr_headers)
 
-    def process_request_metadata(self, cat_linking_value):
+    # This function is CAT related and has been deprecated.
+    # Eventually, this will be removed.  Until then, coverage
+    # does not need to factor this function into its analysis.
+    def process_request_metadata(self, cat_linking_value):  # pragma: no cover
         try:
             payload = base64_decode(cat_linking_value)
         except:
@@ -1447,7 +1443,6 @@ class Transaction(object):
         return self._process_incoming_cat_headers(encoded_cross_process_id, encoded_txn_header)
 
     def set_transaction_name(self, name, group=None, priority=None):
-
         # Always perform this operation even if the transaction
         # is not active at the time as will be called from
         # constructor. If path has been frozen do not allow
@@ -1517,7 +1512,9 @@ class Transaction(object):
 
         self._log_events.add(event, priority=priority)
 
-    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
+    # This function has been deprecated (and will be removed eventually)
+    # and therefore does not need to be included in coverage analysis
+    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):  # pragma: no cover
         # Deprecation Warning
         warnings.warn(
             ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
@@ -1684,7 +1681,9 @@ class Transaction(object):
 
         return result
 
-    def add_custom_parameter(self, name, value):
+    # This function has been deprecated (and will be removed eventually)
+    # and therefore does not need to be included in coverage analysis
+    def add_custom_parameter(self, name, value):  # pragma: no cover
         # Deprecation warning
         warnings.warn(
             ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
@@ -1692,7 +1691,9 @@ class Transaction(object):
         )
         return self.add_custom_attribute(name, value)
 
-    def add_custom_parameters(self, items):
+    # This function has been deprecated (and will be removed eventually)
+    # and therefore does not need to be included in coverage analysis
+    def add_custom_parameters(self, items):  # pragma: no cover
         # Deprecation warning
         warnings.warn(
             ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
@@ -1796,19 +1797,23 @@ def add_custom_attributes(items):
         return False
 
 
-def add_custom_parameter(key, value):
+# This function has been deprecated (and will be removed eventually)
+# and therefore does not need to be included in coverage analysis
+def add_custom_parameter(key, value):  # pragma: no cover
     # Deprecation warning
     warnings.warn(
-        ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
+        ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
         DeprecationWarning,
     )
     return add_custom_attribute(key, value)
 
 
-def add_custom_parameters(items):
+# This function has been deprecated (and will be removed eventually)
+# and therefore does not need to be included in coverage analysis
+def add_custom_parameters(items):  # pragma: no cover
     # Deprecation warning
     warnings.warn(
-        ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
+        ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
         DeprecationWarning,
     )
     return add_custom_attributes(items)

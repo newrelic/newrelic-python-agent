@@ -985,7 +985,6 @@ def _nr_wrapper_django_template_library_InclusionNode_render_(wrapped, instance,
 #     node_type = _bind_params(*args, **kwargs)
 
 #     if node_type.__name__ == "InclusionNode":
-#         breakpoint()
 #         node_type.render = _nr_wrapper_django_template_library_InclusionNode_render_(node_type.render)
 #         instance.render_annotated = _nr_wrapper_django_template_library_InclusionNode_render_(instance.render_annotated)
 
@@ -1026,7 +1025,6 @@ def _nr_wrapper_django_template_library_Library_tag_(wrapped, instance, args, kw
 
     # TODO: Write tests to include this
     if node_class.__name__ == "InclusionNode":
-        breakpoint()
         result = wrapped(*args, **kwargs)
         # node_class.render = _nr_wrapper_django_template_library_InclusionNode_render_(node_class.render)
         result.render = _nr_wrapper_django_template_library_InclusionNode_render_(result.render)
@@ -1064,7 +1062,6 @@ def instrument_django_template_library(module):
     if "django.instrumentation.inclusion-tags.r1" in settings.feature_flag:
 
         if hasattr(module, "Library"):
-            breakpoint()
             wrap_function_wrapper(module, "Library.tag", _nr_wrapper_django_template_library_Library_tag_)
 
             wrap_function_wrapper(

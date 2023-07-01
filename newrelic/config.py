@@ -2103,11 +2103,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.framework_django",
         "instrument_django_core_management_base",
     )
-    _process_module_definition(
-        "django.template.base",
-        "newrelic.hooks.framework_django",
-        "instrument_django_template_base",
-    )
+    # _process_module_definition(
+    #     "django.template.base",
+    #     "newrelic.hooks.framework_django",
+    #     "instrument_django_template_base",
+    # )
     _process_module_definition(
         "django.middleware.gzip",
         "newrelic.hooks.framework_django",

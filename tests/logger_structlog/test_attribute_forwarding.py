@@ -20,7 +20,7 @@ from testing_support.validators.validate_log_events import validate_log_events
 from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
 
 
-_event_attributes = {"message": "A", "context.key": "value"}
+_event_attributes = {"message": "A"}
 
 
 @override_application_settings({

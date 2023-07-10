@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # Install OS packages
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -36,7 +36,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         libmpfr-dev \
         libncurses-dev \
         libpq-dev \
-        librdkafka-dev \
         libreadline-dev \
         libsqlite3-dev \
         libssl-dev \
@@ -55,6 +54,18 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         zlib1g \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
+
+# Build librdkafka from source
+ARG LIBRDKAFKA_VERSION=2.1.1
+RUN cd /tmp && \
+    wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v${LIBRDKAFKA_VERSION}.zip -O ./librdkafka.zip && \
+    unzip ./librdkafka.zip && \
+    rm ./librdkafka.zip && \
+    cd ./librdkafka-${LIBRDKAFKA_VERSION} && \
+    ./configure && \
+    make all install && \
+    cd /tmp && \
+    rm -rf ./librdkafka-${LIBRDKAFKA_VERSION}
 
 # Setup ODBC config
 RUN sed -i 's|Driver=psqlodbca.so|Driver=/usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so|g' /etc/odbcinst.ini && \

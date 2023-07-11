@@ -648,14 +648,15 @@ jobs:
         image: bitnami/kafka:3.2
         ports:
           - 8080:8080
-          - 8081:8081
+          - 8082:8082
+          - 8083:8083
         env:
           KAFKA_ENABLE_KRAFT: no
           ALLOW_PLAINTEXT_LISTENER: yes
           KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
           KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
-          KAFKA_CFG_LISTENERS: L1://:8080,L2://:8081,L3://:8082
-          KAFKA_CFG_ADVERTISED_LISTENERS: L1://host.docker.internal:8080,L2://host.docker.internal:8081,L3://kafka:8082
+          KAFKA_CFG_LISTENERS: L1://:8082,L2://:8083,L3://:8080
+          KAFKA_CFG_ADVERTISED_LISTENERS: L1://host.docker.internal:8082,L2://host.docker.internal:8083,L3://kafka:8080
           KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT,L3:PLAINTEXT
           KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L3
 

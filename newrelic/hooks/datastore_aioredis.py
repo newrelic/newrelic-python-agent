@@ -72,8 +72,6 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
             # AioRedis v2 uses a Pipeline object for a client and internally queues up pipeline commands
             if aioredis_version:
                 from aioredis.client import Pipeline
-            else:
-                from redis.asyncio.client import Pipeline
             if isinstance(instance, Pipeline):
                 return wrapped(*args, **kwargs)
 

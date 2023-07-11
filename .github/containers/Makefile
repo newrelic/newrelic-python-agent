@@ -24,7 +24,7 @@ build:
 	@# Perform a shortened build for testing
 	@docker build $(MAKEFILE_DIR) \
 		-t ghcr.io/newrelic/newrelic-python-agent-ci:local \
-		--build-arg='PYTHON_VERSIONS=3.9'
+		--build-arg='PYTHON_VERSIONS=3.10 2.7'
 
 .PHONY: test
 test: build

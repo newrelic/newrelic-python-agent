@@ -96,8 +96,7 @@ def _wrap_method_trace(module, class_, method, name=None, group=None):
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
             inference_id = uuid.uuid4()
-            create_feature_event(transaction, class_, inference_id, instance, args, kwargs)
-            create_label_event(transaction, class_, inference_id, instance, return_val)
+            create_prediction_event(transaction, class_, inference_id, instance, args, kwargs, return_val)
             return PredictReturnTypeProxy(return_val, model_name=class_, training_step=training_step)
         return return_val
 
@@ -170,53 +169,6 @@ def _calc_prediction_label_stats(labels, class_, label_column_names, tags):
     _record_stats(labels, label_column_names, class_, "Label", tags)
 
 
-def create_label_event(transaction, class_, inference_id, instance, return_val):
-    model_name = getattr(instance, "_nr_wrapped_name", class_)
-    model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
-    label_names = getattr(instance, "_nr_wrapped_label_names", None)
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if return_val is not None:
-        import numpy as np
-
-        if not hasattr(return_val, "__iter__"):
-            labels = np.array([return_val])
-        else:
-            labels = np.array(return_val)
-        if len(labels.shape) == 1:
-            labels = np.reshape(labels, (len(labels) // 1, 1))
-
-        label_names_list = _get_label_names(label_names, labels)
-        _calc_prediction_label_stats(
-            labels,
-            class_,
-            label_names_list,
-            tags={
-                "inference_id": inference_id,
-                "model_version": model_version,
-                # The following are used for entity synthesis.
-                "modelName": model_name,
-            },
-        )
-        for prediction in labels:
-            for index, value in enumerate(prediction):
-                python_value_type = str(type(value))
-                value_type = str(categorize_data_type(python_value_type))
-
-                event = {
-                    "inference_id": inference_id,
-                    "model_version": model_version,
-                    "label_name": str(label_names_list[index]),
-                    "label_type": value_type,
-                    # The following are used for entity synthesis.
-                    "modelName": model_name,
-                }
-                # Don't include the raw value when inference_event_value is disabled.
-                if settings and settings.machine_learning.inference_events_value.enabled:
-                    event["label_value"] = str(value)
-                transaction.record_ml_event("InferenceData", event)
-
-
 def _get_label_names(user_defined_label_names, prediction_array):
     import numpy as np
 
@@ -283,14 +235,37 @@ def bind_predict(X, *args, **kwargs):
     return X
 
 
-def create_feature_event(transaction, class_, inference_id, instance, args, kwargs):
+def create_prediction_event(transaction, class_, inference_id, instance, args, kwargs, return_val):
     import numpy as np
 
     data_set = bind_predict(*args, **kwargs)
     model_name = getattr(instance, "_nr_wrapped_name", class_)
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
+    label_names = getattr(instance, "_nr_wrapped_label_names", None)
     settings = transaction.settings if transaction.settings is not None else global_settings()
+
+    labels = []
+    if return_val is not None:
+        if not hasattr(return_val, "__iter__"):
+            labels = np.array([return_val])
+        else:
+            labels = np.array(return_val)
+        if len(labels.shape) == 1:
+            labels = np.reshape(labels, (len(labels) // 1, 1))
+
+        label_names_list = _get_label_names(label_names, labels)
+        _calc_prediction_label_stats(
+            labels,
+            class_,
+            label_names_list,
+            tags={
+                "inference_id": inference_id,
+                "model_version": model_version,
+                # The following are used for entity synthesis.
+                "modelName": model_name,
+            },
+        )
 
     final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
     np_casted_data_set = np.array(data_set)
@@ -305,21 +280,29 @@ def create_feature_event(transaction, class_, inference_id, instance, args, kwar
             "modelName": model_name,
         },
     )
-    for col_index, feature in enumerate(np_casted_data_set):
-        for row_index, value in enumerate(feature):
-            value_type = find_type_category(data_set, row_index, col_index)
-            event = {
-                "inference_id": inference_id,
-                "model_version": model_version,
-                "feature_name": str(final_feature_names[row_index]),
-                "feature_type": value_type,
-                # The following are used for entity synthesis.
-                "modelName": model_name,
-            }
-            # Don't include the raw value when inference_event_value is disabled.
-            if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:
-                event["feature_value"] = str(value)
-            transaction.record_ml_event("InferenceData", event)
+    features, predictions = np_casted_data_set.shape
+    for prediction_index, prediction in enumerate(np_casted_data_set):
+        event = {
+            "inference_id": inference_id,
+            "model_version": model_version,
+            # The following are used for entity synthesis.
+            "modelName": model_name,
+        }
+        # Don't include the raw value when inference_event_value is disabled.
+        if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:
+            event.update(
+                {
+                    "feature.%s" % str(final_feature_names[feature_col_index]): str(value)
+                    for feature_col_index, value in enumerate(prediction)
+                }
+            )
+            event.update(
+                {
+                    "label.%s" % str(label_names_list[index]): str(value)
+                    for index, value in enumerate(labels[prediction_index])
+                }
+            )
+        transaction.record_ml_event("InferenceData", event)
 
 
 def _nr_instrument_model(module, model_class):

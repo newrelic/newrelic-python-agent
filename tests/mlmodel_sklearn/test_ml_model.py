@@ -127,31 +127,9 @@ int_list_recorded_custom_events = [
             "inference_id": None,
             "modelName": "MyCustomModel",
             "model_version": "1.2.3",
-            "feature_name": "0",
-            "feature_type": "numeric",
-            "feature_value": "1.0",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MyCustomModel",
-            "model_version": "1.2.3",
-            "feature_name": "1",
-            "feature_type": "numeric",
-            "feature_value": "2.0",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MyCustomModel",
-            "model_version": "1.2.3",
-            "label_name": "0",
-            "label_type": "numeric",
-            "label_value": label_value,
+            "feature.0": "1.0",
+            "feature.1": "2.0",
+            "label.0": label_value,
         },
     ),
 ]
@@ -159,7 +137,7 @@ int_list_recorded_custom_events = [
 
 @reset_core_stats_engine()
 def test_custom_model_int_list_no_features_and_labels():
-    @validate_ml_event_count(count=3)
+    @validate_ml_event_count(count=1)
     @validate_ml_events(int_list_recorded_custom_events)
     @background_task()
     def _test():
@@ -184,42 +162,10 @@ pandas_df_recorded_custom_events = [
             "inference_id": None,
             "modelName": "PandasTestModel",
             "model_version": "1.5.0b1",
-            "feature_name": "feature1",
-            "feature_type": "categorical",
-            "feature_value": "0",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "PandasTestModel",
-            "model_version": "1.5.0b1",
-            "feature_name": "feature2",
-            "feature_type": "categorical",
-            "feature_value": "0",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "PandasTestModel",
-            "model_version": "1.5.0b1",
-            "feature_name": "feature3",
-            "feature_type": "categorical",
-            "feature_value": "1",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "PandasTestModel",
-            "model_version": "1.5.0b1",
-            "label_name": "label1",
-            "label_type": "numeric",
-            "label_value": "0.5" if six.PY3 else "0.0",
+            "feature.feature1": "0",
+            "feature.feature2": "0",
+            "feature.feature3": "1",
+            "label.label1": "0.5" if six.PY3 else "0.0",
         },
     ),
 ]
@@ -227,7 +173,7 @@ pandas_df_recorded_custom_events = [
 
 @reset_core_stats_engine()
 def test_wrapper_attrs_custom_model_pandas_df():
-    @validate_ml_event_count(count=4)
+    @validate_ml_event_count(count=1)
     @validate_ml_events(pandas_df_recorded_custom_events)
     @background_task()
     def _test():
@@ -256,31 +202,9 @@ pandas_df_recorded_builtin_events = [
             "inference_id": None,
             "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
-            "feature_name": "feature1",
-            "feature_type": "numeric",
-            "feature_value": "12",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MyDecisionTreeClassifier",
-            "model_version": "1.5.0b1",
-            "feature_name": "feature2",
-            "feature_type": "numeric",
-            "feature_value": "14",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MyDecisionTreeClassifier",
-            "model_version": "1.5.0b1",
-            "label_name": "label1",
-            "label_type": "numeric",
-            "label_value": "0",
+            "feature.feature1": "12",
+            "feature.feature2": "14",
+            "label.label1": "0",
         },
     ),
 ]
@@ -288,7 +212,7 @@ pandas_df_recorded_builtin_events = [
 
 @reset_core_stats_engine()
 def test_wrapper_attrs_builtin_model():
-    @validate_ml_event_count(count=3)
+    @validate_ml_event_count(count=1)
     @validate_ml_events(pandas_df_recorded_builtin_events)
     @background_task()
     def _test():
@@ -322,42 +246,10 @@ pandas_df_mismatched_custom_events = [
             "inference_id": None,
             "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
-            "feature_name": "col1",
-            "feature_type": "numeric",
-            "feature_value": "12",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MyDecisionTreeClassifier",
-            "model_version": "1.5.0b1",
-            "feature_name": "col2",
-            "feature_type": "numeric",
-            "feature_value": "14",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MyDecisionTreeClassifier",
-            "model_version": "1.5.0b1",
-            "feature_name": "col3",
-            "feature_type": "numeric",
-            "feature_value": "16",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MyDecisionTreeClassifier",
-            "model_version": "1.5.0b1",
-            "label_name": "0",
-            "label_type": "numeric",
-            "label_value": "1",
+            "feature.col1": "12",
+            "feature.col2": "14",
+            "feature.col3": "16",
+            "label.0": "1",
         },
     ),
 ]
@@ -365,7 +257,7 @@ pandas_df_mismatched_custom_events = [
 
 @reset_core_stats_engine()
 def test_wrapper_mismatched_features_and_labels_df():
-    @validate_ml_event_count(count=4)
+    @validate_ml_event_count(count=1)
     @validate_ml_events(pandas_df_mismatched_custom_events)
     @background_task()
     def _test():
@@ -398,31 +290,9 @@ numpy_str_mismatched_custom_events = [
             "inference_id": None,
             "modelName": "MyDecisionTreeClassifier",
             "model_version": "0.0.1",
-            "feature_name": "0",
-            "feature_type": "str",
-            "feature_value": "20",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MyDecisionTreeClassifier",
-            "model_version": "0.0.1",
-            "feature_name": "1",
-            "feature_type": "str",
-            "feature_value": "21",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MyDecisionTreeClassifier",
-            "model_version": "0.0.1",
-            "label_name": "0",
-            "label_type": "str",
-            "label_value": "21",
+            "feature.0": "20",
+            "feature.1": "21",
+            "label.0": "21",
         },
     ),
 ]
@@ -431,7 +301,7 @@ numpy_str_mismatched_custom_events = [
 @reset_core_stats_engine()
 def test_wrapper_mismatched_features_and_labels_np_array():
     @validate_ml_events(numpy_str_mismatched_custom_events)
-    @validate_ml_event_count(count=3)
+    @validate_ml_event_count(count=1)
     @background_task()
     def _test():
         import numpy as np

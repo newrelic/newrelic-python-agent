@@ -16,8 +16,8 @@ import re
 
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import function_wrapper
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+
 
 _redis_client_methods = {
     "acl_cat",

@@ -1060,7 +1060,6 @@ def instrument_django_template_library(module):
     settings = global_settings()
 
     if "django.instrumentation.inclusion-tags.r1" in settings.feature_flag:
-
         if hasattr(module, "Library"):
             wrap_function_wrapper(module, "Library.tag", _nr_wrapper_django_template_library_Library_tag_)
 

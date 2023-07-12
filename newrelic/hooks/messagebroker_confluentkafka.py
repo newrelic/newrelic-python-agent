@@ -33,6 +33,8 @@ HEARTBEAT_RECEIVE = "MessageBroker/Kafka/Heartbeat/Receive"
 HEARTBEAT_SESSION_TIMEOUT = "MessageBroker/Kafka/Heartbeat/SessionTimeout"
 HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
 
+CONFLUENT_KAFKA_VERSION = get_package_version("confluent-kafka")
+
 
 def wrap_Producer_produce(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -57,7 +59,7 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
     else:
         topic = kwargs.pop("topic", None)
 
-    transaction.add_messagebroker_info("Confluent-Kafka", get_package_version("confluent-kafka"))
+    transaction.add_messagebroker_info("Confluent-Kafka", CONFLUENT_KAFKA_VERSION)
 
     with MessageTrace(
         library="Kafka",
@@ -164,7 +166,7 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
             name = "Named/%s" % destination_name
             transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
             transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
-            transaction.add_messagebroker_info("Confluent-Kafka", get_package_version("confluent-kafka"))
+            transaction.add_messagebroker_info("Confluent-Kafka", CONFLUENT_KAFKA_VERSION)
 
     return record
 

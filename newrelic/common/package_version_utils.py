@@ -19,10 +19,12 @@ VERSION_ATTRS = ("__version__", "version", "__version_tuple__", "version_tuple")
 NULL_VERSIONS = frozenset((None, "", "0", "0.0", "0.0.0", "0.0.0.0", (0,), (0, 0), (0, 0, 0), (0, 0, 0, 0)))  # nosec
 
 
-def get_package_version(name):
+def get_package_version(name, giveup_early=False):
     """Gets the version string of the library.
     :param name: The name of library.
     :type name: str
+    :param giveup_early: If True, stops search for version after checking version attributes on module. This is a performance optimization.
+    :type giveup_early: bool
     :return: The version of the library. Returns None if can't determine version.
     :type return: str or None
 
@@ -31,7 +33,7 @@ def get_package_version(name):
                 "1.1.0"
     """
 
-    version = _get_package_version(name)
+    version = _get_package_version(name, giveup_early)
 
     # Coerce iterables into a string
     if isinstance(version, tuple):
@@ -40,10 +42,12 @@ def get_package_version(name):
     return version
 
 
-def get_package_version_tuple(name):
+def get_package_version_tuple(name, giveup_early=False):
     """Gets the version tuple of the library.
     :param name: The name of library.
     :type name: str
+    :param giveup_early: If True, stops search for version after checking version attributes on module. This is a performance optimization.
+    :type giveup_early: bool
     :return: The version of the library. Returns None if can't determine version.
     :type return: tuple or None
 
@@ -58,7 +62,7 @@ def get_package_version_tuple(name):
         except Exception:
             return str(value)
 
-    version = _get_package_version(name)
+    version = _get_package_version(name, giveup_early)
 
     # Split "." separated strings and cast fields to ints
     if isinstance(version, str):
@@ -67,7 +71,7 @@ def get_package_version_tuple(name):
     return version
 
 
-def _get_package_version(name):
+def _get_package_version(name, giveup_early=False):
     module = sys.modules.get(name, None)
     version = None
     for attr in VERSION_ATTRS:
@@ -83,6 +87,9 @@ def _get_package_version(name):
                 return version
         except Exception:
             pass
+
+    if giveup_early:
+        return None
 
     # importlib was introduced into the standard library starting in Python3.8.
     if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):

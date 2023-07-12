@@ -35,6 +35,8 @@ HEARTBEAT_RECEIVE = "MessageBroker/Kafka/Heartbeat/Receive"
 HEARTBEAT_SESSION_TIMEOUT = "MessageBroker/Kafka/Heartbeat/SessionTimeout"
 HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
 
+KAFKA_PYTHON_VERSION = get_package_version("kafka-python")
+
 
 def _bind_send(topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None):
     return topic, value, key, headers, partition, timestamp_ms
@@ -49,7 +51,7 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
     topic, value, key, headers, partition, timestamp_ms = _bind_send(*args, **kwargs)
     headers = list(headers) if headers else []
 
-    transaction.add_messagebroker_info("Kafka-Python", get_package_version("kafka-python"))
+    transaction.add_messagebroker_info("Kafka-Python", KAFKA_PYTHON_VERSION)
 
     with MessageTrace(
         library="Kafka",
@@ -147,7 +149,7 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             name = "Named/%s" % destination_name
             transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
             transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
-            transaction.add_messagebroker_info("Kafka-Python", get_package_version("kafka-python"))
+            transaction.add_messagebroker_info("Kafka-Python", KAFKA_PYTHON_VERSION)
 
     return record
 

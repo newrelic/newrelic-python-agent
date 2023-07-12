@@ -102,6 +102,14 @@ _config_object = ConfigParser.RawConfigParser()
 
 _cache_object = []
 
+
+def _reset_config_parser():
+    global _config_object
+    global _cache_object
+    _config_object = ConfigParser.RawConfigParser()
+    _cache_object = []
+
+
 # Mechanism for extracting settings from the configuration for use in
 # instrumentation modules and extensions.
 
@@ -548,6 +556,11 @@ def _process_configuration(section):
 # and instrumentation errors should raise an exception or not.
 
 _configuration_done = False
+
+
+def _reset_configuration_done():
+    global _configuration_done
+    _configuration_done = False
 
 
 def _process_app_name_setting():
@@ -1238,7 +1251,6 @@ def _process_wsgi_application_configuration():
     for section in _config_object.sections():
         if not section.startswith("wsgi-application:"):
             continue
-
         enabled = False
 
         try:
@@ -3104,6 +3116,11 @@ def _process_module_entry_points():
 
 
 _instrumentation_done = False
+
+
+def _reset_instrumentation_done():
+    global _instrumentation_done
+    _instrumentation_done = False
 
 
 def _setup_instrumentation():

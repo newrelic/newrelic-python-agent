@@ -17,7 +17,10 @@ import json
 
 import pytest
 import webtest
-from testing_support.fixtures import override_application_settings, override_generic_settings, validate_attributes
+from testing_support.fixtures import (
+    override_application_settings,
+    validate_attributes,
+)
 from testing_support.validators.validate_error_event_attributes import (
     validate_error_event_attributes,
 )
@@ -364,15 +367,17 @@ def test_current_span_id_outside_transaction():
     assert span_id is None
 
 
-@pytest.mark.parametrize("trusted_account_key", ('1', None), ids=("tk_set", "tk_unset"))
+@pytest.mark.parametrize("trusted_account_key", ("1", None), ids=("tk_set", "tk_unset"))
 def test_outbound_dt_payload_generation(trusted_account_key):
-    @override_application_settings({
-        'distributed_tracing.enabled': True,
-        'account_id': '1',
-        'trusted_account_key': trusted_account_key,
-        'primary_application_id': '1',
-    })
-    @background_task(name='test_outbound_dt_payload_generation')
+    @override_application_settings(
+        {
+            "distributed_tracing.enabled": True,
+            "account_id": "1",
+            "trusted_account_key": trusted_account_key,
+            "primary_application_id": "1",
+        }
+    )
+    @background_task(name="test_outbound_dt_payload_generation")
     def _test_outbound_dt_payload_generation():
         transaction = current_transaction()
         payload = ExternalTrace.generate_request_headers(transaction)
@@ -386,31 +391,33 @@ def test_outbound_dt_payload_generation(trusted_account_key):
     _test_outbound_dt_payload_generation()
 
 
-@pytest.mark.parametrize("trusted_account_key", ('1', None), ids=("tk_set", "tk_unset"))
+@pytest.mark.parametrize("trusted_account_key", ("1", None), ids=("tk_set", "tk_unset"))
 def test_inbound_dt_payload_acceptance(trusted_account_key):
-    @override_application_settings({
-        'distributed_tracing.enabled': True,
-        'account_id': '1',
-        'trusted_account_key': trusted_account_key,
-        'primary_application_id': '1',
-    })
-    @background_task(name='_test_inbound_dt_payload_acceptance')
+    @override_application_settings(
+        {
+            "distributed_tracing.enabled": True,
+            "account_id": "1",
+            "trusted_account_key": trusted_account_key,
+            "primary_application_id": "1",
+        }
+    )
+    @background_task(name="_test_inbound_dt_payload_acceptance")
     def _test_inbound_dt_payload_acceptance():
         transaction = current_transaction()
 
         payload = {
-            'v': [0, 1],
-            'd': {
-                'ty': 'Mobile',
-                'ac': '1',
-                'tk': '1',
-                'ap': '2827902',
-                'pa': '5e5733a911cfbc73',
-                'id': '7d3efb1b173fecfa',
-                'tr': 'd6b4ba0c3a712ca',
-                'ti': 1518469636035,
-                'tx': '8703ff3d88eefe9d',
-            }
+            "v": [0, 1],
+            "d": {
+                "ty": "Mobile",
+                "ac": "1",
+                "tk": "1",
+                "ap": "2827902",
+                "pa": "5e5733a911cfbc73",
+                "id": "7d3efb1b173fecfa",
+                "tr": "d6b4ba0c3a712ca",
+                "ti": 1518469636035,
+                "tx": "8703ff3d88eefe9d",
+            },
         }
 
         result = transaction.accept_distributed_trace_payload(payload)

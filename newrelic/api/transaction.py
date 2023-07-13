@@ -1030,7 +1030,9 @@ class Transaction(object):
 
         settings = self._settings
         account_id = settings.account_id
-        trusted_account_key = settings.trusted_account_key or (self._settings.serverless_mode.enabled and self._settings.account_id)
+        trusted_account_key = settings.trusted_account_key or (
+            self._settings.serverless_mode.enabled and self._settings.account_id
+        )
         application_id = settings.primary_application_id
 
         if not (account_id and application_id and trusted_account_key and settings.distributed_tracing.enabled):
@@ -1121,7 +1123,9 @@ class Transaction(object):
             return False
 
         settings = self._settings
-        trusted_account_key = settings.trusted_account_key or (self._settings.serverless_mode.enabled and self._settings.account_id)
+        trusted_account_key = settings.trusted_account_key or (
+            self._settings.serverless_mode.enabled and self._settings.account_id
+        )
         if not (settings.distributed_tracing.enabled and trusted_account_key):
             return False
 
@@ -1168,7 +1172,9 @@ class Transaction(object):
 
             settings = self._settings
             account_id = data.get("ac")
-            trusted_account_key = settings.trusted_account_key or (self._settings.serverless_mode.enabled and self._settings.account_id)
+            trusted_account_key = settings.trusted_account_key or (
+                self._settings.serverless_mode.enabled and self._settings.account_id
+            )
 
             # If trust key doesn't exist in the payload, use account_id
             received_trust_key = data.get("tk", account_id)
@@ -1281,7 +1287,9 @@ class Transaction(object):
                 tracestate = ensure_str(tracestate)
                 try:
                     vendors = W3CTraceState.decode(tracestate)
-                    trusted_account_key = self._settings.trusted_account_key or (self._settings.serverless_mode.enabled and self._settings.account_id)
+                    trusted_account_key = self._settings.trusted_account_key or (
+                        self._settings.serverless_mode.enabled and self._settings.account_id
+                    )
                     payload = vendors.pop(trusted_account_key + "@nr", "")
                     self.tracing_vendors = ",".join(vendors.keys())
                     self.tracestate = vendors.text(limit=31)

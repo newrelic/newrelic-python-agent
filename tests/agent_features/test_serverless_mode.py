@@ -94,11 +94,12 @@ def test_no_cat_headers(serverless_application):
     _test_cat_headers()
 
 
-def test_dt_outbound(serverless_application):
+@pytest.mark.parametrize("trusted_account_key", ('1', None))
+def test_dt_outbound(serverless_application, trusted_account_key):
     @override_generic_settings(serverless_application.settings, {
         'distributed_tracing.enabled': True,
         'account_id': '1',
-        'trusted_account_key': '1',
+        'trusted_account_key': trusted_account_key,
         'primary_application_id': '1',
     })
     @background_task(
@@ -108,64 +109,18 @@ def test_dt_outbound(serverless_application):
         transaction = current_transaction()
         payload = ExternalTrace.generate_request_headers(transaction)
         assert payload
+        # Ensure trusted account key or account ID present as vendor
+        assert dict(payload)["tracestate"].startswith("1@nr=")
 
     _test_dt_outbound()
 
 
-def test_dt_inbound(serverless_application):
+@pytest.mark.parametrize("trusted_account_key", ('1', None))
+def test_dt_inbound(serverless_application, trusted_account_key):
     @override_generic_settings(serverless_application.settings, {
         'distributed_tracing.enabled': True,
         'account_id': '1',
-        'trusted_account_key': '1',
-        'primary_application_id': '1',
-    })
-    @background_task(
-            application=serverless_application,
-            name='test_dt_inbound')
-    def _test_dt_inbound():
-        transaction = current_transaction()
-
-        payload = {
-            'v': [0, 1],
-            'd': {
-                'ty': 'Mobile',
-                'ac': '1',
-                'tk': '1',
-                'ap': '2827902',
-                'pa': '5e5733a911cfbc73',
-                'id': '7d3efb1b173fecfa',
-                'tr': 'd6b4ba0c3a712ca',
-                'ti': 1518469636035,
-                'tx': '8703ff3d88eefe9d',
-            }
-        }
-
-        result = transaction.accept_distributed_trace_payload(payload)
-        assert result
-
-    _test_dt_inbound()
-
-def test_dt_outbound_no_trusted_account_key(serverless_application):
-    @override_generic_settings(serverless_application.settings, {
-        'distributed_tracing.enabled': True,
-        'account_id': '1',
-        'primary_application_id': '1',
-    })
-    @background_task(
-            application=serverless_application,
-            name='test_dt_outbound')
-    def _test_dt_outbound():
-        transaction = current_transaction()
-        payload = ExternalTrace.generate_request_headers(transaction)
-        assert payload
-
-    _test_dt_outbound()
-
-
-def test_dt_inbound_no_trusted_account_key(serverless_application):
-    @override_generic_settings(serverless_application.settings, {
-        'distributed_tracing.enabled': True,
-        'account_id': '1',
+        'trusted_account_key': trusted_account_key,
         'primary_application_id': '1',
     })
     @background_task(

@@ -1291,7 +1291,7 @@ class Transaction(object):
                     # Remove trusted new relic header if available and parse
                     if payload:
                         try:
-                            tracestate_data = NrTraceState.decode(payload, tk)
+                            tracestate_data = NrTraceState.decode(payload, trusted_account_key)
                         except:
                             tracestate_data = None
                         if tracestate_data:

@@ -94,8 +94,8 @@ def test_no_cat_headers(serverless_application):
     _test_cat_headers()
 
 
-@pytest.mark.parametrize("trusted_account_key", ('1', None))
-def test_dt_outbound(serverless_application, trusted_account_key):
+@pytest.mark.parametrize("trusted_account_key", ('1', None), ids=("tk_set", "tk_unset"))
+def test_outbound_dt_payload_generation(serverless_application, trusted_account_key):
     @override_generic_settings(serverless_application.settings, {
         'distributed_tracing.enabled': True,
         'account_id': '1',
@@ -104,19 +104,19 @@ def test_dt_outbound(serverless_application, trusted_account_key):
     })
     @background_task(
             application=serverless_application,
-            name='test_dt_outbound')
-    def _test_dt_outbound():
+            name='test_outbound_dt_payload_generation')
+    def _test_outbound_dt_payload_generation():
         transaction = current_transaction()
         payload = ExternalTrace.generate_request_headers(transaction)
         assert payload
         # Ensure trusted account key or account ID present as vendor
         assert dict(payload)["tracestate"].startswith("1@nr=")
 
-    _test_dt_outbound()
+    _test_outbound_dt_payload_generation()
 
 
-@pytest.mark.parametrize("trusted_account_key", ('1', None))
-def test_dt_inbound(serverless_application, trusted_account_key):
+@pytest.mark.parametrize("trusted_account_key", ('1', None), ids=("tk_set", "tk_unset"))
+def test_inbound_dt_payload_acceptance(serverless_application, trusted_account_key):
     @override_generic_settings(serverless_application.settings, {
         'distributed_tracing.enabled': True,
         'account_id': '1',
@@ -125,8 +125,8 @@ def test_dt_inbound(serverless_application, trusted_account_key):
     })
     @background_task(
             application=serverless_application,
-            name='test_dt_inbound')
-    def _test_dt_inbound():
+            name='test_inbound_dt_payload_acceptance')
+    def _test_inbound_dt_payload_acceptance():
         transaction = current_transaction()
 
         payload = {
@@ -147,7 +147,7 @@ def test_dt_inbound(serverless_application, trusted_account_key):
         result = transaction.accept_distributed_trace_payload(payload)
         assert result
 
-    _test_dt_inbound()
+    _test_inbound_dt_payload_acceptance()
 
 
 @pytest.mark.parametrize('arn_set', (True, False))

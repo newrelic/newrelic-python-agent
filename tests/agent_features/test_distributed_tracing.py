@@ -17,10 +17,7 @@ import json
 
 import pytest
 import webtest
-from testing_support.fixtures import (
-    override_application_settings,
-    validate_attributes,
-)
+from testing_support.fixtures import override_application_settings, validate_attributes
 from testing_support.validators.validate_error_event_attributes import (
     validate_error_event_attributes,
 )

@@ -22,7 +22,9 @@ default: test
 .PHONY: build
 build:
 	@# Perform a shortened build for testing
-	@docker build --build-arg='PYTHON_VERSIONS=3.10 2.7' $(MAKEFILE_DIR) -t ghcr.io/newrelic/newrelic-python-agent-ci:local
+	@docker build $(MAKEFILE_DIR) \
+		-t ghcr.io/newrelic/newrelic-python-agent-ci:local \
+		--build-arg='PYTHON_VERSIONS=3.10 2.7'
 
 .PHONY: test
 test: build
@@ -38,7 +40,9 @@ run: build
 	@docker run --rm -it \
 		--mount type=bind,source="$(REPO_ROOT)",target=/home/github/python-agent \
 		--workdir=/home/github/python-agent \
+		--add-host=host.docker.internal:host-gateway \
 		-e NEW_RELIC_HOST="${NEW_RELIC_HOST}" \
 		-e NEW_RELIC_LICENSE_KEY="${NEW_RELIC_LICENSE_KEY}" \
 		-e NEW_RELIC_DEVELOPER_MODE="${NEW_RELIC_DEVELOPER_MODE}" \
+		-e GITHUB_ACTIONS="true" \
 		ghcr.io/newrelic/newrelic-python-agent-ci:local /bin/bash

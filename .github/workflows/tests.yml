@@ -276,7 +276,7 @@ jobs:
 
     services:
       mssql:
-        image: mcr.microsoft.com/azure-sql-edge:sha-aceb2f0a5e9f2dd67eef0223b5f259bb5f181a57
+        image: mcr.microsoft.com/azure-sql-edge:latest
         env:
           MSSQL_USER: python_agent
           MSSQL_PASSWORD: python_agent

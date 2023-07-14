@@ -30,6 +30,7 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask, background_task
+from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import (
     accept_distributed_trace_headers,
@@ -361,3 +362,65 @@ def test_current_span_id_inside_transaction():
 def test_current_span_id_outside_transaction():
     span_id = current_span_id()
     assert span_id is None
+
+
+@pytest.mark.parametrize("trusted_account_key", ("1", None), ids=("tk_set", "tk_unset"))
+def test_outbound_dt_payload_generation(trusted_account_key):
+    @override_application_settings(
+        {
+            "distributed_tracing.enabled": True,
+            "account_id": "1",
+            "trusted_account_key": trusted_account_key,
+            "primary_application_id": "1",
+        }
+    )
+    @background_task(name="test_outbound_dt_payload_generation")
+    def _test_outbound_dt_payload_generation():
+        transaction = current_transaction()
+        payload = ExternalTrace.generate_request_headers(transaction)
+        if trusted_account_key:
+            assert payload
+            # Ensure trusted account key present as vendor
+            assert dict(payload)["tracestate"].startswith("1@nr=")
+        else:
+            assert not payload
+
+    _test_outbound_dt_payload_generation()
+
+
+@pytest.mark.parametrize("trusted_account_key", ("1", None), ids=("tk_set", "tk_unset"))
+def test_inbound_dt_payload_acceptance(trusted_account_key):
+    @override_application_settings(
+        {
+            "distributed_tracing.enabled": True,
+            "account_id": "1",
+            "trusted_account_key": trusted_account_key,
+            "primary_application_id": "1",
+        }
+    )
+    @background_task(name="_test_inbound_dt_payload_acceptance")
+    def _test_inbound_dt_payload_acceptance():
+        transaction = current_transaction()
+
+        payload = {
+            "v": [0, 1],
+            "d": {
+                "ty": "Mobile",
+                "ac": "1",
+                "tk": "1",
+                "ap": "2827902",
+                "pa": "5e5733a911cfbc73",
+                "id": "7d3efb1b173fecfa",
+                "tr": "d6b4ba0c3a712ca",
+                "ti": 1518469636035,
+                "tx": "8703ff3d88eefe9d",
+            },
+        }
+
+        result = transaction.accept_distributed_trace_payload(payload)
+        if trusted_account_key:
+            assert result
+        else:
+            assert not result
+
+    _test_inbound_dt_payload_acceptance()

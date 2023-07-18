@@ -35,6 +35,7 @@ pandas_df_category_recorded_custom_events = [
             "feature.col1": "2.0",
             "feature.col2": "4.0",
             "label.0": "27.0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -73,6 +74,7 @@ pandas_df_bool_recorded_custom_events = [
             "feature.col1": "True",
             "feature.col2": "True",
             "label.0": true_label_value,
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -110,6 +112,7 @@ pandas_df_float_recorded_custom_events = [
             "feature.col1": "100.0",
             "feature.col2": "300.0",
             "label.0": "345.6",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -147,6 +150,7 @@ int_list_recorded_custom_events = [
             "feature.0": "1",
             "feature.1": "2",
             "label.0": "1.0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -183,6 +187,7 @@ numpy_int_recorded_custom_events = [
             "feature.0": "12",
             "feature.1": "13",
             "label.0": "11.0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -219,6 +224,7 @@ numpy_str_recorded_custom_events = [
             "feature.0": "20",
             "feature.1": "21",
             "label.0": "21",
+            "new_relic_data_schema_version": 2,
         },
     ),
     (
@@ -230,6 +236,7 @@ numpy_str_recorded_custom_events = [
             "feature.0": "22",
             "feature.1": "23",
             "label.0": "21",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -263,6 +270,7 @@ numpy_str_recorded_custom_events_no_value = [
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -367,6 +375,7 @@ multilabel_output_label_events = [
             "feature.17": "1.0",
             "feature.18": "2.0",
             "feature.19": "4.0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]

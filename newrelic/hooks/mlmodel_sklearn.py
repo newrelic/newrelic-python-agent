@@ -285,6 +285,7 @@ def create_prediction_event(transaction, class_, inference_id, instance, args, k
         event = {
             "inference_id": inference_id,
             "model_version": model_version,
+            "new_relic_data_schema_version": 2,
             # The following are used for entity synthesis.
             "modelName": model_name,
         }

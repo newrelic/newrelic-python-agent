@@ -130,6 +130,7 @@ int_list_recorded_custom_events = [
             "feature.0": "1.0",
             "feature.1": "2.0",
             "label.0": label_value,
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -166,6 +167,7 @@ pandas_df_recorded_custom_events = [
             "feature.feature2": "0",
             "feature.feature3": "1",
             "label.label1": "0.5" if six.PY3 else "0.0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -205,6 +207,7 @@ pandas_df_recorded_builtin_events = [
             "feature.feature1": "12",
             "feature.feature2": "14",
             "label.label1": "0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -250,6 +253,7 @@ pandas_df_mismatched_custom_events = [
             "feature.col2": "14",
             "feature.col3": "16",
             "label.0": "1",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -293,6 +297,7 @@ numpy_str_mismatched_custom_events = [
             "feature.0": "20",
             "feature.1": "21",
             "label.0": "21",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]

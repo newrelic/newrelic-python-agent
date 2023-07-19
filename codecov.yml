@@ -1,8 +1,10 @@
 ignore:
   - "newrelic/packages/**/*"
   - "newrelic/packages/*"
+  - "newreilc/hooks/component_sentry.py"
   - "newrelic/hooks/adapter_meinheld.py"
   - "newrelic/hooks/adapter_flup.py"
+  - "newrelic/hooks/adapter_paste.py"
   - "newrelic/hooks/component_piston.py"
   - "newrelic/hooks/datastore_pyelasticsearch.py"
   - "newrelic/hooks/external_pywapi.py"
@@ -13,9 +15,9 @@ ignore:
   - "newrelic/hooks/framework_web2py.py"
   - "newrelic/hooks/middleware_weberror.py"
   - "newrelic/hooks/framework_webpy.py"
+  - "newrelic/hooks/datastore_motor.py"
   - "newrelic/hooks/database_oursql.py"
   - "newrelic/hooks/database_psycopg2ct.py"
   - "newrelic/hooks/datastore_umemcache.py"
-  # Temporarily disable kafka
-  - "newrelic/hooks/messagebroker_kafkapython.py"
-  - "newrelic/hooks/messagebroker_confluentkafka.py"
+  - "newrelic/admin/*"
+  - "newrelic/console.py"

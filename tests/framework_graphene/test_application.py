@@ -14,10 +14,10 @@
 
 import pytest
 
-from framework_graphql.test_application import *
+from newrelic.common.package_version_utils import get_package_version
 
 
-@pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async", "sync-promise", "async-promise"])
+@pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async"])
 def target_application(request):
     from ._target_application import target_application
 
@@ -26,13 +26,7 @@ def target_application(request):
         pytest.skip("Unsupported combination.")
         return
 
-    try:
-        import graphene
-        version = graphene.__version__
-    except Exception:
-        import pkg_resources
-        version = pkg_resources.get_distribution("graphene").version
-
+    version = get_package_version("graphene")
     param = request.param.split("-")
     is_background = param[0] not in {"wsgi", "asgi"}
     schema_type = param[1]

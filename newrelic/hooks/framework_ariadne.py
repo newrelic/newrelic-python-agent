@@ -21,25 +21,14 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.graphql_utils import graphql_statement
 from newrelic.hooks.framework_graphql import (
-    framework_version as graphql_framework_version,
+    GRAPHQL_VERSION,
+    ignore_graphql_duplicate_exception,
 )
-from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
 
-
-def framework_details():
-    try:
-        import ariadne
-        version = ariadne.__version__
-    except Exception:
-        try:
-            import pkg_resources
-            version = pkg_resources.get_distribution("ariadne").version
-        except Exception:
-            version = None
-
-    return ("Ariadne", version)
+ARIADNE_VERSION = get_package_version("ariadne")
 
 
 def bind_graphql(schema, data, *args, **kwargs):
@@ -57,9 +46,8 @@ def wrap_graphql_sync(wrapped, instance, args, kwargs):
     except TypeError:
         return wrapped(*args, **kwargs)
 
-    framework = framework_details()
-    transaction.add_framework_info(name=framework[0], version=framework[1])  # No version info available on ariadne
-    transaction.add_framework_info(name="GraphQL", version=graphql_framework_version())
+    transaction.add_framework_info(name="Ariadne", version=ARIADNE_VERSION)
+    transaction.add_framework_info(name="GraphQL", version=GRAPHQL_VERSION)
 
     query = data["query"]
     if hasattr(query, "body"):
@@ -91,9 +79,8 @@ async def wrap_graphql(wrapped, instance, args, kwargs):
             result = await result
         return result
 
-    framework = framework_details()
-    transaction.add_framework_info(name=framework[0], version=framework[1])  # No version info available on ariadne
-    transaction.add_framework_info(name="GraphQL", version=graphql_framework_version())
+    transaction.add_framework_info(name="Ariadne", version=ARIADNE_VERSION)
+    transaction.add_framework_info(name="GraphQL", version=GRAPHQL_VERSION)
 
     query = data["query"]
     if hasattr(query, "body"):
@@ -121,9 +108,9 @@ def instrument_ariadne_execute(module):
 
 def instrument_ariadne_asgi(module):
     if hasattr(module, "GraphQL"):
-        wrap_asgi_application(module, "GraphQL.__call__", framework=framework_details())
+        wrap_asgi_application(module, "GraphQL.__call__", framework=("GraphQL", GRAPHQL_VERSION))
 
 
 def instrument_ariadne_wsgi(module):
     if hasattr(module, "GraphQL"):
-        wrap_wsgi_application(module, "GraphQL.__call__", framework=framework_details())
+        wrap_wsgi_application(module, "GraphQL.__call__", framework=("GraphQL", GRAPHQL_VERSION))

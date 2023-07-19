@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
 import logging
 import sys
 import time
 from collections import deque
+from inspect import isawaitable
 
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.function_trace import FunctionTrace
@@ -25,42 +25,14 @@ from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.graphql_utils import graphql_statement
-from newrelic.packages import six
-
-try:
-    from inspect import isawaitable
-except ImportError:
-
-    def isawaitable(f):
-        return False
-
-
-try:
-    # from promise import is_thenable as is_promise
-    from promise import Promise
-
-    def is_promise(obj):
-        return isinstance(obj, Promise)
-
-    def as_promise(f):
-        return Promise.resolve(None).then(f)
-
-except ImportError:
-    # If promises is not installed, prevent crashes by bypassing logic
-    def is_promise(obj):
-        return False
-
-    def as_promise(f):
-        return f
-
-if six.PY3:
-    from newrelic.hooks.framework_graphql_py3 import (
-        nr_coro_execute_name_wrapper,
-        nr_coro_resolver_error_wrapper,
-        nr_coro_resolver_wrapper,
-        nr_coro_graphql_impl_wrapper,
-    )
+from newrelic.hooks.framework_graphql_py3 import (
+    nr_coro_execute_name_wrapper,
+    nr_coro_graphql_impl_wrapper,
+    nr_coro_resolver_error_wrapper,
+    nr_coro_resolver_wrapper,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -70,23 +42,7 @@ GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type"))
 VERSION = None
 
 
-def framework_version():
-    """Framework version string."""
-    global VERSION
-    if VERSION is None:
-        from graphql import __version__ as version
-
-        VERSION = version
-
-    return VERSION
-
-
-def graphql_version():
-    """Minor version tuple."""
-    version = framework_version()
-
-    # Take first two values in version to avoid ValueErrors with pre-releases (ex: 3.2.0a0)
-    return tuple(int(v) for v in version.split(".")[:2])
+GRAPHQL_VERSION = get_package_version("graphql")
 
 
 def ignore_graphql_duplicate_exception(exc, val, tb):
@@ -115,20 +71,6 @@ def ignore_graphql_duplicate_exception(exc, val, tb):
     return None  # Follow original exception matching rules
 
 
-def catch_promise_error(e):
-    if hasattr(e, "__traceback__"):
-        notice_error(error=(e.__class__, e, e.__traceback__), ignore=ignore_graphql_duplicate_exception)
-    else:
-        # Python 2 does not retain a reference to the traceback and is irretrievable from a promise.
-        # As a workaround, raise the error and report it despite having an incorrect traceback.
-        try:
-            raise e
-        except Exception:
-            notice_error(ignore=ignore_graphql_duplicate_exception)
-
-    return None
-
-
 def wrap_executor_context_init(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
@@ -150,10 +92,6 @@ def bind_operation_v3(operation, root_value):
     return operation
 
 
-def bind_operation_v2(exe_context, operation, root_value):
-    return operation
-
-
 def wrap_execute_operation(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     trace = current_trace()
@@ -170,15 +108,9 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     try:
         operation = bind_operation_v3(*args, **kwargs)
     except TypeError:
-        try:
-            operation = bind_operation_v2(*args, **kwargs)
-        except TypeError:
-            return wrapped(*args, **kwargs)
+        return wrapped(*args, **kwargs)
 
-    if graphql_version() < (3, 0):
-        execution_context = args[0]
-    else:
-        execution_context = instance
+    execution_context = args[0]
 
     trace.operation_name = get_node_value(operation, "name") or "<anonymous>"
 
@@ -202,10 +134,8 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
             # Operation trace sets transaction name
             trace.set_transaction_name(priority=14)
         return value
-    
-    if is_promise(result) and result.is_pending and graphql_version() < (3, 0):
-        return result.then(set_name)
-    elif isawaitable(result) and not is_promise(result):
+
+    if isawaitable(result):
         return nr_coro_execute_name_wrapper(wrapped, result, set_name)
     else:
         set_name()
@@ -220,34 +150,20 @@ def get_node_value(field, attr, subattr="value"):
 
 
 def is_fragment_spread_node(field):
-    # Resolve version specific imports
-    try:
-        from graphql.language.ast import FragmentSpread
-    except ImportError:
-        from graphql import FragmentSpreadNode as FragmentSpread
+    from graphql.language.ast import FragmentSpread
 
     return isinstance(field, FragmentSpread)
 
 
 def is_fragment(field):
-    # Resolve version specific imports
-    try:
-        from graphql.language.ast import FragmentSpread, InlineFragment
-    except ImportError:
-        from graphql import FragmentSpreadNode as FragmentSpread
-        from graphql import InlineFragmentNode as InlineFragment
+    from graphql.language.ast import FragmentSpread, InlineFragment
 
     _fragment_types = (InlineFragment, FragmentSpread)
-
     return isinstance(field, _fragment_types)
 
 
 def is_named_fragment(field):
-    # Resolve version specific imports
-    try:
-        from graphql.language.ast import NamedType
-    except ImportError:
-        from graphql import NamedTypeNode as NamedType
+    from graphql.language.ast import NamedType
 
     return (
         is_fragment(field)
@@ -390,19 +306,8 @@ def wrap_resolver(wrapped, instance, args, kwargs):
     with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
         sync_start_time = time.time()
         result = wrapped(*args, **kwargs)
-        
-        if is_promise(result) and result.is_pending and graphql_version() < (3, 0):
-            @functools.wraps(wrapped)
-            def nr_promise_resolver_error_wrapper(v):
-                with trace:
-                    with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-                        try:
-                            return result.get()
-                        except Exception:
-                            transaction.set_transaction_name(name, "GraphQL", priority=15)
-                            raise
-            return as_promise(nr_promise_resolver_error_wrapper)
-        elif isawaitable(result) and not is_promise(result):
+
+        if isawaitable(result):
             # Grab any async resolvers and wrap with traces
             return nr_coro_resolver_error_wrapper(
                 wrapped, name, trace, ignore_graphql_duplicate_exception, result, transaction
@@ -410,9 +315,6 @@ def wrap_resolver(wrapped, instance, args, kwargs):
         else:
             with trace:
                 trace.start_time = sync_start_time
-                if is_promise(result) and result.is_rejected:
-                    result.catch(catch_promise_error).get()
-                    transaction.set_transaction_name(name, "GraphQL", priority=15)
                 return result
 
 
@@ -455,19 +357,12 @@ def bind_resolve_field_v3(parent_type, source, field_nodes, path):
     return parent_type, field_nodes, path
 
 
-def bind_resolve_field_v2(exe_context, parent_type, source, field_asts, parent_info, field_path):
-    return parent_type, field_asts, field_path
-
-
 def wrap_resolve_field(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    if graphql_version() < (3, 0):
-        bind_resolve_field = bind_resolve_field_v2
-    else:
-        bind_resolve_field = bind_resolve_field_v3
+    bind_resolve_field = bind_resolve_field_v3
 
     try:
         parent_type, field_asts, field_path = bind_resolve_field(*args, **kwargs)
@@ -496,14 +391,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
             notice_error(ignore=ignore_graphql_duplicate_exception)
             raise
 
-    if is_promise(result) and result.is_pending and graphql_version() < (3, 0):
-        @functools.wraps(wrapped)
-        def nr_promise_resolver_wrapper(v):
-            with trace:
-                with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-                    return result.get()
-        return as_promise(nr_promise_resolver_wrapper)
-    elif isawaitable(result) and not is_promise(result):
+    if isawaitable(result):
         # Asynchronous resolvers (returned coroutines from non-coroutine functions)
         # Return a coroutine that handles wrapping in a resolver trace
         return nr_coro_resolver_wrapper(wrapped, trace, ignore_graphql_duplicate_exception, result)
@@ -538,11 +426,8 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    transaction.add_framework_info(name="GraphQL", version=framework_version())
-    if graphql_version() < (3, 0):
-        bind_query = bind_execute_graphql_query
-    else:
-        bind_query = bind_graphql_impl_query
+    transaction.add_framework_info(name="GraphQL", version=GRAPHQL_VERSION)
+    bind_query = bind_graphql_impl_query
 
     try:
         schema, query = bind_query(*args, **kwargs)
@@ -563,7 +448,7 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
         framework = schema._nr_framework
         trace.product = framework[0]
         transaction.add_framework_info(name=framework[0], version=framework[1])
-    
+
     # Trace must be manually started and stopped to ensure it exists prior to and during the entire duration of the query.
     # Otherwise subsequent instrumentation will not be able to find an operation trace and will have issues.
     trace.__enter__()
@@ -575,19 +460,7 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
         trace.__exit__(*sys.exc_info())
         raise
     else:
-        if is_promise(result) and result.is_pending:
-            # Execution promise, append callbacks to exit trace.
-            def on_resolve(v):
-                trace.__exit__(None, None, None)
-                return v
-
-            def on_reject(e):
-                catch_promise_error(e)
-                trace.__exit__(e.__class__, e, e.__traceback__)
-                return e
-
-            return result.then(on_resolve, on_reject)
-        elif isawaitable(result) and not is_promise(result):
+        if isawaitable(result):
             # Asynchronous implementations
             # Return a coroutine that handles closing the operation trace
             return nr_coro_graphql_impl_wrapper(wrapped, trace, ignore_graphql_duplicate_exception, result)
@@ -642,8 +515,6 @@ def instrument_graphql_validate(module):
 def instrument_graphql(module):
     if hasattr(module, "graphql_impl"):
         wrap_function_wrapper(module, "graphql_impl", wrap_graphql_impl)
-    if hasattr(module, "execute_graphql"):
-        wrap_function_wrapper(module, "execute_graphql", wrap_graphql_impl)
 
 
 def instrument_graphql_parser(module):

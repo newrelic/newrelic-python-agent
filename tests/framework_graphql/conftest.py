@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     code_coverage_fixture,
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -40,7 +40,8 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
 )
 
-@pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async", "sync-promise", "async-promise"])
+
+@pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async"])
 def target_application(request):
     from ._target_application import target_application
 

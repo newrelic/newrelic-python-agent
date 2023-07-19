@@ -13,6 +13,10 @@
 # limitations under the License.
 
 import pytest
+from framework_graphql.test_application_async import (
+    error_middleware_async,
+    example_middleware_async,
+)
 from testing_support.fixtures import (
     dt_enabled,
     validate_transaction_errors,
@@ -28,7 +32,6 @@ from testing_support.validators.validate_transaction_count import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-from newrelic.packages import six
 
 
 def conditional_decorator(decorator, condition):
@@ -80,14 +83,8 @@ def error_middleware(next, root, info, **args):
 example_middleware = [example_middleware]
 error_middleware = [error_middleware]
 
-if six.PY3:
-    try:
-        from test_application_async import error_middleware_async, example_middleware_async
-    except ImportError:
-        from framework_graphql.test_application_async import error_middleware_async, example_middleware_async
-
-    example_middleware.append(example_middleware_async)
-    error_middleware.append(error_middleware_async)
+example_middleware.append(example_middleware_async)
+error_middleware.append(error_middleware_async)
 
 
 _runtime_error_name = callable_name(RuntimeError)
@@ -177,7 +174,9 @@ def test_query_and_mutation(target_application, is_graphql_2):
         "graphql.field.returnType": "[String%s]%s" % (type_annotation, type_annotation),
     }
 
-    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add")
+    @validate_code_level_metrics(
+        "framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add"
+    )
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
     @validate_transaction_metrics(

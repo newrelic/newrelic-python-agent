@@ -15,7 +15,11 @@
 
 IGNORED_METHODS = {
     "address",
+    "auto_close_connection_pool",
     "channels",
+    "client_tracking_off",
+    "client_tracking_on",
+    "client_no_touch",
     "close",
     "closed",
     "connection_pool",
@@ -25,6 +29,9 @@ IGNORED_METHODS = {
     "execute_command",
     "execute",
     "from_url",
+    "get_connection_kwargs",
+    "get_encoder",
+    "get_retry",
     "hscan_iter",
     "ihscan",
     "in_pubsub",
@@ -33,6 +40,7 @@ IGNORED_METHODS = {
     "iscan",
     "isscan",
     "izscan",
+    "load_external_module",
     "lock",
     "multi_exec",
     "parse_response",
@@ -42,9 +50,11 @@ IGNORED_METHODS = {
     "register_script",
     "response_callbacks",
     "RESPONSE_CALLBACKS",
+    "sentinel",
     "SET_IF_EXIST",
     "SET_IF_NOT_EXIST",
     "set_response_callback",
+    "set_retry",
     "SHUTDOWN_NOSAVE",
     "SHUTDOWN_SAVE",
     "single_connection_client",
@@ -60,6 +70,20 @@ IGNORED_METHODS = {
     "ZSET_IF_EXIST",
     "ZSET_IF_NOT_EXIST",
 }
+
+REDIS_MODULES = {
+    "bf",
+    "cf",
+    "cms",
+    "ft",
+    "graph",
+    "json",
+    "tdigest",
+    "topk",
+    "ts",
+}
+
+IGNORED_METHODS |= REDIS_MODULES
 
 
 def test_uninstrumented_methods(client):

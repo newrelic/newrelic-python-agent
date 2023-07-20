@@ -24,19 +24,24 @@ on:
   schedule:
     - cron: "0 15 * * *"
 
+concurrency:
+  group: ${{ github.ref || github.run_id }}-${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
-  tests: # Aggregate job that provides a single check for workflow success
-    runs-on: ubuntu-latest
+  # Aggregate job that provides a single check for all tests passing
+  tests:
+    runs-on: ubuntu-20.04
     needs:
       - python
-      - elasticsearchserver01
       - elasticsearchserver07
+      - elasticsearchserver08
       - gearman
       - grpc
       - kafka
-      - libcurl
       - memcached
       - mongodb
+      - mssql
       - mysql
       - postgres
       - rabbitmq
@@ -47,6 +52,40 @@ jobs:
       - name: Success
         run: echo "Success!"
 
+  # Combine and upload coverage data
+  coverage:
+    if: success() || failure() # Does not run on cancelled workflows
+    runs-on: ubuntu-20.04
+    needs:
+      - tests
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          architecture: x64
+
+      - name: Download Coverage Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./
+
+      - name: Combine Coverage
+        run: |
+          pip install coverage
+          find . -name ".coverage.*" -exec mv {} ./ \;
+          coverage combine
+          coverage xml
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: coverage.xml
+          fail_ci_if_error: true
+
+  # Tests
   python:
     env:
       TOTAL_GROUPS: 20
@@ -78,17 +117,25 @@ jobs:
             20,
           ]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -98,6 +145,13 @@ jobs:
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   grpc:
     env:
@@ -108,17 +162,25 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -129,41 +191,12 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
-  libcurl:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
-
-      # Special case packages
-      - name: Install libcurl-dev
-        run: |
-          sudo apt-get update
-          sudo apt-get install libcurl4-openssl-dev
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   postgres:
     env:
@@ -174,7 +207,11 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -194,12 +231,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -210,6 +251,76 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
+  mssql:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/azure-sql-edge:latest
+        env:
+          MSSQL_USER: python_agent
+          MSSQL_PASSWORD: python_agent
+          MSSQL_SA_PASSWORD: "python_agent#1234"
+          ACCEPT_EULA: "Y"
+        ports:
+          - 8080:1433
+          - 8081:1433
+        # Set health checks to wait until mysql has started
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -U SA -P $MSSQL_SA_PASSWORD -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
   mysql:
     env:
       TOTAL_GROUPS: 2
@@ -219,7 +330,11 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -242,12 +357,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -258,6 +377,13 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
   redis:
     env:
       TOTAL_GROUPS: 2
@@ -267,7 +393,11 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -285,12 +415,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -301,6 +435,13 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
   solr:
     env:
       TOTAL_GROUPS: 1
@@ -310,7 +451,11 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -330,12 +475,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -346,6 +495,13 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
   memcached:
     env:
       TOTAL_GROUPS: 2
@@ -355,7 +511,11 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -373,12 +533,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -389,6 +553,13 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
   rabbitmq:
     env:
       TOTAL_GROUPS: 1
@@ -398,7 +569,11 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -417,12 +592,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -433,16 +612,27 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
   kafka:
     env:
-      TOTAL_GROUPS: 2
+      TOTAL_GROUPS: 4
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2]
+        group-number: [1, 2, 3, 4]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -458,45 +648,46 @@ jobs:
         image: bitnami/kafka:3.2
         ports:
           - 8080:8080
-          - 8081:8081
+          - 8082:8082
+          - 8083:8083
         env:
+          KAFKA_ENABLE_KRAFT: no
           ALLOW_PLAINTEXT_LISTENER: yes
           KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
           KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
-          KAFKA_CFG_LISTENERS: L1://:8080,L2://:8081
-          KAFKA_CFG_ADVERTISED_LISTENERS: L1://127.0.0.1:8080,L2://kafka:8081,
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT
-          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L2
+          KAFKA_CFG_LISTENERS: L1://:8082,L2://:8083,L3://:8080
+          KAFKA_CFG_ADVERTISED_LISTENERS: L1://host.docker.internal:8082,L2://host.docker.internal:8083,L3://kafka:8080
+          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT,L3:PLAINTEXT
+          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L3
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
 
-      # Special case packages
-      - name: Install librdkafka-dev
+      - name: Fetch git tags
         run: |
-          # Use lsb-release to find the codename of Ubuntu to use to install the correct library name
-          sudo apt-get update
-          sudo ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
-          sudo apt-get install -y wget gnupg2 software-properties-common
-          sudo wget -qO - https://packages.confluent.io/deb/7.2/archive.key | sudo apt-key add -
-          sudo add-apt-repository "deb https://packages.confluent.io/clients/deb $(lsb_release -cs) main"
-          sudo apt-get update
-          sudo apt-get install -y librdkafka-dev/$(lsb_release -c | cut -f 2)
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }}
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   mongodb:
     env:
@@ -507,7 +698,11 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
@@ -525,12 +720,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -541,50 +740,12 @@ jobs:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
-  elasticsearchserver01:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    services:
-      es01:
-        image: elasticsearch:1.4.4
-        env:
-          "discovery.type": "single-node"
-        ports:
-          - 8080:9200
-          - 8081:9200
-        # Set health checks to wait until elasticsearch has started
-        options: >-
-          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   elasticsearchserver07:
     env:
@@ -595,12 +756,16 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
-      es01:
-        image: elasticsearch:7.13.2
+      elasticsearch:
+        image: elasticsearch:7.17.8
         env:
           "discovery.type": "single-node"
         ports:
@@ -615,12 +780,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -630,6 +799,74 @@ jobs:
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
+  elasticsearchserver08:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+
+    services:
+      elasticsearch:
+        image: elasticsearch:8.6.0
+        env:
+          "xpack.security.enabled": "false"
+          "discovery.type": "single-node"
+        ports:
+          - 8080:9200
+          - 8081:9200
+        # Set health checks to wait until elasticsearch has started
+        options: >-
+          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
 
   gearman:
     env:
@@ -640,14 +877,18 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
 
     services:
       gearman:
         image: artefactual/gearmand
         ports:
-          - 4730:4730
+          - 8080:4730
         # Set health checks to wait until gearman has started
         options: >-
           --health-cmd "(echo status ; sleep 0.1) | nc 127.0.0.1 4730 -w 1"
@@ -657,12 +898,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-python-matrix
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Get Environments
         id: get-envs
         run: |
-          echo "::set-output name=envs::$(tox -l | grep "^${{ github.job }}\-" | ./.github/workflows/get-envs.py)"
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -672,3 +917,10 @@ jobs:
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1

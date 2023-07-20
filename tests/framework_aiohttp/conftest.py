@@ -22,21 +22,13 @@ from aiohttp.test_utils import TestClient as _TestClient
 from testing_support.fixture.event_loop import (  # noqa: F401 pylint: disable=W0611
     event_loop,
 )
-from testing_support.fixtures import (  # noqa: F401 pylint: disable=W0611
-    code_coverage_fixture,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer,
     MockExternalHTTPServer,
 )
 
-_coverage_source = [
-    "newrelic.hooks.framework_aiohttp",
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -76,8 +68,7 @@ class SimpleAiohttpApp(AioHTTPTestCase):
         if hasattr(self, "asyncTearDown"):
             asyncio.get_event_loop().run_until_complete(self.asyncTearDown())
 
-    @asyncio.coroutine
-    def _get_client(self, app_or_server):
+    async def _get_client(self, app_or_server):
         """Return a TestClient instance."""
         client_constructor_arg = app_or_server
 

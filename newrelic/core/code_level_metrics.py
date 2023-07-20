@@ -89,7 +89,7 @@ def extract_code_from_callable(func):
             # Use inspect to get file and line number
             file_path = inspect.getsourcefile(func)
             line_number = inspect.getsourcelines(func)[1]
-        except TypeError:
+        except Exception:
             pass
 
     # Split function path to extract class name

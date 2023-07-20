@@ -16,12 +16,24 @@ import pytest
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
-    validate_error_event_attributes_outside_transaction,
     validate_error_event_sample_data,
+)
+from testing_support.validators.validate_error_event_attributes_outside_transaction import (
+    validate_error_event_attributes_outside_transaction,
+)
+from testing_support.validators.validate_error_trace_attributes_outside_transaction import (
     validate_error_trace_attributes_outside_transaction,
+)
+from testing_support.validators.validate_time_metrics_outside_transaction import (
     validate_time_metrics_outside_transaction,
+)
+from testing_support.validators.validate_transaction_error_trace_attributes import (
     validate_transaction_error_trace_attributes,
+)
+from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
@@ -86,8 +98,9 @@ def test_classes_error_event_inside_transaction(settings, expected, ignore):
 
     error_count = 1 if not ignore else 0
     errors = _test_runtime_error if not ignore else []
+    expected_errors = _runtime_error_name if expected and not ignore else None
 
-    @validate_transaction_errors(errors=errors)
+    @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
     @validate_error_event_sample_data(
         required_attrs=attributes,
         required_user_attrs=False,
@@ -260,8 +273,9 @@ def test_status_codes_inside_transaction(settings, expected, ignore, status_code
 
     error_count = 1 if not ignore else 0
     errors = _test_teapot_error if not ignore else []
+    expected_errors = _teapot_error_name if expected and not ignore else None
 
-    @validate_transaction_errors(errors=errors)
+    @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
     @validate_error_event_sample_data(
         required_attrs=attributes,
         required_user_attrs=False,
@@ -351,8 +365,9 @@ def test_mixed_ignore_expected_settings_inside_transaction(
 
     error_count = 1 if not ignore else 0
     errors = _test_runtime_error if not ignore else []
+    expected_errors = _runtime_error_name if expected and not ignore else None
 
-    @validate_transaction_errors(errors=errors)
+    @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
     @validate_error_event_sample_data(
         required_attrs=attributes,
         required_user_attrs=False,
@@ -420,8 +435,9 @@ def test_overrides_inside_transaction(override, result, parameter):
 
     error_count = 1 if not ignore else 0
     errors = _test_runtime_error if not ignore else []
+    expected_errors = _runtime_error_name if expected and not ignore else None
 
-    @validate_transaction_errors(errors=errors)
+    @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
     @validate_error_event_sample_data(
         required_attrs=attributes,
         required_user_attrs=False,

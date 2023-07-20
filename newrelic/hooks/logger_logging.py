@@ -15,9 +15,8 @@
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
-from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.config import global_settings
-
 
 try:
     from urllib import quote
@@ -28,7 +27,7 @@ except ImportError:
 def add_nr_linking_metadata(message):
     available_metadata = get_linking_metadata()
     entity_name = quote(available_metadata.get("entity.name", ""))
-    entity_guid = available_metadata.get("entity.guid", "") 
+    entity_guid = available_metadata.get("entity.guid", "")
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
     hostname = available_metadata.get("hostname", "")
@@ -72,7 +71,7 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
                 if application and application.enabled:
                     application.record_custom_metric("Logging/lines", {"count": 1})
                     application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
-            
+
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             try:
                 message = record.getMessage()

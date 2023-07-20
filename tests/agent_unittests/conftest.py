@@ -16,10 +16,8 @@ import sys
 import tempfile
 
 import pytest
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     newrelic_caplog as caplog,
 )
@@ -44,11 +42,12 @@ try:
     reload
 except NameError:
     # python 3.x
-    from imp import reload  # pylint: disable=W0402
+    from importlib import reload
 
 
 class FakeProtos(object):
     Span = object()
+    SpanBatch = object()
 
 
 sys.modules["grpc"] = object()

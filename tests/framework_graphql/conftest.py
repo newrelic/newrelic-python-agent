@@ -21,12 +21,6 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
 
 from newrelic.packages import six
 
-_coverage_source = [
-    "newrelic.hooks.framework_graphql",
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
-
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,

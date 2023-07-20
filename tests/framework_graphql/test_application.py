@@ -17,17 +17,19 @@ from framework_graphql.test_application_async import (
     error_middleware_async,
     example_middleware_async,
 )
-from testing_support.fixtures import (
-    dt_enabled,
-    validate_transaction_errors,
-    validate_transaction_metrics,
-)
+from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
@@ -78,6 +80,14 @@ def example_middleware(next, root, info, **args):
 
 def error_middleware(next, root, info, **args):
     raise RuntimeError("Runtime Error!")
+
+
+def test_no_harm_no_transaction(app, graphql_run):
+    def _test():
+        response = graphql_run(app, "{ __schema { types { name } } }")
+        assert not response.errors
+
+    _test()
 
 
 example_middleware = [example_middleware]
@@ -567,12 +577,18 @@ def test_deepest_unique_path(target_application, query, expected_path):
     _test()
 
 
-def test_ignored_introspection_transactions(target_application):
+@pytest.mark.parametrize("capture_introspection_setting", (True, False))
+def test_introspection_transactions(target_application, capture_introspection_setting):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    txn_ct = 1 if capture_introspection_setting else 0
 
-    @validate_transaction_count(0)
+    @override_application_settings(
+        {"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting}
+    )
+    @validate_transaction_count(txn_ct)
     @background_task()
     def _test():
         response = target_application("{ __schema { types { name } } }")
+        assert not response.errors
 
     _test()

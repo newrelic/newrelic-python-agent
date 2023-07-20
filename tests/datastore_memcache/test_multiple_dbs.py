@@ -17,8 +17,8 @@ import memcache
 
 from newrelic.api.background_task import background_task
 
-from testing_support.fixtures import (validate_transaction_metrics,
-    override_application_settings)
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.db_settings import memcached_settings
 from testing_support.util import instance_hostname
 

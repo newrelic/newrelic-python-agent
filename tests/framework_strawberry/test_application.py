@@ -11,20 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import pytest
 from framework_graphql.test_application import *
+from testing_support.fixtures import dt_enabled, override_application_settings
+from testing_support.validators.validate_transaction_count import (
+    validate_transaction_count,
+)
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async", "asgi-sync", "asgi-async"])
 def target_application(request):
     from ._target_application import target_application
+
     target_application = target_application[request.param]
 
     try:
         import strawberry
+
         version = strawberry.__version__
     except Exception:
         import pkg_resources
+
         version = pkg_resources.get_distribution("strawberry-graphql").version
 
     is_asgi = "asgi" in request.param
@@ -33,3 +42,18 @@ def target_application(request):
     assert version is not None
     return "Strawberry", version, target_application, not is_asgi, schema_type, 0
 
+
+@pytest.mark.parametrize("capture_introspection_setting", (True, False))
+def test_introspection_transactions(target_application, capture_introspection_setting):
+    txn_ct = 1 if capture_introspection_setting else 0
+
+    @override_application_settings(
+        {"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting}
+    )
+    @validate_transaction_count(txn_ct)
+    @background_task()
+    def _test():
+        response = application("{ __schema { types { name } } }")
+        assert not response.errors
+
+    _test()

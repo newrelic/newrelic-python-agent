@@ -15,7 +15,7 @@
 from newrelic.api.asgi_application import ASGIApplicationWrapper
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import (
-    add_custom_parameter,
+    add_custom_attribute,
     current_transaction,
     ignore_transaction,
 )
@@ -101,8 +101,8 @@ simple_app_v3 = ASGIApplicationWrapper(simple_app_v3_raw)
 @ASGIApplicationWrapper
 async def normal_asgi_application(scope, receive, send):
     output = b"<html><head>header</head><body><p>RESPONSE</p></body></html>"
-    add_custom_parameter("puppies", "test_value")
-    add_custom_parameter("sunshine", "test_value")
+    add_custom_attribute("puppies", "test_value")
+    add_custom_attribute("sunshine", "test_value")
 
     response_headers = [
         (b"content-type", b"text/html; charset=utf-8"),

@@ -11,17 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 import uuid
 
 import pytest
 
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
+from google.cloud.firestore import Client
 
+from testing_support.db_settings import firestore_settings
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 
+
+DB_SETTINGS = firestore_settings()[0]
+FIRESTORE_HOST = DB_SETTINGS["host"]
+FIRESTORE_PORT = DB_SETTINGS["port"]
 
 _default_settings = {
     'transaction_tracer.explain_threshold': 0.0,
@@ -40,18 +43,19 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope="session")
 def client():
-    creds = credentials.ApplicationDefault()
-
-    firebase_admin.initialize_app(creds)
-    client = firestore.client()
+    os.environ["FIRESTORE_EMULATOR_HOST"] = "%s:%d" % (FIRESTORE_HOST, FIRESTORE_PORT)
+    client = Client()
+    client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5)  # Ensure connection is available
     return client
 
 
 @pytest.fixture(scope="function")
 def collection(client):
-    collection = client.collection("firestore_collection_" + str(uuid.uuid4()))
-    
-    yield collection
+    yield client.collection("firestore_collection_" + str(uuid.uuid4()))
 
-    for doc in collection.list_documents():
-        doc.delete()
+
+@pytest.fixture(scope="function", autouse=True)
+def reset_firestore(client):
+    for coll in client.collections():
+        for document in coll.list_documents():
+            document.delete()

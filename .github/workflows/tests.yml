@@ -924,3 +924,68 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           retention-days: 1
+
+  firestore:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+
+    services:
+      firestore:
+        # Image set here MUST be repeated down below in options. See comment below.
+        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators
+        ports:
+          - 8080:8080
+        # Set health checks to wait 5 seconds in lieu of an actual healthcheck
+        options: >-
+          --health-cmd "echo success"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 5s
+          gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators /bin/bash -c "gcloud emulators firestore start --host-port=0.0.0.0:8080" ||
+        # This is a very hacky solution. GitHub Actions doesn't provide APIs for setting commands on services, but allows adding arbitrary options.
+        # --entrypoint won't work as it only accepts an executable and not the [] syntax.
+        # Instead, we specify the image again the command afterwards like a call to docker create. The result is a few environment variables
+        # and the original command being appended to our hijacked docker create command. We can avoid any issues by adding || to prevent that
+        # from every being executed as bash commands.
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1

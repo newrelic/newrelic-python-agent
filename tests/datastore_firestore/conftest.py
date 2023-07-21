@@ -44,7 +44,9 @@ collector_agent_registration = collector_agent_registration_fixture(
 @pytest.fixture(scope="session")
 def client():
     os.environ["FIRESTORE_EMULATOR_HOST"] = "%s:%d" % (FIRESTORE_HOST, FIRESTORE_PORT)
-    return Client()
+    client = Client()
+    list(client.collections(retry=None))  # Ensure connection is available
+    return client
 
 
 @pytest.fixture(scope="function")

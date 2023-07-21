@@ -45,7 +45,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 def client():
     os.environ["FIRESTORE_EMULATOR_HOST"] = "%s:%d" % (FIRESTORE_HOST, FIRESTORE_PORT)
     client = Client()
-    list(client.collections(retry=None))  # Ensure connection is available
+    client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5)  # Ensure connection is available
     return client
 
 

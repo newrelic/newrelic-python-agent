@@ -168,6 +168,8 @@ def mongodb_settings():
 def firestore_settings():
     """Return a list of dict of settings for connecting to firestore.
 
+    This only includes the host and port as the collection name is defined in
+    the firestore conftest file.
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
     later environments override earlier ones.

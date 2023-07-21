@@ -26,6 +26,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         freetds-common \
         freetds-dev \
         gcc \
+        gfortran \
         git \
         libbz2-dev \
         libcurl4-openssl-dev \

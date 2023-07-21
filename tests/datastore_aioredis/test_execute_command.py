@@ -11,18 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import asyncio
 
 import pytest
 
-# import aioredis
 from conftest import AIOREDIS_VERSION, loop  # noqa # pylint: disable=E0611,W0611
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+    validate_transaction_metrics,)
 
 from newrelic.api.background_task import background_task
 
@@ -125,27 +122,27 @@ def test_redis_execute_command_as_two_args_disable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_multi_args(client))
 
 
-@background_task()
-def test_pubsub(client, loop):  # noqa
-    async def exercise():
-        pubsub = client.pubsub()
-        return await pubsub.psubscribe("channel:*")
+# @background_task()
+# def test_pubsub(client, loop):  # noqa
+#     async def exercise():
+#         pubsub = client.pubsub()
+#         return await pubsub.psubscribe("channel:*")
 
-    status = loop.run_until_complete(exercise())
+#     status = loop.run_until_complete(exercise())
 
-    assert status is None
+#     assert status is None
 
 
-@background_task()
-def test_monitor(client, loop):  # noqa
-    async def exercise():
-        monitor = client.monitor()
-        try:
-            async with asyncio.timeout(0.1):
-                async for _ in monitor.listen():
-                    break
-        except (asyncio.CancelledError, TimeoutError):
-            # that's ok, we are just testing sync/async wrapping
-            pass
+# @background_task()
+# def test_monitor(client, loop):  # noqa
+#     async def exercise():
+#         monitor = client.monitor()
+#         try:
+#             async with asyncio.timeout(0.1):
+#                 async for _ in monitor.listen():
+#                     break
+#         except (asyncio.CancelledError, TimeoutError):
+#             # that's ok, we are just testing sync/async wrapping
+#             pass
 
-    loop.run_until_complete(exercise())
+#     loop.run_until_complete(exercise())

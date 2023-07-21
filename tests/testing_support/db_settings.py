@@ -267,12 +267,13 @@ def kafka_settings():
         2. Github Actions
     """
 
-    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    base_port = 8082 if "GITHUB_ACTIONS" in os.environ else 8080
     instances = 2
     settings = [
         {
             "host": host,
-            "port": 8080 + instance_num,
+            "port": base_port + instance_num,
         }
         for instance_num in range(instances)
     ]

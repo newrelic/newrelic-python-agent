@@ -942,18 +942,24 @@ jobs:
     timeout-minutes: 30
 
     services:
-      firestore:    
+      firestore:
+        # Image set here MUST be repeated down below in options. See comment below.
         image: gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators
         ports:
           - 8080:8080
-          - 8081:8080
-        # Set health checks to wait until gearman has started
+        # Set health checks to wait 5 seconds in lieu of an actual healthcheck
         options: >-
-          --entrypoint=["gcloud", "emulators", "firestore", "start", "--host-port=0.0.0.0:8080"]
-          --health-cmd "(echo status ; sleep 0.1) | nc 127.0.0.1 8080 -w 1"
+          --health-cmd "echo success"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --health-start-period 5s
+          gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators /bin/bash -c "gcloud emulators firestore start --host-port=0.0.0.0:8080" ||
+        # This is a very hacky solution. GitHub Actions doesn't provide APIs for setting commands on services, but allows adding arbitrary options.
+        # --entrypoint won't work as it only accepts an executable and not the [] syntax.
+        # Instead, we specify the image again the command afterwards like a call to docker create. The result is a few environment variables
+        # and the original command being appended to our hijacked docker create command. We can avoid any issues by adding || to prevent that
+        # from every being executed as bash commands.
 
     steps:
       - uses: actions/checkout@v3

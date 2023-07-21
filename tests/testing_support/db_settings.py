@@ -166,7 +166,7 @@ def mongodb_settings():
 
 
 def firestore_settings():
-    """Return a list of dict of settings for connecting to mongodb.
+    """Return a list of dict of settings for connecting to firestore.
 
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
@@ -179,7 +179,7 @@ def firestore_settings():
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
     settings = [
-        {"host": host, "port": 8080 + instance_num, "collection": "firestore_collection_" + str(os.getpid())}
+        {"host": host, "port": 8080 + instance_num}
         for instance_num in range(instances)
     ]
     return settings

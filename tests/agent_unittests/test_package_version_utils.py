@@ -103,6 +103,7 @@ def test_get_package_version_tuple(attr, value, expected_value, remove_importlib
 
 @SKIP_IF_NOT_IMPORTLIB_METADATA
 @validate_function_called("importlib.metadata", "version")
+@validate_function_called("importlib.metadata", "packages_distributions")
 def test_importlib_metadata():
     version = get_package_version("pytest")
     assert version not in NULL_VERSIONS, version

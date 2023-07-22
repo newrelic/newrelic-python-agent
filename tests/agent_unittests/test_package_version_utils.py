@@ -40,6 +40,17 @@ def patched_pytest_module(monkeypatch):
     yield pytest
 
 
+@pytest.fixture(scope="function")
+def remove_importlib():
+    if "importlib" not in sys.modules:
+        return
+
+    importlib = sys.modules["importlib"]
+    del sys.modules["importlib"]
+    yield
+    sys.modules["importlib"] = importlib
+
+
 @pytest.mark.parametrize(
     "attr,value,expected_value",
     (
@@ -49,7 +60,7 @@ def patched_pytest_module(monkeypatch):
         ("version_tuple", [3, 1, "0b2"], "3.1.0b2"),
     ),
 )
-def test_get_package_version(attr, value, expected_value):
+def test_get_package_version(attr, value, expected_value, remove_importlib):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
     setattr(pytest, attr, value)
@@ -58,7 +69,7 @@ def test_get_package_version(attr, value, expected_value):
     delattr(pytest, attr)
 
 
-def test_skips_version_callables():
+def test_skips_version_callables(remove_importlib):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
     setattr(pytest, "version", lambda x: "1.2.3.4")
@@ -81,7 +92,7 @@ def test_skips_version_callables():
         ("version_tuple", [3, 1, "0b2"], (3, 1, "0b2")),
     ),
 )
-def test_get_package_version_tuple(attr, value, expected_value):
+def test_get_package_version_tuple(attr, value, expected_value, remove_importlib):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
     setattr(pytest, attr, value)

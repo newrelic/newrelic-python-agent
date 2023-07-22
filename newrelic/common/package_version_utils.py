@@ -70,6 +70,16 @@ def get_package_version_tuple(name):
 def _get_package_version(name):
     module = sys.modules.get(name, None)
     version = None
+
+    # importlib was introduced into the standard library starting in Python3.8.
+    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
+        try:
+            version = sys.modules["importlib"].metadata.version(name)  # pylint: disable=E1101
+            if version not in NULL_VERSIONS:
+                return version
+        except Exception:
+            pass
+
     for attr in VERSION_ATTRS:
         try:
             version = getattr(module, attr, None)
@@ -79,15 +89,6 @@ def _get_package_version(name):
                 continue
             # Cast any version specified as a list into a tuple.
             version = tuple(version) if isinstance(version, list) else version
-            if version not in NULL_VERSIONS:
-                return version
-        except Exception:
-            pass
-
-    # importlib was introduced into the standard library starting in Python3.8.
-    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
-        try:
-            version = sys.modules["importlib"].metadata.version(name)  # pylint: disable=E1101
             if version not in NULL_VERSIONS:
                 return version
         except Exception:

@@ -60,20 +60,6 @@ def instrument_google_cloud_firestore_v1_base_client(module):
     )
 
 
-def instrument_google_cloud_firestore_v1_base_collection(module):
-    for name in _firestore_collection_commands:
-        if hasattr(module.BaseCollectionReference, name) and not getattr(getattr(module.BaseCollectionReference, name), "_nr_wrapped", False):
-            wrap_datastore_trace(
-                module, "BaseCollectionReference.%s" % name, product="Firestore", target=_get_object_id, operation=name
-            )
-            getattr(module.BaseCollectionReference, name)._nr_wrapped = True
-
-    for name in _firestore_collection_generator_commands:
-        if hasattr(module.BaseCollectionReference, name) and not getattr(getattr(module.BaseCollectionReference, name), "_nr_wrapped", False):
-            wrap_generator_method(module, "BaseCollectionReference", name)
-            getattr(module.BaseCollectionReference, name)._nr_wrapped = True
-
-
 def instrument_google_cloud_firestore_v1_collection(module):
     for name in _firestore_collection_commands:
         if hasattr(module.CollectionReference, name) and not getattr(getattr(module.CollectionReference, name), "_nr_wrapped", False):
@@ -86,20 +72,6 @@ def instrument_google_cloud_firestore_v1_collection(module):
         if hasattr(module.CollectionReference, name) and not getattr(getattr(module.CollectionReference, name), "_nr_wrapped", False):
             wrap_generator_method(module, "CollectionReference", name)
             getattr(module.CollectionReference, name)._nr_wrapped = True
-
-
-def instrument_google_cloud_firestore_v1_base_document(module):
-    for name in _firestore_document_commands:
-        if hasattr(module.BaseDocumentReference, name) and not getattr(getattr(module.BaseDocumentReference, name), "_nr_wrapped", False):
-            wrap_datastore_trace(
-                module, "BaseDocumentReference.%s" % name, product="Firestore", target=_get_object_id, operation=name
-            )
-            getattr(module.BaseDocumentReference, name)._nr_wrapped = True
-
-    for name in _firestore_document_generator_commands:
-        if hasattr(module.BaseDocumentReference, name) and not getattr(getattr(module.BaseDocumentReference, name), "_nr_wrapped", False):
-            wrap_generator_method(module, "BaseDocumentReference", name)
-            getattr(module.BaseDocumentReference, name)._nr_wrapped = True
 
 
 def instrument_google_cloud_firestore_v1_document(module):

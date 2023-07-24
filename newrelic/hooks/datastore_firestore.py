@@ -18,25 +18,6 @@ from newrelic.api.function_trace import wrap_function_trace
 from newrelic.common.async_wrapper import generator_wrapper
 from newrelic.api.datastore_trace import DatastoreTrace
 
-_firestore_document_commands = (
-    "create",
-    "delete",
-    "get",
-    "set",
-    "update",
-)
-_firestore_document_generator_commands = (
-    "collections",
-)
-
-_firestore_collection_commands = (
-    "add",
-    "get",
-)
-_firestore_collection_generator_commands = (
-    "stream",
-    "list_documents"
-)
 
 _get_object_id = lambda obj, *args, **kwargs: obj.id
 
@@ -61,28 +42,28 @@ def instrument_google_cloud_firestore_v1_base_client(module):
 
 
 def instrument_google_cloud_firestore_v1_collection(module):
-    for name in _firestore_collection_commands:
-        if hasattr(module.CollectionReference, name) and not getattr(getattr(module.CollectionReference, name), "_nr_wrapped", False):
-            wrap_datastore_trace(
-                module, "CollectionReference.%s" % name, product="Firestore", target=_get_object_id, operation=name
-            )
-            getattr(module.CollectionReference, name)._nr_wrapped = True
+    if hasattr(module, "CollectionReference"):
+        class_ = module.CollectionReference
+        for method in ("add", "get"):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "CollectionReference.%s" % method, product="Firestore", target=_get_object_id, operation=method
+                )
 
-    for name in _firestore_collection_generator_commands:
-        if hasattr(module.CollectionReference, name) and not getattr(getattr(module.CollectionReference, name), "_nr_wrapped", False):
-            wrap_generator_method(module, "CollectionReference", name)
-            getattr(module.CollectionReference, name)._nr_wrapped = True
+        for method in ("stream", "list_documents"):
+            if hasattr(class_, method):
+                wrap_generator_method(module, "CollectionReference", method)
 
 
 def instrument_google_cloud_firestore_v1_document(module):
-    for name in _firestore_document_commands:
-        if hasattr(module.DocumentReference, name) and not getattr(getattr(module.DocumentReference, name), "_nr_wrapped", False):
-            wrap_datastore_trace(
-                module, "DocumentReference.%s" % name, product="Firestore", target=_get_object_id, operation=name
-            )
-            getattr(module.DocumentReference, name)._nr_wrapped = True
+    if hasattr(module, "DocumentReference"):
+        class_ = module.DocumentReference
+        for method in ("create", "delete", "get", "set", "update"):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "DocumentReference.%s" % method, product="Firestore", target=_get_object_id, operation=method
+                )
 
-    for name in _firestore_document_generator_commands:
-        if hasattr(module.DocumentReference, name) and not getattr(getattr(module.DocumentReference, name), "_nr_wrapped", False):
-            wrap_generator_method(module, "DocumentReference", name)
-            getattr(module.DocumentReference, name)._nr_wrapped = True
+        for method in ("collections",):
+            if hasattr(class_, method):
+                wrap_generator_method(module, "DocumentReference", method)

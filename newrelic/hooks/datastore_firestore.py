@@ -122,3 +122,22 @@ def instrument_google_cloud_firestore_v1_aggregation(module):
         for method in ("stream",):
             if hasattr(class_, method):
                 wrap_generator_method(module, "AggregationQuery", method, target=_get_collection_ref_id)
+
+
+def instrument_google_cloud_firestore_v1_batch(module):
+    if hasattr(module, "WriteBatch"):
+        class_ = module.WriteBatch
+        for method in ("commit",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "WriteBatch.%s" % method, product="Firestore", target=None, operation=method
+                )
+
+def instrument_google_cloud_firestore_v1_bulk_batch(module):
+    if hasattr(module, "BulkWriteBatch"):
+        class_ = module.BulkWriteBatch
+        for method in ("commit",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "BulkWriteBatch.%s" % method, product="Firestore", target=None, operation=method
+                )

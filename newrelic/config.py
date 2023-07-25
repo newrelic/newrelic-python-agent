@@ -2299,6 +2299,16 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_aggregation",
     )
+    _process_module_definition(
+        "google.cloud.firestore_v1.batch",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_batch",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.bulk_batch",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_bulk_batch",
+    )
 
     _process_module_definition(
         "ariadne.asgi",

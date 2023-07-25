@@ -280,7 +280,6 @@ def wrap_leading_middleware(middleware):
 # functionality, so instead of removing this instrumentation, this
 # will be excluded from the coverage analysis.
 def wrap_view_middleware(middleware):  # pragma: no cover
-
     # This is no longer being used. The changes to strip the
     # wrapper from the view handler when passed into the function
     # urlresolvers.reverse() solves most of the problems. To back
@@ -1034,7 +1033,6 @@ def _nr_wrapper_django_template_base_Library_inclusion_tag_(wrapped, instance, a
 
 @function_wrapper
 def _nr_wrapper_django_template_base_InclusionNode_render_(wrapped, instance, args, kwargs):
-
     if wrapped.__self__ is None:
         return wrapped(*args, **kwargs)
 
@@ -1104,7 +1102,6 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance, args, kwarg
             and hasattr(compile_function, "__name__")
             and compile_function.__name__ == "_curried"
         ):
-
             # compile_function here is generic_tag_compiler(), which has been
             # curried. To get node_class, we first get the function obj, args,
             # and kwargs of the curried function from the cells in
@@ -1164,7 +1161,6 @@ def instrument_django_template_base(module):
     settings = global_settings()
 
     if "django.instrumentation.inclusion-tags.r1" in settings.feature_flag:
-
         if hasattr(module, "generic_tag_compiler"):
             wrap_function_wrapper(
                 module, "generic_tag_compiler", _nr_wrapper_django_template_base_generic_tag_compiler_

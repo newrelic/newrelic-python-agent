@@ -29,7 +29,7 @@ def sample_data(collection, reset_firestore):
 
 
 def _exercise_firestore(collection):
-    query = collection.select("x").limit(10).order_by("x").where("x", "<=", 3)
+    query = collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
     assert len(query.get()) == 3
     assert len(list(query.stream())) == 3
 
@@ -61,7 +61,7 @@ def test_firestore_query(collection):
 
 @background_task()
 def test_firestore_query_generators(collection, assert_trace_for_generator):
-    query = collection.select("x").where("x", "<=", 3)
+    query = collection.select("x").where(field_path="x", op_string="<=", value=3)
     assert_trace_for_generator(query.stream)
 
 

@@ -29,7 +29,7 @@ def sample_data(collection, reset_firestore):
 
 
 def _exercise_firestore(collection):
-    aggregation_query = collection.select("x").where("x", "<=", 3).count()
+    aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
     assert aggregation_query.get()[0][0].value == 3
     assert list(aggregation_query.stream())[0][0].value == 3
 
@@ -61,7 +61,7 @@ def test_firestore_aggregation_query(collection):
 
 @background_task()
 def test_firestore_aggregation_query_generators(collection, assert_trace_for_generator):
-    aggregation_query = collection.select("x").where("x", "<=", 3).count()
+    aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
     assert_trace_for_generator(aggregation_query.stream)
 
 

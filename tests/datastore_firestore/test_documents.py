@@ -73,7 +73,7 @@ def test_firestore_documents(collection):
 
 
 @background_task()
-def test_firestore_documents_generators(collection):
+def test_firestore_documents_generators(collection, assert_trace_for_generator):
     txn = current_trace()
 
     subcollection_doc = collection.document("SubCollections")
@@ -82,12 +82,7 @@ def test_firestore_documents_generators(collection):
     subcollection_doc.collection("collection2").add({})
     assert len(list(subcollection_doc.collections())) == 2
     
-    # Check for generator trace on collections
-    _trace_check = []
-    for _ in subcollection_doc.collections():
-        _trace_check.append(isinstance(current_trace(), DatastoreTrace))
-    assert _trace_check and all(_trace_check)
-    assert current_trace() is txn
+    assert_trace_for_generator(subcollection_doc.collections)
 
 
 @validate_database_duration()

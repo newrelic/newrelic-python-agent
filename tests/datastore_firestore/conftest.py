@@ -18,6 +18,8 @@ import pytest
 
 from google.cloud.firestore import Client
 
+from newrelic.api.time_trace import current_trace
+from newrelic.api.datastore_trace import DatastoreTrace
 from testing_support.db_settings import firestore_settings
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 
@@ -57,5 +59,20 @@ def collection(client):
 @pytest.fixture(scope="function", autouse=True)
 def reset_firestore(client):
     for coll in client.collections():
-        for document in coll.list_documents():
-            document.delete()
+        client.recursive_delete(coll)
+
+
+@pytest.fixture(scope="session")
+def assert_trace_for_generator():
+    def _assert_trace_for_generator(generator_func, *args, **kwargs):
+        txn = current_trace()
+        assert not isinstance(txn, DatastoreTrace)
+
+        # Check for generator trace on collections
+        _trace_check = []
+        for _ in generator_func(*args, **kwargs):
+            _trace_check.append(isinstance(current_trace(), DatastoreTrace))
+        assert _trace_check and all(_trace_check)  # All checks are True, and at least 1 is present.
+        assert current_trace() is txn  # Generator trace has exited.
+
+    return _assert_trace_for_generator

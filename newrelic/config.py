@@ -2270,22 +2270,26 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "google.cloud.firestore_v1.base_client",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_base_client",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.client",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_client",
+    )
+    _process_module_definition(
         "google.cloud.firestore_v1.document",
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_document",
     )
-
     _process_module_definition(
         "google.cloud.firestore_v1.collection",
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_collection",
     )
 
-    _process_module_definition(
-        "google.cloud.firestore_v1.base_client",
-        "newrelic.hooks.datastore_firestore",
-        "instrument_google_cloud_firestore_v1_base_client",
-    )
     _process_module_definition(
         "ariadne.asgi",
         "newrelic.hooks.framework_ariadne",

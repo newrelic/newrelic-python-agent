@@ -22,9 +22,10 @@ from newrelic.api.datastore_trace import DatastoreTrace
 _get_object_id = lambda obj, *args, **kwargs: obj.id
 
 
-def wrap_generator_method(module, class_name, method_name):
+def wrap_generator_method(module, class_name, method_name, target=_get_object_id):
     def _wrapper(wrapped, instance, args, kwargs):
-        trace = DatastoreTrace(product="Firestore", target=instance.id, operation=method_name)
+        target_ = target(instance) if callable(target) else target
+        trace = DatastoreTrace(product="Firestore", target=target_, operation=method_name)
         wrapped = generator_wrapper(wrapped, trace)
         return wrapped(*args, **kwargs)
     
@@ -39,6 +40,14 @@ def instrument_google_cloud_firestore_v1_base_client(module):
     wrap_function_trace(
         module, "BaseClient.__init__", name="%s:BaseClient.__init__" % module.__name__, terminal=True, rollup=rollup
     )
+
+
+def instrument_google_cloud_firestore_v1_client(module):
+    if hasattr(module, "Client"):
+        class_ = module.Client
+        for method in ("collections", "get_all"):
+            if hasattr(class_, method):
+                wrap_generator_method(module, "Client", method, target=None)
 
 
 def instrument_google_cloud_firestore_v1_collection(module):

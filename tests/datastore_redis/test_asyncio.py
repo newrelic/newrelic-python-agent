@@ -92,7 +92,7 @@ def test_async_pubsub(client, loop):  # noqa
 
     async def _test_pubsub():
         async with client.pubsub() as pubsub:
-            await pubsub.subscribe("channel:1", "channel:2")
+            await pubsub.psubscribe("channel:*")
 
             future = asyncio.create_task(reader(pubsub))
 

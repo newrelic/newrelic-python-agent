@@ -66,12 +66,12 @@ def client(loop):  # noqa
 @validate_transaction_metrics("test_asyncio:test_async_pipeline", background_task=True)
 @background_task()
 def test_async_pipeline(client, loop):  # noqa
-    async def exercise_pipeline(client):
+    async def _test_pipeline(client):
         async with client.pipeline(transaction=True) as pipe:
             await (pipe.set("key1", "value1"))
             await (pipe.execute())
 
-    loop.run_until_complete(exercise_pipeline(client))
+    loop.run_until_complete(_test_pipeline(client))
 
 
 @pytest.mark.skipif(REDIS_VERSION < (4, 2), reason="This functionality exists in Redis 4.2+")

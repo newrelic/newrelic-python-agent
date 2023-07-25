@@ -29,7 +29,7 @@ def sample_data(collection, reset_firestore):
 
 # ===== Query =====
 
-def _exercise_firestore_query(collection):
+def _exercise_query(collection):
     query = collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
     assert len(query.get()) == 3
     assert len(list(query.stream())) == 3
@@ -55,7 +55,7 @@ def test_firestore_query(collection):
     )
     @background_task(name="test_firestore_query")
     def _test():
-        _exercise_firestore_query(collection)
+        _exercise_query(collection)
 
     _test()
 
@@ -69,11 +69,11 @@ def test_firestore_query_generators(collection, assert_trace_for_generator):
 @validate_database_duration()
 @background_task()
 def test_firestore_query_db_duration(collection):
-    _exercise_firestore_query(collection)
+    _exercise_query(collection)
 
 # ===== AggregationQuery =====
 
-def _exercise_firestore_aggregation(collection):
+def _exercise_aggregation_query(collection):
     aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
     assert aggregation_query.get()[0][0].value == 3
     assert list(aggregation_query.stream())[0][0].value == 3
@@ -99,7 +99,7 @@ def test_firestore_aggregation_query(collection):
     )
     @background_task(name="test_firestore_aggregation_query")
     def _test():
-        _exercise_firestore_aggregation(collection)
+        _exercise_aggregation_query(collection)
 
     _test()
 
@@ -113,4 +113,4 @@ def test_firestore_aggregation_query_generators(collection, assert_trace_for_gen
 @validate_database_duration()
 @background_task()
 def test_firestore_aggregation_query_db_duration(collection):
-    _exercise_firestore_aggregation(collection)
+    _exercise_aggregation_query(collection)

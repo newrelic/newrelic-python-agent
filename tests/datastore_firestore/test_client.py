@@ -31,7 +31,7 @@ def existing_document(collection, reset_firestore):
     return doc
 
 
-def _exercise_firestore(client, collection, existing_document):
+def _exercise_client(client, collection, existing_document):
     assert len(list(client.collections())) == 1
     doc = list(client.get_all([existing_document]))[0]
     assert doc.to_dict()["x"] == 1
@@ -56,7 +56,7 @@ def test_firestore_client(client, collection, existing_document):
     )
     @background_task(name="test_firestore_client")
     def _test():
-        _exercise_firestore(client, collection, existing_document)
+        _exercise_client(client, collection, existing_document)
 
     _test()
 
@@ -73,4 +73,4 @@ def test_firestore_client_generators(client, collection, assert_trace_for_genera
 @validate_database_duration()
 @background_task()
 def test_firestore_client_db_duration(client, collection, existing_document):
-    _exercise_firestore(client, collection, existing_document)
+    _exercise_client(client, collection, existing_document)

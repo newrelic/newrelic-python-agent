@@ -21,7 +21,7 @@ from testing_support.validators.validate_database_duration import (
 )
 
 
-def _exercise_firestore(collection):
+def _exercise_documents(collection):
     italy_doc = collection.document("Italy")
     italy_doc.set({"capital": "Rome", "currency": "Euro", "language": "Italian"})
     italy_doc.get()
@@ -67,7 +67,7 @@ def test_firestore_documents(collection):
     )
     @background_task(name="test_firestore_documents")
     def _test():
-        _exercise_firestore(collection)
+        _exercise_documents(collection)
 
     _test()
 
@@ -86,4 +86,4 @@ def test_firestore_documents_generators(collection, assert_trace_for_generator):
 @validate_database_duration()
 @background_task()
 def test_firestore_documents_db_duration(collection):
-    _exercise_firestore(collection)
+    _exercise_documents(collection)

@@ -274,6 +274,77 @@ def wrap_leading_middleware(middleware):
         yield wrapper(wrapped)
 
 
+# Because this is not being used in any version of Django that is
+# within New Relic's support window, so no tests will be added
+# for this.  However, value exists to keeping backwards compatible
+# functionality, so instead of removing this instrumentation, this
+# will be excluded from the coverage analysis.
+def wrap_view_middleware(middleware):  # pragma: no cover
+
+    # This is no longer being used. The changes to strip the
+    # wrapper from the view handler when passed into the function
+    # urlresolvers.reverse() solves most of the problems. To back
+    # that up, the object wrapper now proxies various special
+    # methods so that comparisons like '==' will work. The object
+    # wrapper can even be used as a standin for the wrapped object
+    # when used as a key in a dictionary and will correctly match
+    # the original wrapped object.
+
+    # Wrapper to be applied to view middleware. Records the time
+    # spent in the middleware as separate function node and also
+    # attempts to name the web transaction after the name of the
+    # middleware with success being determined by the priority.
+    # This wrapper is special in that it must strip the wrapper
+    # from the view handler when being passed to the view
+    # middleware to avoid issues where middleware wants to do
+    # comparisons between the passed middleware and some other
+    # value. It is believed that the view handler should never
+    # actually be called from the view middleware so not an
+    # issue that no longer wrapped at this point.
+
+    def wrapper(wrapped):
+        # The middleware if a class method would already be
+        # bound at this point, so is safe to determine the name
+        # when it is being wrapped rather than on each
+        # invocation.
+
+        name = callable_name(wrapped)
+
+        def wrapper(wrapped, instance, args, kwargs):
+            transaction = current_transaction()
+
+            def _wrapped(request, view_func, view_args, view_kwargs):
+                # This strips the view handler wrapper before call.
+
+                if hasattr(view_func, "_nr_last_object"):
+                    view_func = view_func._nr_last_object
+
+                return wrapped(request, view_func, view_args, view_kwargs)
+
+            if transaction is None:
+                return _wrapped(*args, **kwargs)
+
+            before = (transaction.name, transaction.group)
+
+            with FunctionTrace(name=name, source=wrapped):
+                try:
+                    return _wrapped(*args, **kwargs)
+
+                finally:
+                    # We want to name the transaction after this
+                    # middleware but only if the transaction wasn't
+                    # named from within the middleware itself explicitly.
+
+                    after = (transaction.name, transaction.group)
+                    if before == after:
+                        transaction.set_transaction_name(name, priority=2)
+
+        return FunctionWrapper(wrapped, wrapper)
+
+    for wrapped in middleware:
+        yield wrapper(wrapped)
+
+
 def wrap_trailing_middleware(middleware):
     # Wrapper to be applied to trailing middleware executed
     # after the view handler. Records the time spent in the
@@ -957,8 +1028,24 @@ def _nr_wrapper_django_inclusion_tag_decorator_(wrapped, instance, args, kwargs)
     return wrapped(func, *_args, **_kwargs)
 
 
-def _nr_wrapper_django_template_library_Library_inclusion_tag_(wrapped, instance, args, kwargs):
+def _nr_wrapper_django_template_base_Library_inclusion_tag_(wrapped, instance, args, kwargs):
     return _nr_wrapper_django_inclusion_tag_decorator_(wrapped(*args, **kwargs))
+
+
+@function_wrapper
+def _nr_wrapper_django_template_base_InclusionNode_render_(wrapped, instance, args, kwargs):
+
+    if wrapped.__self__ is None:
+        return wrapped(*args, **kwargs)
+
+    file_name = getattr(wrapped.__self__, "_nr_file_name", None)
+
+    if file_name is None:
+        return wrapped(*args, **kwargs)
+
+    name = wrapped.__self__._nr_file_name
+
+    return FunctionTraceWrapper(wrapped, name=name, group="Template/Include")(*args, **kwargs)
 
 
 @function_wrapper
@@ -976,30 +1063,23 @@ def _nr_wrapper_django_template_library_InclusionNode_render_(wrapped, instance,
     return FunctionTraceWrapper(wrapped, name=name, group="Template/Include")(*args, **kwargs)
 
 
-# # TODO: django.template.base Node.get_nodes_by_type (returns list of node types)
-# def _nr_wrapper_django_template_base_Node_get_nodes_by_type(wrapped, instance, args, kwargs):
+def _nr_wrapper_django_template_base_generic_tag_compiler_(wrapped, instance, args, kwargs):
+    def _bind_params(parser, token, params, varargs, varkw, defaults, name, takes_context, node_class, *args, **kwargs):
+        return node_class
 
-#     def _bind_params(nodetype, *args, **kwargs):
-#         return nodetype
+    node_class = _bind_params(*args, **kwargs)
 
-#     node_type = _bind_params(*args, **kwargs)
+    if node_class.__name__ == "InclusionNode":
+        result = wrapped(*args, **kwargs)
 
-#     if node_type.__name__ == "InclusionNode":
-#         node_type.render = _nr_wrapper_django_template_library_InclusionNode_render_(node_type.render)
-#         instance.render_annotated = _nr_wrapper_django_template_library_InclusionNode_render_(instance.render_annotated)
+        result.render = _nr_wrapper_django_template_base_InclusionNode_render_(result.render)
 
+        return result
 
-#     # if node_class.__name__ == "InclusionNode":
-#     #     result = wrapped(*args, **kwargs)
-
-#     #     result.render = _nr_wrapper_django_template_library_InclusionNode_render_(result.render)
-
-#     #     return result
-
-#     # return wrapped(*args, **kwargs)
+    return wrapped(*args, **kwargs)
 
 
-def _nr_wrapper_django_template_library_Library_tag_(wrapped, instance, args, kwargs):
+def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance, args, kwargs):
     def _bind_params(name=None, compile_function=None, *args, **kwargs):
         return compile_function
 
@@ -1016,6 +1096,31 @@ def _nr_wrapper_django_template_library_Library_tag_(wrapped, instance, args, kw
         if isinstance(compile_function, functools.partial):
             node_class = compile_function.keywords.get("node_class")
 
+        # Django < 1.4 uses their home-grown "curry" function,
+        # not functools.partial.
+
+        if (
+            hasattr(compile_function, "func_closure")
+            and hasattr(compile_function, "__name__")
+            and compile_function.__name__ == "_curried"
+        ):
+
+            # compile_function here is generic_tag_compiler(), which has been
+            # curried. To get node_class, we first get the function obj, args,
+            # and kwargs of the curried function from the cells in
+            # compile_function.func_closure. But, the order of the cells
+            # is not consistent from platform to platform, so we need to map
+            # them to the variables in compile_function.__code__.co_freevars.
+
+            cells = dict(
+                zip(compile_function.__code__.co_freevars, (c.cell_contents for c in compile_function.func_closure))
+            )
+
+            # node_class is the 4th arg passed to generic_tag_compiler()
+
+            if "args" in cells and len(cells["args"]) > 3:
+                node_class = cells["args"][3]
+
         return node_class
 
     node_class = _get_node_class(compile_function)
@@ -1023,57 +1128,54 @@ def _nr_wrapper_django_template_library_Library_tag_(wrapped, instance, args, kw
     if node_class is None or node_class.__name__ != "InclusionNode":
         return wrapped(*args, **kwargs)
 
-    # TODO: Write tests to include this
     if node_class.__name__ == "InclusionNode":
         result = wrapped(*args, **kwargs)
         # node_class.render = _nr_wrapper_django_template_library_InclusionNode_render_(node_class.render)
         result.render = _nr_wrapper_django_template_library_InclusionNode_render_(result.render)
         return result
 
-    # TODO: Rewrite this
-
     # Climb stack to find the file_name of the include template.
     # While you only have to go up 1 frame when using python with
     # extensions, pure python requires going up 2 frames.
 
-    # file_name = None
-    # stack_levels = 2
+    file_name = None
+    stack_levels = 2
 
-    # for i in range(1, stack_levels + 1):
-    #     frame = sys._getframe(i)
+    for i in range(1, stack_levels + 1):
+        frame = sys._getframe(i)
 
-    #     if "generic_tag_compiler" in frame.f_code.co_names and "file_name" in frame.f_code.co_freevars:
-    #         file_name = frame.f_locals.get("file_name")
+        if "generic_tag_compiler" in frame.f_code.co_names and "file_name" in frame.f_code.co_freevars:
+            file_name = frame.f_locals.get("file_name")
 
-    # if file_name is None:
-    #     return wrapped(*args, **kwargs)
+    if file_name is None:
+        return wrapped(*args, **kwargs)
 
-    # if isinstance(file_name, module_django_template_base.Template):
-    #     file_name = file_name.name
+    if isinstance(file_name, module_django_template_base.Template):
+        file_name = file_name.name
 
-    # node_class._nr_file_name = file_name
+    node_class._nr_file_name = file_name
 
-    # return wrapped(*args, **kwargs)
+    return wrapped(*args, **kwargs)
 
 
-def instrument_django_template_library(module):
+def instrument_django_template_base(module):
+    global module_django_template_base
+    module_django_template_base = module
     settings = global_settings()
 
     if "django.instrumentation.inclusion-tags.r1" in settings.feature_flag:
-        if hasattr(module, "Library"):
-            wrap_function_wrapper(module, "Library.tag", _nr_wrapper_django_template_library_Library_tag_)
 
+        if hasattr(module, "generic_tag_compiler"):
             wrap_function_wrapper(
-                module, "Library.inclusion_tag", _nr_wrapper_django_template_library_Library_inclusion_tag_
+                module, "generic_tag_compiler", _nr_wrapper_django_template_base_generic_tag_compiler_
             )
 
+        if hasattr(module, "Library"):
+            wrap_function_wrapper(module, "Library.tag", _nr_wrapper_django_template_base_Library_tag_)
 
-# def instrument_django_template_base(module):
-#     # global module_django_template_base
-#     # module_django_template_base = module
-
-#     if hasattr(module, "Node"):
-#         wrap_function_wrapper(module, "Node.get_nodes_by_type", _nr_wrapper_django_template_base_Node_get_nodes_by_type)
+            wrap_function_wrapper(
+                module, "Library.inclusion_tag", _nr_wrapper_django_template_base_Library_inclusion_tag_
+            )
 
 
 def _nr_wrap_converted_middleware_(middleware, name):
@@ -1105,6 +1207,9 @@ def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args, kwargs):
 
 
 def instrument_django_core_handlers_exception(module):
+    if hasattr(module, "convert_exception_to_response"):
+        wrap_function_wrapper(module, "convert_exception_to_response", _nr_wrapper_convert_exception_to_response_)
+
     if hasattr(module, "convert_exception_to_response"):
         wrap_function_wrapper(module, "convert_exception_to_response", _nr_wrapper_convert_exception_to_response_)
 

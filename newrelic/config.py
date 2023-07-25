@@ -2034,11 +2034,11 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("asgiref.sync", "newrelic.hooks.adapter_asgiref", "instrument_asgiref_sync")
 
-    _process_module_definition(
-        "django.template.library",
-        "newrelic.hooks.framework_django",
-        "instrument_django_template_library",
-    )
+    # _process_module_definition(
+    #     "django.template.library",
+    #     "newrelic.hooks.framework_django",
+    #     "instrument_django_template_library",
+    # )
 
     _process_module_definition(
         "django.core.handlers.base",

@@ -32,9 +32,10 @@ def _get_parent_id(obj, *args, **kwargs):
     except Exception:
         return None
 
-def _get_nested_query_parent_id(obj, *args, **kwargs):
+
+def _get_collection_ref_id(obj, *args, **kwargs):
     try:
-        return obj._nested_query._parent.id
+        return obj._collection_ref.id
     except Exception:
         return None
 
@@ -115,9 +116,9 @@ def instrument_google_cloud_firestore_v1_aggregation(module):
         for method in ("get",):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "AggregationQuery.%s" % method, product="Firestore", target=_get_nested_query_parent_id, operation=method
+                    module, "AggregationQuery.%s" % method, product="Firestore", target=_get_collection_ref_id, operation=method
                 )
 
         for method in ("stream",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "AggregationQuery", method, target=_get_nested_query_parent_id)
+                wrap_generator_method(module, "AggregationQuery", method, target=_get_collection_ref_id)

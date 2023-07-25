@@ -19,10 +19,27 @@ from newrelic.common.async_wrapper import generator_wrapper
 from newrelic.api.datastore_trace import DatastoreTrace
 
 
-_get_object_id = lambda obj, *args, **kwargs: obj.id
+def _get_object_id(obj, *args, **kwargs):
+    try:
+        return obj.id
+    except Exception:
+        return None
 
 
-def wrap_generator_method(module, class_name, method_name, target=_get_object_id):
+def _get_parent_id(obj, *args, **kwargs):
+    try:
+        return obj._parent.id
+    except Exception:
+        return None
+
+def _get_nested_query_parent_id(obj, *args, **kwargs):
+    try:
+        return obj._nested_query._parent.id
+    except Exception:
+        return None
+
+
+def wrap_generator_method(module, class_name, method_name, target):
     def _wrapper(wrapped, instance, args, kwargs):
         target_ = target(instance) if callable(target) else target
         trace = DatastoreTrace(product="Firestore", target=target_, operation=method_name)
@@ -61,7 +78,7 @@ def instrument_google_cloud_firestore_v1_collection(module):
 
         for method in ("stream", "list_documents"):
             if hasattr(class_, method):
-                wrap_generator_method(module, "CollectionReference", method)
+                wrap_generator_method(module, "CollectionReference", method, target=_get_object_id)
 
 
 def instrument_google_cloud_firestore_v1_document(module):
@@ -75,4 +92,32 @@ def instrument_google_cloud_firestore_v1_document(module):
 
         for method in ("collections",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "DocumentReference", method)
+                wrap_generator_method(module, "DocumentReference", method, target=_get_object_id)
+
+
+def instrument_google_cloud_firestore_v1_query(module):
+    if hasattr(module, "Query"):
+        class_ = module.Query
+        for method in ("get",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "Query.%s" % method, product="Firestore", target=_get_parent_id, operation=method
+                )
+
+        for method in ("stream",):
+            if hasattr(class_, method):
+                wrap_generator_method(module, "Query", method, target=_get_parent_id)
+
+
+def instrument_google_cloud_firestore_v1_aggregation(module):
+    if hasattr(module, "AggregationQuery"):
+        class_ = module.AggregationQuery
+        for method in ("get",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "AggregationQuery.%s" % method, product="Firestore", target=_get_nested_query_parent_id, operation=method
+                )
+
+        for method in ("stream",):
+            if hasattr(class_, method):
+                wrap_generator_method(module, "AggregationQuery", method, target=_get_nested_query_parent_id)

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.time_trace import current_trace
-from newrelic.api.datastore_trace import DatastoreTrace
+import pytest
+
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
@@ -21,42 +21,38 @@ from testing_support.validators.validate_database_duration import (
 )
 
 
+@pytest.fixture(autouse=True)
+def sample_data(collection, reset_firestore):
+    # reset_firestore must be run before, not after this fixture
+    for x in range(1, 6):
+        collection.add({"x": x})
+
+
 def _exercise_firestore(collection):
-    collection.document("DoesNotExist")
-    collection.add({"capital": "Rome", "currency": "Euro", "language": "Italian"}, "Italy")
-    collection.add({"capital": "Mexico City", "currency": "Peso", "language": "Spanish"}, "Mexico")
-    
-    documents_get = collection.get()
-    assert len(documents_get) == 2
-    documents_stream = list(collection.stream())
-    assert len(documents_stream) == 2
-    documents_list = list(collection.list_documents())
-    assert len(documents_list) == 2
+    aggregation_query = collection.select("x").where("x", "<=", 3).count()
+    assert aggregation_query.get()[0][0].value == 3
+    assert list(aggregation_query.stream())[0][0].value == 3
 
 
-def test_firestore_collections(collection):
+def test_firestore_aggregation_query(collection):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/list_documents" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/add" % collection.id, 2),
     ]
 
     _test_rollup_metrics = [
-        ("Datastore/operation/Firestore/add", 2),
         ("Datastore/operation/Firestore/get", 1),
         ("Datastore/operation/Firestore/stream", 1),
-        ("Datastore/operation/Firestore/list_documents", 1),
-        ("Datastore/all", 5),
-        ("Datastore/allOther", 5),
+        ("Datastore/all", 2),
+        ("Datastore/allOther", 2),
     ]
     @validate_transaction_metrics(
-        "test_firestore_collections",
+        "test_firestore_aggregation_query",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_rollup_metrics,
         background_task=True,
     )
-    @background_task(name="test_firestore_collections")
+    @background_task(name="test_firestore_aggregation_query")
     def _test():
         _exercise_firestore(collection)
 
@@ -64,16 +60,12 @@ def test_firestore_collections(collection):
 
 
 @background_task()
-def test_firestore_collections_generators(collection, assert_trace_for_generator):
-    collection.add({})
-    collection.add({})
-    assert len(list(collection.list_documents())) == 2
-    
-    assert_trace_for_generator(collection.stream)
-    assert_trace_for_generator(collection.list_documents)
+def test_firestore_aggregation_query_generators(collection, assert_trace_for_generator):
+    aggregation_query = collection.select("x").where("x", "<=", 3).count()
+    assert_trace_for_generator(aggregation_query.stream)
 
 
 @validate_database_duration()
 @background_task()
-def test_firestore_collections_db_duration(collection):
+def test_firestore_aggregation_query_db_duration(collection):
     _exercise_firestore(collection)

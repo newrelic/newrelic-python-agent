@@ -74,8 +74,6 @@ def test_firestore_documents(collection):
 
 @background_task()
 def test_firestore_documents_generators(collection, assert_trace_for_generator):
-    txn = current_trace()
-
     subcollection_doc = collection.document("SubCollections")
     subcollection_doc.set({})
     subcollection_doc.collection("collection1").add({})

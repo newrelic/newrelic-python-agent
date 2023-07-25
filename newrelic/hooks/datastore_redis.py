@@ -403,6 +403,7 @@ _redis_client_async_methods = {
     "unlink",
     "unsubscribe",
     "wait",
+    "waitaof",
     "xack",
     "xadd",
     "xautoclaim",
@@ -463,7 +464,6 @@ _redis_client_async_methods = {
 }
 
 _redis_client_methods = _redis_client_sync_methods.union(_redis_client_async_methods)
-
 
 _redis_multipart_commands = set(["client", "cluster", "command", "config", "debug", "sentinel", "slowlog", "script"])
 
@@ -599,7 +599,7 @@ def instrument_redis_client(module):
 def instrument_asyncio_redis_client(module):
     if hasattr(module, "Redis"):
         class_ = getattr(module, "Redis")
-        for operation in _redis_client_methods:
+        for operation in _redis_client_async_methods:
             if hasattr(class_, operation):
                 _wrap_asyncio_Redis_method_wrapper(module, "Redis", operation)
 

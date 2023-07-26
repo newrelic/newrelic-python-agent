@@ -156,6 +156,20 @@ def instrument_google_cloud_firestore_v1_query(module):
                 wrap_generator_method(module, "Query", method, target=_get_parent_id)
 
 
+def instrument_google_cloud_firestore_v1_async_query(module):
+    if hasattr(module, "AsyncQuery"):
+        class_ = module.AsyncQuery
+        for method in ("get",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "AsyncQuery.%s" % method, product="Firestore", target=_get_parent_id, operation=method
+                )
+
+        for method in ("stream",):
+            if hasattr(class_, method):
+                wrap_async_generator_method(module, "AsyncQuery", method, target=_get_parent_id)
+
+
 def instrument_google_cloud_firestore_v1_aggregation(module):
     if hasattr(module, "AggregationQuery"):
         class_ = module.AggregationQuery
@@ -168,6 +182,20 @@ def instrument_google_cloud_firestore_v1_aggregation(module):
         for method in ("stream",):
             if hasattr(class_, method):
                 wrap_generator_method(module, "AggregationQuery", method, target=_get_collection_ref_id)
+
+
+def instrument_google_cloud_firestore_v1_async_aggregation(module):
+    if hasattr(module, "AsyncAggregationQuery"):
+        class_ = module.AsyncAggregationQuery
+        for method in ("get",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "AsyncAggregationQuery.%s" % method, product="Firestore", target=_get_collection_ref_id, operation=method
+                )
+
+        for method in ("stream",):
+            if hasattr(class_, method):
+                wrap_async_generator_method(module, "AsyncAggregationQuery", method, target=_get_collection_ref_id)
 
 
 def instrument_google_cloud_firestore_v1_batch(module):

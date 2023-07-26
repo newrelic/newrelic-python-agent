@@ -2310,9 +2310,19 @@ def _process_module_builtin_defaults():
         "instrument_google_cloud_firestore_v1_query",
     )
     _process_module_definition(
+        "google.cloud.firestore_v1.async_query",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_query",
+    )
+    _process_module_definition(
         "google.cloud.firestore_v1.aggregation",
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_aggregation",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_aggregation",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_aggregation",
     )
     _process_module_definition(
         "google.cloud.firestore_v1.batch",

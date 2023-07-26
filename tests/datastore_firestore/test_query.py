@@ -47,6 +47,7 @@ def test_firestore_query(collection):
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
     ]
+    @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_query",
         scoped_metrics=_test_scoped_metrics,
@@ -64,12 +65,6 @@ def test_firestore_query(collection):
 def test_firestore_query_generators(collection, assert_trace_for_generator):
     query = collection.select("x").where(field_path="x", op_string="<=", value=3)
     assert_trace_for_generator(query.stream)
-
-
-@validate_database_duration()
-@background_task()
-def test_firestore_query_db_duration(collection):
-    _exercise_query(collection)
 
 # ===== AggregationQuery =====
 
@@ -91,6 +86,7 @@ def test_firestore_aggregation_query(collection):
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
     ]
+    @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_aggregation_query",
         scoped_metrics=_test_scoped_metrics,
@@ -108,9 +104,3 @@ def test_firestore_aggregation_query(collection):
 def test_firestore_aggregation_query_generators(collection, assert_trace_for_generator):
     aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
     assert_trace_for_generator(aggregation_query.stream)
-
-
-@validate_database_duration()
-@background_task()
-def test_firestore_aggregation_query_db_duration(collection):
-    _exercise_aggregation_query(collection)

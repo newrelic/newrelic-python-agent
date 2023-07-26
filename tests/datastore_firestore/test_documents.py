@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.time_trace import current_trace
-from newrelic.api.datastore_trace import DatastoreTrace
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
@@ -59,6 +57,7 @@ def test_firestore_documents(collection):
         ("Datastore/all", 7),
         ("Datastore/allOther", 7),
     ]
+    @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_documents",
         scoped_metrics=_test_scoped_metrics,
@@ -81,9 +80,3 @@ def test_firestore_documents_generators(collection, assert_trace_for_generator):
     assert len([_ for _ in subcollection_doc.collections()]) == 2
     
     assert_trace_for_generator(subcollection_doc.collections)
-
-
-@validate_database_duration()
-@background_task()
-def test_firestore_documents_db_duration(collection):
-    _exercise_documents(collection)

@@ -13,9 +13,6 @@
 # limitations under the License.
 import pytest
 
-from newrelic.api.time_trace import current_trace
-from newrelic.api.datastore_trace import DatastoreTrace
-from testing_support.db_settings import firestore_settings
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (

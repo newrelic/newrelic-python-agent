@@ -208,6 +208,16 @@ def instrument_google_cloud_firestore_v1_batch(module):
                 )
 
 
+def instrument_google_cloud_firestore_v1_async_batch(module):
+    if hasattr(module, "AsyncWriteBatch"):
+        class_ = module.AsyncWriteBatch
+        for method in ("commit",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "AsyncWriteBatch.%s" % method, product="Firestore", target=None, operation=method
+                )
+
+
 def instrument_google_cloud_firestore_v1_bulk_batch(module):
     if hasattr(module, "BulkWriteBatch"):
         class_ = module.BulkWriteBatch

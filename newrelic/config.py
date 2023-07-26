@@ -2330,6 +2330,11 @@ def _process_module_builtin_defaults():
         "instrument_google_cloud_firestore_v1_batch",
     )
     _process_module_definition(
+        "google.cloud.firestore_v1.async_batch",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_batch",
+    )
+    _process_module_definition(
         "google.cloud.firestore_v1.bulk_batch",
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_bulk_batch",

@@ -13,9 +13,6 @@
 # limitations under the License.
 import pytest
 
-from newrelic.api.time_trace import current_trace
-from newrelic.api.datastore_trace import DatastoreTrace
-from testing_support.db_settings import firestore_settings
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
@@ -48,6 +45,7 @@ def test_firestore_client(client, collection, existing_document):
         ("Datastore/allOther", 2),
     ]
 
+    @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_client",
         scoped_metrics=_test_scoped_metrics,
@@ -68,9 +66,3 @@ def test_firestore_client_generators(client, collection, assert_trace_for_genera
 
     assert_trace_for_generator(client.collections)
     assert_trace_for_generator(client.get_all, [doc])
-
-
-@validate_database_duration()
-@background_task()
-def test_firestore_client_db_duration(client, collection, existing_document):
-    _exercise_client(client, collection, existing_document)

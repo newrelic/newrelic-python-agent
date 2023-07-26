@@ -32,7 +32,7 @@ def sample_data(collection, reset_firestore):
 def _exercise_query(collection):
     query = collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
     assert len(query.get()) == 3
-    assert len(list(query.stream())) == 3
+    assert len([_ for _ in query.stream()]) == 3
 
 
 def test_firestore_query(collection):
@@ -76,7 +76,7 @@ def test_firestore_query_db_duration(collection):
 def _exercise_aggregation_query(collection):
     aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
     assert aggregation_query.get()[0][0].value == 3
-    assert list(aggregation_query.stream())[0][0].value == 3
+    assert [_ for _ in aggregation_query.stream()][0][0].value == 3
 
 
 def test_firestore_aggregation_query(collection):

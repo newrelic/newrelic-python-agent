@@ -28,9 +28,9 @@ def _exercise_collections(collection):
     
     documents_get = collection.get()
     assert len(documents_get) == 2
-    documents_stream = list(collection.stream())
+    documents_stream = [_ for _ in collection.stream()]
     assert len(documents_stream) == 2
-    documents_list = list(collection.list_documents())
+    documents_list = [_ for _ in collection.list_documents()]
     assert len(documents_list) == 2
 
 
@@ -67,7 +67,7 @@ def test_firestore_collections(collection):
 def test_firestore_collections_generators(collection, assert_trace_for_generator):
     collection.add({})
     collection.add({})
-    assert len(list(collection.list_documents())) == 2
+    assert len([_ for _ in collection.list_documents()]) == 2
     
     assert_trace_for_generator(collection.stream)
     assert_trace_for_generator(collection.list_documents)

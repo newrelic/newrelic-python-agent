@@ -32,8 +32,8 @@ def existing_document(collection, reset_firestore):
 
 
 def _exercise_client(client, collection, existing_document):
-    assert len(list(client.collections())) == 1
-    doc = list(client.get_all([existing_document]))[0]
+    assert len([_ for _ in client.collections()]) == 1
+    doc = [_ for _ in client.get_all([existing_document])][0]
     assert doc.to_dict()["x"] == 1
 
 

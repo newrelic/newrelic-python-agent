@@ -100,6 +100,20 @@ def instrument_google_cloud_firestore_v1_collection(module):
                 wrap_generator_method(module, "CollectionReference", method, target=_get_object_id)
 
 
+def instrument_google_cloud_firestore_v1_async_collection(module):
+    if hasattr(module, "AsyncCollectionReference"):
+        class_ = module.AsyncCollectionReference
+        for method in ("add", "get"):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "AsyncCollectionReference.%s" % method, product="Firestore", target=_get_object_id, operation=method
+                )
+
+        for method in ("stream", "list_documents"):
+            if hasattr(class_, method):
+                wrap_async_generator_method(module, "AsyncCollectionReference", method, target=_get_object_id)
+
+
 def instrument_google_cloud_firestore_v1_document(module):
     if hasattr(module, "DocumentReference"):
         class_ = module.DocumentReference

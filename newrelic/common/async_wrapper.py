@@ -93,7 +93,7 @@ def async_generator_wrapper(wrapped, trace):
         with trace:
             while True:
                 try:
-                    g.asend(value).send(None)
+                    yielded = await g.asend(value)
                 except StopAsyncIteration as e:
                     # The underlying async generator has finished, return propagates a new StopAsyncIteration
                     return
@@ -107,7 +107,7 @@ def async_generator_wrapper(wrapped, trace):
                     # An exception was thrown with .athrow(), propagate to the original async generator.
                     # Return value logic must be identical to .asend()
                     try:
-                        g.athrow(type(e), e).send(None)
+                        value = yield await g.athrow(type(e), e)
                     except StopAsyncIteration as e:
                         # The underlying async generator has finished, return propagates a new StopAsyncIteration
                         return

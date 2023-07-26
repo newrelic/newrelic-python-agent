@@ -261,6 +261,37 @@ def test_async_generator_parents(event_loop):
 
 
 @validate_transaction_metrics(
+    "test_asend_receives_a_value",
+    background_task=True,
+    scoped_metrics=[("Function/agen", 1)],
+    rollup_metrics=[("Function/agen", 1)],
+)
+def test_asend_receives_a_value(event_loop):
+    _received = []
+    @function_trace(name="agen")
+    async def agen():
+        value = yield
+        _received.append(value)
+        yield value
+
+    @background_task(name="test_asend_receives_a_value")
+    async def _test():
+        gen = agen()
+
+        # kickstart the coroutine
+        await anext(gen)
+
+        assert await gen.asend("foobar") == "foobar"
+        assert _received and _received[0] == "foobar"
+
+        # finish consumption of the coroutine if necessary
+        async for _ in gen:
+            pass
+
+    event_loop.run_until_complete(_test())
+
+
+@validate_transaction_metrics(
     "test_athrow_yields_a_value",
     background_task=True,
     scoped_metrics=[("Function/agen", 1)],

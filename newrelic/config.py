@@ -2290,6 +2290,11 @@ def _process_module_builtin_defaults():
         "instrument_google_cloud_firestore_v1_document",
     )
     _process_module_definition(
+        "google.cloud.firestore_v1.async_document",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_document",
+    )
+    _process_module_definition(
         "google.cloud.firestore_v1.collection",
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_collection",

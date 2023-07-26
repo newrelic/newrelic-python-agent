@@ -128,6 +128,20 @@ def instrument_google_cloud_firestore_v1_document(module):
                 wrap_generator_method(module, "DocumentReference", method, target=_get_object_id)
 
 
+def instrument_google_cloud_firestore_v1_async_document(module):
+    if hasattr(module, "AsyncDocumentReference"):
+        class_ = module.AsyncDocumentReference
+        for method in ("create", "delete", "get", "set", "update"):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "AsyncDocumentReference.%s" % method, product="Firestore", target=_get_object_id, operation=method
+                )
+
+        for method in ("collections",):
+            if hasattr(class_, method):
+                wrap_async_generator_method(module, "AsyncDocumentReference", method, target=_get_object_id)
+
+
 def instrument_google_cloud_firestore_v1_query(module):
     if hasattr(module, "Query"):
         class_ = module.Query

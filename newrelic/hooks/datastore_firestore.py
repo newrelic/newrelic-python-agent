@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.api.datastore_trace import wrap_datastore_trace
 from newrelic.api.function_trace import wrap_function_trace
-from newrelic.common.async_wrapper import generator_wrapper
+from newrelic.common.async_wrapper import generator_wrapper, async_generator_wrapper
 from newrelic.api.datastore_trace import DatastoreTrace
 
 
@@ -40,17 +42,25 @@ def _get_collection_ref_id(obj, *args, **kwargs):
         return None
 
 
-def wrap_generator_method(module, class_name, method_name, target):
+def wrap_generator_method(module, class_name, method_name, target, is_async=False):
+    if is_async:
+        async_wrapper = async_generator_wrapper
+    else:
+        async_wrapper = generator_wrapper
+
     def _wrapper(wrapped, instance, args, kwargs):
         target_ = target(instance) if callable(target) else target
         trace = DatastoreTrace(product="Firestore", target=target_, operation=method_name)
-        wrapped = generator_wrapper(wrapped, trace)
+        wrapped = async_wrapper(wrapped, trace)
         return wrapped(*args, **kwargs)
     
     class_ = getattr(module, class_name)
     if class_ is not None:
         if hasattr(class_, method_name):
             wrap_function_wrapper(module, "%s.%s" % (class_name, method_name), _wrapper)
+
+
+wrap_async_generator_method = functools.partial(wrap_generator_method, is_async=True)
 
 
 def instrument_google_cloud_firestore_v1_base_client(module):
@@ -66,6 +76,14 @@ def instrument_google_cloud_firestore_v1_client(module):
         for method in ("collections", "get_all"):
             if hasattr(class_, method):
                 wrap_generator_method(module, "Client", method, target=None)
+
+
+def instrument_google_cloud_firestore_v1_async_client(module):
+    if hasattr(module, "AsyncClient"):
+        class_ = module.AsyncClient
+        for method in ("collections", "get_all"):
+            if hasattr(class_, method):
+                wrap_async_generator_method(module, "AsyncClient", method, target=None)
 
 
 def instrument_google_cloud_firestore_v1_collection(module):

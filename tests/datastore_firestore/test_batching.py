@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 # ===== WriteBatch =====
+
 
 def _exercise_write_batch(client, collection):
     docs = [collection.document(str(x)) for x in range(1, 4)]
@@ -38,6 +42,7 @@ def test_firestore_write_batch(client, collection):
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
     ]
+
     @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_write_batch",
@@ -51,11 +56,13 @@ def test_firestore_write_batch(client, collection):
 
     _test()
 
+
 # ===== BulkWriteBatch =====
+
 
 def _exercise_bulk_write_batch(client, collection):
     from google.cloud.firestore_v1.bulk_batch import BulkWriteBatch
-    
+
     docs = [collection.document(str(x)) for x in range(1, 4)]
     batch = BulkWriteBatch(client)
     for doc in docs:
@@ -73,6 +80,7 @@ def test_firestore_bulk_write_batch(client, collection):
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
     ]
+
     @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_bulk_write_batch",

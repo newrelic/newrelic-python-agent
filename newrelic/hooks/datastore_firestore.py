@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.api.datastore_trace import wrap_datastore_trace
+from newrelic.api.datastore_trace import DatastoreTrace, wrap_datastore_trace
 from newrelic.api.function_trace import wrap_function_trace
 from newrelic.common.async_wrapper import generator_wrapper
-from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def _get_object_id(obj, *args, **kwargs):
@@ -46,7 +45,7 @@ def wrap_generator_method(module, class_name, method_name, target):
         trace = DatastoreTrace(product="Firestore", target=target_, operation=method_name)
         wrapped = generator_wrapper(wrapped, trace)
         return wrapped(*args, **kwargs)
-    
+
     class_ = getattr(module, class_name)
     if class_ is not None:
         if hasattr(class_, method_name):
@@ -74,7 +73,11 @@ def instrument_google_cloud_firestore_v1_collection(module):
         for method in ("add", "get"):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "CollectionReference.%s" % method, product="Firestore", target=_get_object_id, operation=method
+                    module,
+                    "CollectionReference.%s" % method,
+                    product="Firestore",
+                    target=_get_object_id,
+                    operation=method,
                 )
 
         for method in ("stream", "list_documents"):
@@ -88,7 +91,11 @@ def instrument_google_cloud_firestore_v1_document(module):
         for method in ("create", "delete", "get", "set", "update"):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "DocumentReference.%s" % method, product="Firestore", target=_get_object_id, operation=method
+                    module,
+                    "DocumentReference.%s" % method,
+                    product="Firestore",
+                    target=_get_object_id,
+                    operation=method,
                 )
 
         for method in ("collections",):
@@ -116,7 +123,11 @@ def instrument_google_cloud_firestore_v1_aggregation(module):
         for method in ("get",):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "AggregationQuery.%s" % method, product="Firestore", target=_get_collection_ref_id, operation=method
+                    module,
+                    "AggregationQuery.%s" % method,
+                    product="Firestore",
+                    target=_get_collection_ref_id,
+                    operation=method,
                 )
 
         for method in ("stream",):

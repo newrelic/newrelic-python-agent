@@ -14,16 +14,11 @@
 
 from newrelic.api.time_trace import current_trace
 from newrelic.api.datastore_trace import DatastoreTrace
-from testing_support.db_settings import firestore_settings
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
-
-DB_SETTINGS = firestore_settings()[0]
-FIRESTORE_HOST = DB_SETTINGS["host"]
-FIRESTORE_PORT = DB_SETTINGS["port"]
 
 
 def _exercise_firestore(collection):

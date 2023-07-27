@@ -28,6 +28,10 @@ def sample_data(collection):
     for x in range(1, 6):
         collection.add({"x": x})
 
+    subcollection_doc = collection.document("subcollection")
+    subcollection_doc.set({})
+    subcollection_doc.collection("subcollection1").add({})
+
 
 # ===== Query =====
 
@@ -111,3 +115,80 @@ def test_firestore_aggregation_query(collection):
 def test_firestore_aggregation_query_generators(collection, assert_trace_for_generator):
     aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
     assert_trace_for_generator(aggregation_query.stream)
+
+
+# ===== CollectionGroup =====
+
+
+@pytest.fixture()
+def patch_partition_queries(monkeypatch, client, collection, sample_data):
+    """
+    Partitioning is not implemented in the Firestore emulator.
+    
+    Ordinarily this method would return a generator of Cursor objects. Each Cursor must point at a valid document path.
+    To test this, we can patch the RPC to return 1 Cursor which is pointed at any document available. 
+    The get_partitions will take that and make 2 QueryPartition objects out of it, which should be enough to ensure
+    we can exercise the generator's tracing.
+    """
+    from google.cloud.firestore_v1.types.query import Cursor
+    from google.cloud.firestore_v1.types.document import Value
+
+    subcollection = collection.document("subcollection").collection("subcollection1")
+    documents = [d for d in subcollection.list_documents()]
+
+    def mock_partition_query(*args, **kwargs):
+        yield Cursor(before=False, values=[Value(reference_value=documents[0].path)])
+
+    monkeypatch.setattr(client._firestore_api, "partition_query", mock_partition_query)
+    yield
+
+
+def _exercise_collection_group(collection):
+    from google.cloud.firestore import CollectionGroup
+
+    collection_group = CollectionGroup(collection)
+    assert len(collection_group.get())
+    assert len([d for d in collection_group.stream()])
+
+    partitions = [p for p in collection_group.get_partitions(1)]
+    assert len(partitions) == 2
+    documents = []
+    while partitions:
+        documents.extend(partitions.pop().query().get())
+    assert len(documents) == 6
+
+
+def test_firestore_collection_group(collection, patch_partition_queries):
+    _test_scoped_metrics = [
+        ("Datastore/statement/Firestore/%s/get" % collection.id, 3),
+        ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
+        ("Datastore/statement/Firestore/%s/get_partitions" % collection.id, 1),
+    ]
+
+    _test_rollup_metrics = [
+        ("Datastore/operation/Firestore/get", 3),
+        ("Datastore/operation/Firestore/stream", 1),
+        ("Datastore/operation/Firestore/get_partitions", 1),
+        ("Datastore/all", 5),
+        ("Datastore/allOther", 5),
+    ]
+
+    @validate_database_duration()
+    @validate_transaction_metrics(
+        "test_firestore_collection_group",
+        scoped_metrics=_test_scoped_metrics,
+        rollup_metrics=_test_rollup_metrics,
+        background_task=True,
+    )
+    @background_task(name="test_firestore_collection_group")
+    def _test():
+        _exercise_collection_group(collection)
+
+    _test()
+
+
+@background_task()
+def test_firestore_collection_group_generators(collection, assert_trace_for_generator, patch_partition_queries):
+    from google.cloud.firestore import CollectionGroup
+    collection_group = CollectionGroup(collection)
+    assert_trace_for_generator(collection_group.get_partitions, 1)

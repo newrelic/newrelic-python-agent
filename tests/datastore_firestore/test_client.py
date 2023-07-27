@@ -30,7 +30,7 @@ def sample_data(collection):
 
 
 def _exercise_client(client, collection, sample_data):
-    assert len([_ for _ in client.collections()]) >= 1
+    assert len([_ for _ in client.collections()])
     doc = [_ for _ in client.get_all([sample_data])][0]
     assert doc.to_dict()["x"] == 1
 

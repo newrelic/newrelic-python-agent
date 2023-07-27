@@ -116,6 +116,12 @@ def instrument_google_cloud_firestore_v1_query(module):
             if hasattr(class_, method):
                 wrap_generator_method(module, "Query", method, target=_get_parent_id)
 
+    if hasattr(module, "CollectionGroup"):
+        class_ = module.CollectionGroup
+        for method in ("get_partitions",):
+            if hasattr(class_, method):
+                wrap_generator_method(module, "CollectionGroup", method, target=_get_parent_id)
+
 
 def instrument_google_cloud_firestore_v1_aggregation(module):
     if hasattr(module, "AggregationQuery"):

@@ -46,6 +46,7 @@ jobs:
       - postgres
       - rabbitmq
       - redis
+      - rediscluster
       - solr
 
     steps:
@@ -354,6 +355,105 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
+  rediscluster:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+
+    services:
+      redis1:
+        image: hmstepanek/redis-cluster-node:1.0.0
+        ports:
+          - 6379:6379
+          - 16379:16379
+        options: >-
+          --add-host=host.docker.internal:host-gateway
+
+      redis2:
+        image: hmstepanek/redis-cluster-node:1.0.0
+        ports:
+          - 6380:6379
+          - 16380:16379
+        options: >-
+          --add-host=host.docker.internal:host-gateway
+
+      redis3:
+        image: hmstepanek/redis-cluster-node:1.0.0
+        ports:
+          - 6381:6379
+          - 16381:16379
+        options: >-
+          --add-host=host.docker.internal:host-gateway
+
+      redis4:
+        image: hmstepanek/redis-cluster-node:1.0.0
+        ports:
+          - 6382:6379
+          - 16382:16379
+        options: >-
+          --add-host=host.docker.internal:host-gateway
+
+      redis5:
+        image: hmstepanek/redis-cluster-node:1.0.0
+        ports:
+          - 6383:6379
+          - 16383:16379
+        options: >-
+          --add-host=host.docker.internal:host-gateway
+
+      redis6:
+        image: hmstepanek/redis-cluster-node:1.0.0
+        ports:
+          - 6384:6379
+          - 16384:16379
+        options: >-
+          --add-host=host.docker.internal:host-gateway
+
+      cluster-setup:
+        image: hmstepanek/redis-cluster:1.0.0    
+        options: >-
+          --add-host=host.docker.internal:host-gateway
 
     steps:
       - uses: actions/checkout@v3

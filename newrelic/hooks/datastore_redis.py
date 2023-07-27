@@ -597,6 +597,10 @@ def instrument_redis_commands_bf_commands(module):
     _instrument_redis_commands_module(module, "TOPKCommands")
 
 
+def instrument_redis_commands_cluster(module):
+    _instrument_redis_commands_module(module, "RedisClusterCommands")
+
+
 def _instrument_redis_commands_module(module, class_name):
     for name in _redis_client_methods:
         if hasattr(module, class_name):

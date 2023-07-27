@@ -237,3 +237,14 @@ def instrument_google_cloud_firestore_v1_transaction(module):
                 wrap_datastore_trace(
                     module, "Transaction.%s" % method, product="Firestore", target=None, operation=operation
                 )
+
+
+def instrument_google_cloud_firestore_v1_async_transaction(module):
+    if hasattr(module, "AsyncTransaction"):
+        class_ = module.AsyncTransaction
+        for method in ("_commit", "_rollback"):
+            if hasattr(class_, method):
+                operation = method[1:]  # Trim leading underscore
+                wrap_datastore_trace(
+                    module, "AsyncTransaction.%s" % method, product="Firestore", target=None, operation=operation
+                )

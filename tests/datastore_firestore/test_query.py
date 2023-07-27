@@ -143,10 +143,8 @@ def patch_partition_queries(monkeypatch, client, collection, sample_data):
     yield
 
 
-def _exercise_collection_group(collection):
-    from google.cloud.firestore import CollectionGroup
-
-    collection_group = CollectionGroup(collection)
+def _exercise_collection_group(client, collection):
+    collection_group = client.collection_group(collection.id)
     assert len(collection_group.get())
     assert len([d for d in collection_group.stream()])
 
@@ -158,7 +156,7 @@ def _exercise_collection_group(collection):
     assert len(documents) == 6
 
 
-def test_firestore_collection_group(collection, patch_partition_queries):
+def test_firestore_collection_group(client, collection, patch_partition_queries):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/get" % collection.id, 3),
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
@@ -182,14 +180,12 @@ def test_firestore_collection_group(collection, patch_partition_queries):
     )
     @background_task(name="test_firestore_collection_group")
     def _test():
-        _exercise_collection_group(collection)
+        _exercise_collection_group(client, collection)
 
     _test()
 
 
 @background_task()
-def test_firestore_collection_group_generators(collection, assert_trace_for_generator, patch_partition_queries):
-    from google.cloud.firestore import CollectionGroup
-
-    collection_group = CollectionGroup(collection)
+def test_firestore_collection_group_generators(client, collection, assert_trace_for_generator, patch_partition_queries):
+    collection_group = client.collection_group(collection.id)
     assert_trace_for_generator(collection_group.get_partitions, 1)

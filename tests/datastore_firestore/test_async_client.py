@@ -21,8 +21,7 @@ from testing_support.validators.validate_database_duration import (
 
 
 @pytest.fixture()
-def existing_document(collection, reset_firestore):
-    # reset_firestore must be run before, not after this fixture
+def existing_document(collection):
     doc = collection.document("document")
     doc.set({"x": 1})
     return doc

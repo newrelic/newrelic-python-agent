@@ -57,13 +57,9 @@ def client():
 
 @pytest.fixture(scope="function")
 def collection(client):
-    yield client.collection("firestore_collection_" + str(uuid.uuid4()))
-
-
-@pytest.fixture(scope="function", autouse=True)
-def reset_firestore(client):
-    for coll in client.collections():
-        client.recursive_delete(coll)
+    collection_ = client.collection("firestore_collection_" + str(uuid.uuid4()))
+    yield collection_
+    client.recursive_delete(collection_)
 
 
 @pytest.fixture(scope="session")

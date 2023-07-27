@@ -23,8 +23,7 @@ from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(autouse=True)
-def sample_data(collection, reset_firestore):
-    # reset_firestore must be run before, not after this fixture
+def sample_data(collection):
     for x in range(1, 4):
         collection.add({"x": x}, "doc%d" % x)
 

@@ -23,20 +23,19 @@ from newrelic.api.background_task import background_task
 
 
 @pytest.fixture()
-def existing_document(collection, reset_firestore):
-    # reset_firestore must be run before, not after this fixture
+def sample_data(collection):
     doc = collection.document("document")
     doc.set({"x": 1})
     return doc
 
 
-def _exercise_client(client, collection, existing_document):
+def _exercise_client(client, collection, sample_data):
     assert len([_ for _ in client.collections()]) >= 1
-    doc = [_ for _ in client.get_all([existing_document])][0]
+    doc = [_ for _ in client.get_all([sample_data])][0]
     assert doc.to_dict()["x"] == 1
 
 
-def test_firestore_client(client, collection, existing_document):
+def test_firestore_client(client, collection, sample_data):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/collections", 1),
         ("Datastore/operation/Firestore/get_all", 1),
@@ -56,15 +55,12 @@ def test_firestore_client(client, collection, existing_document):
     )
     @background_task(name="test_firestore_client")
     def _test():
-        _exercise_client(client, collection, existing_document)
+        _exercise_client(client, collection, sample_data)
 
     _test()
 
 
 @background_task()
-def test_firestore_client_generators(client, collection, assert_trace_for_generator):
-    doc = collection.document("test")
-    doc.set({})
-
+def test_firestore_client_generators(client, collection, sample_data, assert_trace_for_generator):
     assert_trace_for_generator(client.collections)
-    assert_trace_for_generator(client.get_all, [doc])
+    assert_trace_for_generator(client.get_all, [sample_data])

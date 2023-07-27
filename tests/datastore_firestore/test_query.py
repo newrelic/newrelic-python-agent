@@ -13,21 +13,28 @@
 # limitations under the License.
 
 import pytest
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(autouse=True)
-def sample_data(collection, reset_firestore):
-    # reset_firestore must be run before, not after this fixture
+def sample_data(collection):
     for x in range(1, 6):
         collection.add({"x": x})
 
+    subcollection_doc = collection.document("subcollection")
+    subcollection_doc.set({})
+    subcollection_doc.collection("subcollection1").add({})
+
+
 # ===== Query =====
+
 
 def _exercise_query(collection):
     query = collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
@@ -47,7 +54,6 @@ def test_firestore_query(collection):
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
     ]
-    @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_query",
         scoped_metrics=_test_scoped_metrics,
@@ -66,7 +72,14 @@ def test_firestore_query_generators(collection, assert_trace_for_generator):
     query = collection.select("x").where(field_path="x", op_string="<=", value=3)
     assert_trace_for_generator(query.stream)
 
+
+@validate_database_duration()
+@background_task()
+def test_firestore_query_db_duration(collection):
+    _exercise_query(collection)
+
 # ===== AggregationQuery =====
+
 
 def _exercise_aggregation_query(collection):
     aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
@@ -86,7 +99,6 @@ def test_firestore_aggregation_query(collection):
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
     ]
-    @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_aggregation_query",
         scoped_metrics=_test_scoped_metrics,
@@ -104,3 +116,9 @@ def test_firestore_aggregation_query(collection):
 def test_firestore_aggregation_query_generators(collection, assert_trace_for_generator):
     aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
     assert_trace_for_generator(aggregation_query.stream)
+
+
+@validate_database_duration()
+@background_task()
+def test_firestore_aggregation_query_db_duration(collection):
+    _exercise_aggregation_query(collection)

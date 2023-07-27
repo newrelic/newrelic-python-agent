@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 
 def _exercise_documents(collection):
@@ -78,5 +81,5 @@ def test_firestore_documents_generators(collection, assert_trace_for_generator):
     subcollection_doc.collection("collection1").add({})
     subcollection_doc.collection("collection2").add({})
     assert len([_ for _ in subcollection_doc.collections()]) == 2
-    
+
     assert_trace_for_generator(subcollection_doc.collections)

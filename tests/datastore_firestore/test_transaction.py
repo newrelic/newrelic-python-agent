@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(autouse=True)
-def sample_data(collection, reset_firestore):
-    # reset_firestore must be run before, not after this fixture
+def sample_data(collection):
     for x in range(1, 4):
         collection.add({"x": x}, "doc%d" % x)
 
@@ -80,6 +81,7 @@ def test_firestore_transaction_commit(client, collection):
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
     ]
+
     @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_transaction",
@@ -105,6 +107,7 @@ def test_firestore_transaction_rollback(client, collection):
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
     ]
+
     @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_transaction",

@@ -124,14 +124,14 @@ def test_firestore_aggregation_query_generators(collection, assert_trace_for_gen
 def patch_partition_queries(monkeypatch, client, collection, sample_data):
     """
     Partitioning is not implemented in the Firestore emulator.
-    
+
     Ordinarily this method would return a generator of Cursor objects. Each Cursor must point at a valid document path.
-    To test this, we can patch the RPC to return 1 Cursor which is pointed at any document available. 
+    To test this, we can patch the RPC to return 1 Cursor which is pointed at any document available.
     The get_partitions will take that and make 2 QueryPartition objects out of it, which should be enough to ensure
     we can exercise the generator's tracing.
     """
-    from google.cloud.firestore_v1.types.query import Cursor
     from google.cloud.firestore_v1.types.document import Value
+    from google.cloud.firestore_v1.types.query import Cursor
 
     subcollection = collection.document("subcollection").collection("subcollection1")
     documents = [d for d in subcollection.list_documents()]
@@ -190,5 +190,6 @@ def test_firestore_collection_group(collection, patch_partition_queries):
 @background_task()
 def test_firestore_collection_group_generators(collection, assert_trace_for_generator, patch_partition_queries):
     from google.cloud.firestore import CollectionGroup
+
     collection_group = CollectionGroup(collection)
     assert_trace_for_generator(collection_group.get_partitions, 1)

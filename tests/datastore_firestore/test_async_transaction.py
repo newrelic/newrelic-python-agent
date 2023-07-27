@@ -27,7 +27,7 @@ def sample_data(collection):
 
 
 async def _exercise_async_transaction_commit(async_client, async_collection):
-    from google.cloud.firestore_v1.async_transaction import async_transactional
+    from google.cloud.firestore import async_transactional
     
     @async_transactional
     async def _exercise(async_transaction):
@@ -54,7 +54,7 @@ async def _exercise_async_transaction_commit(async_client, async_collection):
 
 
 async def _exercise_async_transaction_rollback(async_client, async_collection):
-    from google.cloud.firestore_v1.async_transaction import async_transactional
+    from google.cloud.firestore import async_transactional
     
     @async_transactional
     async def _exercise(async_transaction):

@@ -29,7 +29,7 @@ def sample_data(collection):
 
 
 def _exercise_transaction_commit(client, collection):
-    from google.cloud.firestore_v1.transaction import transactional
+    from google.cloud.firestore import transactional
 
     @transactional
     def _exercise(transaction):
@@ -53,7 +53,7 @@ def _exercise_transaction_commit(client, collection):
 
 
 def _exercise_transaction_rollback(client, collection):
-    from google.cloud.firestore_v1.transaction import transactional
+    from google.cloud.firestore import transactional
 
     @transactional
     def _exercise(transaction):

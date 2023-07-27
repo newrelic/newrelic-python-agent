@@ -183,6 +183,12 @@ def instrument_google_cloud_firestore_v1_async_query(module):
             if hasattr(class_, method):
                 wrap_async_generator_method(module, "AsyncQuery", method, target=_get_parent_id)
 
+    if hasattr(module, "AsyncCollectionGroup"):
+        class_ = module.AsyncCollectionGroup
+        for method in ("get_partitions",):
+            if hasattr(class_, method):
+                wrap_async_generator_method(module, "AsyncCollectionGroup", method, target=_get_parent_id)
+
 
 def instrument_google_cloud_firestore_v1_aggregation(module):
     if hasattr(module, "AggregationQuery"):

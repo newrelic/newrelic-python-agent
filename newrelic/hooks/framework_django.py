@@ -271,7 +271,7 @@ def wrap_leading_middleware(middleware):
 
 
 # Because this is not being used in any version of Django that is
-# within New Relic's support window, so no tests will be added
+# within New Relic's support window, no tests will be added
 # for this.  However, value exists to keeping backwards compatible
 # functionality, so instead of removing this instrumentation, this
 # will be excluded from the coverage analysis.

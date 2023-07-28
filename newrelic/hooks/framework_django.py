@@ -606,7 +606,7 @@ def wrap_url_resolver(wrapped):
             with FunctionTrace(name=name, label=path, source=wrapped):
                 result = wrapped(path)
 
-                if isinstance(result, tuple):
+                if type(result) is tuple:
                     callback, callback_args, callback_kwargs = result
                     result = (wrap_view_handler(callback, priority=5), callback_args, callback_kwargs)
                 else:

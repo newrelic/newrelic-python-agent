@@ -18,25 +18,9 @@ from newrelic.common.async_wrapper import generator_wrapper
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
-def _get_object_id(obj, *args, **kwargs):
-    try:
-        return obj.id
-    except Exception:
-        return None
-
-
-def _get_parent_id(obj, *args, **kwargs):
-    try:
-        return obj._parent.id
-    except Exception:
-        return None
-
-
-def _get_collection_ref_id(obj, *args, **kwargs):
-    try:
-        return obj._collection_ref.id
-    except Exception:
-        return None
+_get_object_id = lambda obj, *args, **kwargs: getattr(obj, "id", None)
+_get_parent_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_parent", None), "id", None)
+_get_collection_ref_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_collection_ref", None), "id", None)
 
 
 def wrap_generator_method(module, class_name, method_name, target):

@@ -29,13 +29,16 @@ def sample_data(collection):
     return doc
 
 
-def _exercise_client(client, collection, sample_data):
-    assert len([_ for _ in client.collections()])
-    doc = [_ for _ in client.get_all([sample_data])][0]
-    assert doc.to_dict()["x"] == 1
+@pytest.fixture()
+def exercise_client(client, sample_data):
+    def _exercise_client():
+        assert len([_ for _ in client.collections()])
+        doc = [_ for _ in client.get_all([sample_data])][0]
+        assert doc.to_dict()["x"] == 1
+    return _exercise_client
 
 
-def test_firestore_client(client, collection, sample_data):
+def test_firestore_client(exercise_client):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/collections", 1),
         ("Datastore/operation/Firestore/get_all", 1),
@@ -55,12 +58,12 @@ def test_firestore_client(client, collection, sample_data):
     )
     @background_task(name="test_firestore_client")
     def _test():
-        _exercise_client(client, collection, sample_data)
+        exercise_client()
 
     _test()
 
 
 @background_task()
-def test_firestore_client_generators(client, collection, sample_data, assert_trace_for_generator):
+def test_firestore_client_generators(client, sample_data, assert_trace_for_generator):
     assert_trace_for_generator(client.collections)
     assert_trace_for_generator(client.get_all, [sample_data])

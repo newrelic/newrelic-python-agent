@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
@@ -22,20 +24,23 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 
 
-def _exercise_collections(collection):
-    collection.document("DoesNotExist")
-    collection.add({"capital": "Rome", "currency": "Euro", "language": "Italian"}, "Italy")
-    collection.add({"capital": "Mexico City", "currency": "Peso", "language": "Spanish"}, "Mexico")
+@pytest.fixture()
+def exercise_collections(collection):
+    def _exercise_collections():
+        collection.document("DoesNotExist")
+        collection.add({"capital": "Rome", "currency": "Euro", "language": "Italian"}, "Italy")
+        collection.add({"capital": "Mexico City", "currency": "Peso", "language": "Spanish"}, "Mexico")
 
-    documents_get = collection.get()
-    assert len(documents_get) == 2
-    documents_stream = [_ for _ in collection.stream()]
-    assert len(documents_stream) == 2
-    documents_list = [_ for _ in collection.list_documents()]
-    assert len(documents_list) == 2
+        documents_get = collection.get()
+        assert len(documents_get) == 2
+        documents_stream = [_ for _ in collection.stream()]
+        assert len(documents_stream) == 2
+        documents_list = [_ for _ in collection.list_documents()]
+        assert len(documents_list) == 2
+    return _exercise_collections
 
 
-def test_firestore_collections(collection):
+def test_firestore_collections(exercise_collections, collection):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
@@ -61,7 +66,7 @@ def test_firestore_collections(collection):
     )
     @background_task(name="test_firestore_collections")
     def _test():
-        _exercise_collections(collection)
+        exercise_collections()
 
     _test()
 

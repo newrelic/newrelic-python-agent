@@ -28,46 +28,52 @@ def sample_data(collection):
         collection.add({"x": x}, "doc%d" % x)
 
 
-def _exercise_transaction_commit(client, collection):
-    from google.cloud.firestore_v1.transaction import transactional
+@pytest.fixture()
+def exercise_transaction_commit(client, collection):
+    def _exercise_transaction_commit():
+        from google.cloud.firestore_v1.transaction import transactional
 
-    @transactional
-    def _exercise(transaction):
-        # get a DocumentReference
-        [_ for _ in transaction.get(collection.document("doc1"))]
+        @transactional
+        def _exercise(transaction):
+            # get a DocumentReference
+            [_ for _ in transaction.get(collection.document("doc1"))]
 
-        # get a Query
-        query = collection.select("x").where(field_path="x", op_string=">", value=2)
-        assert len([_ for _ in transaction.get(query)]) == 1
+            # get a Query
+            query = collection.select("x").where(field_path="x", op_string=">", value=2)
+            assert len([_ for _ in transaction.get(query)]) == 1
 
-        # get_all on a list of DocumentReferences
-        all_docs = transaction.get_all([collection.document("doc%d" % x) for x in range(1, 4)])
-        assert len([_ for _ in all_docs]) == 3
+            # get_all on a list of DocumentReferences
+            all_docs = transaction.get_all([collection.document("doc%d" % x) for x in range(1, 4)])
+            assert len([_ for _ in all_docs]) == 3
 
-        # set and delete methods
-        transaction.set(collection.document("doc2"), {"x": 0})
-        transaction.delete(collection.document("doc3"))
+            # set and delete methods
+            transaction.set(collection.document("doc2"), {"x": 0})
+            transaction.delete(collection.document("doc3"))
 
-    _exercise(client.transaction())
-    assert len([_ for _ in collection.list_documents()]) == 2
-
-
-def _exercise_transaction_rollback(client, collection):
-    from google.cloud.firestore_v1.transaction import transactional
-
-    @transactional
-    def _exercise(transaction):
-        # set and delete methods
-        transaction.set(collection.document("doc2"), {"x": 99})
-        transaction.delete(collection.document("doc1"))
-        raise RuntimeError()
-
-    with pytest.raises(RuntimeError):
         _exercise(client.transaction())
-    assert len([_ for _ in collection.list_documents()]) == 3
+        assert len([_ for _ in collection.list_documents()]) == 2
+    return _exercise_transaction_commit
 
 
-def test_firestore_transaction_commit(client, collection):
+@pytest.fixture()
+def exercise_transaction_rollback(client, collection):
+    def _exercise_transaction_rollback():
+        from google.cloud.firestore_v1.transaction import transactional
+
+        @transactional
+        def _exercise(transaction):
+            # set and delete methods
+            transaction.set(collection.document("doc2"), {"x": 99})
+            transaction.delete(collection.document("doc1"))
+            raise RuntimeError()
+
+        with pytest.raises(RuntimeError):
+            _exercise(client.transaction())
+        assert len([_ for _ in collection.list_documents()]) == 3
+    return _exercise_transaction_rollback
+
+
+def test_firestore_transaction_commit(exercise_transaction_commit, collection):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/commit", 1),
         ("Datastore/operation/Firestore/get_all", 2),
@@ -91,12 +97,12 @@ def test_firestore_transaction_commit(client, collection):
     )
     @background_task(name="test_firestore_transaction")
     def _test():
-        _exercise_transaction_commit(client, collection)
+        exercise_transaction_commit()
 
     _test()
 
 
-def test_firestore_transaction_rollback(client, collection):
+def test_firestore_transaction_rollback(exercise_transaction_rollback, collection):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/rollback", 1),
         ("Datastore/statement/Firestore/%s/list_documents" % collection.id, 1),
@@ -117,6 +123,6 @@ def test_firestore_transaction_rollback(client, collection):
     )
     @background_task(name="test_firestore_transaction")
     def _test():
-        _exercise_transaction_rollback(client, collection)
+        exercise_transaction_rollback()
 
     _test()

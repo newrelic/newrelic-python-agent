@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
@@ -24,16 +26,19 @@ from newrelic.api.background_task import background_task
 # ===== WriteBatch =====
 
 
-def _exercise_write_batch(client, collection):
-    docs = [collection.document(str(x)) for x in range(1, 4)]
-    batch = client.batch()
-    for doc in docs:
-        batch.set(doc, {})
+@pytest.fixture()
+def exercise_write_batch(client, collection):
+    def _exercise_write_batch():
+        docs = [collection.document(str(x)) for x in range(1, 4)]
+        batch = client.batch()
+        for doc in docs:
+            batch.set(doc, {})
 
-    batch.commit()
+        batch.commit()
+    return _exercise_write_batch
 
 
-def test_firestore_write_batch(client, collection):
+def test_firestore_write_batch(exercise_write_batch):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/commit", 1),
     ]
@@ -52,7 +57,7 @@ def test_firestore_write_batch(client, collection):
     )
     @background_task(name="test_firestore_write_batch")
     def _test():
-        _exercise_write_batch(client, collection)
+        exercise_write_batch()
 
     _test()
 
@@ -60,18 +65,21 @@ def test_firestore_write_batch(client, collection):
 # ===== BulkWriteBatch =====
 
 
-def _exercise_bulk_write_batch(client, collection):
-    from google.cloud.firestore_v1.bulk_batch import BulkWriteBatch
+@pytest.fixture()
+def exercise_bulk_write_batch(client, collection):
+    def _exercise_bulk_write_batch():
+        from google.cloud.firestore_v1.bulk_batch import BulkWriteBatch
 
-    docs = [collection.document(str(x)) for x in range(1, 4)]
-    batch = BulkWriteBatch(client)
-    for doc in docs:
-        batch.set(doc, {})
+        docs = [collection.document(str(x)) for x in range(1, 4)]
+        batch = BulkWriteBatch(client)
+        for doc in docs:
+            batch.set(doc, {})
 
-    batch.commit()
+        batch.commit()
+    return _exercise_bulk_write_batch
 
 
-def test_firestore_bulk_write_batch(client, collection):
+def test_firestore_bulk_write_batch(exercise_bulk_write_batch):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/commit", 1),
     ]
@@ -90,6 +98,6 @@ def test_firestore_bulk_write_batch(client, collection):
     )
     @background_task(name="test_firestore_bulk_write_batch")
     def _test():
-        _exercise_bulk_write_batch(client, collection)
+        exercise_bulk_write_batch()
 
     _test()

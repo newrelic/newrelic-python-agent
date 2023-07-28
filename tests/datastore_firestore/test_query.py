@@ -36,13 +36,16 @@ def sample_data(collection):
 # ===== Query =====
 
 
-def _exercise_query(collection):
-    query = collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
-    assert len(query.get()) == 3
-    assert len([_ for _ in query.stream()]) == 3
+@pytest.fixture()
+def exercise_query(collection):
+    def _exercise_query():
+        query = collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
+        assert len(query.get()) == 3
+        assert len([_ for _ in query.stream()]) == 3
+    return _exercise_query
 
 
-def test_firestore_query(collection):
+def test_firestore_query(exercise_query, collection):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
@@ -64,7 +67,7 @@ def test_firestore_query(collection):
     )
     @background_task(name="test_firestore_query")
     def _test():
-        _exercise_query(collection)
+        exercise_query()
 
     _test()
 
@@ -78,13 +81,16 @@ def test_firestore_query_generators(collection, assert_trace_for_generator):
 # ===== AggregationQuery =====
 
 
-def _exercise_aggregation_query(collection):
-    aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
-    assert aggregation_query.get()[0][0].value == 3
-    assert [_ for _ in aggregation_query.stream()][0][0].value == 3
+@pytest.fixture()
+def exercise_aggregation_query(collection):
+    def _exercise_aggregation_query():
+        aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
+        assert aggregation_query.get()[0][0].value == 3
+        assert [_ for _ in aggregation_query.stream()][0][0].value == 3
+    return _exercise_aggregation_query
 
 
-def test_firestore_aggregation_query(collection):
+def test_firestore_aggregation_query(exercise_aggregation_query, collection):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
@@ -106,7 +112,7 @@ def test_firestore_aggregation_query(collection):
     )
     @background_task(name="test_firestore_aggregation_query")
     def _test():
-        _exercise_aggregation_query(collection)
+        exercise_aggregation_query()
 
     _test()
 
@@ -143,20 +149,23 @@ def patch_partition_queries(monkeypatch, client, collection, sample_data):
     yield
 
 
-def _exercise_collection_group(client, collection):
-    collection_group = client.collection_group(collection.id)
-    assert len(collection_group.get())
-    assert len([d for d in collection_group.stream()])
+@pytest.fixture()
+def exercise_collection_group(client, collection):
+    def _exercise_collection_group():
+        collection_group = client.collection_group(collection.id)
+        assert len(collection_group.get())
+        assert len([d for d in collection_group.stream()])
 
-    partitions = [p for p in collection_group.get_partitions(1)]
-    assert len(partitions) == 2
-    documents = []
-    while partitions:
-        documents.extend(partitions.pop().query().get())
-    assert len(documents) == 6
+        partitions = [p for p in collection_group.get_partitions(1)]
+        assert len(partitions) == 2
+        documents = []
+        while partitions:
+            documents.extend(partitions.pop().query().get())
+        assert len(documents) == 6
+    return _exercise_collection_group
 
 
-def test_firestore_collection_group(client, collection, patch_partition_queries):
+def test_firestore_collection_group(exercise_collection_group, client, collection, patch_partition_queries):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/get" % collection.id, 3),
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
@@ -180,7 +189,7 @@ def test_firestore_collection_group(client, collection, patch_partition_queries)
     )
     @background_task(name="test_firestore_collection_group")
     def _test():
-        _exercise_collection_group(client, collection)
+        exercise_collection_group()
 
     _test()
 

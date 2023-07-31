@@ -26,6 +26,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         freetds-common \
         freetds-dev \
         gcc \
+        gfortran \
         git \
         libbz2-dev \
         libcurl4-openssl-dev \
@@ -43,6 +44,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         make \
         odbc-postgresql \
         openssl \
+        pkg-config \
         python2-dev \
         python3-dev \
         python3-pip \
@@ -55,10 +57,22 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
+# Build librdkafka from source
+ARG LIBRDKAFKA_VERSION=2.1.1
+RUN cd /tmp && \
+    wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v${LIBRDKAFKA_VERSION}.zip -O ./librdkafka.zip && \
+    unzip ./librdkafka.zip && \
+    rm ./librdkafka.zip && \
+    cd ./librdkafka-${LIBRDKAFKA_VERSION} && \
+    ./configure && \
+    make all install && \
+    cd /tmp && \
+    rm -rf ./librdkafka-${LIBRDKAFKA_VERSION}
+
 # Setup ODBC config
-RUN sed -i 's/Driver=psqlodbca.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psqlodbca.so/g' /etc/odbcinst.ini && \
-    sed -i 's/Driver=psqlodbcw.so/Driver=\/usr\/lib\/x86_64-linux-gnu\/odbc\/psqlodbcw.so/g' /etc/odbcinst.ini && \
-    sed -i 's/Setup=libodbcpsqlS.so/Setup=\/usr\/lib\/x86_64-linux-gnu\/odbc\/libodbcpsqlS.so/g' /etc/odbcinst.ini
+RUN sed -i 's|Driver=psqlodbca.so|Driver=/usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so|g' /etc/odbcinst.ini && \
+    sed -i 's|Driver=psqlodbcw.so|Driver=/usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so|g' /etc/odbcinst.ini && \
+    sed -i 's|Setup=libodbcpsqlS.so|Setup=/usr/lib/x86_64-linux-gnu/odbc/libodbcpsqlS.so|g' /etc/odbcinst.ini
 
 # Set the locale
 RUN locale-gen --no-purge en_US.UTF-8
@@ -79,7 +93,7 @@ RUN echo 'eval "$(pyenv init -)"' >>$HOME/.bashrc && \
     pyenv update
 
 # Install Python
-ARG PYTHON_VERSIONS="3.10 3.9 3.8 3.7 3.11 2.7 pypy2.7-7.3.11 pypy3.7"
+ARG PYTHON_VERSIONS="3.10 3.9 3.8 3.7 3.11 2.7 pypy2.7-7.3.12 pypy3.8-7.3.11"
 COPY --chown=1000:1000 --chmod=+x ./install-python.sh /tmp/install-python.sh
 COPY ./requirements.txt /requirements.txt
 RUN /tmp/install-python.sh && \

@@ -13,10 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
-
-SCRIPT_DIR=$(dirname "$0")
-PIP_REQUIREMENTS=$(cat /requirements.txt)
+set -eo pipefail
 
 main() {
     # Coerce space separated string to array
@@ -50,7 +47,7 @@ main() {
     pyenv global ${PYENV_VERSIONS[@]}
     
     # Install dependencies for main python installation
-    pyenv exec pip install --upgrade $PIP_REQUIREMENTS
+    pyenv exec pip install --upgrade -r /requirements.txt
 }
 
 main

@@ -100,12 +100,20 @@ class CustomTestModel(BaseDecisionTree):
             )
 
     def fit(self, X, y, sample_weight=None, check_input=True):
-        return super(CustomTestModel, self).fit(
-            X,
-            y,
-            sample_weight=sample_weight,
-            check_input=check_input,
-        )
+        if hasattr(super(CustomTestModel, self), "_fit"):
+            return self._fit(
+                X,
+                y,
+                sample_weight=sample_weight,
+                check_input=check_input,
+            )
+        else:
+            return super(CustomTestModel, self).fit(
+                X,
+                y,
+                sample_weight=sample_weight,
+                check_input=check_input,
+            )
 
     def predict(self, X, check_input=True):
         return super(CustomTestModel, self).predict(X, check_input=check_input)

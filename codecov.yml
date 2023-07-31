@@ -19,6 +19,5 @@ ignore:
   - "newrelic/hooks/database_oursql.py"
   - "newrelic/hooks/database_psycopg2ct.py"
   - "newrelic/hooks/datastore_umemcache.py"
-  # Temporarily disable kafka
-  - "newrelic/hooks/messagebroker_kafkapython.py"
-  - "newrelic/hooks/messagebroker_confluentkafka.py"
+  - "newrelic/admin/*"
+  - "newrelic/console.py"

@@ -135,7 +135,7 @@ class DatastoreTrace(TimeTrace):
         )
 
 
-def DatastoreTraceWrapper(wrapped, product, target, operation, host, port_path_or_id, database_name):
+def DatastoreTraceWrapper(wrapped, product, target, operation, host=None, port_path_or_id=None, database_name=None):
     """Wraps a method to time datastore queries.
 
     :param wrapped: The function to apply the trace to.
@@ -242,7 +242,7 @@ def DatastoreTraceWrapper(wrapped, product, target, operation, host, port_path_o
     return FunctionWrapper(wrapped, _nr_datastore_trace_wrapper_)
 
 
-def datastore_trace(product, target, operation, host, port_path_or_id, database_name):
+def datastore_trace(product, target, operation, host=None, port_path_or_id=None, database_name=None):
     """Decorator allows datastore query to be timed.
 
     :param product: The name of the vendor.
@@ -287,7 +287,7 @@ def datastore_trace(product, target, operation, host, port_path_or_id, database_
     )
 
 
-def wrap_datastore_trace(module, object_path, product, target, operation, host, port_path_or_id, database_name):
+def wrap_datastore_trace(module, object_path, product, target, operation, host=None, port_path_or_id=None, database_name=None):
     """Method applies custom timing to datastore query.
 
     :param module: Module containing the method to be instrumented.

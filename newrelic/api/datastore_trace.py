@@ -95,7 +95,14 @@ class DatastoreTrace(TimeTrace):
         return "<%s object at 0x%x %s>" % (
             self.__class__.__name__,
             id(self),
-            dict(product=self.product, target=self.target, operation=self.operation, host=self.host, port_path_or_id=self.port_path_or_id, database_name=self.database_name),
+            dict(
+                product=self.product,
+                target=self.target,
+                operation=self.operation,
+                host=self.host,
+                port_path_or_id=self.port_path_or_id,
+                database_name=self.database_name,
+            ),
         )
 
     def finalize_data(self, transaction, exc=None, value=None, tb=None):
@@ -222,7 +229,9 @@ def DatastoreTraceWrapper(wrapped, product, target, operation, host, port_path_o
         else:
             _database_name = database_name
 
-        trace = DatastoreTrace(_product, _target, _operation, _host, _port_path_or_id, _database_name, parent=parent, source=wrapped)
+        trace = DatastoreTrace(
+            _product, _target, _operation, _host, _port_path_or_id, _database_name, parent=parent, source=wrapped
+        )
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -267,7 +276,15 @@ def datastore_trace(product, target, operation, host, port_path_or_id, database_
         ...     time.sleep(*args, **kwargs)
 
     """
-    return functools.partial(DatastoreTraceWrapper, product=product, target=target, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=database_name)
+    return functools.partial(
+        DatastoreTraceWrapper,
+        product=product,
+        target=target,
+        operation=operation,
+        host=host,
+        port_path_or_id=port_path_or_id,
+        database_name=database_name,
+    )
 
 
 def wrap_datastore_trace(module, object_path, product, target, operation, host, port_path_or_id, database_name):
@@ -307,4 +324,6 @@ def wrap_datastore_trace(module, object_path, product, target, operation, host, 
         ...        'sleep')
 
     """
-    wrap_object(module, object_path, DatastoreTraceWrapper, (product, target, operation, host, port_path_or_id, database_name))
+    wrap_object(
+        module, object_path, DatastoreTraceWrapper, (product, target, operation, host, port_path_or_id, database_name)
+    )

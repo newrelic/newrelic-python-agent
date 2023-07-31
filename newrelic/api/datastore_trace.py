@@ -287,7 +287,9 @@ def datastore_trace(product, target, operation, host=None, port_path_or_id=None,
     )
 
 
-def wrap_datastore_trace(module, object_path, product, target, operation, host=None, port_path_or_id=None, database_name=None):
+def wrap_datastore_trace(
+    module, object_path, product, target, operation, host=None, port_path_or_id=None, database_name=None
+):
     """Method applies custom timing to datastore query.
 
     :param module: Module containing the method to be instrumented.

@@ -12,29 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.time_trace import current_trace
-from newrelic.api.datastore_trace import DatastoreTrace
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.api.background_task import background_task
+import pytest
+
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 
-def _exercise_firestore(collection):
-    collection.document("DoesNotExist")
-    collection.add({"capital": "Rome", "currency": "Euro", "language": "Italian"}, "Italy")
-    collection.add({"capital": "Mexico City", "currency": "Peso", "language": "Spanish"}, "Mexico")
-    
-    documents_get = collection.get()
-    assert len(documents_get) == 2
-    documents_stream = list(collection.stream())
-    assert len(documents_stream) == 2
-    documents_list = list(collection.list_documents())
-    assert len(documents_list) == 2
+@pytest.fixture()
+def exercise_collections(collection):
+    def _exercise_collections():
+        collection.document("DoesNotExist")
+        collection.add({"capital": "Rome", "currency": "Euro", "language": "Italian"}, "Italy")
+        collection.add({"capital": "Mexico City", "currency": "Peso", "language": "Spanish"}, "Mexico")
+
+        documents_get = collection.get()
+        assert len(documents_get) == 2
+        documents_stream = [_ for _ in collection.stream()]
+        assert len(documents_stream) == 2
+        documents_list = [_ for _ in collection.list_documents()]
+        assert len(documents_list) == 2
+    return _exercise_collections
 
 
-def test_firestore_collections(collection):
+def test_firestore_collections(exercise_collections, collection):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
@@ -50,6 +56,8 @@ def test_firestore_collections(collection):
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
     ]
+
+    @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_collections",
         scoped_metrics=_test_scoped_metrics,
@@ -58,34 +66,16 @@ def test_firestore_collections(collection):
     )
     @background_task(name="test_firestore_collections")
     def _test():
-        _exercise_firestore(collection)
+        exercise_collections()
 
     _test()
 
 
 @background_task()
-def test_firestore_collections_generators(collection):
-    txn = current_trace()
+def test_firestore_collections_generators(collection, assert_trace_for_generator):
     collection.add({})
     collection.add({})
-    assert len(list(collection.list_documents())) == 2
-    
-    # Check for generator trace on stream
-    _trace_check = []
-    for _ in collection.stream():
-        _trace_check.append(isinstance(current_trace(), DatastoreTrace))
-    assert _trace_check and all(_trace_check)
-    assert current_trace() is txn
+    assert len([_ for _ in collection.list_documents()]) == 2
 
-    # Check for generator trace on list_documents
-    _trace_check = []
-    for _ in collection.list_documents():
-        _trace_check.append(isinstance(current_trace(), DatastoreTrace))
-    assert _trace_check and all(_trace_check)
-    assert current_trace() is txn
-
-
-@validate_database_duration()
-@background_task()
-def test_firestore_collections_db_duration(collection):
-    _exercise_firestore(collection)
+    assert_trace_for_generator(collection.stream)
+    assert_trace_for_generator(collection.list_documents)

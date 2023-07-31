@@ -12,32 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.time_trace import current_trace
-from newrelic.api.datastore_trace import DatastoreTrace
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.api.background_task import background_task
+import pytest
+
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 
-def _exercise_firestore(collection):
-    italy_doc = collection.document("Italy")
-    italy_doc.set({"capital": "Rome", "currency": "Euro", "language": "Italian"})
-    italy_doc.get()
-    italian_cities = italy_doc.collection("cities")
-    italian_cities.add({"capital": "Rome"})
-    retrieved_coll = list(italy_doc.collections())
-    assert len(retrieved_coll) == 1
+@pytest.fixture()
+def exercise_documents(collection):
+    def _exercise_documents():
+        italy_doc = collection.document("Italy")
+        italy_doc.set({"capital": "Rome", "currency": "Euro", "language": "Italian"})
+        italy_doc.get()
+        italian_cities = italy_doc.collection("cities")
+        italian_cities.add({"capital": "Rome"})
+        retrieved_coll = [_ for _ in italy_doc.collections()]
+        assert len(retrieved_coll) == 1
 
-    usa_doc = collection.document("USA")
-    usa_doc.create({"capital": "Washington D.C.", "currency": "Dollar", "language": "English"})
-    usa_doc.update({"president": "Joe Biden"})
+        usa_doc = collection.document("USA")
+        usa_doc.create({"capital": "Washington D.C.", "currency": "Dollar", "language": "English"})
+        usa_doc.update({"president": "Joe Biden"})
 
-    collection.document("USA").delete()
+        collection.document("USA").delete()
+    return _exercise_documents
 
 
-def test_firestore_documents(collection):
+def test_firestore_documents(exercise_documents):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/Italy/set", 1),
         ("Datastore/statement/Firestore/Italy/get", 1),
@@ -59,6 +65,8 @@ def test_firestore_documents(collection):
         ("Datastore/all", 7),
         ("Datastore/allOther", 7),
     ]
+
+    @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_documents",
         scoped_metrics=_test_scoped_metrics,
@@ -67,30 +75,17 @@ def test_firestore_documents(collection):
     )
     @background_task(name="test_firestore_documents")
     def _test():
-        _exercise_firestore(collection)
+        exercise_documents()
 
     _test()
 
 
 @background_task()
-def test_firestore_documents_generators(collection):
-    txn = current_trace()
-
+def test_firestore_documents_generators(collection, assert_trace_for_generator):
     subcollection_doc = collection.document("SubCollections")
     subcollection_doc.set({})
     subcollection_doc.collection("collection1").add({})
     subcollection_doc.collection("collection2").add({})
-    assert len(list(subcollection_doc.collections())) == 2
-    
-    # Check for generator trace on collections
-    _trace_check = []
-    for _ in subcollection_doc.collections():
-        _trace_check.append(isinstance(current_trace(), DatastoreTrace))
-    assert _trace_check and all(_trace_check)
-    assert current_trace() is txn
+    assert len([_ for _ in subcollection_doc.collections()]) == 2
 
-
-@validate_database_duration()
-@background_task()
-def test_firestore_documents_db_duration(collection):
-    _exercise_firestore(collection)
+    assert_trace_for_generator(subcollection_doc.collections)

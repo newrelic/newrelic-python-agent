@@ -15,47 +15,64 @@ import os
 import uuid
 
 import pytest
-
 from google.cloud.firestore import Client
-
 from testing_support.db_settings import firestore_settings
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
+from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.time_trace import current_trace
 
 DB_SETTINGS = firestore_settings()[0]
 FIRESTORE_HOST = DB_SETTINGS["host"]
 FIRESTORE_PORT = DB_SETTINGS["port"]
 
 _default_settings = {
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.transaction_threshold': 0.0,
-    'transaction_tracer.stack_trace_threshold': 0.0,
-    'debug.log_data_collector_payloads': True,
-    'debug.record_transaction_failure': True,
-    'debug.log_explain_plan_queries': True
+    "transaction_tracer.explain_threshold": 0.0,
+    "transaction_tracer.transaction_threshold": 0.0,
+    "transaction_tracer.stack_trace_threshold": 0.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
+    "debug.log_explain_plan_queries": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (datastore_firestore)',
-        default_settings=_default_settings,
-        linked_applications=['Python Agent Test (datastore)'])
+    app_name="Python Agent Test (datastore_firestore)",
+    default_settings=_default_settings,
+    linked_applications=["Python Agent Test (datastore)"],
+)
 
 
 @pytest.fixture(scope="session")
 def client():
     os.environ["FIRESTORE_EMULATOR_HOST"] = "%s:%d" % (FIRESTORE_HOST, FIRESTORE_PORT)
     client = Client()
-    client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5)  # Ensure connection is available
+    client.collection("healthcheck").document("healthcheck").set(
+        {}, retry=None, timeout=5
+    )  # Ensure connection is available
     return client
 
 
 @pytest.fixture(scope="function")
 def collection(client):
-    yield client.collection("firestore_collection_" + str(uuid.uuid4()))
+    collection_ = client.collection("firestore_collection_" + str(uuid.uuid4()))
+    yield collection_
+    client.recursive_delete(collection_)
 
 
-@pytest.fixture(scope="function", autouse=True)
-def reset_firestore(client):
-    for coll in client.collections():
-        for document in coll.list_documents():
-            document.delete()
+@pytest.fixture(scope="session")
+def assert_trace_for_generator():
+    def _assert_trace_for_generator(generator_func, *args, **kwargs):
+        txn = current_trace()
+        assert not isinstance(txn, DatastoreTrace)
+
+        # Check for generator trace on collections
+        _trace_check = []
+        for _ in generator_func(*args, **kwargs):
+            _trace_check.append(isinstance(current_trace(), DatastoreTrace))
+        assert _trace_check and all(_trace_check)  # All checks are True, and at least 1 is present.
+        assert current_trace() is txn  # Generator trace has exited.
+
+    return _assert_trace_for_generator

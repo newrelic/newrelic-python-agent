@@ -12,22 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.api.datastore_trace import wrap_datastore_trace
+from newrelic.api.datastore_trace import DatastoreTrace, wrap_datastore_trace
 from newrelic.api.function_trace import wrap_function_trace
 from newrelic.common.async_wrapper import generator_wrapper
-from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
-_get_object_id = lambda obj, *args, **kwargs: obj.id
+_get_object_id = lambda obj, *args, **kwargs: getattr(obj, "id", None)
+_get_parent_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_parent", None), "id", None)
+_get_collection_ref_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_collection_ref", None), "id", None)
 
 
-def wrap_generator_method(module, class_name, method_name):
+def wrap_generator_method(module, class_name, method_name, target):
     def _wrapper(wrapped, instance, args, kwargs):
-        trace = DatastoreTrace(product="Firestore", target=instance.id, operation=method_name)
+        target_ = target(instance) if callable(target) else target
+        trace = DatastoreTrace(product="Firestore", target=target_, operation=method_name)
         wrapped = generator_wrapper(wrapped, trace)
         return wrapped(*args, **kwargs)
-    
+
     class_ = getattr(module, class_name)
     if class_ is not None:
         if hasattr(class_, method_name):
@@ -41,18 +43,30 @@ def instrument_google_cloud_firestore_v1_base_client(module):
     )
 
 
+def instrument_google_cloud_firestore_v1_client(module):
+    if hasattr(module, "Client"):
+        class_ = module.Client
+        for method in ("collections", "get_all"):
+            if hasattr(class_, method):
+                wrap_generator_method(module, "Client", method, target=None)
+
+
 def instrument_google_cloud_firestore_v1_collection(module):
     if hasattr(module, "CollectionReference"):
         class_ = module.CollectionReference
         for method in ("add", "get"):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "CollectionReference.%s" % method, product="Firestore", target=_get_object_id, operation=method
+                    module,
+                    "CollectionReference.%s" % method,
+                    product="Firestore",
+                    target=_get_object_id,
+                    operation=method,
                 )
 
         for method in ("stream", "list_documents"):
             if hasattr(class_, method):
-                wrap_generator_method(module, "CollectionReference", method)
+                wrap_generator_method(module, "CollectionReference", method, target=_get_object_id)
 
 
 def instrument_google_cloud_firestore_v1_document(module):
@@ -61,9 +75,82 @@ def instrument_google_cloud_firestore_v1_document(module):
         for method in ("create", "delete", "get", "set", "update"):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "DocumentReference.%s" % method, product="Firestore", target=_get_object_id, operation=method
+                    module,
+                    "DocumentReference.%s" % method,
+                    product="Firestore",
+                    target=_get_object_id,
+                    operation=method,
                 )
 
         for method in ("collections",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "DocumentReference", method)
+                wrap_generator_method(module, "DocumentReference", method, target=_get_object_id)
+
+
+def instrument_google_cloud_firestore_v1_query(module):
+    if hasattr(module, "Query"):
+        class_ = module.Query
+        for method in ("get",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "Query.%s" % method, product="Firestore", target=_get_parent_id, operation=method
+                )
+
+        for method in ("stream",):
+            if hasattr(class_, method):
+                wrap_generator_method(module, "Query", method, target=_get_parent_id)
+
+    if hasattr(module, "CollectionGroup"):
+        class_ = module.CollectionGroup
+        for method in ("get_partitions",):
+            if hasattr(class_, method):
+                wrap_generator_method(module, "CollectionGroup", method, target=_get_parent_id)
+
+
+def instrument_google_cloud_firestore_v1_aggregation(module):
+    if hasattr(module, "AggregationQuery"):
+        class_ = module.AggregationQuery
+        for method in ("get",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module,
+                    "AggregationQuery.%s" % method,
+                    product="Firestore",
+                    target=_get_collection_ref_id,
+                    operation=method,
+                )
+
+        for method in ("stream",):
+            if hasattr(class_, method):
+                wrap_generator_method(module, "AggregationQuery", method, target=_get_collection_ref_id)
+
+
+def instrument_google_cloud_firestore_v1_batch(module):
+    if hasattr(module, "WriteBatch"):
+        class_ = module.WriteBatch
+        for method in ("commit",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "WriteBatch.%s" % method, product="Firestore", target=None, operation=method
+                )
+
+
+def instrument_google_cloud_firestore_v1_bulk_batch(module):
+    if hasattr(module, "BulkWriteBatch"):
+        class_ = module.BulkWriteBatch
+        for method in ("commit",):
+            if hasattr(class_, method):
+                wrap_datastore_trace(
+                    module, "BulkWriteBatch.%s" % method, product="Firestore", target=None, operation=method
+                )
+
+
+def instrument_google_cloud_firestore_v1_transaction(module):
+    if hasattr(module, "Transaction"):
+        class_ = module.Transaction
+        for method in ("_commit", "_rollback"):
+            if hasattr(class_, method):
+                operation = method[1:]  # Trim leading underscore
+                wrap_datastore_trace(
+                    module, "Transaction.%s" % method, product="Firestore", target=None, operation=operation
+                )

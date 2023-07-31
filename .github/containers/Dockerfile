@@ -44,6 +44,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         make \
         odbc-postgresql \
         openssl \
+        pkg-config \
         python2-dev \
         python3-dev \
         python3-pip \

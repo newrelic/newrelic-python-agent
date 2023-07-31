@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import pytest
 
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -27,13 +28,16 @@ def existing_document(collection):
     return doc
 
 
-async def _exercise_async_client(async_client, existing_document):
-    assert len([_ async for _ in async_client.collections()]) >= 1
-    doc = [_ async for _ in async_client.get_all([existing_document])][0]
-    assert doc.to_dict()["x"] == 1
+@pytest.fixture()
+def exercise_async_client(async_client, existing_document):
+    async def _exercise_async_client():
+        assert len([_ async for _ in async_client.collections()]) >= 1
+        doc = [_ async for _ in async_client.get_all([existing_document])][0]
+        assert doc.to_dict()["x"] == 1
+    return _exercise_async_client
 
 
-def test_firestore_async_client(loop, async_client, existing_document):
+def test_firestore_async_client(loop, exercise_async_client):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/collections", 1),
         ("Datastore/operation/Firestore/get_all", 1),
@@ -53,7 +57,7 @@ def test_firestore_async_client(loop, async_client, existing_document):
     )
     @background_task(name="test_firestore_async_client")
     def _test():
-       loop.run_until_complete(_exercise_async_client(async_client, existing_document))
+       loop.run_until_complete(exercise_async_client())
 
     _test()
 

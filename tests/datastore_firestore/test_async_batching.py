@@ -12,22 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
 
-async def _exercise_async_write_batch(async_client, async_collection):
-    docs = [async_collection.document(str(x)) for x in range(1, 4)]
-    async_batch = async_client.batch()
-    for doc in docs:
-        async_batch.set(doc, {})
 
-    await async_batch.commit()
+@pytest.fixture()
+def exercise_async_write_batch(async_client, async_collection):
+    async def _exercise_async_write_batch():
+        docs = [async_collection.document(str(x)) for x in range(1, 4)]
+        async_batch = async_client.batch()
+        for doc in docs:
+            async_batch.set(doc, {})
+
+        await async_batch.commit()
+    return _exercise_async_write_batch
 
 
-def test_firestore_async_write_batch(loop, async_client, async_collection):
+def test_firestore_async_write_batch(loop, exercise_async_write_batch):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/commit", 1),
     ]
@@ -45,6 +51,6 @@ def test_firestore_async_write_batch(loop, async_client, async_collection):
     )
     @background_task(name="test_firestore_async_write_batch")
     def _test():
-        loop.run_until_complete(_exercise_async_write_batch(async_client, async_collection))
+        loop.run_until_complete(exercise_async_write_batch())
 
     _test()

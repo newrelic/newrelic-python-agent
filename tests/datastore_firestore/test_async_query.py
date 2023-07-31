@@ -33,13 +33,16 @@ def sample_data(collection):
 
 # ===== AsyncQuery =====
 
-async def _exercise_async_query(async_collection):
-    async_query = async_collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
-    assert len(await async_query.get()) == 3
-    assert len([_ async for _ in async_query.stream()]) == 3
+@pytest.fixture()
+def exercise_async_query(async_collection):
+    async def _exercise_async_query():
+        async_query = async_collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
+        assert len(await async_query.get()) == 3
+        assert len([_ async for _ in async_query.stream()]) == 3
+    return _exercise_async_query
 
 
-def test_firestore_async_query(loop, async_collection):
+def test_firestore_async_query(loop, exercise_async_query, async_collection):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % async_collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % async_collection.id, 1),
@@ -60,7 +63,7 @@ def test_firestore_async_query(loop, async_collection):
     )
     @background_task(name="test_firestore_async_query")
     def _test():
-        loop.run_until_complete(_exercise_async_query(async_collection))
+        loop.run_until_complete(exercise_async_query())
 
     _test()
 
@@ -72,13 +75,16 @@ def test_firestore_async_query_generators(async_collection, assert_trace_for_asy
 
 # ===== AsyncAggregationQuery =====
 
-async def _exercise_async_aggregation_query(async_collection):
-    async_aggregation_query = async_collection.select("x").where(field_path="x", op_string="<=", value=3).count()
-    assert (await async_aggregation_query.get())[0][0].value == 3
-    assert [_ async for _ in async_aggregation_query.stream()][0][0].value == 3
+@pytest.fixture()
+def exercise_async_aggregation_query(async_collection):
+    async def _exercise_async_aggregation_query():
+        async_aggregation_query = async_collection.select("x").where(field_path="x", op_string="<=", value=3).count()
+        assert (await async_aggregation_query.get())[0][0].value == 3
+        assert [_ async for _ in async_aggregation_query.stream()][0][0].value == 3
+    return _exercise_async_aggregation_query
 
 
-def test_firestore_async_aggregation_query(loop, async_collection):
+def test_firestore_async_aggregation_query(loop, exercise_async_aggregation_query, async_collection):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % async_collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % async_collection.id, 1),
@@ -99,7 +105,7 @@ def test_firestore_async_aggregation_query(loop, async_collection):
     )
     @background_task(name="test_firestore_async_aggregation_query")
     def _test():
-        loop.run_until_complete(_exercise_async_aggregation_query(async_collection))
+        loop.run_until_complete(exercise_async_aggregation_query())
 
     _test()
 
@@ -138,20 +144,23 @@ def patch_partition_queries(monkeypatch, async_client, collection, sample_data):
     yield
 
 
-async def _exercise_async_collection_group(async_client, async_collection):
-    async_collection_group = async_client.collection_group(async_collection.id)
-    assert len(await async_collection_group.get())
-    assert len([d async for d in async_collection_group.stream()])
+@pytest.fixture()
+def exercise_async_collection_group(async_client, async_collection):
+    async def _exercise_async_collection_group():
+        async_collection_group = async_client.collection_group(async_collection.id)
+        assert len(await async_collection_group.get())
+        assert len([d async for d in async_collection_group.stream()])
 
-    partitions = [p async for p in async_collection_group.get_partitions(1)]
-    assert len(partitions) == 2
-    documents = []
-    while partitions:
-        documents.extend(await partitions.pop().query().get())
-    assert len(documents) == 6
+        partitions = [p async for p in async_collection_group.get_partitions(1)]
+        assert len(partitions) == 2
+        documents = []
+        while partitions:
+            documents.extend(await partitions.pop().query().get())
+        assert len(documents) == 6
+    return _exercise_async_collection_group
 
 
-def test_firestore_async_collection_group(loop, async_client, async_collection, patch_partition_queries):
+def test_firestore_async_collection_group(loop, exercise_async_collection_group, async_collection, patch_partition_queries):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/get" % async_collection.id, 3),
         ("Datastore/statement/Firestore/%s/stream" % async_collection.id, 1),
@@ -175,7 +184,7 @@ def test_firestore_async_collection_group(loop, async_client, async_collection, 
     )
     @background_task(name="test_firestore_async_collection_group")
     def _test():
-        loop.run_until_complete(_exercise_async_collection_group(async_client, async_collection))
+        loop.run_until_complete(exercise_async_collection_group())
 
     _test()
 

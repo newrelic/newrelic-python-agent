@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
@@ -19,23 +21,26 @@ from testing_support.validators.validate_database_duration import (
 )
 
 
-async def _exercise_async_documents(async_collection):
-    italy_doc = async_collection.document("Italy")
-    await italy_doc.set({"capital": "Rome", "currency": "Euro", "language": "Italian"})
-    await italy_doc.get()
-    italian_cities = italy_doc.collection("cities")
-    await italian_cities.add({"capital": "Rome"})
-    retrieved_coll = [_ async for _ in italy_doc.collections()]
-    assert len(retrieved_coll) == 1
+@pytest.fixture()
+def exercise_async_documents(async_collection):
+    async def _exercise_async_documents():
+        italy_doc = async_collection.document("Italy")
+        await italy_doc.set({"capital": "Rome", "currency": "Euro", "language": "Italian"})
+        await italy_doc.get()
+        italian_cities = italy_doc.collection("cities")
+        await italian_cities.add({"capital": "Rome"})
+        retrieved_coll = [_ async for _ in italy_doc.collections()]
+        assert len(retrieved_coll) == 1
 
-    usa_doc = async_collection.document("USA")
-    await usa_doc.create({"capital": "Washington D.C.", "currency": "Dollar", "language": "English"})
-    await usa_doc.update({"president": "Joe Biden"})
+        usa_doc = async_collection.document("USA")
+        await usa_doc.create({"capital": "Washington D.C.", "currency": "Dollar", "language": "English"})
+        await usa_doc.update({"president": "Joe Biden"})
 
-    await async_collection.document("USA").delete()
+        await async_collection.document("USA").delete()
+    return _exercise_async_documents
 
 
-def test_firestore_async_documents(loop, async_collection):
+def test_firestore_async_documents(loop, exercise_async_documents):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/Italy/set", 1),
         ("Datastore/statement/Firestore/Italy/get", 1),
@@ -66,7 +71,7 @@ def test_firestore_async_documents(loop, async_collection):
     )
     @background_task(name="test_firestore_async_documents")
     def _test():
-        loop.run_until_complete(_exercise_async_documents(async_collection))
+        loop.run_until_complete(exercise_async_documents())
 
     _test()
 

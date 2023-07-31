@@ -82,6 +82,9 @@ class DatastoreTrace(TimeTrace):
             self.product = transaction._intern_string(self.product)
             self.target = transaction._intern_string(self.target)
             self.operation = transaction._intern_string(self.operation)
+            self.host = transaction._intern_string(self.host)
+            self.port_path_or_id = transaction._intern_string(self.port_path_or_id)
+            self.database_name = transaction._intern_string(self.database_name)
 
             datastore_tracer_settings = transaction.settings.datastore_tracer
             self.instance_reporting_enabled = datastore_tracer_settings.instance_reporting.enabled
@@ -92,7 +95,7 @@ class DatastoreTrace(TimeTrace):
         return "<%s object at 0x%x %s>" % (
             self.__class__.__name__,
             id(self),
-            dict(product=self.product, target=self.target, operation=self.operation),
+            dict(product=self.product, target=self.target, operation=self.operation, host=self.host, port_path_or_id=self.port_path_or_id, database_name=self.database_name),
         )
 
     def finalize_data(self, transaction, exc=None, value=None, tb=None):
@@ -125,7 +128,7 @@ class DatastoreTrace(TimeTrace):
         )
 
 
-def DatastoreTraceWrapper(wrapped, product, target, operation):
+def DatastoreTraceWrapper(wrapped, product, target, operation, host, port_path_or_id, database_name):
     """Wraps a method to time datastore queries.
 
     :param wrapped: The function to apply the trace to.
@@ -140,6 +143,14 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
                       or the name of any API function/method in the client
                       library.
     :type operation: str or callable
+    :param host: The name of the server hosting the actual datastore.
+    :type host: str
+    :param port_path_or_id: The value passed in can represent either the port,
+                            path, or id of the datastore being connected to.
+    :type port_path_or_id: str
+    :param database_name: The name of database where the current query is being
+                          executed.
+    :type database_name: str
     :rtype: :class:`newrelic.common.object_wrapper.FunctionWrapper`
 
     This is typically used to wrap datastore queries such as calls to Redis or
@@ -187,7 +198,31 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
         else:
             _operation = operation
 
-        trace = DatastoreTrace(_product, _target, _operation, parent=parent, source=wrapped)
+        if callable(host):
+            if instance is not None:
+                _host = host(instance, *args, **kwargs)
+            else:
+                _host = host(*args, **kwargs)
+        else:
+            _host = host
+
+        if callable(port_path_or_id):
+            if instance is not None:
+                _port_path_or_id = port_path_or_id(instance, *args, **kwargs)
+            else:
+                _port_path_or_id = port_path_or_id(*args, **kwargs)
+        else:
+            _port_path_or_id = port_path_or_id
+
+        if callable(database_name):
+            if instance is not None:
+                _database_name = database_name(instance, *args, **kwargs)
+            else:
+                _database_name = database_name(*args, **kwargs)
+        else:
+            _database_name = database_name
+
+        trace = DatastoreTrace(_product, _target, _operation, _host, _port_path_or_id, _database_name, parent=parent, source=wrapped)
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -198,7 +233,7 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
     return FunctionWrapper(wrapped, _nr_datastore_trace_wrapper_)
 
 
-def datastore_trace(product, target, operation):
+def datastore_trace(product, target, operation, host, port_path_or_id, database_name):
     """Decorator allows datastore query to be timed.
 
     :param product: The name of the vendor.
@@ -211,6 +246,14 @@ def datastore_trace(product, target, operation):
                       or the name of any API function/method in the client
                       library.
     :type operation: str
+    :param host: The name of the server hosting the actual datastore.
+    :type host: str
+    :param port_path_or_id: The value passed in can represent either the port,
+                            path, or id of the datastore being connected to.
+    :type port_path_or_id: str
+    :param database_name: The name of database where the current query is being
+                          executed.
+    :type database_name: str
 
     This is typically used to decorate datastore queries such as calls to Redis
     or ElasticSearch.
@@ -224,10 +267,10 @@ def datastore_trace(product, target, operation):
         ...     time.sleep(*args, **kwargs)
 
     """
-    return functools.partial(DatastoreTraceWrapper, product=product, target=target, operation=operation)
+    return functools.partial(DatastoreTraceWrapper, product=product, target=target, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=database_name)
 
 
-def wrap_datastore_trace(module, object_path, product, target, operation):
+def wrap_datastore_trace(module, object_path, product, target, operation, host, port_path_or_id, database_name):
     """Method applies custom timing to datastore query.
 
     :param module: Module containing the method to be instrumented.
@@ -244,6 +287,14 @@ def wrap_datastore_trace(module, object_path, product, target, operation):
                       or the name of any API function/method in the client
                       library.
     :type operation: str
+    :param host: The name of the server hosting the actual datastore.
+    :type host: str
+    :param port_path_or_id: The value passed in can represent either the port,
+                            path, or id of the datastore being connected to.
+    :type port_path_or_id: str
+    :param database_name: The name of database where the current query is being
+                          executed.
+    :type database_name: str
 
     This is typically used to time database query method calls such as Redis
     GET.
@@ -256,4 +307,4 @@ def wrap_datastore_trace(module, object_path, product, target, operation):
         ...        'sleep')
 
     """
-    wrap_object(module, object_path, DatastoreTraceWrapper, (product, target, operation))
+    wrap_object(module, object_path, DatastoreTraceWrapper, (product, target, operation, host, port_path_or_id, database_name))

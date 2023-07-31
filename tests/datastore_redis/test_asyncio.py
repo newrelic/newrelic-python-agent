@@ -68,8 +68,8 @@ def client(loop):  # noqa
 def test_async_pipeline(client, loop):  # noqa
     async def _test_pipeline(client):
         async with client.pipeline(transaction=True) as pipe:
-            await (pipe.set("key1", "value1"))
-            await (pipe.execute())
+            await pipe.set("key1", "value1")
+            await pipe.execute()
 
     loop.run_until_complete(_test_pipeline(client))
 

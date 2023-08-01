@@ -439,6 +439,26 @@ def test_async_generator_time_excludes_creation_time(event_loop):
     assert full_metrics[("Function/agen", "")].total_call_time < 0.1
 
 
+@validate_transaction_metrics(
+    "test_complete_async_generator",
+    background_task=True,
+    scoped_metrics=[("Function/agen", 1)],
+    rollup_metrics=[("Function/agen", 1)],
+)
+@background_task(name="test_complete_async_generator")
+def test_complete_async_generator(event_loop):
+    @function_trace(name="agen")
+    async def agen():
+        for i in range(5):
+            yield i
+
+    async def _test():
+        gen = agen()
+        assert [x async for x in gen] == [x for x in range(5)]
+
+    event_loop.run_until_complete(_test())
+
+
 @pytest.mark.parametrize("nr_transaction", [True, False])
 def test_incomplete_async_generator(event_loop, nr_transaction):
     @function_trace(name="agen")
@@ -472,13 +492,13 @@ def test_incomplete_async_generator(event_loop, nr_transaction):
                 gc.collect()
 
         if nr_transaction:
-            _test = background_task(name="test_incomplete_coroutine")(_test)
+            _test = background_task(name="test_incomplete_async_generator")(_test)
 
         event_loop.run_until_complete(_test())
 
     if nr_transaction:
         _test_incomplete_async_generator = validate_transaction_metrics(
-            "test_incomplete_coroutine",
+            "test_incomplete_async_generator",
             background_task=True,
             scoped_metrics=[("Function/agen", 1)],
             rollup_metrics=[("Function/agen", 1)],

@@ -110,7 +110,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     except TypeError:
         return wrapped(*args, **kwargs)
 
-    execution_context = args[0]
+    execution_context = instance
 
     trace.operation_name = get_node_value(operation, "name") or "<anonymous>"
 
@@ -139,8 +139,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     if isawaitable(result):
         return nr_coro_execute_name_wrapper(wrapped, result, set_name)
     else:
-        set_name()
-        return result
+        return set_name(result)
 
 
 def get_node_value(field, attr, subattr="value"):
@@ -249,8 +248,7 @@ def wrap_middleware(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(name, "GraphQL", priority=12)
     with FunctionTrace(name, source=wrapped):
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
-            result = wrapped(*args, **kwargs)
-            return result
+            return wrapped(*args, **kwargs)
 
 
 def bind_get_field_resolver(field_resolver):

@@ -130,7 +130,7 @@ def test_async_generator_caught_exception(event_loop):
             gen = agen()
             # kickstart the generator (the try/except logic is inside the
             # generator)
-            await anext(gen)
+            await gen.asend(None)
             await gen.athrow(ValueError)
 
             # consume the generator
@@ -198,7 +198,7 @@ def test_async_generator_close_ends_trace(event_loop):
         gen = agen()
 
         # kickstart the coroutine
-        await anext(gen)
+        await gen.asend(None)
 
         # trace should be ended/recorded by close
         await gen.aclose()
@@ -279,7 +279,7 @@ def test_asend_receives_a_value(event_loop):
         gen = agen()
 
         # kickstart the coroutine
-        await anext(gen)
+        await gen.asend(None)
 
         assert await gen.asend("foobar") == "foobar"
         assert _received and _received[0] == "foobar"
@@ -311,7 +311,7 @@ def test_athrow_yields_a_value(event_loop):
         gen = agen()
 
         # kickstart the coroutine
-        await anext(gen)
+        await gen.asend(None)
 
         assert await gen.athrow(MyException) == "foobar"
 
@@ -342,7 +342,7 @@ def test_athrow_does_not_yield_a_value(event_loop):
         gen = agen()
 
         # kickstart the coroutine
-        await anext(gen)
+        await gen.asend(None)
 
         # async generator will raise StopAsyncIteration
         with pytest.raises(StopAsyncIteration):

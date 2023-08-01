@@ -18,6 +18,7 @@ from newrelic.common.coroutine import (
     is_coroutine_callable,
     is_asyncio_coroutine,
     is_generator_function,
+    is_async_generator_function,
 )
 
 
@@ -29,7 +30,6 @@ def evaluate_wrapper(wrapper_string, wrapped, trace):
 
 
 def coroutine_wrapper(wrapped, trace):
-
     WRAPPER = textwrap.dedent("""
     @functools.wraps(wrapped)
     async def wrapper(*args, **kwargs):
@@ -81,9 +81,49 @@ def generator_wrapper(wrapped, trace):
     return wrapper
 
 
+def async_generator_wrapper(wrapped, trace):
+    WRAPPER = textwrap.dedent("""
+    @functools.wraps(wrapped)
+    async def wrapper(*args, **kwargs):
+        g = wrapped(*args, **kwargs)
+        value = None
+        with trace:
+            while True:
+                try:
+                    yielded = await g.asend(value)
+                except StopAsyncIteration as e:
+                    # The underlying async generator has finished, return propagates a new StopAsyncIteration
+                    return
+                except StopIteration as e:
+                    # The call to async_generator_asend.send() should raise a StopIteration containing the yielded value
+                    yielded = e.value
+
+                try:
+                    value = yield yielded
+                except BaseException as e:
+                    # An exception was thrown with .athrow(), propagate to the original async generator.
+                    # Return value logic must be identical to .asend()
+                    try:
+                        value = yield await g.athrow(type(e), e)
+                    except StopAsyncIteration as e:
+                        # The underlying async generator has finished, return propagates a new StopAsyncIteration
+                        return
+                    except StopIteration as e:
+                        # The call to async_generator_athrow.send() should raise a StopIteration containing a yielded value
+                        value = yield e.value
+    """)
+
+    try:
+        return evaluate_wrapper(WRAPPER, wrapped, trace)
+    except:
+        return wrapped
+
+
 def async_wrapper(wrapped):
     if is_coroutine_callable(wrapped):
         return coroutine_wrapper
+    elif is_async_generator_function(wrapped):
+        return async_generator_wrapper
     elif is_generator_function(wrapped):
         if is_asyncio_coroutine(wrapped):
             return awaitable_generator_wrapper

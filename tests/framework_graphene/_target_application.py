@@ -48,6 +48,8 @@ def run_async(schema):
 
 target_application = {
     "sync-sync": run_sync(target_schema_sync),
+    "async-sync": run_async(target_schema_sync),
+    "async-async": run_async(target_schema_async),
 }
 
 

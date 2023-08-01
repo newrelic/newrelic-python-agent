@@ -18,15 +18,47 @@ from newrelic.common.async_wrapper import generator_wrapper
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
+def _conn_str_to_host(getter):
+    def closure(obj, *args, **kwargs):
+        try:
+            return getter(obj, *args, **kwargs).split(":")[0]
+        except Exception:
+            return None
+
+    return closure
+
+
+def _conn_str_to_port(getter):
+    def closure(obj, *args, **kwargs):
+        try:
+            return int(getter(obj, *args, **kwargs).split(":")[1])
+        except Exception:
+            return None
+
+    return closure
+
+
 _get_object_id = lambda obj, *args, **kwargs: getattr(obj, "id", None)
 _get_parent_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_parent", None), "id", None)
 _get_collection_ref_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_collection_ref", None), "id", None)
+_get_parent_client_target = lambda obj, *args, **kwargs: obj._parent._client._target
+_get_parent_client_database_string = lambda obj, *args, **kwargs: obj._parent._client._database_string
 
 
-def wrap_generator_method(module, class_name, method_name, target):
+def wrap_generator_method(module, class_name, method_name, target, host=None, port_path_or_id=None, database_name=None):
     def _wrapper(wrapped, instance, args, kwargs):
         target_ = target(instance) if callable(target) else target
-        trace = DatastoreTrace(product="Firestore", target=target_, operation=method_name)
+        host_ = host(instance) if callable(host) else host
+        port_path_or_id_ = port_path_or_id(instance) if callable(port_path_or_id) else port_path_or_id
+        database_name_ = database_name(instance) if callable(database_name) else database_name
+        trace = DatastoreTrace(
+            product="Firestore",
+            target=target_,
+            operation=method_name,
+            host=host_,
+            port_path_or_id=port_path_or_id_,
+            database_name=database_name_,
+        )
         wrapped = generator_wrapper(wrapped, trace)
         return wrapped(*args, **kwargs)
 
@@ -98,13 +130,29 @@ def instrument_google_cloud_firestore_v1_query(module):
 
         for method in ("stream",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "Query", method, target=_get_parent_id)
+                wrap_generator_method(
+                    module,
+                    "Query",
+                    method,
+                    target=_get_parent_id,
+                    host=_conn_str_to_host(_get_parent_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_parent_client_target),
+                    database_name=_get_parent_client_database_string,
+                )
 
     if hasattr(module, "CollectionGroup"):
         class_ = module.CollectionGroup
         for method in ("get_partitions",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "CollectionGroup", method, target=_get_parent_id)
+                wrap_generator_method(
+                    module,
+                    "CollectionGroup",
+                    method,
+                    target=_get_parent_id,
+                    host=_conn_str_to_host(_get_parent_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_parent_client_target),
+                    database_name=_get_parent_client_database_string,
+                )
 
 
 def instrument_google_cloud_firestore_v1_aggregation(module):

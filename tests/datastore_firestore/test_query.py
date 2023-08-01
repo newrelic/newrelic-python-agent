@@ -170,7 +170,7 @@ def patch_partition_queries(monkeypatch, client, collection, sample_data):
 
 
 @pytest.fixture()
-def exercise_collection_group(client, collection):
+def exercise_collection_group(client, collection, patch_partition_queries):
     def _exercise_collection_group():
         collection_group = client.collection_group(collection.id)
         assert len(collection_group.get())
@@ -185,7 +185,7 @@ def exercise_collection_group(client, collection):
     return _exercise_collection_group
 
 
-def test_firestore_collection_group(exercise_collection_group, client, collection, patch_partition_queries):
+def test_firestore_collection_group(exercise_collection_group, client, collection):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/get" % collection.id, 3),
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),

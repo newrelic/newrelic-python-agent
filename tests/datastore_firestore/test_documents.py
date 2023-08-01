@@ -20,6 +20,9 @@ from testing_support.validators.validate_database_duration import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 from newrelic.api.background_task import background_task
 
@@ -89,3 +92,12 @@ def test_firestore_documents_generators(collection, assert_trace_for_generator):
     assert len([_ for _ in subcollection_doc.collections()]) == 2
 
     assert_trace_for_generator(subcollection_doc.collections)
+
+
+def test_firestore_documents_trace_node_datastore_params(exercise_documents, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        exercise_documents()
+
+    _test()

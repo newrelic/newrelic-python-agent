@@ -18,6 +18,9 @@ from testing_support.validators.validate_database_duration import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 from newrelic.api.background_task import background_task
 
@@ -123,6 +126,16 @@ def test_firestore_transaction_rollback(exercise_transaction_rollback, collectio
     )
     @background_task(name="test_firestore_transaction")
     def _test():
+        exercise_transaction_rollback()
+
+    _test()
+
+
+def test_firestore_transaction_trace_node_datastore_params(exercise_transaction_commit, exercise_transaction_rollback, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        exercise_transaction_commit()
         exercise_transaction_rollback()
 
     _test()

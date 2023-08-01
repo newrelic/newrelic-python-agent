@@ -19,6 +19,8 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def _conn_str_to_host(getter):
+    """Safely transform a getter that can retrieve a connection string into the resulting host."""
+
     def closure(obj, *args, **kwargs):
         try:
             return getter(obj, *args, **kwargs).split(":")[0]
@@ -29,6 +31,8 @@ def _conn_str_to_host(getter):
 
 
 def _conn_str_to_port(getter):
+    """Safely transform a getter that can retrieve a connection string into the resulting port."""
+
     def closure(obj, *args, **kwargs):
         try:
             return int(getter(obj, *args, **kwargs).split(":")[1])
@@ -38,11 +42,30 @@ def _conn_str_to_port(getter):
     return closure
 
 
+# Default Instance Info
 _get_object_id = lambda obj, *args, **kwargs: getattr(obj, "id", None)
+_get_client_target = lambda obj, *args, **kwargs: obj._client._target
+_get_client_database_string = lambda obj, *args, **kwargs: getattr(
+    getattr(obj, "_client", None), "_database_string", None
+)
+
+# Client Instance Info
+_get_target = lambda obj, *args, **kwargs: obj._target
+_get_database_string = lambda obj, *args, **kwargs: getattr(obj, "_database_string", None)
+
+# Query Instance Info
 _get_parent_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_parent", None), "id", None)
-_get_collection_ref_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_collection_ref", None), "id", None)
 _get_parent_client_target = lambda obj, *args, **kwargs: obj._parent._client._target
-_get_parent_client_database_string = lambda obj, *args, **kwargs: obj._parent._client._database_string
+_get_parent_client_database_string = lambda obj, *args, **kwargs: getattr(
+    getattr(getattr(obj, "_parent", None), "_client", None), "_database_string", None
+)
+
+# AggregationQuery Instance Info
+_get_collection_ref_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_collection_ref", None), "id", None)
+_get_nested_query_parent_client_target = lambda obj, *args, **kwargs: obj._nested_query._parent._client._target
+_get_nested_query_parent_client_database_string = lambda obj, *args, **kwargs: getattr(
+    getattr(getattr(getattr(obj, "_nested_query", None), "_parent", None), "_client", None), "_database_string", None
+)
 
 
 def wrap_generator_method(module, class_name, method_name, target, host=None, port_path_or_id=None, database_name=None):
@@ -80,7 +103,15 @@ def instrument_google_cloud_firestore_v1_client(module):
         class_ = module.Client
         for method in ("collections", "get_all"):
             if hasattr(class_, method):
-                wrap_generator_method(module, "Client", method, target=None)
+                wrap_generator_method(
+                    module,
+                    "Client",
+                    method,
+                    target=None,
+                    host=_conn_str_to_host(_get_target),
+                    port_path_or_id=_conn_str_to_port(_get_target),
+                    database_name=_get_database_string,
+                )
 
 
 def instrument_google_cloud_firestore_v1_collection(module):
@@ -94,11 +125,22 @@ def instrument_google_cloud_firestore_v1_collection(module):
                     product="Firestore",
                     target=_get_object_id,
                     operation=method,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )
 
         for method in ("stream", "list_documents"):
             if hasattr(class_, method):
-                wrap_generator_method(module, "CollectionReference", method, target=_get_object_id)
+                wrap_generator_method(
+                    module,
+                    "CollectionReference",
+                    method,
+                    target=_get_object_id,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
+                )
 
 
 def instrument_google_cloud_firestore_v1_document(module):
@@ -112,11 +154,22 @@ def instrument_google_cloud_firestore_v1_document(module):
                     product="Firestore",
                     target=_get_object_id,
                     operation=method,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )
 
         for method in ("collections",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "DocumentReference", method, target=_get_object_id)
+                wrap_generator_method(
+                    module,
+                    "DocumentReference",
+                    method,
+                    target=_get_object_id,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
+                )
 
 
 def instrument_google_cloud_firestore_v1_query(module):
@@ -125,7 +178,14 @@ def instrument_google_cloud_firestore_v1_query(module):
         for method in ("get",):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "Query.%s" % method, product="Firestore", target=_get_parent_id, operation=method
+                    module,
+                    "Query.%s" % method,
+                    product="Firestore",
+                    target=_get_parent_id,
+                    operation=method,
+                    host=_conn_str_to_host(_get_parent_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_parent_client_target),
+                    database_name=_get_parent_client_database_string,
                 )
 
         for method in ("stream",):
@@ -166,11 +226,22 @@ def instrument_google_cloud_firestore_v1_aggregation(module):
                     product="Firestore",
                     target=_get_collection_ref_id,
                     operation=method,
+                    host=_conn_str_to_host(_get_nested_query_parent_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_nested_query_parent_client_target),
+                    database_name=_get_nested_query_parent_client_database_string,
                 )
 
         for method in ("stream",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "AggregationQuery", method, target=_get_collection_ref_id)
+                wrap_generator_method(
+                    module,
+                    "AggregationQuery",
+                    method,
+                    target=_get_collection_ref_id,
+                    host=_conn_str_to_host(_get_nested_query_parent_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_nested_query_parent_client_target),
+                    database_name=_get_nested_query_parent_client_database_string,
+                )
 
 
 def instrument_google_cloud_firestore_v1_batch(module):
@@ -179,7 +250,14 @@ def instrument_google_cloud_firestore_v1_batch(module):
         for method in ("commit",):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "WriteBatch.%s" % method, product="Firestore", target=None, operation=method
+                    module,
+                    "WriteBatch.%s" % method,
+                    product="Firestore",
+                    target=None,
+                    operation=method,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )
 
 
@@ -189,7 +267,14 @@ def instrument_google_cloud_firestore_v1_bulk_batch(module):
         for method in ("commit",):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "BulkWriteBatch.%s" % method, product="Firestore", target=None, operation=method
+                    module,
+                    "BulkWriteBatch.%s" % method,
+                    product="Firestore",
+                    target=None,
+                    operation=method,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )
 
 
@@ -200,5 +285,12 @@ def instrument_google_cloud_firestore_v1_transaction(module):
             if hasattr(class_, method):
                 operation = method[1:]  # Trim leading underscore
                 wrap_datastore_trace(
-                    module, "Transaction.%s" % method, product="Firestore", target=None, operation=operation
+                    module,
+                    "Transaction.%s" % method,
+                    product="Firestore",
+                    target=None,
+                    operation=operation,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )

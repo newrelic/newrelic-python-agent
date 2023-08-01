@@ -145,9 +145,9 @@ else:
 
 @pytest.mark.parametrize("as_partial", [True, False])
 @validate_code_level_metrics(
-    "test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_outside_transaction.<locals>",
+    "test_pika_blocking_connection_consume"
+    + (".test_blocking_connection_basic_consume_outside_transaction.<locals>" if six.PY3 else ""),
     "on_message",
-    py2_namespace="test_pika_blocking_connection_consume",
 )
 @validate_transaction_metrics(
     _txn_name,
@@ -201,9 +201,9 @@ else:
 
 @pytest.mark.parametrize("as_partial", [True, False])
 @validate_code_level_metrics(
-    "test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_inside_txn.<locals>",
+    "test_pika_blocking_connection_consume"
+    + (".test_blocking_connection_basic_consume_inside_txn.<locals>" if six.PY3 else ""),
     "on_message",
-    py2_namespace="test_pika_blocking_connection_consume",
 )
 @validate_transaction_metrics(
     ("test_pika_blocking_connection_consume:" "test_blocking_connection_basic_consume_inside_txn"),

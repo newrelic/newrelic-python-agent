@@ -19,6 +19,9 @@ from testing_support.validators.validate_database_duration import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 from newrelic.api.background_task import background_task
 
@@ -78,6 +81,14 @@ def test_firestore_query_generators(collection, assert_trace_for_generator):
     assert_trace_for_generator(query.stream)
 
 
+def test_firestore_query_trace_node_datastore_params(exercise_query, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        exercise_query()
+
+    _test()
+
 # ===== AggregationQuery =====
 
 
@@ -121,6 +132,15 @@ def test_firestore_aggregation_query(exercise_aggregation_query, collection):
 def test_firestore_aggregation_query_generators(collection, assert_trace_for_generator):
     aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
     assert_trace_for_generator(aggregation_query.stream)
+
+
+def test_firestore_aggregation_query_trace_node_datastore_params(exercise_aggregation_query, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        exercise_aggregation_query()
+
+    _test()
 
 
 # ===== CollectionGroup =====
@@ -198,3 +218,12 @@ def test_firestore_collection_group(exercise_collection_group, client, collectio
 def test_firestore_collection_group_generators(client, collection, assert_trace_for_generator, patch_partition_queries):
     collection_group = client.collection_group(collection.id)
     assert_trace_for_generator(collection_group.get_partitions, 1)
+
+
+def test_firestore_collection_group_trace_node_datastore_params(exercise_collection_group, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        exercise_collection_group()
+
+    _test()

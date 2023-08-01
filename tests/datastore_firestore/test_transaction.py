@@ -131,11 +131,18 @@ def test_firestore_transaction_rollback(exercise_transaction_rollback, collectio
     _test()
 
 
-def test_firestore_transaction_trace_node_datastore_params(exercise_transaction_commit, exercise_transaction_rollback, instance_info):
+def test_firestore_transaction_commit_trace_node_datastore_params(exercise_transaction_commit, instance_info):
     @validate_tt_collector_json(datastore_params=instance_info)
     @background_task()
     def _test():
         exercise_transaction_commit()
+
+    _test()
+
+def test_firestore_transaction_rollback_trace_node_datastore_params(exercise_transaction_rollback, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
         exercise_transaction_rollback()
 
     _test()

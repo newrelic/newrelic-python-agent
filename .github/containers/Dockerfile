@@ -26,7 +26,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         freetds-common \
         freetds-dev \
         gcc \
-        gfortran \
         git \
         libbz2-dev \
         libcurl4-openssl-dev \
@@ -44,7 +43,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         make \
         odbc-postgresql \
         openssl \
-        pkg-config \
         python2-dev \
         python3-dev \
         python3-pip \

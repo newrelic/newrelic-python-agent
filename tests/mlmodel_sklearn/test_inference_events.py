@@ -32,31 +32,10 @@ pandas_df_category_recorded_custom_events = [
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
-            "feature_name": "col1",
-            "feature_type": "categorical",
-            "feature_value": "2.0",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "feature_name": "col2",
-            "feature_type": "categorical",
-            "feature_value": "4.0",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "label_name": "0",
-            "label_type": "numeric",
-            "label_value": "27.0",
+            "feature.col1": "2.0",
+            "feature.col2": "4.0",
+            "label.0": "27.0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -65,7 +44,7 @@ pandas_df_category_recorded_custom_events = [
 @reset_core_stats_engine()
 def test_pandas_df_categorical_feature_event():
     @validate_ml_events(pandas_df_category_recorded_custom_events)
-    @validate_ml_event_count(count=3)
+    @validate_ml_event_count(count=1)
     @background_task()
     def _test():
         import sklearn.tree
@@ -92,31 +71,10 @@ pandas_df_bool_recorded_custom_events = [
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
-            "feature_name": "col1",
-            "feature_type": "bool",
-            "feature_value": "True",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "feature_name": "col2",
-            "feature_type": "bool",
-            "feature_value": "True",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "label_name": "0",
-            "label_type": label_type,
-            "label_value": true_label_value,
+            "feature.col1": "True",
+            "feature.col2": "True",
+            "label.0": true_label_value,
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -125,7 +83,7 @@ pandas_df_bool_recorded_custom_events = [
 @reset_core_stats_engine()
 def test_pandas_df_bool_feature_event():
     @validate_ml_events(pandas_df_bool_recorded_custom_events)
-    @validate_ml_event_count(count=3)
+    @validate_ml_event_count(count=1)
     @background_task()
     def _test():
         import sklearn.tree
@@ -151,31 +109,10 @@ pandas_df_float_recorded_custom_events = [
             "inference_id": None,
             "modelName": "DecisionTreeRegressor",
             "model_version": "0.0.0",
-            "feature_name": "col1",
-            "feature_type": "numeric",
-            "feature_value": "100.0",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "DecisionTreeRegressor",
-            "model_version": "0.0.0",
-            "feature_name": "col2",
-            "feature_type": "numeric",
-            "feature_value": "300.0",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "DecisionTreeRegressor",
-            "model_version": "0.0.0",
-            "label_name": "0",
-            "label_type": "numeric",
-            "label_value": "345.6",
+            "feature.col1": "100.0",
+            "feature.col2": "300.0",
+            "label.0": "345.6",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -184,7 +121,7 @@ pandas_df_float_recorded_custom_events = [
 @reset_core_stats_engine()
 def test_pandas_df_float_feature_event():
     @validate_ml_events(pandas_df_float_recorded_custom_events)
-    @validate_ml_event_count(count=3)
+    @validate_ml_event_count(count=1)
     @background_task()
     def _test():
         import sklearn.tree
@@ -210,31 +147,10 @@ int_list_recorded_custom_events = [
             "inference_id": None,
             "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
-            "feature_name": "0",
-            "feature_type": "numeric",
-            "feature_value": "1",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "ExtraTreeRegressor",
-            "model_version": "0.0.0",
-            "feature_name": "1",
-            "feature_type": "numeric",
-            "feature_value": "2",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "ExtraTreeRegressor",
-            "model_version": "0.0.0",
-            "label_name": "0",
-            "label_type": "numeric",
-            "label_value": "1.0",
+            "feature.0": "1",
+            "feature.1": "2",
+            "label.0": "1.0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -243,7 +159,7 @@ int_list_recorded_custom_events = [
 @reset_core_stats_engine()
 def test_int_list():
     @validate_ml_events(int_list_recorded_custom_events)
-    @validate_ml_event_count(count=3)
+    @validate_ml_event_count(count=1)
     @background_task()
     def _test():
         import sklearn.tree
@@ -268,31 +184,10 @@ numpy_int_recorded_custom_events = [
             "inference_id": None,
             "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
-            "feature_name": "0",
-            "feature_type": "numeric",
-            "feature_value": "12",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "ExtraTreeRegressor",
-            "model_version": "0.0.0",
-            "feature_name": "1",
-            "feature_type": "numeric",
-            "feature_value": "13",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "ExtraTreeRegressor",
-            "model_version": "0.0.0",
-            "label_name": "0",
-            "label_type": "numeric",
-            "label_value": "11.0",
+            "feature.0": "12",
+            "feature.1": "13",
+            "label.0": "11.0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -301,7 +196,7 @@ numpy_int_recorded_custom_events = [
 @reset_core_stats_engine()
 def test_numpy_int_array():
     @validate_ml_events(numpy_int_recorded_custom_events)
-    @validate_ml_event_count(count=3)
+    @validate_ml_event_count(count=1)
     @background_task()
     def _test():
         import sklearn.tree
@@ -326,9 +221,10 @@ numpy_str_recorded_custom_events = [
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
-            "feature_name": "0",
-            "feature_type": "str",
-            "feature_value": "20",
+            "feature.0": "20",
+            "feature.1": "21",
+            "label.0": "21",
+            "new_relic_data_schema_version": 2,
         },
     ),
     (
@@ -337,31 +233,10 @@ numpy_str_recorded_custom_events = [
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
-            "feature_name": "1",
-            "feature_type": "str",
-            "feature_value": "21",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "feature_name": "0",
-            "feature_type": "str",
-            "feature_value": "22",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "feature_name": "1",
-            "feature_type": "str",
-            "feature_value": "23",
+            "feature.0": "22",
+            "feature.1": "23",
+            "label.0": "21",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -370,7 +245,7 @@ numpy_str_recorded_custom_events = [
 @reset_core_stats_engine()
 def test_numpy_str_array_multiple_features():
     @validate_ml_events(numpy_str_recorded_custom_events)
-    @validate_ml_event_count(count=6)
+    @validate_ml_event_count(count=2)
     @background_task()
     def _test():
         import sklearn.tree
@@ -395,28 +270,7 @@ numpy_str_recorded_custom_events_no_value = [
             "inference_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
-            "feature_name": "0",
-            "feature_type": "str",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "feature_name": "1",
-            "feature_type": "str",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "DecisionTreeClassifier",
-            "model_version": "0.0.0",
-            "label_name": "0",
-            "label_type": "str",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -426,7 +280,7 @@ numpy_str_recorded_custom_events_no_value = [
 @override_application_settings({"machine_learning.inference_events_value.enabled": False})
 def test_does_not_include_value_when_inference_event_value_enabled_is_false():
     @validate_ml_events(numpy_str_recorded_custom_events_no_value)
-    @validate_ml_event_count(count=3)
+    @validate_ml_event_count(count=1)
     @background_task()
     def _test():
         import sklearn.tree
@@ -498,31 +352,30 @@ multilabel_output_label_events = [
             "inference_id": None,
             "modelName": "MultiOutputClassifier",
             "model_version": "0.0.0",
-            "label_name": "0",
-            "label_type": "numeric",
-            "label_value": "1",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MultiOutputClassifier",
-            "model_version": "0.0.0",
-            "label_name": "1",
-            "label_type": "numeric",
-            "label_value": "0",
-        },
-    ),
-    (
-        {"type": "InferenceData"},
-        {
-            "inference_id": None,
-            "modelName": "MultiOutputClassifier",
-            "model_version": "0.0.0",
-            "label_name": "2",
-            "label_type": "numeric",
-            "label_value": "1",
+            "label.0": "1",
+            "label.1": "0",
+            "label.2": "1",
+            "feature.0": "3.0",
+            "feature.1": "5.0",
+            "feature.2": "3.0",
+            "feature.3": "0.0",
+            "feature.4": "0.0",
+            "feature.5": "2.0",
+            "feature.6": "2.0",
+            "feature.7": "0.0",
+            "feature.8": "4.0",
+            "feature.9": "3.0",
+            "feature.10": "2.0",
+            "feature.11": "5.0",
+            "feature.12": "2.0",
+            "feature.13": "3.0",
+            "feature.14": "3.0",
+            "feature.15": "4.0",
+            "feature.16": "3.0",
+            "feature.17": "1.0",
+            "feature.18": "2.0",
+            "feature.19": "4.0",
+            "new_relic_data_schema_version": 2,
         },
     ),
 ]
@@ -531,8 +384,7 @@ multilabel_output_label_events = [
 @reset_core_stats_engine()
 def test_custom_event_count_multilabel_output():
     @validate_ml_events(multilabel_output_label_events)
-    # The expected count of 23 comes from 20 feature events + 3 label events to be generated
-    @validate_ml_event_count(count=23)
+    @validate_ml_event_count(count=1)
     @background_task()
     def _test():
         from sklearn.datasets import make_multilabel_classification

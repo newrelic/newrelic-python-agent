@@ -45,7 +45,7 @@ def validate_datastore_trace_inputs(operation=None, target=None, host=None, port
         if operation is not None:
             assert captured_operation == operation, "%s didn't match expected %s" % (captured_operation, operation)
         if host is not None:
-            assert host == host, "%s didn't match expected %s" % (captured_host, host)
+            assert captured_host == host, "%s didn't match expected %s" % (captured_host, host)
         if port_path_or_id is not None:
             assert captured_port_path_or_id == port_path_or_id, "%s didn't match expected %s" % (
                 captured_port_path_or_id,

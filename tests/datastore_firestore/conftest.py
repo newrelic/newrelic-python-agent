@@ -15,8 +15,12 @@ import os
 import uuid
 
 import pytest
+
 from google.cloud.firestore import Client
+from google.cloud.firestore import Client, AsyncClient
+
 from testing_support.db_settings import firestore_settings
+from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401; pylint: disable=W0611
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -71,6 +75,20 @@ def collection(client):
 
 
 @pytest.fixture(scope="session")
+def async_client(loop):
+    os.environ["FIRESTORE_EMULATOR_HOST"] = "%s:%d" % (FIRESTORE_HOST, FIRESTORE_PORT)
+    client = AsyncClient()
+    loop.run_until_complete(client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5))  # Ensure connection is available
+    return client
+
+
+@pytest.fixture(scope="function")
+def async_collection(async_client, collection):
+    # Use the same collection name as the collection fixture
+    yield async_client.collection(collection.id)
+
+
+@pytest.fixture(scope="session")
 def assert_trace_for_generator():
     def _assert_trace_for_generator(generator_func, *args, **kwargs):
         txn = current_trace()
@@ -84,3 +102,23 @@ def assert_trace_for_generator():
         assert current_trace() is txn  # Generator trace has exited.
 
     return _assert_trace_for_generator
+
+
+@pytest.fixture(scope="session")
+def assert_trace_for_async_generator(loop):
+    def _assert_trace_for_async_generator(generator_func, *args, **kwargs):
+        _trace_check = []
+        txn = current_trace()
+        assert not isinstance(txn, DatastoreTrace)
+        
+        async def coro():
+            # Check for generator trace on collections
+            async for _ in generator_func(*args, **kwargs):
+                _trace_check.append(isinstance(current_trace(), DatastoreTrace))
+
+        loop.run_until_complete(coro())
+
+        assert _trace_check and all(_trace_check)  # All checks are True, and at least 1 is present.
+        assert current_trace() is txn  # Generator trace has exited.
+
+    return _assert_trace_for_async_generator

@@ -59,7 +59,6 @@ def test_firestore_collections(exercise_collections, collection):
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
     ]
-
     @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_collections",

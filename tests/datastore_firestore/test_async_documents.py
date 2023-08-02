@@ -14,39 +14,33 @@
 
 import pytest
 
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_tt_collector_json import (
-    validate_tt_collector_json,
-)
-
-from newrelic.api.background_task import background_task
 
 
 @pytest.fixture()
-def exercise_documents(collection):
-    def _exercise_documents():
-        italy_doc = collection.document("Italy")
-        italy_doc.set({"capital": "Rome", "currency": "Euro", "language": "Italian"})
-        italy_doc.get()
+def exercise_async_documents(async_collection):
+    async def _exercise_async_documents():
+        italy_doc = async_collection.document("Italy")
+        await italy_doc.set({"capital": "Rome", "currency": "Euro", "language": "Italian"})
+        await italy_doc.get()
         italian_cities = italy_doc.collection("cities")
-        italian_cities.add({"capital": "Rome"})
-        retrieved_coll = [_ for _ in italy_doc.collections()]
+        await italian_cities.add({"capital": "Rome"})
+        retrieved_coll = [_ async for _ in italy_doc.collections()]
         assert len(retrieved_coll) == 1
 
-        usa_doc = collection.document("USA")
-        usa_doc.create({"capital": "Washington D.C.", "currency": "Dollar", "language": "English"})
-        usa_doc.update({"president": "Joe Biden"})
+        usa_doc = async_collection.document("USA")
+        await usa_doc.create({"capital": "Washington D.C.", "currency": "Dollar", "language": "English"})
+        await usa_doc.update({"president": "Joe Biden"})
 
-        collection.document("USA").delete()
-    return _exercise_documents
+        await async_collection.document("USA").delete()
+    return _exercise_async_documents
 
 
-def test_firestore_documents(exercise_documents):
+def test_firestore_async_documents(loop, exercise_async_documents):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/Italy/set", 1),
         ("Datastore/statement/Firestore/Italy/get", 1),
@@ -70,33 +64,26 @@ def test_firestore_documents(exercise_documents):
     ]
     @validate_database_duration()
     @validate_transaction_metrics(
-        "test_firestore_documents",
+        "test_firestore_async_documents",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_rollup_metrics,
         background_task=True,
     )
-    @background_task(name="test_firestore_documents")
+    @background_task(name="test_firestore_async_documents")
     def _test():
-        exercise_documents()
+        loop.run_until_complete(exercise_async_documents())
 
     _test()
 
 
 @background_task()
-def test_firestore_documents_generators(collection, assert_trace_for_generator):
+def test_firestore_async_documents_generators(collection, async_collection, assert_trace_for_async_generator):
     subcollection_doc = collection.document("SubCollections")
     subcollection_doc.set({})
     subcollection_doc.collection("collection1").add({})
     subcollection_doc.collection("collection2").add({})
     assert len([_ for _ in subcollection_doc.collections()]) == 2
 
-    assert_trace_for_generator(subcollection_doc.collections)
-
-
-def test_firestore_documents_trace_node_datastore_params(exercise_documents, instance_info):
-    @validate_tt_collector_json(datastore_params=instance_info)
-    @background_task()
-    def _test():
-        exercise_documents()
-
-    _test()
+    async_subcollection = async_collection.document(subcollection_doc.id)
+    
+    assert_trace_for_async_generator(async_subcollection.collections)

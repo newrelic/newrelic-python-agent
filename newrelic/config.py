@@ -2280,9 +2280,19 @@ def _process_module_builtin_defaults():
         "instrument_google_cloud_firestore_v1_client",
     )
     _process_module_definition(
+        "google.cloud.firestore_v1.async_client",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_client",
+    )
+    _process_module_definition(
         "google.cloud.firestore_v1.document",
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_document",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_document",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_document",
     )
     _process_module_definition(
         "google.cloud.firestore_v1.collection",
@@ -2290,9 +2300,19 @@ def _process_module_builtin_defaults():
         "instrument_google_cloud_firestore_v1_collection",
     )
     _process_module_definition(
+        "google.cloud.firestore_v1.async_collection",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_collection",
+    )
+    _process_module_definition(
         "google.cloud.firestore_v1.query",
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_query",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_query",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_query",
     )
     _process_module_definition(
         "google.cloud.firestore_v1.aggregation",
@@ -2300,9 +2320,19 @@ def _process_module_builtin_defaults():
         "instrument_google_cloud_firestore_v1_aggregation",
     )
     _process_module_definition(
+        "google.cloud.firestore_v1.async_aggregation",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_aggregation",
+    )
+    _process_module_definition(
         "google.cloud.firestore_v1.batch",
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_batch",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_batch",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_batch",
     )
     _process_module_definition(
         "google.cloud.firestore_v1.bulk_batch",
@@ -2313,6 +2343,11 @@ def _process_module_builtin_defaults():
         "google.cloud.firestore_v1.transaction",
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_transaction",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_transaction",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_transaction",
     )
 
     _process_module_definition(

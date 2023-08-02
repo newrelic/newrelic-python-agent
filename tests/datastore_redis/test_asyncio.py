@@ -32,25 +32,16 @@ REDIS_VERSION = get_package_version_tuple("redis")
 
 # Metrics
 
-_base_scoped_metrics = (("Datastore/operation/Redis/publish", 3),)
+_enable_scoped_metrics = [("Datastore/operation/Redis/publish", 3)]
 
-_base_rollup_metrics = (
+_enable_rollup_metrics = [
     ("Datastore/all", 3),
     ("Datastore/allOther", 3),
     ("Datastore/Redis/all", 3),
     ("Datastore/Redis/allOther", 3),
     ("Datastore/operation/Redis/publish", 3),
-)
-
-_enable_scoped_metrics = list(_base_scoped_metrics)
-_enable_rollup_metrics = list(_base_rollup_metrics)
-
-_host = instance_hostname(DB_SETTINGS["host"])
-_port = DB_SETTINGS["port"]
-
-_instance_metric_name = "Datastore/instance/Redis/%s/%s" % (_host, _port)
-
-_enable_rollup_metrics.append((_instance_metric_name, 3))
+    ("Datastore/instance/Redis/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 3),
+]
 
 # Tests
 
@@ -84,11 +75,13 @@ def test_async_pipeline(client, loop):  # noqa
 @background_task()
 def test_async_pubsub(client, loop):  # noqa
     async def reader(client):
+        received_messages = []
         message = {"data": "Hello"}
         while message and message["data"] != b"NOPE":
             message = await client.get_message(ignore_subscribe_messages=True)
             if message:
-                assert message
+                received_messages.append(message)
+        assert received_messages == [{"data": "Hello"}, {"data": "World"}, {"data": "NOPE"}]
 
     async def _test_pubsub():
         async with client.pubsub() as pubsub:

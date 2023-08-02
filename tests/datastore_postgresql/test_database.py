@@ -13,15 +13,13 @@
 # limitations under the License.
 
 import postgresql.driver.dbapi20
-
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-
+from testing_support.db_settings import postgresql_settings
 from testing_support.validators.validate_database_trace_inputs import (
     validate_database_trace_inputs,
 )
-
-from testing_support.db_settings import postgresql_settings
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 
@@ -41,13 +39,14 @@ _test_execute_via_cursor_scoped_metrics = [
     ("Datastore/operation/Postgres/create", 1),
     ("Datastore/operation/Postgres/commit", 3),
     ("Datastore/operation/Postgres/rollback", 1),
+    ("Datastore/operation/Postgres/other", 1),
 ]
 
 _test_execute_via_cursor_rollup_metrics = [
-    ("Datastore/all", 13),
-    ("Datastore/allOther", 13),
-    ("Datastore/Postgres/all", 13),
-    ("Datastore/Postgres/allOther", 13),
+    ("Datastore/all", 14),
+    ("Datastore/allOther", 14),
+    ("Datastore/Postgres/all", 14),
+    ("Datastore/Postgres/allOther", 14),
     ("Datastore/operation/Postgres/select", 1),
     ("Datastore/statement/Postgres/%s/select" % DB_SETTINGS["table_name"], 1),
     ("Datastore/operation/Postgres/insert", 1),
@@ -63,6 +62,10 @@ _test_execute_via_cursor_rollup_metrics = [
     ("Datastore/operation/Postgres/call", 2),
     ("Datastore/operation/Postgres/commit", 3),
     ("Datastore/operation/Postgres/rollback", 1),
+    ("Datastore/operation/Postgres/other", 1),
+    ("Function/postgresql.driver.dbapi20:connect", 1),
+    ("Function/postgresql.driver.dbapi20:Connection.__enter__", 1),
+    ("Function/postgresql.driver.dbapi20:Connection.__exit__", 1),
 ]
 
 
@@ -87,25 +90,23 @@ def test_execute_via_cursor():
 
         cursor.execute("""drop table if exists %s""" % DB_SETTINGS["table_name"])
 
-        cursor.execute(
-            """create table %s """ % DB_SETTINGS["table_name"]
-            + """(a integer, b real, c text)"""
-        )
+        cursor.execute("""create table %s """ % DB_SETTINGS["table_name"] + """(a integer, b real, c text)""")
 
         cursor.executemany(
-            """insert into %s """ % DB_SETTINGS["table_name"]
-            + """values (%s, %s, %s)""",
+            """insert into %s """ % DB_SETTINGS["table_name"] + """values (%s, %s, %s)""",
             [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
         )
 
         cursor.execute("""select * from %s""" % DB_SETTINGS["table_name"])
 
-        for row in cursor:
-            pass
+        cursor.execute(
+            """with temporaryTable (averageValue) as (select avg(b) from %s) """ % DB_SETTINGS["table_name"]
+            + """select * from %s,temporaryTable """ % DB_SETTINGS["table_name"]
+            + """where %s.b > temporaryTable.averageValue""" % DB_SETTINGS["table_name"]
+        )
 
         cursor.execute(
-            """update %s """ % DB_SETTINGS["table_name"]
-            + """set a=%s, b=%s, c=%s where a=%s""",
+            """update %s """ % DB_SETTINGS["table_name"] + """set a=%s, b=%s, c=%s where a=%s""",
             (4, 4.0, "4.0", 1),
         )
 

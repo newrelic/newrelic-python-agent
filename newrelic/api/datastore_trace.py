@@ -15,7 +15,7 @@
 import functools
 
 from newrelic.api.time_trace import TimeTrace, current_trace
-from newrelic.common.async_wrapper import async_wrapper
+from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.datastore_node import DatastoreNode
 
@@ -135,7 +135,7 @@ class DatastoreTrace(TimeTrace):
         )
 
 
-def DatastoreTraceWrapper(wrapped, product, target, operation, host=None, port_path_or_id=None, database_name=None):
+def DatastoreTraceWrapper(wrapped, product, target, operation, host=None, port_path_or_id=None, database_name=None, async_wrapper=None):
     """Wraps a method to time datastore queries.
 
     :param wrapped: The function to apply the trace to.
@@ -158,6 +158,8 @@ def DatastoreTraceWrapper(wrapped, product, target, operation, host=None, port_p
     :param database_name: The name of database where the current query is being
                           executed.
     :type database_name: str
+    :param async_wrapper: An async trace wrapper from newrelic.common.async_wrapper.
+    :type async_wrapper: callable or None
     :rtype: :class:`newrelic.common.object_wrapper.FunctionWrapper`
 
     This is typically used to wrap datastore queries such as calls to Redis or
@@ -173,7 +175,7 @@ def DatastoreTraceWrapper(wrapped, product, target, operation, host=None, port_p
     """
 
     def _nr_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
-        wrapper = async_wrapper(wrapped)
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
             if not parent:
@@ -242,7 +244,7 @@ def DatastoreTraceWrapper(wrapped, product, target, operation, host=None, port_p
     return FunctionWrapper(wrapped, _nr_datastore_trace_wrapper_)
 
 
-def datastore_trace(product, target, operation, host=None, port_path_or_id=None, database_name=None):
+def datastore_trace(product, target, operation, host=None, port_path_or_id=None, database_name=None, async_wrapper=None):
     """Decorator allows datastore query to be timed.
 
     :param product: The name of the vendor.
@@ -263,6 +265,8 @@ def datastore_trace(product, target, operation, host=None, port_path_or_id=None,
     :param database_name: The name of database where the current query is being
                           executed.
     :type database_name: str
+    :param async_wrapper: An async trace wrapper from newrelic.common.async_wrapper.
+    :type async_wrapper: callable or None
 
     This is typically used to decorate datastore queries such as calls to Redis
     or ElasticSearch.
@@ -284,11 +288,12 @@ def datastore_trace(product, target, operation, host=None, port_path_or_id=None,
         host=host,
         port_path_or_id=port_path_or_id,
         database_name=database_name,
+        async_wrapper=async_wrapper,
     )
 
 
 def wrap_datastore_trace(
-    module, object_path, product, target, operation, host=None, port_path_or_id=None, database_name=None
+    module, object_path, product, target, operation, host=None, port_path_or_id=None, database_name=None, async_wrapper=None
 ):
     """Method applies custom timing to datastore query.
 
@@ -314,6 +319,8 @@ def wrap_datastore_trace(
     :param database_name: The name of database where the current query is being
                           executed.
     :type database_name: str
+    :param async_wrapper: An async trace wrapper from newrelic.common.async_wrapper.
+    :type async_wrapper: callable or None
 
     This is typically used to time database query method calls such as Redis
     GET.
@@ -327,5 +334,5 @@ def wrap_datastore_trace(
 
     """
     wrap_object(
-        module, object_path, DatastoreTraceWrapper, (product, target, operation, host, port_path_or_id, database_name)
+        module, object_path, DatastoreTraceWrapper, (product, target, operation, host, port_path_or_id, database_name, async_wrapper)
     )

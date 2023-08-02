@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import functools
-import gc
 import sys
 import time
 
@@ -31,10 +30,10 @@ from newrelic.api.database_trace import database_trace
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import external_trace
 from newrelic.api.function_trace import function_trace
+from newrelic.api.graphql_trace import graphql_operation_trace, graphql_resolver_trace
 from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
 
-is_pypy = hasattr(sys, "pypy_version_info")
 asyncio = pytest.importorskip("asyncio")
 
 
@@ -47,6 +46,8 @@ asyncio = pytest.importorskip("asyncio")
         (functools.partial(datastore_trace, "lib", "foo", "bar"), "Datastore/statement/lib/foo/bar"),
         (functools.partial(message_trace, "lib", "op", "typ", "name"), "MessageBroker/lib/typ/op/Named/name"),
         (functools.partial(memcache_trace, "cmd"), "Memcache/cmd"),
+        (functools.partial(graphql_operation_trace), "GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>"),
+        (functools.partial(graphql_resolver_trace), "GraphQL/resolve/GraphQL/<unknown>"),
     ],
 )
 def test_async_generator_timing(event_loop, trace, metric):
@@ -130,7 +131,7 @@ def test_async_generator_caught_exception(event_loop):
             gen = agen()
             # kickstart the generator (the try/except logic is inside the
             # generator)
-            await anext(gen)
+            await gen.asend(None)
             await gen.athrow(ValueError)
 
             # consume the generator
@@ -198,7 +199,7 @@ def test_async_generator_close_ends_trace(event_loop):
         gen = agen()
 
         # kickstart the coroutine
-        await anext(gen)
+        await gen.asend(None)
 
         # trace should be ended/recorded by close
         await gen.aclose()
@@ -279,7 +280,7 @@ def test_asend_receives_a_value(event_loop):
         gen = agen()
 
         # kickstart the coroutine
-        await anext(gen)
+        await gen.asend(None)
 
         assert await gen.asend("foobar") == "foobar"
         assert _received and _received[0] == "foobar"
@@ -311,7 +312,7 @@ def test_athrow_yields_a_value(event_loop):
         gen = agen()
 
         # kickstart the coroutine
-        await anext(gen)
+        await gen.asend(None)
 
         assert await gen.athrow(MyException) == "foobar"
 
@@ -342,7 +343,7 @@ def test_athrow_does_not_yield_a_value(event_loop):
         gen = agen()
 
         # kickstart the coroutine
-        await anext(gen)
+        await gen.asend(None)
 
         # async generator will raise StopAsyncIteration
         with pytest.raises(StopAsyncIteration):
@@ -401,10 +402,6 @@ def test_catching_generator_exit_causes_runtime_error(event_loop):
         with pytest.raises(RuntimeError):
             await gen.aclose()
 
-        if is_pypy:
-            gen = None
-            gc.collect()
-
     event_loop.run_until_complete(_test())
 
 
@@ -439,6 +436,26 @@ def test_async_generator_time_excludes_creation_time(event_loop):
     assert full_metrics[("Function/agen", "")].total_call_time < 0.1
 
 
+@validate_transaction_metrics(
+    "test_complete_async_generator",
+    background_task=True,
+    scoped_metrics=[("Function/agen", 1)],
+    rollup_metrics=[("Function/agen", 1)],
+)
+@background_task(name="test_complete_async_generator")
+def test_complete_async_generator(event_loop):
+    @function_trace(name="agen")
+    async def agen():
+        for i in range(5):
+            yield i
+
+    async def _test():
+        gen = agen()
+        assert [x async for x in gen] == [x for x in range(5)]
+
+    event_loop.run_until_complete(_test())
+
+
 @pytest.mark.parametrize("nr_transaction", [True, False])
 def test_incomplete_async_generator(event_loop, nr_transaction):
     @function_trace(name="agen")
@@ -453,35 +470,44 @@ def test_incomplete_async_generator(event_loop, nr_transaction):
             async for _ in c:
                 break
 
-            if is_pypy:
-                # pypy is not guaranteed to delete the coroutine when it goes out
-                # of scope. This code "helps" pypy along. The test above is really
-                # just to verify that incomplete coroutines will "eventually" be
-                # cleaned up. In pypy, unfortunately that means it may not be
-                # reported all the time. A customer would be expected to call gc
-                # directly; however, they already have to handle this case since
-                # incomplete generators are well documented as having problems with
-                # pypy's gc.
-
-                # See:
-                # http://doc.pypy.org/en/latest/cpython_differences.html#differences-related-to-garbage-collection-strategies
-                # https://bitbucket.org/pypy/pypy/issues/736
-                del c
-                import gc
-
-                gc.collect()
-
         if nr_transaction:
-            _test = background_task(name="test_incomplete_coroutine")(_test)
+            _test = background_task(name="test_incomplete_async_generator")(_test)
 
         event_loop.run_until_complete(_test())
 
     if nr_transaction:
         _test_incomplete_async_generator = validate_transaction_metrics(
-            "test_incomplete_coroutine",
+            "test_incomplete_async_generator",
             background_task=True,
             scoped_metrics=[("Function/agen", 1)],
             rollup_metrics=[("Function/agen", 1)],
         )(_test_incomplete_async_generator)
     
+    _test_incomplete_async_generator()
+
+
+def test_incomplete_async_generator_transaction_exited(event_loop):
+    @function_trace(name="agen")
+    async def agen():
+        for _ in range(5):
+            yield
+
+    @validate_transaction_metrics(
+        "test_incomplete_async_generator",
+        background_task=True,
+        scoped_metrics=[("Function/agen", 1)],
+        rollup_metrics=[("Function/agen", 1)],
+    )
+    def _test_incomplete_async_generator():
+        c = agen()
+        @background_task(name="test_incomplete_async_generator")
+        async def _test():
+            async for _ in c:
+                break
+
+        event_loop.run_until_complete(_test())
+
+        # Remove generator after transaction completes
+        del c
+
     _test_incomplete_async_generator()

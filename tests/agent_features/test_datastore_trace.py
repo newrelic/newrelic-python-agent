@@ -12,17 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.background_task import background_task
-from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper
 from testing_support.validators.validate_datastore_trace_inputs import (
     validate_datastore_trace_inputs,
 )
 
+from newrelic.api.background_task import background_task
+from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper
 
-@validate_datastore_trace_inputs(operation='test_operation', target='test_target', host='test_host', port_path_or_id='test_port', database_name='test_db_name')
+
+@validate_datastore_trace_inputs(
+    operation="test_operation",
+    target="test_target",
+    host="test_host",
+    port_path_or_id="test_port",
+    database_name="test_db_name",
+)
 @background_task()
 def test_dt_trace_all_args():
-    with DatastoreTrace(product='Agent Features', target='test_target', operation='test_operation', host='test_host', port_path_or_id='test_port', database_name='test_db_name'):
+    with DatastoreTrace(
+        product="Agent Features",
+        target="test_target",
+        operation="test_operation",
+        host="test_host",
+        port_path_or_id="test_port",
+        database_name="test_db_name",
+    ):
         pass
 
 
@@ -39,22 +53,37 @@ def test_dt_trace_callable_args():
         return "Agent Features"
 
     def target_callable():
-        return 'test_target'
+        return "test_target"
 
     def operation_callable():
         return "test_operation"
 
     def host_callable():
-        return 'test_host'
+        return "test_host"
 
     def port_path_id_callable():
-        return 'test_port'
+        return "test_port"
 
     def db_name_callable():
-        return 'test_db_name'
+        return "test_db_name"
 
-    @validate_datastore_trace_inputs(operation='test_operation', target='test_target', host='test_host', port_path_or_id='test_port', database_name='test_db_name')
+    @validate_datastore_trace_inputs(
+        operation="test_operation",
+        target="test_target",
+        host="test_host",
+        port_path_or_id="test_port",
+        database_name="test_db_name",
+    )
     def _test():
         pass
-    wrapped_fn = DatastoreTraceWrapper(_test, product=product_callable, target=target_callable, operation=operation_callable, host=host_callable, port_path_or_id=port_path_id_callable, database_name=db_name_callable)
+
+    wrapped_fn = DatastoreTraceWrapper(
+        _test,
+        product=product_callable,
+        target=target_callable,
+        operation=operation_callable,
+        host=host_callable,
+        port_path_or_id=port_path_id_callable,
+        database_name=db_name_callable,
+    )
     wrapped_fn()

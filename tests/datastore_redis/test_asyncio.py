@@ -74,14 +74,15 @@ def test_async_pipeline(client, loop):  # noqa
 )
 @background_task()
 def test_async_pubsub(client, loop):  # noqa
-    async def reader(client):
-        received_messages = []
-        message = {"data": "filler"}
-        while message and message["data"] != b"NOPE":
-            message = await client.get_message(ignore_subscribe_messages=True)
+    messages_received = []
+
+    async def reader(pubsub):
+        while True:
+            message = await pubsub.get_message(ignore_subscribe_messages=True)
             if message:
-                received_messages.append(message)
-        assert received_messages == [{"data": "filler"}, {"data": "Hello"}, {"data": "World"}, {"data": "NOPE"}]
+                messages_received.append(message["data"].decode())
+                if message["data"].decode() == "NOPE":
+                    break
 
     async def _test_pubsub():
         async with client.pubsub() as pubsub:
@@ -96,3 +97,4 @@ def test_async_pubsub(client, loop):  # noqa
             await future
 
     loop.run_until_complete(_test_pubsub())
+    assert messages_received == ["Hello", "World", "NOPE"]

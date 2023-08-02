@@ -139,6 +139,7 @@ def test_firestore_transaction_commit_trace_node_datastore_params(exercise_trans
 
     _test()
 
+
 def test_firestore_transaction_rollback_trace_node_datastore_params(exercise_transaction_rollback, instance_info):
     @validate_tt_collector_json(datastore_params=instance_info)
     @background_task()

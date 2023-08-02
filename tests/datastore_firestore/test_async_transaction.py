@@ -19,6 +19,9 @@ from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -122,6 +125,24 @@ def test_firestore_async_transaction_rollback(loop, exercise_async_transaction_r
         background_task=True,
     )
     @background_task(name="test_firestore_async_transaction")
+    def _test():
+        loop.run_until_complete(exercise_async_transaction_rollback())
+
+    _test()
+
+
+def test_firestore_async_transaction_commit_trace_node_datastore_params(loop, exercise_async_transaction_commit, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        loop.run_until_complete(exercise_async_transaction_commit())
+
+    _test()
+
+
+def test_firestore_async_transaction_rollback_trace_node_datastore_params(loop, exercise_async_transaction_rollback, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
     def _test():
         loop.run_until_complete(exercise_async_transaction_rollback())
 

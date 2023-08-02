@@ -103,6 +103,9 @@ def instrument_google_cloud_firestore_v1_async_client(module):
                     operation=method,
                     product="Firestore",
                     target=None,
+                    host=_conn_str_to_host(_get_target),
+                    port_path_or_id=_conn_str_to_port(_get_target),
+                    database_name=_get_database_string,
                     async_wrapper=async_generator_wrapper,
                 )
 
@@ -148,6 +151,9 @@ def instrument_google_cloud_firestore_v1_async_collection(module):
                     "AsyncCollectionReference.%s" % method,
                     product="Firestore",
                     target=_get_object_id,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                     operation=method,
                 )
 
@@ -159,6 +165,9 @@ def instrument_google_cloud_firestore_v1_async_collection(module):
                     operation=method,
                     product="Firestore",
                     target=_get_object_id,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                     async_wrapper=async_generator_wrapper,
                 )
 
@@ -205,6 +214,9 @@ def instrument_google_cloud_firestore_v1_async_document(module):
                     product="Firestore",
                     target=_get_object_id,
                     operation=method,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )
 
         for method in ("collections",):
@@ -215,6 +227,9 @@ def instrument_google_cloud_firestore_v1_async_document(module):
                     operation=method,
                     product="Firestore",
                     target=_get_object_id,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                     async_wrapper=async_generator_wrapper,
                 )
 
@@ -272,7 +287,14 @@ def instrument_google_cloud_firestore_v1_async_query(module):
         for method in ("get",):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "AsyncQuery.%s" % method, product="Firestore", target=_get_parent_id, operation=method
+                    module,
+                    "AsyncQuery.%s" % method,
+                    product="Firestore",
+                    target=_get_parent_id,
+                    operation=method,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )
 
         for method in ("stream",):
@@ -283,6 +305,9 @@ def instrument_google_cloud_firestore_v1_async_query(module):
                     operation=method,
                     product="Firestore",
                     target=_get_parent_id,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                     async_wrapper=async_generator_wrapper,
                 )
 
@@ -296,6 +321,9 @@ def instrument_google_cloud_firestore_v1_async_query(module):
                     operation=method,
                     product="Firestore",
                     target=_get_parent_id,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                     async_wrapper=async_generator_wrapper,
                 )
 
@@ -342,6 +370,9 @@ def instrument_google_cloud_firestore_v1_async_aggregation(module):
                     product="Firestore",
                     target=_get_collection_ref_id,
                     operation=method,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )
 
         for method in ("stream",):
@@ -352,6 +383,9 @@ def instrument_google_cloud_firestore_v1_async_aggregation(module):
                     operation=method,
                     product="Firestore",
                     target=_get_collection_ref_id,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                     async_wrapper=async_generator_wrapper,
                 )
 
@@ -379,7 +413,14 @@ def instrument_google_cloud_firestore_v1_async_batch(module):
         for method in ("commit",):
             if hasattr(class_, method):
                 wrap_datastore_trace(
-                    module, "AsyncWriteBatch.%s" % method, product="Firestore", target=None, operation=method
+                    module,
+                    "AsyncWriteBatch.%s" % method,
+                    product="Firestore",
+                    target=None,
+                    operation=method,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )
 
 
@@ -425,5 +466,12 @@ def instrument_google_cloud_firestore_v1_async_transaction(module):
             if hasattr(class_, method):
                 operation = method[1:]  # Trim leading underscore
                 wrap_datastore_trace(
-                    module, "AsyncTransaction.%s" % method, product="Firestore", target=None, operation=operation
+                    module,
+                    "AsyncTransaction.%s" % method,
+                    product="Firestore",
+                    target=None,
+                    operation=operation,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )

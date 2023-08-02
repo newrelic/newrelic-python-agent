@@ -12,39 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
-
-from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.api.datastore_trace import wrap_datastore_trace
 from newrelic.api.function_trace import wrap_function_trace
 from newrelic.common.async_wrapper import generator_wrapper, async_generator_wrapper
-from newrelic.api.datastore_trace import DatastoreTrace
 
 
 _get_object_id = lambda obj, *args, **kwargs: getattr(obj, "id", None)
 _get_parent_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_parent", None), "id", None)
 _get_collection_ref_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_collection_ref", None), "id", None)
-
-
-def wrap_generator_method(module, class_name, method_name, target, is_async=False):
-    if is_async:
-        async_wrapper = async_generator_wrapper
-    else:
-        async_wrapper = generator_wrapper
-
-    def _wrapper(wrapped, instance, args, kwargs):
-        target_ = target(instance) if callable(target) else target
-        trace = DatastoreTrace(product="Firestore", target=target_, operation=method_name)
-        wrapped = async_wrapper(wrapped, trace)
-        return wrapped(*args, **kwargs)
-
-    class_ = getattr(module, class_name)
-    if class_ is not None:
-        if hasattr(class_, method_name):
-            wrap_function_wrapper(module, "%s.%s" % (class_name, method_name), _wrapper)
-
-
-wrap_async_generator_method = functools.partial(wrap_generator_method, is_async=True)
 
 
 def instrument_google_cloud_firestore_v1_base_client(module):
@@ -59,7 +34,7 @@ def instrument_google_cloud_firestore_v1_client(module):
         class_ = module.Client
         for method in ("collections", "get_all"):
             if hasattr(class_, method):
-                wrap_generator_method(module, "Client", method, target=None)
+                wrap_datastore_trace(module, "Client.%s" % method, operation=method, product="Firestore", target=None, async_wrapper=generator_wrapper)
 
 
 def instrument_google_cloud_firestore_v1_async_client(module):
@@ -67,7 +42,7 @@ def instrument_google_cloud_firestore_v1_async_client(module):
         class_ = module.AsyncClient
         for method in ("collections", "get_all"):
             if hasattr(class_, method):
-                wrap_async_generator_method(module, "AsyncClient", method, target=None)
+                wrap_datastore_trace(module, "AsyncClient.%s" % method, operation=method, product="Firestore", target=None, async_wrapper=async_generator_wrapper)
 
 
 def instrument_google_cloud_firestore_v1_collection(module):
@@ -85,7 +60,7 @@ def instrument_google_cloud_firestore_v1_collection(module):
 
         for method in ("stream", "list_documents"):
             if hasattr(class_, method):
-                wrap_generator_method(module, "CollectionReference", method, target=_get_object_id)
+                wrap_datastore_trace(module, "CollectionReference.%s" % method, operation=method, product="Firestore", target=_get_object_id, async_wrapper=generator_wrapper)
 
 
 def instrument_google_cloud_firestore_v1_async_collection(module):
@@ -99,7 +74,7 @@ def instrument_google_cloud_firestore_v1_async_collection(module):
 
         for method in ("stream", "list_documents"):
             if hasattr(class_, method):
-                wrap_async_generator_method(module, "AsyncCollectionReference", method, target=_get_object_id)
+                wrap_datastore_trace(module, "AsyncCollectionReference.%s" % method, operation=method, product="Firestore", target=_get_object_id, async_wrapper=async_generator_wrapper)
 
 
 def instrument_google_cloud_firestore_v1_document(module):
@@ -117,7 +92,7 @@ def instrument_google_cloud_firestore_v1_document(module):
 
         for method in ("collections",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "DocumentReference", method, target=_get_object_id)
+                wrap_datastore_trace(module, "DocumentReference.%s" % method, operation=method, product="Firestore", target=_get_object_id, async_wrapper=generator_wrapper)
 
 
 def instrument_google_cloud_firestore_v1_async_document(module):
@@ -131,7 +106,7 @@ def instrument_google_cloud_firestore_v1_async_document(module):
 
         for method in ("collections",):
             if hasattr(class_, method):
-                wrap_async_generator_method(module, "AsyncDocumentReference", method, target=_get_object_id)
+                wrap_datastore_trace(module, "AsyncDocumentReference.%s" % method, operation=method, product="Firestore", target=_get_object_id, async_wrapper=async_generator_wrapper)
 
 
 def instrument_google_cloud_firestore_v1_query(module):
@@ -145,13 +120,13 @@ def instrument_google_cloud_firestore_v1_query(module):
 
         for method in ("stream",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "Query", method, target=_get_parent_id)
+                wrap_datastore_trace(module, "Query.%s" % method, operation=method, product="Firestore", target=_get_parent_id, async_wrapper=generator_wrapper)
 
     if hasattr(module, "CollectionGroup"):
         class_ = module.CollectionGroup
         for method in ("get_partitions",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "CollectionGroup", method, target=_get_parent_id)
+                wrap_datastore_trace(module, "CollectionGroup.%s" % method, operation=method, product="Firestore", target=_get_parent_id, async_wrapper=generator_wrapper)
 
 
 def instrument_google_cloud_firestore_v1_async_query(module):
@@ -165,13 +140,13 @@ def instrument_google_cloud_firestore_v1_async_query(module):
 
         for method in ("stream",):
             if hasattr(class_, method):
-                wrap_async_generator_method(module, "AsyncQuery", method, target=_get_parent_id)
+                wrap_datastore_trace(module, "AsyncQuery.%s" % method, operation=method, product="Firestore", target=_get_parent_id, async_wrapper=async_generator_wrapper)
 
     if hasattr(module, "AsyncCollectionGroup"):
         class_ = module.AsyncCollectionGroup
         for method in ("get_partitions",):
             if hasattr(class_, method):
-                wrap_async_generator_method(module, "AsyncCollectionGroup", method, target=_get_parent_id)
+                wrap_datastore_trace(module, "AsyncCollectionGroup.%s" % method, operation=method, product="Firestore", target=_get_parent_id, async_wrapper=async_generator_wrapper)
 
 
 def instrument_google_cloud_firestore_v1_aggregation(module):
@@ -189,7 +164,7 @@ def instrument_google_cloud_firestore_v1_aggregation(module):
 
         for method in ("stream",):
             if hasattr(class_, method):
-                wrap_generator_method(module, "AggregationQuery", method, target=_get_collection_ref_id)
+                wrap_datastore_trace(module, "AggregationQuery.%s" % method, operation=method, product="Firestore", target=_get_collection_ref_id, async_wrapper=generator_wrapper)
 
 
 def instrument_google_cloud_firestore_v1_async_aggregation(module):
@@ -203,7 +178,7 @@ def instrument_google_cloud_firestore_v1_async_aggregation(module):
 
         for method in ("stream",):
             if hasattr(class_, method):
-                wrap_async_generator_method(module, "AsyncAggregationQuery", method, target=_get_collection_ref_id)
+                wrap_datastore_trace(module, "AsyncAggregationQuery.%s" % method, operation=method, product="Firestore", target=_get_collection_ref_id, async_wrapper=async_generator_wrapper)
 
 
 def instrument_google_cloud_firestore_v1_batch(module):

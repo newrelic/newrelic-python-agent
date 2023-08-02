@@ -111,11 +111,16 @@ def _create_import_hook_from_entrypoint(entrypoint):
 
 def discover_post_import_hooks(group):
     try:
-        import pkg_resources
+        # since Python 3.8
+        from importlib.metadata import entry_points
     except ImportError:
-        return
+        try:
+            # Deprecated in Python 3.12
+            from pkg_resources import iter_entry_points as entry_points
+        except ImportError:
+            return
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
+    for entrypoint in entry_points(group=group):
         callback = _create_import_hook_from_entrypoint(entrypoint)
         register_post_import_hook(callback, entrypoint.name)
 

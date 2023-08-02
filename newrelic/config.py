@@ -3097,13 +3097,18 @@ def _process_module_builtin_defaults():
 
 def _process_module_entry_points():
     try:
-        import pkg_resources
+        # since Python 3.8
+        from importlib.metadata import entry_points
     except ImportError:
-        return
+        try:
+            # Deprecated in Python 3.12
+            from pkg_resources import iter_entry_points as entry_points
+        except ImportError:
+            return
 
     group = "newrelic.hooks"
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
+    for entrypoint in entry_points(group=group):
         target = entrypoint.name
 
         if target in _module_import_hook_registry:
@@ -3161,13 +3166,18 @@ def _setup_instrumentation():
 
 def _setup_extensions():
     try:
-        import pkg_resources
+        # since Python 3.8
+        from importlib.metadata import entry_points
     except ImportError:
-        return
+        try:
+            # Deprecated in Python 3.12
+            from pkg_resources import iter_entry_points as entry_points
+        except ImportError:
+            return
 
     group = "newrelic.extension"
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
+    for entrypoint in entry_points(group=group):
         __import__(entrypoint.module_name)
         module = sys.modules[entrypoint.module_name]
         module.initialize()

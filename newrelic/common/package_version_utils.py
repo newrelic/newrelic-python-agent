@@ -93,6 +93,7 @@ def _get_package_version(name):
         except Exception:
             pass
 
+    # pkg_resources has been deprecated in Python 3.12
     if "pkg_resources" in sys.modules:
         try:
             version = sys.modules["pkg_resources"].get_distribution(name).version

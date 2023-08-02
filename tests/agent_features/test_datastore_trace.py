@@ -20,12 +20,14 @@ from testing_support.validators.validate_datastore_trace_inputs import (
 
 
 @validate_datastore_trace_inputs(operation='test_operation', target='test_target', host='test_host', port_path_or_id='test_port', database_name='test_db_name')
+@background_task()
 def test_dt_trace_all_args():
     with DatastoreTrace(product='Agent Features', target='test_target', operation='test_operation', host='test_host', port_path_or_id='test_port', database_name='test_db_name'):
         pass
 
 
 @validate_datastore_trace_inputs(operation=None, target=None, host=None, port_path_or_id=None, database_name=None)
+@background_task()
 def test_dt_trace_empty():
     with DatastoreTrace(product=None, target=None, operation=None):
         pass

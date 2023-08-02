@@ -141,7 +141,6 @@ def test_each_span_type(trace_type, args):
     )
     @background_task(name="test_each_span_type")
     def _test():
-
         transaction = current_transaction()
         transaction._sampled = True
 
@@ -307,7 +306,6 @@ def test_external_spans(exclude_url):
     }
 )
 def test_external_span_limits(kwarg_override, attr_override):
-
     exact_intrinsics = {
         "type": "Span",
         "sampled": True,
@@ -364,7 +362,6 @@ def test_external_span_limits(kwarg_override, attr_override):
     }
 )
 def test_datastore_span_limits(kwarg_override, attribute_override):
-
     exact_intrinsics = {
         "type": "Span",
         "sampled": True,
@@ -505,7 +502,6 @@ class FakeTrace(object):
 )
 @pytest.mark.parametrize("exclude_attributes", (True, False))
 def test_span_event_user_attributes(trace_type, args, exclude_attributes):
-
     _settings = {
         "distributed_tracing.enabled": True,
         "span_events.enabled": True,
@@ -622,7 +618,6 @@ _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
     ),
 )
 def test_span_event_error_attributes_notice_error(trace_type, args):
-
     _settings = {
         "distributed_tracing.enabled": True,
         "span_events.enabled": True,
@@ -670,7 +665,6 @@ def test_span_event_error_attributes_notice_error(trace_type, args):
     ),
 )
 def test_span_event_error_attributes_observed(trace_type, args):
-
     error = ValueError("whoops")
 
     exact_agents = {

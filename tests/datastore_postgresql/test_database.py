@@ -85,7 +85,6 @@ def test_execute_via_cursor():
         host=DB_SETTINGS["host"],
         port=DB_SETTINGS["port"],
     ) as connection:
-
         cursor = connection.cursor()
 
         cursor.execute("""drop table if exists %s""" % DB_SETTINGS["table_name"])
@@ -153,7 +152,6 @@ def test_rollback_on_exception():
             host=DB_SETTINGS["host"],
             port=DB_SETTINGS["port"],
         ):
-
             raise RuntimeError("error")
 
     except RuntimeError:

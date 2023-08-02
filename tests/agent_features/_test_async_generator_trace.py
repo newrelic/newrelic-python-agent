@@ -31,6 +31,7 @@ from newrelic.api.database_trace import database_trace
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import external_trace
 from newrelic.api.function_trace import function_trace
+from newrelic.api.graphql_trace import graphql_operation_trace, graphql_resolver_trace
 from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
 
@@ -47,6 +48,8 @@ asyncio = pytest.importorskip("asyncio")
         (functools.partial(datastore_trace, "lib", "foo", "bar"), "Datastore/statement/lib/foo/bar"),
         (functools.partial(message_trace, "lib", "op", "typ", "name"), "MessageBroker/lib/typ/op/Named/name"),
         (functools.partial(memcache_trace, "cmd"), "Memcache/cmd"),
+        (functools.partial(graphql_operation_trace), "GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>"),
+        (functools.partial(graphql_resolver_trace), "GraphQL/resolve/GraphQL/<unknown>"),
     ],
 )
 def test_async_generator_timing(event_loop, trace, metric):
@@ -504,4 +507,47 @@ def test_incomplete_async_generator(event_loop, nr_transaction):
             rollup_metrics=[("Function/agen", 1)],
         )(_test_incomplete_async_generator)
     
+    _test_incomplete_async_generator()
+
+
+def test_incomplete_async_generator_transaction_exited(event_loop):
+    @function_trace(name="agen")
+    async def agen():
+        for _ in range(5):
+            yield
+
+    @validate_transaction_metrics(
+        "test_incomplete_async_generator",
+        background_task=True,
+        scoped_metrics=[("Function/agen", 1)],
+        rollup_metrics=[("Function/agen", 1)],
+    )
+    def _test_incomplete_async_generator():
+        c = agen()
+        @background_task(name="test_incomplete_async_generator")
+        async def _test():
+            async for _ in c:
+                break
+
+        event_loop.run_until_complete(_test())
+
+        # Remove generator after transaction completes
+        if is_pypy:
+            # pypy is not guaranteed to delete the coroutine when it goes out
+            # of scope. This code "helps" pypy along. The test above is really
+            # just to verify that incomplete coroutines will "eventually" be
+            # cleaned up. In pypy, unfortunately that means it may not be
+            # reported all the time. A customer would be expected to call gc
+            # directly; however, they already have to handle this case since
+            # incomplete generators are well documented as having problems with
+            # pypy's gc.
+
+            # See:
+            # http://doc.pypy.org/en/latest/cpython_differences.html#differences-related-to-garbage-collection-strategies
+            # https://bitbucket.org/pypy/pypy/issues/736
+            del c
+            import gc
+
+            gc.collect()
+
     _test_incomplete_async_generator()

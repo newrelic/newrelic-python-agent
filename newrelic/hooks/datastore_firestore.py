@@ -41,7 +41,7 @@ def _conn_str_to_port(getter):
     return closure
 
 
-# Default Instance Info
+# Default Target ID and Instance Info
 _get_object_id = lambda obj, *args, **kwargs: getattr(obj, "id", None)
 _get_client_target = lambda obj, *args, **kwargs: obj._client._target
 _get_client_database_string = lambda obj, *args, **kwargs: getattr(
@@ -52,19 +52,11 @@ _get_client_database_string = lambda obj, *args, **kwargs: getattr(
 _get_target = lambda obj, *args, **kwargs: obj._target
 _get_database_string = lambda obj, *args, **kwargs: getattr(obj, "_database_string", None)
 
-# Query Instance Info
+# Query Target ID
 _get_parent_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_parent", None), "id", None)
-_get_parent_client_target = lambda obj, *args, **kwargs: obj._parent._client._target
-_get_parent_client_database_string = lambda obj, *args, **kwargs: getattr(
-    getattr(getattr(obj, "_parent", None), "_client", None), "_database_string", None
-)
 
-# AggregationQuery Instance Info
+# AggregationQuery Target ID
 _get_collection_ref_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_collection_ref", None), "id", None)
-_get_nested_query_parent_client_target = lambda obj, *args, **kwargs: obj._nested_query._parent._client._target
-_get_nested_query_parent_client_database_string = lambda obj, *args, **kwargs: getattr(
-    getattr(getattr(getattr(obj, "_nested_query", None), "_parent", None), "_client", None), "_database_string", None
-)
 
 
 def instrument_google_cloud_firestore_v1_base_client(module):
@@ -245,9 +237,9 @@ def instrument_google_cloud_firestore_v1_query(module):
                     product="Firestore",
                     target=_get_parent_id,
                     operation=method,
-                    host=_conn_str_to_host(_get_parent_client_target),
-                    port_path_or_id=_conn_str_to_port(_get_parent_client_target),
-                    database_name=_get_parent_client_database_string,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )
 
         for method in ("stream",):
@@ -258,9 +250,9 @@ def instrument_google_cloud_firestore_v1_query(module):
                     operation=method,
                     product="Firestore",
                     target=_get_parent_id,
-                    host=_conn_str_to_host(_get_parent_client_target),
-                    port_path_or_id=_conn_str_to_port(_get_parent_client_target),
-                    database_name=_get_parent_client_database_string,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                     async_wrapper=generator_wrapper,
                 )
 
@@ -274,9 +266,9 @@ def instrument_google_cloud_firestore_v1_query(module):
                     operation=method,
                     product="Firestore",
                     target=_get_parent_id,
-                    host=_conn_str_to_host(_get_parent_client_target),
-                    port_path_or_id=_conn_str_to_port(_get_parent_client_target),
-                    database_name=_get_parent_client_database_string,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                     async_wrapper=generator_wrapper,
                 )
 
@@ -339,9 +331,9 @@ def instrument_google_cloud_firestore_v1_aggregation(module):
                     product="Firestore",
                     target=_get_collection_ref_id,
                     operation=method,
-                    host=_conn_str_to_host(_get_nested_query_parent_client_target),
-                    port_path_or_id=_conn_str_to_port(_get_nested_query_parent_client_target),
-                    database_name=_get_nested_query_parent_client_database_string,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                 )
 
         for method in ("stream",):
@@ -352,9 +344,9 @@ def instrument_google_cloud_firestore_v1_aggregation(module):
                     operation=method,
                     product="Firestore",
                     target=_get_collection_ref_id,
-                    host=_conn_str_to_host(_get_nested_query_parent_client_target),
-                    port_path_or_id=_conn_str_to_port(_get_nested_query_parent_client_target),
-                    database_name=_get_nested_query_parent_client_database_string,
+                    host=_conn_str_to_host(_get_client_target),
+                    port_path_or_id=_conn_str_to_port(_get_client_target),
+                    database_name=_get_client_database_string,
                     async_wrapper=generator_wrapper,
                 )
 

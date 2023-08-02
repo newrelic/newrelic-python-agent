@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import functools
-import gc
 import sys
 import time
 
@@ -35,7 +34,6 @@ from newrelic.api.graphql_trace import graphql_operation_trace, graphql_resolver
 from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
 
-is_pypy = hasattr(sys, "pypy_version_info")
 asyncio = pytest.importorskip("asyncio")
 
 
@@ -404,10 +402,6 @@ def test_catching_generator_exit_causes_runtime_error(event_loop):
         with pytest.raises(RuntimeError):
             await gen.aclose()
 
-        if is_pypy:
-            gen = None
-            gc.collect()
-
     event_loop.run_until_complete(_test())
 
 
@@ -476,24 +470,6 @@ def test_incomplete_async_generator(event_loop, nr_transaction):
             async for _ in c:
                 break
 
-            if is_pypy:
-                # pypy is not guaranteed to delete the coroutine when it goes out
-                # of scope. This code "helps" pypy along. The test above is really
-                # just to verify that incomplete coroutines will "eventually" be
-                # cleaned up. In pypy, unfortunately that means it may not be
-                # reported all the time. A customer would be expected to call gc
-                # directly; however, they already have to handle this case since
-                # incomplete generators are well documented as having problems with
-                # pypy's gc.
-
-                # See:
-                # http://doc.pypy.org/en/latest/cpython_differences.html#differences-related-to-garbage-collection-strategies
-                # https://bitbucket.org/pypy/pypy/issues/736
-                del c
-                import gc
-
-                gc.collect()
-
         if nr_transaction:
             _test = background_task(name="test_incomplete_async_generator")(_test)
 
@@ -532,22 +508,6 @@ def test_incomplete_async_generator_transaction_exited(event_loop):
         event_loop.run_until_complete(_test())
 
         # Remove generator after transaction completes
-        if is_pypy:
-            # pypy is not guaranteed to delete the coroutine when it goes out
-            # of scope. This code "helps" pypy along. The test above is really
-            # just to verify that incomplete coroutines will "eventually" be
-            # cleaned up. In pypy, unfortunately that means it may not be
-            # reported all the time. A customer would be expected to call gc
-            # directly; however, they already have to handle this case since
-            # incomplete generators are well documented as having problems with
-            # pypy's gc.
-
-            # See:
-            # http://doc.pypy.org/en/latest/cpython_differences.html#differences-related-to-garbage-collection-strategies
-            # https://bitbucket.org/pypy/pypy/issues/736
-            del c
-            import gc
-
-            gc.collect()
+        del c
 
     _test_incomplete_async_generator()

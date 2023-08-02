@@ -288,12 +288,12 @@ def datastore_trace(product, target, operation, host=None, port_path_or_id=None,
         host=host,
         port_path_or_id=port_path_or_id,
         database_name=database_name,
-        async_wrapper=None,
+        async_wrapper=async_wrapper,
     )
 
 
 def wrap_datastore_trace(
-    module, object_path, product, target, operation, host=None, port_path_or_id=None, database_name=None
+    module, object_path, product, target, operation, host=None, port_path_or_id=None, database_name=None, async_wrapper=None
 ):
     """Method applies custom timing to datastore query.
 

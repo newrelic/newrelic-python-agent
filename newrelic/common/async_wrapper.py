@@ -21,15 +21,10 @@ from newrelic.common.coroutine import (
     is_async_generator_function,
 )
 
-try:
-    import asyncio
-except ImportError:
-    asyncio = None
-
 
 def evaluate_wrapper(wrapper_string, wrapped, trace):
     values = {'wrapper': None, 'wrapped': wrapped,
-            'trace': trace, 'functools': functools, "asyncio": asyncio}
+            'trace': trace, 'functools': functools}
     exec(wrapper_string, values)
     return values['wrapper']
 
@@ -50,6 +45,8 @@ def coroutine_wrapper(wrapped, trace):
 
 def awaitable_generator_wrapper(wrapped, trace):
     WRAPPER = textwrap.dedent("""
+    import asyncio
+
     @functools.wraps(wrapped)
     @asyncio.coroutine
     def wrapper(*args, **kwargs):

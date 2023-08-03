@@ -13,16 +13,22 @@
 # limitations under the License.
 
 from typing import List
+
 import strawberry.mutation
 import strawberry.type
+from framework_strawberry._target_schema_sync import (
+    Item,
+    Library,
+    Storage,
+    books,
+    libraries,
+    magazines,
+)
 from strawberry import Schema, field
 from strawberry.asgi import GraphQL
 from strawberry.schema.config import StrawberryConfig
 from strawberry.types.types import Optional
 from testing_support.asgi_testing import AsgiTest
-
-from ._target_schema_sync import Library, Item, Storage, books, magazines, libraries
-
 
 storage = []
 

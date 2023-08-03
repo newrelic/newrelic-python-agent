@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import six
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -30,7 +29,3 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (framework_strawberry)",
     default_settings=_default_settings,
 )
-
-
-if six.PY2:
-    collect_ignore = ["test_application_async.py"]

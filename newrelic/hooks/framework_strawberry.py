@@ -25,7 +25,7 @@ from newrelic.hooks.framework_graphql import (
     ignore_graphql_duplicate_exception,
 )
 
-STRAWBERRY_GRAPHQL_VERSION = get_package_version("strawberry")
+STRAWBERRY_GRAPHQL_VERSION = get_package_version("strawberry-graphql")
 
 
 def bind_execute(query, *args, **kwargs):
@@ -69,7 +69,7 @@ async def wrap_execute(wrapped, instance, args, kwargs):
     except TypeError:
         return await wrapped(*args, **kwargs)
 
-    transaction.add_framework_info(name="Stawberry", version=STRAWBERRY_GRAPHQL_VERSION)
+    transaction.add_framework_info(name="Strawberry", version=STRAWBERRY_GRAPHQL_VERSION)
     transaction.add_framework_info(name="GraphQL", version=GRAPHQL_VERSION)
 
     if hasattr(query, "body"):

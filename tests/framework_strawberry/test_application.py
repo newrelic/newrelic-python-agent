@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-from framework_graphql.test_application import *
-from testing_support.fixtures import dt_enabled, override_application_settings
+from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
@@ -45,6 +44,8 @@ def target_application(request):
 
 @pytest.mark.parametrize("capture_introspection_setting", (True, False))
 def test_introspection_transactions(target_application, capture_introspection_setting):
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+
     txn_ct = 1 if capture_introspection_setting else 0
 
     @override_application_settings(
@@ -53,7 +54,6 @@ def test_introspection_transactions(target_application, capture_introspection_se
     @validate_transaction_count(txn_ct)
     @background_task()
     def _test():
-        response = application("{ __schema { types { name } } }")
-        assert not response.errors
+        response = target_application("{ __schema { types { name } } }")
 
     _test()

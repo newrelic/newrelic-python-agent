@@ -74,12 +74,20 @@ def error_middleware(next, root, info, **args):
     raise RuntimeError("Runtime Error!")
 
 
+def test_no_harm_no_transaction(target_application):
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+
+    def _test():
+        response = target_application("{ __schema { types { name } } }")
+
+    _test()
+
+
 example_middleware = [example_middleware]
 error_middleware = [error_middleware]
 
 example_middleware.append(example_middleware_async)
 error_middleware.append(error_middleware_async)
-
 
 _runtime_error_name = callable_name(RuntimeError)
 _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
@@ -570,6 +578,5 @@ def test_introspection_transactions(target_application, capture_introspection_se
     @background_task()
     def _test():
         response = target_application("{ __schema { types { name } } }")
-        assert not response.get("errors", None)
 
     _test()

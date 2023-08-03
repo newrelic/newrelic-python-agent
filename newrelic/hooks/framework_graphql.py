@@ -150,25 +150,25 @@ def get_node_value(field, attr, subattr="value"):
 
 
 def is_fragment_spread_node(field):
-    from graphql.language.ast import FragmentSpread
+    from graphql.language.ast import FragmentSpreadNode
 
-    return isinstance(field, FragmentSpread)
+    return isinstance(field, FragmentSpreadNode)
 
 
 def is_fragment(field):
-    from graphql.language.ast import FragmentSpread, InlineFragment
+    from graphql.language.ast import FragmentSpreadNode, InlineFragmentNode
 
-    _fragment_types = (InlineFragment, FragmentSpread)
+    _fragment_types = (InlineFragmentNode, FragmentSpreadNode)
     return isinstance(field, _fragment_types)
 
 
 def is_named_fragment(field):
-    from graphql.language.ast import NamedType
+    from graphql.language.ast import NamedTypeNode
 
     return (
         is_fragment(field)
         and getattr(field, "type_condition", None) is not None
-        and isinstance(field.type_condition, NamedType)
+        and isinstance(field.type_condition, NamedTypeNode)
     )
 
 

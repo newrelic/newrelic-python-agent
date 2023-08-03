@@ -158,10 +158,10 @@ def resolve_error(root, info):
     raise RuntimeError("Runtime Error!")
 
 
-hello_field = GraphQLField(GraphQLString, resolver=resolve_hello)
+hello_field = GraphQLField(GraphQLString, resolve=resolve_hello)
 library_field = GraphQLField(
     Library,
-    resolver=resolve_library,
+    resolve=resolve_library,
     args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
 )
 search_field = GraphQLField(
@@ -170,21 +170,21 @@ search_field = GraphQLField(
 )
 echo_field = GraphQLField(
     GraphQLString,
-    resolver=resolve_echo,
+    resolve=resolve_echo,
     args={"echo": GraphQLArgument(GraphQLNonNull(GraphQLString))},
 )
 storage_field = GraphQLField(
     Storage,
-    resolver=resolve_storage,
+    resolve=resolve_storage,
 )
 storage_add_field = GraphQLField(
     GraphQLString,
-    resolver=resolve_storage_add,
+    resolve=resolve_storage_add,
     args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))},
 )
-error_field = GraphQLField(GraphQLString, resolver=resolve_error)
-error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolver=resolve_error)
-error_middleware_field = GraphQLField(GraphQLString, resolver=resolve_hello)
+error_field = GraphQLField(GraphQLString, resolve=resolve_error)
+error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolve=resolve_error)
+error_middleware_field = GraphQLField(GraphQLString, resolve=resolve_hello)
 
 query = GraphQLObjectType(
     name="Query",

@@ -45,14 +45,6 @@ def conditional_decorator(decorator, condition):
     return _conditional_decorator
 
 
-@pytest.fixture(scope="session")
-def is_graphql_2():
-    from graphql import __version__ as version
-
-    major_version = int(version.split(".")[0])
-    return major_version == 2
-
-
 def to_graphql_source(query):
     def delay_import():
         try:
@@ -80,14 +72,6 @@ def example_middleware(next, root, info, **args):
 
 def error_middleware(next, root, info, **args):
     raise RuntimeError("Runtime Error!")
-
-
-def test_no_harm_no_transaction(app, graphql_run):
-    def _test():
-        response = graphql_run(app, "{ __schema { types { name } } }")
-        assert not response.errors
-
-    _test()
 
 
 example_middleware = [example_middleware]
@@ -148,7 +132,7 @@ def test_basic(target_application):
 
 
 @dt_enabled
-def test_query_and_mutation(target_application, is_graphql_2):
+def test_query_and_mutation(target_application):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
     mutation_path = "storage_add" if framework != "Graphene" else "storage_add.string"
@@ -372,15 +356,12 @@ def test_exception_in_resolver(target_application, field):
         ("{ syntax_error ", "graphql.error.syntax_error:GraphQLSyntaxError"),
     ],
 )
-def test_exception_in_validation(target_application, is_graphql_2, query, exc_class):
+def test_exception_in_validation(target_application, query, exc_class):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     if "syntax" in query:
         txn_name = "graphql.language.parser:parse"
     else:
-        if is_graphql_2:
-            txn_name = "graphql.validation.validation:validate"
-        else:
-            txn_name = "graphql.validation.validate:validate"
+        txn_name = "graphql.validation.validate:validate"
 
     # Import path differs between versions
     if exc_class == "GraphQLError":
@@ -589,6 +570,6 @@ def test_introspection_transactions(target_application, capture_introspection_se
     @background_task()
     def _test():
         response = target_application("{ __schema { types { name } } }")
-        assert not response.errors
+        assert not response.get("errors", None)
 
     _test()

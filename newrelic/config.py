@@ -2852,6 +2852,10 @@ def _process_module_builtin_defaults():
     _process_module_definition("redis.client", "newrelic.hooks.datastore_redis", "instrument_redis_client")
 
     _process_module_definition(
+        "redis.commands.cluster", "newrelic.hooks.datastore_redis", "instrument_redis_commands_cluster"
+    )
+
+    _process_module_definition(
         "redis.commands.core", "newrelic.hooks.datastore_redis", "instrument_redis_commands_core"
     )
 

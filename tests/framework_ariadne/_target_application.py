@@ -27,7 +27,9 @@ from framework_ariadne._target_schema_sync import target_schema as target_schema
 from framework_ariadne._target_schema_sync import (
     target_wsgi_application as target_wsgi_application_sync,
 )
+from framework_ariadne.test_application import ariadne_version_tuple
 from graphql import MiddlewareManager
+
 
 
 def check_response(query, success, response):
@@ -42,12 +44,11 @@ def run_sync(schema):
     def _run_sync(query, middleware=None):
         from ariadne import graphql_sync
 
-        if middleware:
-            middleware = MiddlewareManager(*middleware)
-        else:
-            middleware = None
+        if ariadne_version_tuple < (0, 18):
+            if middleware:
+                middleware = MiddlewareManager(*middleware)
 
-        success, response = graphql_sync(schema, {"query": query}, middleware=[middleware])
+        success, response = graphql_sync(schema, {"query": query}, middleware=middleware)
         check_response(query, success, response)
 
         return response.get("data", {})
@@ -59,13 +60,13 @@ def run_async(schema):
     def _run_async(query, middleware=None):
         from ariadne import graphql
 
-        if middleware:
-            middleware = MiddlewareManager(*middleware)
-        else:
-            middleware = None
+        #Later versions of ariadne directly accept a list of middleware while older versions require the MiddlewareManager
+        if ariadne_version_tuple < (0, 18):
+            if middleware:
+                middleware = MiddlewareManager(*middleware)
 
         loop = asyncio.get_event_loop()
-        success, response = loop.run_until_complete(graphql(schema, {"query": query}, middleware=[middleware]))
+        success, response = loop.run_until_complete(graphql(schema, {"query": query}, middleware=middleware))
         check_response(query, success, response)
 
         return response.get("data", {})
@@ -99,7 +100,12 @@ def run_wsgi(app):
 
 def run_asgi(app):
     def _run_asgi(query, middleware=None):
-        app.asgi_application.middleware = middleware
+        if ariadne_version_tuple < (0, 16):
+            app.asgi_application.middleware = middleware
+
+        #In ariadne v0.16.0, the middleware attribute was removed from the GraphQL class in favor of the http_handler
+        elif ariadne_version_tuple >= (0, 16):
+            app.asgi_application.http_handler.middleware = middleware
 
         response = app.make_request(
             "POST", "/", body=json.dumps({"query": query}), headers={"Content-Type": "application/json"}

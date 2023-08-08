@@ -22,11 +22,17 @@ from ariadne import (
     load_schema_from_path,
     make_executable_schema,
 )
-from ariadne.asgi import GraphQL as GraphQLASGI
 from ariadne.wsgi import GraphQL as GraphQLWSGI
 from framework_graphql._target_schema_sync import books, magazines, libraries
 
 from testing_support.asgi_testing import AsgiTest
+from framework_ariadne.test_application import ariadne_version_tuple
+
+if ariadne_version_tuple < (0, 16):
+    from ariadne.asgi import GraphQL as GraphQLASGI
+elif ariadne_version_tuple >= (0, 16):
+    from ariadne.asgi.graphql import GraphQL as GraphQLASGI
+
 
 schema_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "schema.graphql")
 type_defs = load_schema_from_path(schema_file)
@@ -34,6 +40,7 @@ type_defs = load_schema_from_path(schema_file)
 storage = []
 
 mutation = MutationType()
+
 
 
 @mutation.field("storage_add")

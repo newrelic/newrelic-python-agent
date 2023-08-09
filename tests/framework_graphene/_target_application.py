@@ -13,6 +13,7 @@
 # limitations under the License.
 from ._target_schema_async import target_schema as target_schema_async
 from ._target_schema_sync import target_schema as target_schema_sync
+from framework_graphene.test_application import GRAPHENE_VERSION
 
 
 def check_response(query, response):
@@ -45,13 +46,10 @@ def run_async(schema):
 
     return _run_async
 
-
 target_application = {
     "sync-sync": run_sync(target_schema_sync),
     "async-sync": run_async(target_schema_sync),
     "async-async": run_async(target_schema_async),
-}
+    }
 
 
-target_application["async-sync"] = run_async(target_schema_sync)
-target_application["async-async"] = run_async(target_schema_async)

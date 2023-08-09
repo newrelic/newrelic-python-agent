@@ -26,7 +26,9 @@ from ariadne.wsgi import GraphQL as GraphQLWSGI
 from framework_graphql._target_schema_sync import books, magazines, libraries
 
 from testing_support.asgi_testing import AsgiTest
-from framework_ariadne.test_application import ariadne_version_tuple
+from framework_ariadne.test_application import ARIADNE_VERSION
+
+ariadne_version_tuple = tuple(map(int, ARIADNE_VERSION.split(".")))
 
 if ariadne_version_tuple < (0, 16):
     from ariadne.asgi import GraphQL as GraphQLASGI

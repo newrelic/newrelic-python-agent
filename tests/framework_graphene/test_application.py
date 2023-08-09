@@ -14,7 +14,10 @@
 
 import pytest
 
+from framework_graphql.test_application import *
 from newrelic.common.package_version_utils import get_package_version
+
+GRAPHENE_VERSION = get_package_version("graphene")
 
 
 @pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async"])
@@ -26,11 +29,9 @@ def target_application(request):
         pytest.skip("Unsupported combination.")
         return
 
-    version = get_package_version("graphene")
     param = request.param.split("-")
     is_background = param[0] not in {"wsgi", "asgi"}
     schema_type = param[1]
     extra_spans = 4 if param[0] == "wsgi" else 0
-
-    assert version is not None
-    return "Graphene", version, target_application, is_background, schema_type, extra_spans
+    assert GRAPHENE_VERSION is not None
+    return "Graphene", GRAPHENE_VERSION, target_application, is_background, schema_type, extra_spans

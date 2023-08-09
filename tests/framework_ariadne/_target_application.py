@@ -27,7 +27,7 @@ from framework_ariadne._target_schema_sync import target_schema as target_schema
 from framework_ariadne._target_schema_sync import (
     target_wsgi_application as target_wsgi_application_sync,
 )
-from framework_ariadne.test_application import ariadne_version_tuple
+from framework_ariadne._target_schema_sync import ariadne_version_tuple
 from graphql import MiddlewareManager
 
 

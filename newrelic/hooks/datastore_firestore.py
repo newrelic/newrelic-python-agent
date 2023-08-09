@@ -47,7 +47,7 @@ _get_client_database_string = lambda obj, *args, **kwargs: getattr(
     getattr(obj, "_client", None), "_database_string", None
 )
 _get_client_target = lambda obj, *args, **kwargs: obj._client._target
-_get_client_target_host = _conn_str_to_port(_get_client_target)
+_get_client_target_host = _conn_str_to_host(_get_client_target)
 _get_client_target_port = _conn_str_to_port(_get_client_target)
 
 # Client Instance Info

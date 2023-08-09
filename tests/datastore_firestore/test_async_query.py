@@ -19,6 +19,9 @@ from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -73,6 +76,15 @@ def test_firestore_async_query_generators(async_collection, assert_trace_for_asy
     async_query = async_collection.select("x").where(field_path="x", op_string="<=", value=3)
     assert_trace_for_async_generator(async_query.stream)
 
+
+def test_firestore_async_query_trace_node_datastore_params(loop, exercise_async_query, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        loop.run_until_complete(exercise_async_query())
+
+    _test()
+
 # ===== AsyncAggregationQuery =====
 
 @pytest.fixture()
@@ -114,6 +126,15 @@ def test_firestore_async_aggregation_query(loop, exercise_async_aggregation_quer
 def test_firestore_async_aggregation_query_generators(async_collection, assert_trace_for_async_generator):
     async_aggregation_query = async_collection.select("x").where(field_path="x", op_string="<=", value=3).count()
     assert_trace_for_async_generator(async_aggregation_query.stream)
+
+
+def test_firestore_async_aggregation_query_trace_node_datastore_params(loop, exercise_async_aggregation_query, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        loop.run_until_complete(exercise_async_aggregation_query())
+
+    _test()
 
 
 # ===== CollectionGroup =====
@@ -193,3 +214,12 @@ def test_firestore_async_collection_group(loop, exercise_async_collection_group,
 def test_firestore_async_collection_group_generators(async_client, async_collection, assert_trace_for_async_generator, patch_partition_queries):
     async_collection_group = async_client.collection_group(async_collection.id)
     assert_trace_for_async_generator(async_collection_group.get_partitions, 1)
+
+
+def test_firestore_async_collection_group_trace_node_datastore_params(loop, exercise_async_collection_group, instance_info, patch_partition_queries):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        loop.run_until_complete(exercise_async_collection_group())
+
+    _test()

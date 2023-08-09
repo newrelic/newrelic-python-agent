@@ -19,6 +19,9 @@ from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 
 @pytest.fixture()
@@ -69,3 +72,12 @@ def test_firestore_async_client_generators(async_client, collection, assert_trac
 
     assert_trace_for_async_generator(async_client.collections)
     assert_trace_for_async_generator(async_client.get_all, [doc])
+
+
+def test_firestore_async_client_trace_node_datastore_params(loop, exercise_async_client, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        loop.run_until_complete(exercise_async_client())
+
+    _test()

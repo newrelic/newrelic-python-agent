@@ -19,11 +19,14 @@ from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 
 @pytest.fixture()
-def exercise_collections(async_collection):
-    async def _exercise_collections():
+def exercise_async_collections(async_collection):
+    async def _exercise_async_collections():
         async_collection.document("DoesNotExist")
         await async_collection.add({"capital": "Rome", "currency": "Euro", "language": "Italian"}, "Italy")
         await async_collection.add({"capital": "Mexico City", "currency": "Peso", "language": "Spanish"}, "Mexico")
@@ -34,10 +37,10 @@ def exercise_collections(async_collection):
         assert len(documents_stream) == 2
         documents_list = [_ async for _ in async_collection.list_documents()]
         assert len(documents_list) == 2
-    return _exercise_collections
+    return _exercise_async_collections
 
 
-def test_firestore_async_collections(loop, exercise_collections, async_collection):
+def test_firestore_async_collections(loop, exercise_async_collections, async_collection):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % async_collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % async_collection.id, 1),
@@ -62,7 +65,7 @@ def test_firestore_async_collections(loop, exercise_collections, async_collectio
     )
     @background_task(name="test_firestore_async_collections")
     def _test():
-        loop.run_until_complete(exercise_collections())
+        loop.run_until_complete(exercise_async_collections())
 
     _test()
 
@@ -75,3 +78,12 @@ def test_firestore_async_collections_generators(collection, async_collection, as
     
     assert_trace_for_async_generator(async_collection.stream)
     assert_trace_for_async_generator(async_collection.list_documents)
+
+
+def test_firestore_async_collections_trace_node_datastore_params(loop, exercise_async_collections, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        loop.run_until_complete(exercise_async_collections())
+
+    _test()

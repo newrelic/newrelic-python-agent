@@ -20,6 +20,9 @@ from testing_support.validators.validate_database_duration import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 from newrelic.api.background_task import background_task
 
@@ -62,6 +65,15 @@ def test_firestore_write_batch(exercise_write_batch):
     _test()
 
 
+def test_firestore_write_batch_trace_node_datastore_params(exercise_write_batch, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
+    def _test():
+        exercise_write_batch()
+
+    _test()
+
+
 # ===== BulkWriteBatch =====
 
 
@@ -97,6 +109,15 @@ def test_firestore_bulk_write_batch(exercise_bulk_write_batch):
         background_task=True,
     )
     @background_task(name="test_firestore_bulk_write_batch")
+    def _test():
+        exercise_bulk_write_batch()
+
+    _test()
+
+
+def test_firestore_bulk_write_batch_trace_node_datastore_params(exercise_bulk_write_batch, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
     def _test():
         exercise_bulk_write_batch()
 

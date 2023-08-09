@@ -19,6 +19,9 @@ from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 
 @pytest.fixture()
@@ -50,6 +53,15 @@ def test_firestore_async_write_batch(loop, exercise_async_write_batch):
         background_task=True,
     )
     @background_task(name="test_firestore_async_write_batch")
+    def _test():
+        loop.run_until_complete(exercise_async_write_batch())
+
+    _test()
+
+
+def test_firestore_async_write_batch_trace_node_datastore_params(loop, exercise_async_write_batch, instance_info):
+    @validate_tt_collector_json(datastore_params=instance_info)
+    @background_task()
     def _test():
         loop.run_until_complete(exercise_async_write_batch())
 

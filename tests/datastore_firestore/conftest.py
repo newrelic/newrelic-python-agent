@@ -28,6 +28,7 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
 
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.time_trace import current_trace
+from newrelic.common.system_info import LOCALHOST_EQUIVALENTS, gethostname
 
 DB_SETTINGS = firestore_settings()[0]
 FIRESTORE_HOST = DB_SETTINGS["host"]
@@ -49,13 +50,20 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
+@pytest.fixture()
+def instance_info():
+    host = gethostname() if FIRESTORE_HOST in LOCALHOST_EQUIVALENTS else FIRESTORE_HOST
+    return {"host": host, "port_path_or_id": str(FIRESTORE_PORT), "db.instance": "projects/google-cloud-firestore-emulator/databases/(default)"}
+
+
 @pytest.fixture(scope="session")
 def client():
     os.environ["FIRESTORE_EMULATOR_HOST"] = "%s:%d" % (FIRESTORE_HOST, FIRESTORE_PORT)
     client = Client()
+    # Ensure connection is available
     client.collection("healthcheck").document("healthcheck").set(
         {}, retry=None, timeout=5
-    )  # Ensure connection is available
+    )
     return client
 
 

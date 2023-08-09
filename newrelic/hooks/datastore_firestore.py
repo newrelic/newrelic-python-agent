@@ -34,7 +34,7 @@ def _conn_str_to_port(getter):
 
     def closure(obj, *args, **kwargs):
         try:
-            return int(getter(obj, *args, **kwargs).split(":")[1])
+            return getter(obj, *args, **kwargs).split(":")[1]
         except Exception:
             return None
 

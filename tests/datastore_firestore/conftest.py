@@ -53,7 +53,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 @pytest.fixture()
 def instance_info():
     host = gethostname() if FIRESTORE_HOST in LOCALHOST_EQUIVALENTS else FIRESTORE_HOST
-    return {"host": host, "port_path_or_id": FIRESTORE_PORT, "db.instance": "projects/google-cloud-firestore-emulator/databases/(default)"}
+    return {"host": host, "port_path_or_id": str(FIRESTORE_PORT), "db.instance": "projects/google-cloud-firestore-emulator/databases/(default)"}
 
 
 @pytest.fixture(scope="session")

@@ -23,11 +23,10 @@ _default_settings = {
     "transaction_tracer.stack_trace_threshold": 0.0,
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
-    "debug.log_explain_plan_queries": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (datastore_postgresql)",
+    app_name="Python Agent Test (datastore_redis)",
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (datastore)"],
 )

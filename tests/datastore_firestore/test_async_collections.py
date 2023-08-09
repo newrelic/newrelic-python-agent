@@ -14,38 +14,35 @@
 
 import pytest
 
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-
-from newrelic.api.background_task import background_task
 
 
 @pytest.fixture()
-def exercise_collections(collection):
-    def _exercise_collections():
-        collection.document("DoesNotExist")
-        collection.add({"capital": "Rome", "currency": "Euro", "language": "Italian"}, "Italy")
-        collection.add({"capital": "Mexico City", "currency": "Peso", "language": "Spanish"}, "Mexico")
-
-        documents_get = collection.get()
+def exercise_collections(async_collection):
+    async def _exercise_collections():
+        async_collection.document("DoesNotExist")
+        await async_collection.add({"capital": "Rome", "currency": "Euro", "language": "Italian"}, "Italy")
+        await async_collection.add({"capital": "Mexico City", "currency": "Peso", "language": "Spanish"}, "Mexico")
+        
+        documents_get = await async_collection.get()
         assert len(documents_get) == 2
-        documents_stream = [_ for _ in collection.stream()]
+        documents_stream = [_ async for _ in async_collection.stream()]
         assert len(documents_stream) == 2
-        documents_list = [_ for _ in collection.list_documents()]
+        documents_list = [_ async for _ in async_collection.list_documents()]
         assert len(documents_list) == 2
     return _exercise_collections
 
 
-def test_firestore_collections(exercise_collections, collection):
+def test_firestore_async_collections(loop, exercise_collections, async_collection):
     _test_scoped_metrics = [
-        ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/list_documents" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/add" % collection.id, 2),
+        ("Datastore/statement/Firestore/%s/stream" % async_collection.id, 1),
+        ("Datastore/statement/Firestore/%s/get" % async_collection.id, 1),
+        ("Datastore/statement/Firestore/%s/list_documents" % async_collection.id, 1),
+        ("Datastore/statement/Firestore/%s/add" % async_collection.id, 2),
     ]
 
     _test_rollup_metrics = [
@@ -58,23 +55,23 @@ def test_firestore_collections(exercise_collections, collection):
     ]
     @validate_database_duration()
     @validate_transaction_metrics(
-        "test_firestore_collections",
+        "test_firestore_async_collections",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_rollup_metrics,
         background_task=True,
     )
-    @background_task(name="test_firestore_collections")
+    @background_task(name="test_firestore_async_collections")
     def _test():
-        exercise_collections()
+        loop.run_until_complete(exercise_collections())
 
     _test()
 
 
 @background_task()
-def test_firestore_collections_generators(collection, assert_trace_for_generator):
+def test_firestore_async_collections_generators(collection, async_collection, assert_trace_for_async_generator):
     collection.add({})
     collection.add({})
     assert len([_ for _ in collection.list_documents()]) == 2
-
-    assert_trace_for_generator(collection.stream)
-    assert_trace_for_generator(collection.list_documents)
+    
+    assert_trace_for_async_generator(async_collection.stream)
+    assert_trace_for_async_generator(async_collection.list_documents)

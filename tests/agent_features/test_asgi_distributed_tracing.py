@@ -22,8 +22,8 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.asgi_application import asgi_application, ASGIWebTransaction
 
 from testing_support.asgi_testing import AsgiTest
-from testing_support.fixtures import (override_application_settings,
-        validate_transaction_metrics)
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 
 distributed_trace_intrinsics = ['guid', 'traceId', 'priority', 'sampled']

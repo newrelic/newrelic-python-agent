@@ -26,6 +26,7 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_function_wrapper,
 )
+from newrelic.common.package_version_utils import get_package_version
 
 HEARTBEAT_POLL = "MessageBroker/Kafka/Heartbeat/Poll"
 HEARTBEAT_SENT = "MessageBroker/Kafka/Heartbeat/Sent"
@@ -47,6 +48,8 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
 
     topic, value, key, headers, partition, timestamp_ms = _bind_send(*args, **kwargs)
     headers = list(headers) if headers else []
+
+    transaction.add_messagebroker_info("Kafka-Python", get_package_version("kafka-python"))
 
     with MessageTrace(
         library="Kafka",
@@ -112,6 +115,7 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
         message_count = 1
 
         transaction = current_transaction(active_only=False)
+
         if not transaction:
             transaction = MessageTransaction(
                 application=application_instance(),
@@ -124,7 +128,7 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
                 source=wrapped,
             )
             instance._nr_transaction = transaction
-            transaction.__enter__()
+            transaction.__enter__()  # pylint: disable=C2801
 
             # Obtain consumer client_id to send up as agent attribute
             if hasattr(instance, "config") and "client_id" in instance.config:
@@ -143,12 +147,13 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             name = "Named/%s" % destination_name
             transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
             transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
+            transaction.add_messagebroker_info("Kafka-Python", get_package_version("kafka-python"))
 
     return record
 
 
 def wrap_KafkaProducer_init(wrapped, instance, args, kwargs):
-    get_config_key = lambda key: kwargs.get(key, instance.DEFAULT_CONFIG[key])  # noqa: E731
+    get_config_key = lambda key: kwargs.get(key, instance.DEFAULT_CONFIG[key])  # pylint: disable=C3001 # noqa: E731
 
     kwargs["key_serializer"] = wrap_serializer(
         instance, "Serialization/Key", "MessageBroker", get_config_key("key_serializer")
@@ -162,13 +167,13 @@ def wrap_KafkaProducer_init(wrapped, instance, args, kwargs):
 
 class NewRelicSerializerWrapper(ObjectProxy):
     def __init__(self, wrapped, serializer_name, group_prefix):
-        ObjectProxy.__init__.__get__(self)(wrapped)
+        ObjectProxy.__init__.__get__(self)(wrapped)  # pylint: disable=W0231
 
         self._nr_serializer_name = serializer_name
         self._nr_group_prefix = group_prefix
 
     def serialize(self, topic, object):
-        wrapped = self.__wrapped__.serialize
+        wrapped = self.__wrapped__.serialize  # pylint: disable=W0622
         args = (topic, object)
         kwargs = {}
 

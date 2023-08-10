@@ -14,10 +14,12 @@
 
 import pytest
 
-from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_application_settings,
+from testing_support.fixtures import (
+    override_application_settings,
     validate_tt_parenting)
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
 from newrelic.packages import six
 

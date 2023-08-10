@@ -17,11 +17,8 @@ import uuid
 
 import pytest
 from testing_support.db_settings import kafka_settings
-from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
-    code_coverage_fixture,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
@@ -30,11 +27,6 @@ DB_SETTINGS = kafka_settings()[0]
 
 BROKER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
 
-_coverage_source = [
-    "newrelic.hooks.messagebroker_confluentkafka",
-]
-
-code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -92,7 +84,7 @@ def producer(topic, client_type, json_serializer):
 
 
 @pytest.fixture(scope="function")
-def consumer(topic, producer, client_type, json_deserializer):
+def consumer(group_id, topic, producer, client_type, json_deserializer):
     from confluent_kafka import Consumer, DeserializingConsumer
 
     if client_type == "cimpl":
@@ -101,7 +93,7 @@ def consumer(topic, producer, client_type, json_deserializer):
                 "bootstrap.servers": BROKER,
                 "auto.offset.reset": "earliest",
                 "heartbeat.interval.ms": 1000,
-                "group.id": "test",
+                "group.id": group_id,
             }
         )
     elif client_type == "serializer_function":
@@ -110,7 +102,7 @@ def consumer(topic, producer, client_type, json_deserializer):
                 "bootstrap.servers": BROKER,
                 "auto.offset.reset": "earliest",
                 "heartbeat.interval.ms": 1000,
-                "group.id": "test",
+                "group.id": group_id,
                 "value.deserializer": lambda v, c: json.loads(v.decode("utf-8")),
                 "key.deserializer": lambda v, c: json.loads(v.decode("utf-8")) if v is not None else None,
             }
@@ -121,7 +113,7 @@ def consumer(topic, producer, client_type, json_deserializer):
                 "bootstrap.servers": BROKER,
                 "auto.offset.reset": "earliest",
                 "heartbeat.interval.ms": 1000,
-                "group.id": "test",
+                "group.id": group_id,
                 "value.deserializer": json_deserializer,
                 "key.deserializer": json_deserializer,
             }
@@ -187,6 +179,11 @@ def topic():
     yield topic
 
     admin.delete_topics(new_topics)
+
+
+@pytest.fixture(scope="session")
+def group_id():
+    return str(uuid.uuid4())
 
 
 @pytest.fixture()

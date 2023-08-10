@@ -13,10 +13,9 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    validate_transaction_errors,
-    validate_transaction_metrics,
+from testing_support.fixtures import dt_enabled, override_application_settings
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
 )
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
@@ -24,6 +23,12 @@ from testing_support.validators.validate_code_level_metrics import (
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
@@ -90,6 +95,14 @@ if six.PY3:
     error_middleware.append(error_middleware_async)
 
 
+def test_no_harm_no_transaction(app, graphql_run):
+    def _test():
+        response = graphql_run(app, "{ __schema { types { name } } }")
+        assert not response.errors
+
+    _test()
+
+
 _runtime_error_name = callable_name(RuntimeError)
 _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
 
@@ -136,6 +149,7 @@ def test_basic(target_application):
     def _test():
         response = target_application("{ hello }")
         assert response["hello"] == "Hello!"
+        assert not response.errors
 
     _test()
 
@@ -437,6 +451,7 @@ def test_operation_metrics_and_attrs(target_application):
     @conditional_decorator(background_task(), is_bg)
     def _test():
         response = target_application("query MyQuery { library(index: 0) { branch, book { id, name } } }")
+        assert not response.errors
 
     _test()
 
@@ -568,12 +583,18 @@ def test_deepest_unique_path(target_application, query, expected_path):
     _test()
 
 
-def test_ignored_introspection_transactions(target_application):
+@pytest.mark.parametrize("capture_introspection_setting", (True, False))
+def test_ignored_introspection_transactions(target_application, capture_introspection_setting):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    txn_ct = 1 if capture_introspection_setting else 0
 
-    @validate_transaction_count(0)
+    @override_application_settings(
+        {"instrumentation.graphql.capture_introspection_queries": capture_introspection_setting}
+    )
+    @validate_transaction_count(txn_ct)
     @background_task()
     def _test():
         response = target_application("{ __schema { types { name } } }")
+        assert not response.errors
 
     _test()

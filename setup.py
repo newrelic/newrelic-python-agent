@@ -45,13 +45,10 @@ from distutils.errors import (  # noqa
 def newrelic_agent_guess_next_version(tag_version):
     version, _, _ = str(tag_version).partition("+")
     version_info = list(map(int, version.split(".")))
-    if len(version_info) < 4:
+    if len(version_info) < 3:
         return version
     version_info[1] += 1
-    if version_info[1] % 2:
-        version_info[3] = 0
-    else:
-        version_info[3] += 1
+    version_info[2] = 0
     return ".".join(map(str, version_info))
 
 
@@ -105,13 +102,14 @@ packages = [
     "newrelic.hooks",
     "newrelic.network",
     "newrelic/packages",
+    "newrelic/packages/isort",
+    "newrelic/packages/isort/stdlibs",
     "newrelic/packages/urllib3",
     "newrelic/packages/urllib3/util",
     "newrelic/packages/urllib3/contrib",
     "newrelic/packages/urllib3/contrib/_securetransport",
     "newrelic/packages/urllib3/packages",
     "newrelic/packages/urllib3/packages/backports",
-    "newrelic/packages/urllib3/packages/ssl_match_hostname",
     "newrelic/packages/wrapt",
     "newrelic.samplers",
 ]
@@ -124,6 +122,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Monitoring",
@@ -134,7 +133,7 @@ kwargs = dict(
     use_scm_version={
         "version_scheme": newrelic_agent_next_version,
         "local_scheme": "no-local-version",
-        "git_describe_command": "git describe --dirty --tags --long --match *.*.*.*",
+        "git_describe_command": "git describe --dirty --tags --long --match *.*.*",
         "write_to": "newrelic/version.txt",
     },
     setup_requires=["setuptools_scm>=3.2,<7"],
@@ -177,7 +176,6 @@ def with_librt():
 
 def run_setup(with_extensions):
     def _run_setup():
-
         # Create a local copy of kwargs, if there is no c compiler run_setup
         # will need to be re-run, and these arguments can not be present.
 
@@ -246,7 +244,6 @@ else:
         run_setup(with_extensions=True)
 
     except BuildExtFailed:
-
         print(75 * "*")
 
         print(WARNING)

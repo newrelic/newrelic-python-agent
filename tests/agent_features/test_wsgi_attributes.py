@@ -13,14 +13,17 @@
 # limitations under the License.
 
 import webtest
-from testing_support.fixtures import (
-    dt_enabled,
-    override_application_settings,
+from testing_support.fixtures import dt_enabled, override_application_settings
+from testing_support.sample_applications import fully_featured_app
+from testing_support.validators.validate_error_event_attributes import (
     validate_error_event_attributes,
+)
+from testing_support.validators.validate_transaction_error_trace_attributes import (
     validate_transaction_error_trace_attributes,
+)
+from testing_support.validators.validate_transaction_event_attributes import (
     validate_transaction_event_attributes,
 )
-from testing_support.sample_applications import fully_featured_app
 
 WSGI_ATTRIBUTES = [
     "wsgi.input.seconds",
@@ -44,6 +47,4 @@ app = webtest.TestApp(fully_featured_app)
 @override_application_settings({"attributes.include": ["*"]})
 @dt_enabled
 def test_wsgi_attributes():
-    app.post_json(
-        "/", {"foo": "bar"}, extra_environ={"n_errors": "1", "err_message": "oops"}
-    )
+    app.post_json("/", {"foo": "bar"}, extra_environ={"n_errors": "1", "err_message": "oops"})

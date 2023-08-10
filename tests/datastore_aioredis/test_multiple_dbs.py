@@ -12,14 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-import aioredis
-from newrelic.api.background_task import background_task
+from conftest import aioredis
 
-from testing_support.fixtures import validate_transaction_metrics, override_application_settings
-from conftest import AIOREDIS_VERSION
+import pytest
+from conftest import AIOREDIS_VERSION, loop  # noqa
 from testing_support.db_settings import redis_settings
+from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()
 
@@ -102,7 +106,7 @@ if len(DB_SETTINGS) > 1:
 
 
 @pytest.fixture(params=("Redis", "StrictRedis"))
-def client_set(request, loop):
+def client_set(request, loop):  # noqa
     if len(DB_SETTINGS) > 1:
         if AIOREDIS_VERSION >= (2, 0):
             if request.param == "Redis":
@@ -133,7 +137,6 @@ def client_set(request, loop):
                 raise NotImplementedError()
 
 
-
 async def exercise_redis(client_1, client_2):
     await client_1.set("key", "value")
     await client_1.get("key")
@@ -153,7 +156,7 @@ async def exercise_redis(client_1, client_2):
     background_task=True,
 )
 @background_task()
-def test_multiple_datastores_enabled(client_set, loop):
+def test_multiple_datastores_enabled(client_set, loop):  # noqa
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
 
@@ -166,7 +169,7 @@ def test_multiple_datastores_enabled(client_set, loop):
     background_task=True,
 )
 @background_task()
-def test_multiple_datastores_disabled(client_set, loop):
+def test_multiple_datastores_disabled(client_set, loop):  # noqa
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
 
@@ -179,7 +182,7 @@ def test_multiple_datastores_disabled(client_set, loop):
 )
 @override_application_settings(_enable_instance_settings)
 @background_task()
-def test_concurrent_calls(client_set, loop):
+def test_concurrent_calls(client_set, loop):  # noqa
     # Concurrent calls made with original instrumenation taken from synchonous Redis
     # instrumentation had a bug where datastore info on concurrent calls to multiple instances
     # would result in all instances reporting as the host/port of the final call made.

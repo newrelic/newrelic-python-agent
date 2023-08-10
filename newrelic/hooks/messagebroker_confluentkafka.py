@@ -22,6 +22,7 @@ from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 
 _logger = logging.getLogger(__name__)
 
@@ -54,7 +55,9 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
         topic = args[0]
         args = args[1:]
     else:
-        topic = kwargs.get("topic", None)
+        topic = kwargs.pop("topic", None)
+
+    transaction.add_messagebroker_info("Confluent-Kafka", get_package_version("confluent-kafka"))
 
     with MessageTrace(
         library="Kafka",
@@ -161,6 +164,7 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
             name = "Named/%s" % destination_name
             transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
             transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
+            transaction.add_messagebroker_info("Confluent-Kafka", get_package_version("confluent-kafka"))
 
     return record
 

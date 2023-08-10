@@ -13,12 +13,17 @@
 # limitations under the License.
 
 import pytest
-from newrelic.api.background_task import background_task
 
-from testing_support.fixtures import validate_transaction_metrics, override_application_settings
-from conftest import AIOREDIS_VERSION
+# import aioredis
+from conftest import AIOREDIS_VERSION, loop  # noqa # pylint: disable=E0611,W0611
 from testing_support.db_settings import redis_settings
+from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()[0]
 
@@ -78,7 +83,7 @@ async def exercise_redis_single_arg(client):
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_enable(client, loop):
+def test_redis_execute_command_as_one_arg_enable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_single_arg(client))
 
 
@@ -91,7 +96,7 @@ def test_redis_execute_command_as_one_arg_enable(client, loop):
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_disable(client, loop):
+def test_redis_execute_command_as_one_arg_disable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_single_arg(client))
 
 
@@ -103,7 +108,7 @@ def test_redis_execute_command_as_one_arg_disable(client, loop):
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_two_args_enable(client, loop):
+def test_redis_execute_command_as_two_args_enable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_multi_args(client))
 
 
@@ -115,5 +120,5 @@ def test_redis_execute_command_as_two_args_enable(client, loop):
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_two_args_disable(client, loop):
+def test_redis_execute_command_as_two_args_disable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_multi_args(client))

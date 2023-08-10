@@ -340,6 +340,37 @@ def test_throw_yields_a_value():
         pass
 
 
+@validate_transaction_metrics(
+    "test_multiple_throws_yield_a_value",
+    background_task=True,
+    scoped_metrics=[("Function/coro", 1)],
+    rollup_metrics=[("Function/coro", 1)],
+)
+@background_task(name="test_multiple_throws_yield_a_value")
+def test_multiple_throws_yield_a_value():
+    @function_trace(name="coro")
+    def coro():
+        value = None
+        for _ in range(4):
+            try:
+                yield value
+                value = "bar"
+            except MyException:
+                value = "foo"
+
+    c = coro()
+
+    # kickstart the coroutine
+    assert next(c) is None
+    assert c.throw(MyException) == "foo"
+    assert c.throw(MyException) == "foo"
+    assert next(c) == "bar"
+
+    # finish consumption of the coroutine if necessary
+    for _ in c:
+        pass
+
+
 @pytest.mark.parametrize(
     "trace",
     [

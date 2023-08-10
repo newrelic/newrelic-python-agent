@@ -20,6 +20,7 @@ from newrelic.common.coroutine import (
     is_generator_function,
     is_async_generator_function,
 )
+from newrelic.packages import six
 
 
 def evaluate_wrapper(wrapper_string, wrapped, trace):
@@ -61,24 +62,41 @@ def awaitable_generator_wrapper(wrapped, trace):
         return wrapped
 
 
-def generator_wrapper(wrapped, trace):
-    @functools.wraps(wrapped)
-    def wrapper(*args, **kwargs):
-        g = wrapped(*args, **kwargs)
-        value = None
-        with trace:
-            while True:
+if six.PY3:
+    def generator_wrapper(wrapped, trace):
+        WRAPPER = textwrap.dedent("""
+        @functools.wraps(wrapped)
+        def wrapper(*args, **kwargs):
+            with trace:
+                result = yield from wrapped(*args, **kwargs)
+                return result
+        """)
+
+        try:
+            return evaluate_wrapper(WRAPPER, wrapped, trace)
+        except:
+            return wrapped
+else:
+    def generator_wrapper(wrapped, trace):
+        @functools.wraps(wrapped)
+        def wrapper(*args, **kwargs):
+            g = wrapped(*args, **kwargs)
+            with trace:
                 try:
-                    yielded = g.send(value)
+                    yielded = g.send(None)
+                    while True:
+                        try:
+                            sent = yield yielded
+                        except GeneratorExit as e:
+                            g.close()
+                            raise
+                        except BaseException as e:
+                            yielded = g.throw(e)
+                        else:
+                            yielded = g.send(sent)
                 except StopIteration:
-                    break
-
-                try:
-                    value = yield yielded
-                except BaseException as e:
-                    value = yield g.throw(type(e), e)
-
-    return wrapper
+                    return
+        return wrapper
 
 
 def async_generator_wrapper(wrapped, trace):
@@ -86,31 +104,21 @@ def async_generator_wrapper(wrapped, trace):
     @functools.wraps(wrapped)
     async def wrapper(*args, **kwargs):
         g = wrapped(*args, **kwargs)
-        value = None
         with trace:
-            while True:
-                try:
-                    yielded = await g.asend(value)
-                except StopAsyncIteration as e:
-                    # The underlying async generator has finished, return propagates a new StopAsyncIteration
-                    return
-                except StopIteration as e:
-                    # The call to async_generator_asend.send() should raise a StopIteration containing the yielded value
-                    yielded = e.value
-
-                try:
-                    value = yield yielded
-                except BaseException as e:
-                    # An exception was thrown with .athrow(), propagate to the original async generator.
-                    # Return value logic must be identical to .asend()
+            try:
+                yielded = await g.asend(None)
+                while True:
                     try:
-                        value = yield await g.athrow(type(e), e)
-                    except StopAsyncIteration as e:
-                        # The underlying async generator has finished, return propagates a new StopAsyncIteration
-                        return
-                    except StopIteration as e:
-                        # The call to async_generator_athrow.send() should raise a StopIteration containing a yielded value
-                        value = yield e.value
+                        sent = yield yielded
+                    except GeneratorExit as e:
+                        await g.aclose()
+                        raise
+                    except BaseException as e:
+                        yielded = await g.athrow(e)
+                    else:
+                        yielded = await g.asend(sent)
+            except StopAsyncIteration:
+                return
     """)
 
     try:

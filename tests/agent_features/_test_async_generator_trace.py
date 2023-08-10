@@ -324,6 +324,41 @@ def test_athrow_yields_a_value(event_loop):
 
 
 @validate_transaction_metrics(
+    "test_multiple_throws_yield_a_value",
+    background_task=True,
+    scoped_metrics=[("Function/agen", 1)],
+    rollup_metrics=[("Function/agen", 1)],
+)
+def test_multiple_throws_yield_a_value(event_loop):
+    @function_trace(name="agen")
+    async def agen():
+        value = None
+        for _ in range(4):
+            try:
+                yield value
+                value = "bar"
+            except MyException:
+                value = "foo"
+
+
+    @background_task(name="test_multiple_throws_yield_a_value")
+    async def _test():
+        gen = agen()
+
+        # kickstart the coroutine
+        assert await gen.asend(None) is None
+        assert await gen.athrow(MyException) == "foo"
+        assert await gen.athrow(MyException) == "foo"
+        assert await gen.asend(None) == "bar"
+
+        # finish consumption of the coroutine if necessary
+        async for _ in gen:
+            pass
+
+    event_loop.run_until_complete(_test())
+
+
+@validate_transaction_metrics(
     "test_athrow_does_not_yield_a_value",
     background_task=True,
     scoped_metrics=[("Function/agen", 1)],

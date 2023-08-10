@@ -2755,12 +2755,14 @@ def _process_module_builtin_defaults():
         "aioredis.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
     )
 
+    # Redis v4.2+
     _process_module_definition(
-        "redis.asyncio.client", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
+        "redis.asyncio.client", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_client"
     )
 
+    # Redis v4.2+
     _process_module_definition(
-        "redis.asyncio.commands", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
+        "redis.asyncio.commands", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_client"
     )
 
     _process_module_definition(
@@ -2929,6 +2931,10 @@ def _process_module_builtin_defaults():
         "instrument_redis_connection",
     )
     _process_module_definition("redis.client", "newrelic.hooks.datastore_redis", "instrument_redis_client")
+
+    _process_module_definition(
+        "redis.commands.cluster", "newrelic.hooks.datastore_redis", "instrument_redis_commands_cluster"
+    )
 
     _process_module_definition(
         "redis.commands.core", "newrelic.hooks.datastore_redis", "instrument_redis_commands_core"

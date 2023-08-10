@@ -95,12 +95,11 @@ if six.PY3:
     error_middleware.append(error_middleware_async)
 
 
-def test_no_harm_no_transaction(app, graphql_run):
-    def _test():
-        response = graphql_run(app, "{ __schema { types { name } } }")
-        assert not response.errors
+def test_no_harm_no_transaction(target_application):
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
-    _test()
+    response = target_application("{ __schema { types { name } } }")
+    assert not response.get("errors", None)
 
 
 _runtime_error_name = callable_name(RuntimeError)
@@ -149,7 +148,7 @@ def test_basic(target_application):
     def _test():
         response = target_application("{ hello }")
         assert response["hello"] == "Hello!"
-        assert not response.errors
+        assert not response.get("errors", None)
 
     _test()
 
@@ -451,7 +450,7 @@ def test_operation_metrics_and_attrs(target_application):
     @conditional_decorator(background_task(), is_bg)
     def _test():
         response = target_application("query MyQuery { library(index: 0) { branch, book { id, name } } }")
-        assert not response.errors
+        assert not response.get("errors", None)
 
     _test()
 
@@ -595,6 +594,6 @@ def test_ignored_introspection_transactions(target_application, capture_introspe
     @background_task()
     def _test():
         response = target_application("{ __schema { types { name } } }")
-        assert not response.errors
+        assert not response.get("errors", None)
 
     _test()

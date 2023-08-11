@@ -34,6 +34,8 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import get_package_version
+
 
 graphql_version = get_package_version("graphql-core")
 

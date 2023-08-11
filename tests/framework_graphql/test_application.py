@@ -35,6 +35,7 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
+graphql_version = get_package_version("graphql-core")
 
 def conditional_decorator(decorator, condition):
     def _conditional_decorator(func):
@@ -53,10 +54,8 @@ def to_graphql_source(query):
             # Fallback if Source is not implemented
             return query
 
-        from graphql import __version__ as version
-
         # For graphql2, Source objects aren't acceptable input
-        major_version = int(version.split(".")[0])
+        major_version = int(graphql_version.split(".")[0])
         if major_version == 2:
             return query
 
@@ -94,7 +93,7 @@ _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
 
 
 def _graphql_base_rollup_metrics(framework, version, background_task=True):
-    from graphql import __version__ as graphql_version
+    graphql_version = get_package_version("graphql-core")
 
     metrics = [
         ("Python/Framework/GraphQL/%s" % graphql_version, 1),

@@ -17,6 +17,7 @@ from framework_graphql.test_application import *
 from newrelic.common.package_version_utils import get_package_version
 
 ARIADNE_VERSION = get_package_version("ariadne")
+ariadne_version_tuple = tuple(map(int, ARIADNE_VERSION.split(".")))
 
 
 @pytest.fixture(

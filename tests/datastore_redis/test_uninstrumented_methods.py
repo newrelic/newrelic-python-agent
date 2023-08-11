@@ -14,19 +14,20 @@
 
 import pytest
 import redis
-
 from testing_support.db_settings import redis_settings
 
 DB_SETTINGS = redis_settings()[0]
 
-redis_client = redis.Redis(host=DB_SETTINGS['host'], port=DB_SETTINGS['port'], db=0)
-strict_redis_client = redis.StrictRedis(host=DB_SETTINGS['host'], port=DB_SETTINGS['port'], db=0)
+redis_client = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+strict_redis_client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
 
 
 IGNORED_METHODS = {
-    'MODULE_CALLBACKS',
-    'MODULE_VERSION',
-    'NAME',
+    "MODULE_CALLBACKS",
+    "MODULE_VERSION",
+    "NAME",
+    "add_edge",
+    "add_node",
     "append_bucket_size",
     "append_capacity",
     "append_error",
@@ -38,6 +39,11 @@ IGNORED_METHODS = {
     "append_no_scale",
     "append_values_and_weights",
     "append_weights",
+    "batch_indexer",
+    "BatchIndexer",
+    "bulk",
+    "call_procedure",
+    "client_no_touch",
     "client_tracking_off",
     "client_tracking_on",
     "client",
@@ -46,45 +52,40 @@ IGNORED_METHODS = {
     "connection_pool",
     "connection",
     "debug_segfault",
+    "edges",
     "execute_command",
+    "flush",
     "from_url",
     "get_connection_kwargs",
     "get_encoder",
+    "get_label",
+    "get_params_args",
+    "get_property",
+    "get_relation",
+    "get_retry",
     "hscan_iter",
+    "index_name",
+    "labels",
+    "list_keys",
+    "load_document",
     "load_external_module",
     "lock",
+    "name",
+    "nodes",
     "parse_response",
     "pipeline",
+    "property_keys",
     "register_script",
+    "relationship_types",
     "response_callbacks",
     "RESPONSE_CALLBACKS",
     "sentinel",
     "set_file",
     "set_path",
     "set_response_callback",
+    "set_retry",
     "transaction",
-    "BatchIndexer",
-    "batch_indexer",
-    "get_params_args",
-    "index_name",
-    "load_document",
-    "add_edge",
-    "add_node",
-    "bulk",
-    "call_procedure",
-    "edges",
-    "flush",
-    "get_label",
-    "get_property",
-    "get_relation",
-    "labels",
-    "list_keys",
-    "name",
-    "nodes",
-    "property_keys",
-    "relationship_types",
     "version",
-
 }
 
 REDIS_MODULES = {

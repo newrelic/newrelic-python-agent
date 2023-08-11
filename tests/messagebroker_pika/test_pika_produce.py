@@ -15,13 +15,15 @@
 import pika
 import pytest
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import (
-    override_application_settings,
-    validate_transaction_metrics,
-    validate_tt_collector_json,
-)
+from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_messagebroker_headers import (
     validate_messagebroker_headers,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
 )
 
 from newrelic.api.background_task import background_task
@@ -46,7 +48,7 @@ DB_SETTINGS = rabbitmq_settings()[0]
 QUEUE = "test-pika-queue"
 CORRELATION_ID = "testingpika"
 REPLY_TO = "testing"
-HEADERS = {u"MYHEADER": u"pikatest"}
+HEADERS = {"MYHEADER": "pikatest"}
 
 _message_broker_tt_included_params = {
     "routing_key": QUEUE,

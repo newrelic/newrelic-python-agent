@@ -20,7 +20,7 @@ import newrelic.agent
 
 from newrelic.core.agent import agent_instance
 
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_metric_payload import (
         validate_metric_payload)
 

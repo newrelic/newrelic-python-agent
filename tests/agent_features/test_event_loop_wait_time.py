@@ -16,10 +16,14 @@ import asyncio
 import time
 
 import pytest
-from testing_support.fixtures import (
-    override_application_settings,
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_transaction_event_attributes import (
     validate_transaction_event_attributes,
+)
+from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
+)
+from testing_support.validators.validate_transaction_trace_attributes import (
     validate_transaction_trace_attributes,
 )
 
@@ -30,36 +34,33 @@ from newrelic.core.trace_cache import trace_cache
 
 
 @background_task(name="block")
-@asyncio.coroutine
-def block_loop(ready, done, blocking_transaction_active, times=1):
+async def block_loop(ready, done, blocking_transaction_active, times=1):
     for _ in range(times):
-        yield from ready.wait()
+        await ready.wait()
         ready.clear()
         time.sleep(0.1)
         done.set()
 
     if blocking_transaction_active:
-        yield from ready.wait()
+        await ready.wait()
 
 
 @function_trace(name="waiter")
-@asyncio.coroutine
-def waiter(ready, done, times=1):
+async def waiter(ready, done, times=1):
     for _ in range(times):
         ready.set()
-        yield from done.wait()
+        await done.wait()
         done.clear()
 
 
 @background_task(name="wait")
-@asyncio.coroutine
-def wait_for_loop(ready, done, times=1):
+async def wait_for_loop(ready, done, times=1):
     transaction = current_transaction()
     transaction._sampled = True
 
     # Run the waiter on another task so that the sentinel for wait appears
     # multiple times in the trace cache
-    yield from asyncio.ensure_future(waiter(ready, done, times))
+    await asyncio.ensure_future(waiter(ready, done, times))
 
     # Set the ready to terminate the block_loop if it's running
     ready.set()
@@ -74,7 +75,7 @@ def wait_for_loop(ready, done, times=1):
     ),
 )
 def test_record_event_loop_wait(event_loop, blocking_transaction_active, event_loop_visibility_enabled):
-    import asyncio
+    # import asyncio
 
     metric_count = 2 if event_loop_visibility_enabled else None
     execute_attributes = {"intrinsic": ("eventLoopTime",), "agent": (), "user": ()}
@@ -139,7 +140,7 @@ def test_record_event_loop_wait(event_loop, blocking_transaction_active, event_l
 def test_record_event_loop_wait_outside_task():
     # Insert a random trace into the trace cache
     trace = FunctionTrace(name="testing")
-    trace_cache()._cache[0] = trace
+    trace_cache()[0] = trace
 
     @background_task(name="test_record_event_loop_wait_outside_task")
     def _test():
@@ -183,7 +184,7 @@ def test_blocking_task_on_different_loop():
 
 
 def test_record_event_loop_wait_on_different_task(event_loop):
-    import asyncio
+    # import asyncio
 
     async def recorder(ready, wait):
         ready.set()

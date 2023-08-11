@@ -21,22 +21,34 @@ from testing_support.fixtures import (
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
-    validate_transaction_errors,
-    validate_transaction_event_attributes,
-    validate_transaction_metrics,
 )
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_event_attributes import (
+    validate_transaction_event_attributes,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.api.application import application_instance
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import Transaction
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
+
+SANIC_VERSION = tuple(map(int, get_package_version("sanic").split(".")))
+
+sanic_21 = SANIC_VERSION >= (21,)
+sanic_v19_to_v22_12 = SANIC_VERSION >= (19,) and SANIC_VERSION < (22, 12)
 
 BASE_METRICS = [
     ("Function/_target_application:index", 1),
-    ("Function/_target_application:request_middleware", 1 if int(sanic.__version__.split(".", 1)[0]) > 18 else 2),
+    ("Function/_target_application:request_middleware", 1 if sanic_v19_to_v22_12 else 2),
 ]
 FRAMEWORK_METRICS = [
     ("Python/Framework/Sanic/%s" % sanic.__version__, 1),

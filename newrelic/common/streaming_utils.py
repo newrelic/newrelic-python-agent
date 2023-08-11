@@ -17,20 +17,24 @@ import logging
 import threading
 
 try:
-    from newrelic.core.infinite_tracing_pb2 import AttributeValue
+    from newrelic.core.infinite_tracing_pb2 import AttributeValue, SpanBatch
 except:
-    AttributeValue = None
+    AttributeValue, SpanBatch = None, None
+
 
 _logger = logging.getLogger(__name__)
 
 
 class StreamBuffer(object):
-    def __init__(self, maxlen):
+    def __init__(self, maxlen, batching=False):
         self._queue = collections.deque(maxlen=maxlen)
         self._notify = self.condition()
         self._shutdown = False
         self._seen = 0
         self._dropped = 0
+        self._settings = None
+
+        self.batching = batching
 
     @staticmethod
     def condition(*args, **kwargs):
@@ -66,14 +70,23 @@ class StreamBuffer(object):
 
         return seen, dropped
 
+    def __bool__(self):
+        return bool(self._queue)
+
+    def __len__(self):
+        return len(self._queue)
+
     def __iter__(self):
         return StreamBufferIterator(self)
 
 
 class StreamBufferIterator(object):
+    MAX_BATCH_SIZE = 100
+
     def __init__(self, stream_buffer):
         self.stream_buffer = stream_buffer
         self._notify = self.stream_buffer._notify
+        self.batching = self.stream_buffer.batching
         self._shutdown = False
         self._stream = None
 
@@ -100,12 +113,30 @@ class StreamBufferIterator(object):
                         self.shutdown()
                     raise StopIteration
 
-                try:
-                    return self.stream_buffer._queue.popleft()
-                except IndexError:
-                    pass
+                if self.batching:
+                    stream_buffer_len = len(self.stream_buffer)
+                    if stream_buffer_len > self.MAX_BATCH_SIZE:
+                        # Ensure batch size is never more than 100 to prevent issues with serializing large numbers
+                        # of spans causing their age to exceed 10 seconds. That would cause them to be rejected
+                        # by the trace observer.
+                        batch = [self.stream_buffer._queue.popleft() for _ in range(self.MAX_BATCH_SIZE)]
+                        return SpanBatch(spans=batch)
+                    elif stream_buffer_len:
+                        # For small span batches empty stream buffer into list and clear queue.
+                        # This is only safe to do under lock which prevents items being added to the queue.
+                        batch = list(self.stream_buffer._queue)
+                        self.stream_buffer._queue.clear()
+                        return SpanBatch(spans=batch)
 
-                if not self.stream_closed() and not self.stream_buffer._queue:
+                else:
+                    # Send items from stream buffer one at a time.
+                    try:
+                        return self.stream_buffer._queue.popleft()
+                    except IndexError:
+                        pass
+
+                # Wait until items are added to the stream buffer.
+                if not self.stream_closed() and not self.stream_buffer:
                     self._notify.wait()
 
     next = __next__

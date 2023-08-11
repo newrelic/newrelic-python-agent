@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from newrelic.api.asgi_application import ASGIApplicationWrapper
+from newrelic.common.package_version_utils import get_package_version
 
 
 @property
@@ -22,9 +23,10 @@ def application(self):
 
 @application.setter
 def application(self, value):
+    dispatcher_details = ("Daphne", get_package_version("daphne"))
     # Wrap app only once
     if value and not getattr(value, "_nr_wrapped", False):
-        value = ASGIApplicationWrapper(value)
+        value = ASGIApplicationWrapper(value, dispatcher=dispatcher_details)
         value._nr_wrapped = True
     self._nr_application = value
 

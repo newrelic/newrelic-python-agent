@@ -14,11 +14,21 @@
 
 import logging
 
-from testing_support.fixtures import validate_transaction_metrics
+import pytest
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
+from newrelic.api.database_trace import DatabaseTrace
+from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.transaction import end_of_transaction
+from newrelic.api.graphql_trace import GraphQLOperationTrace, GraphQLResolverTrace
+from newrelic.api.memcache_trace import MemcacheTrace
+from newrelic.api.message_trace import MessageTrace
+from newrelic.api.solr_trace import SolrTrace
+from newrelic.api.transaction import current_transaction, end_of_transaction
 
 
 @validate_transaction_metrics(
@@ -34,3 +44,30 @@ def test_trace_after_end_of_transaction(caplog):
 
     error_messages = [record for record in caplog.records if record.levelno >= logging.ERROR]
     assert not error_messages
+
+
+@pytest.mark.parametrize(
+    "trace_type,args",
+    (
+        (DatabaseTrace, ("select * from foo",)),
+        (DatastoreTrace, ("db_product", "db_target", "db_operation")),
+        (ExternalTrace, ("lib", "url")),
+        (FunctionTrace, ("name",)),
+        (GraphQLOperationTrace, ()),
+        (GraphQLResolverTrace, ()),
+        (MemcacheTrace, ("command",)),
+        (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
+        (SolrTrace, ("lib", "command")),
+    ),
+)
+@background_task()
+def test_trace_finalizes_with_transaction_missing_settings(monkeypatch, trace_type, args):
+    txn = current_transaction()
+    try:
+        with trace_type(*args):
+            # Validate no errors are raised when finalizing trace with no settings
+            monkeypatch.setattr(txn, "_settings", None)
+    finally:
+        # Ensure transaction still has settings when it exits to prevent other crashes making errors hard to read
+        monkeypatch.undo()
+        assert txn.settings

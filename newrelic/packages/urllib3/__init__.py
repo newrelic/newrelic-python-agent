@@ -19,6 +19,7 @@ from .util.retry import Retry
 from .util.timeout import Timeout
 from .util.url import get_host
 
+
 __author__ = "Andrey Petrov (andrey.petrov@shazow.net)"
 __license__ = "MIT"
 __version__ = __version__

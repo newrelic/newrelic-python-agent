@@ -15,19 +15,27 @@
 
 import asyncio
 import json
-import pytest
 
-from ._target_schema_sync import target_schema as target_schema_sync, target_asgi_application as target_asgi_application_sync, target_wsgi_application as target_wsgi_application_sync
-from ._target_schema_async import target_schema as target_schema_async, target_asgi_application as target_asgi_application_async
-
+from framework_ariadne._target_schema_async import (
+    target_asgi_application as target_asgi_application_async,
+)
+from framework_ariadne._target_schema_async import target_schema as target_schema_async
+from framework_ariadne._target_schema_sync import (
+    target_asgi_application as target_asgi_application_sync,
+)
+from framework_ariadne._target_schema_sync import target_schema as target_schema_sync
+from framework_ariadne._target_schema_sync import (
+    target_wsgi_application as target_wsgi_application_sync,
+)
+from framework_ariadne.test_application import ariadne_version_tuple
 from graphql import MiddlewareManager
 
 
 
 def check_response(query, success, response):
     if isinstance(query, str) and "error" not in query:
-        assert success and not "errors" in response, response["errors"]
-        assert response["data"]
+        assert success and "errors" not in response, response
+        assert response.get("data", None), response
     else:
         assert "errors" in response, response
 
@@ -36,15 +44,15 @@ def run_sync(schema):
     def _run_sync(query, middleware=None):
         from ariadne import graphql_sync
 
-        if middleware:
-            middleware = MiddlewareManager(*middleware)
-        else:
-            middleware = None
+        if ariadne_version_tuple < (0, 18):
+            if middleware:
+                middleware = MiddlewareManager(*middleware)
 
         success, response = graphql_sync(schema, {"query": query}, middleware=middleware)
         check_response(query, success, response)
 
         return response.get("data", {})
+
     return _run_sync
 
 
@@ -52,16 +60,17 @@ def run_async(schema):
     def _run_async(query, middleware=None):
         from ariadne import graphql
 
-        if middleware:
-            middleware = MiddlewareManager(*middleware)
-        else:
-            middleware = None
+        #Later versions of ariadne directly accept a list of middleware while older versions require the MiddlewareManager
+        if ariadne_version_tuple < (0, 18):
+            if middleware:
+                middleware = MiddlewareManager(*middleware)
 
         loop = asyncio.get_event_loop()
         success, response = loop.run_until_complete(graphql(schema, {"query": query}, middleware=middleware))
         check_response(query, success, response)
 
         return response.get("data", {})
+
     return _run_async
 
 
@@ -91,7 +100,12 @@ def run_wsgi(app):
 
 def run_asgi(app):
     def _run_asgi(query, middleware=None):
-        app.asgi_application.middleware = middleware
+        if ariadne_version_tuple < (0, 16):
+            app.asgi_application.middleware = middleware
+
+        #In ariadne v0.16.0, the middleware attribute was removed from the GraphQL class in favor of the http_handler
+        elif ariadne_version_tuple >= (0, 16):
+            app.asgi_application.http_handler.middleware = middleware
 
         response = app.make_request(
             "POST", "/", body=json.dumps({"query": query}), headers={"Content-Type": "application/json"}
@@ -108,6 +122,7 @@ def run_asgi(app):
             assert "errors" not in body or not body["errors"]
 
         return body.get("data", {})
+
     return _run_asgi
 
 

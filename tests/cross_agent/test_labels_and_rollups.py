@@ -21,7 +21,7 @@ from newrelic.core.config import global_settings
 
 from testing_support.fixtures import override_application_settings
 
-FIXTURE = os.path.join(os.curdir, 'fixtures', 'labels.json')
+FIXTURE = os.path.join(os.path.dirname(__file__), 'fixtures', 'labels.json')
 
 def _load_tests():
     with open(FIXTURE, 'r') as fh:

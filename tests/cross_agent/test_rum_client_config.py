@@ -28,7 +28,7 @@ from newrelic.api.wsgi_application import wsgi_application
 
 
 def _load_tests():
-    fixture = os.path.join(os.curdir, "fixtures", "rum_client_config.json")
+    fixture = os.path.join(os.path.dirname(__file__), "fixtures", "rum_client_config.json")
     with open(fixture, "r") as fh:
         js = fh.read()
     return json.loads(js)

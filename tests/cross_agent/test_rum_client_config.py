@@ -26,10 +26,11 @@ from newrelic.api.transaction import (
 )
 from newrelic.api.wsgi_application import wsgi_application
 
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+FIXTURE = os.path.join(CURRENT_DIR, "fixtures", "rum_client_config.json")
 
 def _load_tests():
-    fixture = os.path.join(os.path.dirname(__file__), "fixtures", "rum_client_config.json")
-    with open(fixture, "r") as fh:
+    with open(FIXTURE, "r") as fh:
         js = fh.read()
     return json.loads(js)
 

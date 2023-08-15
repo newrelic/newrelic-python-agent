@@ -23,6 +23,7 @@ import redis
 import six
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -30,7 +31,7 @@ from testing_support.db_settings import redis_settings
 from testing_support.util import instance_hostname
 
 DB_SETTINGS = redis_settings()[0]
-REDIS_PY_VERSION = redis.VERSION
+REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 
 # Settings
@@ -61,10 +62,7 @@ _base_rollup_metrics = (
         ('Datastore/operation/Redis/set', 1),
 )
 
-_disable_scoped_metrics = list(_base_scoped_metrics)
 _disable_rollup_metrics = list(_base_rollup_metrics)
-
-_enable_scoped_metrics = list(_base_scoped_metrics)
 _enable_rollup_metrics = list(_base_rollup_metrics)
 
 _host = instance_hostname(DB_SETTINGS['host'])
@@ -80,25 +78,26 @@ _disable_rollup_metrics.append(
         (_instance_metric_name, None)
 )
 
-# Operations
 
+# Operations
 def exercise_redis(routing_client):
     routing_client.set('key', 'value')
     routing_client.get('key')
+
 
 def exercise_fanout(cluster):
     with cluster.fanout(hosts='all') as client:
         client.execute_command('CLIENT', 'LIST')
 
-# Tests
 
+# Tests
 @pytest.mark.skipif(six.PY3, reason='Redis Blaster is Python 2 only.')
 @pytest.mark.skipif(REDIS_PY_VERSION < (2, 10, 2),
         reason='Redis Blaster requires redis>=2.10.2')
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
         'test_rb:test_redis_blaster_operation_enable_instance',
-        scoped_metrics=_enable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -121,7 +120,7 @@ def test_redis_blaster_operation_enable_instance():
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
         'test_rb:test_redis_blaster_operation_disable_instance',
-        scoped_metrics=_disable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)
 @background_task()

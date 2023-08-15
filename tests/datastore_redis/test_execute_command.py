@@ -16,6 +16,7 @@ import pytest
 import redis
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -23,7 +24,8 @@ from testing_support.db_settings import redis_settings
 from testing_support.util import instance_hostname
 
 DB_SETTINGS = redis_settings()[0]
-REDIS_PY_VERSION = redis.VERSION
+REDIS_PY_VERSION = get_package_version_tuple("redis")
+
 
 # Settings
 
@@ -36,34 +38,34 @@ _disable_instance_settings = {
 
 # Metrics
 
-_base_scoped_metrics = (
+_base_scoped_metrics = [
         ('Datastore/operation/Redis/client_list', 1),
-)
+]
+if REDIS_PY_VERSION >= (5, 0):
+    _base_scoped_metrics.append(('Datastore/operation/Redis/client_setinfo', 2),)
 
-_base_rollup_metrics = (
-        ('Datastore/all', 1),
-        ('Datastore/allOther', 1),
-        ('Datastore/Redis/all', 1),
-        ('Datastore/Redis/allOther', 1),
+_base_rollup_metrics = [
+        ('Datastore/all', 3),
+        ('Datastore/allOther', 3),
+        ('Datastore/Redis/all', 3),
+        ('Datastore/Redis/allOther', 3),
         ('Datastore/operation/Redis/client_list', 1),
-)
-
-_disable_scoped_metrics = list(_base_scoped_metrics)
-_disable_rollup_metrics = list(_base_rollup_metrics)
-
-_enable_scoped_metrics = list(_base_scoped_metrics)
-_enable_rollup_metrics = list(_base_rollup_metrics)
+]
+if REDIS_PY_VERSION >= (5, 0):
+    _base_rollup_metrics.append(('Datastore/operation/Redis/client_setinfo', 2),)
 
 _host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
 _instance_metric_name = 'Datastore/instance/Redis/%s/%s' % (_host, _port)
 
-_enable_rollup_metrics.append(
-        (_instance_metric_name, 1)
+instance_metric_count = 3 if REDIS_PY_VERSION >= (5, 0) else 1
+
+_enable_rollup_metrics = _base_rollup_metrics.append(
+        (_instance_metric_name, instance_metric_count)
 )
 
-_disable_rollup_metrics.append(
+_disable_rollup_metrics = _base_rollup_metrics.append(
         (_instance_metric_name, None)
 )
 
@@ -76,7 +78,7 @@ def exercise_redis_single_arg(client):
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
         'test_execute_command:test_strict_redis_execute_command_two_args_enable',
-        scoped_metrics=_enable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -88,7 +90,7 @@ def test_strict_redis_execute_command_two_args_enable():
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
         'test_execute_command:test_strict_redis_execute_command_two_args_disabled',
-        scoped_metrics=_disable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -100,7 +102,7 @@ def test_strict_redis_execute_command_two_args_disabled():
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
         'test_execute_command:test_redis_execute_command_two_args_enable',
-        scoped_metrics=_enable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -112,7 +114,7 @@ def test_redis_execute_command_two_args_enable():
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
         'test_execute_command:test_redis_execute_command_two_args_disabled',
-        scoped_metrics=_disable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -126,7 +128,7 @@ def test_redis_execute_command_two_args_disabled():
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
         'test_execute_command:test_strict_redis_execute_command_as_one_arg_enable',
-        scoped_metrics=_enable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -140,7 +142,7 @@ def test_strict_redis_execute_command_as_one_arg_enable():
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
         'test_execute_command:test_strict_redis_execute_command_as_one_arg_disabled',
-        scoped_metrics=_disable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -154,7 +156,7 @@ def test_strict_redis_execute_command_as_one_arg_disabled():
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
         'test_execute_command:test_redis_execute_command_as_one_arg_enable',
-        scoped_metrics=_enable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -168,7 +170,7 @@ def test_redis_execute_command_as_one_arg_enable():
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
         'test_execute_command:test_redis_execute_command_as_one_arg_disabled',
-        scoped_metrics=_disable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)
 @background_task()

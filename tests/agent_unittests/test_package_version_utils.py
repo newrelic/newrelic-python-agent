@@ -24,12 +24,11 @@ from newrelic.common.package_version_utils import (
     get_package_version_tuple,
 )
 
-"""
-importlib.metadata was a provisional addition to the std library in PY38 and PY39
-while pkg_resources was deprecated.
-importlib.metadata is no longer provisional in PY310+.  It added some attributes
-such as distribution_packages and removed pkg_resources.
-"""
+# Notes:
+# importlib.metadata was a provisional addition to the std library in PY38 and PY39
+# while pkg_resources was deprecated.
+# importlib.metadata is no longer provisional in PY310+.  It added some attributes
+# such as distribution_packages and removed pkg_resources.
 
 IS_PY38_PLUS = sys.version_info[:2] >= (3, 8)
 IS_PY310_PLUS = sys.version_info[:2] >= (3,10)

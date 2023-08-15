@@ -46,19 +46,10 @@ def patched_pytest_module(monkeypatch):
             monkeypatch.delattr(pytest, attr)
 
     yield pytest
+    
 
-
-@pytest.fixture(scope="function")
-def remove_importlib():
-    if "importlib" not in sys.modules:
-        return
-
-    importlib = sys.modules["importlib"]
-    del sys.modules["importlib"]
-    yield
-    sys.modules["importlib"] = importlib
-
-
+# This test only works on Python 3.7
+@SKIP_IF_IMPORTLIB_METADATA
 @pytest.mark.parametrize(
     "attr,value,expected_value",
     (
@@ -68,7 +59,7 @@ def remove_importlib():
         ("version_tuple", [3, 1, "0b2"], "3.1.0b2"),
     ),
 )
-def test_get_package_version(attr, value, expected_value, remove_importlib):
+def test_get_package_version(attr, value, expected_value):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
     setattr(pytest, attr, value)
@@ -77,7 +68,9 @@ def test_get_package_version(attr, value, expected_value, remove_importlib):
     delattr(pytest, attr)
 
 
-def test_skips_version_callables(remove_importlib):
+# This test only works on Python 3.7
+@SKIP_IF_IMPORTLIB_METADATA
+def test_skips_version_callables():
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
     setattr(pytest, "version", lambda x: "1.2.3.4")
@@ -91,6 +84,8 @@ def test_skips_version_callables(remove_importlib):
     delattr(pytest, "version_tuple")
 
 
+# This test only works on Python 3.7
+@SKIP_IF_IMPORTLIB_METADATA
 @pytest.mark.parametrize(
     "attr,value,expected_value",
     (
@@ -100,7 +95,7 @@ def test_skips_version_callables(remove_importlib):
         ("version_tuple", [3, 1, "0b2"], (3, 1, "0b2")),
     ),
 )
-def test_get_package_version_tuple(attr, value, expected_value, remove_importlib):
+def test_get_package_version_tuple(attr, value, expected_value):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
     setattr(pytest, attr, value)

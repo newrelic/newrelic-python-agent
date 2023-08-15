@@ -571,3 +571,37 @@ class NrTraceState(dict):
                     data['pr'] = None
 
             return data
+
+
+def capitalize(string):
+    """Capitalize the first letter of a string."""
+    if not string:
+        return string
+    elif len(string) == 1:
+        return string.capitalize()
+    else:
+        return "".join((string[0].upper(), string[1:]))
+
+
+_camel_case_re = re.compile(r"(_+)")
+def camel_case(string, upper=True):
+    """Convert a string of snake case to camel case."""
+    string = ensure_str(string)
+    camel_cased_string = "".join([capitalize(substr) for substr in _camel_case_re.split(string)])
+    if not upper and len(camel_cased_string) > 0:
+        if len(camel_cased_string) > 1:
+            return "".join((string[0].lower(), string[1:]))
+        else:
+            return string[0].lower()
+
+    return camel_cased_string
+
+
+_snake_case_re = re.compile(r"([A-Z])")
+def snake_case(string):
+    """Convert a string of camel case to snake case."""
+    string = ensure_str(string)
+    if "_" in string:
+        return string  # Don't touch strings that are already snake cased
+
+    return _snake_case_re.sub(r"_\1", string).lower()

@@ -121,6 +121,31 @@ def redis_settings():
     return settings
 
 
+def redis_cluster_settings():
+    """Return a list of dict of settings for connecting to redis cluster.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 1
+    base_port = 6379
+
+    settings = [
+        {
+            "host": host,
+            "port": base_port + instance_num,
+        }
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
 def memcached_settings():
     """Return a list of dict of settings for connecting to memcached.
 
@@ -160,6 +185,28 @@ def mongodb_settings():
     instances = 2
     settings = [
         {"host": host, "port": 8080 + instance_num, "collection": "mongodb_collection_" + str(os.getpid())}
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
+def firestore_settings():
+    """Return a list of dict of settings for connecting to firestore.
+
+    This only includes the host and port as the collection name is defined in
+    the firestore conftest file.
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 2
+    settings = [
+        {"host": host, "port": 8080 + instance_num}
         for instance_num in range(instances)
     ]
     return settings

@@ -120,7 +120,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -165,7 +165,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -210,7 +210,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -270,7 +270,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -333,7 +333,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -396,7 +396,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -495,7 +495,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -553,7 +553,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -613,7 +613,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -671,7 +671,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -730,7 +730,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -800,7 +800,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -858,7 +858,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -918,7 +918,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -979,7 +979,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -1036,7 +1036,7 @@ jobs:
 
     runs-on: ubuntu-20.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:sha-08d128d61ce9e7ecc2f49decb8e72f54887e4e4b
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30

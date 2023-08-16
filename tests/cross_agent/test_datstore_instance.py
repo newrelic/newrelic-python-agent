@@ -23,7 +23,8 @@ from newrelic.api.transaction import current_transaction
 from newrelic.core.database_node import DatabaseNode
 from newrelic.core.stats_engine import StatsEngine
 
-FIXTURE = os.path.join(os.curdir,
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+FIXTURE = os.path.join(CURRENT_DIR,
         'fixtures', 'datastores', 'datastore_instances.json')
 
 _parameters_list = ['name', 'system_hostname', 'db_hostname',

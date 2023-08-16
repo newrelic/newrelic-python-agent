@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 import threading
+import time
 
 import pytest
 from conftest import cache_kafka_producer_headers
@@ -29,6 +29,7 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
 
 
@@ -97,7 +98,7 @@ def test_produce_arguments(topic, producer, client_type, serialize, headers):
 
 
 def test_trace_metrics(topic, send_producer_message):
-    from confluent_kafka import __version__ as version
+    version = get_package_version("confluent_kafka")
 
     scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
     unscoped_metrics = scoped_metrics

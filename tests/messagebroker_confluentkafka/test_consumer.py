@@ -34,6 +34,7 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
 
 
@@ -66,7 +67,7 @@ def test_multiple_transactions(get_consumer_record, topic):
 
 
 def test_custom_metrics_on_existing_transaction(get_consumer_record, topic):
-    from confluent_kafka import __version__ as version
+    version = get_package_version("confluent_kafka")
 
     transaction_name = (
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"

@@ -26,11 +26,12 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
 
 
 def test_trace_metrics(topic, send_producer_message):
-    from kafka.version import __version__ as version
+    version = get_package_version("kafka")
 
     scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
     unscoped_metrics = scoped_metrics

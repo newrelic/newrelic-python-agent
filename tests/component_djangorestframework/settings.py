@@ -13,47 +13,48 @@
 # limitations under the License.
 
 import os
-import django
+
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 BASE_DIR = os.path.dirname(__file__)
 DEBUG = True
 
-django_version = django.VERSION
+DJANGO_VERSION = get_package_version_tuple("django")
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = "cookies"
+SECRET_KEY = "cookies"  # nosec
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
+    "django.template.loaders.filesystem.Loader",
+    "django.template.loaders.app_directories.Loader",
 )
 
 middleware = (
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    "django.middleware.common.CommonMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
 )
-if django_version[:2] >= (1, 10):
+if DJANGO_VERSION[:2] >= (1, 10):
     MIDDLEWARE = middleware
 else:
     MIDDLEWARE_CLASSES = middleware
 
-ROOT_URLCONF = 'urls'
+ROOT_URLCONF = "urls"
 
 TEMPLATE_DIRS = ()
 
 # For Django 1.10 compatibility because TEMPLATE_DIRS is deprecated
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': TEMPLATE_DIRS,
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": TEMPLATE_DIRS,
     }
 ]
 
 INSTALLED_APPS = (
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
 )

@@ -19,25 +19,29 @@ import threading
 from urllib.request import HTTPError, urlopen
 
 import pytest
-import uvicorn
 from testing_support.fixtures import (
     override_application_settings,
     raise_background_exceptions,
     wait_for_background_threads,
 )
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.sample_asgi_applications import (
     AppWithCall,
     AppWithCallRaw,
     simple_app_v2_raw,
 )
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 from uvicorn.config import Config
 from uvicorn.main import Server
 
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-UVICORN_VERSION = tuple(int(v) for v in uvicorn.__version__.split(".")[:2])
+UVICORN_VERSION = get_package_version_tuple("uvicorn")
 
 
 def get_open_port():
@@ -112,7 +116,7 @@ def test_uvicorn_200(port, app):
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():
-        return urlopen("http://localhost:%d" % port)
+        return urlopen("http://localhost:%d" % port)  # nosec
 
     assert response().status == 200
 
@@ -125,7 +129,7 @@ def test_uvicorn_500(port, app):
     @wait_for_background_threads()
     def _test():
         try:
-            urlopen("http://localhost:%d/exc" % port)
+            urlopen("http://localhost:%d/exc" % port)  # nosec
         except HTTPError:
             pass
 

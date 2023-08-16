@@ -40,6 +40,8 @@ def patched_pytest_module(monkeypatch):
     yield pytest
 
 
+# This test only works on Python 3.7
+@SKIP_IF_IMPORTLIB_METADATA
 @pytest.mark.parametrize(
     "attr,value,expected_value",
     (
@@ -58,6 +60,8 @@ def test_get_package_version(attr, value, expected_value):
     delattr(pytest, attr)
 
 
+# This test only works on Python 3.7
+@SKIP_IF_IMPORTLIB_METADATA
 def test_skips_version_callables():
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
@@ -72,6 +76,8 @@ def test_skips_version_callables():
     delattr(pytest, "version_tuple")
 
 
+# This test only works on Python 3.7
+@SKIP_IF_IMPORTLIB_METADATA
 @pytest.mark.parametrize(
     "attr,value,expected_value",
     (

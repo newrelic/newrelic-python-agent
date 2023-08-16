@@ -153,47 +153,43 @@ def environment_settings():
             dispatcher.append(("Dispatcher", "gunicorn (eventlet)"))
         elif "uvicorn.workers" in sys.modules:
             dispatcher.append(("Dispatcher", "gunicorn (uvicorn)"))
-            uvicorn = sys.modules.get("uvicorn")
-            if hasattr(uvicorn, "__version__"):
-                dispatcher.append(("Worker Version", uvicorn.__version__))
+            uvicorn_version = get_package_version("uvicorn")
+            if uvicorn_version:
+                dispatcher.append(("Worker Version", uvicorn_version))
         else:
             dispatcher.append(("Dispatcher", "gunicorn"))
 
-        gunicorn = sys.modules["gunicorn"]
-        if hasattr(gunicorn, "__version__"):
-            dispatcher.append(("Dispatcher Version", gunicorn.__version__))
+        gunicorn_version = get_package_version("gunicorn")
+        if gunicorn_version:
+            dispatcher.append(("Dispatcher Version", gunicorn_version))
 
     if not dispatcher and "uvicorn" in sys.modules:
         dispatcher.append(("Dispatcher", "uvicorn"))
-        uvicorn = sys.modules["uvicorn"]
 
-        if hasattr(uvicorn, "__version__"):
-            dispatcher.append(("Dispatcher Version", uvicorn.__version__))
+        uvicorn_version = get_package_version("uvicorn")
+        if uvicorn_version:
+            dispatcher.append(("Dispatcher Version", uvicorn_version))
 
     if not dispatcher and "hypercorn" in sys.modules:
         dispatcher.append(("Dispatcher", "hypercorn"))
-        hypercorn = sys.modules["hypercorn"]
 
-        if hasattr(hypercorn, "__version__"):
-            dispatcher.append(("Dispatcher Version", hypercorn.__version__))
-        else:
-            try:
-                dispatcher.append(("Dispatcher Version", get_package_version("hypercorn")))
-            except Exception:
-                pass
+        hypercorn_version = get_package_version("hypercorn")
+        if hypercorn_version:
+            dispatcher.append(("Dispatcher Version", hypercorn_version))
 
     if not dispatcher and "daphne" in sys.modules:
         dispatcher.append(("Dispatcher", "daphne"))
-        daphne = sys.modules["daphne"]
 
-        if hasattr(daphne, "__version__"):
-            dispatcher.append(("Dispatcher Version", daphne.__version__))
+        daphne_version = get_package_version("daphne")
+        if daphne_version:
+            dispatcher.append(("Dispatcher Version", daphne_version))
 
     if not dispatcher and "tornado" in sys.modules:
         dispatcher.append(("Dispatcher", "tornado"))
-        tornado = sys.modules["tornado"]
-        if hasattr(tornado, "version_info"):
-            dispatcher.append(("Dispatcher Version", str(tornado.version_info)))
+
+        tornado_version = get_package_version("tornado")
+        if tornado_version:
+            dispatcher.append(("Dispatcher Version", tornado_version))
 
     env.extend(dispatcher)
 
@@ -260,8 +256,9 @@ def _get_stdlib_builtin_module_names():
     elif python_version < (3, 10):
         stdlibs = isort_stdlibs.py39.stdlib
     elif python_version >= (3, 10):
-        stdlibs = sys.stdlib_module_names
+        # This is new in Python 3.10+
+        stdlibs = sys.stdlib_module_names  # pylint: disable=E1101
     else:
-        _logger.warn("Unsupported Python version. Unable to determine stdlibs.")
+        _logger.warning("Unsupported Python version. Unable to determine stdlibs.")
         return builtins
     return builtins | stdlibs

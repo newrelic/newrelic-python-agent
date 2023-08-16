@@ -16,6 +16,7 @@ import sys
 
 import pytest
 
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.environment import environment_settings
 
 
@@ -31,7 +32,7 @@ def module(version):
 
 def test_plugin_list():
     # Let's pretend we fired an import hook
-    import newrelic.hooks.adapter_gunicorn  # noqa: F401
+    import newrelic.hooks.adapter_gunicorn  # noqa: F401, pylint: disable=unused-import
 
     environment_info = environment_settings()
 
@@ -44,7 +45,7 @@ def test_plugin_list():
     # Check that bogus plugins don't get reported
     assert "newrelic.hooks.newrelic" not in plugin_list
     # Check that plugin that should get reported has version info.
-    assert "pytest (%s)" % (pytest.__version__) in plugin_list
+    assert "pytest (%s)" % get_package_version("pytest") in plugin_list
 
 
 class NoIteratorDict(object):

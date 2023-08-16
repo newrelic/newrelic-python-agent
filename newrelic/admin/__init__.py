@@ -123,19 +123,28 @@ def load_internal_plugins():
 
 def load_external_plugins():
     try:
-        # since Python 3.8
-        from importlib.metadata import entry_points
-    except ImportError:
-        try:
-            # Deprecated in Python 3.12
+        # Preferred after Python 3.10
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import entry_points
+        # Introduced in Python 3.8
+        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+            from importlib_metadata import entry_points
+        # Removed in Python 3.12
+        else:
             from pkg_resources import iter_entry_points as entry_points
-        except ImportError:
-            return
+    except ImportError:
+        return
 
     group = "newrelic.admin"
 
     for entrypoint in entry_points(group=group):
-        __import__(entrypoint.module_name)
+        try:
+            __import__(entrypoint.module_name)
+        except AttributeError:  # for instances of "no attribute 'module_name'"
+            try:
+                __import__(entrypoint.name)
+            except:
+                return
 
 
 def main():

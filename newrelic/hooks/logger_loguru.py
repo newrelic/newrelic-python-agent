@@ -18,6 +18,7 @@ import sys
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
@@ -28,9 +29,7 @@ is_pypy = hasattr(sys, "pypy_version_info")
 
 
 def loguru_version():
-    from loguru import __version__
-
-    return tuple(int(x) for x in __version__.split("."))
+    return get_package_version_tuple("loguru")
 
 
 def _nr_log_forwarder(message_instance):
@@ -86,7 +85,7 @@ def wrap_log(wrapped, instance, args, kwargs):
             options[1] += 2
 
     except Exception as e:
-        _logger.debug("Exception in loguru handling: %s" % str(e))
+        _logger.debug("Exception in loguru handling: %s", str(e))
         return wrapped(*args, **kwargs)
     else:
         return wrapped(**bound_args)
@@ -111,7 +110,7 @@ def nr_log_patcher(original_patcher=None):
 
     if loguru_version() > (0, 6, 0):
         if original_patcher is not None:
-            patchers = [p for p in original_patcher]  # Consumer iterable into list so we can modify
+            patchers = list(original_patcher)  # Consumer iterable into list so we can modify
             # Wipe out reference so patchers aren't called twice, as the framework will handle calling other patchers.
             original_patcher = None
         else:

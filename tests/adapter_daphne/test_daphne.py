@@ -38,8 +38,12 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 
-DAPHNE_VERSION = tuple(int(v) for v in daphne.__version__.split(".")[:2])
+DAPHNE_VERSION = get_package_version_tuple("daphne")
 skip_asgi_3_unsupported = pytest.mark.skipif(DAPHNE_VERSION < (3, 0), reason="ASGI3 unsupported")
 skip_asgi_2_unsupported = pytest.mark.skipif(DAPHNE_VERSION >= (3, 0), reason="ASGI2 unsupported")
 
@@ -124,7 +128,7 @@ def test_daphne_200(port, app):
     @validate_transaction_metrics(
         callable_name(app),
         custom_metrics=[
-            ("Python/Dispatcher/Daphne/%s" % daphne.__version__, 1),
+            ("Python/Dispatcher/Daphne/%s" % get_package_version("daphne"), 1),
         ],
     )
     @raise_background_exceptions()

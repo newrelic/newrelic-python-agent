@@ -286,7 +286,7 @@ jobs:
         ports:
           - 8080:1433
           - 8081:1433
-        # Set health checks to wait until mysql has started
+        # Set health checks to wait until mssql has started
         options: >-
           --health-cmd "/opt/mssql-tools/bin/sqlcmd -U SA -P $MSSQL_SA_PASSWORD -Q 'SELECT 1'"
           --health-interval 10s

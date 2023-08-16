@@ -45,9 +45,6 @@ main() {
 
     # Set all installed versions as globally accessible
     pyenv global ${PYENV_VERSIONS[@]}
-    
-    # Install dependencies for main python installation
-    pyenv exec pip install --upgrade -r /requirements.txt
 }
 
 main

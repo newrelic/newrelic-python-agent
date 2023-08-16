@@ -70,6 +70,17 @@ def get_package_version_tuple(name):
 def _get_package_version(name):
     module = sys.modules.get(name, None)
     version = None
+
+    # importlib was introduced into the standard library starting in Python3.8.
+    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
+        try:
+            version = sys.modules["importlib"].metadata.version(name)  # pylint: disable=E1101
+            if version not in NULL_VERSIONS:
+                return version
+        except Exception:
+            pass
+
+    # __version__ has been deprecated in Python 3.12 and will be removed in future versions
     for attr in VERSION_ATTRS:
         try:
             version = getattr(module, attr, None)
@@ -84,16 +95,7 @@ def _get_package_version(name):
         except Exception:
             pass
 
-    # importlib was introduced into the standard library starting in Python3.8.
-    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
-        try:
-            version = sys.modules["importlib"].metadata.version(name)  # pylint: disable=E1101
-            if version not in NULL_VERSIONS:
-                return version
-        except Exception:
-            pass
-
-    # pkg_resources has been deprecated in Python 3.12
+    # pkg_resources has been removed in Python 3.12
     if "pkg_resources" in sys.modules:
         try:
             version = sys.modules["pkg_resources"].get_distribution(name).version

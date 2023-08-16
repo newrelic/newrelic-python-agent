@@ -13,12 +13,11 @@
 # limitations under the License.
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 
 
 def framework_details():
-    import graphene
-
-    return ("Graphene", getattr(graphene, "__version__", None))
+    return ("Graphene", get_package_version("graphene"))
 
 
 def wrap_schema_init(wrapped, instance, args, kwargs):

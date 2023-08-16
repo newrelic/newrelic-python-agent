@@ -21,6 +21,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.graphql_utils import graphql_statement
 from newrelic.hooks.framework_graphql import (
     framework_version as graphql_framework_version,
@@ -29,9 +30,7 @@ from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
 
 
 def framework_details():
-    import ariadne
-
-    return ("Ariadne", getattr(ariadne, "__version__", None))
+    return ("Ariadne", get_package_version("ariadne"))
 
 
 def bind_graphql(schema, data, *args, **kwargs):

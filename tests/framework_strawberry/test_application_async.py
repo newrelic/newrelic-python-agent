@@ -16,10 +16,13 @@ import asyncio
 
 import pytest
 from testing_support.fixtures import dt_enabled
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version
 
 
 @pytest.fixture(scope="session")
@@ -45,13 +48,13 @@ loop = asyncio.new_event_loop()
 
 
 def test_basic(app, graphql_run_async):
-    from graphql import __version__ as version
+    graphql_version = get_package_version("graphql")
 
     from newrelic.hooks.framework_strawberry import framework_details
 
     FRAMEWORK_METRICS = [
         ("Python/Framework/Strawberry/%s" % framework_details()[1], 1),
-        ("Python/Framework/GraphQL/%s" % version, 1),
+        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
     ]
 
     @validate_transaction_metrics(
@@ -73,13 +76,13 @@ def test_basic(app, graphql_run_async):
 
 @dt_enabled
 def test_query_and_mutation_async(app, graphql_run_async):
-    from graphql import __version__ as version
+    graphql_version = get_package_version("graphql")
 
     from newrelic.hooks.framework_strawberry import framework_details
 
     FRAMEWORK_METRICS = [
         ("Python/Framework/Strawberry/%s" % framework_details()[1], 1),
-        ("Python/Framework/GraphQL/%s" % version, 1),
+        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
     ]
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/Strawberry/storage", 1),

@@ -22,6 +22,10 @@ from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 from newrelic.core.graphql_utils import graphql_statement
 
 _logger = logging.getLogger(__name__)
@@ -29,26 +33,17 @@ _logger = logging.getLogger(__name__)
 
 GRAPHQL_IGNORED_FIELDS = frozenset(("id", "__typename"))
 GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type"))
-VERSION = None
+# VERSION = None
 
 
 def framework_version():
     """Framework version string."""
-    global VERSION
-    if VERSION is None:
-        from graphql import __version__ as version
-
-        VERSION = version
-
-    return VERSION
+    return get_package_version("graphql")
 
 
 def graphql_version():
     """Minor version tuple."""
-    version = framework_version()
-
-    # Take first two values in version to avoid ValueErrors with pre-releases (ex: 3.2.0a0)
-    return tuple(int(v) for v in version.split(".")[:2])
+    return get_package_version_tuple("graphql")
 
 
 def ignore_graphql_duplicate_exception(exc, val, tb):
@@ -240,8 +235,7 @@ def traverse_deepest_unique_path(fields, fragments):
             field = fragment_selection_set[0]
         if field.selection_set is None:
             break
-        else:
-            fields = field.selection_set.selections
+        fields = field.selection_set.selections
 
     return deepest_path
 

@@ -12,25 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib
-
 import pytest
 from testing_support.fixtures import dt_enabled
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 
 
 @pytest.fixture(scope="session")
 def is_graphql_2():
-    from graphql import __version__ as version
-
-    major_version = int(version.split(".")[0])
+    major_version = get_package_version_tuple("graphql")[0]
     return major_version == 2
 
 
@@ -39,7 +43,7 @@ def target_application(request):
     import _test_graphql
 
     framework = request.param
-    version = importlib.import_module(framework.lower()).__version__
+    version = get_package_version(framework.lower())
 
     return framework, version, _test_graphql.target_application[framework]
 
@@ -69,8 +73,8 @@ _view_metrics = {
 
 def test_basic(target_application):
     framework, version, target_application = target_application
-    from graphql import __version__ as graphql_version
-    from graphql_server import __version__ as graphql_server_version
+    graphql_version = get_package_version("graphql")
+    graphql_server_version = get_package_version("graphql_server")
 
     FRAMEWORK_METRICS = [
         ("Python/Framework/GraphQL/%s" % graphql_version, 1),
@@ -92,8 +96,8 @@ def test_basic(target_application):
 @dt_enabled
 def test_query_and_mutation(target_application):
     framework, version, target_application = target_application
-    from graphql import __version__ as graphql_version
-    from graphql_server import __version__ as graphql_server_version
+    graphql_version = get_package_version("graphql")
+    graphql_server_version = get_package_version("graphql_server")
 
     FRAMEWORK_METRICS = [
         ("Python/Framework/GraphQL/%s" % graphql_version, 1),

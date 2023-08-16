@@ -17,8 +17,12 @@ import json
 import pytest
 from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import dt_enabled
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.common.package_version_utils import get_package_version
 
 
 @pytest.fixture(scope="session")
@@ -38,11 +42,12 @@ def graphql_asgi_run():
 
 @dt_enabled
 def test_query_and_mutation_asgi(graphql_asgi_run):
-    from graphql import __version__ as version
+    graphql_version = get_package_version("graphql")
+    ariadne_version = get_package_version("ariadne")
 
     FRAMEWORK_METRICS = [
-        ("Python/Framework/Ariadne/None", 1),
-        ("Python/Framework/GraphQL/%s" % version, 1),
+        ("Python/Framework/Ariadne/%s" % ariadne_version, 1),
+        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
     ]
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/Ariadne/storage_add", 1),

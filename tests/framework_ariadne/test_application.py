@@ -27,14 +27,15 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-from newrelic.common.package_version_utils import get_package_version_tuple
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 
 
 @pytest.fixture(scope="session")
 def is_graphql_2():
-    from graphql import __version__ as version
-
-    major_version = int(version.split(".")[0])
+    major_version = get_package_version_tuple("graphql")[0]
     return major_version == 2
 
 
@@ -58,11 +59,8 @@ def to_graphql_source(query):
             # Fallback if Source is not implemented
             return query
 
-        from graphql import __version__ as version
-
         # For graphql2, Source objects aren't acceptable input
-        major_version = int(version.split(".")[0])
-        if major_version == 2:
+        if get_package_version_tuple("graphql")[0] == 2:
             return query
 
         return Source(query)
@@ -91,11 +89,12 @@ _graphql_base_rollup_metrics = [
 
 
 def test_basic(app, graphql_run):
-    from graphql import __version__ as version
+    graphql_version = get_package_version("graphql")
+    ariadne_version = get_package_version("ariadne")
 
     FRAMEWORK_METRICS = [
-        ("Python/Framework/Ariadne/None", 1),
-        ("Python/Framework/GraphQL/%s" % version, 1),
+        ("Python/Framework/Ariadne/%s" % ariadne_version, 1),
+        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
     ]
 
     @validate_transaction_metrics(
@@ -114,11 +113,12 @@ def test_basic(app, graphql_run):
 
 @dt_enabled
 def test_query_and_mutation(app, graphql_run):
-    from graphql import __version__ as version
+    graphql_version = get_package_version("graphql")
+    ariadne_version = get_package_version("ariadne")
 
     FRAMEWORK_METRICS = [
-        ("Python/Framework/Ariadne/None", 1),
-        ("Python/Framework/GraphQL/%s" % version, 1),
+        ("Python/Framework/Ariadne/%s" % ariadne_version, 1),
+        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
     ]
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/Ariadne/storage", 1),

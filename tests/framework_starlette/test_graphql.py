@@ -16,15 +16,19 @@ import json
 
 import pytest
 from testing_support.fixtures import dt_enabled
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 
 
 def get_starlette_version():
-    import starlette
-
-    version = getattr(starlette, "__version__", "0.0.0").split(".")
-    return tuple(int(x) for x in version)
+    return get_package_version_tuple("starlette")
 
 
 @pytest.fixture(scope="session")
@@ -38,13 +42,13 @@ def target_application():
 @pytest.mark.parametrize("endpoint", ("/async", "/sync"))
 @pytest.mark.skipif(get_starlette_version() >= (0, 17), reason="Starlette GraphQL support dropped in v0.17.0")
 def test_graphql_metrics_and_attrs(target_application, endpoint):
-    from graphql import __version__ as version
-
     from newrelic.hooks.framework_graphene import framework_details
+
+    graphql_version = get_package_version("graphql")
 
     FRAMEWORK_METRICS = [
         ("Python/Framework/Graphene/%s" % framework_details()[1], 1),
-        ("Python/Framework/GraphQL/%s" % version, 1),
+        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
     ]
     _test_scoped_metrics = [
         ("GraphQL/resolve/Graphene/hello", 1),

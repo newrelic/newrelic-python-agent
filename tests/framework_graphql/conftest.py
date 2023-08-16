@@ -14,9 +14,12 @@
 
 import pytest
 import six
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
-
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -37,6 +40,12 @@ def app():
     from _target_application import _target_application
 
     return _target_application
+
+
+@pytest.fixture(scope="session")
+def is_graphql_2():
+    major_version = get_package_version_tuple("graphql")[0]
+    return major_version == 2
 
 
 if six.PY2:

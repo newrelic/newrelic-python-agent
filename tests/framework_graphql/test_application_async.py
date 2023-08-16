@@ -15,20 +15,24 @@
 import asyncio
 
 import pytest
-from test_application import is_graphql_2
 from testing_support.fixtures import dt_enabled
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 
 
 @pytest.fixture(scope="session")
 def graphql_run_async():
-    from graphql import __version__ as version
     from graphql import graphql
 
-    major_version = int(version.split(".")[0])
+    major_version = get_package_version_tuple("graphql")[0]
     if major_version == 2:
 
         def graphql_run(*args, **kwargs):
@@ -41,7 +45,7 @@ def graphql_run_async():
 
 @dt_enabled
 def test_query_and_mutation_async(app, graphql_run_async, is_graphql_2):
-    from graphql import __version__ as version
+    version = get_package_version("graphql")
 
     FRAMEWORK_METRICS = [
         ("Python/Framework/GraphQL/%s" % version, 1),

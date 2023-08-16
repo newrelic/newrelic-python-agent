@@ -28,20 +28,27 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 # Settings
 
 DB_SETTINGS = redis_settings()[0]
-REDIS_VERSION = get_package_version_tuple("redis")
+REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 # Metrics
 
-_enable_scoped_metrics = [("Datastore/operation/Redis/publish", 3)]
+_base_scoped_metrics = [("Datastore/operation/Redis/publish", 3)]
 
-_enable_rollup_metrics = [
-    ("Datastore/all", 3),
-    ("Datastore/allOther", 3),
-    ("Datastore/Redis/all", 3),
-    ("Datastore/Redis/allOther", 3),
+if REDIS_PY_VERSION >= (5, 0):
+    _base_scoped_metrics.append(('Datastore/operation/Redis/client_setinfo', 2),)
+
+datastore_all_metric_count = 5 if REDIS_PY_VERSION >= (5, 0) else 3
+
+_base_rollup_metrics = [
+    ("Datastore/all", datastore_all_metric_count),
+    ("Datastore/allOther", datastore_all_metric_count),
+    ("Datastore/Redis/all", datastore_all_metric_count),
+    ("Datastore/Redis/allOther", datastore_all_metric_count),
     ("Datastore/operation/Redis/publish", 3),
-    ("Datastore/instance/Redis/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 3),
+    ("Datastore/instance/Redis/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), datastore_all_metric_count),
 ]
+if REDIS_PY_VERSION >= (5, 0):
+    _base_rollup_metrics.append(('Datastore/operation/Redis/client_setinfo', 2),)
 
 # Tests
 
@@ -53,7 +60,7 @@ def client(loop):  # noqa
     return loop.run_until_complete(redis.asyncio.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0))
 
 
-@pytest.mark.skipif(REDIS_VERSION < (4, 2), reason="This functionality exists in Redis 4.2+")
+@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="This functionality exists in Redis 4.2+")
 @validate_transaction_metrics("test_asyncio:test_async_pipeline", background_task=True)
 @background_task()
 def test_async_pipeline(client, loop):  # noqa
@@ -65,11 +72,11 @@ def test_async_pipeline(client, loop):  # noqa
     loop.run_until_complete(_test_pipeline(client))
 
 
-@pytest.mark.skipif(REDIS_VERSION < (4, 2), reason="This functionality exists in Redis 4.2+")
+@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="This functionality exists in Redis 4.2+")
 @validate_transaction_metrics(
     "test_asyncio:test_async_pubsub",
-    scoped_metrics=_enable_scoped_metrics,
-    rollup_metrics=_enable_rollup_metrics,
+    scoped_metrics=_base_scoped_metrics,
+    rollup_metrics=_base_rollup_metrics,
     background_task=True,
 )
 @background_task()

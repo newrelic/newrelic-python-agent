@@ -27,12 +27,13 @@ from testing_support.validators.validate_tt_collector_json import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = postgresql_settings()[0]
 
 
 PG_PREFIX = "Datastore/operation/Postgres/"
-ASYNCPG_VERSION = tuple(int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2])
+ASYNCPG_VERSION = get_package_version_tuple("asyncpg")
 
 if ASYNCPG_VERSION < (0, 11):
     CONNECT_METRICS = ()

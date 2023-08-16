@@ -12,20 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
-
 import asyncpg
 import pytest
 from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_MULTIPLE_SETTINGS = postgresql_settings()
 
-ASYNCPG_VERSION = tuple(int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2])
+ASYNCPG_VERSION = get_package_version_tuple("asyncpg")
 
 if ASYNCPG_VERSION < (0, 11):
     CONNECT_METRICS = []

@@ -21,6 +21,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import web_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 
 
 def _bind_add(uri, methods, handler, *args, **kwargs):
@@ -46,9 +47,7 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
             pass
 
     transaction.set_transaction_name(name, priority=3)
-    import sanic
-
-    transaction.add_framework_info(name="Sanic", version=sanic.__version__)
+    transaction.add_framework_info(name="Sanic", version=get_package_version("sanic"))
 
     with FunctionTrace(name=name, source=view):
         return wrapped(*args, **kwargs)

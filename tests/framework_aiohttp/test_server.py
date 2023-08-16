@@ -14,7 +14,6 @@
 
 import asyncio
 
-import aiohttp
 import pytest
 from testing_support.fixtures import (
     count_transactions,
@@ -36,9 +35,13 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 from newrelic.core.config import global_settings
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
+version_info = get_package_version_tuple("aiohttp")
 
 
 BASE_REQUIRED_ATTRS = ["request.headers.contentType", "request.method"]
@@ -81,9 +84,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled, ai
         if error:
             errors.append(error)
 
-        @validate_transaction_errors(
-            errors=errors, expected_errors=["aiohttp.web_exceptions:HTTPForbidden"]
-        )
+        @validate_transaction_errors(errors=errors, expected_errors=["aiohttp.web_exceptions:HTTPForbidden"])
         @validate_transaction_metrics(
             metric_name,
             scoped_metrics=[
@@ -91,7 +92,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled, ai
             ],
             rollup_metrics=[
                 ("Function/%s" % metric_name, 1),
-                ("Python/Framework/aiohttp/%s" % aiohttp.__version__, 1),
+                ("Python/Framework/aiohttp/%s" % get_package_version("aiohttp"), 1),
             ],
         )
         @validate_transaction_event_attributes(
@@ -188,7 +189,7 @@ def test_simultaneous_requests(method, uri, metric_name, nr_enabled, aiohttp_app
             ],
             rollup_metrics=[
                 ("Function/%s" % metric_name, 1),
-                ("Python/Framework/aiohttp/%s" % aiohttp.__version__, 1),
+                ("Python/Framework/aiohttp/%s" % get_package_version("aiohttp"), 1),
             ],
         )
         @validate_transaction_event_attributes(

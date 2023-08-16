@@ -17,13 +17,16 @@ import asyncio
 import aiohttp
 import pytest
 from testing_support.fixtures import cat_enabled
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 from yarl import URL
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
+version_info = get_package_version_tuple("aiohttp")
 
 
 async def fetch(method, url):

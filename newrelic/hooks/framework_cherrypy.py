@@ -48,12 +48,11 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_function_wrapper,
 )
+from newrelic.common.package_version_utils import get_package_version
 
 
 def framework_details():
-    import cherrypy
-
-    return ("CherryPy", getattr(cherrypy, "__version__", None))
+    return ("CherryPy", get_package_version("cherrypy"))
 
 
 def status_code(exc, value, tb):
@@ -86,6 +85,7 @@ def handler_wrapper(wrapped, instance, args, kwargs):
     # application.
 
     return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
+
 
 class ResourceProxy(ObjectProxy):
     def __getattr__(self, name):

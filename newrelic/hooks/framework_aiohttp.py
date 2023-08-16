@@ -26,15 +26,17 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_function_wrapper,
 )
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 from newrelic.core.config import is_expected_error, should_ignore_error
 
 SUPPORTED_METHODS = ("connect", "head", "get", "delete", "options", "patch", "post", "put", "trace")
 
 
 def aiohttp_version_info():
-    import aiohttp
-
-    return tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
+    return get_package_version_tuple("aiohttp")
 
 
 def headers_preserve_casing():
@@ -354,9 +356,7 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
         # Patch in is_expected to all notice_error calls
         transaction._expect_errors = is_expected(transaction)
 
-        import aiohttp
-
-        transaction.add_framework_info(name="aiohttp", version=aiohttp.__version__)
+        transaction.add_framework_info(name="aiohttp", version=get_package_version("aiohttp"))
 
         import aiohttp.web as _web
 

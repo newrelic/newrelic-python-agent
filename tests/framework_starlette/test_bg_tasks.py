@@ -15,7 +15,6 @@
 import sys
 
 import pytest
-from starlette import __version__
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
@@ -23,10 +22,14 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-starlette_version = tuple(int(x) for x in __version__.split("."))
+from newrelic.common.package_version_utils import get_package_version_tuple
+
+STARLETTE_VERSION = get_package_version_tuple("starlette")
 
 try:
-    from starlette.middleware import Middleware  # noqa: F401
+    from starlette.middleware import (  # noqa: F401, pylint: disable=unused-import
+        Middleware,
+    )
 
     no_middleware = False
 except ImportError:
@@ -92,15 +95,15 @@ def test_basehttp_style_middleware(target_application, route):
     # The bug was fixed again in version 0.29.0
     BUG_COMPLETELY_FIXED = any(
         (
-            (0, 21, 0) <= starlette_version < (0, 23, 1),
-            (0, 20, 1) <= starlette_version < (0, 23, 1) and sys.version_info[:2] > (3, 7),
-            starlette_version >= (0, 29, 0),
+            (0, 21, 0) <= STARLETTE_VERSION < (0, 23, 1),
+            (0, 20, 1) <= STARLETTE_VERSION < (0, 23, 1) and sys.version_info[:2] > (3, 7),
+            STARLETTE_VERSION >= (0, 29, 0),
         )
     )
     BUG_PARTIALLY_FIXED = any(
         (
-            (0, 20, 1) <= starlette_version < (0, 21, 0),
-            (0, 23, 1) <= starlette_version < (0, 29, 0),
+            (0, 20, 1) <= STARLETTE_VERSION < (0, 21, 0),
+            (0, 23, 1) <= STARLETTE_VERSION < (0, 29, 0),
         )
     )
     if BUG_COMPLETELY_FIXED:

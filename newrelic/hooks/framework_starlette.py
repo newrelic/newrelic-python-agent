@@ -24,13 +24,12 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_function_wrapper,
 )
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.context import ContextOf, context_wrapper
 
 
 def framework_details():
-    import starlette
-
-    return ("Starlette", getattr(starlette, "__version__", None))
+    return ("Starlette", get_package_version("starlette"))
 
 
 def bind_request(request, *args, **kwargs):

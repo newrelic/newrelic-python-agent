@@ -23,8 +23,9 @@ from yarl import URL
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
+version_info = get_package_version_tuple("aiohttp")
 skipif_aiohttp3 = pytest.mark.skipif(
     version_info >= (3, 0), reason="This version of aiohttp does not support yield from syntax"
 )

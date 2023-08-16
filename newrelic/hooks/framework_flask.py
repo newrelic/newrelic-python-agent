@@ -28,12 +28,11 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 
 
 def framework_details():
-    import flask
-
-    return ("Flask", getattr(flask, "__version__", None))
+    return ("Flask", get_package_version("flask"))
 
 
 def status_code(exc, value, tb):

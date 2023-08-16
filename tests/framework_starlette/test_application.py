@@ -15,15 +15,25 @@
 import sys
 
 import pytest
-import starlette
 from testing_support.fixtures import override_ignore_status_codes
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.common.object_names import callable_name
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 
-starlette_version = tuple(int(x) for x in starlette.__version__.split("."))
+STARLETTE_VERSION = get_package_version_tuple("starlette")
+
 
 @pytest.fixture(scope="session")
 def target_application():
@@ -32,9 +42,9 @@ def target_application():
     return _test_application.target_application
 
 
-FRAMEWORK_METRIC = ("Python/Framework/Starlette/%s" % starlette.__version__, 1)
+FRAMEWORK_METRIC = ("Python/Framework/Starlette/%s" % get_package_version("starlette"), 1)
 
-if starlette_version >= (0, 20, 1):
+if STARLETTE_VERSION >= (0, 20, 1):
     DEFAULT_MIDDLEWARE_METRICS = [
         ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
         ("Function/starlette.middleware.exceptions:ExceptionMiddleware.__call__", 1),
@@ -78,10 +88,11 @@ def test_application_non_async(target_application, app_name):
     response = app.get("/non_async")
     assert response.status == 200
 
+
 # Starting in Starlette v0.20.1, the ExceptionMiddleware class
 # has been moved to the starlette.middleware.exceptions from
 # starlette.exceptions
-version_tweak_string = ".middleware" if starlette_version >= (0, 20, 1) else ""
+version_tweak_string = ".middleware" if STARLETTE_VERSION >= (0, 20, 1) else ""
 
 DEFAULT_MIDDLEWARE_METRICS = [
     ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
@@ -96,8 +107,10 @@ middleware_test = (
     ),
 )
 
+
 @pytest.mark.parametrize(
-    "app_name, transaction_name", middleware_test,
+    "app_name, transaction_name",
+    middleware_test,
 )
 def test_application_nonexistent_route(target_application, app_name, transaction_name):
     @validate_transaction_metrics(
@@ -117,13 +130,9 @@ def test_application_nonexistent_route(target_application, app_name, transaction
 def test_exception_in_middleware(target_application, app_name):
     app = target_application[app_name]
 
-    from starlette import __version__ as version
-
-    starlette_version = tuple(int(v) for v in version.split("."))
-
     # Starlette >=0.15 and <0.17 raises an exception group instead of reraising the ValueError
     # This only occurs on Python versions >=3.8
-    if sys.version_info[0:2] > (3, 7) and starlette_version >= (0, 15, 0) and starlette_version < (0, 17, 0):
+    if sys.version_info[0:2] > (3, 7) and STARLETTE_VERSION >= (0, 15, 0) and STARLETTE_VERSION < (0, 17, 0):
         from anyio._backends._asyncio import ExceptionGroup
 
         exc_type = ExceptionGroup
@@ -272,9 +281,8 @@ middleware_test_exception = (
     ),
 )
 
-@pytest.mark.parametrize(
-    "app_name,scoped_metrics", middleware_test_exception
-)
+
+@pytest.mark.parametrize("app_name,scoped_metrics", middleware_test_exception)
 def test_starlette_http_exception(target_application, app_name, scoped_metrics):
     @validate_transaction_errors(errors=["starlette.exceptions:HTTPException"])
     @validate_transaction_metrics(

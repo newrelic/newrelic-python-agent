@@ -90,7 +90,6 @@ def test_execute_via_cursor():
         host=DB_SETTINGS["host"],
         port=DB_SETTINGS["port"],
     ) as connection:
-
         cursor = connection.cursor()
 
         psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE)
@@ -160,7 +159,6 @@ def test_rollback_on_exception():
             host=DB_SETTINGS["host"],
             port=DB_SETTINGS["port"],
         ):
-
             raise RuntimeError("error")
     except RuntimeError:
         pass
@@ -200,7 +198,6 @@ _test_async_mode_rollup_metrics = [
 @validate_transaction_errors(errors=[])
 @background_task()
 def test_async_mode():
-
     wait = psycopg2cffi.extras.wait_select
 
     kwargs = {}

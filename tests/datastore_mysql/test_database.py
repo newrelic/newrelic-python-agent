@@ -80,7 +80,6 @@ _test_execute_via_cursor_rollup_metrics = [
 @validate_database_trace_inputs(sql_parameters_type=dict)
 @background_task()
 def test_execute_via_cursor(table_name):
-
     connection = mysql.connector.connect(
         db=DB_SETTINGS["name"],
         user=DB_SETTINGS["user"],
@@ -172,7 +171,6 @@ _test_connect_using_alias_rollup_metrics = [
 @validate_database_trace_inputs(sql_parameters_type=dict)
 @background_task()
 def test_connect_using_alias(table_name):
-
     connection = mysql.connector.connect(
         db=DB_SETTINGS["name"],
         user=DB_SETTINGS["user"],

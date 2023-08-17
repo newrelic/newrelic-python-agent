@@ -101,7 +101,6 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
 
 
 async def _exercise_db():
-
     postgresql1 = DB_MULTIPLE_SETTINGS[0]
     postgresql2 = DB_MULTIPLE_SETTINGS[1]
 

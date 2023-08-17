@@ -38,10 +38,11 @@ def exercise_client(client, sample_data):
         assert len([_ for _ in client.collections()])
         doc = [_ for _ in client.get_all([sample_data])][0]
         assert doc.to_dict()["x"] == 1
+
     return _exercise_client
 
 
-def test_firestore_client(exercise_client):
+def test_firestore_client(exercise_client, instance_info):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/collections", 1),
         ("Datastore/operation/Firestore/get_all", 1),
@@ -50,6 +51,7 @@ def test_firestore_client(exercise_client):
     _test_rollup_metrics = [
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
     ]
 
     @validate_database_duration()

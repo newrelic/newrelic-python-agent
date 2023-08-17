@@ -19,7 +19,8 @@ import pytest
 
 import newrelic.common.utilization as u
 
-DOCKER_FIXTURE = os.path.join(os.curdir, 'fixtures', 'docker_container_id')
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+DOCKER_FIXTURE = os.path.join(CURRENT_DIR, 'fixtures', 'docker_container_id')
 
 
 def _load_docker_test_attributes():

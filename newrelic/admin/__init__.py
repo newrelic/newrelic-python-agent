@@ -138,13 +138,7 @@ def load_external_plugins():
     group = "newrelic.admin"
 
     for entrypoint in entry_points(group=group):
-        try:
-            __import__(entrypoint.module_name)
-        except AttributeError:  # for instances of "no attribute 'module_name'"
-            try:
-                __import__(entrypoint.name)
-            except:
-                return
+        __import__(entrypoint.module_name)
 
 
 def main():

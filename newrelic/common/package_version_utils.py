@@ -71,10 +71,18 @@ def _get_package_version(name):
     module = sys.modules.get(name, None)
     version = None
 
-    # importlib was introduced into the standard library starting in Python 3.8
+    # importlib was introduced into the standard library starting in Python3.8.
     if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
         try:
-            version = sys.modules["importlib"].metadata.version(name)  # pylint: disable=E1101
+            # In Python3.10+ packages_distribution can be checked for as well
+            if hasattr(sys.modules["importlib"].metadata, "packages_distributions"):  # pylint: disable=E1101
+                distributions = sys.modules["importlib"].metadata.packages_distributions()  # pylint: disable=E1101
+                distribution_name = distributions.get(name, name)
+                distribution_name = distribution_name[0] if isinstance(distribution_name, list) else distribution_name
+            else:
+                distribution_name = name
+
+            version = sys.modules["importlib"].metadata.version(distribution_name)  # pylint: disable=E1101
             if version not in NULL_VERSIONS:
                 return version
         except Exception:

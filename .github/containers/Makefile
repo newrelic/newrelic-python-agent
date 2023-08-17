@@ -19,16 +19,16 @@ REPO_ROOT:=$(realpath $(MAKEFILE_DIR)../../)
 .PHONY: default
 default: test
 
+# Perform a shortened build for testing
 .PHONY: build
 build:
-	@# Perform a shortened build for testing
 	@docker build $(MAKEFILE_DIR) \
 		-t ghcr.io/newrelic/newrelic-python-agent-ci:local \
 		--build-arg='PYTHON_VERSIONS=3.10 2.7'
 
+# Ensure python versions are usable
 .PHONY: test
 test: build
-	@# Ensure python versions are usable
 	@docker run --rm ghcr.io/newrelic/python-agent-ci:local /bin/bash -c '\
 		python3.10 --version && \
 		python2.7 --version && \

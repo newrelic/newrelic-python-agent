@@ -1129,7 +1129,11 @@ class StatsEngine(object):
 
         if normalizer is not None:
             for key, value in six.iteritems(self.__stats_table):
-                key = (normalizer(key[0])[0], key[1])
+                normalized_name, ignored = normalizer(key[0])
+                if ignored:
+                    continue
+
+                key = (normalized_name, key[1])
                 stats = normalized_stats.get(key)
                 if stats is None:
                     normalized_stats[key] = copy.copy(value)

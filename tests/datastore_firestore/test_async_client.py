@@ -13,15 +13,17 @@
 # limitations under the License.
 
 import pytest
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 from testing_support.validators.validate_tt_collector_json import (
     validate_tt_collector_json,
 )
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture()
@@ -37,10 +39,11 @@ def exercise_async_client(async_client, existing_document):
         assert len([_ async for _ in async_client.collections()]) >= 1
         doc = [_ async for _ in async_client.get_all([existing_document])][0]
         assert doc.to_dict()["x"] == 1
+
     return _exercise_async_client
 
 
-def test_firestore_async_client(loop, exercise_async_client):
+def test_firestore_async_client(loop, exercise_async_client, instance_info):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/collections", 1),
         ("Datastore/operation/Firestore/get_all", 1),
@@ -49,6 +52,7 @@ def test_firestore_async_client(loop, exercise_async_client):
     _test_rollup_metrics = [
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
     ]
 
     @validate_database_duration()
@@ -60,7 +64,7 @@ def test_firestore_async_client(loop, exercise_async_client):
     )
     @background_task(name="test_firestore_async_client")
     def _test():
-       loop.run_until_complete(exercise_async_client())
+        loop.run_until_complete(exercise_async_client())
 
     _test()
 

@@ -14,6 +14,7 @@
 
 import postgresql.driver.dbapi20
 from testing_support.db_settings import postgresql_settings
+from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_trace_inputs import (
     validate_database_trace_inputs,
 )
@@ -63,6 +64,7 @@ _test_execute_via_cursor_rollup_metrics = [
     ("Datastore/operation/Postgres/commit", 3),
     ("Datastore/operation/Postgres/rollback", 1),
     ("Datastore/operation/Postgres/other", 1),
+    ("Datastore/instance/Postgres/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 13),
     ("Function/postgresql.driver.dbapi20:connect", 1),
     ("Function/postgresql.driver.dbapi20:Connection.__enter__", 1),
     ("Function/postgresql.driver.dbapi20:Connection.__exit__", 1),

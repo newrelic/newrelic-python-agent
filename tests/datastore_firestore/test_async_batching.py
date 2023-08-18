@@ -13,15 +13,17 @@
 # limitations under the License.
 
 import pytest
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 from testing_support.validators.validate_tt_collector_json import (
     validate_tt_collector_json,
 )
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture()
@@ -33,10 +35,11 @@ def exercise_async_write_batch(async_client, async_collection):
             async_batch.set(doc, {})
 
         await async_batch.commit()
+
     return _exercise_async_write_batch
 
 
-def test_firestore_async_write_batch(loop, exercise_async_write_batch):
+def test_firestore_async_write_batch(loop, exercise_async_write_batch, instance_info):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/commit", 1),
     ]
@@ -44,7 +47,9 @@ def test_firestore_async_write_batch(loop, exercise_async_write_batch):
     _test_rollup_metrics = [
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 1),
     ]
+
     @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_async_write_batch",

@@ -68,6 +68,7 @@ def test_multiple_transactions(get_consumer_record, topic):
 
 def test_custom_metrics_on_existing_transaction(get_consumer_record, topic):
     version = get_package_version("confluent_kafka")
+    assert version is not None
 
     transaction_name = (
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"

@@ -99,6 +99,7 @@ def test_produce_arguments(topic, producer, client_type, serialize, headers):
 
 def test_trace_metrics(topic, send_producer_message):
     version = get_package_version("confluent_kafka")
+    assert version is not None
 
     scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
     unscoped_metrics = scoped_metrics

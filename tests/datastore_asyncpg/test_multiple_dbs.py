@@ -145,6 +145,7 @@ async def _exercise_db():
 )
 @background_task()
 def test_multiple_databases_enable_instance(event_loop):
+    assert ASYNCPG_VERSION is not None
     event_loop.run_until_complete(_exercise_db())
 
 
@@ -161,4 +162,5 @@ def test_multiple_databases_enable_instance(event_loop):
 )
 @background_task()
 def test_multiple_databases_disable_instance(event_loop):
+    assert ASYNCPG_VERSION is not None
     event_loop.run_until_complete(_exercise_db())

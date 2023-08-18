@@ -202,6 +202,7 @@ def test_async_mode():
 
     kwargs = {}
     version = get_package_version_tuple("psycopg2cffi")
+    assert version is not None
     if version >= (2, 8):
         kwargs["async_"] = 1
     else:

@@ -13,15 +13,17 @@
 # limitations under the License.
 
 import pytest
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 from testing_support.validators.validate_tt_collector_json import (
     validate_tt_collector_json,
 )
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture()
@@ -40,10 +42,11 @@ def exercise_async_documents(async_collection):
         await usa_doc.update({"president": "Joe Biden"})
 
         await async_collection.document("USA").delete()
+
     return _exercise_async_documents
 
 
-def test_firestore_async_documents(loop, exercise_async_documents):
+def test_firestore_async_documents(loop, exercise_async_documents, instance_info):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/Italy/set", 1),
         ("Datastore/statement/Firestore/Italy/get", 1),
@@ -64,7 +67,9 @@ def test_firestore_async_documents(loop, exercise_async_documents):
         ("Datastore/operation/Firestore/delete", 1),
         ("Datastore/all", 7),
         ("Datastore/allOther", 7),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 7),
     ]
+
     @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_async_documents",
@@ -80,7 +85,9 @@ def test_firestore_async_documents(loop, exercise_async_documents):
 
 
 @background_task()
-def test_firestore_async_documents_generators(collection, async_collection, assert_trace_for_async_generator):
+def test_firestore_async_documents_generators(
+    collection, async_collection, assert_trace_for_async_generator, instance_info
+):
     subcollection_doc = collection.document("SubCollections")
     subcollection_doc.set({})
     subcollection_doc.collection("collection1").add({})
@@ -88,7 +95,7 @@ def test_firestore_async_documents_generators(collection, async_collection, asse
     assert len([_ for _ in subcollection_doc.collections()]) == 2
 
     async_subcollection = async_collection.document(subcollection_doc.id)
-    
+
     assert_trace_for_async_generator(async_subcollection.collections)
 
 

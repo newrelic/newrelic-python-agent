@@ -13,6 +13,7 @@
 # limitations under the License.
 import pytest
 from testing_support.db_settings import postgresql_settings
+from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_trace_inputs import (
     validate_database_trace_inputs,
 )

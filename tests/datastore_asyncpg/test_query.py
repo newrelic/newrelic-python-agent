@@ -27,12 +27,13 @@ from testing_support.validators.validate_tt_collector_json import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = postgresql_settings()[0]
 
 
 PG_PREFIX = "Datastore/operation/Postgres/"
-ASYNCPG_VERSION = tuple(int(x) for x in getattr(asyncpg, "__version__", "0.0").split(".")[:2])
+ASYNCPG_VERSION = get_package_version_tuple("asyncpg")
 
 if ASYNCPG_VERSION < (0, 11):
     CONNECT_METRICS = ()
@@ -65,6 +66,7 @@ def conn(event_loop):
 @background_task(name="test_single")
 @pytest.mark.parametrize("method", ("execute",))
 def test_single(event_loop, method, conn):
+    assert ASYNCPG_VERSION is not None
     _method = getattr(conn, method)
     event_loop.run_until_complete(_method("""SELECT 0"""))
 
@@ -81,6 +83,7 @@ def test_single(event_loop, method, conn):
 @background_task(name="test_prepared_single")
 @pytest.mark.parametrize("method", ("fetch", "fetchrow", "fetchval"))
 def test_prepared_single(event_loop, method, conn):
+    assert ASYNCPG_VERSION is not None
     _method = getattr(conn, method)
     event_loop.run_until_complete(_method("""SELECT 0"""))
 
@@ -93,6 +96,7 @@ def test_prepared_single(event_loop, method, conn):
 )
 @background_task(name="test_prepare")
 def test_prepare(event_loop, conn):
+    assert ASYNCPG_VERSION is not None
     event_loop.run_until_complete(conn.prepare("""SELECT 0"""))
 
 
@@ -125,6 +129,7 @@ def test_copy(event_loop, table, conn):
         # 2 statements
         await conn.copy_from_query("""SELECT 0""", output=BytesIO())
 
+    assert ASYNCPG_VERSION is not None
     event_loop.run_until_complete(amain())
 
 
@@ -139,6 +144,7 @@ def test_copy(event_loop, table, conn):
 )
 @background_task(name="test_select_many")
 def test_select_many(event_loop, conn):
+    assert ASYNCPG_VERSION is not None
     event_loop.run_until_complete(conn.executemany("""SELECT $1::int""", ((1,), (2,))))
 
 
@@ -158,6 +164,7 @@ def test_transaction(event_loop, conn):
         async with conn.transaction():
             await conn.execute("""SELECT 0""")
 
+    assert ASYNCPG_VERSION is not None
     event_loop.run_until_complete(amain())
 
 
@@ -181,6 +188,7 @@ def test_cursor(event_loop, conn):
 
             await conn.cursor("SELECT 0")
 
+    assert ASYNCPG_VERSION is not None
     event_loop.run_until_complete(amain())
 
 
@@ -200,6 +208,7 @@ def test_cursor(event_loop, conn):
 )
 @background_task(name="test_unix_socket_connect")
 def test_unix_socket_connect(event_loop):
+    assert ASYNCPG_VERSION is not None
     with pytest.raises(OSError):
         event_loop.run_until_complete(asyncpg.connect("postgres://?host=/.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST"))
 
@@ -233,4 +242,5 @@ def test_pool_acquire(event_loop):
         finally:
             await pool.close()
 
+    assert ASYNCPG_VERSION is not None
     event_loop.run_until_complete(amain())

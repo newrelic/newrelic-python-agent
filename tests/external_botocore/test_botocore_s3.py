@@ -25,9 +25,10 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-MOTO_VERSION = tuple(int(v) for v in moto.__version__.split(".")[:3])
-BOTOCORE_VERSION = tuple(int(v) for v in botocore.__version__.split(".")[:3])
+MOTO_VERSION = MOTO_VERSION = get_package_version_tuple("moto")
+BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 
 # patch earlier versions of moto to support py37

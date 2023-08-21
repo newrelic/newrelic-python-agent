@@ -565,6 +565,7 @@ def test_ca_bundle_path(monkeypatch, ca_bundle_path):
     # Pretend CA certificates are not available
     class DefaultVerifyPaths(object):
         cafile = None
+        capath = None
 
         def __init__(self, *args, **kwargs):
             pass

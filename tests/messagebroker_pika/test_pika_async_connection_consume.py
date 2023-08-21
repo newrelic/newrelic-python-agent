@@ -12,24 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from minversion import pika_version_info
-from compat import basic_consume
 import functools
+
 import pika
-from pika.adapters.tornado_connection import TornadoConnection
 import pytest
 import six
 import tornado
+from compat import basic_consume
+from conftest import (
+    BODY,
+    CORRELATION_ID,
+    EXCHANGE,
+    EXCHANGE_2,
+    HEADERS,
+    QUEUE,
+    QUEUE_2,
+    REPLY_TO,
+)
+from minversion import pika_version_info
+from pika.adapters.tornado_connection import TornadoConnection
+from testing_support.db_settings import rabbitmq_settings
+from testing_support.fixtures import (
+    capture_transaction_metrics,
+    function_not_called,
+    override_application_settings,
+)
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 from newrelic.api.background_task import background_task
-
-from conftest import (QUEUE, QUEUE_2, EXCHANGE, EXCHANGE_2, CORRELATION_ID,
-        REPLY_TO, HEADERS, BODY)
-from testing_support.fixtures import (capture_transaction_metrics,
-        validate_transaction_metrics, validate_tt_collector_json,
-        function_not_called, override_application_settings)
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-from testing_support.db_settings import rabbitmq_settings
 
 
 DB_SETTINGS = rabbitmq_settings()[0]

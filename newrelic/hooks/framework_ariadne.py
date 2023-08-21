@@ -23,7 +23,7 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.graphql_utils import graphql_statement
-from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
+from newrelic.hooks.framework_graphql import GRAPHQL_VERSION, ignore_graphql_duplicate_exception
 
 ARIADNE_VERSION = get_package_version("ariadne")
 

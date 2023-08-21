@@ -12,21 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from compat import basic_consume
 import functools
+import os
+
 import pika
 import pytest
 import six
-import os
+from compat import basic_consume
+from conftest import BODY, CORRELATION_ID, EXCHANGE, HEADERS, QUEUE, REPLY_TO
+from testing_support.db_settings import rabbitmq_settings
+from testing_support.fixtures import capture_transaction_metrics
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+from testing_support.validators.validate_tt_collector_json import (
+    validate_tt_collector_json,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
-
-from conftest import QUEUE, EXCHANGE, CORRELATION_ID, REPLY_TO, HEADERS, BODY
-from testing_support.fixtures import (capture_transaction_metrics,
-        validate_transaction_metrics, validate_tt_collector_json)
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-from testing_support.db_settings import rabbitmq_settings
 
 DB_SETTINGS = rabbitmq_settings()[0]
 

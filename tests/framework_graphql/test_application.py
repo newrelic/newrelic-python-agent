@@ -56,11 +56,6 @@ def to_graphql_source(query):
             # Fallback if Source is not implemented
             return query
 
-        # For graphql2, Source objects aren't acceptable input
-        major_version = int(graphql_version.split(".")[0])
-        if major_version == 2:
-            return query
-
         return Source(query)
 
     return delay_import

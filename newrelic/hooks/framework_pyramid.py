@@ -114,7 +114,7 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
 
 
 def wrap_view_handler(mapped_view):
-    if hasattr(mapped_view, '_nr_wrapped'):
+    if hasattr(mapped_view, '_nr_wrapped'):   # pragma: no cover
         return mapped_view
     else:
         wrapped = FunctionWrapper(mapped_view, view_handler_wrapper)
@@ -180,7 +180,7 @@ def instrument_pyramid_config_views(module):
     # Location of the ViewDeriver class changed from pyramid.config to
     # pyramid.config.views so check if present before trying to update.
 
-    if hasattr(module, 'ViewDeriver'):
+    if hasattr(module, 'ViewDeriver'):   # pragma: no cover
         wrap_out_function(module, 'ViewDeriver.__call__', wrap_view_handler)
     elif hasattr(module, 'Configurator'):
         wrap_out_function(module, 'Configurator._derive_view',

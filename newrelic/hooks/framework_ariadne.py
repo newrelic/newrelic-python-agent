@@ -26,6 +26,7 @@ from newrelic.core.graphql_utils import graphql_statement
 from newrelic.hooks.framework_graphql import GRAPHQL_VERSION, ignore_graphql_duplicate_exception
 
 ARIADNE_VERSION = get_package_version("ariadne")
+ariadne_version_tuple = tuple(map(int, ARIADNE_VERSION.split(".")))
 
 
 def bind_graphql(schema, data, *args, **kwargs):
@@ -96,6 +97,9 @@ async def wrap_graphql(wrapped, instance, args, kwargs):
 
 
 def instrument_ariadne_execute(module):
+    # v0.9.0 is the version where ariadne started using graphql-core v3
+    if ariadne_version_tuple < (0, 9):
+        return
     if hasattr(module, "graphql"):
         wrap_function_wrapper(module, "graphql", wrap_graphql)
 
@@ -104,10 +108,14 @@ def instrument_ariadne_execute(module):
 
 
 def instrument_ariadne_asgi(module):
+    if ariadne_version_tuple < (0, 9):
+        return
     if hasattr(module, "GraphQL"):
         wrap_asgi_application(module, "GraphQL.__call__", framework=("Ariadne", ARIADNE_VERSION))
 
 
 def instrument_ariadne_wsgi(module):
+    if ariadne_version_tuple < (0, 9):
+        return
     if hasattr(module, "GraphQL"):
         wrap_wsgi_application(module, "GraphQL.__call__", framework=("Ariadne", ARIADNE_VERSION))

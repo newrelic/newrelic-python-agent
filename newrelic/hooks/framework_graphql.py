@@ -42,7 +42,8 @@ GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type"))
 VERSION = None
 
 
-GRAPHQL_VERSION = get_package_version("graphql")
+GRAPHQL_VERSION = get_package_version("graphql-core")
+major_version = int(GRAPHQL_VERSION.split(".")[0])
 
 
 def ignore_graphql_duplicate_exception(exc, val, tb):
@@ -491,11 +492,15 @@ def instrument_graphql_execute(module):
 
 
 def instrument_graphql_execution_utils(module):
+    if major_version == 2:
+        return
     if hasattr(module, "ExecutionContext"):
         wrap_function_wrapper(module, "ExecutionContext.__init__", wrap_executor_context_init)
 
 
 def instrument_graphql_execution_middleware(module):
+    if major_version == 2:
+        return
     if hasattr(module, "get_middleware_resolvers"):
         wrap_function_wrapper(module, "get_middleware_resolvers", wrap_get_middleware_resolvers)
     if hasattr(module, "MiddlewareManager"):
@@ -503,18 +508,26 @@ def instrument_graphql_execution_middleware(module):
 
 
 def instrument_graphql_error_located_error(module):
+    if major_version == 2:
+        return
     if hasattr(module, "located_error"):
         wrap_function_wrapper(module, "located_error", wrap_error_handler)
 
 
 def instrument_graphql_validate(module):
+    if major_version == 2:
+        return
     wrap_function_wrapper(module, "validate", wrap_validate)
 
 
 def instrument_graphql(module):
+    if major_version == 2:
+        return
     if hasattr(module, "graphql_impl"):
         wrap_function_wrapper(module, "graphql_impl", wrap_graphql_impl)
 
 
 def instrument_graphql_parser(module):
+    if major_version == 2:
+        return
     wrap_function_wrapper(module, "parse", wrap_parse)

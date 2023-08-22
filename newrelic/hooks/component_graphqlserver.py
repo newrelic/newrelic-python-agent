@@ -3,17 +3,15 @@ from newrelic.api.graphql_trace import GraphQLOperationTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.graphql_utils import graphql_statement
 from newrelic.hooks.framework_graphql import (
     GRAPHQL_VERSION,
     ignore_graphql_duplicate_exception,
 )
 
-
-def framework_details():
-    import graphql_server
-
-    return ("GraphQLServer", getattr(graphql_server, "__version__", None))
+GRAPHQL_SERVER_VERSION = get_package_version("graphql-server")
+graphql_server_major_version = int(GRAPHQL_SERVER_VERSION.split(".")[0])
 
 
 def bind_query(schema, params, *args, **kwargs):
@@ -31,8 +29,7 @@ def wrap_get_response(wrapped, instance, args, kwargs):
     except TypeError:
         return wrapped(*args, **kwargs)
 
-    framework = framework_details()
-    transaction.add_framework_info(name=framework[0], version=framework[1])
+    transaction.add_framework_info(name="GraphQLServer", version=GRAPHQL_SERVER_VERSION)
     transaction.add_framework_info(name="GraphQL", version=GRAPHQL_VERSION)
 
     if hasattr(query, "body"):
@@ -48,4 +45,7 @@ def wrap_get_response(wrapped, instance, args, kwargs):
 
 
 def instrument_graphqlserver(module):
+    breakpoint()
+    if graphql_server_major_version <= 2:
+        return
     wrap_function_wrapper(module, "get_response", wrap_get_response)

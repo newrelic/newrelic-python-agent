@@ -23,6 +23,8 @@ from newrelic.core.graphql_utils import graphql_statement
 from newrelic.hooks.framework_graphql import GRAPHQL_VERSION, ignore_graphql_duplicate_exception
 
 STRAWBERRY_GRAPHQL_VERSION = get_package_version("strawberry-graphql")
+strawberry_version_tuple = tuple(map(int, STRAWBERRY_GRAPHQL_VERSION.split(".")))
+breakpoint()
 
 
 def bind_execute(query, *args, **kwargs):
@@ -101,6 +103,8 @@ def wrap_from_resolver(wrapped, instance, args, kwargs):
 
 
 def instrument_strawberry_schema(module):
+    if strawberry_version_tuple < (0, 23, 3):
+        return
     if hasattr(module, "Schema"):
         if hasattr(module.Schema, "execute"):
             wrap_function_wrapper(module, "Schema.execute", wrap_execute)
@@ -109,11 +113,15 @@ def instrument_strawberry_schema(module):
 
 
 def instrument_strawberry_asgi(module):
+    if strawberry_version_tuple < (0, 23, 3):
+        return
     if hasattr(module, "GraphQL"):
         wrap_asgi_application(module, "GraphQL.__call__", framework=("Strawberry", STRAWBERRY_GRAPHQL_VERSION))
 
 
 def instrument_strawberry_schema_converter(module):
+    if strawberry_version_tuple < (0, 23, 3):
+        return
     if hasattr(module, "GraphQLCoreConverter"):
         if hasattr(module.GraphQLCoreConverter, "from_resolver"):
             wrap_function_wrapper(module, "GraphQLCoreConverter.from_resolver", wrap_from_resolver)

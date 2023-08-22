@@ -45,7 +45,6 @@ def wrap_get_response(wrapped, instance, args, kwargs):
 
 
 def instrument_graphqlserver(module):
-    breakpoint()
     if graphql_server_major_version <= 2:
         return
     wrap_function_wrapper(module, "get_response", wrap_get_response)

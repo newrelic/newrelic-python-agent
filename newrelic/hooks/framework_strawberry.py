@@ -24,7 +24,6 @@ from newrelic.hooks.framework_graphql import GRAPHQL_VERSION, ignore_graphql_dup
 
 STRAWBERRY_GRAPHQL_VERSION = get_package_version("strawberry-graphql")
 strawberry_version_tuple = tuple(map(int, STRAWBERRY_GRAPHQL_VERSION.split(".")))
-breakpoint()
 
 
 def bind_execute(query, *args, **kwargs):

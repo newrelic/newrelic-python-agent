@@ -134,7 +134,7 @@ def patch_loguru_logger(logger):
         if not hasattr(logger._core, "_nr_instrumented"):
             logger.add(_nr_log_forwarder, format="{message}")
             logger._core._nr_instrumented = True
-    elif not hasattr(logger, "_nr_instrumented"):   # pragma: no cover
+    elif not hasattr(logger, "_nr_instrumented"):  # pragma: no cover
         for _, handler in six.iteritems(logger._handlers):
             if handler._writer is _nr_log_forwarder:
                 logger._nr_instrumented = True

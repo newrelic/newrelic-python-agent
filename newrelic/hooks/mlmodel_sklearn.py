@@ -93,6 +93,7 @@ def _wrap_method_trace(module, class_, method, name=None, group=None):
 
         # If this is the predict method, wrap the return type in an nr type with
         # _nr_wrapped attrs that will attach model info to the data.
+        breakpoint()
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
             inference_id = uuid.uuid4()
@@ -245,6 +246,7 @@ def create_prediction_event(transaction, class_, inference_id, instance, args, k
     label_names = getattr(instance, "_nr_wrapped_label_names", None)
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
+    breakpoint()
     labels = []
     if return_val is not None:
         if not hasattr(return_val, "__iter__"):
@@ -293,7 +295,7 @@ def create_prediction_event(transaction, class_, inference_id, instance, args, k
         if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:
             event.update(
                 {
-                    "feature.%s" % str(final_feature_names[feature_col_index]): str(value)
+                    "feature.%s" % str(final_feature_names[feature_col_index]): value
                     for feature_col_index, value in enumerate(prediction)
                 }
             )

@@ -13,10 +13,11 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import dt_enabled, override_application_settings
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
+from framework_graphql.test_application_async import (
+    error_middleware_async,
+    example_middleware_async,
 )
+from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
@@ -33,8 +34,10 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-from newrelic.packages import six
+from newrelic.common.package_version_utils import get_package_version
 
+
+graphql_version = get_package_version("graphql-core")
 
 def conditional_decorator(decorator, condition):
     def _conditional_decorator(func):
@@ -45,27 +48,12 @@ def conditional_decorator(decorator, condition):
     return _conditional_decorator
 
 
-@pytest.fixture(scope="session")
-def is_graphql_2():
-    from graphql import __version__ as version
-
-    major_version = int(version.split(".")[0])
-    return major_version == 2
-
-
 def to_graphql_source(query):
     def delay_import():
         try:
             from graphql import Source
         except ImportError:
             # Fallback if Source is not implemented
-            return query
-
-        from graphql import __version__ as version
-
-        # For graphql2, Source objects aren't acceptable input
-        major_version = int(version.split(".")[0])
-        if major_version == 2:
             return query
 
         return Source(query)
@@ -82,32 +70,27 @@ def error_middleware(next, root, info, **args):
     raise RuntimeError("Runtime Error!")
 
 
-example_middleware = [example_middleware]
-error_middleware = [error_middleware]
-
-if six.PY3:
-    try:
-        from test_application_async import error_middleware_async, example_middleware_async
-    except ImportError:
-        from framework_graphql.test_application_async import error_middleware_async, example_middleware_async
-
-    example_middleware.append(example_middleware_async)
-    error_middleware.append(error_middleware_async)
-
-
 def test_no_harm_no_transaction(target_application):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
-    response = target_application("{ __schema { types { name } } }")
-    assert not response.get("errors", None)
+    def _test():
+        response = target_application("{ __schema { types { name } } }")
 
+    _test()
+
+
+example_middleware = [example_middleware]
+error_middleware = [error_middleware]
+
+example_middleware.append(example_middleware_async)
+error_middleware.append(error_middleware_async)
 
 _runtime_error_name = callable_name(RuntimeError)
 _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
 
 
 def _graphql_base_rollup_metrics(framework, version, background_task=True):
-    from graphql import __version__ as graphql_version
+    graphql_version = get_package_version("graphql-core")
 
     metrics = [
         ("Python/Framework/GraphQL/%s" % graphql_version, 1),
@@ -148,13 +131,12 @@ def test_basic(target_application):
     def _test():
         response = target_application("{ hello }")
         assert response["hello"] == "Hello!"
-        assert not response.get("errors", None)
 
     _test()
 
 
 @dt_enabled
-def test_query_and_mutation(target_application, is_graphql_2):
+def test_query_and_mutation(target_application):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
     mutation_path = "storage_add" if framework != "Graphene" else "storage_add.string"
@@ -190,7 +172,9 @@ def test_query_and_mutation(target_application, is_graphql_2):
         "graphql.field.returnType": "[String%s]%s" % (type_annotation, type_annotation),
     }
 
-    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add")
+    @validate_code_level_metrics(
+        "framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add"
+    )
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
     @validate_transaction_metrics(
@@ -376,15 +360,12 @@ def test_exception_in_resolver(target_application, field):
         ("{ syntax_error ", "graphql.error.syntax_error:GraphQLSyntaxError"),
     ],
 )
-def test_exception_in_validation(target_application, is_graphql_2, query, exc_class):
+def test_exception_in_validation(target_application, query, exc_class):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     if "syntax" in query:
         txn_name = "graphql.language.parser:parse"
     else:
-        if is_graphql_2:
-            txn_name = "graphql.validation.validation:validate"
-        else:
-            txn_name = "graphql.validation.validate:validate"
+        txn_name = "graphql.validation.validate:validate"
 
     # Import path differs between versions
     if exc_class == "GraphQLError":
@@ -450,7 +431,6 @@ def test_operation_metrics_and_attrs(target_application):
     @conditional_decorator(background_task(), is_bg)
     def _test():
         response = target_application("query MyQuery { library(index: 0) { branch, book { id, name } } }")
-        assert not response.get("errors", None)
 
     _test()
 
@@ -583,7 +563,7 @@ def test_deepest_unique_path(target_application, query, expected_path):
 
 
 @pytest.mark.parametrize("capture_introspection_setting", (True, False))
-def test_ignored_introspection_transactions(target_application, capture_introspection_setting):
+def test_introspection_transactions(target_application, capture_introspection_setting):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     txn_ct = 1 if capture_introspection_setting else 0
 
@@ -594,6 +574,5 @@ def test_ignored_introspection_transactions(target_application, capture_introspe
     @background_task()
     def _test():
         response = target_application("{ __schema { types { name } } }")
-        assert not response.get("errors", None)
 
     _test()

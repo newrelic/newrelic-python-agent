@@ -12,14 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import importlib
+
 import pytest
 from testing_support.fixtures import dt_enabled
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.common.object_names import callable_name
@@ -32,9 +38,11 @@ def is_graphql_2():
     major_version = int(version.split(".")[0])
     return major_version == 2
 
+
 @pytest.fixture(scope="session", params=("Sanic", "Flask"))
 def target_application(request):
     from . import _test_graphql
+
     framework = request.param
     version = importlib.import_module(framework.lower()).__version__
 

@@ -62,7 +62,7 @@ _test_application_index_scoped_metrics = [
 ]
 
 
-@validate_code_level_metrics(TEST_APPLICATION_PREFIX + ".IndexResource", "get")
+@validate_code_level_metrics("_test_application.create_app.<locals>.IndexResource", "get", py2_namespace="_test_application.IndexResource")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics("_test_application:index", scoped_metrics=_test_application_index_scoped_metrics)
 def test_application_index(application):
@@ -88,7 +88,7 @@ _test_application_raises_scoped_metrics = [
     ],
 )
 def test_application_raises(exception, status_code, ignore_status_code, propagate_exceptions, application):
-    @validate_code_level_metrics(TEST_APPLICATION_PREFIX + ".ExceptionResource", "get")
+    @validate_code_level_metrics("_test_application.create_app.<locals>.ExceptionResource", "get", py2_namespace="_test_application.ExceptionResource")
     @validate_transaction_metrics("_test_application:exception", scoped_metrics=_test_application_raises_scoped_metrics)
     def _test():
         try:

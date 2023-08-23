@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-import six
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
-
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -30,7 +29,3 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (framework_strawberry)",
     default_settings=_default_settings,
 )
-
-
-if six.PY2:
-    collect_ignore = ["test_application_async.py"]

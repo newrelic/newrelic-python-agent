@@ -17,6 +17,7 @@ from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.fixtures import dt_enabled
 from newrelic.common.object_wrapper import function_wrapper
 
+
 def validate_code_level_metrics(namespace, function, py2_namespace=None, builtin=False, count=1, index=-1):
     """Verify that code level metrics are generated for a callable."""
 
@@ -43,4 +44,3 @@ def validate_code_level_metrics(namespace, function, py2_namespace=None, builtin
         validator(dt_enabled(wrapped))(*args, **kwargs)
 
     return wrapper
-

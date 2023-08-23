@@ -15,10 +15,18 @@
 
 import asyncio
 import json
-import pytest
 
-from ._target_schema_sync import target_schema as target_schema_sync, target_asgi_application as target_asgi_application_sync
-from ._target_schema_async import target_schema as target_schema_async, target_asgi_application as target_asgi_application_async
+import pytest
+from framework_strawberry._target_schema_async import (
+    target_asgi_application as target_asgi_application_async,
+)
+from framework_strawberry._target_schema_async import (
+    target_schema as target_schema_async,
+)
+from framework_strawberry._target_schema_sync import (
+    target_asgi_application as target_asgi_application_sync,
+)
+from framework_strawberry._target_schema_sync import target_schema as target_schema_sync
 
 
 def run_sync(schema):
@@ -36,6 +44,7 @@ def run_sync(schema):
             assert response.errors
 
         return response.data
+
     return _run_sync
 
 
@@ -55,6 +64,7 @@ def run_async(schema):
             assert response.errors
 
         return response.data
+
     return _run_async
 
 
@@ -78,6 +88,7 @@ def run_asgi(app):
             assert "errors" not in body or not body["errors"]
 
         return body["data"]
+
     return _run_asgi
 
 

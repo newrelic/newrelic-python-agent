@@ -18,7 +18,7 @@ from newrelic.common.object_names import callable_name
 from newrelic.hooks.mlmodel_sklearn import _nr_instrument_model
 
 
-def wrap_mlmodel(model, name=None, version=None, feature_names=None, label_names=None):
+def wrap_mlmodel(model, name=None, version=None, feature_names=None, label_names=None, metadata=None):
     model_callable_name = callable_name(model)
     _class = model.__class__.__name__
     module = sys.modules[model_callable_name.split(":")[0]]
@@ -31,3 +31,5 @@ def wrap_mlmodel(model, name=None, version=None, feature_names=None, label_names
         model._nr_wrapped_feature_names = feature_names
     if label_names:
         model._nr_wrapped_label_names = label_names
+    if metadata and metadata is not {}:
+        model._nr_wrapped_metadata = metadata

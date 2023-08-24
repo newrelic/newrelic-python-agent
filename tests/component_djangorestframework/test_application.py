@@ -31,7 +31,6 @@ from newrelic.packages import six
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 
-
 @pytest.fixture(scope="module")
 def target_application():
     from wsgi import application

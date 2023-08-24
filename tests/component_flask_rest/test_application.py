@@ -31,8 +31,6 @@ from newrelic.common.object_names import callable_name
 from newrelic.core.config import global_settings
 from newrelic.packages import six
 
-TEST_APPLICATION_PREFIX = "_test_application.create_app.<locals>" if six.PY3 else "_test_application"
-
 
 @pytest.fixture(params=["flask_restful", "flask_restx"])
 def application(request):

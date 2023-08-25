@@ -127,8 +127,8 @@ int_list_recorded_custom_events = [
             "inference_id": None,
             "modelName": "MyCustomModel",
             "model_version": "1.2.3",
-            "feature.0": "1.0",
-            "feature.1": "2.0",
+            "feature.0": 1.0,
+            "feature.1": 2.0,
             "label.0": label_value,
             "new_relic_data_schema_version": 2,
         },
@@ -156,6 +156,52 @@ def test_custom_model_int_list_no_features_and_labels():
     _test()
 
 
+label_value_mapping = "The treachery of code" if six.PY2 else "Ceci n'est pas une code"
+label_map = {1.0: "The treachery of code"} if six.PY2 else {0.5: "Ceci n'est pas une code"}
+int_list_recorded_custom_events_with_metadata_and_label_mapping = [
+    (
+        {"type": "InferenceData"},
+        {
+            "inference_id": None,
+            "modelName": "MyCustomModel",
+            "model_version": "1.2.3",
+            "feature.0": 1.0,
+            "feature.1": 2.0,
+            "label.0": label_value_mapping,
+            "new_relic_data_schema_version": 2,
+            "metadata1": "WHAT?",
+            "metadata2": "YEAH!",
+        },
+    ),
+]
+
+
+@reset_core_stats_engine()
+def test_custom_model_int_list_with_metadata_and_label_mapping():
+    @validate_ml_event_count(count=1)
+    @validate_ml_events(int_list_recorded_custom_events_with_metadata_and_label_mapping)
+    @background_task()
+    def _test():
+        x_train = [[0, 0], [1, 1]]
+        y_train = [0, 1]
+        x_test = [[1.0, 2.0]]
+
+        model = CustomTestModel().fit(x_train, y_train)
+        wrap_mlmodel(
+            model,
+            name="MyCustomModel",
+            version="1.2.3",
+            metadata={"metadata1": "WHAT?", "metadata2": "YEAH!"},
+            label_mapping=label_map,
+        )
+
+        labels = model.predict(x_test)
+
+        return model
+
+    _test()
+
+
 pandas_df_recorded_custom_events = [
     (
         {"type": "InferenceData"},
@@ -163,9 +209,9 @@ pandas_df_recorded_custom_events = [
             "inference_id": None,
             "modelName": "PandasTestModel",
             "model_version": "1.5.0b1",
-            "feature.feature1": "0",
-            "feature.feature2": "0",
-            "feature.feature3": "1",
+            "feature.feature1": 0,
+            "feature.feature2": 0,
+            "feature.feature3": 1,
             "label.label1": "0.5" if six.PY3 else "0.0",
             "new_relic_data_schema_version": 2,
         },
@@ -204,8 +250,8 @@ pandas_df_recorded_builtin_events = [
             "inference_id": None,
             "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
-            "feature.feature1": "12",
-            "feature.feature2": "14",
+            "feature.feature1": 12,
+            "feature.feature2": 14,
             "label.label1": "0",
             "new_relic_data_schema_version": 2,
         },
@@ -249,9 +295,9 @@ pandas_df_mismatched_custom_events = [
             "inference_id": None,
             "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
-            "feature.col1": "12",
-            "feature.col2": "14",
-            "feature.col3": "16",
+            "feature.col1": 12,
+            "feature.col2": 14,
+            "feature.col3": 16,
             "label.0": "1",
             "new_relic_data_schema_version": 2,
         },

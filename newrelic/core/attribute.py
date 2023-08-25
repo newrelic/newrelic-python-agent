@@ -245,19 +245,19 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
         value = sanitize(value)
 
     except NameIsNotStringException:
-        _logger.debug("Attribute name must be a string. Dropping " "attribute: %r=%r", name, value)
+        _logger.debug("Attribute name must be a string. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except NameTooLongException:
-        _logger.debug("Attribute name exceeds maximum length. Dropping " "attribute: %r=%r", name, value)
+        _logger.debug("Attribute name exceeds maximum length. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except IntTooLargeException:
-        _logger.debug("Attribute value exceeds maximum integer value. " "Dropping attribute: %r=%r", name, value)
+        _logger.debug("Attribute value exceeds maximum integer value. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except CastingFailureException:
-        _logger.debug("Attribute value cannot be cast to a string. " "Dropping attribute: %r=%r", name, value)
+        _logger.debug("Attribute value cannot be cast to a string. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     else:
@@ -270,7 +270,7 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
             trunc_value = truncate(value, maxsize=max_length, ending=ending)
             if value != trunc_value:
                 _logger.debug(
-                    "Attribute value exceeds maximum length " "(%r bytes). Truncating value: %r=%r.",
+                    "Attribute value exceeds maximum length (%r bytes). Truncating value: %r=%r.",
                     max_length,
                     name,
                     trunc_value,
@@ -282,13 +282,39 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
 
 
 def sanitize(value):
+    """
+    Return value unchanged, if it's a valid type that is supported by
+    Insights. Otherwise, convert value to a string.
 
-    # Return value unchanged, if it's a valid type that is supported by
-    # Insights. Otherwise, convert value to a string.
-    #
-    # Raise CastingFailureException, if str(value) somehow fails.
+    Raise CastingFailureException, if str(value) somehow fails.
+    """
 
     valid_value_types = (six.text_type, six.binary_type, bool, float, six.integer_types)
+
+    # When working with numpy, note that numpy has its own `int`s, `str`s,
+    # et cetera. This is fine for computational purposes, but when it
+    # comes to displaying this data in Insights/Nerdgraph, `numpy.str_`
+    # is not supported, unlike `str`.  `numpy.str_` is a subclass of string
+    # which `isinstance` captures.  Unfortunately, in this case, this
+    # is not the desired behavior.  `type()` needs to be explicitly used
+    # in this case and not `isinstance()` to ensure that anything other
+    # than what is in `valid_value_types` is converted to a `str`.
+    #
+    # In other words:
+    #   isinstance([var with type <class 'numpy.str_'>], <class 'str'>) == True
+    #   type([var with type <class 'numpy.str_'>]) != <class 'str'>
+    #
+
+    # This is to capture any potential numpy types that could
+    # otherwise correspond to a standard python type and
+    # converts them to the appropriate standard python type.
+    # If this is not the case, the function will attempt to
+    # convert the value into a string type. (e.g. UUID types)
+    if not type(value) in valid_value_types:
+        try:
+            value = value.item()
+        except AttributeError:
+            pass
 
     if not isinstance(value, valid_value_types):
         original = value
@@ -298,8 +324,6 @@ def sanitize(value):
         except Exception:
             raise CastingFailureException()
         else:
-            _logger.debug(
-                "Attribute value is of type: %r. Casting %r to " "string: %s", type(original), original, value
-            )
+            _logger.debug("Attribute value is of type: %r. Casting %r to string: %s", type(original), original, value)
 
     return value

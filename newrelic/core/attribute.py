@@ -180,7 +180,6 @@ def create_user_attributes(attr_dict, attribute_filter):
 
 
 def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding="utf-8", ending=None):
-
     # Truncate text so that its byte representation
     # is no longer than maxsize bytes.
 
@@ -225,7 +224,6 @@ def check_max_int(value, max_int=MAX_64_BIT_INT):
 
 
 def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=None):
-
     # Perform all necessary checks on a potential attribute.
     #
     # Returns:
@@ -261,7 +259,6 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
         return FAILED_RESULT
 
     else:
-
         # Check length after casting
 
         valid_types_text = (six.text_type, six.binary_type)

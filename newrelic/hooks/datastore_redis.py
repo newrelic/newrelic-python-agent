@@ -367,6 +367,7 @@ _redis_client_methods = {
     "sort_ro",
     "sort",
     "spellcheck",
+    "spublish",
     "spop",
     "srandmember",
     "srem",

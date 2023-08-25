@@ -162,6 +162,7 @@ _redis_client_async_methods = {
     "cluster_reset",
     "cluster_save_config",
     "cluster_set_config_epoch",
+    "client_setinfo",
     "cluster_setslot",
     "cluster_slaves",
     "cluster_slots",
@@ -220,6 +221,7 @@ _redis_client_async_methods = {
     "function_load",
     "function_restore",
     "function_stats",
+    "gears_refresh_cluster",
     "geoadd",
     "geodist",
     "geohash",
@@ -321,6 +323,9 @@ _redis_client_async_methods = {
     "pubsub_channels",
     "pubsub_numpat",
     "pubsub_numsub",
+    "pubsub_shardchannels",
+    "pubsub_shardnumsub",
+    "pubsub",
     "punsubscribe",
     "quantile",
     "query",
@@ -375,6 +380,9 @@ _redis_client_async_methods = {
     "smismember",
     "smove",
     "spellcheck",
+    "spublish",
+    "spop",
+    "srandmember",
     "srem",
     "sscan_iter",
     "sscan",
@@ -394,6 +402,11 @@ _redis_client_async_methods = {
     "syndump",
     "synupdate",
     "tagvals",
+    "tfcall",
+    "tfcall_async",
+    "tfunction_delete",
+    "tfunction_list",
+    "tfunction_load",
     "time",
     "toggle",
     "touch",
@@ -513,7 +526,6 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
 
 
 def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, operation):
-
     @function_wrapper
     async def _nr_wrapper_asyncio_Redis_async_method_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -525,6 +537,7 @@ def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, operation):
 
     def _nr_wrapper_asyncio_Redis_method_(wrapped, instance, args, kwargs):
         from redis.asyncio.client import Pipeline
+
         if isinstance(instance, Pipeline):
             return wrapped(*args, **kwargs)
 
@@ -633,6 +646,10 @@ def instrument_redis_commands_bf_commands(module):
     _instrument_redis_commands_module(module, "CMSCommands")
     _instrument_redis_commands_module(module, "TDigestCommands")
     _instrument_redis_commands_module(module, "TOPKCommands")
+
+
+def instrument_redis_commands_cluster(module):
+    _instrument_redis_commands_module(module, "RedisClusterCommands")
 
 
 def _instrument_redis_commands_module(module, class_name):

@@ -60,12 +60,7 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
         # Method will return synchronously without executing,
         # it will be added to the command stack and run later.
         aioredis_version = get_package_version_tuple("aioredis")
-        # This conditional is for versions of aioredis that are outside
-        # New Relic's supportability window but will still work.  New
-        # Relic does not provide testing/support for this.  In order to
-        # keep functionality without affecting coverage metrics, this
-        # segment is excluded from coverage analysis.
-        if aioredis_version and aioredis_version < (2,):  # pragma: no cover
+        if aioredis_version and aioredis_version < (2,):
             # AioRedis v1 uses a RedisBuffer instead of a real connection for queueing up pipeline commands
             from aioredis.commands.transaction import _RedisBuffer
 
@@ -140,12 +135,7 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
 
-# This wrapper is for versions of aioredis that are outside
-# New Relic's supportability window but will still work.  New
-# Relic does not provide testing/support for this.  In order to
-# keep functionality without affecting coverage metrics, this
-# segment is excluded from coverage analysis.
-def wrap_RedisConnection_execute(wrapped, instance, args, kwargs):  # pragma: no cover
+def wrap_RedisConnection_execute(wrapped, instance, args, kwargs):
     # RedisConnection in aioredis v1 returns a future instead of using coroutines
     transaction = current_transaction()
     if not transaction:
@@ -213,11 +203,6 @@ def instrument_aioredis_connection(module):
         if hasattr(module.Connection, "send_command"):
             wrap_function_wrapper(module, "Connection.send_command", wrap_Connection_send_command)
 
-    # This conditional is for versions of aioredis that are outside
-    # New Relic's supportability window but will still work.  New
-    # Relic does not provide testing/support for this.  In order to
-    # keep functionality without affecting coverage metrics, this
-    # segment is excluded from coverage analysis.
-    if hasattr(module, "RedisConnection"):  # pragma: no cover
+    if hasattr(module, "RedisConnection"):
         if hasattr(module.RedisConnection, "execute"):
             wrap_function_wrapper(module, "RedisConnection.execute", wrap_RedisConnection_execute)

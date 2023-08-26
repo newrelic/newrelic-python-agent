@@ -119,6 +119,22 @@ def reset_agent_config(ini_contents, env_dict):
 
 
 @reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)
+def test_otlp_host_port_default():
+    settings = global_settings()
+    assert settings.otlp_host == "otlp.nr-data.net"
+    assert settings.otlp_port == 0
+
+
+@reset_agent_config(
+    INI_FILE_WITHOUT_UTIL_CONF, {"NEW_RELIC_OTLP_HOST": "custom-otlp.nr-data.net", "NEW_RELIC_OTLP_PORT": 443}
+)
+def test_otlp_port_override():
+    settings = global_settings()
+    assert settings.otlp_host == "custom-otlp.nr-data.net"
+    assert settings.otlp_port == 443
+
+
+@reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)
 def test_heroku_default():
     settings = global_settings()
     assert settings.heroku.use_dyno_names is True

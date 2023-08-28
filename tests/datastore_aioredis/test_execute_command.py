@@ -13,13 +13,13 @@
 # limitations under the License.
 
 import pytest
-
 from conftest import AIOREDIS_VERSION, loop  # noqa # pylint: disable=E0611,W0611
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,)
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 
@@ -120,4 +120,3 @@ def test_redis_execute_command_as_two_args_enable(client, loop):  # noqa
 @background_task()
 def test_redis_execute_command_as_two_args_disable(client, loop):  # noqa
     loop.run_until_complete(exercise_redis_multi_args(client))
-

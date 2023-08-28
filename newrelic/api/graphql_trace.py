@@ -139,7 +139,7 @@ def wrap_graphql_operation_trace(module, object_path, async_wrapper=None):
 
 
 class GraphQLResolverTrace(TimeTrace):
-    def __init__(self, field_name=None, **kwargs):
+    def __init__(self, field_name=None, field_parent_type=None, field_return_type=None, field_path=None, **kwargs):
         parent = kwargs.pop("parent", None)
         source = kwargs.pop("source", None)
         if kwargs:
@@ -148,6 +148,9 @@ class GraphQLResolverTrace(TimeTrace):
         super(GraphQLResolverTrace, self).__init__(parent=parent, source=source)
 
         self.field_name = field_name
+        self.field_parent_type = field_parent_type
+        self.field_return_type = field_return_type
+        self.field_path = field_path
         self._product = None
 
     def __repr__(self):
@@ -175,6 +178,9 @@ class GraphQLResolverTrace(TimeTrace):
 
     def finalize_data(self, *args, **kwargs):
         self._add_agent_attribute("graphql.field.name", self.field_name)
+        self._add_agent_attribute("graphql.field.parentType", self.field_parent_type)
+        self._add_agent_attribute("graphql.field.returnType", self.field_return_type)
+        self._add_agent_attribute("graphql.field.path", self.field_path)
 
         return super(GraphQLResolverTrace, self).finalize_data(*args, **kwargs)
 

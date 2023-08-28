@@ -13,11 +13,6 @@
 # limitations under the License.
 
 from solr import SolrConnection
-<<<<<<< HEAD
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-=======
->>>>>>> main
 from testing_support.db_settings import solr_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import (

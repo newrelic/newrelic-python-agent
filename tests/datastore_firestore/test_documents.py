@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
@@ -43,10 +42,11 @@ def exercise_documents(collection):
         usa_doc.update({"president": "Joe Biden"})
 
         collection.document("USA").delete()
+
     return _exercise_documents
 
 
-def test_firestore_documents(exercise_documents):
+def test_firestore_documents(exercise_documents, instance_info):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/Italy/set", 1),
         ("Datastore/statement/Firestore/Italy/get", 1),
@@ -67,7 +67,9 @@ def test_firestore_documents(exercise_documents):
         ("Datastore/operation/Firestore/delete", 1),
         ("Datastore/all", 7),
         ("Datastore/allOther", 7),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 7),
     ]
+
     @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_documents",

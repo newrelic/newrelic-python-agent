@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
@@ -40,10 +39,11 @@ def exercise_collections(collection):
         assert len(documents_stream) == 2
         documents_list = [_ for _ in collection.list_documents()]
         assert len(documents_list) == 2
+
     return _exercise_collections
 
 
-def test_firestore_collections(exercise_collections, collection):
+def test_firestore_collections(exercise_collections, collection, instance_info):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
@@ -58,7 +58,9 @@ def test_firestore_collections(exercise_collections, collection):
         ("Datastore/operation/Firestore/list_documents", 1),
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 5),
     ]
+
     @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_collections",

@@ -44,11 +44,6 @@ def register_database_client(
     dbapi2_module._nr_explain_query = explain_query
     dbapi2_module._nr_explain_stmts = explain_stmts
     dbapi2_module._nr_instance_info = instance_info
-    dbapi2_module._nr_datastore_instance_feature_flag = False
-
-
-def enable_datastore_instance_feature(dbapi2_module):
-    dbapi2_module._nr_datastore_instance_feature_flag = True
 
 
 class DatabaseTrace(TimeTrace):
@@ -153,12 +148,7 @@ class DatabaseTrace(TimeTrace):
 
         if instance_enabled or db_name_enabled:
 
-            if (
-                self.dbapi2_module
-                and self.connect_params
-                and self.dbapi2_module._nr_datastore_instance_feature_flag
-                and self.dbapi2_module._nr_instance_info is not None
-            ):
+            if self.dbapi2_module and self.connect_params and self.dbapi2_module._nr_instance_info is not None:
 
                 instance_info = self.dbapi2_module._nr_instance_info(*self.connect_params)
 

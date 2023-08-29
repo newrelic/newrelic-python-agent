@@ -45,10 +45,11 @@ def exercise_query(collection):
         query = collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
         assert len(query.get()) == 3
         assert len([_ for _ in query.stream()]) == 3
+
     return _exercise_query
 
 
-def test_firestore_query(exercise_query, collection):
+def test_firestore_query(exercise_query, collection, instance_info):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
@@ -59,6 +60,7 @@ def test_firestore_query(exercise_query, collection):
         ("Datastore/operation/Firestore/stream", 1),
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
     ]
 
     @validate_database_duration()
@@ -89,6 +91,7 @@ def test_firestore_query_trace_node_datastore_params(exercise_query, instance_in
 
     _test()
 
+
 # ===== AggregationQuery =====
 
 
@@ -98,10 +101,11 @@ def exercise_aggregation_query(collection):
         aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
         assert aggregation_query.get()[0][0].value == 3
         assert [_ for _ in aggregation_query.stream()][0][0].value == 3
+
     return _exercise_aggregation_query
 
 
-def test_firestore_aggregation_query(exercise_aggregation_query, collection):
+def test_firestore_aggregation_query(exercise_aggregation_query, collection, instance_info):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
@@ -112,6 +116,7 @@ def test_firestore_aggregation_query(exercise_aggregation_query, collection):
         ("Datastore/operation/Firestore/stream", 1),
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
     ]
 
     @validate_database_duration()
@@ -182,10 +187,11 @@ def exercise_collection_group(client, collection, patch_partition_queries):
         while partitions:
             documents.extend(partitions.pop().query().get())
         assert len(documents) == 6
+
     return _exercise_collection_group
 
 
-def test_firestore_collection_group(exercise_collection_group, client, collection):
+def test_firestore_collection_group(exercise_collection_group, client, collection, instance_info):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/get" % collection.id, 3),
         ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
@@ -198,6 +204,7 @@ def test_firestore_collection_group(exercise_collection_group, client, collectio
         ("Datastore/operation/Firestore/get_partitions", 1),
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 5),
     ]
 
     @validate_database_duration()

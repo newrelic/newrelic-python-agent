@@ -16,19 +16,17 @@ from newrelic.api.asgi_application import wrap_asgi_application
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.graphql_trace import GraphQLOperationTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.api.transaction_name import TransactionNameWrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.graphql_utils import graphql_statement
 from newrelic.hooks.framework_graphql import (
-    framework_version as graphql_framework_version,
+    GRAPHQL_VERSION,
+    ignore_graphql_duplicate_exception,
 )
-from newrelic.hooks.framework_graphql import ignore_graphql_duplicate_exception
 
-
-def framework_details():
-    return ("Strawberry", get_package_version("strawberry"))
+STRAWBERRY_GRAPHQL_VERSION = get_package_version("strawberry-graphql")
+strawberry_version_tuple = tuple(map(int, STRAWBERRY_GRAPHQL_VERSION.split(".")))
 
 
 def bind_execute(query, *args, **kwargs):
@@ -46,9 +44,8 @@ def wrap_execute_sync(wrapped, instance, args, kwargs):
     except TypeError:
         return wrapped(*args, **kwargs)
 
-    framework = framework_details()
-    transaction.add_framework_info(name=framework[0], version=framework[1])
-    transaction.add_framework_info(name="GraphQL", version=graphql_framework_version())
+    transaction.add_framework_info(name="Strawberry", version=STRAWBERRY_GRAPHQL_VERSION)
+    transaction.add_framework_info(name="GraphQL", version=GRAPHQL_VERSION)
 
     if hasattr(query, "body"):
         query = query.body
@@ -73,9 +70,8 @@ async def wrap_execute(wrapped, instance, args, kwargs):
     except TypeError:
         return await wrapped(*args, **kwargs)
 
-    framework = framework_details()
-    transaction.add_framework_info(name=framework[0], version=framework[1])
-    transaction.add_framework_info(name="GraphQL", version=graphql_framework_version())
+    transaction.add_framework_info(name="Strawberry", version=STRAWBERRY_GRAPHQL_VERSION)
+    transaction.add_framework_info(name="GraphQL", version=GRAPHQL_VERSION)
 
     if hasattr(query, "body"):
         query = query.body
@@ -103,13 +99,14 @@ def wrap_from_resolver(wrapped, instance, args, kwargs):
     else:
         if hasattr(field, "base_resolver"):
             if hasattr(field.base_resolver, "wrapped_func"):
-                resolver_name = callable_name(field.base_resolver.wrapped_func)
-                result = TransactionNameWrapper(result, resolver_name, "GraphQL", priority=13)
+                result._nr_base_resolver = field.base_resolver.wrapped_func
 
     return result
 
 
 def instrument_strawberry_schema(module):
+    if strawberry_version_tuple < (0, 23, 3):
+        return
     if hasattr(module, "Schema"):
         if hasattr(module.Schema, "execute"):
             wrap_function_wrapper(module, "Schema.execute", wrap_execute)
@@ -118,11 +115,15 @@ def instrument_strawberry_schema(module):
 
 
 def instrument_strawberry_asgi(module):
+    if strawberry_version_tuple < (0, 23, 3):
+        return
     if hasattr(module, "GraphQL"):
-        wrap_asgi_application(module, "GraphQL.__call__", framework=framework_details())
+        wrap_asgi_application(module, "GraphQL.__call__", framework=("Strawberry", STRAWBERRY_GRAPHQL_VERSION))
 
 
 def instrument_strawberry_schema_converter(module):
+    if strawberry_version_tuple < (0, 23, 3):
+        return
     if hasattr(module, "GraphQLCoreConverter"):
         if hasattr(module.GraphQLCoreConverter, "from_resolver"):
             wrap_function_wrapper(module, "GraphQLCoreConverter.from_resolver", wrap_from_resolver)

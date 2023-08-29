@@ -17,6 +17,7 @@ import psycopg2cffi.extensions
 import psycopg2cffi.extras
 from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import validate_stats_engine_explain_plan_output_is_none
+from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_trace_inputs import (
     validate_database_trace_inputs,
 )
@@ -71,6 +72,7 @@ _test_execute_via_cursor_rollup_metrics = [
     ("Datastore/operation/Postgres/call", 2),
     ("Datastore/operation/Postgres/commit", 3),
     ("Datastore/operation/Postgres/rollback", 1),
+    ("Datastore/instance/Postgres/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 12),
 ]
 
 
@@ -183,6 +185,7 @@ _test_async_mode_rollup_metrics = [
     ("Datastore/statement/Postgres/%s/insert" % DB_SETTINGS["table_name"], 1),
     ("Datastore/operation/Postgres/drop", 1),
     ("Datastore/operation/Postgres/create", 1),
+    ("Datastore/instance/Postgres/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 4),
 ]
 
 

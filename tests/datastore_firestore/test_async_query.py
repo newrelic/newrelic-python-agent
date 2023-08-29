@@ -13,15 +13,17 @@
 # limitations under the License.
 
 import pytest
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 from testing_support.validators.validate_tt_collector_json import (
     validate_tt_collector_json,
 )
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(autouse=True)
@@ -36,16 +38,20 @@ def sample_data(collection):
 
 # ===== AsyncQuery =====
 
+
 @pytest.fixture()
 def exercise_async_query(async_collection):
     async def _exercise_async_query():
-        async_query = async_collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
+        async_query = (
+            async_collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
+        )
         assert len(await async_query.get()) == 3
         assert len([_ async for _ in async_query.stream()]) == 3
+
     return _exercise_async_query
 
 
-def test_firestore_async_query(loop, exercise_async_query, async_collection):
+def test_firestore_async_query(loop, exercise_async_query, async_collection, instance_info):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % async_collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % async_collection.id, 1),
@@ -56,7 +62,9 @@ def test_firestore_async_query(loop, exercise_async_query, async_collection):
         ("Datastore/operation/Firestore/stream", 1),
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
     ]
+
     # @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_async_query",
@@ -85,7 +93,9 @@ def test_firestore_async_query_trace_node_datastore_params(loop, exercise_async_
 
     _test()
 
+
 # ===== AsyncAggregationQuery =====
+
 
 @pytest.fixture()
 def exercise_async_aggregation_query(async_collection):
@@ -93,10 +103,11 @@ def exercise_async_aggregation_query(async_collection):
         async_aggregation_query = async_collection.select("x").where(field_path="x", op_string="<=", value=3).count()
         assert (await async_aggregation_query.get())[0][0].value == 3
         assert [_ async for _ in async_aggregation_query.stream()][0][0].value == 3
+
     return _exercise_async_aggregation_query
 
 
-def test_firestore_async_aggregation_query(loop, exercise_async_aggregation_query, async_collection):
+def test_firestore_async_aggregation_query(loop, exercise_async_aggregation_query, async_collection, instance_info):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/stream" % async_collection.id, 1),
         ("Datastore/statement/Firestore/%s/get" % async_collection.id, 1),
@@ -107,7 +118,9 @@ def test_firestore_async_aggregation_query(loop, exercise_async_aggregation_quer
         ("Datastore/operation/Firestore/stream", 1),
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
     ]
+
     @validate_database_duration()
     @validate_transaction_metrics(
         "test_firestore_async_aggregation_query",
@@ -128,7 +141,9 @@ def test_firestore_async_aggregation_query_generators(async_collection, assert_t
     assert_trace_for_async_generator(async_aggregation_query.stream)
 
 
-def test_firestore_async_aggregation_query_trace_node_datastore_params(loop, exercise_async_aggregation_query, instance_info):
+def test_firestore_async_aggregation_query_trace_node_datastore_params(
+    loop, exercise_async_aggregation_query, instance_info
+):
     @validate_tt_collector_json(datastore_params=instance_info)
     @background_task()
     def _test():
@@ -145,9 +160,9 @@ def patch_partition_queries(monkeypatch, async_client, collection, sample_data):
     """
     Partitioning is not implemented in the Firestore emulator.
 
-    Ordinarily this method would return a coroutine that returns an async_generator of Cursor objects. 
-    Each Cursor must point at a valid document path. To test this, we can patch the RPC to return 1 Cursor 
-    which is pointed at any document available. The get_partitions will take that and make 2 QueryPartition 
+    Ordinarily this method would return a coroutine that returns an async_generator of Cursor objects.
+    Each Cursor must point at a valid document path. To test this, we can patch the RPC to return 1 Cursor
+    which is pointed at any document available. The get_partitions will take that and make 2 QueryPartition
     objects out of it, which should be enough to ensure we can exercise the generator's tracing.
     """
     from google.cloud.firestore_v1.types.document import Value
@@ -159,6 +174,7 @@ def patch_partition_queries(monkeypatch, async_client, collection, sample_data):
     async def mock_partition_query(*args, **kwargs):
         async def _mock_partition_query():
             yield Cursor(before=False, values=[Value(reference_value=documents[0].path)])
+
         return _mock_partition_query()
 
     monkeypatch.setattr(async_client._firestore_api, "partition_query", mock_partition_query)
@@ -178,10 +194,13 @@ def exercise_async_collection_group(async_client, async_collection):
         while partitions:
             documents.extend(await partitions.pop().query().get())
         assert len(documents) == 6
+
     return _exercise_async_collection_group
 
 
-def test_firestore_async_collection_group(loop, exercise_async_collection_group, async_collection, patch_partition_queries):
+def test_firestore_async_collection_group(
+    loop, exercise_async_collection_group, async_collection, patch_partition_queries, instance_info
+):
     _test_scoped_metrics = [
         ("Datastore/statement/Firestore/%s/get" % async_collection.id, 3),
         ("Datastore/statement/Firestore/%s/stream" % async_collection.id, 1),
@@ -194,6 +213,7 @@ def test_firestore_async_collection_group(loop, exercise_async_collection_group,
         ("Datastore/operation/Firestore/get_partitions", 1),
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 5),
     ]
 
     @validate_database_duration()
@@ -211,12 +231,16 @@ def test_firestore_async_collection_group(loop, exercise_async_collection_group,
 
 
 @background_task()
-def test_firestore_async_collection_group_generators(async_client, async_collection, assert_trace_for_async_generator, patch_partition_queries):
+def test_firestore_async_collection_group_generators(
+    async_client, async_collection, assert_trace_for_async_generator, patch_partition_queries
+):
     async_collection_group = async_client.collection_group(async_collection.id)
     assert_trace_for_async_generator(async_collection_group.get_partitions, 1)
 
 
-def test_firestore_async_collection_group_trace_node_datastore_params(loop, exercise_async_collection_group, instance_info, patch_partition_queries):
+def test_firestore_async_collection_group_trace_node_datastore_params(
+    loop, exercise_async_collection_group, instance_info, patch_partition_queries
+):
     @validate_tt_collector_json(datastore_params=instance_info)
     @background_task()
     def _test():

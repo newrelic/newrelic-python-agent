@@ -263,7 +263,7 @@ class HttpClient(BaseClient):
 
                 # If there is no resolved cafile, assume the bundled certs are
                 # required and report this condition as a supportability metric.
-                if not verify_path.cafile:
+                if not verify_path.cafile and not verify_path.capath:
                     ca_bundle_path = certs.where()
                     internal_metric(
                         "Supportability/Python/Certificate/BundleRequired", 1

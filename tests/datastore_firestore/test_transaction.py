@@ -55,6 +55,7 @@ def exercise_transaction_commit(client, collection):
 
         _exercise(client.transaction())
         assert len([_ for _ in collection.list_documents()]) == 2
+
     return _exercise_transaction_commit
 
 
@@ -73,10 +74,11 @@ def exercise_transaction_rollback(client, collection):
         with pytest.raises(RuntimeError):
             _exercise(client.transaction())
         assert len([_ for _ in collection.list_documents()]) == 3
+
     return _exercise_transaction_rollback
 
 
-def test_firestore_transaction_commit(exercise_transaction_commit, collection):
+def test_firestore_transaction_commit(exercise_transaction_commit, collection, instance_info):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/commit", 1),
         ("Datastore/operation/Firestore/get_all", 2),
@@ -89,6 +91,7 @@ def test_firestore_transaction_commit(exercise_transaction_commit, collection):
         ("Datastore/operation/Firestore/list_documents", 1),
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 5),
     ]
 
     @validate_database_duration()
@@ -105,7 +108,7 @@ def test_firestore_transaction_commit(exercise_transaction_commit, collection):
     _test()
 
 
-def test_firestore_transaction_rollback(exercise_transaction_rollback, collection):
+def test_firestore_transaction_rollback(exercise_transaction_rollback, collection, instance_info):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/rollback", 1),
         ("Datastore/statement/Firestore/%s/list_documents" % collection.id, 1),
@@ -115,6 +118,7 @@ def test_firestore_transaction_rollback(exercise_transaction_rollback, collectio
         ("Datastore/operation/Firestore/list_documents", 1),
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
     ]
 
     @validate_database_duration()

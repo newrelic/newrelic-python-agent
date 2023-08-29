@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import django
 import pytest
 import webtest
 from testing_support.fixtures import function_not_called, override_generic_settings
@@ -30,7 +31,6 @@ from newrelic.core.config import global_settings
 from newrelic.packages import six
 
 DJANGO_VERSION = get_package_version_tuple("django")
-
 
 @pytest.fixture(scope="module")
 def target_application():
@@ -65,16 +65,16 @@ _scoped_metrics = [
     ("Python/WSGI/Application", 1),
     ("Python/WSGI/Response", 1),
     ("Python/WSGI/Finalize", 1),
-    (("Function/django.middleware.common:" "CommonMiddleware" + process_request_method), 1),
-    (("Function/django.contrib.sessions.middleware:" "SessionMiddleware" + process_request_method), 1),
-    (("Function/django.contrib.auth.middleware:" "AuthenticationMiddleware" + process_request_method), 1),
-    (("Function/django.contrib.messages.middleware:" "MessageMiddleware" + process_request_method), 1),
-    (("Function/%s:" % url_module_path + "%s.resolve" % url_resolver_cls), 1),
-    (("Function/django.middleware.csrf:" "CsrfViewMiddleware" + process_view_method), 1),
-    (("Function/django.contrib.messages.middleware:" "MessageMiddleware" + process_response_method), 1),
-    (("Function/django.middleware.csrf:" "CsrfViewMiddleware" + process_response_method), 1),
-    (("Function/django.contrib.sessions.middleware:" "SessionMiddleware" + process_response_method), 1),
-    (("Function/django.middleware.common:" "CommonMiddleware" + process_response_method), 1),
+    (("Function/django.middleware.common:CommonMiddleware%s" % process_request_method), 1),
+    (("Function/django.contrib.sessions.middleware:SessionMiddleware%s" % process_request_method), 1),
+    (("Function/django.contrib.auth.middleware:AuthenticationMiddleware%s" % process_request_method), 1),
+    (("Function/django.contrib.messages.middleware:MessageMiddleware%s" % process_request_method), 1),
+    (("Function/%s:%s.resolve" % (url_module_path, url_resolver_cls)), 1),
+    (("Function/django.middleware.csrf:CsrfViewMiddleware%s" % process_view_method), 1),
+    (("Function/django.contrib.messages.middleware:MessageMiddleware%s" % process_response_method), 1),
+    (("Function/django.middleware.csrf:CsrfViewMiddleware%s" % process_response_method), 1),
+    (("Function/django.contrib.sessions.middleware:SessionMiddleware%s" % process_response_method), 1),
+    (("Function/django.middleware.common:CommonMiddleware%s" % process_response_method), 1),
 ]
 
 _test_application_index_scoped_metrics = list(_scoped_metrics)
@@ -150,7 +150,7 @@ _test_api_view_scoped_metrics_get.append(("Function/%s" % _test_api_view_view_na
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(_test_api_view_view_name_get, scoped_metrics=_test_api_view_scoped_metrics_get)
-@validate_code_level_metrics("urls.WrappedAPIView" if six.PY3 else "urls", "wrapped_view")
+@validate_code_level_metrics("urls.WrappedAPIView", "wrapped_view", py2_namespace="urls")
 def test_api_view_get(target_application):
     response = target_application.get("/api_view/")
     response.mustcontain("wrapped_view response")

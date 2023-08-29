@@ -18,6 +18,7 @@ from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 
+
 _redis_client_sync_methods = {
     "acl_dryrun",
     "auth",
@@ -611,7 +612,6 @@ def instrument_asyncio_redis_client(module):
         for operation in _redis_client_async_methods:
             if hasattr(class_, operation):
                 _wrap_asyncio_Redis_method_wrapper(module, "Redis", operation)
-
 
 def instrument_redis_commands_core(module):
     _instrument_redis_commands_module(module, "CoreCommands")

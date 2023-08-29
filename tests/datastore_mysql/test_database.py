@@ -14,6 +14,7 @@
 
 import mysql.connector
 from testing_support.db_settings import mysql_settings
+from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_trace_inputs import (
     validate_database_trace_inputs,
 )
@@ -68,9 +69,16 @@ _test_execute_via_cursor_rollup_metrics = [
     ("Datastore/operation/MySQL/create", 2),
     ("Datastore/operation/MySQL/commit", 2),
     ("Datastore/operation/MySQL/rollback", 1),
+    ("Datastore/instance/MySQL/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 12),
 ]
 
 
+@validate_transaction_metrics(
+    "test_database:test_execute_via_cursor",
+    scoped_metrics=_test_execute_via_cursor_scoped_metrics,
+    rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+    background_task=True,
+)
 @validate_transaction_metrics(
     "test_database:test_execute_via_cursor",
     scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -160,6 +168,7 @@ _test_connect_using_alias_rollup_metrics = [
     ("Datastore/operation/MySQL/create", 2),
     ("Datastore/operation/MySQL/commit", 2),
     ("Datastore/operation/MySQL/rollback", 1),
+    ("Datastore/instance/MySQL/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 12),
 ]
 
 

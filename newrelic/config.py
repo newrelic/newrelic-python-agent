@@ -2454,6 +2454,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.logger_loguru",
         "instrument_loguru_logger",
     )
+    _process_module_definition(
+        "structlog._base",
+        "newrelic.hooks.logger_structlog",
+        "instrument_structlog__base",
+    )
 
     _process_module_definition(
         "paste.httpserver",

@@ -289,31 +289,21 @@ def sanitize(value):
     valid_value_types = (six.text_type, six.binary_type, bool, float, six.integer_types)
 
     # When working with numpy, note that numpy has its own `int`s, `str`s,
-    # et cetera. This is fine for computational purposes, but when it
-    # comes to displaying this data in Insights/Nerdgraph, `numpy.str_`
-    # is not supported, unlike `str`.  `numpy.str_` is a subclass of string
-    # which `isinstance` captures.  Unfortunately, in this case, this
-    # is not the desired behavior.  `type()` needs to be explicitly used
-    # in this case and not `isinstance()` to ensure that anything other
-    # than what is in `valid_value_types` is converted to a `str`.
-    #
-    # In other words:
-    #   isinstance([var with type <class 'numpy.str_'>], <class 'str'>) == True
-    #   type([var with type <class 'numpy.str_'>]) != <class 'str'>
-    #
+    # et cetera. `numpy.str_` and `numpy.float_` inherit from Python's native
+    # `str` and `float`, respectively.  However, some types, such as `numpy.int_`
+    # and `numpy.bool_`, do not inherit from `int` and `bool` (respectively).
+    # In those cases, the valid_value_types check fails and it will try to
+    # convert these to string, which is not the desired behavior.  Checking for
+    # `type` in lieu of `isinstance` has the potential to impact performance.
 
-    # This is to capture any potential numpy types that could
-    # otherwise correspond to a standard python type and
-    # converts them to the appropriate standard python type.
-    # If this is not the case, the function will attempt to
-    # convert the value into a string type. (e.g. UUID types)
-    if not type(value) in valid_value_types:
-        try:
-            value = value.item()
-        except AttributeError:
-            pass
-
-    if not isinstance(value, valid_value_types):
+    # numpy values have an attribute "item" that returns the closest
+    # equivalent Python native type.  Ex: numpy.int64 -> int
+    # This is important to utilize in cases like int and bool where
+    # numpy does not inherit from those classes. This logic is
+    # determining whether or not the value is a valid_value_type (or
+    # inherited from one of those types) AND whether it is a numpy
+    # type (by determining if it has the attribute "item").
+    if not isinstance(value, valid_value_types) and not hasattr(value, "item"):
         original = value
 
         try:

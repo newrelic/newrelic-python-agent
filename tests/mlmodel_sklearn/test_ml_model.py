@@ -15,7 +15,6 @@
 import logging
 
 import pandas
-import six
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.validators.validate_ml_events import validate_ml_events
@@ -33,71 +32,35 @@ _logger = logging.getLogger(__name__)
 
 # Create custom model that isn't auto-instrumented to validate ml_model wrapper functionality
 class CustomTestModel(BaseDecisionTree):
-    if six.PY2:
-
-        def __init__(
-            self,
-            criterion="mse",
-            splitter="random",
-            max_depth=None,
-            min_samples_split=2,
-            min_samples_leaf=1,
-            min_weight_fraction_leaf=0.0,
-            max_features=None,
-            random_state=0,
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            min_impurity_split=None,
-            class_weight=None,
-            presort=False,
-        ):
-            super(CustomTestModel, self).__init__(
-                criterion=criterion,
-                splitter=splitter,
-                max_depth=max_depth,
-                min_samples_split=min_samples_split,
-                min_samples_leaf=min_samples_leaf,
-                min_weight_fraction_leaf=min_weight_fraction_leaf,
-                max_features=max_features,
-                max_leaf_nodes=max_leaf_nodes,
-                class_weight=class_weight,
-                random_state=random_state,
-                min_impurity_decrease=min_impurity_decrease,
-                min_impurity_split=min_impurity_split,
-                presort=presort,
-            )
-
-    else:
-
-        def __init__(
-            self,
-            criterion="poisson",
-            splitter="random",
-            max_depth=None,
-            min_samples_split=2,
-            min_samples_leaf=1,
-            min_weight_fraction_leaf=0.0,
-            max_features=None,
-            random_state=0,
-            max_leaf_nodes=None,
-            min_impurity_decrease=0.0,
-            class_weight=None,
-            ccp_alpha=0.0,
-        ):
-            super().__init__(
-                criterion=criterion,
-                splitter=splitter,
-                max_depth=max_depth,
-                min_samples_split=min_samples_split,
-                min_samples_leaf=min_samples_leaf,
-                min_weight_fraction_leaf=min_weight_fraction_leaf,
-                max_features=max_features,
-                max_leaf_nodes=max_leaf_nodes,
-                class_weight=class_weight,
-                random_state=random_state,
-                min_impurity_decrease=min_impurity_decrease,
-                ccp_alpha=ccp_alpha,
-            )
+    def __init__(
+        self,
+        criterion="poisson",
+        splitter="random",
+        max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        min_weight_fraction_leaf=0.0,
+        max_features=None,
+        random_state=0,
+        max_leaf_nodes=None,
+        min_impurity_decrease=0.0,
+        class_weight=None,
+        ccp_alpha=0.0,
+    ):
+        super().__init__(
+            criterion=criterion,
+            splitter=splitter,
+            max_depth=max_depth,
+            min_samples_split=min_samples_split,
+            min_samples_leaf=min_samples_leaf,
+            min_weight_fraction_leaf=min_weight_fraction_leaf,
+            max_features=max_features,
+            max_leaf_nodes=max_leaf_nodes,
+            class_weight=class_weight,
+            random_state=random_state,
+            min_impurity_decrease=min_impurity_decrease,
+            ccp_alpha=ccp_alpha,
+        )
 
     def fit(self, X, y, sample_weight=None, check_input=True):
         if hasattr(super(CustomTestModel, self), "_fit"):
@@ -119,7 +82,6 @@ class CustomTestModel(BaseDecisionTree):
         return super(CustomTestModel, self).predict(X, check_input=check_input)
 
 
-label_value = "1.0" if six.PY2 else "0.5"
 int_list_recorded_custom_events = [
     (
         {"type": "InferenceData"},
@@ -129,7 +91,7 @@ int_list_recorded_custom_events = [
             "model_version": "1.2.3",
             "feature.0": 1.0,
             "feature.1": 2.0,
-            "label.0": label_value,
+            "label.0": "0.5",
             "new_relic_data_schema_version": 2,
         },
     ),
@@ -156,7 +118,6 @@ def test_custom_model_int_list_no_features_and_labels():
     _test()
 
 
-label_value = "1.0" if six.PY2 else "0.5"
 int_list_recorded_custom_events_with_metadata = [
     (
         {"type": "InferenceData"},
@@ -166,7 +127,7 @@ int_list_recorded_custom_events_with_metadata = [
             "model_version": "1.2.3",
             "feature.0": 1.0,
             "feature.1": 2.0,
-            "label.0": label_value,
+            "label.0": "0.5",
             "new_relic_data_schema_version": 2,
             "metadata1": "value1",
             "metadata2": "value2",
@@ -210,7 +171,7 @@ pandas_df_recorded_custom_events = [
             "feature.feature1": 0,
             "feature.feature2": 0,
             "feature.feature3": 1,
-            "label.label1": "0.5" if six.PY3 else "0.0",
+            "label.label1": "0.5",
             "new_relic_data_schema_version": 2,
         },
     ),
@@ -235,7 +196,7 @@ def test_wrapper_attrs_custom_model_pandas_df():
             feature_names=["feature1", "feature2", "feature3"],
             label_names=["label1"],
         )
-        labels = model.predict(x_test)
+        model.predict(x_test)
         return model
 
     _test()
@@ -279,7 +240,7 @@ def test_wrapper_attrs_builtin_model():
             feature_names=["feature1", "feature2"],
             label_names=["label1"],
         )
-        labels = model.predict(x_test)
+        model.predict(x_test)
 
         return model
 
@@ -325,7 +286,7 @@ def test_wrapper_mismatched_features_and_labels_df():
             feature_names=["feature1", "feature2"],
             label_names=["label1", "label2"],
         )
-        labels = model.predict(x_test)
+        model.predict(x_test)
         return model
 
     _test()
@@ -363,7 +324,7 @@ def test_wrapper_mismatched_features_and_labels_np_array():
 
         model = clf.fit(x_train, y_train)
         wrap_mlmodel(model, name="MyDecisionTreeClassifier", version="0.0.1", feature_names=["feature1"])
-        labels = model.predict(x_test)
+        model.predict(x_test)
 
         return model
 

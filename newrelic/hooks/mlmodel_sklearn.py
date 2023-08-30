@@ -294,7 +294,7 @@ def create_prediction_event(transaction, class_, instance, args, kwargs, return_
             "modelName": model_name,
         }
         if metadata:
-            event.update({key: value for key, value in metadata.items()})
+            event.update(metadata)
         # Don't include the raw value when inference_event_value is disabled.
         if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:
             event.update(

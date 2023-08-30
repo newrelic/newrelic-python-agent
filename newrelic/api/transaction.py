@@ -60,11 +60,15 @@ from newrelic.core.attribute_filter import (
     DST_NONE,
     DST_TRANSACTION_TRACER,
 )
-from newrelic.core.config import CUSTOM_EVENT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
+from newrelic.core.config import (
+    CUSTOM_EVENT_RESERVOIR_SIZE,
+    LOG_EVENT_RESERVOIR_SIZE,
+    ML_EVENT_RESERVOIR_SIZE,
+)
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.stack_trace import exception_stack
-from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
+from newrelic.core.stats_engine import CustomMetrics, DimensionalMetrics, SampledDataSet
 from newrelic.core.thread_utilization import utilization_tracker
 from newrelic.core.trace_cache import (
     TraceCacheActiveTraceError,
@@ -305,6 +309,7 @@ class Transaction(object):
         self.synthetics_header = None
 
         self._custom_metrics = CustomMetrics()
+        self._dimensional_metrics = DimensionalMetrics()
 
         global_settings = application.global_settings
 
@@ -328,12 +333,14 @@ class Transaction(object):
             self._custom_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data
             )
+            self._ml_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.ml_event_data)
             self._log_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.log_event_data
             )
         else:
             self._custom_events = SampledDataSet(capacity=CUSTOM_EVENT_RESERVOIR_SIZE)
             self._log_events = SampledDataSet(capacity=LOG_EVENT_RESERVOIR_SIZE)
+            self._ml_events = SampledDataSet(capacity=ML_EVENT_RESERVOIR_SIZE)
 
     def __del__(self):
         self._dead = True
@@ -580,10 +587,12 @@ class Transaction(object):
             errors=tuple(self._errors),
             slow_sql=tuple(self._slow_sql),
             custom_events=self._custom_events,
+            ml_events=self._ml_events,
             log_events=self._log_events,
             apdex_t=self.apdex,
             suppress_apdex=self.suppress_apdex,
             custom_metrics=self._custom_metrics,
+            dimensional_metrics=self._dimensional_metrics,
             guid=self.guid,
             cpu_time=self._cpu_user_time_value,
             suppress_transaction_trace=self.suppress_transaction_trace,
@@ -1030,7 +1039,9 @@ class Transaction(object):
 
         settings = self._settings
         account_id = settings.account_id
-        trusted_account_key = settings.trusted_account_key
+        trusted_account_key = settings.trusted_account_key or (
+            self._settings.serverless_mode.enabled and self._settings.account_id
+        )
         application_id = settings.primary_application_id
 
         if not (account_id and application_id and trusted_account_key and settings.distributed_tracing.enabled):
@@ -1121,7 +1132,10 @@ class Transaction(object):
             return False
 
         settings = self._settings
-        if not (settings.distributed_tracing.enabled and settings.trusted_account_key):
+        trusted_account_key = settings.trusted_account_key or (
+            self._settings.serverless_mode.enabled and self._settings.account_id
+        )
+        if not (settings.distributed_tracing.enabled and trusted_account_key):
             return False
 
         if self._distributed_trace_state:
@@ -1167,10 +1181,13 @@ class Transaction(object):
 
             settings = self._settings
             account_id = data.get("ac")
+            trusted_account_key = settings.trusted_account_key or (
+                self._settings.serverless_mode.enabled and self._settings.account_id
+            )
 
             # If trust key doesn't exist in the payload, use account_id
             received_trust_key = data.get("tk", account_id)
-            if settings.trusted_account_key != received_trust_key:
+            if trusted_account_key != received_trust_key:
                 self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount")
                 if settings.debug.log_untrusted_distributed_trace_keys:
                     _logger.debug(
@@ -1279,8 +1296,10 @@ class Transaction(object):
                 tracestate = ensure_str(tracestate)
                 try:
                     vendors = W3CTraceState.decode(tracestate)
-                    tk = self._settings.trusted_account_key
-                    payload = vendors.pop(tk + "@nr", "")
+                    trusted_account_key = self._settings.trusted_account_key or (
+                        self._settings.serverless_mode.enabled and self._settings.account_id
+                    )
+                    payload = vendors.pop(trusted_account_key + "@nr", "")
                     self.tracing_vendors = ",".join(vendors.keys())
                     self.tracestate = vendors.text(limit=31)
                 except:
@@ -1289,7 +1308,7 @@ class Transaction(object):
                     # Remove trusted new relic header if available and parse
                     if payload:
                         try:
-                            tracestate_data = NrTraceState.decode(payload, tk)
+                            tracestate_data = NrTraceState.decode(payload, trusted_account_key)
                         except:
                             tracestate_data = None
                         if tracestate_data:
@@ -1597,6 +1616,16 @@ class Transaction(object):
         for name, value in metrics:
             self._custom_metrics.record_custom_metric(name, value)
 
+    def record_dimensional_metric(self, name, value, tags=None):
+        self._dimensional_metrics.record_dimensional_metric(name, value, tags)
+
+    def record_dimensional_metrics(self, metrics):
+        for metric in metrics:
+            name, value = metric[:2]
+            tags = metric[2] if len(metric) >= 3 else None
+
+            self._dimensional_metrics.record_dimensional_metric(name, value, tags)
+
     def record_custom_event(self, event_type, params):
         settings = self._settings
 
@@ -1609,6 +1638,19 @@ class Transaction(object):
         event = create_custom_event(event_type, params)
         if event:
             self._custom_events.add(event, priority=self.priority)
+
+    def record_ml_event(self, event_type, params):
+        settings = self._settings
+
+        if not settings:
+            return
+
+        if not settings.ml_insights_events.enabled:
+            return
+
+        event = create_custom_event(event_type, params)
+        if event:
+            self._ml_events.add(event, priority=self.priority)
 
     def _intern_string(self, value):
         return self._string_cache.setdefault(value, value)
@@ -1903,6 +1945,44 @@ def record_custom_metrics(metrics, application=None):
         application.record_custom_metrics(metrics)
 
 
+def record_dimensional_metric(name, value, tags=None, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_dimensional_metric(name, value, tags)
+        else:
+            _logger.debug(
+                "record_dimensional_metric has been called but no "
+                "transaction was running. As a result, the following metric "
+                "has not been recorded. Name: %r Value: %r Tags: %r. To correct this "
+                "problem, supply an application object as a parameter to this "
+                "record_dimensional_metrics call.",
+                name,
+                value,
+                tags,
+            )
+    elif application.enabled:
+        application.record_dimensional_metric(name, value, tags)
+
+
+def record_dimensional_metrics(metrics, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_dimensional_metrics(metrics)
+        else:
+            _logger.debug(
+                "record_dimensional_metrics has been called but no "
+                "transaction was running. As a result, the following metrics "
+                "have not been recorded: %r. To correct this problem, "
+                "supply an application object as a parameter to this "
+                "record_dimensional_metric call.",
+                list(metrics),
+            )
+    elif application.enabled:
+        application.record_dimensional_metrics(metrics)
+
+
 def record_custom_event(event_type, params, application=None):
     """Record a custom event.
 
@@ -1929,6 +2009,34 @@ def record_custom_event(event_type, params, application=None):
             )
     elif application.enabled:
         application.record_custom_event(event_type, params)
+
+
+def record_ml_event(event_type, params, application=None):
+    """Record a machine learning custom event.
+
+    Args:
+        event_type (str): The type (name) of the ml event.
+        params (dict): Attributes to add to the event.
+        application (newrelic.api.Application): Application instance.
+
+    """
+
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_ml_event(event_type, params)
+        else:
+            _logger.debug(
+                "record_ml_event has been called but no "
+                "transaction was running. As a result, the following event "
+                "has not been recorded. event_type: %r params: %r. To correct "
+                "this problem, supply an application object as a parameter to "
+                "this record_ml_event call.",
+                event_type,
+                params,
+            )
+    elif application.enabled:
+        application.record_ml_event(event_type, params)
 
 
 def record_log_event(message, level=None, timestamp=None, application=None, priority=None):

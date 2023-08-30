@@ -54,7 +54,7 @@ class PredictReturnTypeProxy(ObjectProxy):
         self._nr_training_step = training_step
 
 
-def _wrap_method_trace(module, class_, method, name=None, group=None, metadata=None, label_mapping=None):
+def _wrap_method_trace(module, class_, method, name=None, group=None, metadata=None):
     def _nr_wrapper_method(wrapped, instance, args, kwargs):
         transaction = current_transaction()
         trace = current_trace()
@@ -95,7 +95,7 @@ def _wrap_method_trace(module, class_, method, name=None, group=None, metadata=N
         # _nr_wrapped attrs that will attach model info to the data.
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
-            create_prediction_event(transaction, class_, instance, args, kwargs, return_val, metadata, label_mapping)
+            create_prediction_event(transaction, class_, instance, args, kwargs, return_val, metadata)
             return PredictReturnTypeProxy(return_val, model_name=class_, training_step=training_step)
         return return_val
 
@@ -234,7 +234,7 @@ def bind_predict(X, *args, **kwargs):
     return X
 
 
-def create_prediction_event(transaction, class_, instance, args, kwargs, return_val, metadata=None, label_mapping=None):
+def create_prediction_event(transaction, class_, instance, args, kwargs, return_val, metadata=None):
     import numpy as np
 
     data_set = bind_predict(*args, **kwargs)
@@ -309,21 +309,19 @@ def create_prediction_event(transaction, class_, instance, args, kwargs, return_
             )
             event.update(
                 {
-                    "label.%s" % str(label_names_list[index]): label_mapping[value] if label_mapping else str(value)
+                    "label.%s" % str(label_names_list[index]): str(value)
                     for index, value in enumerate(labels[prediction_index])
                 }
             )
         transaction.record_ml_event("InferenceData", event)
 
 
-def _nr_instrument_model(module, model_class, metadata=None, label_mapping=None):
+def _nr_instrument_model(module, model_class, metadata=None):
     for method_name in METHODS_TO_WRAP:
         if hasattr(getattr(module, model_class), method_name):
             # Function/MLModel/Sklearn/Named/<class name>.<method name>
             name = "MLModel/Sklearn/Named/%s.%s" % (model_class, method_name)
-            _wrap_method_trace(
-                module, model_class, method_name, name=name, metadata=metadata, label_mapping=label_mapping
-            )
+            _wrap_method_trace(module, model_class, method_name, name=name, metadata=metadata)
 
 
 def _instrument_sklearn_models(module, model_classes):

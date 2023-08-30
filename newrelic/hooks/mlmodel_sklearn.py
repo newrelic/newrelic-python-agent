@@ -54,7 +54,7 @@ class PredictReturnTypeProxy(ObjectProxy):
         self._nr_training_step = training_step
 
 
-def _wrap_method_trace(module, class_, method, name=None, group=None, metadata=None):
+def _wrap_method_trace(module, class_, method, name=None, group=None):
     def _nr_wrapper_method(wrapped, instance, args, kwargs):
         transaction = current_transaction()
         trace = current_trace()
@@ -95,7 +95,7 @@ def _wrap_method_trace(module, class_, method, name=None, group=None, metadata=N
         # _nr_wrapped attrs that will attach model info to the data.
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
-            create_prediction_event(transaction, class_, instance, args, kwargs, return_val, metadata)
+            create_prediction_event(transaction, class_, instance, args, kwargs, return_val)
             return PredictReturnTypeProxy(return_val, model_name=class_, training_step=training_step)
         return return_val
 
@@ -234,7 +234,7 @@ def bind_predict(X, *args, **kwargs):
     return X
 
 
-def create_prediction_event(transaction, class_, instance, args, kwargs, return_val, metadata=None):
+def create_prediction_event(transaction, class_, instance, args, kwargs, return_val):
     import numpy as np
 
     data_set = bind_predict(*args, **kwargs)
@@ -242,6 +242,7 @@ def create_prediction_event(transaction, class_, instance, args, kwargs, return_
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
     label_names = getattr(instance, "_nr_wrapped_label_names", None)
+    metadata = getattr(instance, "_nr_wrapped_metadata", {})
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
@@ -294,13 +295,8 @@ def create_prediction_event(transaction, class_, instance, args, kwargs, return_
         }
         if metadata:
             event.update({key: value for key, value in metadata.items()})
-        # Don't include the raw value when inference_event_value is disabled or when high security mode is enabled.
-        if (
-            settings
-            and settings.machine_learning
-            and settings.machine_learning.inference_events_value.enabled
-            and not settings.high_security
-        ):
+        # Don't include the raw value when inference_event_value is disabled.
+        if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:
             event.update(
                 {
                     "feature.%s" % str(final_feature_names[feature_col_index]): value
@@ -316,12 +312,12 @@ def create_prediction_event(transaction, class_, instance, args, kwargs, return_
         transaction.record_ml_event("InferenceData", event)
 
 
-def _nr_instrument_model(module, model_class, metadata=None):
+def _nr_instrument_model(module, model_class):
     for method_name in METHODS_TO_WRAP:
         if hasattr(getattr(module, model_class), method_name):
             # Function/MLModel/Sklearn/Named/<class name>.<method name>
             name = "MLModel/Sklearn/Named/%s.%s" % (model_class, method_name)
-            _wrap_method_trace(module, model_class, method_name, name=name, metadata=metadata)
+            _wrap_method_trace(module, model_class, method_name, name=name)
 
 
 def _instrument_sklearn_models(module, model_classes):

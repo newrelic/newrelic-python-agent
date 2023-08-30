@@ -156,7 +156,7 @@ def test_custom_model_int_list_no_features_and_labels():
     _test()
 
 
-label_value = 1.0 if six.PY2 else 0.5
+label_value = "1.0" if six.PY2 else "0.5"
 int_list_recorded_custom_events_with_metadata = [
     (
         {"type": "InferenceData"},
@@ -168,8 +168,8 @@ int_list_recorded_custom_events_with_metadata = [
             "feature.1": 2.0,
             "label.0": label_value,
             "new_relic_data_schema_version": 2,
-            "metadata1": "WHAT?",
-            "metadata2": "YEAH!",
+            "metadata1": "value1",
+            "metadata2": "value2",
         },
     ),
 ]
@@ -190,7 +190,7 @@ def test_custom_model_int_list_with_metadata():
             model,
             name="MyCustomModel",
             version="1.2.3",
-            metadata={"metadata1": "WHAT?", "metadata2": "YEAH!"},
+            metadata={"metadata1": "value1", "metadata2": "value2"},
         )
 
         labels = model.predict(x_test)

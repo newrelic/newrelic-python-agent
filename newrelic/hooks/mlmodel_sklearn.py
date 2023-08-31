@@ -95,8 +95,7 @@ def _wrap_method_trace(module, class_, method, name=None, group=None):
         # _nr_wrapped attrs that will attach model info to the data.
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
-            inference_id = uuid.uuid4()
-            create_prediction_event(transaction, class_, inference_id, instance, args, kwargs, return_val)
+            create_prediction_event(transaction, class_, instance, args, kwargs, return_val)
             return PredictReturnTypeProxy(return_val, model_name=class_, training_step=training_step)
         return return_val
 
@@ -235,7 +234,7 @@ def bind_predict(X, *args, **kwargs):
     return X
 
 
-def create_prediction_event(transaction, class_, inference_id, instance, args, kwargs, return_val):
+def create_prediction_event(transaction, class_, instance, args, kwargs, return_val):
     import numpy as np
 
     data_set = bind_predict(*args, **kwargs)
@@ -243,7 +242,10 @@ def create_prediction_event(transaction, class_, inference_id, instance, args, k
     model_version = getattr(instance, "_nr_wrapped_version", "0.0.0")
     user_provided_feature_names = getattr(instance, "_nr_wrapped_feature_names", None)
     label_names = getattr(instance, "_nr_wrapped_label_names", None)
+    metadata = getattr(instance, "_nr_wrapped_metadata", {})
     settings = transaction.settings if transaction.settings is not None else global_settings()
+
+    prediction_id = uuid.uuid4()
 
     labels = []
     if return_val is not None:
@@ -260,7 +262,7 @@ def create_prediction_event(transaction, class_, inference_id, instance, args, k
             class_,
             label_names_list,
             tags={
-                "inference_id": inference_id,
+                "prediction_id": prediction_id,
                 "model_version": model_version,
                 # The following are used for entity synthesis.
                 "modelName": model_name,
@@ -274,7 +276,7 @@ def create_prediction_event(transaction, class_, inference_id, instance, args, k
         class_,
         final_feature_names,
         tags={
-            "inference_id": inference_id,
+            "prediction_id": prediction_id,
             "model_version": model_version,
             # The following are used for entity synthesis.
             "modelName": model_name,
@@ -282,18 +284,23 @@ def create_prediction_event(transaction, class_, inference_id, instance, args, k
     )
     features, predictions = np_casted_data_set.shape
     for prediction_index, prediction in enumerate(np_casted_data_set):
+        inference_id = uuid.uuid4()
+
         event = {
             "inference_id": inference_id,
+            "prediction_id": prediction_id,
             "model_version": model_version,
             "new_relic_data_schema_version": 2,
             # The following are used for entity synthesis.
             "modelName": model_name,
         }
+        if metadata and isinstance(metadata, dict):
+            event.update(metadata)
         # Don't include the raw value when inference_event_value is disabled.
         if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:
             event.update(
                 {
-                    "feature.%s" % str(final_feature_names[feature_col_index]): str(value)
+                    "feature.%s" % str(final_feature_names[feature_col_index]): value
                     for feature_col_index, value in enumerate(prediction)
                 }
             )

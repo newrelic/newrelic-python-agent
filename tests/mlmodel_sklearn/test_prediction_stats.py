@@ -445,9 +445,8 @@ _test_prediction_stats_tags = frozenset(
     ],
 )
 def test_prediction_stats(run_model, x_train, y_train, x_test, metrics, force_uuid):
-    expected_transaction_name = (
-        "test_prediction_stats:test_prediction_stats.<locals>._test"
-    )
+    expected_transaction_name = "test_prediction_stats:test_prediction_stats.<locals>._test"
+
     @validate_transaction_metrics(
         expected_transaction_name,
         dimensional_metrics=metrics,
@@ -466,9 +465,7 @@ _test_prediction_stats_multilabel_output_tags = frozenset(
 
 
 def test_prediction_stats_multilabel_output(force_uuid):
-    expected_transaction_name = (
-        "test_prediction_stats:test_prediction_stats_multilabel_output.<locals>._test"
-    )
+    expected_transaction_name = "test_prediction_stats:test_prediction_stats_multilabel_output.<locals>._test"
     stats = ["Mean", "Percentile25", "Percentile50", "Percentile75", "StandardDeviation", "Min", "Max", "Count"]
     metrics = [
         (

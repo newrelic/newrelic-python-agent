@@ -30,6 +30,7 @@ pandas_df_category_recorded_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature.col1": 2.0,
@@ -69,6 +70,7 @@ pandas_df_bool_recorded_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature.col1": True,
@@ -107,6 +109,7 @@ pandas_df_float_recorded_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "DecisionTreeRegressor",
             "model_version": "0.0.0",
             "feature.col1": 100.0,
@@ -145,6 +148,7 @@ int_list_recorded_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature.0": 1,
@@ -182,6 +186,7 @@ numpy_int_recorded_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "ExtraTreeRegressor",
             "model_version": "0.0.0",
             "feature.0": 12,
@@ -219,6 +224,7 @@ numpy_str_recorded_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature.0": "20",
@@ -231,6 +237,7 @@ numpy_str_recorded_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "feature.0": "22",
@@ -268,6 +275,7 @@ numpy_str_recorded_custom_events_no_value = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "DecisionTreeClassifier",
             "model_version": "0.0.0",
             "new_relic_data_schema_version": 2,
@@ -350,6 +358,7 @@ multilabel_output_label_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "MultiOutputClassifier",
             "model_version": "0.0.0",
             "label.0": "1",

@@ -87,6 +87,7 @@ int_list_recorded_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "MyCustomModel",
             "model_version": "1.2.3",
             "feature.0": 1.0,
@@ -123,6 +124,7 @@ int_list_recorded_custom_events_with_metadata = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "MyCustomModel",
             "model_version": "1.2.3",
             "feature.0": 1.0,
@@ -166,6 +168,7 @@ pandas_df_recorded_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "PandasTestModel",
             "model_version": "1.5.0b1",
             "feature.feature1": 0,
@@ -207,6 +210,7 @@ pandas_df_recorded_builtin_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature.feature1": 12,
@@ -252,6 +256,7 @@ pandas_df_mismatched_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "MyDecisionTreeClassifier",
             "model_version": "1.5.0b1",
             "feature.col1": 12,
@@ -297,6 +302,7 @@ numpy_str_mismatched_custom_events = [
         {"type": "InferenceData"},
         {
             "inference_id": None,
+            "prediction_id": None,
             "modelName": "MyDecisionTreeClassifier",
             "model_version": "0.0.1",
             "feature.0": "20",

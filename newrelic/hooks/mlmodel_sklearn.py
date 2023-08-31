@@ -245,55 +245,56 @@ def create_prediction_event(transaction, class_, instance, args, kwargs, return_
     metadata = getattr(instance, "_nr_wrapped_metadata", {})
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
-    np_casted_data_set = np.array(data_set)
+    prediction_id = uuid.uuid4()
 
-    features, predictions = np_casted_data_set.shape
-    for prediction_index, prediction in enumerate(np_casted_data_set):
-        inference_id = uuid.uuid4()
+    labels = []
+    if return_val is not None:
+        if not hasattr(return_val, "__iter__"):
+            labels = np.array([return_val])
+        else:
+            labels = np.array(return_val)
+        if len(labels.shape) == 1:
+            labels = np.reshape(labels, (len(labels) // 1, 1))
 
-        labels = []
-        if return_val is not None:
-            if not hasattr(return_val, "__iter__"):
-                labels = np.array([return_val])
-            else:
-                labels = np.array(return_val)
-            if len(labels.shape) == 1:
-                labels = np.reshape(labels, (len(labels) // 1, 1))
-
-            label_names_list = _get_label_names(label_names, labels)
-            _calc_prediction_label_stats(
-                labels,
-                class_,
-                label_names_list,
-                tags={
-                    "inference_id": inference_id,
-                    "model_version": model_version,
-                    # The following are used for entity synthesis.
-                    "modelName": model_name,
-                },
-            )
-
-        _calc_prediction_feature_stats(
-            data_set,
+        label_names_list = _get_label_names(label_names, labels)
+        _calc_prediction_label_stats(
+            labels,
             class_,
-            final_feature_names,
+            label_names_list,
             tags={
-                "inference_id": inference_id,
+                "prediction_id": prediction_id,
                 "model_version": model_version,
                 # The following are used for entity synthesis.
                 "modelName": model_name,
             },
         )
 
+    final_feature_names = _get_feature_column_names(user_provided_feature_names, data_set)
+    np_casted_data_set = np.array(data_set)
+    _calc_prediction_feature_stats(
+        data_set,
+        class_,
+        final_feature_names,
+        tags={
+            "prediction_id": prediction_id,
+            "model_version": model_version,
+            # The following are used for entity synthesis.
+            "modelName": model_name,
+        },
+    )
+    features, predictions = np_casted_data_set.shape
+    for prediction_index, prediction in enumerate(np_casted_data_set):
+        inference_id = uuid.uuid4()
+
         event = {
             "inference_id": inference_id,
+            "prediction_id": prediction_id,
             "model_version": model_version,
             "new_relic_data_schema_version": 2,
             # The following are used for entity synthesis.
             "modelName": model_name,
         }
-        if metadata:
+        if metadata and isinstance(metadata, dict):
             event.update(metadata)
         # Don't include the raw value when inference_event_value is disabled.
         if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:

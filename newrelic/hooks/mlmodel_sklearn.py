@@ -172,7 +172,9 @@ def _calc_prediction_label_stats(labels, class_, label_column_names, tags):
 def _get_label_names(user_defined_label_names, prediction_array):
     import numpy as np
 
-    if user_defined_label_names is None or len(user_defined_label_names) != prediction_array.shape[1]:
+    if user_defined_label_names is None:
+        return np.array(range(prediction_array.shape[1]))
+    if user_defined_label_names and len(user_defined_label_names) != prediction_array.shape[1]:
         _logger.warning(
             "The number of label names passed to the ml_model wrapper function is not equal to the number of predictions in the data set. Please supply the correct number of label names."
         )

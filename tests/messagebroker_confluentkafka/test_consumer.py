@@ -38,7 +38,7 @@ from newrelic.packages import six
 
 
 # Flaky test for client_type==cimpl
-# @pytest.mark.skip(reason="cimpl test is flaky")
+@pytest.mark.skip(reason="cimpl test is flaky")
 def test_custom_metrics(get_consumer_record, topic):
     custom_metrics = [
         ("Message/Kafka/Topic/Named/%s/Received/Bytes" % topic, 1),

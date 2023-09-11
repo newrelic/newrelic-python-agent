@@ -166,7 +166,7 @@ def _nr_wrapper_error_handler_(wrapped, instance, args, kwargs):
     return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
-def _nr_wrapper_Flask__register_error_handler_(wrapped, instance, args, kwargs):
+def _nr_wrapper_Flask__register_error_handler_(wrapped, instance, args, kwargs):  # pragma: no cover
     def _bind_params(key, code_or_exception, f):
         return key, code_or_exception, f
 

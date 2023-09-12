@@ -23,6 +23,8 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import set_background_task
 
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
 DB_SETTINGS = memcached_settings()[0]
 
 MEMCACHED_HOST = DB_SETTINGS["host"]

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
@@ -60,6 +59,7 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
         # Method will return synchronously without executing,
         # it will be added to the command stack and run later.
         aioredis_version = get_package_version_tuple("aioredis")
+
         # This conditional is for versions of aioredis that are outside
         # New Relic's supportability window but will still work.  New
         # Relic does not provide testing/support for this.  In order to

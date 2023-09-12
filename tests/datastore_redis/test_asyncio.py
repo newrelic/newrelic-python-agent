@@ -35,7 +35,9 @@ REDIS_PY_VERSION = get_package_version_tuple("redis")
 _base_scoped_metrics = [("Datastore/operation/Redis/publish", 3)]
 
 if REDIS_PY_VERSION >= (5, 0):
-    _base_scoped_metrics.append(('Datastore/operation/Redis/client_setinfo', 2),)
+    _base_scoped_metrics.append(
+        ("Datastore/operation/Redis/client_setinfo", 2),
+    )
 
 datastore_all_metric_count = 5 if REDIS_PY_VERSION >= (5, 0) else 3
 
@@ -45,10 +47,15 @@ _base_rollup_metrics = [
     ("Datastore/Redis/all", datastore_all_metric_count),
     ("Datastore/Redis/allOther", datastore_all_metric_count),
     ("Datastore/operation/Redis/publish", 3),
-    ("Datastore/instance/Redis/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), datastore_all_metric_count),
+    (
+        "Datastore/instance/Redis/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]),
+        datastore_all_metric_count,
+    ),
 ]
 if REDIS_PY_VERSION >= (5, 0):
-    _base_rollup_metrics.append(('Datastore/operation/Redis/client_setinfo', 2),)
+    _base_rollup_metrics.append(
+        ("Datastore/operation/Redis/client_setinfo", 2),
+    )
 
 # Tests
 

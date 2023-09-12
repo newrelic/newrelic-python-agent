@@ -22,8 +22,8 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
+# This will act as the UUID for `prediction_id`
 ML_METRIC_FORCED_UUID = "0b59992f-2349-4a46-8de1-696d3fe1088b"
 
 
@@ -33,7 +33,7 @@ def force_uuid(monkeypatch):
 
 
 _test_prediction_stats_tags = frozenset(
-    {("modelName", "DummyClassifier"), ("inference_id", ML_METRIC_FORCED_UUID), ("model_version", "0.0.0")}
+    {("modelName", "DummyClassifier"), ("prediction_id", ML_METRIC_FORCED_UUID), ("model_version", "0.0.0")}
 )
 
 
@@ -445,9 +445,7 @@ _test_prediction_stats_tags = frozenset(
     ],
 )
 def test_prediction_stats(run_model, x_train, y_train, x_test, metrics, force_uuid):
-    expected_transaction_name = (
-        "test_prediction_stats:test_prediction_stats.<locals>._test" if six.PY3 else "test_prediction_stats:_test"
-    )
+    expected_transaction_name = "test_prediction_stats:test_prediction_stats.<locals>._test"
 
     @validate_transaction_metrics(
         expected_transaction_name,
@@ -462,16 +460,12 @@ def test_prediction_stats(run_model, x_train, y_train, x_test, metrics, force_uu
 
 
 _test_prediction_stats_multilabel_output_tags = frozenset(
-    {("modelName", "MultiOutputClassifier"), ("inference_id", ML_METRIC_FORCED_UUID), ("model_version", "0.0.0")}
+    {("modelName", "MultiOutputClassifier"), ("prediction_id", ML_METRIC_FORCED_UUID), ("model_version", "0.0.0")}
 )
 
 
 def test_prediction_stats_multilabel_output(force_uuid):
-    expected_transaction_name = (
-        "test_prediction_stats:test_prediction_stats_multilabel_output.<locals>._test"
-        if six.PY3
-        else "test_prediction_stats:_test"
-    )
+    expected_transaction_name = "test_prediction_stats:test_prediction_stats_multilabel_output.<locals>._test"
     stats = ["Mean", "Percentile25", "Percentile50", "Percentile75", "StandardDeviation", "Min", "Max", "Count"]
     metrics = [
         (

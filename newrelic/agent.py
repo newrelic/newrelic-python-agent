@@ -153,6 +153,7 @@ from newrelic.api.message_transaction import (
 from newrelic.api.message_transaction import (
     wrap_message_transaction as __wrap_message_transaction,
 )
+from newrelic.api.ml_model import wrap_mlmodel as __wrap_mlmodel
 from newrelic.api.profile_trace import ProfileTraceWrapper as __ProfileTraceWrapper
 from newrelic.api.profile_trace import profile_trace as __profile_trace
 from newrelic.api.profile_trace import wrap_profile_trace as __wrap_profile_trace
@@ -206,11 +207,6 @@ from newrelic.common.object_wrapper import wrap_pre_function as __wrap_pre_funct
 
 # EXPERIMENTAL - Generator traces are currently experimental and may not
 # exist in this form in future versions of the agent.
-
-
-# EXPERIMENTAL - Profile traces are currently experimental and may not
-# exist in this form in future versions of the agent.
-
 
 initialize = __initialize
 extra_settings = __wrap_api_call(__extra_settings, "extra_settings")
@@ -343,3 +339,4 @@ OutFunctionWrapper = __wrap_api_call(__OutFunctionWrapper, "OutFunctionWrapper")
 wrap_out_function = __wrap_api_call(__wrap_out_function, "wrap_out_function")
 insert_html_snippet = __wrap_api_call(__insert_html_snippet, "insert_html_snippet")
 verify_body_exists = __wrap_api_call(__verify_body_exists, "verify_body_exists")
+wrap_mlmodel = __wrap_api_call(__wrap_mlmodel, "wrap_mlmodel")

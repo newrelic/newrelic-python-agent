@@ -166,7 +166,7 @@ def _nr_wrapper_error_handler_(wrapped, instance, args, kwargs):
     return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
-def _nr_wrapper_Flask__register_error_handler_(wrapped, instance, args, kwargs):
+def _nr_wrapper_Flask__register_error_handler_(wrapped, instance, args, kwargs):  # pragma: no cover
     def _bind_params(key, code_or_exception, f):
         return key, code_or_exception, f
 
@@ -189,7 +189,6 @@ def _nr_wrapper_Flask_register_error_handler_(wrapped, instance, args, kwargs):
 
 
 def _nr_wrapper_Flask_try_trigger_before_first_request_functions_(wrapped, instance, args, kwargs):
-
     transaction = current_transaction()
 
     if transaction is None:
@@ -355,7 +354,6 @@ def _nr_wrapper_Blueprint_endpoint_(wrapped, instance, args, kwargs):
 
 @function_wrapper
 def _nr_wrapper_Blueprint_before_request_wrapped_(wrapped, instance, args, kwargs):
-
     transaction = current_transaction()
 
     if transaction is None:

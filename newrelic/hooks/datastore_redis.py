@@ -15,9 +15,9 @@
 import re
 
 from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
-
 
 _redis_client_sync_methods = {
     "acl_dryrun",
@@ -545,6 +545,59 @@ def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, operation):
     wrap_function_wrapper(module, name, _nr_wrapper_asyncio_Redis_method_)
 
 
+async def wrap_async_Connection_send_command(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    host, port_path_or_id, db = (None, None, None)
+
+    try:
+        dt = transaction.settings.datastore_tracer
+        if dt.instance_reporting.enabled or dt.database_name_reporting.enabled:
+            conn_kwargs = _conn_attrs_to_dict(instance)
+            host, port_path_or_id, db = _instance_info(conn_kwargs)
+    except Exception:
+        pass
+
+    # Older Redis clients would when sending multi part commands pass
+    # them in as separate arguments to send_command(). Need to therefore
+    # detect those and grab the next argument from the set of arguments.
+
+    operation = args[0].strip().lower()
+
+    # If it's not a multi part command, there's no need to trace it, so
+    # we can return early.
+
+    if (
+        operation.split()[0] not in _redis_multipart_commands
+    ):  # Set the datastore info on the DatastoreTrace containing this function call.
+        trace = current_trace()
+
+        # Find DatastoreTrace no matter how many other traces are inbetween
+        while trace is not None and not isinstance(trace, DatastoreTrace):
+            trace = getattr(trace, "parent", None)
+
+        if trace is not None:
+            trace.host = host
+            trace.port_path_or_id = port_path_or_id
+            trace.database_name = db
+
+        return await wrapped(*args, **kwargs)
+
+    # Convert multi args to single arg string
+
+    if operation in _redis_multipart_commands and len(args) > 1:
+        operation = "%s %s" % (operation, args[1].strip().lower())
+
+    operation = _redis_operation_re.sub("_", operation)
+
+    with DatastoreTrace(
+        product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db
+    ):
+        return await wrapped(*args, **kwargs)
+
+
 def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
@@ -613,6 +666,7 @@ def instrument_asyncio_redis_client(module):
             if hasattr(class_, operation):
                 _wrap_asyncio_Redis_method_wrapper(module, "Redis", operation)
 
+
 def instrument_redis_commands_core(module):
     _instrument_redis_commands_module(module, "CoreCommands")
 
@@ -658,4 +712,12 @@ def _instrument_redis_commands_module(module, class_name):
 
 
 def instrument_redis_connection(module):
-    wrap_function_wrapper(module, "Connection.send_command", _nr_Connection_send_command_wrapper_)
+    if hasattr(module, "Connection"):
+        if hasattr(module.Connection, "send_command"):
+            wrap_function_wrapper(module, "Connection.send_command", _nr_Connection_send_command_wrapper_)
+
+
+def instrument_asyncio_redis_connection(module):
+    if hasattr(module, "Connection"):
+        if hasattr(module.Connection, "send_command"):
+            wrap_function_wrapper(module, "Connection.send_command", wrap_async_Connection_send_command)

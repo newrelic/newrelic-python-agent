@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
@@ -38,10 +37,11 @@ def exercise_write_batch(client, collection):
             batch.set(doc, {})
 
         batch.commit()
+
     return _exercise_write_batch
 
 
-def test_firestore_write_batch(exercise_write_batch):
+def test_firestore_write_batch(exercise_write_batch, instance_info):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/commit", 1),
     ]
@@ -49,6 +49,7 @@ def test_firestore_write_batch(exercise_write_batch):
     _test_rollup_metrics = [
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 1),
     ]
 
     @validate_database_duration()
@@ -88,10 +89,11 @@ def exercise_bulk_write_batch(client, collection):
             batch.set(doc, {})
 
         batch.commit()
+
     return _exercise_bulk_write_batch
 
 
-def test_firestore_bulk_write_batch(exercise_bulk_write_batch):
+def test_firestore_bulk_write_batch(exercise_bulk_write_batch, instance_info):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/commit", 1),
     ]
@@ -99,6 +101,7 @@ def test_firestore_bulk_write_batch(exercise_bulk_write_batch):
     _test_rollup_metrics = [
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
+        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 1),
     ]
 
     @validate_database_duration()

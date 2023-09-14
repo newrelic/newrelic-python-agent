@@ -30,7 +30,9 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 DB_SETTINGS = redis_settings()[0]
 REDIS_PY_VERSION = get_package_version_tuple("redis")
 
-# Metrics
+# Metrics for publish test
+
+datastore_all_metric_count = 5 if REDIS_PY_VERSION >= (5, 0) else 3
 
 _base_scoped_metrics = [("Datastore/operation/Redis/publish", 3)]
 
@@ -38,8 +40,6 @@ if REDIS_PY_VERSION >= (5, 0):
     _base_scoped_metrics.append(
         ("Datastore/operation/Redis/client_setinfo", 2),
     )
-
-datastore_all_metric_count = 5 if REDIS_PY_VERSION >= (5, 0) else 3
 
 _base_rollup_metrics = [
     ("Datastore/all", datastore_all_metric_count),
@@ -57,6 +57,27 @@ if REDIS_PY_VERSION >= (5, 0):
         ("Datastore/operation/Redis/client_setinfo", 2),
     )
 
+
+# Metrics for connection pool test
+
+_base_pool_scoped_metrics = [
+    ("Datastore/operation/Redis/get", 1),
+    ("Datastore/operation/Redis/set", 1),
+    ("Datastore/operation/Redis/client_list", 1),
+]
+
+_base_pool_rollup_metrics = [
+    ("Datastore/all", 3),
+    ("Datastore/allOther", 3),
+    ("Datastore/Redis/all", 3),
+    ("Datastore/Redis/allOther", 3),
+    ("Datastore/operation/Redis/get", 1),
+    ("Datastore/operation/Redis/set", 1),
+    ("Datastore/operation/Redis/client_list", 1),
+    ("Datastore/instance/Redis/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 3),
+]
+
+
 # Tests
 
 
@@ -65,6 +86,31 @@ def client(loop):  # noqa
     import redis.asyncio
 
     return loop.run_until_complete(redis.asyncio.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0))
+
+
+@pytest.fixture()
+def client_pool(loop):  # noqa
+    import redis.asyncio
+
+    connection_pool = redis.asyncio.ConnectionPool(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+    return loop.run_until_complete(redis.asyncio.Redis(connection_pool=connection_pool))
+
+
+@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="This functionality exists in Redis 4.2+")
+@validate_transaction_metrics(
+    "test_asyncio:test_async_connection_pool",
+    scoped_metrics=_base_pool_scoped_metrics,
+    rollup_metrics=_base_pool_rollup_metrics,
+    background_task=True,
+)
+@background_task()
+def test_async_connection_pool(client_pool, loop):  # noqa
+    async def _test_async_pool(client_pool):
+        await client_pool.set("key1", "value1")
+        await client_pool.get("key1")
+        await client_pool.execute_command("CLIENT", "LIST")
+
+    loop.run_until_complete(_test_async_pool(client_pool))
 
 
 @pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="This functionality exists in Redis 4.2+")

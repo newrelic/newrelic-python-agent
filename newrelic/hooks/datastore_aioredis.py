@@ -139,7 +139,6 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
     ):
         return await wrapped(*args, **kwargs)
 
-
 # This wrapper is for versions of aioredis that are outside
 # New Relic's supportability window but will still work.  New
 # Relic does not provide testing/support for this.  In order to

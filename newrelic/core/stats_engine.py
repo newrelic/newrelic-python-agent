@@ -188,7 +188,6 @@ class TimeStats(list):
 
 
 class CountStats(TimeStats):
-
     def merge_stats(self, other):
         self[0] += other[0]
 
@@ -240,6 +239,7 @@ class CustomMetrics(object):
 
         """
         self.__stats_table = {}
+
 
 class DimensionalMetrics(object):
 
@@ -294,7 +294,7 @@ class DimensionalMetrics(object):
         return (name, tags)
 
     def metrics(self):
-        """Returns an iterator over the set of value metrics. 
+        """Returns an iterator over the set of value metrics.
         The items returned are a dictionary of tags for each metric value.
         Metric values are each a tuple consisting of the metric name and accumulated
         stats for the metric.
@@ -326,7 +326,7 @@ class DimensionalMetrics(object):
 
     def __str__(self):
         return str(self.__stats_table)
-    
+
     def __repr__(self):
         return "%s(%s)" % (__class__.__name__, repr(self.__stats_table))
 
@@ -1284,7 +1284,11 @@ class StatsEngine(object):
 
         if normalizer is not None:
             for key, value in six.iteritems(self.__stats_table):
-                key = (normalizer(key[0])[0], key[1])
+                normalized_name, ignored = normalizer(key[0])
+                if ignored:
+                    continue
+
+                key = (normalized_name, key[1])
                 stats = normalized_stats.get(key)
                 if stats is None:
                     normalized_stats[key] = copy.copy(value)

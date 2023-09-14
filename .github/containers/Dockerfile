@@ -23,6 +23,8 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         build-essential \
         curl \
         expat \
+        fish \
+        fontconfig \
         freetds-common \
         freetds-dev \
         gcc \
@@ -46,13 +48,16 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         python2-dev \
         python3-dev \
         python3-pip \
+        sudo \
         tzdata \
         unixodbc-dev \
         unzip \
+        vim \
         wget \
         zip \
         zlib1g \
-        zlib1g-dev && \
+        zlib1g-dev \
+        zsh && \
     rm -rf /var/lib/apt/lists/*
 
 # Build librdkafka from source
@@ -93,6 +98,10 @@ RUN echo 'eval "$(pyenv init -)"' >>$HOME/.bashrc && \
 # Install Python
 ARG PYTHON_VERSIONS="3.10 3.9 3.8 3.7 3.11 2.7 pypy2.7-7.3.12 pypy3.8-7.3.11"
 COPY --chown=1000:1000 --chmod=+x ./install-python.sh /tmp/install-python.sh
-COPY ./requirements.txt /requirements.txt
 RUN /tmp/install-python.sh && \
     rm /tmp/install-python.sh
+
+# Install dependencies for main python installation
+COPY ./requirements.txt /tmp/requirements.txt
+RUN pyenv exec pip install --upgrade -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt

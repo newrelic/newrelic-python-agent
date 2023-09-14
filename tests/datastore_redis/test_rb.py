@@ -81,6 +81,7 @@ def exercise_redis(routing_client):
     routing_client.get("key")
 
 
+
 def exercise_fanout(cluster):
     with cluster.fanout(hosts="all") as client:
         client.execute_command("CLIENT", "LIST")

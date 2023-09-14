@@ -100,6 +100,7 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     )
 
 
+
 def exercise_redis(client_1, client_2):
     client_1.set("key", "value")
     client_1.get("key")

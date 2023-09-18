@@ -57,6 +57,7 @@ def core_app(collector_agent_registration):
     return app._agent.application(app.name)
 
 
+@override_application_settings({"ml_insights_events.enabled": True})
 @validate_ml_event_payload(
     [{"foo": "bar", "real_agent_id": "1234567", "event.domain": "newrelic.ml_events", "event.name": "InferenceEvent"}]
 )
@@ -70,6 +71,7 @@ def test_ml_event_payload_inside_transaction(core_app):
     core_app.harvest()
 
 
+@override_application_settings({"ml_insights_events.enabled": True})
 @validate_ml_event_payload(
     [{"foo": "bar", "real_agent_id": "1234567", "event.domain": "newrelic.ml_events", "event.name": "InferenceEvent"}]
 )
@@ -83,6 +85,7 @@ def test_ml_event_payload_outside_transaction(core_app):
     core_app.harvest()
 
 
+@override_application_settings({"ml_insights_events.enabled": True})
 @pytest.mark.parametrize(
     "params,expected",
     [
@@ -102,6 +105,7 @@ def test_record_ml_event_inside_transaction(params, expected):
     _test()
 
 
+@override_application_settings({"ml_insights_events.enabled": True})
 @pytest.mark.parametrize(
     "params,expected",
     [
@@ -121,6 +125,7 @@ def test_record_ml_event_outside_transaction(params, expected):
     _test()
 
 
+@override_application_settings({"ml_insights_events.enabled": True})
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 @background_task()
@@ -128,6 +133,7 @@ def test_record_ml_event_inside_transaction_bad_event_type():
     record_ml_event("!@#$%^&*()", {"foo": "bar"})
 
 
+@override_application_settings({"ml_insights_events.enabled": True})
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 def test_record_ml_event_outside_transaction_bad_event_type():
@@ -135,6 +141,7 @@ def test_record_ml_event_outside_transaction_bad_event_type():
     record_ml_event("!@#$%^&*()", {"foo": "bar"}, application=app)
 
 
+@override_application_settings({"ml_insights_events.enabled": True})
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 @background_task()
@@ -142,6 +149,7 @@ def test_record_ml_event_inside_transaction_params_not_a_dict():
     record_ml_event("ParamsListEvent", ["not", "a", "dict"])
 
 
+@override_application_settings({"ml_insights_events.enabled": True})
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 def test_record_ml_event_outside_transaction_params_not_a_dict():
@@ -152,11 +160,10 @@ def test_record_ml_event_outside_transaction_params_not_a_dict():
 # Tests for ML Events configuration settings
 
 
-@override_application_settings({"ml_insights_events.enabled": False})
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 @background_task()
-def test_ml_event_settings_check_ml_insights_enabled():
+def test_ml_event_settings_check_ml_insights_disabled():
     record_ml_event("FooEvent", {"foo": "bar"})
 
 
@@ -167,7 +174,6 @@ def test_ml_event_settings_check_ml_insights_enabled():
 # event_type and attribute processing.
 
 
-@override_application_settings({"ml_insights_events.enabled": False})
 @reset_core_stats_engine()
 @function_not_called("newrelic.api.transaction", "create_custom_event")
 @background_task()
@@ -175,7 +181,6 @@ def test_transaction_create_ml_event_not_called():
     record_ml_event("FooEvent", {"foo": "bar"})
 
 
-@override_application_settings({"ml_insights_events.enabled": False})
 @reset_core_stats_engine()
 @function_not_called("newrelic.core.application", "create_custom_event")
 @background_task()
@@ -184,6 +189,7 @@ def test_application_create_ml_event_not_called():
     record_ml_event("FooEvent", {"foo": "bar"}, application=app)
 
 
+@override_application_settings({"ml_insights_events.enabled": True})
 @pytest.fixture(scope="module", autouse=True, params=["protobuf", "json"])
 def otlp_content_encoding(request):
     if six.PY2 and request.param == "protobuf":

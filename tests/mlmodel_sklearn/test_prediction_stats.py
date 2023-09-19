@@ -17,7 +17,6 @@ import uuid
 import numpy as np
 import pandas as pd
 import pytest
-from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -37,14 +36,7 @@ _test_prediction_stats_tags = frozenset(
     {("modelName", "DummyClassifier"), ("prediction_id", ML_METRIC_FORCED_UUID), ("model_version", "0.0.0")}
 )
 
-enabled_settings = {
-    "machine_learning.enabled": True,
-    "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": True
-}
 
-
-@override_application_settings(enabled_settings)
 @pytest.mark.parametrize(
     "x_train,y_train,x_test,metrics",
     [
@@ -472,7 +464,6 @@ _test_prediction_stats_multilabel_output_tags = frozenset(
 )
 
 
-@override_application_settings(enabled_settings)
 def test_prediction_stats_multilabel_output(force_uuid):
     expected_transaction_name = "test_prediction_stats:test_prediction_stats_multilabel_output.<locals>._test"
     stats = ["Mean", "Percentile25", "Percentile50", "Percentile75", "StandardDeviation", "Min", "Max", "Count"]

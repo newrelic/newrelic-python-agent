@@ -42,14 +42,7 @@ pandas_df_category_recorded_custom_events = [
     ),
 ]
 
-enabled_settings = {
-    "machine_learning.enabled": True,
-    "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": True
-}
 
-
-@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_pandas_df_categorical_feature_event():
     @validate_ml_events(pandas_df_category_recorded_custom_events)
@@ -90,7 +83,6 @@ pandas_df_bool_recorded_custom_events = [
 ]
 
 
-@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_pandas_df_bool_feature_event():
     @validate_ml_events(pandas_df_bool_recorded_custom_events)
@@ -130,7 +122,6 @@ pandas_df_float_recorded_custom_events = [
 ]
 
 
-@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_pandas_df_float_feature_event():
     @validate_ml_events(pandas_df_float_recorded_custom_events)
@@ -170,7 +161,6 @@ int_list_recorded_custom_events = [
 ]
 
 
-@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_int_list():
     @validate_ml_events(int_list_recorded_custom_events)
@@ -209,7 +199,6 @@ numpy_int_recorded_custom_events = [
 ]
 
 
-@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_numpy_int_array():
     @validate_ml_events(numpy_int_recorded_custom_events)
@@ -261,7 +250,6 @@ numpy_str_recorded_custom_events = [
 ]
 
 
-@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_numpy_str_array_multiple_features():
     @validate_ml_events(numpy_str_recorded_custom_events)
@@ -424,7 +412,6 @@ multilabel_output_label_events = [
 ]
 
 
-@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_custom_event_count_multilabel_output():
     @validate_ml_events(multilabel_output_label_events)

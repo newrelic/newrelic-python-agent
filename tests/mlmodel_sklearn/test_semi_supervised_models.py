@@ -14,7 +14,6 @@
 
 import pytest
 from sklearn.ensemble import AdaBoostClassifier
-from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -25,14 +24,7 @@ from newrelic.packages import six
 
 SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
 
-enabled_settings = {
-    "machine_learning.enabled": True,
-    "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": True
-}
 
-
-@override_application_settings(enabled_settings)
 @pytest.mark.parametrize(
     "semi_supervised_model_name",
     [
@@ -73,7 +65,6 @@ def test_model_methods_wrapped_in_function_trace(semi_supervised_model_name, run
     _test()
 
 
-@override_application_settings(enabled_settings)
 @pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0), reason="Requires sklearn <= 1.0")
 @pytest.mark.parametrize(
     "semi_supervised_model_name",

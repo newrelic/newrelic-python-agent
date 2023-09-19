@@ -13,19 +13,12 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
 from newrelic.packages import six
-
-enabled_settings = {
-    "machine_learning.enabled": True,
-    "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": True
-}
 
 
 def test_model_methods_wrapped_in_function_trace(tree_model_name, run_tree_model):
@@ -64,7 +57,6 @@ def test_model_methods_wrapped_in_function_trace(tree_model_name, run_tree_model
         else "test_tree_models:_test"
     )
 
-    @override_application_settings(enabled_settings)
     @validate_transaction_metrics(
         expected_transaction_name,
         scoped_metrics=expected_scoped_metrics[tree_model_name],
@@ -112,7 +104,6 @@ def test_multiple_calls_to_model_methods(tree_model_name, run_tree_model):
         "test_tree_models:test_multiple_calls_to_model_methods.<locals>._test" if six.PY3 else "test_tree_models:_test"
     )
 
-    @override_application_settings(enabled_settings)
     @validate_transaction_metrics(
         expected_transaction_name,
         scoped_metrics=expected_scoped_metrics[tree_model_name],

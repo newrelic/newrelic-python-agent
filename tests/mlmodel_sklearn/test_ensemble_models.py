@@ -14,7 +14,6 @@
 
 import pytest
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -25,14 +24,6 @@ from newrelic.packages import six
 
 SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
 
-enabled_settings = {
-    "machine_learning.enabled": True,
-    "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": True
-}
-
-
-@override_application_settings(enabled_settings)
 @pytest.mark.parametrize(
     "ensemble_model_name",
     [
@@ -149,7 +140,6 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(ensemble_model_name,
     _test()
 
 
-@override_application_settings(enabled_settings)
 @pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0) or SKLEARN_VERSION >= (1, 1, 0), reason="Requires 1.0 <= sklearn < 1.1")
 @pytest.mark.parametrize(
     "ensemble_model_name",
@@ -206,7 +196,7 @@ def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(ensemble_
     _test()
 
 
-@override_application_settings(enabled_settings)
+
 @pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn >= 1.1")
 @pytest.mark.parametrize(
     "ensemble_model_name",

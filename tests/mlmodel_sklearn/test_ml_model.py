@@ -137,6 +137,7 @@ int_list_recorded_custom_events_with_metadata = [
     ),
 ]
 
+
 @reset_core_stats_engine()
 def test_custom_model_int_list_with_metadata():
     @validate_ml_event_count(count=1)

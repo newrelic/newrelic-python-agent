@@ -23,6 +23,7 @@ from newrelic.packages import six
 
 SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
 
+
 @pytest.mark.parametrize(
     "linear_model_name",
     [

@@ -19,6 +19,7 @@ from testing_support.fixtures import validate_attributes
 from newrelic.api.background_task import background_task
 from newrelic.hooks.mlmodel_sklearn import PredictReturnTypeProxy
 
+
 @pytest.mark.parametrize(
     "metric_scorer_name",
     (

@@ -14,12 +14,22 @@
 
 import numpy as np
 import pytest
-from testing_support.fixtures import validate_attributes
+from testing_support.fixtures import (
+    validate_attributes,
+    override_application_settings
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.hooks.mlmodel_sklearn import PredictReturnTypeProxy
 
+enabled_settings = {
+    "machine_learning.enabled": True,
+    "machine_learning.inference_events_value.enabled": True,
+    "ml_insights_events.enabled": True
+}
 
+
+@override_application_settings(enabled_settings)
 @pytest.mark.parametrize(
     "metric_scorer_name",
     (
@@ -41,6 +51,7 @@ def test_metric_scorer_attributes(metric_scorer_name, run_metric_scorer):
     _test()
 
 
+@override_application_settings(enabled_settings)
 @pytest.mark.parametrize(
     "metric_scorer_name",
     (
@@ -68,6 +79,7 @@ def test_metric_scorer_training_steps_attributes(metric_scorer_name, run_metric_
     _test()
 
 
+@override_application_settings(enabled_settings)
 @pytest.mark.parametrize(
     "metric_scorer_name,kwargs",
     [
@@ -91,6 +103,7 @@ def test_metric_scorer_iterable_score_attributes(metric_scorer_name, kwargs, run
     _test()
 
 
+@override_application_settings(enabled_settings)
 @pytest.mark.parametrize(
     "metric_scorer_name",
     [
@@ -117,6 +130,7 @@ def test_metric_scorer_attributes_unknown_model(metric_scorer_name):
     _test()
 
 
+@override_application_settings(enabled_settings)
 @pytest.mark.parametrize("data", (np.array([0, 1]), "foo", 1, 1.0, True, [0, 1], {"foo": "bar"}, (0, 1), np.str_("F")))
 def test_PredictReturnTypeProxy(data):
     wrapped_data = PredictReturnTypeProxy(data, "ModelName", 0)

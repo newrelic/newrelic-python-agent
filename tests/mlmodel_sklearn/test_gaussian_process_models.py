@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -20,7 +21,14 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.packages import six
 
+enabled_settings = {
+    "machine_learning.enabled": True,
+    "machine_learning.inference_events_value.enabled": True,
+    "ml_insights_events.enabled": True
+}
 
+
+@override_application_settings(enabled_settings)
 @pytest.mark.parametrize(
     "gaussian_process_model_name",
     [

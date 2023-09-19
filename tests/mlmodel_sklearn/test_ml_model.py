@@ -15,7 +15,10 @@
 import logging
 
 import pandas
-from testing_support.fixtures import reset_core_stats_engine
+from testing_support.fixtures import (
+    override_application_settings,
+    reset_core_stats_engine
+)
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.validators.validate_ml_events import validate_ml_events
 
@@ -98,7 +101,14 @@ int_list_recorded_custom_events = [
     ),
 ]
 
+enabled_settings = {
+    "machine_learning.enabled": True,
+    "machine_learning.inference_events_value.enabled": True,
+    "ml_insights_events.enabled": True
+}
 
+
+@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_custom_model_int_list_no_features_and_labels():
     @validate_ml_event_count(count=1)
@@ -137,7 +147,7 @@ int_list_recorded_custom_events_with_metadata = [
     ),
 ]
 
-
+@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_custom_model_int_list_with_metadata():
     @validate_ml_event_count(count=1)
@@ -181,6 +191,7 @@ pandas_df_recorded_custom_events = [
 ]
 
 
+@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_wrapper_attrs_custom_model_pandas_df():
     @validate_ml_event_count(count=1)
@@ -222,6 +233,7 @@ pandas_df_recorded_builtin_events = [
 ]
 
 
+@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_wrapper_attrs_builtin_model():
     @validate_ml_event_count(count=1)
@@ -269,6 +281,7 @@ pandas_df_mismatched_custom_events = [
 ]
 
 
+@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_wrapper_mismatched_features_and_labels_df():
     @validate_ml_event_count(count=1)
@@ -314,6 +327,7 @@ numpy_str_mismatched_custom_events = [
 ]
 
 
+@override_application_settings(enabled_settings)
 @reset_core_stats_engine()
 def test_wrapper_mismatched_features_and_labels_np_array():
     @validate_ml_events(numpy_str_mismatched_custom_events)

@@ -896,7 +896,7 @@ _settings.application_logging.local_decorating.enabled = _environ_as_bool(
 )
 _settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNING_ENABLED", default=False)
 _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
-    "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
+    "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=True
 )
 
 

@@ -15,6 +15,7 @@
 import pytest
 from sklearn import __init__  # noqa: Needed for get_package_version
 from sklearn.ensemble import AdaBoostClassifier
+from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -25,7 +26,14 @@ from newrelic.packages import six
 
 SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
 
+enabled_settings = {
+    "machine_learning.enabled": True,
+    "machine_learning.inference_events_value.enabled": True,
+    "ml_insights_events.enabled": True
+}
 
+
+@override_application_settings(enabled_settings)
 # Python 2 will not allow instantiation of abstract class
 # (abstract method is __init__ here)
 @pytest.mark.skipif(SKLEARN_VERSION >= (1, 0, 0) or six.PY2, reason="Requires sklearn < 1.0 and Python3")
@@ -61,6 +69,7 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(multioutput_model_na
     _test()
 
 
+@override_application_settings(enabled_settings)
 @pytest.mark.parametrize(
     "multioutput_model_name",
     [

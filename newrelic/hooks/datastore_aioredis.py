@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
@@ -60,7 +59,13 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
         # Method will return synchronously without executing,
         # it will be added to the command stack and run later.
         aioredis_version = get_package_version_tuple("aioredis")
-        if aioredis_version and aioredis_version < (2,):
+
+        # This conditional is for versions of aioredis that are outside
+        # New Relic's supportability window but will still work.  New
+        # Relic does not provide testing/support for this.  In order to
+        # keep functionality without affecting coverage metrics, this
+        # segment is excluded from coverage analysis.
+        if aioredis_version and aioredis_version < (2,):  # pragma: no cover
             # AioRedis v1 uses a RedisBuffer instead of a real connection for queueing up pipeline commands
             from aioredis.commands.transaction import _RedisBuffer
 
@@ -72,8 +77,6 @@ def _wrap_AioRedis_method_wrapper(module, instance_class_name, operation):
             # AioRedis v2 uses a Pipeline object for a client and internally queues up pipeline commands
             if aioredis_version:
                 from aioredis.client import Pipeline
-            else:
-                from redis.asyncio.client import Pipeline
             if isinstance(instance, Pipeline):
                 return wrapped(*args, **kwargs)
 
@@ -136,8 +139,12 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
     ):
         return await wrapped(*args, **kwargs)
 
-
-def wrap_RedisConnection_execute(wrapped, instance, args, kwargs):
+# This wrapper is for versions of aioredis that are outside
+# New Relic's supportability window but will still work.  New
+# Relic does not provide testing/support for this.  In order to
+# keep functionality without affecting coverage metrics, this
+# segment is excluded from coverage analysis.
+def wrap_RedisConnection_execute(wrapped, instance, args, kwargs):  # pragma: no cover
     # RedisConnection in aioredis v1 returns a future instead of using coroutines
     transaction = current_transaction()
     if not transaction:
@@ -205,6 +212,11 @@ def instrument_aioredis_connection(module):
         if hasattr(module.Connection, "send_command"):
             wrap_function_wrapper(module, "Connection.send_command", wrap_Connection_send_command)
 
-    if hasattr(module, "RedisConnection"):
+    # This conditional is for versions of aioredis that are outside
+    # New Relic's supportability window but will still work.  New
+    # Relic does not provide testing/support for this.  In order to
+    # keep functionality without affecting coverage metrics, this
+    # segment is excluded from coverage analysis.
+    if hasattr(module, "RedisConnection"):  # pragma: no cover
         if hasattr(module.RedisConnection, "execute"):
             wrap_function_wrapper(module, "RedisConnection.execute", wrap_RedisConnection_execute)

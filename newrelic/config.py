@@ -2270,6 +2270,87 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "google.cloud.firestore_v1.base_client",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_base_client",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.client",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_client",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_client",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_client",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.document",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_document",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_document",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_document",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.collection",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_collection",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_collection",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_collection",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.query",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_query",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_query",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_query",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.aggregation",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_aggregation",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_aggregation",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_aggregation",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.batch",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_batch",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_batch",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_batch",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.bulk_batch",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_bulk_batch",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.transaction",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_transaction",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_transaction",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_transaction",
+    )
+
+    _process_module_definition(
         "ariadne.asgi",
         "newrelic.hooks.framework_ariadne",
         "instrument_ariadne_asgi",
@@ -2372,6 +2453,11 @@ def _process_module_builtin_defaults():
         "loguru._logger",
         "newrelic.hooks.logger_loguru",
         "instrument_loguru_logger",
+    )
+    _process_module_definition(
+        "structlog._base",
+        "newrelic.hooks.logger_structlog",
+        "instrument_structlog__base",
     )
 
     _process_module_definition(
@@ -2674,18 +2760,6 @@ def _process_module_builtin_defaults():
         "aioredis.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
     )
 
-    _process_module_definition(
-        "redis.asyncio.client", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
-    )
-
-    _process_module_definition(
-        "redis.asyncio.commands", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
-    )
-
-    _process_module_definition(
-        "redis.asyncio.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
-    )
-
     # v7 and below
     _process_module_definition(
         "elasticsearch.client",
@@ -2840,6 +2914,21 @@ def _process_module_builtin_defaults():
         "pymongo.collection",
         "newrelic.hooks.datastore_pymongo",
         "instrument_pymongo_collection",
+    )
+
+    # Redis v4.2+
+    _process_module_definition(
+        "redis.asyncio.client", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_client"
+    )
+
+    # Redis v4.2+
+    _process_module_definition(
+        "redis.asyncio.commands", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_client"
+    )
+
+    # Redis v4.2+
+    _process_module_definition(
+        "redis.asyncio.connection", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_connection"
     )
 
     _process_module_definition(
@@ -3097,8 +3186,15 @@ def _process_module_builtin_defaults():
 
 def _process_module_entry_points():
     try:
-        # since Python 3.8
-        from importlib.metadata import entry_points
+        # Preferred after Python 3.10
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import entry_points
+        # Introduced in Python 3.8
+        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+            from importlib_metadata import entry_points
+        # Removed in Python 3.12
+        else:
+            from pkg_resources import iter_entry_points as entry_points
     except ImportError:
         try:
             # Deprecated in Python 3.12
@@ -3166,8 +3262,15 @@ def _setup_instrumentation():
 
 def _setup_extensions():
     try:
-        # since Python 3.8
-        from importlib.metadata import entry_points
+        # Preferred after Python 3.10
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import entry_points
+        # Introduced in Python 3.8
+        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+            from importlib_metadata import entry_points
+        # Removed in Python 3.12
+        else:
+            from pkg_resources import iter_entry_points as entry_points
     except ImportError:
         try:
             # Deprecated in Python 3.12

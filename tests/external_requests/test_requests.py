@@ -30,13 +30,19 @@ from testing_support.validators.validate_cross_process_headers import (
 from testing_support.validators.validate_external_node_params import (
     validate_external_node_params,
 )
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 
 def get_requests_version():
-    return tuple(map(int, requests.__version__.split(".")[:2]))
+    return get_package_version_tuple("requests")
 
 
 @pytest.fixture(scope="session")
@@ -89,7 +95,7 @@ def test_https_request_get(server, metrics):
     @background_task(name="test_requests:test_https_request_get")
     def _test():
         try:
-            requests.get("https://localhost:%d/" % server.port, verify=False)
+            requests.get("https://localhost:%d/" % server.port, verify=False)  # nosec
         except Exception:
             pass
 

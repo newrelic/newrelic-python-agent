@@ -26,15 +26,15 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_function_wrapper,
 )
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 from newrelic.core.config import is_expected_error, should_ignore_error
 
 SUPPORTED_METHODS = ("connect", "head", "get", "delete", "options", "patch", "post", "put", "trace")
 
-
-def aiohttp_version_info():
-    import aiohttp
-
-    return tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
+AIOHTTP_VERSION = get_package_version_tuple("aiohttp")
 
 
 def headers_preserve_casing():
@@ -304,9 +304,7 @@ def instrument_aiohttp_client(module):
 
 
 def instrument_aiohttp_client_reqrep(module):
-    version_info = aiohttp_version_info()
-
-    if version_info >= (2, 0):
+    if AIOHTTP_VERSION >= (2, 0):
         if headers_preserve_casing():
             cat_wrapper = _nr_aiohttp_add_cat_headers_simple_
         else:
@@ -320,7 +318,7 @@ def instrument_aiohttp_protocol(module):
 
 
 def instrument_aiohttp_web_urldispatcher(module):
-    if aiohttp_version_info() < (3, 5):
+    if AIOHTTP_VERSION < (3, 5):
         system_route_handler = "SystemRoute._handler"
     else:
         system_route_handler = "SystemRoute._handle"
@@ -354,9 +352,7 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
         # Patch in is_expected to all notice_error calls
         transaction._expect_errors = is_expected(transaction)
 
-        import aiohttp
-
-        transaction.add_framework_info(name="aiohttp", version=aiohttp.__version__)
+        transaction.add_framework_info(name="aiohttp", version=get_package_version("aiohttp"))
 
         import aiohttp.web as _web
 

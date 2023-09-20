@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import aiohttp
 from testing_support.fixtures import function_not_called
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
+from newrelic.common.package_version_utils import get_package_version_tuple
+
+version_info = get_package_version_tuple("aiohttp")
 
 
 @function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")

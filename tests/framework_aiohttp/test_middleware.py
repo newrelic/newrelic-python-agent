@@ -22,9 +22,13 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 from newrelic.core.config import global_settings
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
+version_info = get_package_version_tuple("aiohttp")
 
 
 async def middleware_factory(app, handler):
@@ -74,7 +78,7 @@ def test_middleware(nr_enabled, aiohttp_app, middleware, metric):
         rollup_metrics = [
             ("Function/_target_application:index", 1),
             (metric, 1),
-            ("Python/Framework/aiohttp/%s" % aiohttp.__version__, 1),
+            ("Python/Framework/aiohttp/%s" % get_package_version("aiohttp"), 1),
         ]
 
         _test = validate_transaction_metrics(

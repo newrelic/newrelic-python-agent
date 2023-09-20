@@ -31,8 +31,9 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-version_info = tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
+version_info = get_package_version_tuple("aiohttp")
 
 if version_info < (2, 0):
     _expected_error_class = aiohttp.errors.HttpProcessingError

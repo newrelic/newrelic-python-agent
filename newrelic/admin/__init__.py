@@ -133,11 +133,7 @@ def load_external_plugins():
         else:
             from pkg_resources import iter_entry_points as entry_points
     except ImportError:
-        try:
-            # Deprecated in Python 3.12
-            from pkg_resources import iter_entry_points as entry_points
-        except ImportError:
-            return
+        return
 
     group = "newrelic.admin"
 

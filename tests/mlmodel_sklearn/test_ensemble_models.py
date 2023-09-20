@@ -197,6 +197,7 @@ def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(ensemble_
     _test()
 
 
+
 @pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn >= 1.1")
 @pytest.mark.parametrize(
     "ensemble_model_name",

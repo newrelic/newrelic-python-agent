@@ -16,12 +16,12 @@ from inspect import isawaitable
 
 
 # Async Functions not allowed in Py2
-async def example_middleware_async(next, root, info, **args):
-    return_value = next(root, info, **args)
+async def example_middleware_async(_next, root, info, **args):
+    return_value = _next(root, info, **args)
     if isawaitable(return_value):
         return await return_value
     return return_value
 
 
-async def error_middleware_async(next, root, info, **args):
+async def error_middleware_async(_next, root, info, **args):
     raise RuntimeError("Runtime Error!")

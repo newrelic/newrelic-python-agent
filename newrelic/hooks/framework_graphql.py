@@ -39,7 +39,6 @@ _logger = logging.getLogger(__name__)
 
 GRAPHQL_IGNORED_FIELDS = frozenset(("id", "__typename"))
 GRAPHQL_INTROSPECTION_FIELDS = frozenset(("__schema", "__type"))
-# VERSION = None
 
 
 GRAPHQL_VERSION = get_package_version("graphql-core")

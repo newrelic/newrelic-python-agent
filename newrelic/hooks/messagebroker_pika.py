@@ -30,9 +30,11 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
     wrap_object,
 )
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 _START_KEY = "_nr_start_time"
 KWARGS_ERROR = "Supportability/hooks/pika/kwargs_error"
+PIKA_VERSION = get_package_version_tuple("pika")
 
 
 def _add_consume_rabbitmq_trace(transaction, method, properties, nr_start_time, queue_name=None):
@@ -400,11 +402,7 @@ def _disable_channel_transactions(wrapped, instance, args, kwargs):
 
 
 def instrument_pika_adapters(module):
-    import pika
-
-    version = tuple(int(num) for num in pika.__version__.split(".", 1)[0])
-
-    if version[0] < 1:
+    if PIKA_VERSION < 1:
         wrap_consume = _wrap_basic_consume_BlockingChannel_old
     else:
         wrap_consume = _wrap_basic_consume_Channel
@@ -422,11 +420,7 @@ def instrument_pika_spec(module):
 
 
 def instrument_pika_channel(module):
-    import pika
-
-    version = tuple(int(num) for num in pika.__version__.split(".", 1)[0])
-
-    if version[0] < 1:
+    if PIKA_VERSION < 1:
         wrap_consume = _wrap_basic_consume_Channel_old
         wrap_get = _wrap_basic_get_Channel_old
     else:

@@ -14,9 +14,8 @@
 
 from newrelic.common.package_version_utils import get_package_version_tuple
 
-try:
-    PROTOBUF_VERSION = get_package_version_tuple("google.protobuf")
-except Exception:
+PROTOBUF_VERSION = get_package_version_tuple("google.protobuf")
+if PROTOBUF_VERSION is None:
     PROTOBUF_VERSION = (0, 0, 0)
 
 # Import appropriate generated pb2 file for protobuf version

@@ -16,7 +16,6 @@ import sys
 import uuid
 
 import boto3
-import botocore
 import moto
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
@@ -41,7 +40,7 @@ AWS_REGION_NAME = "us-west-2"
 
 TEST_BUCKET = "python-agent-test-%s" % uuid.uuid4()
 
-BOTOCORE_VERSION = tuple(map(int, botocore.__version__.split(".")))
+BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 
 if BOTOCORE_VERSION < (1, 7, 41):

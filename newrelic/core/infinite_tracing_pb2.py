@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    from google.protobuf import __version__
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-    PROTOBUF_VERSION = tuple(int(v) for v in __version__.split("."))
+try:
+    PROTOBUF_VERSION = get_package_version_tuple("google.protobuf")
 except Exception:
     PROTOBUF_VERSION = (0, 0, 0)
 

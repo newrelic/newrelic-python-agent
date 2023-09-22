@@ -25,7 +25,7 @@ def run_openai_chat_completion_sync():
             {"role": "user", "content": "What is the boiling point of water?"},
             {"role": "assistant", "content": "The boiling point of water is 212 degrees Fahrenheit."},
             {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
-        ]
+        ],
     )
 
 
@@ -36,8 +36,11 @@ def run_openai_chat_completion_async():
         messages=[
             {"role": "system", "content": "You are a scientist."},
             {"role": "user", "content": "What is the boiling point of water?"},
-            {"role": "assistant", "content": "The boiling point of water is 212 degrees Fahrenheit or 100 degrees Celsius."},
-        ]
+            {
+                "role": "assistant",
+                "content": "The boiling point of water is 212 degrees Fahrenheit or 100 degrees Celsius.",
+            },
+        ],
     )
 
 

@@ -14,7 +14,6 @@
 
 import pytest
 from openai.util import convert_to_openai_object
-
 from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -42,21 +41,14 @@ def openai_chat_completion_dict():
             {
                 "finish_reason": "stop",
                 "index": 0,
-                 "message": {
-                    "content": "212 degrees Fahrenheit is 100 degrees Celsius.",
-                    "role": "assistant"
-                }
+                "message": {"content": "212 degrees Fahrenheit is 100 degrees Celsius.", "role": "assistant"},
             }
         ],
         "created": 1676917710,
         "id": "some-test-id-123456789",
         "model": "gpt-3.5-turbo-0613",
         "object": "chat.completion",
-        "usage": {
-            "completion_tokens": 7,
-            "prompt_tokens": 3,
-            "total_tokens": 10
-        },
+        "usage": {"completion_tokens": 7, "prompt_tokens": 3, "total_tokens": 10},
     }
 
 
@@ -70,15 +62,12 @@ def openai_embedding_dict():
                     -0.005336422007530928,
                 ],
                 "index": 0,
-                "object": "embedding"
+                "object": "embedding",
             }
         ],
         "model": "text-embedding-ada-002",
         "object": "list",
-        "usage": {
-            "prompt_tokens": 5,
-            "total_tokens": 5
-        }
+        "usage": {"prompt_tokens": 5, "total_tokens": 5},
     }
 
 

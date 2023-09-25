@@ -26,6 +26,15 @@ Distributed under the following license(s):
 * [The MIT License](http://opensource.org/licenses/MIT)
 
 
+## [opentelemetry-proto](https://pypi.org/project/opentelemetry-proto)
+
+Copyright (c) The OpenTelemetry Authors
+
+Distributed under the following license(s):
+
+* [The Apache License, Version 2.0 License](https://opensource.org/license/apache-2-0/)
+
+
 ## [six](https://pypi.org/project/six)
 
 Copyright (c) 2010-2013 Benjamin Peterson

@@ -45,7 +45,7 @@ class FakeConnectionPool(object):
     def release(self, connection):
         self.connection.disconnect()
 
-    def disconnect(self, connection):
+    def disconnect(self):
         self.connection.disconnect()
 
 

@@ -15,9 +15,9 @@
 import json
 import threading
 
-from newrelic.packages.six.moves import BaseHTTPServer
 from testing_support.util import get_open_port
 
+from newrelic.packages.six.moves import BaseHTTPServer
 
 # This defines an external server test apps can make requests to (instead of
 # www.google.com for example). This provides 3 features:
@@ -32,20 +32,26 @@ from testing_support.util import get_open_port
 
 
 def simple_get(self):
-    content_len = int(self.headers.get('content-length'))
+    content_len = int(self.headers.get("content-length"))
     content = json.loads(self.rfile.read(content_len).decode("utf-8"))
+    if "prompt" in content:
+        prompt = content["prompt"].strip()
+    elif "messages" in content:
+        print(content)
+        prompt = "\n".join(m["content"].strip() for m in content["messages"])
 
     if self.path == "/chat/completions":
-        prompt = content["prompt"].strip()
-        response, headers = ({}, "")
+        print(prompt)
+        headers, response = ({}, "")
         for k, v in MockExternalOpenAIServer.RESPONSES.items():
             if prompt.startswith(k):
-                response, headers = v
+                headers, response = v
                 break
         else:  # If no matches found
             self.send_response(500)
             self.end_headers()
-            self.wfile.write(b"Unknown Prompt")
+            self.wfile.write(("Unknown Prompt:\n%s" % prompt).encode("utf-8"))
+            return
 
         # Send response code
         self.send_response(200)
@@ -57,10 +63,12 @@ def simple_get(self):
 
         # Send response body
         self.wfile.write(json.dumps(response).encode("utf-8"))
+        return
     else:
         self.send_response(404)
         self.end_headers()
-        self.wfile.write(b"Unknown Path")
+        self.wfile.write(("Unknown Path: %s" % self.path).encode("utf-8"))
+        return
 
 
 class MockExternalOpenAIServer(threading.Thread):
@@ -68,22 +76,45 @@ class MockExternalOpenAIServer(threading.Thread):
     # before and after making requests to the test app that makes the external
     # calls.
     RESPONSES = {
-        "Suggest three names for an animal": ({}, {
-            "warning": "This model version is deprecated. Migrate before January 4, 2024 to avoid disruption of service. Learn more https://platform.openai.com/docs/deprecations",
-            "id": "cmpl-85KiuTDTtg3pAKWyMHWcN6OEUZskB",
-            "object": "text_completion",
-            "created": 1696281992,
-            "model": "text-davinci-003",
-            "choices": [
-                {
-                    "text": " Thunderbun, Thumper Man, Daredevil Hare",
-                    "index": 0,
-                    "logprobs": "None",
-                    "finish_reason": "stop",
-                }
-            ],
-            "usage": {"prompt_tokens": 61, "completion_tokens": 10, "total_tokens": 71},
-        })
+        "You are a scientist": (
+            {},
+            {
+                "id": "chatcmpl-85MA1QDLrjBcobHqColOy02QqHjDX",
+                "object": "chat.completion",
+                "created": 1696287517,
+                "model": "gpt-3.5-turbo-0613",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {"prompt_tokens": 53, "completion_tokens": 11, "total_tokens": 64},
+            },
+        ),
+        "Suggest three names for an animal": (
+            {},
+            {
+                "warning": "This model version is deprecated. Migrate before January 4, 2024 to avoid disruption of service. Learn more https://platform.openai.com/docs/deprecations",
+                "id": "cmpl-85KiuTDTtg3pAKWyMHWcN6OEUZskB",
+                "object": "text_completion",
+                "created": 1696281992,
+                "model": "text-davinci-003",
+                "choices": [
+                    {
+                        "text": " Thunderbun, Thumper Man, Daredevil Hare",
+                        "index": 0,
+                        "logprobs": "None",
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {"prompt_tokens": 61, "completion_tokens": 10, "total_tokens": 71},
+            },
+        ),
     }
 
     def __init__(self, port=None, *args, **kwargs):
@@ -147,4 +178,5 @@ class MockExternalOpenAIServer(threading.Thread):
 if __name__ == "__main__":
     with MockExternalOpenAIServer() as server:
         print("MockExternalOpenAIServer serving on port %s" % str(server.port))
-        while True: pass  # Server forever
+        while True:
+            pass  # Serve forever

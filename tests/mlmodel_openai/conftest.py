@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 import pytest
-from openai.util import convert_to_openai_object
+from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
+    event_loop as loop,
+)
 from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
+from testing_support.mock_external_openai_server import MockExternalOpenAIServer
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -35,47 +40,20 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 
 @pytest.fixture(autouse=True)
-def openai_chat_completion_dict():
-    return {
-        "choices": [
-            {
-                "finish_reason": "stop",
-                "index": 0,
-                "message": {"content": "212 degrees Fahrenheit is 100 degrees Celsius.", "role": "assistant"},
-            }
-        ],
-        "created": 1676917710,
-        "id": "some-test-id-123456789",
-        "model": "gpt-3.5-turbo-0613",
-        "object": "chat.completion",
-        "usage": {"completion_tokens": 7, "prompt_tokens": 3, "total_tokens": 10},
-    }
+def openai_server():
+    import openai
 
+    if os.environ.get("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
+        # Use real OpenAI backend and record responses
+        openai.api_key = os.environ.get("OPENAI_API_KEY", "")
+        if not openai.api_key:
+            raise RuntimeError("OPENAI_API_KEY environment variable required.")
 
-@pytest.fixture(autouse=True)
-def openai_embedding_dict():
-    return {
-        "data": [
-            {
-                "embedding": [
-                    -0.006929283495992422,
-                    -0.005336422007530928,
-                ],
-                "index": 0,
-                "object": "embedding",
-            }
-        ],
-        "model": "text-embedding-ada-002",
-        "object": "list",
-        "usage": {"prompt_tokens": 5, "total_tokens": 5},
-    }
-
-
-@pytest.fixture(autouse=True)
-def openai_chat_completion_object(openai_chat_completion_dict):
-    return convert_to_openai_object(openai_chat_completion_dict)
-
-
-@pytest.fixture(autouse=True)
-def openai_embedding_object(openai_embedding_dict):
-    return convert_to_openai_object(openai_embedding_dict)
+        yield
+        return
+    else:
+        # Use mocked OpenAI backend and prerecorded responses
+        with MockExternalOpenAIServer() as server:
+            openai.api_base = "http://localhost:%d" % server.port
+            openai.api_key = "NOT-A-REAL-SECRET"
+            yield

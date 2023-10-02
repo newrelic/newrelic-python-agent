@@ -13,36 +13,26 @@
 # limitations under the License.
 
 import openai
-import pytest
+
+_test_openai_chat_completion_sync_messages = (
+    {"role": "system", "content": "You are a scientist."},
+    {"role": "user", "content": "What is the boiling point of water?"},
+    {"role": "assistant", "content": "The boiling point of water is 212 degrees Fahrenheit."},
+    {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
+)
 
 
-@pytest.fixture
-def run_openai_chat_completion_sync():
-    openai.ChatCompletion.create(
+def test_openai_chat_completion_sync():
+    result = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a scientist."},
-            {"role": "user", "content": "What is the boiling point of water?"},
-            {"role": "assistant", "content": "The boiling point of water is 212 degrees Fahrenheit."},
-            {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
-        ],
+        messages=_test_openai_chat_completion_sync_messages,
     )
 
 
-@pytest.fixture
-def run_openai_chat_completion_async():
-    openai.ChatCompletion.acreate(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a scientist."},
-            {"role": "user", "content": "What is the boiling point of water?"},
-            {
-                "role": "assistant",
-                "content": "The boiling point of water is 212 degrees Fahrenheit or 100 degrees Celsius.",
-            },
-        ],
+def test_openai_chat_completion_async(loop):
+    result = loop.run_until_complete(
+        openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_sync_messages,
+        )
     )
-
-
-def test_no_harm():
-    pass

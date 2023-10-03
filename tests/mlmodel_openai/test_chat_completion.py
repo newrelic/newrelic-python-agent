@@ -23,14 +23,14 @@ _test_openai_chat_completion_sync_messages = (
 
 
 def test_openai_chat_completion_sync():
-    result = openai.ChatCompletion.create(
+    openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_sync_messages,
     )
 
 
 def test_openai_chat_completion_async(loop):
-    result = loop.run_until_complete(
+    loop.run_until_complete(
         openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo",
             messages=_test_openai_chat_completion_sync_messages,

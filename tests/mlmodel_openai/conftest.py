@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 
 import pytest
+
+from newrelic.common.object_wrapper import transient_function_wrapper, wrap_function_wrapper
+
 from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
     event_loop as loop,
 )
@@ -38,22 +42,64 @@ collector_agent_registration = collector_agent_registration_fixture(
     linked_applications=["Python Agent Test (mlmodel_openai)"],
 )
 
+OPENAI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "openai_audit.log")
+OPENAI_AUDIT_LOG = {}
 
-@pytest.fixture(autouse=True)
+
+@pytest.fixture(autouse=True, scope="session")
 def openai_server():
+    """
+    This fixture will either create a mocked backend for testing purposes, or will
+    set up an audit log file to log responses of the real OpenAI backend to a file.
+    The behavior can be controlled by setting NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES=1 as
+    an environment variable to run using the real OpenAI backend. (Default: mocking)
+    """
     import openai
+    from newrelic.core.config import _environ_as_bool
 
-    if os.environ.get("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
-        # Use real OpenAI backend and record responses
-        openai.api_key = os.environ.get("OPENAI_API_KEY", "")
-        if not openai.api_key:
-            raise RuntimeError("OPENAI_API_KEY environment variable required.")
-
-        yield
-        return
-    else:
+    if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
         # Use mocked OpenAI backend and prerecorded responses
         with MockExternalOpenAIServer() as server:
             openai.api_base = "http://localhost:%d" % server.port
             openai.api_key = "NOT-A-REAL-SECRET"
             yield
+    else:
+        # Use real OpenAI backend and record responses
+        openai.api_key = os.environ.get("OPENAI_API_KEY", "")
+        if not openai.api_key:
+            raise RuntimeError("OPENAI_API_KEY environment variable required.")
+
+        # Apply function wrappers to record data
+        wrap_function_wrapper("openai.api_requestor", "APIRequestor.request", wrap_openai_api_requestor_request)
+        yield  # Run tests
+
+        # Write responses to audit log
+        with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log:
+            json.dump(OPENAI_AUDIT_LOG, audit_log)
+
+
+# Intercept outgoing requests and log to file for mocking
+RECORDED_HEADERS = set(["x-request-id", "content-type"])
+def wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
+    params = bind_request_params(*args, **kwargs)
+    if not params:
+        return wrapped(*args, **kwargs)
+
+    prompt = params.get("prompt", None) or "\n".join(m["content"] for m in params.get("messages"))
+    shortened_prompt = prompt.lstrip().split("\n")[0]
+
+    # Send request
+    result = wrapped(*args, **kwargs)
+
+    # Clean up data
+    data = result[0].data
+    headers = result[0]._headers
+    headers = dict(filter(lambda k: k[0].lower() in RECORDED_HEADERS or k[0].lower().startswith("openai"), headers.items()))
+    
+    # Log response
+    OPENAI_AUDIT_LOG[shortened_prompt] = headers, data  # Append response data to audit log
+    return result
+
+
+def bind_request_params(method, url, params=None, *args, **kwargs):
+    return params

@@ -13,14 +13,12 @@
 # limitations under the License.
 
 import json
-import threading
 
-from testing_support.util import get_open_port
+from testing_support.mock_external_http_server import MockExternalHTTPServer
 
-from newrelic.packages.six.moves import BaseHTTPServer
 
-# This defines an external server test apps can make requests to (instead of
-# www.google.com for example). This provides 3 features:
+# This defines an external server test apps can make requests to instead of
+# the real OpenAI backend. This provides 3 features:
 #
 # 1) This removes dependencies on external websites.
 # 2) Provides a better mechanism for making an external call in a test app than
@@ -29,6 +27,38 @@ from newrelic.packages.six.moves import BaseHTTPServer
 #    transactions to separate the ones created in the test app and the ones
 #    created by an external call.
 # 3) This app runs on a separate thread meaning it won't block the test app.
+
+ALLOWED_PATHS = set(["/chat/completions"])
+
+RESPONSES = {
+    "You are a scientist.": [
+        {
+            "Content-Type": "application/json",
+            "openai-model": "gpt-3.5-turbo-0613",
+            "openai-organization": "new-relic-nkmd8b",
+            "openai-processing-ms": "1090",
+            "openai-version": "2020-10-01",
+            "x-request-id": "efe27ad067ad8c6a551f0338ad7b4ca3",
+        },
+        {
+            "id": "chatcmpl-85dpg8pZBkSu7nDIoiyjOSChBQAT5",
+            "object": "chat.completion",
+            "created": 1696355448,
+            "model": "gpt-3.5-turbo-0613",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "212 degrees Fahrenheit is equivalent to 100 degrees Celsius.",
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 53, "completion_tokens": 11, "total_tokens": 64},
+        },
+    ]
+}
 
 
 def simple_get(self):
@@ -40,10 +70,10 @@ def simple_get(self):
         print(content)
         prompt = "\n".join(m["content"].strip() for m in content["messages"])
 
-    if self.path == "/chat/completions":
+    if self.path in ALLOWED_PATHS:
         print(prompt)
         headers, response = ({}, "")
-        for k, v in MockExternalOpenAIServer.RESPONSES.items():
+        for k, v in RESPONSES.items():
             if prompt.startswith(k):
                 headers, response = v
                 break
@@ -71,108 +101,13 @@ def simple_get(self):
         return
 
 
-class MockExternalOpenAIServer(threading.Thread):
+class MockExternalOpenAIServer(MockExternalHTTPServer):
     # To use this class in a test one needs to start and stop this server
     # before and after making requests to the test app that makes the external
     # calls.
-    RESPONSES = {
-        "You are a scientist": (
-            {},
-            {
-                "id": "chatcmpl-85MA1QDLrjBcobHqColOy02QqHjDX",
-                "object": "chat.completion",
-                "created": 1696287517,
-                "model": "gpt-3.5-turbo-0613",
-                "choices": [
-                    {
-                        "index": 0,
-                        "message": {
-                            "role": "assistant",
-                            "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
-                        },
-                        "finish_reason": "stop",
-                    }
-                ],
-                "usage": {"prompt_tokens": 53, "completion_tokens": 11, "total_tokens": 64},
-            },
-        ),
-        "Suggest three names for an animal": (
-            {},
-            {
-                "warning": "This model version is deprecated. Migrate before January 4, 2024 to avoid disruption of service. Learn more https://platform.openai.com/docs/deprecations",
-                "id": "cmpl-85KiuTDTtg3pAKWyMHWcN6OEUZskB",
-                "object": "text_completion",
-                "created": 1696281992,
-                "model": "text-davinci-003",
-                "choices": [
-                    {
-                        "text": " Thunderbun, Thumper Man, Daredevil Hare",
-                        "index": 0,
-                        "logprobs": "None",
-                        "finish_reason": "stop",
-                    }
-                ],
-                "usage": {"prompt_tokens": 61, "completion_tokens": 10, "total_tokens": 71},
-            },
-        ),
-    }
 
-    def __init__(self, port=None, *args, **kwargs):
-        super(MockExternalOpenAIServer, self).__init__(*args, **kwargs)
-        self.daemon = True
-        handler = type(
-            "ResponseHandler",
-            (
-                BaseHTTPServer.BaseHTTPRequestHandler,
-                object,
-            ),
-            {
-                "do_GET": simple_get,
-                "do_OPTIONS": simple_get,
-                "do_HEAD": simple_get,
-                "do_POST": simple_get,
-                "do_PUT": simple_get,
-                "do_PATCH": simple_get,
-                "do_DELETE": simple_get,
-            },
-        )
-
-        if port:
-            self.httpd = BaseHTTPServer.HTTPServer(("localhost", port), handler)
-            self.port = port
-        else:
-            # If port not set, try to bind to a port until successful
-            retries = 5  # Set retry limit to prevent infinite loops
-            self.port = None  # Initialize empty
-            while not self.port and retries > 0:
-                retries -= 1
-                try:
-                    # Obtain random open port
-                    port = get_open_port()
-                    # Attempt to bind to port
-                    self.httpd = BaseHTTPServer.HTTPServer(("localhost", port), handler)
-                    self.port = port
-                except OSError as exc:
-                    # Reraise errors other than port already in use
-                    if "Address already in use" not in exc:
-                        raise
-
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, type, value, tb):
-        self.stop()
-
-    def run(self):
-        self.httpd.serve_forever()
-
-    def stop(self):
-        # Shutdowns the httpd server.
-        self.httpd.shutdown()
-        # Close the socket so we can reuse it.
-        self.httpd.socket.close()
-        self.join()
+    def __init__(self, handler=simple_get, port=None, *args, **kwargs):
+        super(MockExternalOpenAIServer, self).__init__(handler=handler, port=port, *args, **kwargs)
 
 
 if __name__ == "__main__":

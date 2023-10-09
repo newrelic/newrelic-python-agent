@@ -20,4 +20,6 @@ def test_openai_embedding_sync():
 
 
 def test_openai_embedding_async(loop):
-    loop.run_until_complete(openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002"))
+    loop.run_until_complete(
+        openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
+    )

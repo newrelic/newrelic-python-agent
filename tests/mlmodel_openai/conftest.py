@@ -99,7 +99,7 @@ def wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
     data = result[0].data
     headers = result[0]._headers
     headers = dict(
-        filter(lambda k: k[0].lower() in RECORDED_HEADERS or k[0].lower().startswith("openai"), headers.items())
+        filter(lambda k: k[0].lower() in RECORDED_HEADERS or k[0].lower().startswith("openai") or k[0].lower().startswith("x-ratelimit"), headers.items())
     )
 
     # Log response

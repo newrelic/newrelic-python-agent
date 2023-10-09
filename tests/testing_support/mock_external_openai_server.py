@@ -28,8 +28,6 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 #    created by an external call.
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
-ALLOWED_PATHS = set(["/chat/completions"])
-
 RESPONSES = {
     "You are a scientist.": [
         {
@@ -67,38 +65,30 @@ def simple_get(self):
     if "prompt" in content:
         prompt = content["prompt"].strip()
     elif "messages" in content:
-        print(content)
         prompt = "\n".join(m["content"].strip() for m in content["messages"])
 
-    if self.path in ALLOWED_PATHS:
-        print(prompt)
-        headers, response = ({}, "")
-        for k, v in RESPONSES.items():
-            if prompt.startswith(k):
-                headers, response = v
-                break
-        else:  # If no matches found
-            self.send_response(500)
-            self.end_headers()
-            self.wfile.write(("Unknown Prompt:\n%s" % prompt).encode("utf-8"))
-            return
-
-        # Send response code
-        self.send_response(200)
-
-        # Send headers
-        for k, v in headers.items():
-            self.send_header(k, v)
+    headers, response = ({}, "")
+    for k, v in RESPONSES.items():
+        if prompt.startswith(k):
+            headers, response = v
+            break
+    else:  # If no matches found
+        self.send_response(500)
         self.end_headers()
+        self.wfile.write(("Unknown Prompt:\n%s" % prompt).encode("utf-8"))
+        return
 
-        # Send response body
-        self.wfile.write(json.dumps(response).encode("utf-8"))
-        return
-    else:
-        self.send_response(404)
-        self.end_headers()
-        self.wfile.write(("Unknown Path: %s" % self.path).encode("utf-8"))
-        return
+    # Send response code
+    self.send_response(200)
+
+    # Send headers
+    for k, v in headers.items():
+        self.send_header(k, v)
+    self.end_headers()
+
+    # Send response body
+    self.wfile.write(json.dumps(response).encode("utf-8"))
+    return
 
 
 class MockExternalOpenAIServer(MockExternalHTTPServer):

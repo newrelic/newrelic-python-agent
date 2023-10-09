@@ -13,18 +13,11 @@
 # limitations under the License.
 
 import openai
-import pytest
 
 
-@pytest.fixture
-def run_openai_embedding_sync():
-    embedding = openai.Embedding.create(input="This is a test.", model="text-embedding-ada-002")
+def test_openai_embedding_sync():
+    openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
-@pytest.fixture
-def run_openai_embedding_async():
-    embedding = openai.Embedding.acreate(input="This is a test.", model="text-embedding-ada-002")
-
-
-def test_no_harm():
-    pass
+def test_openai_embedding_async(loop):
+    loop.run_until_complete(openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002"))

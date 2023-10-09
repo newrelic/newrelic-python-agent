@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
+import pprint
 import os
 
 import pytest
 
-from newrelic.common.object_wrapper import transient_function_wrapper, wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
     event_loop as loop,
@@ -26,7 +26,7 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
-from testing_support.mock_external_openai_server import MockExternalOpenAIServer
+from testing_support.mock_external_openai_server import MockExternalOpenAIServer, extract_shortened_prompt
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -43,7 +43,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 OPENAI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "openai_audit.log")
-OPENAI_AUDIT_LOG = {}
+OPENAI_AUDIT_LOG_CONTENTS = {}
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -74,8 +74,8 @@ def openai_server():
         yield  # Run tests
 
         # Write responses to audit log
-        with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log:
-            json.dump(OPENAI_AUDIT_LOG, audit_log)
+        with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log_fp:
+            pprint.pprint(OPENAI_AUDIT_LOG_CONTENTS, stream=audit_log_fp)
 
 
 # Intercept outgoing requests and log to file for mocking
@@ -85,8 +85,7 @@ def wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
     if not params:
         return wrapped(*args, **kwargs)
 
-    prompt = params.get("prompt", None) or "\n".join(m["content"] for m in params.get("messages"))
-    shortened_prompt = prompt.lstrip().split("\n")[0]
+    prompt = extract_shortened_prompt(params)
 
     # Send request
     result = wrapped(*args, **kwargs)
@@ -97,7 +96,7 @@ def wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
     headers = dict(filter(lambda k: k[0].lower() in RECORDED_HEADERS or k[0].lower().startswith("openai"), headers.items()))
     
     # Log response
-    OPENAI_AUDIT_LOG[shortened_prompt] = headers, data  # Append response data to audit log
+    OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, data  # Append response data to audit log
     return result
 
 

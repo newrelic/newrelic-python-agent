@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pprint
 import os
+import pprint
 
 import pytest
-
-from newrelic.common.object_wrapper import wrap_function_wrapper
-
 from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
     event_loop as loop,
 )
@@ -26,7 +23,12 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
-from testing_support.mock_external_openai_server import MockExternalOpenAIServer, extract_shortened_prompt
+from testing_support.mock_external_openai_server import (
+    MockExternalOpenAIServer,
+    extract_shortened_prompt,
+)
+
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -55,6 +57,7 @@ def openai_server():
     an environment variable to run using the real OpenAI backend. (Default: mocking)
     """
     import openai
+
     from newrelic.core.config import _environ_as_bool
 
     if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
@@ -80,6 +83,8 @@ def openai_server():
 
 # Intercept outgoing requests and log to file for mocking
 RECORDED_HEADERS = set(["x-request-id", "content-type"])
+
+
 def wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
     params = bind_request_params(*args, **kwargs)
     if not params:
@@ -93,8 +98,10 @@ def wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
     # Clean up data
     data = result[0].data
     headers = result[0]._headers
-    headers = dict(filter(lambda k: k[0].lower() in RECORDED_HEADERS or k[0].lower().startswith("openai"), headers.items()))
-    
+    headers = dict(
+        filter(lambda k: k[0].lower() in RECORDED_HEADERS or k[0].lower().startswith("openai"), headers.items())
+    )
+
     # Log response
     OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, data  # Append response data to audit log
     return result

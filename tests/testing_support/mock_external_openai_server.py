@@ -16,7 +16,6 @@ import json
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
-
 # This defines an external server test apps can make requests to instead of
 # the real OpenAI backend. This provides 3 features:
 #

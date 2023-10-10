@@ -51,11 +51,14 @@ except Exception:
 # By default, Transaction Events and Custom Events have the same size
 # reservoir. Error Events have a different default size.
 
+# Slow harvest (Every 60 seconds)
 DEFAULT_RESERVOIR_SIZE = 1200
-CUSTOM_EVENT_RESERVOIR_SIZE = 3600
 ERROR_EVENT_RESERVOIR_SIZE = 100
 SPAN_EVENT_RESERVOIR_SIZE = 2000
+# Fast harvest (Every 5 seconds, so divide by 12 to get average per minute value)
+CUSTOM_EVENT_RESERVOIR_SIZE = 3600
 LOG_EVENT_RESERVOIR_SIZE = 10000
+ML_EVENT_RESERVOIR_SIZE = 100000
 
 # settings that should be completely ignored if set server side
 IGNORED_SERVER_SIDE_SETTINGS = [
@@ -101,6 +104,7 @@ def create_settings(nested):
 
 class TopLevelSettings(Settings):
     _host = None
+    _otlp_host = None
 
     @property
     def host(self):
@@ -112,6 +116,16 @@ class TopLevelSettings(Settings):
     def host(self, value):
         self._host = value
 
+    @property
+    def otlp_host(self):
+        if self._otlp_host:
+            return self._otlp_host
+        return default_otlp_host(self.host)
+
+    @otlp_host.setter
+    def otlp_host(self, value):
+        self._otlp_host = value
+
 
 class AttributesSettings(Settings):
     pass
@@ -119,6 +133,14 @@ class AttributesSettings(Settings):
 
 class GCRuntimeMetricsSettings(Settings):
     enabled = False
+
+
+class MachineLearningSettings(Settings):
+    pass
+
+
+class MachineLearningInferenceEventsValueSettings(Settings):
+    pass
 
 
 class CodeLevelMetricsSettings(Settings):
@@ -196,6 +218,10 @@ class TransactionEventsAttributesSettings(Settings):
 
 
 class CustomInsightsEventsSettings(Settings):
+    pass
+
+
+class MlInsightsEventsSettings(Settings):
     pass
 
 
@@ -370,6 +396,8 @@ _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
+_settings.machine_learning = MachineLearningSettings()
+_settings.machine_learning.inference_events_value = MachineLearningInferenceEventsValueSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
@@ -377,6 +405,7 @@ _settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.console = ConsoleSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
+_settings.ml_insights_events = MlInsightsEventsSettings()
 _settings.datastore_tracer = DatastoreTracerSettings()
 _settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseNameReportingSettings()
 _settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
@@ -542,6 +571,24 @@ def default_host(license_key):
     return host
 
 
+def default_otlp_host(host):
+    HOST_MAP = {
+        "collector.newrelic.com": "otlp.nr-data.net",
+        "collector.eu.newrelic.com": "otlp.eu01.nr-data.net",
+        "gov-collector.newrelic.com": "gov-otlp.nr-data.net",
+        "staging-collector.newrelic.com": "staging-otlp.nr-data.net",
+        "staging-collector.eu.newrelic.com": "staging-otlp.eu01.nr-data.net",
+        "staging-gov-collector.newrelic.com": "staging-gov-otlp.nr-data.net",
+        "fake-collector.newrelic.com": "fake-otlp.nr-data.net",
+    }
+    otlp_host = HOST_MAP.get(host, None)
+    if not otlp_host:
+        default = HOST_MAP["collector.newrelic.com"]
+        _logger.warn("Unable to find corresponding OTLP host using default %s" % default)
+        otlp_host = default
+    return otlp_host
+
+
 _LOG_LEVEL = {
     "CRITICAL": logging.CRITICAL,
     "ERROR": logging.ERROR,
@@ -567,7 +614,9 @@ _settings.api_key = os.environ.get("NEW_RELIC_API_KEY", None)
 _settings.ssl = _environ_as_bool("NEW_RELIC_SSL", True)
 
 _settings.host = os.environ.get("NEW_RELIC_HOST")
+_settings.otlp_host = os.environ.get("NEW_RELIC_OTLP_HOST")
 _settings.port = int(os.environ.get("NEW_RELIC_PORT", "0"))
+_settings.otlp_port = int(os.environ.get("NEW_RELIC_OTLP_PORT", "0"))
 
 _settings.agent_run_id = None
 _settings.entity_guid = None
@@ -668,6 +717,7 @@ _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
+_settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
 _settings.distributed_tracing.exclude_newrelic_header = False
@@ -760,6 +810,10 @@ _settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_in
     "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", CUSTOM_EVENT_RESERVOIR_SIZE
 )
 
+_settings.event_harvest_config.harvest_limits.ml_event_data = _environ_as_int(
+    "NEW_RELIC_ML_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", ML_EVENT_RESERVOIR_SIZE
+)
+
 _settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
     "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", SPAN_EVENT_RESERVOIR_SIZE
 )
@@ -797,6 +851,7 @@ _settings.debug.disable_certificate_validation = False
 _settings.debug.log_untrusted_distributed_trace_keys = False
 _settings.debug.disable_harvest_until_shutdown = False
 _settings.debug.connect_span_stream_in_developer_mode = False
+_settings.debug.otlp_content_encoding = None
 
 _settings.message_tracer.segment_parameters_enabled = True
 
@@ -838,6 +893,10 @@ _settings.application_logging.metrics.enabled = _environ_as_bool(
 )
 _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
+)
+_settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNING_ENABLED", default=False)
+_settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
+    "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
 )
 
 
@@ -1083,8 +1142,8 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         apply_config_setting(settings_snapshot, name, value)
 
     # Overlay with global server side configuration settings.
-    # global server side configuration always takes precedence over the global
-    # server side configuration settings.
+    # global server side configuration always takes precedence over the local
+    # agent configuration settings.
 
     for name, value in server_side_config.items():
         apply_config_setting(settings_snapshot, name, value)
@@ -1100,6 +1159,16 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         apply_config_setting(
             settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
         )
+
+    # Since the server does not override this setting as it's an OTLP setting,
+    # we must override it here manually by converting it into a per harvest cycle
+    # value.
+    apply_config_setting(
+        settings_snapshot,
+        "event_harvest_config.harvest_limits.ml_event_data",
+        # override ml_events / (60s/5s) harvest
+        settings_snapshot.event_harvest_config.harvest_limits.ml_event_data / 12,
+    )
 
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of

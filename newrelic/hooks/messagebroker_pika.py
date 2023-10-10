@@ -38,7 +38,6 @@ PIKA_VERSION = get_package_version_tuple("pika")
 
 
 def _add_consume_rabbitmq_trace(transaction, method, properties, nr_start_time, queue_name=None):
-
     routing_key = None
     if hasattr(method, "routing_key"):
         routing_key = method.routing_key
@@ -199,7 +198,7 @@ def _wrap_basic_get_Channel(wrapper, queue, callback, *args, **kwargs):
     return queue, args, kwargs
 
 
-def _wrap_basic_get_Channel_old(wrapper, callback=None, queue="", *args, **kwargs):
+def _wrap_basic_get_Channel_old(wrapper, callback=None, queue="", *args, **kwargs):  # pragma: no cover
     if callback is not None:
         callback = wrapper(callback)
     args = (callback, queue) + args
@@ -370,7 +369,6 @@ def _wrap_Channel_consume_callback(module, obj, wrap_consume):
                     correlation_id=correlation_id,
                     source=wrapped,
                 ) as mt:
-
                     # Improve transaction naming
                     _new_txn_name = "RabbitMQ/Exchange/%s/%s" % (exchange, name)
                     mt.set_transaction_name(_new_txn_name, group="Message")
@@ -402,7 +400,7 @@ def _disable_channel_transactions(wrapped, instance, args, kwargs):
 
 
 def instrument_pika_adapters(module):
-    if PIKA_VERSION < 1:
+    if PIKA_VERSION < 1: # pragma: no cover
         wrap_consume = _wrap_basic_consume_BlockingChannel_old
     else:
         wrap_consume = _wrap_basic_consume_Channel
@@ -420,7 +418,7 @@ def instrument_pika_spec(module):
 
 
 def instrument_pika_channel(module):
-    if PIKA_VERSION < 1:
+    if PIKA_VERSION < 1: # pragma: no cover
         wrap_consume = _wrap_basic_consume_Channel_old
         wrap_get = _wrap_basic_get_Channel_old
     else:

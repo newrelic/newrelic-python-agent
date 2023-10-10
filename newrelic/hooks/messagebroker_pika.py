@@ -196,7 +196,7 @@ def _wrap_basic_get_Channel(wrapper, queue, callback, *args, **kwargs):
     return queue, args, kwargs
 
 
-def _wrap_basic_get_Channel_old(wrapper, callback=None, queue="", *args, **kwargs):
+def _wrap_basic_get_Channel_old(wrapper, callback=None, queue="", *args, **kwargs):  # pragma: no cover
     if callback is not None:
         callback = wrapper(callback)
     args = (callback, queue) + args
@@ -402,7 +402,7 @@ def instrument_pika_adapters(module):
 
     version = tuple(int(num) for num in pika.__version__.split(".", 1)[0])
 
-    if version[0] < 1:
+    if version[0] < 1:  # pragma: no cover
         wrap_consume = _wrap_basic_consume_BlockingChannel_old
     else:
         wrap_consume = _wrap_basic_consume_Channel
@@ -424,7 +424,7 @@ def instrument_pika_channel(module):
 
     version = tuple(int(num) for num in pika.__version__.split(".", 1)[0])
 
-    if version[0] < 1:
+    if version[0] < 1:  # pragma: no cover
         wrap_consume = _wrap_basic_consume_Channel_old
         wrap_get = _wrap_basic_get_Channel_old
     else:

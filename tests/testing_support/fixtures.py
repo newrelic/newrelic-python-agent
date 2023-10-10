@@ -166,7 +166,10 @@ def capture_harvest_errors():
 
     def wrap_record_custom_metric(wrapped, instance, args, kwargs):
         def _bind_params(name, value, *args, **kwargs):
-            return name
+            if isinstance(name, tuple):
+                return name[0]
+            else:
+                return name
 
         metric_name = _bind_params(*args, **kwargs)
         if (

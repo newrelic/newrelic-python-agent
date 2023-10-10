@@ -180,7 +180,6 @@ def create_user_attributes(attr_dict, attribute_filter):
 
 
 def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding="utf-8", ending=None):
-
     # Truncate text so that its byte representation
     # is no longer than maxsize bytes.
 
@@ -225,7 +224,6 @@ def check_max_int(value, max_int=MAX_64_BIT_INT):
 
 
 def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=None):
-
     # Perform all necessary checks on a potential attribute.
     #
     # Returns:
@@ -245,23 +243,22 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
         value = sanitize(value)
 
     except NameIsNotStringException:
-        _logger.debug("Attribute name must be a string. Dropping " "attribute: %r=%r", name, value)
+        _logger.debug("Attribute name must be a string. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except NameTooLongException:
-        _logger.debug("Attribute name exceeds maximum length. Dropping " "attribute: %r=%r", name, value)
+        _logger.debug("Attribute name exceeds maximum length. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except IntTooLargeException:
-        _logger.debug("Attribute value exceeds maximum integer value. " "Dropping attribute: %r=%r", name, value)
+        _logger.debug("Attribute value exceeds maximum integer value. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except CastingFailureException:
-        _logger.debug("Attribute value cannot be cast to a string. " "Dropping attribute: %r=%r", name, value)
+        _logger.debug("Attribute value cannot be cast to a string. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     else:
-
         # Check length after casting
 
         valid_types_text = (six.text_type, six.binary_type)
@@ -270,7 +267,7 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
             trunc_value = truncate(value, maxsize=max_length, ending=ending)
             if value != trunc_value:
                 _logger.debug(
-                    "Attribute value exceeds maximum length " "(%r bytes). Truncating value: %r=%r.",
+                    "Attribute value exceeds maximum length (%r bytes). Truncating value: %r=%r.",
                     max_length,
                     name,
                     trunc_value,
@@ -282,15 +279,31 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
 
 
 def sanitize(value):
+    """
+    Return value unchanged, if it's a valid type that is supported by
+    Insights. Otherwise, convert value to a string.
 
-    # Return value unchanged, if it's a valid type that is supported by
-    # Insights. Otherwise, convert value to a string.
-    #
-    # Raise CastingFailureException, if str(value) somehow fails.
+    Raise CastingFailureException, if str(value) somehow fails.
+    """
 
     valid_value_types = (six.text_type, six.binary_type, bool, float, six.integer_types)
 
-    if not isinstance(value, valid_value_types):
+    # When working with numpy, note that numpy has its own `int`s, `str`s,
+    # et cetera. `numpy.str_` and `numpy.float_` inherit from Python's native
+    # `str` and `float`, respectively.  However, some types, such as `numpy.int_`
+    # and `numpy.bool_`, do not inherit from `int` and `bool` (respectively).
+    # In those cases, the valid_value_types check fails and it will try to
+    # convert these to string, which is not the desired behavior.  Checking for
+    # `type` in lieu of `isinstance` has the potential to impact performance.
+
+    # numpy values have an attribute "item" that returns the closest
+    # equivalent Python native type.  Ex: numpy.int64 -> int
+    # This is important to utilize in cases like int and bool where
+    # numpy does not inherit from those classes. This logic is
+    # determining whether or not the value is a valid_value_type (or
+    # inherited from one of those types) AND whether it is a numpy
+    # type (by determining if it has the attribute "item").
+    if not isinstance(value, valid_value_types) and not hasattr(value, "item"):
         original = value
 
         try:
@@ -298,8 +311,6 @@ def sanitize(value):
         except Exception:
             raise CastingFailureException()
         else:
-            _logger.debug(
-                "Attribute value is of type: %r. Casting %r to " "string: %s", type(original), original, value
-            )
+            _logger.debug("Attribute value is of type: %r. Casting %r to string: %s", type(original), original, value)
 
     return value

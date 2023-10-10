@@ -37,7 +37,6 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "machine_learning.enabled": True,
-    #"machine_learning.inference_events_value.enabled": True,
     "ml_insights_events.enabled": True
 }
 

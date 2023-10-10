@@ -40,8 +40,6 @@ from newrelic.packages import six
 
 _test_openai_chat_completion_sync_messages = (
     {"role": "system", "content": "You are a scientist."},
-    #{"role": "user", "content": "What is the boiling point of water?"},
-    #{"role": "assistant", "content": "The boiling point of water is 212 degrees Fahrenheit."},
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
 )
 
@@ -158,7 +156,6 @@ def test_openai_chat_completion_sync_in_txn():
 
 
 @reset_core_stats_engine()
-# One summary event, one system message, one user message, and one response message from the assistant
 @validate_ml_event_count(count=0)
 def test_openai_chat_completion_sync_outside_txn():
     set_trace_info()
@@ -180,7 +177,6 @@ disabled_ml_settings = {
 
 @override_application_settings(disabled_ml_settings)
 @reset_core_stats_engine()
-# One summary event, one system message, one user message, and one response message from the assistant
 @validate_ml_event_count(count=0)
 def test_openai_chat_completion_sync_disabled_settings():
     set_trace_info()

@@ -36,8 +36,11 @@ _default_settings = {
     "transaction_tracer.stack_trace_threshold": 0.0,
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
-    "ml_insights_event.enabled": True,
+    "machine_learning.enabled": True,
+    #"machine_learning.inference_events_value.enabled": True,
+    "ml_insights_events.enabled": True
 }
+
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (mlmodel_openai)",
     default_settings=_default_settings,

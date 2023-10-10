@@ -24,14 +24,7 @@ from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 
-
-def set_trace_info():
-    txn = current_transaction()
-    if txn:
-        txn._trace_id = "trace-id"
-    trace = current_trace()
-    if trace:
-        trace.guid = "span-id"
+disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
 
 
 sync_embedding_recorded_events = [
@@ -70,7 +63,7 @@ sync_embedding_recorded_events = [
 @validate_ml_events(sync_embedding_recorded_events)
 @validate_ml_event_count(count=1)
 @background_task()
-def test_openai_embedding_sync():
+def test_openai_embedding_sync(set_trace_info):
     set_trace_info()
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
@@ -81,18 +74,71 @@ def test_openai_embedding_sync_outside_txn():
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
-disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
+@override_application_settings(disabled_ml_insights_settings)
+@reset_core_stats_engine()
+@validate_ml_event_count(count=0)
+def test_openai_chat_completion_sync_disabled_settings(set_trace_info):
+    set_trace_info()
+    openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
+
+
+@reset_core_stats_engine()
+@validate_ml_events(
+    [
+        (
+            {"type": "LlmEmbedding"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "transaction_id": None,  # Varies with each run.
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "request_id": "c70828b2293314366a76a2b1dcb20688",
+                "input": "This is an embedding test.",
+                "api_key_last_four_digits": "sk-CRET",
+                "request.model": "text-embedding-ada-002",
+                "response.model": "text-embedding-ada-002-v2",
+                "response.organization": "new-relic-nkmd8b",
+                "response.usage.total_tokens": 6,
+                "response.usage.prompt_tokens": 6,
+                "response.api_type": "None",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "response.headers.llmVersion": "2020-10-01",
+                "response.headers.ratelimitLimitRequests": 200,
+                "response.headers.ratelimitLimitTokens": 150000,
+                "response.headers.ratelimitResetTokens": "2ms",
+                "response.headers.ratelimitResetRequests": "19m45.394s",
+                "response.headers.ratelimitRemainingTokens": 149994,
+                "response.headers.ratelimitRemainingRequests": 197,
+                "duration": None,  # Varies with each run.
+            },
+        ),
+    ]
+)
+@validate_ml_event_count(count=1)
+@background_task()
+def test_openai_embedding_async(loop, set_trace_info):
+    set_trace_info()
+
+    loop.run_until_complete(
+        openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
+    )
+
+
+@reset_core_stats_engine()
+@validate_ml_event_count(count=0)
+def test_openai_embedding_async_outside_transaction(loop):
+    loop.run_until_complete(
+        openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
+    )
 
 
 @override_application_settings(disabled_ml_insights_settings)
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
-def test_openai_chat_completion_sync_disabled_settings():
-    set_trace_info()
-    openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
-
-
-def test_openai_embedding_async(loop):
+@background_task()
+def test_openai_embedding_async_disabled_ml_insights_events(loop):
     loop.run_until_complete(
         openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
     )

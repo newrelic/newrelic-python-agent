@@ -24,18 +24,17 @@ from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import add_custom_attribute, current_transaction
 
-
-def set_trace_info():
-    txn = current_transaction()
-    if txn:
-        txn._trace_id = "trace-id"
-    trace = current_trace()
-    if trace:
-        trace.guid = "span-id"
-
+disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
 
 _test_openai_chat_completion_sync_messages = (
     {"role": "system", "content": "You are a scientist."},
+    {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
+)
+
+_test_openai_chat_completion_async_messages = (
+    {"role": "system", "content": "You are a scientist."},
+    {"role": "user", "content": "What is the boiling point of water?"},
+    {"role": "assistant", "content": "The boiling point of water is 212 degrees Fahrenheit."},
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
 )
 
@@ -136,7 +135,7 @@ sync_chat_completion_recorded_events = [
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_ml_event_count(count=4)
 @background_task()
-def test_openai_chat_completion_sync_in_txn_with_convo_id():
+def test_openai_chat_completion_sync_in_txn_with_convo_id(set_trace_info):
     set_trace_info()
     add_custom_attribute("conversation_id", "my-awesome-id")
     openai.ChatCompletion.create(
@@ -240,7 +239,7 @@ sync_chat_completion_recorded_events_no_convo_id = [
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_ml_event_count(count=4)
 @background_task()
-def test_openai_chat_completion_sync_in_txn_no_convo_id():
+def test_openai_chat_completion_sync_in_txn_no_convo_id(set_trace_info):
     set_trace_info()
     openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_sync_messages, temperature=0.7, max_tokens=100
@@ -256,24 +255,349 @@ def test_openai_chat_completion_sync_outside_txn():
     )
 
 
-disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
-
-
 @override_application_settings(disabled_ml_insights_settings)
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 @background_task()
-def test_openai_chat_completion_sync_ml_insights_disabled():
+def test_openai_chat_completion_sync_ml_insights_disabled(set_trace_info):
     set_trace_info()
     openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_sync_messages, temperature=0.7, max_tokens=100
     )
 
 
-def test_openai_chat_completion_async(loop):
+@reset_core_stats_engine()
+@validate_ml_events(
+    [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "",
+                "transaction_id": None,  # Varies with each run.
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "api_key_last_four_digits": "sk-CRET",
+                "request.max_tokens": 100,
+                "response.number_of_messages": 5,
+                "request.model": "gpt-3.5-turbo",
+                "response.model": "gpt-3.5-turbo-0613",
+                "response.organization": "new-relic-nkmd8b",
+                "response.usage.total_tokens": 64,
+                "response.usage.prompt_tokens": 53,
+                "response.usage.completion_tokens": 11,
+                "response.choices.finish_reason": "stop",
+                "response.api_type": "None",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "response.headers.llmVersion": "2020-10-01",
+                "response.headers.ratelimitLimitRequests": 200,
+                "response.headers.ratelimitLimitTokens": 40000,
+                "response.headers.ratelimitResetTokens": "90ms",
+                "response.headers.ratelimitResetRequests": "7m12s",
+                "response.headers.ratelimitRemainingTokens": 39940,
+                "response.headers.ratelimitRemainingRequests": 199,
+                "duration": None,  # Varies with each run.
+                "request.temperature": 0.7,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-0",
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "response.model": "gpt-3.5-turbo-0613",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "content": "You are a scientist.",
+                "role": "system",
+                "completion_id": None,
+                "sequence": 0,
+                "vendor": "openAI",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-1",
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "response.model": "gpt-3.5-turbo-0613",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "content": "What is the boiling point of water?",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 1,
+                "vendor": "openAI",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "response.model": "gpt-3.5-turbo-0613",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "content": "The boiling point of water is 212 degrees Fahrenheit.",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 2,
+                "vendor": "openAI",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-3",
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "response.model": "gpt-3.5-turbo-0613",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "content": "What is 212 degrees Fahrenheit converted to Celsius?",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 3,
+                "vendor": "openAI",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-4",
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "response.model": "gpt-3.5-turbo-0613",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 4,
+                "vendor": "openAI",
+            },
+        ),
+    ]
+)
+@validate_ml_event_count(count=6)
+@background_task()
+def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info):
+    set_trace_info()
+
     loop.run_until_complete(
         openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo",
-            messages=_test_openai_chat_completion_sync_messages,
+            messages=_test_openai_chat_completion_async_messages,
+            max_tokens=100,
+            temperature=0.7,
+        )
+    )
+
+
+@reset_core_stats_engine()
+@validate_ml_events(
+    [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "my-awesome-id",
+                "transaction_id": None,  # Varies with each run.
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "api_key_last_four_digits": "sk-CRET",
+                "request.max_tokens": 100,
+                "response.number_of_messages": 5,
+                "request.model": "gpt-3.5-turbo",
+                "response.model": "gpt-3.5-turbo-0613",
+                "response.organization": "new-relic-nkmd8b",
+                "response.usage.total_tokens": 64,
+                "response.usage.prompt_tokens": 53,
+                "response.usage.completion_tokens": 11,
+                "response.choices.finish_reason": "stop",
+                "response.api_type": "None",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "response.headers.llmVersion": "2020-10-01",
+                "response.headers.ratelimitLimitRequests": 200,
+                "response.headers.ratelimitLimitTokens": 40000,
+                "response.headers.ratelimitResetTokens": "90ms",
+                "response.headers.ratelimitResetRequests": "7m12s",
+                "response.headers.ratelimitRemainingTokens": 39940,
+                "response.headers.ratelimitRemainingRequests": 199,
+                "duration": None,  # Varies with each run.
+                "request.temperature": 0.7,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-0",
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "my-awesome-id",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "response.model": "gpt-3.5-turbo-0613",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "content": "You are a scientist.",
+                "role": "system",
+                "completion_id": None,
+                "sequence": 0,
+                "vendor": "openAI",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-1",
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "my-awesome-id",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "response.model": "gpt-3.5-turbo-0613",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "content": "What is the boiling point of water?",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 1,
+                "vendor": "openAI",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "my-awesome-id",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "response.model": "gpt-3.5-turbo-0613",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "content": "The boiling point of water is 212 degrees Fahrenheit.",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 2,
+                "vendor": "openAI",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-3",
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "my-awesome-id",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "response.model": "gpt-3.5-turbo-0613",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "content": "What is 212 degrees Fahrenheit converted to Celsius?",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 3,
+                "vendor": "openAI",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-4",
+                "appName": "Python Agent Test (mlmodel_openai)",
+                "conversation_id": "my-awesome-id",
+                "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "response.model": "gpt-3.5-turbo-0613",
+                "vendor": "openAI",
+                # instrumentation.provider is attached to all ml_events and asserted in the payload tests
+                "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 4,
+                "vendor": "openAI",
+            },
+        ),
+    ]
+)
+@validate_ml_event_count(count=6)
+@background_task()
+def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info):
+    set_trace_info()
+    add_custom_attribute("conversation_id", "my-awesome-id")
+
+    loop.run_until_complete(
+        openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_async_messages,
+            max_tokens=100,
+            temperature=0.7,
+        )
+    )
+
+
+@reset_core_stats_engine()
+@validate_ml_event_count(count=0)
+def test_openai_chat_completion_async_outside_transaction(loop):
+    loop.run_until_complete(
+        openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_async_messages,
+            max_tokens=100,
+            temperature=0.7,
+        )
+    )
+
+
+@override_application_settings(disabled_ml_insights_settings)
+@reset_core_stats_engine()
+@validate_ml_event_count(count=0)
+@background_task()
+def test_openai_chat_completion_async_disabled_ml_settings(loop):
+    loop.run_until_complete(
+        openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_async_messages,
+            max_tokens=100,
+            temperature=0.7,
         )
     )

@@ -591,6 +591,8 @@ def test_translate_deprecated_ignored_params_with_new_setting():
         ("agent_run_id", None),
         ("entity_guid", None),
         ("distributed_tracing.exclude_newrelic_header", False),
+        ("otlp_host", "otlp.nr-data.net"),
+        ("otlp_port", 0),
     ),
 )
 def test_default_values(name, expected_value):

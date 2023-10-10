@@ -12,37 +12,60 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Repository root for mounting into container.
-MAKEFILE_DIR:=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
-REPO_ROOT:=$(realpath $(MAKEFILE_DIR)../../)
+# Override constants
+PLATFORM_OVERRIDE:=
+PYTHON_VERSIONS_OVERRIDE:=
+
+# Computed variables
+IMAGE_NAME:=ghcr.io/newrelic/newrelic-python-agent-ci
+MAKEFILE_DIR:=$(dir $(realpath $(firstword ${MAKEFILE_LIST})))
+REPO_ROOT:=$(realpath ${MAKEFILE_DIR}../../)
+UNAME_P:=$(shell uname -p)
+PLATFORM_AUTOMATIC:=$(if $(findstring arm,${UNAME_P}),linux/arm64,linux/amd64)
+PLATFORM:=$(if ${PLATFORM_OVERRIDE},${PLATFORM_OVERRIDE},${PLATFORM_AUTOMATIC})
+PYTHON_VERSIONS_AUTOMATIC:=3.10 2.7
+PYTHON_VERSIONS:=$(if ${PYTHON_VERSIONS_OVERRIDE},${PYTHON_VERSIONS_OVERRIDE},${PYTHON_VERSIONS_AUTOMATIC})
 
 .PHONY: default
 default: test
 
-# Perform a shortened build for testing
 .PHONY: build
 build:
-	@docker build $(MAKEFILE_DIR) \
-		-t ghcr.io/newrelic/newrelic-python-agent-ci:local \
-		--build-arg='PYTHON_VERSIONS=3.10 2.7'
+	@docker build ${MAKEFILE_DIR} \
+		--platform=${PLATFORM} \
+		-t ${IMAGE_NAME}:local \
+		--build-arg='PYTHON_VERSIONS=${PYTHON_VERSIONS}'
 
-# Ensure python versions are usable
-.PHONY: test
-test: build
-	@docker run --rm ghcr.io/newrelic/python-agent-ci:local /bin/bash -c '\
-		python3.10 --version && \
-		python2.7 --version && \
-		touch tox.ini && tox --version && \
-		echo "Success! Python versions installed."'
-
+# Run the local tag as a container.
 .PHONY: run
-run: build
+run: run.local
+
+# Run a specific tag as a container.
+# Usage: make run.<tag>
+# Defaults to run.local, but can instead be run.latest or any other tag.
+.PHONY: run.%
+run.%:
+# Build image if local was specified, else pull latest
+	@if [[ "$*" = "local" ]]; then cd ${MAKEFILE_DIR} && $(MAKE) build; else docker pull ${IMAGE_NAME}:$*; fi
 	@docker run --rm -it \
-		--mount type=bind,source="$(REPO_ROOT)",target=/home/github/python-agent \
+		--platform=${PLATFORM} \
+		--mount type=bind,source="${REPO_ROOT}",target=/home/github/python-agent \
 		--workdir=/home/github/python-agent \
 		--add-host=host.docker.internal:host-gateway \
 		-e NEW_RELIC_HOST="${NEW_RELIC_HOST}" \
 		-e NEW_RELIC_LICENSE_KEY="${NEW_RELIC_LICENSE_KEY}" \
 		-e NEW_RELIC_DEVELOPER_MODE="${NEW_RELIC_DEVELOPER_MODE}" \
 		-e GITHUB_ACTIONS="true" \
-		ghcr.io/newrelic/newrelic-python-agent-ci:local /bin/bash
+		${IMAGE_NAME}:$* /bin/bash
+
+# Ensure python versions are usable. Cannot be automatically used with PYTHON_VERSIONS_OVERRIDE.
+.PHONY: test
+test: build
+	@docker run --rm \
+		--platform=${PLATFORM} \
+		ghcr.io/newrelic/python-agent-ci:local \
+		/bin/bash -c '\
+			python3.10 --version && \
+			python2.7 --version && \
+			touch tox.ini && tox --version && \
+			echo "Success! Python versions installed."'

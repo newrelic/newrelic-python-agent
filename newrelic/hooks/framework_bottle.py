@@ -42,7 +42,7 @@ def status_code(exc, value, tb):
     # The HTTPError class derives from HTTPResponse and so we do not
     # need to check for it seperately as isinstance() will pick it up.
 
-    if isinstance(value, module_bottle.HTTPResponse):
+    if isinstance(value, module_bottle.HTTPResponse):  # pragma: no cover
         if hasattr(value, "status_code"):
             return value.status_code
         elif hasattr(value, "status"):
@@ -158,7 +158,7 @@ def instrument_bottle(module):
         wrap_out_function(module, "Route._make_callback", output_wrapper_Route_make_callback)
     elif hasattr(module.Bottle, "_match"):  # version >= 0.9
         wrap_out_function(module, "Bottle._match", output_wrapper_Bottle_match)
-    elif hasattr(module.Bottle, "match_url"):  # version < 0.9
+    elif hasattr(module.Bottle, "match_url"):  # version < 0.9 # pragma: no cover
         wrap_out_function(module, "Bottle.match_url", output_wrapper_Bottle_match)
 
     wrap_object_attribute(module, "Bottle.error_handler", proxy_Bottle_error_handler)
@@ -178,5 +178,5 @@ def instrument_bottle(module):
     if hasattr(module, "Jinja2Template"):
         wrap_function_trace(module, "Jinja2Template.render")
 
-    if hasattr(module, "SimpleTALTemplate"):
+    if hasattr(module, "SimpleTALTemplate"):  # pragma: no cover
         wrap_function_trace(module, "SimpleTALTemplate.render")

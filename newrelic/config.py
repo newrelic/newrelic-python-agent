@@ -2038,6 +2038,16 @@ def _process_trace_cache_import_hooks():
 
 def _process_module_builtin_defaults():
     _process_module_definition(
+        "openai.api_resources.embedding",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_api_resources_embedding",
+    )
+    _process_module_definition(
+        "openai.util",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_util",
+    )
+    _process_module_definition(
         "asyncio.base_events",
         "newrelic.hooks.coroutines_asyncio",
         "instrument_asyncio_base_events",

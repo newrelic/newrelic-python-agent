@@ -126,6 +126,10 @@ def create_key_values_from_iterable(iterable):
 
 def create_resource(attributes=None):
     attributes = attributes or {"instrumentation.provider": "newrelic-opentelemetry-python-ml"}
+    from newrelic.api.time_trace import get_service_linking_metadata
+
+    metadata = get_service_linking_metadata()
+    attributes.update(metadata)
     return Resource(attributes=create_key_values_from_iterable(attributes))
 
 

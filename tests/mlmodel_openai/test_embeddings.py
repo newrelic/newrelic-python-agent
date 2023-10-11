@@ -89,7 +89,6 @@ def test_openai_embedding_sync():
 
 
 @reset_core_stats_engine()
-# One summary event, one system message, one user message, and one response message from the assistant
 @validate_ml_event_count(count=0)
 def test_openai_embedding_sync_outside_txn():
     set_trace_info()
@@ -104,7 +103,6 @@ disabled_ml_settings = {
 
 @override_application_settings(disabled_ml_settings)
 @reset_core_stats_engine()
-# One summary event, one system message, one user message, and one response message from the assistant
 @validate_ml_event_count(count=0)
 def test_openai_chat_completion_sync_disabled_settings():
     set_trace_info()

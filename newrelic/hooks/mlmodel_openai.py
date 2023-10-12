@@ -44,7 +44,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
 
-    response_headers = getattr(response, "_nr_response_headers")
+    response_headers = getattr(response, "_nr_response_headers", None)
     response_model = response.model
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
@@ -63,11 +63,11 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "response.usage.completion_tokens": response.usage.completion_tokens,
         "response.usage.total_tokens": response.usage.total_tokens,
         "response.usage.prompt_tokens": response.usage.prompt_tokens,
-        "request.temperature": kwargs.get("temperature"),
-        "request.max_tokens": kwargs.get("max_tokens"),
+        "request.temperature": kwargs.get("temperature", ""),
+        "request.max_tokens": kwargs.get("max_tokens", ""),
         "response.choices.finish_reason": response.choices[0].finish_reason,
         "response.api_type": response.api_type,
-        "response.headers.llmVersion": response_headers.get("openai-version"),
+        "response.headers.llmVersion": response_headers.get("openai-version", ""),
         "response.headers.ratelimitLimitRequests": check_rate_limit_header(response_headers, "x-ratelimit-limit-requests", True),
         "response.headers.ratelimitLimitTokens": check_rate_limit_header(response_headers, "x-ratelimit-limit-tokens", True),
         "response.headers.ratelimitResetTokens": check_rate_limit_header(response_headers, "x-ratelimit-reset-tokens", False),
@@ -77,7 +77,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "vendor": "openAI",
         "ingest_source": "Python",
         "number_of_messages": len(kwargs.get("messages", [])) + len(response.choices),
-        "api_version": response_headers.get("openai-version")
+        "api_version": response_headers.get("openai-version", "")
     }
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
@@ -89,6 +89,8 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
 
 def check_rate_limit_header(response_headers, header_name, is_int):
+    if not response_headers:
+        return None
     if header_name in response_headers:
         header_value = response_headers.get(header_name)
         if is_int:

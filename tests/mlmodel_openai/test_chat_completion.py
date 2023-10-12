@@ -38,11 +38,6 @@ from newrelic.api.transaction import record_ml_event
 from newrelic.core.config import global_settings
 from newrelic.packages import six
 
-_test_openai_chat_completion_sync_messages = (
-    {"role": "system", "content": "You are a scientist."},
-    {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
-)
-
 
 def set_trace_info():
     txn = current_transaction()
@@ -51,6 +46,12 @@ def set_trace_info():
     trace = current_trace()
     if trace:
         trace.guid = "span-id"
+
+
+_test_openai_chat_completion_sync_messages = (
+    {"role": "system", "content": "You are a scientist."},
+    {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
+)
 
 
 sync_chat_completion_recorded_events = [
@@ -170,7 +171,6 @@ def test_openai_chat_completion_sync_outside_txn():
 
 disabled_ml_settings = {
     "machine_learning.enabled": False,
-    "machine_learning.inference_events_value.enabled": False,
     "ml_insights_events.enabled": False
 }
 

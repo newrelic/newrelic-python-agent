@@ -64,8 +64,9 @@ sync_chat_completion_recorded_events = [
             'transaction_id': None,
             'span_id': "span-id",
             'trace_id': "trace-id",
+            'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
             'api_key_last_four_digits': 'sk-CRET',
-            'response_time': None, # Response time varies each test run
+            'duration': None,  # Response time varies each test run
             'request.model': 'gpt-3.5-turbo',
             'response.model': 'gpt-3.5-turbo-0613',
             'response.organization': 'new-relic-nkmd8b',
@@ -86,13 +87,14 @@ sync_chat_completion_recorded_events = [
             'vendor': 'openAI',
             'ingest_source': 'Python',
             'number_of_messages': 3,
-            'api_version': '2020-10-01'
         },
     ),
     (
         {'type': 'LlmChatCompletionMessage'},
         {
-            'id': None,
+            'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-0",
+            'appName': 'Python Agent Test (mlmodel_openai)',
+            'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
             'span_id': "span-id",
             'trace_id': "trace-id",
             'transaction_id': None,
@@ -100,7 +102,7 @@ sync_chat_completion_recorded_events = [
             'role': 'system',
             'completion_id': None,
             'sequence': 0,
-            'model': 'gpt-3.5-turbo-0613',
+            'response.model': 'gpt-3.5-turbo-0613',
             'vendor': 'openAI',
             'ingest_source': 'Python'
         },
@@ -108,7 +110,9 @@ sync_chat_completion_recorded_events = [
     (
         {'type': 'LlmChatCompletionMessage'},
         {
-            'id': None,
+            'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-1",
+            'appName': 'Python Agent Test (mlmodel_openai)',
+            'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
             'span_id': "span-id",
             'trace_id': "trace-id",
             'transaction_id': None,
@@ -116,7 +120,7 @@ sync_chat_completion_recorded_events = [
             'role': 'user',
             'completion_id': None,
             'sequence': 1,
-            'model': 'gpt-3.5-turbo-0613',
+            'response.model': 'gpt-3.5-turbo-0613',
             'vendor': 'openAI',
             'ingest_source': 'Python'
         },
@@ -124,7 +128,9 @@ sync_chat_completion_recorded_events = [
     (
         {'type': 'LlmChatCompletionMessage'},
         {
-            'id': None,
+            'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
+            'appName': 'Python Agent Test (mlmodel_openai)',
+            'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
             'span_id': "span-id",
             'trace_id': "trace-id",
             'transaction_id': None,
@@ -132,7 +138,7 @@ sync_chat_completion_recorded_events = [
             'role': 'assistant',
             'completion_id': None,
             'sequence': 2,
-            'model': 'gpt-3.5-turbo-0613',
+            'response.model': 'gpt-3.5-turbo-0613',
             'vendor': 'openAI',
             'ingest_source': 'Python'
         }

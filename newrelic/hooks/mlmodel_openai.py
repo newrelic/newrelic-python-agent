@@ -37,7 +37,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         return
 
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict["conversation_id"] if "conversation_id" in custom_attrs_dict.keys() else str(uuid.uuid4())
+    conversation_id = custom_attrs_dict.get("conversation_id", str(uuid.uuid4()))
 
     chat_completion_id = str(uuid.uuid4())
     available_metadata = get_trace_linking_metadata()
@@ -46,6 +46,8 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
     response_headers = getattr(response, "_nr_response_headers", None)
     response_model = response.model
+    response_id = response.get("id", "")
+    request_id = response_headers.get("x-request-id", "")
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     chat_completion_summary_dict = {
@@ -55,8 +57,9 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction._transaction_id,
+        "request_id": request_id,
         "api_key_last_four_digits": f"sk-{response.api_key[-4:]}",
-        "response_time": ft.duration,
+        "duration": ft.duration,
         "request.model": kwargs.get("model") or kwargs.get("engine"),
         "response.model": response_model,
         "response.organization":  response.organization,
@@ -77,36 +80,38 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "vendor": "openAI",
         "ingest_source": "Python",
         "number_of_messages": len(kwargs.get("messages", [])) + len(response.choices),
-        "api_version": response_headers.get("openai-version", "")
     }
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
     message_list = list(kwargs.get("messages", [])) + [response.choices[0].message]
 
-    create_chat_completion_message_event(transaction, message_list, chat_completion_id, span_id, trace_id, response_model)
+    create_chat_completion_message_event(transaction, settings.app_name, message_list, chat_completion_id, span_id, trace_id, response_model, response_id, request_id)
 
     return response
 
 
 def check_rate_limit_header(response_headers, header_name, is_int):
     if not response_headers:
-        return None
+        return ""
+
     if header_name in response_headers:
         header_value = response_headers.get(header_name)
         if is_int:
             header_value = int(header_value)
         return header_value
     else:
-        return None
+        return ""
 
 
-def create_chat_completion_message_event(transaction, message_list, chat_completion_id, span_id, trace_id, response_model):
+def create_chat_completion_message_event(transaction, app_name, message_list, chat_completion_id, span_id, trace_id, response_model, response_id, request_id):
     if not transaction:
         return
 
     for index, message in enumerate(message_list):
         chat_completion_message_dict = {
-            "id": str(uuid.uuid4()),
+            "id": "%s-%s" % (response_id, index),
+            "appName": app_name,
+            "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction._transaction_id,
@@ -114,7 +119,7 @@ def create_chat_completion_message_event(transaction, message_list, chat_complet
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
-            "model": response_model,
+            "response.model": response_model,
             "vendor": "openAI",
             "ingest_source": "Python",
         }

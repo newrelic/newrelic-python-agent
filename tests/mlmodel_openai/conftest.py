@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
-import pprint
 
 import pytest
+from _mock_external_openai_server import (
+    MockExternalOpenAIServer,
+    extract_shortened_prompt,
+)
 from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
     event_loop as loop,
 )
 from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
-)
-from testing_support.mock_external_openai_server import (
-    MockExternalOpenAIServer,
-    extract_shortened_prompt,
 )
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -78,7 +78,7 @@ def openai_server():
 
         # Write responses to audit log
         with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log_fp:
-            pprint.pprint(OPENAI_AUDIT_LOG_CONTENTS, stream=audit_log_fp)
+            json.dump(OPENAI_AUDIT_LOG_CONTENTS, fp=audit_log_fp, indent=4)
 
 
 # Intercept outgoing requests and log to file for mocking

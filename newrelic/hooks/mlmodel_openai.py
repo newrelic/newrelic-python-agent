@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import openai
 import uuid
+
+import openai
+
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import get_trace_linking_metadata
-from newrelic.core.config import global_settings
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.core.config import global_settings
 
 
 def wrap_embedding_create(wrapped, instance, args, kwargs):
@@ -63,12 +65,24 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
         "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
-        "response.headers.ratelimitLimitRequests": check_rate_limit_header(response_headers, "x-ratelimit-limit-requests", True),
-        "response.headers.ratelimitLimitTokens": check_rate_limit_header(response_headers, "x-ratelimit-limit-tokens", True),
-        "response.headers.ratelimitResetTokens": check_rate_limit_header(response_headers, "x-ratelimit-reset-tokens", False),
-        "response.headers.ratelimitResetRequests": check_rate_limit_header(response_headers, "x-ratelimit-reset-requests", False),
-        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(response_headers, "x-ratelimit-remaining-tokens", True),
-        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(response_headers, "x-ratelimit-remaining-requests", True),
+        "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-requests", True
+        ),
+        "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-tokens", True
+        ),
+        "response.headers.ratelimitResetTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-tokens", False
+        ),
+        "response.headers.ratelimitResetRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-requests", False
+        ),
+        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-tokens", True
+        ),
+        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-requests", True
+        ),
         "vendor": "openAI",
     }
 
@@ -116,7 +130,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "duration": ft.duration,
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "response.model": response_model,
-        "response.organization":  response.organization,
+        "response.organization": response.organization,
         "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if any(response_usage) else "",
         "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
@@ -125,12 +139,24 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "response.choices.finish_reason": response.choices[0].finish_reason,
         "response.api_type": response.api_type,
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
-        "response.headers.ratelimitLimitRequests": check_rate_limit_header(response_headers, "x-ratelimit-limit-requests", True),
-        "response.headers.ratelimitLimitTokens": check_rate_limit_header(response_headers, "x-ratelimit-limit-tokens", True),
-        "response.headers.ratelimitResetTokens": check_rate_limit_header(response_headers, "x-ratelimit-reset-tokens", False),
-        "response.headers.ratelimitResetRequests": check_rate_limit_header(response_headers, "x-ratelimit-reset-requests", False),
-        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(response_headers, "x-ratelimit-remaining-tokens", True),
-        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(response_headers, "x-ratelimit-remaining-requests", True),
+        "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-requests", True
+        ),
+        "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-tokens", True
+        ),
+        "response.headers.ratelimitResetTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-tokens", False
+        ),
+        "response.headers.ratelimitResetRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-requests", False
+        ),
+        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-tokens", True
+        ),
+        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-requests", True
+        ),
         "vendor": "openAI",
         "response.number_of_messages": len(kwargs.get("messages", [])) + len(response.choices),
     }
@@ -138,7 +164,18 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
     message_list = list(kwargs.get("messages", [])) + [response.choices[0].message]
 
-    create_chat_completion_message_event(transaction, settings.app_name, message_list, chat_completion_id, span_id, trace_id, response_model, response_id, request_id, conversation_id)
+    create_chat_completion_message_event(
+        transaction,
+        settings.app_name,
+        message_list,
+        chat_completion_id,
+        span_id,
+        trace_id,
+        response_model,
+        response_id,
+        request_id,
+        conversation_id,
+    )
 
     return response
 
@@ -159,7 +196,18 @@ def check_rate_limit_header(response_headers, header_name, is_int):
         return ""
 
 
-def create_chat_completion_message_event(transaction, app_name, message_list, chat_completion_id, span_id, trace_id, response_model, response_id, request_id, conversation_id):
+def create_chat_completion_message_event(
+    transaction,
+    app_name,
+    message_list,
+    chat_completion_id,
+    span_id,
+    trace_id,
+    response_model,
+    response_id,
+    request_id,
+    conversation_id,
+):
     if not transaction:
         return
 
@@ -200,7 +248,7 @@ def instrument_openai_api_resources_embedding(module):
     if hasattr(module.Embedding, "create"):
         wrap_function_wrapper(module, "Embedding.create", wrap_embedding_create)
 
-        
+
 def instrument_openai_api_resources_chat_completion(module):
     if hasattr(module.ChatCompletion, "create"):
         wrap_function_wrapper(module, "ChatCompletion.create", wrap_chat_completion_create)

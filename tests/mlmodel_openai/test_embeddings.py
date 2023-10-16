@@ -17,12 +17,12 @@ from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,
     reset_core_stats_engine,
 )
-
-from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.validators.validate_ml_events import validate_ml_events
+
 from newrelic.api.background_task import background_task
+from newrelic.api.time_trace import current_trace
+from newrelic.api.transaction import current_transaction
 
 
 def set_trace_info():
@@ -36,31 +36,31 @@ def set_trace_info():
 
 sync_embedding_recorded_events = [
     (
-        {'type': 'LlmEmbedding'},
+        {"type": "LlmEmbedding"},
         {
-            'id': None,  # UUID that varies with each run
-            'appName': 'Python Agent Test (mlmodel_openai)',
-            'transaction_id': None,
-            'span_id': "span-id",
-            'trace_id': "trace-id",
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "transaction_id": None,
+            "span_id": "span-id",
+            "trace_id": "trace-id",
             "input": "This is an embedding test.",
-            'api_key_last_four_digits': 'sk-CRET',
-            'duration': None,  # Response time varies each test run
-            'response.model': 'text-embedding-ada-002-v2',
-            'request.model': 'text-embedding-ada-002',
-            'request_id': "c70828b2293314366a76a2b1dcb20688",
-            'response.organization': 'new-relic-nkmd8b',
-            'response.usage.total_tokens': 6,
-            'response.usage.prompt_tokens': 6,
-            'response.api_type': 'None',
-            'response.headers.llmVersion': '2020-10-01',
-            'response.headers.ratelimitLimitRequests': 200,
-            'response.headers.ratelimitLimitTokens': 150000,
-            'response.headers.ratelimitResetTokens': '2ms',
-            'response.headers.ratelimitResetRequests': '19m45.394s',
-            'response.headers.ratelimitRemainingTokens': 149994,
-            'response.headers.ratelimitRemainingRequests': 197,
-            'vendor': 'openAI',
+            "api_key_last_four_digits": "sk-CRET",
+            "duration": None,  # Response time varies each test run
+            "response.model": "text-embedding-ada-002-v2",
+            "request.model": "text-embedding-ada-002",
+            "request_id": "c70828b2293314366a76a2b1dcb20688",
+            "response.organization": "new-relic-nkmd8b",
+            "response.usage.total_tokens": 6,
+            "response.usage.prompt_tokens": 6,
+            "response.api_type": "None",
+            "response.headers.llmVersion": "2020-10-01",
+            "response.headers.ratelimitLimitRequests": 200,
+            "response.headers.ratelimitLimitTokens": 150000,
+            "response.headers.ratelimitResetTokens": "2ms",
+            "response.headers.ratelimitResetRequests": "19m45.394s",
+            "response.headers.ratelimitRemainingTokens": 149994,
+            "response.headers.ratelimitRemainingRequests": 197,
+            "vendor": "openAI",
         },
     ),
 ]

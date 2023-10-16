@@ -85,7 +85,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
     message_list = list(kwargs.get("messages", [])) + [response.choices[0].message]
 
-    create_chat_completion_message_event(transaction, settings.app_name, message_list, chat_completion_id, span_id, trace_id, response_model, response_id, request_id)
+    create_chat_completion_message_event(transaction, settings.app_name, message_list, chat_completion_id, span_id, trace_id, response_model, response_id, request_id, conversation_id)
 
     return response
 
@@ -106,7 +106,7 @@ def check_rate_limit_header(response_headers, header_name, is_int):
         return ""
 
 
-def create_chat_completion_message_event(transaction, app_name, message_list, chat_completion_id, span_id, trace_id, response_model, response_id, request_id):
+def create_chat_completion_message_event(transaction, app_name, message_list, chat_completion_id, span_id, trace_id, response_model, response_id, request_id, conversation_id):
     if not transaction:
         return
 
@@ -114,6 +114,7 @@ def create_chat_completion_message_event(transaction, app_name, message_list, ch
         chat_completion_message_dict = {
             "id": "%s-%s" % (response_id, index),
             "appName": app_name,
+            "conversation_id": conversation_id,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,

@@ -13,30 +13,18 @@
 # limitations under the License.
 
 import openai
-import pytest
-from testing_support.fixtures import (  # function_not_called,; override_application_settings,
-    function_not_called,
+from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
 )
-
+from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction, add_custom_attribute
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
-from testing_support.validators.validate_ml_event_payload import (
-    validate_ml_event_payload,
-)
 from testing_support.validators.validate_ml_events import validate_ml_events
 from testing_support.validators.validate_ml_events_outside_transaction import (
     validate_ml_events_outside_transaction,
 )
-
-import newrelic.core.otlp_utils
-from newrelic.api.application import application_instance as application
-from newrelic.api.background_task import background_task
-from newrelic.api.transaction import record_ml_event
-from newrelic.core.config import global_settings
-from newrelic.packages import six
 
 
 def set_trace_info():
@@ -93,6 +81,7 @@ sync_chat_completion_recorded_events = [
         {
             'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-0",
             'appName': 'Python Agent Test (mlmodel_openai)',
+            'conversation_id': 'my-awesome-id',
             'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
             'span_id': "span-id",
             'trace_id': "trace-id",
@@ -110,6 +99,7 @@ sync_chat_completion_recorded_events = [
         {
             'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-1",
             'appName': 'Python Agent Test (mlmodel_openai)',
+            'conversation_id': 'my-awesome-id',
             'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
             'span_id': "span-id",
             'trace_id': "trace-id",
@@ -127,6 +117,7 @@ sync_chat_completion_recorded_events = [
         {
             'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
             'appName': 'Python Agent Test (mlmodel_openai)',
+            'conversation_id': 'my-awesome-id',
             'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
             'span_id': "span-id",
             'trace_id': "trace-id",
@@ -197,6 +188,7 @@ sync_chat_completion_recorded_events_no_convo_id = [
         {
             'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-0",
             'appName': 'Python Agent Test (mlmodel_openai)',
+            'conversation_id': "",
             'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
             'span_id': "span-id",
             'trace_id': "trace-id",
@@ -214,6 +206,7 @@ sync_chat_completion_recorded_events_no_convo_id = [
         {
             'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-1",
             'appName': 'Python Agent Test (mlmodel_openai)',
+            'conversation_id': "",
             'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
             'span_id': "span-id",
             'trace_id': "trace-id",
@@ -231,6 +224,7 @@ sync_chat_completion_recorded_events_no_convo_id = [
         {
             'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
             'appName': 'Python Agent Test (mlmodel_openai)',
+            'conversation_id': "",
             'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
             'span_id': "span-id",
             'trace_id': "trace-id",

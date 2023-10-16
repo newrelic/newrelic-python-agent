@@ -2043,6 +2043,11 @@ def _process_module_builtin_defaults():
         "instrument_openai_api_resources_embedding",
     )
     _process_module_definition(
+        "openai.api_resources.chat_completion",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_api_resources_chat_completion",
+    )
+    _process_module_definition(
         "openai.util",
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_util",

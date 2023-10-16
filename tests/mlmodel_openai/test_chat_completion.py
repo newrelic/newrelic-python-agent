@@ -268,12 +268,10 @@ def test_openai_chat_completion_sync_outside_txn():
     )
 
 
-disabled_ml_settings = {
-    "ml_insights_events.enabled": False
-}
+disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
 
 
-@override_application_settings(disabled_ml_settings)
+@override_application_settings(disabled_ml_insights_settings)
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 @background_task()

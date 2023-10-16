@@ -20,7 +20,6 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.core.config import global_settings
 from newrelic.common.object_names import callable_name
-from newrelic.core.attribute import MAX_LOG_MESSAGE_LENGTH
 
 
 def wrap_embedding_create(wrapped, instance, args, kwargs):
@@ -39,37 +38,42 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
     embedding_id = str(uuid.uuid4())
-    response_headers = getattr(response, "_nr_response_headers")
-    settings = transaction.settings if transaction.settings is not None else global_settings()
 
+    response_headers = getattr(response, "_nr_response_headers", None)
+    request_id = response_headers.get("x-request-id", "") if response_headers else ""
+    response_model = response.get("model", "")
+    response_usage = response.get("usage", {})
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     embedding_dict = {
         "id": embedding_id,
         "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
+        "request_id": request_id,
         "transaction_id": transaction._transaction_id,
-        "input": kwargs.get("input")[:MAX_LOG_MESSAGE_LENGTH],
+        "input": kwargs.get("input", ""),
         "api_key_last_four_digits": f"sk-{response.api_key[-4:]}",
         "response_time": ft.duration,
-        "request.model": kwargs.get("model") or kwargs.get("engine"),
-        "response.model": response.model,
-        "response.usage.total_tokens": response.usage.total_tokens,
-        "response.usage.prompt_tokens": response.usage.prompt_tokens,
-        "response.headers.llmVersion": response_headers.get("openai-version"),
+        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+        "response.model": response_model,
+        "response.organization": response.organization,
+        "response.api_type": response.api_type,
+        "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
+        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
+        "response.headers.llmVersion": response_headers.get("openai-version", ""),
         "response.headers.ratelimitLimitRequests": check_rate_limit_header(response_headers, "x-ratelimit-limit-requests", True),
         "response.headers.ratelimitLimitTokens": check_rate_limit_header(response_headers, "x-ratelimit-limit-tokens", True),
         "response.headers.ratelimitResetTokens": check_rate_limit_header(response_headers, "x-ratelimit-reset-tokens", False),
         "response.headers.ratelimitResetRequests": check_rate_limit_header(response_headers, "x-ratelimit-reset-requests", False),
         "response.headers.ratelimitRemainingTokens": check_rate_limit_header(response_headers, "x-ratelimit-remaining-tokens", True),
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(response_headers, "x-ratelimit-remaining-requests", True),
-        "response.api_type": response.api_type,
         "vendor": "openAI",
-        "response.organization": response.organization,
-        "api_version": response_headers.get("openai-version"),
     }
 
     transaction.record_ml_event("LlmEmbedding", embedding_dict)
+    return response
 
 
 def wrap_chat_completion_create(wrapped, instance, args, kwargs):
@@ -110,7 +114,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "request_id": request_id,
         "api_key_last_four_digits": f"sk-{response.api_key[-4:]}",
         "duration": ft.duration,
-        "request.model": kwargs.get("model") or kwargs.get("engine"),
+        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "response.model": response_model,
         "response.organization":  response.organization,
         "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if any(response_usage) else "",
@@ -168,7 +172,7 @@ def create_chat_completion_message_event(transaction, app_name, message_list, ch
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction._transaction_id,
-            "content": message.get("content", "")[:MAX_LOG_MESSAGE_LENGTH],
+            "content": message.get("content", ""),
             "role": message.get("role", ""),
             "completion_id": chat_completion_id,
             "sequence": index,

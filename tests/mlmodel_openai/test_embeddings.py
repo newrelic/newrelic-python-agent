@@ -61,6 +61,7 @@ sync_embedding_recorded_events = [
             'response_time': None,  # Response time varies each test run
             'response.model': 'text-embedding-ada-002-v2',
             'request.model': 'text-embedding-ada-002',
+            'request_id': "c70828b2293314366a76a2b1dcb20688",
             'response.organization': 'new-relic-nkmd8b',
             'response.usage.total_tokens': 6,
             'response.usage.prompt_tokens': 6,
@@ -73,7 +74,6 @@ sync_embedding_recorded_events = [
             'response.headers.ratelimitRemainingTokens': 149994,
             'response.headers.ratelimitRemainingRequests': 197,
             'vendor': 'openAI',
-            'api_version': '2020-10-01'
         },
     ),
 ]
@@ -95,13 +95,10 @@ def test_openai_embedding_sync_outside_txn():
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
-disabled_ml_settings = {
-    "machine_learning.enabled": False,
-    "ml_insights_events.enabled": False
-}
+disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
 
 
-@override_application_settings(disabled_ml_settings)
+@override_application_settings(disabled_ml_insights_settings)
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 def test_openai_chat_completion_sync_disabled_settings():

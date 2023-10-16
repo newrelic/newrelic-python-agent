@@ -22,9 +22,6 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction, add_custom_attribute
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.validators.validate_ml_events import validate_ml_events
-from testing_support.validators.validate_ml_events_outside_transaction import (
-    validate_ml_events_outside_transaction,
-)
 
 
 def set_trace_info():
@@ -46,7 +43,7 @@ sync_chat_completion_recorded_events = [
     (
         {'type': 'LlmChatCompletionSummary'},
         {
-            'id': None, # UUID that varies with each run
+            'id': None,  # UUID that varies with each run
             'appName': 'Python Agent Test (mlmodel_openai)',
             'conversation_id': 'my-awesome-id',
             'transaction_id': None,
@@ -258,7 +255,6 @@ def test_openai_chat_completion_sync_in_txn_no_convo_id():
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 def test_openai_chat_completion_sync_outside_txn():
-    set_trace_info()
     add_custom_attribute("conversation_id", "my-awesome-id")
     openai.ChatCompletion.create(
         model="gpt-3.5-turbo",

@@ -13,29 +13,16 @@
 # limitations under the License.
 
 import openai
-import pytest
-from testing_support.fixtures import (  # function_not_called,; override_application_settings,
-    function_not_called,
+from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,
     reset_core_stats_engine,
 )
 
 from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction, add_custom_attribute
+from newrelic.api.transaction import current_transaction
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
-from testing_support.validators.validate_ml_event_payload import (
-    validate_ml_event_payload,
-)
 from testing_support.validators.validate_ml_events import validate_ml_events
-from testing_support.validators.validate_ml_events_outside_transaction import (
-    validate_ml_events_outside_transaction,
-)
-import newrelic.core.otlp_utils
-from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import record_ml_event
-from newrelic.core.config import global_settings
-from newrelic.packages import six
 
 
 def set_trace_info():
@@ -91,7 +78,6 @@ def test_openai_embedding_sync():
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 def test_openai_embedding_sync_outside_txn():
-    set_trace_info()
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
@@ -102,7 +88,6 @@ disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 def test_openai_chat_completion_sync_disabled_settings():
-    set_trace_info()
     set_trace_info()
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 

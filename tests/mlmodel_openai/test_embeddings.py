@@ -58,7 +58,7 @@ sync_embedding_recorded_events = [
             'trace_id': "trace-id",
             "input": "This is an embedding test.",
             'api_key_last_four_digits': 'sk-CRET',
-            'response_time': None,  # Response time varies each test run
+            'duration': None,  # Response time varies each test run
             'response.model': 'text-embedding-ada-002-v2',
             'request.model': 'text-embedding-ada-002',
             'request_id': "c70828b2293314366a76a2b1dcb20688",

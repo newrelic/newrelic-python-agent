@@ -55,7 +55,7 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
         "transaction_id": transaction._transaction_id,
         "input": kwargs.get("input", ""),
         "api_key_last_four_digits": f"sk-{response.api_key[-4:]}",
-        "response_time": ft.duration,
+        "duration": ft.duration,
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "response.model": response_model,
         "response.organization": response.organization,

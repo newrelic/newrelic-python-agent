@@ -65,8 +65,8 @@ def payload_to_ml_events(payload):
         else:
             # Make sure apm entity attrs are present on the resource.
             expected_apm_keys = ("entity.type", "entity.name", "entity.guid", "hostname", "instrumentation.provider")
-            assert all([attr["key"] in expected_apm_keys for attr in resource_attrs])
-            assert all([attr["value"] not in ("", None) for attr in resource_attrs])
+            assert all(attr["key"] in expected_apm_keys for attr in resource_attrs)
+            assert all(attr["value"] not in ("", None) for attr in resource_attrs)
 
             apm_logs = logs
 
@@ -104,10 +104,10 @@ def validate_ml_event_payload(ml_events=None):
         all_apm_logs = normalize_logs(decoded_apm_payloads)
         all_inference_logs = normalize_logs(decoded_inference_payloads)
 
-        for expected_event in ml_events["inference_events"]:
+        for expected_event in ml_events.get("inference", []):
             assert expected_event in all_inference_logs, "%s Not Found. Got: %s" % (expected_event, all_inference_logs)
 
-        for expected_event in ml_events["apm_events"]:
+        for expected_event in ml_events.get("apm", []):
             assert expected_event in all_apm_logs, "%s Not Found. Got: %s" % (expected_event, all_apm_logs)
         return val
 
@@ -129,4 +129,4 @@ def normalize_logs(decoded_payloads):
 def get_event_name(logs):
     for attr in logs[0]["attributes"]:
         if attr["key"] == "event.name":
-            return attr["value"]
+            return attr["value"]["string_value"]

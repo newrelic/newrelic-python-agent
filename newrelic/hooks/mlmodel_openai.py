@@ -1,4 +1,3 @@
-
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,15 +11,51 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import openai
+
 import uuid
+
+import openai
+
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import get_trace_linking_metadata
-from newrelic.core.config import global_settings
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.core.attribute import MAX_LOG_MESSAGE_LENGTH
+from newrelic.core.config import global_settings
+
+
+def openai_error_attributes(exception, request_args):
+    # 'id' attribute will always be 'None' in this case.
+    # 'completion_id' is generated at the completion of
+    # the request and all of these error types occur
+    # before the response is generated.
+    #
+    api_key_LFD = None
+    if openai.api_key:
+        api_key_LFD = f"sk-{openai.api_key[-4:]}"
+
+    error_code = "None"
+    status_code = getattr(exception, "http_status", "None")
+    if status_code and status_code >= 400 and status_code < 600:
+        error_code = status_code
+
+    error_attributes = {
+        "id": "None",
+        "api_key_last_four_digits": api_key_LFD,
+        "request.model": request_args.get("model") or request_args.get("engine", "None"),
+        "temperature": request_args.get("temperature", "None"),
+        "max_tokens": request_args.get("max_tokens", "None"),
+        "vendor": "openAI",
+        "ingest_source": "Python",
+        "organization": getattr(exception, "organization", "None"),
+        "number_of_messages": len(request_args.get("messages", [])),
+        "status_code": status_code,
+        "error_message": getattr(exception, "_message", "None"),
+        "error_type": exception.__class__.__name__ or "None",
+        "error_code": error_code,
+        "error_param": getattr(exception, "param", "None"),
+    }
+    return error_attributes
 
 
 def wrap_chat_completion_create(wrapped, instance, args, kwargs):
@@ -31,13 +66,20 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
-        response = wrapped(*args, **kwargs)
+        try:
+            response = wrapped(*args, **kwargs)
+        except Exception as exc:
+            error_attributes = openai_error_attributes(exc, kwargs)
+            transaction.notice_error(attributes=error_attributes)
+            raise
 
     if not response:
         return
 
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict["conversation_id"] if "conversation_id" in custom_attrs_dict.keys() else str(uuid.uuid4())
+    conversation_id = (
+        custom_attrs_dict["conversation_id"] if "conversation_id" in custom_attrs_dict.keys() else str(uuid.uuid4())
+    )
 
     chat_completion_id = str(uuid.uuid4())
     available_metadata = get_trace_linking_metadata()
@@ -59,7 +101,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "response_time": ft.duration,
         "request.model": kwargs.get("model") or kwargs.get("engine"),
         "response.model": response_model,
-        "response.organization":  response.organization,
+        "response.organization": response.organization,
         "response.usage.completion_tokens": response.usage.completion_tokens,
         "response.usage.total_tokens": response.usage.total_tokens,
         "response.usage.prompt_tokens": response.usage.prompt_tokens,
@@ -68,22 +110,36 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "response.choices.finish_reason": response.choices[0].finish_reason,
         "response.api_type": response.api_type,
         "response.headers.llmVersion": response_headers.get("openai-version"),
-        "response.headers.ratelimitLimitRequests": check_rate_limit_header(response_headers, "x-ratelimit-limit-requests", True),
-        "response.headers.ratelimitLimitTokens": check_rate_limit_header(response_headers, "x-ratelimit-limit-tokens", True),
-        "response.headers.ratelimitResetTokens": check_rate_limit_header(response_headers, "x-ratelimit-reset-tokens", False),
-        "response.headers.ratelimitResetRequests": check_rate_limit_header(response_headers, "x-ratelimit-reset-requests", False),
-        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(response_headers, "x-ratelimit-remaining-tokens", True),
-        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(response_headers, "x-ratelimit-remaining-requests", True),
+        "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-requests", True
+        ),
+        "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-tokens", True
+        ),
+        "response.headers.ratelimitResetTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-tokens", False
+        ),
+        "response.headers.ratelimitResetRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-requests", False
+        ),
+        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-tokens", True
+        ),
+        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-requests", True
+        ),
         "vendor": "openAI",
         "ingest_source": "Python",
         "number_of_messages": len(kwargs.get("messages", [])) + len(response.choices),
-        "api_version": response_headers.get("openai-version")
+        "api_version": response_headers.get("openai-version"),
     }
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
     message_list = list(kwargs.get("messages", [])) + [response.choices[0].message]
 
-    create_chat_completion_message_event(transaction, message_list, chat_completion_id, span_id, trace_id, response_model)
+    create_chat_completion_message_event(
+        transaction, message_list, chat_completion_id, span_id, trace_id, response_model
+    )
 
     return response
 
@@ -98,7 +154,9 @@ def check_rate_limit_header(response_headers, header_name, is_int):
         return None
 
 
-def create_chat_completion_message_event(transaction, message_list, chat_completion_id, span_id, trace_id, response_model):
+def create_chat_completion_message_event(
+    transaction, message_list, chat_completion_id, span_id, trace_id, response_model
+):
     if not transaction:
         return
 
@@ -127,12 +185,3 @@ def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
         setattr(returned_response, "_nr_response_headers", getattr(resp, "_headers", {}))
 
     return returned_response
-
-
-def instrument_openai_api_resources_chat_completion(module):
-    if hasattr(module.ChatCompletion, "create"):
-        wrap_function_wrapper(module, "ChatCompletion.create", wrap_chat_completion_create)
-
-
-def instrument_openai_util(module):
-    wrap_function_wrapper(module, "convert_to_openai_object", wrap_convert_to_openai_object)

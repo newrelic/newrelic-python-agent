@@ -2038,6 +2038,11 @@ def _process_trace_cache_import_hooks():
 
 def _process_module_builtin_defaults():
     _process_module_definition(
+        "openai.api_resources.embedding",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_api_resources_embedding",
+    )
+    _process_module_definition(
         "openai.api_resources.chat_completion",
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_api_resources_chat_completion",

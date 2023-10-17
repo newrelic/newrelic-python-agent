@@ -21,7 +21,6 @@ from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.config import global_settings
 
 
@@ -270,7 +269,6 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
         "request_id": response_headers.get("x-request-id", ""),
         "input": kwargs.get("input", ""),
         "response.api_type": getattr(response, "api_type", ""),
-        "vendor": "openAI",
         "response.organization": getattr(response, "organization", ""),
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "response.model": response.get("model", ""),
@@ -435,4 +433,3 @@ def instrument_openai_api_resources_chat_completion(module):
         wrap_function_wrapper(module, "ChatCompletion.create", wrap_chat_completion_create)
     if hasattr(module.ChatCompletion, "acreate"):
         wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_acreate)
-

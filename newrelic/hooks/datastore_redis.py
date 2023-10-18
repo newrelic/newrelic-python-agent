@@ -14,10 +14,11 @@
 
 import re
 
-from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.async_wrapper import coroutine_wrapper, async_generator_wrapper
 
 _redis_client_sync_methods = {
     "acl_dryrun",
@@ -248,7 +249,6 @@ _redis_client_async_methods = {
     "hmset_dict",
     "hmset",
     "hrandfield",
-    "hscan_inter",
     "hscan",
     "hset",
     "hsetnx",
@@ -349,7 +349,6 @@ _redis_client_async_methods = {
     "rpushx",
     "sadd",
     "save",
-    "scan_iter",
     "scan",
     "scandump",
     "scard",
@@ -381,7 +380,6 @@ _redis_client_async_methods = {
     "spellcheck",
     "spublish",
     "srem",
-    "sscan_iter",
     "sscan",
     "stralgo",
     "strappend",
@@ -466,14 +464,20 @@ _redis_client_async_methods = {
     "zrevrange",
     "zrevrangebylex",
     "zrevrank",
-    "zscan_iter",
     "zscan",
     "zscore",
     "zunion",
     "zunionstore",
 }
 
-_redis_client_methods = _redis_client_sync_methods.union(_redis_client_async_methods)
+_redis_client_async_gen_methods = {
+    "scan_iter",
+    "hscan_iter",
+    "sscan_iter",
+    "zscan_iter",
+}
+
+_redis_client_methods = _redis_client_sync_methods.union(_redis_client_async_methods, _redis_client_async_gen_methods)
 
 _redis_multipart_commands = set(["client", "cluster", "command", "config", "debug", "sentinel", "slowlog", "script"])
 
@@ -522,24 +526,15 @@ def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
     wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
 
 
-def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, operation):
-    @function_wrapper
-    async def _nr_wrapper_asyncio_Redis_async_method_(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
-        if transaction is None:
-            return await wrapped(*args, **kwargs)
-
-        with DatastoreTrace(product="Redis", target=None, operation=operation):
-            return await wrapped(*args, **kwargs)
-
+def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, operation, async_wrapper=coroutine_wrapper):
     def _nr_wrapper_asyncio_Redis_method_(wrapped, instance, args, kwargs):
         from redis.asyncio.client import Pipeline
 
         if isinstance(instance, Pipeline):
             return wrapped(*args, **kwargs)
 
-        # Method should be run when awaited, therefore we wrap in an async wrapper.
-        return _nr_wrapper_asyncio_Redis_async_method_(wrapped)(*args, **kwargs)
+        # Method should be run when awaited or iterated, therefore we wrap in an async wrapper.
+        return DatastoreTraceWrapper(wrapped, product="Redis", target=None, operation=operation, async_wrapper=async_wrapper)(*args, **kwargs)
 
     name = "%s.%s" % (instance_class_name, operation)
     wrap_function_wrapper(module, name, _nr_wrapper_asyncio_Redis_method_)
@@ -665,6 +660,9 @@ def instrument_asyncio_redis_client(module):
         for operation in _redis_client_async_methods:
             if hasattr(class_, operation):
                 _wrap_asyncio_Redis_method_wrapper(module, "Redis", operation)
+        for operation in _redis_client_async_gen_methods:
+            if hasattr(class_, operation):
+                _wrap_asyncio_Redis_method_wrapper(module, "Redis", operation, async_wrapper=async_generator_wrapper)
 
 
 def instrument_redis_commands_core(module):

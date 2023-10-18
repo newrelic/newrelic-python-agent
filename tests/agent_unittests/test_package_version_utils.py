@@ -20,9 +20,9 @@ from testing_support.validators.validate_function_called import validate_functio
 from newrelic.common.package_version_utils import (
     NULL_VERSIONS,
     VERSION_ATTRS,
+    _get_package_version,
     get_package_version,
     get_package_version_tuple,
-    _get_package_version,
 )
 
 # Notes:
@@ -32,7 +32,7 @@ from newrelic.common.package_version_utils import (
 # such as distribution_packages and removed pkg_resources.
 
 IS_PY38_PLUS = sys.version_info[:2] >= (3, 8)
-IS_PY310_PLUS = sys.version_info[:2] >= (3,10)
+IS_PY310_PLUS = sys.version_info[:2] >= (3, 10)
 SKIP_IF_NOT_IMPORTLIB_METADATA = pytest.mark.skipif(not IS_PY38_PLUS, reason="importlib.metadata is not supported.")
 SKIP_IF_IMPORTLIB_METADATA = pytest.mark.skipif(
     IS_PY38_PLUS, reason="importlib.metadata is preferred over pkg_resources."

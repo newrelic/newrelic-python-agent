@@ -22,11 +22,12 @@ except ImportError:
 
     _package_version_cache = {}
     _package_version_cache_lock = Lock()
+
     def _cache_package_versions(wrapped):
         """
         Threadsafe implementation of caching for _get_package_version.
-        
-        Python 2.7 does not have the @functools.cache decorator, and 
+
+        Python 2.7 does not have the @functools.cache decorator, and
         must be reimplemented with support for clearing the cache.
         """
 
@@ -34,14 +35,14 @@ except ImportError:
         def _wrapper(name):
             if name in _package_version_cache:
                 return _package_version_cache[name]
-            
+
             with _package_version_cache_lock:
                 if name in _package_version_cache:
                     return _package_version_cache[name]
 
                 version = _package_version_cache[name] = wrapped(name)
                 return version
-        
+
         def cache_clear():
             """Cache clear function to mimic @functools.cache"""
             with _package_version_cache_lock:
@@ -113,7 +114,7 @@ def _get_package_version(name):
     if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
         try:
             # In Python3.10+ packages_distribution can be checked for as well
-            if hasattr(sys.modules["importlib"].metadata, "packages_distributions"):    # pylint: disable=E1101
+            if hasattr(sys.modules["importlib"].metadata, "packages_distributions"):  # pylint: disable=E1101
                 distributions = sys.modules["importlib"].metadata.packages_distributions()  # pylint: disable=E1101
                 distribution_name = distributions.get(name, name)
             else:

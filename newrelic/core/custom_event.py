@@ -109,15 +109,17 @@ def create_custom_event(event_type, params, is_ml_event=False):
                         _logger.debug('Maximum number of attributes already '
                                 'added to event %r. Dropping attribute: %r=%r',
                                 name, key, value)
+                    else:
+                        attributes[key] = value
             else:
                 key, value = process_user_attribute(k, v)
                 if key:
                     if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
                         _logger.debug('Maximum number of attributes already '
                                 'added to event %r. Dropping attribute: %r=%r',
-                                name, key, value)
-                else:
-                    attributes[key] = value
+                                 name, key, value)
+                    else:
+                        attributes[key] = value
     except Exception:
         _logger.debug('Attributes failed to validate for unknown reason. '
                 'Check traceback for clues. Dropping event: %r.', name,

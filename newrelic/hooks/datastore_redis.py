@@ -603,7 +603,15 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     except:
         pass
 
-    transaction._nr_datastore_instance_info = (host, port_path_or_id, db)
+    # Find DatastoreTrace no matter how many other traces are inbetween
+    trace = current_trace()
+    while trace is not None and not isinstance(trace, DatastoreTrace):
+        trace = getattr(trace, "parent", None)
+
+    if trace is not None:
+        trace.host = host
+        trace.port_path_or_id = port_path_or_id
+        trace.database_name = db
 
     # Older Redis clients would when sending multi part commands pass
     # them in as separate arguments to send_command(). Need to therefore

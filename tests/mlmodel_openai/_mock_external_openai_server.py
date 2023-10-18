@@ -88,6 +88,39 @@ RESPONSES = {
             "usage": {"completion_tokens": 11, "prompt_tokens": 53, "total_tokens": 64},
         },
     ),
+    "You are a mathematician.": (
+        {
+            "Content-Type": "application/json",
+            "openai-model": "gpt-3.5-turbo-0613",
+            "openai-organization": "new-relic-nkmd8b",
+            "openai-processing-ms": "1469",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "200",
+            "x-ratelimit-limit-tokens": "40000",
+            "x-ratelimit-remaining-requests": "199",
+            "x-ratelimit-remaining-tokens": "39940",
+            "x-ratelimit-reset-requests": "7m12s",
+            "x-ratelimit-reset-tokens": "90ms",
+            "x-request-id": "49dbbffbd3c3f4612aa48def69059aad",
+        },
+        {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "index": 0,
+                    "message": {
+                        "content": "1 plus 2 is 3.",
+                        "role": "assistant",
+                    },
+                }
+            ],
+            "created": 1696888865,
+            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTeat",
+            "model": "gpt-3.5-turbo-0613",
+            "object": "chat.completion",
+            "usage": {"completion_tokens": 11, "prompt_tokens": 53, "total_tokens": 64},
+        },
+    ),
 }
 
 

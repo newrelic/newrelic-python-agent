@@ -102,6 +102,16 @@ def test_record_ml_event_inside_transaction(params, expected):
     _test()
 
 
+@reset_core_stats_engine()
+def test_record_ml_event_truncation():
+    @validate_ml_events([(_intrinsics, {"a": "a" * 4096})])
+    @background_task()
+    def _test():
+        record_ml_event("LabelEvent", {"a": "a" * 4100})
+
+    _test()
+
+
 @pytest.mark.parametrize(
     "params,expected",
     [

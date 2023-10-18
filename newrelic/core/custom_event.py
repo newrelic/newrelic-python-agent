@@ -18,7 +18,7 @@ import time
 
 from newrelic.core.attribute import (check_name_is_string, check_name_length,
         process_user_attribute, NameIsNotStringException, NameTooLongException,
-        MAX_NUM_USER_ATTRIBUTES)
+        MAX_NUM_USER_ATTRIBUTES, MAX_ML_ATTRIBUTE_LENGTH)
 
 
 _logger = logging.getLogger(__name__)
@@ -72,7 +72,8 @@ def process_event_type(name):
     else:
         return name
 
-def create_custom_event(event_type, params):
+
+def create_custom_event(event_type, params, is_ml_event=False):
     """Creates a valid custom event.
 
     Ensures that the custom event has a valid name, and also checks
@@ -83,6 +84,8 @@ def create_custom_event(event_type, params):
     Args:
         event_type (str): The type (name) of the custom event.
         params (dict): Attributes to add to the event.
+        is_ml_event (bool): Boolean indicating whether create_custom_event was called from
+        record_ml_event for truncation purposes
 
     Returns:
         Custom event (list of 2 dicts), if successful.
@@ -99,7 +102,10 @@ def create_custom_event(event_type, params):
 
     try:
         for k, v in params.items():
-            key, value = process_user_attribute(k, v)
+            if is_ml_event:
+                key, value = process_user_attribute(k, v, max_length=MAX_ML_ATTRIBUTE_LENGTH)
+            else:
+                key, value = process_user_attribute(k, v)
             if key:
                 if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
                     _logger.debug('Maximum number of attributes already '

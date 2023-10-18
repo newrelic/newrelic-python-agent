@@ -18,7 +18,7 @@ import time
 
 from newrelic.core.attribute import (check_name_is_string, check_name_length,
         process_user_attribute, NameIsNotStringException, NameTooLongException,
-        MAX_NUM_USER_ATTRIBUTES, MAX_ML_ATTRIBUTE_LENGTH)
+        MAX_NUM_USER_ATTRIBUTES, MAX_ML_ATTRIBUTE_LENGTH, MAX_NUM_ML_USER_ATTRIBUTES)
 
 
 _logger = logging.getLogger(__name__)
@@ -104,13 +104,18 @@ def create_custom_event(event_type, params, is_ml_event=False):
         for k, v in params.items():
             if is_ml_event:
                 key, value = process_user_attribute(k, v, max_length=MAX_ML_ATTRIBUTE_LENGTH)
+                if key:
+                    if len(attributes) >= MAX_NUM_ML_USER_ATTRIBUTES:
+                        _logger.debug('Maximum number of attributes already '
+                                'added to event %r. Dropping attribute: %r=%r',
+                                name, key, value)
             else:
                 key, value = process_user_attribute(k, v)
-            if key:
-                if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
-                    _logger.debug('Maximum number of attributes already '
-                            'added to event %r. Dropping attribute: %r=%r',
-                            name, key, value)
+                if key:
+                    if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
+                        _logger.debug('Maximum number of attributes already '
+                                'added to event %r. Dropping attribute: %r=%r',
+                                name, key, value)
                 else:
                     attributes[key] = value
     except Exception:

@@ -15,7 +15,7 @@
 import uuid
 
 import openai
-
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
@@ -28,6 +28,8 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
+
+    transaction.add_ml_model_info("OpenAI", get_package_version("openai"))
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
@@ -95,6 +97,8 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
     if not transaction:
         return wrapped(*args, **kwargs)
+
+    transaction.add_ml_model_info("OpenAI", get_package_version("openai"))
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
@@ -239,6 +243,8 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
+    transaction.add_ml_model_info("OpenAI", get_package_version("openai"))
+
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
         response = await wrapped(*args, **kwargs)
@@ -309,6 +315,8 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
 
     if not transaction:
         return await wrapped(*args, **kwargs)
+
+    transaction.add_ml_model_info("OpenAI", get_package_version("openai"))
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:

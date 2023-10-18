@@ -13,7 +13,43 @@
 # limitations under the License.
 
 import sys
-from functools import lru_cache
+
+try:
+    from functools import cache as _cache_package_versions
+except ImportError:
+    from functools import wraps
+    from threading import Lock
+
+    _package_version_cache = {}
+    _package_version_cache_lock = Lock()
+    def _cache_package_versions(wrapped):
+        """
+        Threadsafe implementation of caching for _get_package_version.
+        
+        Python 2.7 does not have the @functools.cache decorator, and 
+        must be reimplemented with support for clearing the cache.
+        """
+
+        @wraps(wrapped)
+        def _wrapper(name):
+            if name in _package_version_cache:
+                return _package_version_cache[name]
+            
+            with _package_version_cache_lock:
+                if name in _package_version_cache:
+                    return _package_version_cache[name]
+
+                version = _package_version_cache[name] = wrapped(name)
+                return version
+        
+        def cache_clear():
+            """Cache clear function to mimic @functools.cache"""
+            with _package_version_cache_lock:
+                _package_version_cache.clear()
+
+        _wrapper.cache_clear = cache_clear
+        return _wrapper
+
 
 # Need to account for 4 possible variations of version declaration specified in (rejected) PEP 396
 VERSION_ATTRS = ("__version__", "version", "__version_tuple__", "version_tuple")  # nosec
@@ -69,7 +105,6 @@ def get_package_version_tuple(name):
 
 
 @_cache_package_versions
-@lru_cache
 def _get_package_version(name):
     module = sys.modules.get(name, None)
     version = None

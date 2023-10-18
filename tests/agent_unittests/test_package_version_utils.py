@@ -22,6 +22,7 @@ from newrelic.common.package_version_utils import (
     VERSION_ATTRS,
     get_package_version,
     get_package_version_tuple,
+    _get_package_version,
 )
 
 # Notes:
@@ -46,7 +47,13 @@ def patched_pytest_module(monkeypatch):
             monkeypatch.delattr(pytest, attr)
 
     yield pytest
-    
+
+
+@pytest.fixture(scope="function", autouse=True)
+def cleared_package_version_cache():
+    """Ensure cache is empty before every test to exercise code paths."""
+    _get_package_version.cache_clear()
+
 
 # This test only works on Python 3.7
 @SKIP_IF_IMPORTLIB_METADATA
@@ -122,4 +129,17 @@ def test_mapping_import_to_distribution_packages():
 @validate_function_called("pkg_resources", "get_distribution")
 def test_pkg_resources_metadata():
     version = get_package_version("pytest")
+    assert version not in NULL_VERSIONS, version
+
+
+def test_version_caching(monkeypatch):
+    # Add fake module to be deleted later
+    sys.modules["mymodule"] = sys.modules["pytest"]
+    setattr(pytest, "__version__", "1.0.0")
+    version = get_package_version("mymodule")
+    assert version not in NULL_VERSIONS, version
+
+    # Ensure after deleting that the call to _get_package_version still completes because of caching
+    del sys.modules["mymodule"]
+    version = get_package_version("mymodule")
     assert version not in NULL_VERSIONS, version

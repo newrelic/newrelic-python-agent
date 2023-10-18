@@ -61,7 +61,7 @@ def openai_error_attributes(exception, request_args):
 def wrap_embedding_create(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
-        return
+        return wrapped(*args, **kwargs)
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
@@ -73,7 +73,7 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
             raise
 
     if not response:
-        return
+        return response
 
     available_metadata = get_trace_linking_metadata()
     span_id = available_metadata.get("span.id", "")
@@ -133,7 +133,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if not transaction:
-        return
+        return wrapped(*args, **kwargs)
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
@@ -145,7 +145,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
             raise
 
     if not response:
-        return
+        return response
 
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("conversation_id", "")
@@ -157,10 +157,15 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
     response_headers = getattr(response, "_nr_response_headers", None)
     response_model = response.get("model", "")
-    response_id = response.get("id", "")
-    request_id = response_headers.get("x-request-id", "")
-    response_usage = response.get("usage", {})
     settings = transaction.settings if transaction.settings is not None else global_settings()
+    response_id = response.get("id")
+    request_id = response_headers.get("x-request-id", "")
+
+    api_key = getattr(response, "api_key", None)
+    response_usage = response.get("usage", {})
+
+    messages = kwargs.get("messages", [])
+    choices = response.get("choices", [])
 
     chat_completion_summary_dict = {
         "id": chat_completion_id,
@@ -170,18 +175,18 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "trace_id": trace_id,
         "transaction_id": transaction._transaction_id,
         "request_id": request_id,
-        "api_key_last_four_digits": f"sk-{response.api_key[-4:]}",
+        "api_key_last_four_digits": f"sk-{api_key[-4:]}" if api_key else "",
         "duration": ft.duration,
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "response.model": response_model,
-        "response.organization": response.organization,
+        "response.organization": getattr(response, "organization", ""),
         "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if any(response_usage) else "",
         "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
         "request.temperature": kwargs.get("temperature", ""),
         "request.max_tokens": kwargs.get("max_tokens", ""),
-        "response.choices.finish_reason": response.choices[0].finish_reason,
-        "response.api_type": response.api_type,
+        "response.choices.finish_reason": choices[0].finish_reason if choices else "",
+        "response.api_type": getattr(response, "api_type", ""),
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
         "response.headers.ratelimitLimitRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-limit-requests", True
@@ -202,11 +207,13 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
             response_headers, "x-ratelimit-remaining-requests", True
         ),
         "vendor": "openAI",
-        "response.number_of_messages": len(kwargs.get("messages", [])) + len(response.choices),
+        "response.number_of_messages": len(messages) + len(choices),
     }
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
-    message_list = list(kwargs.get("messages", [])) + [response.choices[0].message]
+    message_list = list(messages)
+    if choices:
+        message_list.extend([choices[0].message])
 
     create_chat_completion_message_event(
         transaction,
@@ -252,9 +259,6 @@ def create_chat_completion_message_event(
     request_id,
     conversation_id,
 ):
-    if not transaction:
-        return
-
     for index, message in enumerate(message_list):
         chat_completion_message_dict = {
             "id": "%s-%s" % (response_id, index),
@@ -274,6 +278,179 @@ def create_chat_completion_message_event(
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
 
+async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    ft_name = callable_name(wrapped)
+    with FunctionTrace(ft_name) as ft:
+        response = await wrapped(*args, **kwargs)
+
+    if not response:
+        return response
+
+    embedding_id = str(uuid.uuid4())
+    response_headers = getattr(response, "_nr_response_headers", None)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+
+    api_key = getattr(response, "api_key", None)
+    usage = response.get("usage")
+    total_tokens = ""
+    prompt_tokens = ""
+    if usage:
+        total_tokens = usage.get("total_tokens", "")
+        prompt_tokens = usage.get("prompt_tokens", "")
+
+    embedding_dict = {
+        "id": embedding_id,
+        "duration": ft.duration,
+        "api_key_last_four_digits": f"sk-{api_key[-4:]}" if api_key else "",
+        "request_id": response_headers.get("x-request-id", ""),
+        "input": kwargs.get("input", ""),
+        "response.api_type": getattr(response, "api_type", ""),
+        "response.organization": getattr(response, "organization", ""),
+        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+        "response.model": response.get("model", ""),
+        "appName": settings.app_name,
+        "trace_id": trace_id,
+        "transaction_id": transaction._transaction_id,
+        "span_id": span_id,
+        "response.usage.total_tokens": total_tokens,
+        "response.usage.prompt_tokens": prompt_tokens,
+        "response.headers.llmVersion": response_headers.get("openai-version", ""),
+        "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-requests", True
+        ),
+        "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-tokens", True
+        ),
+        "response.headers.ratelimitResetTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-tokens", False
+        ),
+        "response.headers.ratelimitResetRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-requests", False
+        ),
+        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-tokens", True
+        ),
+        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-requests", True
+        ),
+        "vendor": "openAI",
+    }
+
+    transaction.record_ml_event("LlmEmbedding", embedding_dict)
+    return response
+
+
+async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    ft_name = callable_name(wrapped)
+    with FunctionTrace(ft_name) as ft:
+        response = await wrapped(*args, **kwargs)
+
+    if not response:
+        return response
+
+    conversation_id = transaction._custom_params.get("conversation_id", "")
+
+    chat_completion_id = str(uuid.uuid4())
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+
+    response_headers = getattr(response, "_nr_response_headers", None)
+    response_model = response.get("model", "")
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    response_id = response.get("id")
+    request_id = response_headers.get("x-request-id", "")
+
+    api_key = getattr(response, "api_key", None)
+    usage = response.get("usage")
+    total_tokens = ""
+    prompt_tokens = ""
+    completion_tokens = ""
+    if usage:
+        total_tokens = usage.get("total_tokens", "")
+        prompt_tokens = usage.get("prompt_tokens", "")
+        completion_tokens = usage.get("completion_tokens", "")
+
+    messages = kwargs.get("messages", [])
+    choices = response.get("choices", [])
+
+    chat_completion_summary_dict = {
+        "id": chat_completion_id,
+        "appName": settings.app_name,
+        "conversation_id": conversation_id,
+        "request_id": request_id,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction._transaction_id,
+        "api_key_last_four_digits": f"sk-{api_key[-4:]}" if api_key else "",
+        "duration": ft.duration,
+        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+        "response.model": response_model,
+        "response.organization": getattr(response, "organization", ""),
+        "response.usage.completion_tokens": completion_tokens,
+        "response.usage.total_tokens": total_tokens,
+        "response.usage.prompt_tokens": prompt_tokens,
+        "response.number_of_messages": len(messages) + len(choices),
+        "request.temperature": kwargs.get("temperature", ""),
+        "request.max_tokens": kwargs.get("max_tokens", ""),
+        "response.choices.finish_reason": choices[0].get("finish_reason", "") if choices else "",
+        "response.api_type": getattr(response, "api_type", ""),
+        "response.headers.llmVersion": response_headers.get("openai-version", ""),
+        "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-requests", True
+        ),
+        "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-tokens", True
+        ),
+        "response.headers.ratelimitResetTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-tokens", False
+        ),
+        "response.headers.ratelimitResetRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-requests", False
+        ),
+        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-tokens", True
+        ),
+        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-requests", True
+        ),
+        "vendor": "openAI",
+    }
+
+    transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
+    message_list = list(messages)
+    if choices:
+        message_list.extend([choices[0].message])
+
+    create_chat_completion_message_event(
+        transaction,
+        settings.app_name,
+        message_list,
+        chat_completion_id,
+        span_id,
+        trace_id,
+        response_model,
+        response_id,
+        request_id,
+        conversation_id,
+    )
+
+    return response
+
+
 def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
     resp = args[0]
     returned_response = wrapped(*args, **kwargs)
@@ -291,8 +468,12 @@ def instrument_openai_util(module):
 def instrument_openai_api_resources_embedding(module):
     if hasattr(module.Embedding, "create"):
         wrap_function_wrapper(module, "Embedding.create", wrap_embedding_create)
+    if hasattr(module.Embedding, "acreate"):
+        wrap_function_wrapper(module, "Embedding.acreate", wrap_embedding_acreate)
 
 
 def instrument_openai_api_resources_chat_completion(module):
     if hasattr(module.ChatCompletion, "create"):
         wrap_function_wrapper(module, "ChatCompletion.create", wrap_chat_completion_create)
+    if hasattr(module.ChatCompletion, "acreate"):
+        wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_acreate)

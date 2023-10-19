@@ -87,6 +87,6 @@ jobs:
           agent-language: "python"
           target-system: "all"
           agent-version: "${{ github.ref_name }}"
-          dry-run: "true"
+          dry-run: "false"
           production-api-key: ${{ secrets.NEW_RELIC_API_KEY_PRODUCTION }}"
           staging-api-key: ${{ secrets.NEW_RELIC_API_KEY_STAGING }}"

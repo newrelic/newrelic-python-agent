@@ -58,10 +58,41 @@ def core_app(collector_agent_registration):
 
 
 @validate_ml_event_payload(
-    [{"foo": "bar", "real_agent_id": "1234567", "event.domain": "newrelic.ml_events", "event.name": "InferenceEvent"}]
+    {
+        "apm": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "MyCustomEvent",
+            }
+        ]
+    }
 )
 @reset_core_stats_engine()
-def test_ml_event_payload_inside_transaction(core_app):
+def test_ml_event_payload_noninference_event_inside_transaction(core_app):
+    @background_task(name="test_ml_event_payload_inside_transaction")
+    def _test():
+        record_ml_event("MyCustomEvent", {"foo": "bar"})
+
+    _test()
+    core_app.harvest()
+
+
+@validate_ml_event_payload(
+    {
+        "inference": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "InferenceEvent",
+            }
+        ]
+    }
+)
+@reset_core_stats_engine()
+def test_ml_event_payload_inference_event_inside_transaction(core_app):
     @background_task(name="test_ml_event_payload_inside_transaction")
     def _test():
         record_ml_event("InferenceEvent", {"foo": "bar"})
@@ -71,13 +102,106 @@ def test_ml_event_payload_inside_transaction(core_app):
 
 
 @validate_ml_event_payload(
-    [{"foo": "bar", "real_agent_id": "1234567", "event.domain": "newrelic.ml_events", "event.name": "InferenceEvent"}]
+    {
+        "apm": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "MyCustomEvent",
+            }
+        ],
+        "inference": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "InferenceEvent",
+            }
+        ],
+    }
 )
 @reset_core_stats_engine()
-def test_ml_event_payload_outside_transaction(core_app):
+def test_ml_event_payload_both_events_inside_transaction(core_app):
+    @background_task(name="test_ml_event_payload_inside_transaction")
+    def _test():
+        record_ml_event("InferenceEvent", {"foo": "bar"})
+        record_ml_event("MyCustomEvent", {"foo": "bar"})
+
+    _test()
+    core_app.harvest()
+
+
+@validate_ml_event_payload(
+    {
+        "inference": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "InferenceEvent",
+            }
+        ]
+    }
+)
+@reset_core_stats_engine()
+def test_ml_event_payload_inference_event_outside_transaction(core_app):
     def _test():
         app = application()
         record_ml_event("InferenceEvent", {"foo": "bar"}, application=app)
+
+    _test()
+    core_app.harvest()
+
+
+@validate_ml_event_payload(
+    {
+        "apm": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "MyCustomEvent",
+            }
+        ],
+        "inference": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "InferenceEvent",
+            }
+        ],
+    }
+)
+@reset_core_stats_engine()
+def test_ml_event_payload_both_events_outside_transaction(core_app):
+    def _test():
+        app = application()
+        record_ml_event("InferenceEvent", {"foo": "bar"}, application=app)
+        record_ml_event("MyCustomEvent", {"foo": "bar"}, application=app)
+
+    _test()
+    core_app.harvest()
+
+
+@validate_ml_event_payload(
+    {
+        "apm": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "MyCustomEvent",
+            }
+        ]
+    }
+)
+@reset_core_stats_engine()
+def test_ml_event_payload_noninference_event_outside_transaction(core_app):
+    def _test():
+        app = application()
+        record_ml_event("MyCustomEvent", {"foo": "bar"}, application=app)
 
     _test()
     core_app.harvest()
@@ -177,6 +301,7 @@ def test_record_ml_event_outside_transaction_params_not_a_dict():
 
 
 # Tests for ML Events configuration settings
+
 
 @override_application_settings({"ml_insights_events.enabled": False})
 @reset_core_stats_engine()

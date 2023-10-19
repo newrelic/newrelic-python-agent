@@ -80,3 +80,12 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Update RPM Config
+        uses: ./.github/actions/setup-python-matrix
+        with:
+
+          agent-language: "python"
+          target-system: "all"
+          agent-version: "${{ github.ref_name }}"
+          dry-run: "true"

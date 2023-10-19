@@ -82,7 +82,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
 
       - name: Update RPM Config
-        uses: ./.github/actions/setup-python-matrix
+        uses: ./.github/actions/update-rpm-config
         with:
           agent-language: "python"
           target-system: "all"

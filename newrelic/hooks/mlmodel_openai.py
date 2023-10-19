@@ -24,7 +24,6 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
 
-
 OPENAI_VERSION = get_package_version("openai")
 
 

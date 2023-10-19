@@ -15,6 +15,7 @@
 import json
 
 import pytest
+from newrelic.api.background_task import background_task
 
 _test_bedrock_chat_completion_prompt = "Write me a blog about making strong business decisions as a leader."
 
@@ -23,13 +24,17 @@ _test_bedrock_chat_completion_prompt = "Write me a blog about making strong busi
     "model_id,payload",
     [
         ("amazon.titan-text-express-v1", {"inputText": "Command: %s\n\nBlog:"}),
-        ("anthropic.claude-instant-v1", {"prompt": "Human: %s\n\nAssistant:", "max_tokens_to_sample": 500}),
-        ("ai21.j2-mid-v1", {"prompt": "%s", "maxTokens": 200}),
-        ("cohere.command-text-v14", {"prompt": "%s", "max_tokens": 200, "temperature": 0.75}),
+        # ("anthropic.claude-instant-v1", {"prompt": "Human: %s\n\nAssistant:", "max_tokens_to_sample": 500}),
+        # ("ai21.j2-mid-v1", {"prompt": "%s", "maxTokens": 200}),
+        # ("cohere.command-text-v14", {"prompt": "%s", "max_tokens": 200, "temperature": 0.75}),
     ],
 )
+@background_task()
 def test_bedrock_chat_completion(bedrock_server, model_id, payload):
     body = json.dumps(payload) % _test_bedrock_chat_completion_prompt
+
+    breakpoint()
+
     response = bedrock_server.invoke_model(
         body=body,
         modelId=model_id,

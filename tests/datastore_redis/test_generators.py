@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import redis
+from testing_support.db_settings import redis_settings
+from testing_support.fixtures import override_application_settings
+from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.time_trace import current_trace
-
-from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.db_settings import redis_settings
-from testing_support.util import instance_hostname
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = redis_settings()[0]
+REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 # Settings
 
@@ -76,12 +80,13 @@ _disable_rollup_metrics.append((_instance_metric_name, None))
 
 # Operations
 
+
 def exercise_redis(client):
     """
     Exercise client generators by iterating on various methods and ensuring they are
     non-empty, and that traces are started and stopped with the generator.
     """
-    
+
     # Set existing values
     client.set("scan-key", "value")
     client.sadd("sscan-key", "value")
@@ -122,12 +127,13 @@ def exercise_redis(client):
         flag = True
     assert flag
 
+
 async def exercise_redis_async(client):
     """
     Exercise client generators by iterating on various methods and ensuring they are
     non-empty, and that traces are started and stopped with the generator.
     """
-    
+
     # Set existing values
     await client.set("scan-key", "value")
     await client.sadd("sscan-key", "value")
@@ -171,12 +177,14 @@ async def exercise_redis_async(client):
 
 # Tests
 
+
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-        "test_generators:test_strict_redis_generator_enable_instance",
-        scoped_metrics=_base_scoped_metrics,
-        rollup_metrics=_enable_rollup_metrics,
-        background_task=True)
+    "test_generators:test_strict_redis_generator_enable_instance",
+    scoped_metrics=_base_scoped_metrics,
+    rollup_metrics=_enable_rollup_metrics,
+    background_task=True,
+)
 @background_task()
 def test_strict_redis_generator_enable_instance():
     client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
@@ -185,60 +193,66 @@ def test_strict_redis_generator_enable_instance():
 
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
-        'test_generators:test_strict_redis_generator_disable_instance',
-        scoped_metrics=_base_scoped_metrics,
-        rollup_metrics=_disable_rollup_metrics,
-        background_task=True)
+    "test_generators:test_strict_redis_generator_disable_instance",
+    scoped_metrics=_base_scoped_metrics,
+    rollup_metrics=_disable_rollup_metrics,
+    background_task=True,
+)
 @background_task()
 def test_strict_redis_generator_disable_instance():
-    client = redis.StrictRedis(host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'], db=0)
+    client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     exercise_redis(client)
+
 
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-        'test_generators:test_redis_generator_enable_instance',
-        scoped_metrics=_base_scoped_metrics,
-        rollup_metrics=_enable_rollup_metrics,
-        background_task=True)
+    "test_generators:test_redis_generator_enable_instance",
+    scoped_metrics=_base_scoped_metrics,
+    rollup_metrics=_enable_rollup_metrics,
+    background_task=True,
+)
 @background_task()
 def test_redis_generator_enable_instance():
-    client = redis.Redis(host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'], db=0)
+    client = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     exercise_redis(client)
+
 
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
-        'test_generators:test_redis_generator_disable_instance',
-        scoped_metrics=_base_scoped_metrics,
-        rollup_metrics=_disable_rollup_metrics,
-        background_task=True)
+    "test_generators:test_redis_generator_disable_instance",
+    scoped_metrics=_base_scoped_metrics,
+    rollup_metrics=_disable_rollup_metrics,
+    background_task=True,
+)
 @background_task()
 def test_redis_generator_disable_instance():
-    client = redis.Redis(host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'], db=0)
+    client = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     exercise_redis(client)
 
+
+@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2))
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-        "test_generators:test_redis_async_generator_enable_instance",
-        scoped_metrics=_base_scoped_metrics,
-        rollup_metrics=_enable_rollup_metrics,
-        background_task=True)
+    "test_generators:test_redis_async_generator_enable_instance",
+    scoped_metrics=_base_scoped_metrics,
+    rollup_metrics=_enable_rollup_metrics,
+    background_task=True,
+)
 @background_task()
 def test_redis_async_generator_enable_instance(loop):
     client = redis.asyncio.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     loop.run_until_complete(exercise_redis_async(client))
 
 
+@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2))
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
-        'test_generators:test_redis_async_generator_disable_instance',
-        scoped_metrics=_base_scoped_metrics,
-        rollup_metrics=_disable_rollup_metrics,
-        background_task=True)
+    "test_generators:test_redis_async_generator_disable_instance",
+    scoped_metrics=_base_scoped_metrics,
+    rollup_metrics=_disable_rollup_metrics,
+    background_task=True,
+)
 @background_task()
 def test_redis_async_generator_disable_instance(loop):
-    client = redis.asyncio.Redis(host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'], db=0)
+    client = redis.asyncio.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     loop.run_until_complete(exercise_redis_async(client))

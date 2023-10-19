@@ -41,23 +41,36 @@ def payload_to_ml_events(payload):
     else:
         message = payload
 
-    resource_logs = message.get("resource_logs")
-    assert len(resource_logs) == 1
-    resource_logs = resource_logs[0]
-    resource = resource_logs.get("resource")
-    assert resource and resource.get("attributes")[0] == {
-        "key": "instrumentation.provider",
-        "value": {"string_value": "newrelic-opentelemetry-python-ml"},
-    }
-    scope_logs = resource_logs.get("scope_logs")
-    assert len(scope_logs) == 1
-    scope_logs = scope_logs[0]
+    inference_logs = []
+    apm_logs = []
+    resource_log_records = message.get("resource_logs")
+    for resource_logs in resource_log_records:
+        resource = resource_logs.get("resource")
+        assert resource
+        resource_attrs = resource.get("attributes")
+        assert {
+            "key": "instrumentation.provider",
+            "value": {"string_value": "newrelic-opentelemetry-python-ml"},
+        } in resource_attrs
+        scope_logs = resource_logs.get("scope_logs")
+        assert len(scope_logs) == 1
+        scope_logs = scope_logs[0]
 
-    scope = scope_logs.get("scope")
-    assert scope is None
-    logs = scope_logs.get("log_records")
+        scope = scope_logs.get("scope")
+        assert scope is None
+        logs = scope_logs.get("log_records")
+        event_name = get_event_name(logs)
+        if event_name == "InferenceEvent":
+            inference_logs = logs
+        else:
+            # Make sure apm entity attrs are present on the resource.
+            expected_apm_keys = ("entity.type", "entity.name", "entity.guid", "hostname", "instrumentation.provider")
+            assert all(attr["key"] in expected_apm_keys for attr in resource_attrs)
+            assert all(attr["value"] not in ("", None) for attr in resource_attrs)
 
-    return logs
+            apm_logs = logs
+
+    return inference_logs, apm_logs
 
 
 def validate_ml_event_payload(ml_events=None):
@@ -86,19 +99,34 @@ def validate_ml_event_payload(ml_events=None):
         assert recorded_ml_events
 
         decoded_payloads = [payload_to_ml_events(payload) for payload in recorded_ml_events]
-        all_logs = []
-        for sent_logs in decoded_payloads:
-            for data_point in sent_logs:
-                for key in ("time_unix_nano",):
-                    assert key in data_point, "Invalid log format. Missing key: %s" % key
+        decoded_inference_payloads = [payload[0] for payload in decoded_payloads]
+        decoded_apm_payloads = [payload[1] for payload in decoded_payloads]
+        all_apm_logs = normalize_logs(decoded_apm_payloads)
+        all_inference_logs = normalize_logs(decoded_inference_payloads)
 
-                all_logs.append(
-                    {attr["key"]: attribute_to_value(attr["value"]) for attr in (data_point.get("attributes") or [])}
-                )
+        for expected_event in ml_events.get("inference", []):
+            assert expected_event in all_inference_logs, "%s Not Found. Got: %s" % (expected_event, all_inference_logs)
 
-        for expected_event in ml_events:
-            assert expected_event in all_logs, "%s Not Found. Got: %s" % (expected_event, all_logs)
-
+        for expected_event in ml_events.get("apm", []):
+            assert expected_event in all_apm_logs, "%s Not Found. Got: %s" % (expected_event, all_apm_logs)
         return val
 
     return _validate_wrapper
+
+
+def normalize_logs(decoded_payloads):
+    all_logs = []
+    for sent_logs in decoded_payloads:
+        for data_point in sent_logs:
+            for key in ("time_unix_nano",):
+                assert key in data_point, "Invalid log format. Missing key: %s" % key
+                all_logs.append(
+                    {attr["key"]: attribute_to_value(attr["value"]) for attr in (data_point.get("attributes") or [])}
+                )
+    return all_logs
+
+
+def get_event_name(logs):
+    for attr in logs[0]["attributes"]:
+        if attr["key"] == "event.name":
+            return attr["value"]["string_value"]

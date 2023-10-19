@@ -16,6 +16,12 @@ inputs:
     description: "Dry Run"
     required: true
     default: "false"
+  production-api-key:
+    description: "API key for New Relic Production"
+    required: false
+  staging-api-key:
+    description: "API key for New Relic Staging"
+    required: false
 
 runs:
   using: "composite"
@@ -50,7 +56,7 @@ runs:
       if: ${{ inputs.dry-run == "false" && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
       run: |
         curl -X POST 'https://staging-api.newrelic.com/v2/system_configuration.json' \
-        -H "X-Api-Key:${{ secrets.NEW_RELIC_API_KEY_STAGING }}" -i \
+        -H "X-Api-Key:${{ inputs.staging-api-key }}" -i \
         -H "${{ env.CONTENT_TYPE }}" \
         -d "${{ env.PAYLOAD }}"
 
@@ -59,7 +65,7 @@ runs:
       if: ${{ inputs.dry-run == "false" && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
       run: |
         curl -X POST 'https://api.newrelic.com/v2/system_configuration.json' \
-        -H "X-Api-Key:${{ secrets.NEW_RELIC_API_KEY_PRODUCTION }}" -i \
+        -H "X-Api-Key:${{ inputs.production-api-key }}" -i \
         -H "${{ env.CONTENT_TYPE }}" \
         -d "${{ env.PAYLOAD }}"
 
@@ -68,7 +74,7 @@ runs:
       if: ${{ inputs.dry-run == "false" && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
       run: |
         STAGING_VERSION=$(curl -X GET 'https://staging-api.newrelic.com/v2/system_configuration.json' \
-        -H "X-Api-Key:${{ secrets.NEW_RELIC_API_KEY_STAGING }}" \
+        -H "X-Api-Key:${{ inputs.staging-api-key }}" \
         -H "${{ env.CONTENT_TYPE }}" | jq ".system_configurations | from_entries | .${{inputs.agent-language}}_agent_version")
 
         if [ "${{ env.AGENT_VERSION }}" != "$STAGING_VERSION" ]; then
@@ -81,7 +87,7 @@ runs:
       if: ${{ inputs.dry-run == "false" && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
       run: |
         PROD_VERSION=$(curl -X GET 'https://api.newrelic.com/v2/system_configuration.json' \
-        -H "X-Api-Key:${{ secrets.NEW_RELIC_API_KEY_PRODUCTION }}" \
+        -H "X-Api-Key:${{ inputs.production-api-key }}" \
         -H "${{ env.CONTENT_TYPE }}" | jq ".system_configurations | from_entries | .${{inputs.agent-language}}_agent_version")
 
         if [ "${{ env.AGENT_VERSION }}" != "$PROD_VERSION" ]; then

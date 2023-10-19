@@ -84,8 +84,9 @@ jobs:
       - name: Update RPM Config
         uses: ./.github/actions/setup-python-matrix
         with:
-
           agent-language: "python"
           target-system: "all"
           agent-version: "${{ github.ref_name }}"
           dry-run: "true"
+          production-api-key: ${{ secrets.NEW_RELIC_API_KEY_PRODUCTION }}"
+          staging-api-key: ${{ secrets.NEW_RELIC_API_KEY_STAGING }}"

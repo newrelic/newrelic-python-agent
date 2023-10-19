@@ -53,7 +53,7 @@ runs:
 
     - name: Update Staging system configuration page
       shell: bash
-      if: ${{ inputs.dry-run == "false" && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
+      if: ${{ inputs.dry-run == 'false' && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
       run: |
         curl -X POST 'https://staging-api.newrelic.com/v2/system_configuration.json' \
         -H "X-Api-Key:${{ inputs.staging-api-key }}" -i \
@@ -62,7 +62,7 @@ runs:
 
     - name: Update Production system configuration page
       shell: bash
-      if: ${{ inputs.dry-run == "false" && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
+      if: ${{ inputs.dry-run == 'false' && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
       run: |
         curl -X POST 'https://api.newrelic.com/v2/system_configuration.json' \
         -H "X-Api-Key:${{ inputs.production-api-key }}" -i \
@@ -71,7 +71,7 @@ runs:
 
     - name: Verify Staging system configuration update
       shell: bash
-      if: ${{ inputs.dry-run == "false" && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
+      if: ${{ inputs.dry-run == 'false' && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
       run: |
         STAGING_VERSION=$(curl -X GET 'https://staging-api.newrelic.com/v2/system_configuration.json' \
         -H "X-Api-Key:${{ inputs.staging-api-key }}" \
@@ -84,7 +84,7 @@ runs:
 
     - name: Verify Production system configuration update
       shell: bash
-      if: ${{ inputs.dry-run == "false" && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
+      if: ${{ inputs.dry-run == 'false' && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
       run: |
         PROD_VERSION=$(curl -X GET 'https://api.newrelic.com/v2/system_configuration.json' \
         -H "X-Api-Key:${{ inputs.production-api-key }}" \
@@ -97,7 +97,7 @@ runs:
 
     - name: (dry-run) Update Staging system configuration page
       shell: bash
-      if: ${{ inputs.dry-run != "false" && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
+      if: ${{ inputs.dry-run != 'false' && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
       run: |
         cat << EOF
             curl -X POST 'https://staging-api.newrelic.com/v2/system_configuration.json' \
@@ -108,7 +108,7 @@ runs:
 
     - name: (dry-run) Update Production system configuration page
       shell: bash
-      if: ${{ inputs.dry-run != "false" && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
+      if: ${{ inputs.dry-run != 'false' && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
       run: |
         cat << EOF
             curl -X POST 'https://api.newrelic.com/v2/system_configuration.json' \

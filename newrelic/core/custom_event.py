@@ -103,23 +103,19 @@ def create_custom_event(event_type, params, is_ml_event=False):
     try:
         for k, v in params.items():
             if is_ml_event:
-                key, value = process_user_attribute(k, v, max_length=MAX_ML_ATTRIBUTE_LENGTH)
-                if key:
-                    if len(attributes) >= MAX_NUM_ML_USER_ATTRIBUTES:
-                        _logger.debug('Maximum number of attributes already '
-                                'added to event %r. Dropping attribute: %r=%r',
-                                name, key, value)
-                    else:
-                        attributes[key] = value
+                max_length = MAX_ML_ATTRIBUTE_LENGTH
+                max_num_attrs = MAX_NUM_ML_USER_ATTRIBUTES
             else:
-                key, value = process_user_attribute(k, v)
-                if key:
-                    if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
-                        _logger.debug('Maximum number of attributes already '
-                                'added to event %r. Dropping attribute: %r=%r',
-                                 name, key, value)
-                    else:
-                        attributes[key] = value
+                max_length = MAX_ATTRIBUTE_LENGTH
+                max_num_attrs = MAX_NUM_USER_ATTRIBUTES
+            key, value = process_user_attribute(k, v, max_length=max_length)
+            if key:
+                if len(attributes) >= max_num_attrs:
+                    _logger.debug('Maximum number of attributes already '
+                                  'added to event %r. Dropping attribute: %r=%r',
+                                  name, key, value)
+                else:
+                    attributes[key] = value
     except Exception:
         _logger.debug('Attributes failed to validate for unknown reason. '
                 'Check traceback for clues. Dropping event: %r.', name,

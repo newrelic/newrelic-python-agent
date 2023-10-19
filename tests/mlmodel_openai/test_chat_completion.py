@@ -19,7 +19,9 @@ from testing_support.fixtures import (
 )
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.validators.validate_ml_events import validate_ml_events
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
@@ -127,8 +129,10 @@ chat_completion_recorded_events = [
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_ml_event_count(count=4)
 @validate_transaction_metrics(
-    name='test_chat_completion:test_openai_chat_completion_sync_in_txn_with_convo_id',
-    custom_metrics=[('Python/ML/OpenAI/%s' % openai.__version__, 1), ],
+    name="test_chat_completion:test_openai_chat_completion_sync_in_txn_with_convo_id",
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
     background_task=True,
 )
 @background_task()
@@ -256,8 +260,10 @@ def test_openai_chat_completion_sync_outside_txn():
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 @validate_transaction_metrics(
-    name='test_chat_completion:test_openai_chat_completion_sync_ml_insights_disabled',
-    custom_metrics=[('Python/ML/OpenAI/%s' % openai.__version__, 1), ],
+    name="test_chat_completion:test_openai_chat_completion_sync_ml_insights_disabled",
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
     background_task=True,
 )
 @background_task()
@@ -286,8 +292,10 @@ def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info
 @validate_ml_events(chat_completion_recorded_events)
 @validate_ml_event_count(count=4)
 @validate_transaction_metrics(
-    name='test_chat_completion:test_openai_chat_completion_async_conversation_id_set',
-    custom_metrics=[('Python/ML/OpenAI/%s' % openai.__version__, 1), ],
+    name="test_chat_completion:test_openai_chat_completion_async_conversation_id_set",
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
     background_task=True,
 )
 @background_task()
@@ -316,8 +324,10 @@ def test_openai_chat_completion_async_outside_transaction(loop):
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
 @validate_transaction_metrics(
-    name='test_chat_completion:test_openai_chat_completion_async_disabled_ml_settings',
-    custom_metrics=[('Python/ML/OpenAI/%s' % openai.__version__, 1), ],
+    name="test_chat_completion:test_openai_chat_completion_async_disabled_ml_settings",
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
     background_task=True,
 )
 @background_task()

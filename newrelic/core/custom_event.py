@@ -18,7 +18,7 @@ import time
 
 from newrelic.core.attribute import (check_name_is_string, check_name_length,
         process_user_attribute, NameIsNotStringException, NameTooLongException,
-        MAX_NUM_USER_ATTRIBUTES, MAX_ML_ATTRIBUTE_LENGTH, MAX_NUM_ML_USER_ATTRIBUTES)
+        MAX_NUM_USER_ATTRIBUTES, MAX_ML_ATTRIBUTE_LENGTH, MAX_NUM_ML_USER_ATTRIBUTES, MAX_ATTRIBUTE_LENGTH)
 
 
 _logger = logging.getLogger(__name__)

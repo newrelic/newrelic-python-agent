@@ -49,6 +49,7 @@ if six.PY2:
         "test_asgi_browser.py",
         "test_asgi_distributed_tracing.py",
         "test_asgi_w3c_trace_context.py",
+        "test_ml_events.py",
     ]
 else:
     from testing_support.fixture.event_loop import event_loop

@@ -238,7 +238,7 @@ def test_record_ml_event_truncation_inside_transaction():
 
 @reset_core_stats_engine()
 def test_record_ml_event_truncation_outside_transaction():
-    @validate_ml_events([(_intrinsics, {"a": "a" * 4095})])
+    @validate_ml_events_outside_transaction([(_intrinsics, {"a": "a" * 4095})])
     def _test():
         app = application()
         record_ml_event("LabelEvent", {"a": "a" * 4100}, application=app)
@@ -274,12 +274,13 @@ def test_record_ml_event_max_num_attrs_outside_transaction():
     for i in range(64):
         max_attrs_event[str(i)] = str(i)
 
-    @validate_ml_events([(_intrinsics, max_attrs_event)])
+    @validate_ml_events_outside_transaction([(_intrinsics, max_attrs_event)])
     def _test():
         app = application()
         record_ml_event("LabelEvent", too_many_attrs_event, application=app)
 
     _test()
+
 
 @pytest.mark.parametrize(
     "params,expected",

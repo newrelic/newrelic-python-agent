@@ -102,6 +102,33 @@ def test_record_ml_event_inside_transaction(params, expected):
     _test()
 
 
+@reset_core_stats_engine()
+def test_record_ml_event_truncation():
+    @validate_ml_events([(_intrinsics, {"a": "a" * 4095})])
+    @background_task()
+    def _test():
+        record_ml_event("LabelEvent", {"a": "a" * 4100})
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_record_ml_event_max_num_attrs():
+    too_many_attrs_event = {}
+    for i in range(65):
+        too_many_attrs_event[str(i)] = str(i)
+
+    max_attrs_event = {}
+    for i in range(64):
+        max_attrs_event[str(i)] = str(i)
+
+    @validate_ml_events([(_intrinsics, max_attrs_event)])
+    @background_task()
+    def _test():
+        record_ml_event("LabelEvent", too_many_attrs_event)
+
+    _test()
+
 @pytest.mark.parametrize(
     "params,expected",
     [

@@ -227,11 +227,21 @@ def test_record_ml_event_inside_transaction(params, expected):
 
 
 @reset_core_stats_engine()
-def test_record_ml_event_truncation():
+def test_record_ml_event_truncation_inside_transaction():
     @validate_ml_events([(_intrinsics, {"a": "a" * 4095})])
     @background_task()
     def _test():
         record_ml_event("LabelEvent", {"a": "a" * 4100})
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_record_ml_event_truncation_outside_transaction():
+    @validate_ml_events([(_intrinsics, {"a": "a" * 4095})])
+    def _test():
+        app = application()
+        record_ml_event("LabelEvent", {"a": "a" * 4100}, application=app)
 
     _test()
 
@@ -250,6 +260,24 @@ def test_record_ml_event_max_num_attrs():
     @background_task()
     def _test():
         record_ml_event("LabelEvent", too_many_attrs_event)
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_record_ml_event_max_num_attrs_outside_transaction():
+    too_many_attrs_event = {}
+    for i in range(65):
+        too_many_attrs_event[str(i)] = str(i)
+
+    max_attrs_event = {}
+    for i in range(64):
+        max_attrs_event[str(i)] = str(i)
+
+    @validate_ml_events([(_intrinsics, max_attrs_event)])
+    def _test():
+        app = application()
+        record_ml_event("LabelEvent", too_many_attrs_event, application=app)
 
     _test()
 

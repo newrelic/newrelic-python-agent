@@ -1648,7 +1648,7 @@ class Transaction(object):
         if not settings.ml_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, is_ml_event=True)
         if event:
             self._ml_events.add(event, priority=self.priority)
 

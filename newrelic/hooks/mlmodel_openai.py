@@ -21,7 +21,10 @@ from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
+
+OPENAI_VERSION = get_package_version("openai")
 
 
 def openai_error_attributes(exception, request_args):
@@ -62,6 +65,8 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
+
+    transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
@@ -134,6 +139,8 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
     if not transaction:
         return wrapped(*args, **kwargs)
+
+    transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
@@ -283,6 +290,8 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
+    transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
         response = await wrapped(*args, **kwargs)
@@ -353,6 +362,8 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
 
     if not transaction:
         return await wrapped(*args, **kwargs)
+
+    transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:

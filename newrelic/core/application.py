@@ -932,7 +932,7 @@ class Application(object):
         if settings is None or not settings.ml_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, is_ml_event=True)
 
         if event:
             with self._stats_custom_lock:

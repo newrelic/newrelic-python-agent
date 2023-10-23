@@ -28,35 +28,22 @@ OPENAI_VERSION = get_package_version("openai")
 
 
 def openai_error_attributes(exception, request_args):
-    # 'id' attribute will always be 'None' in this case.
-    # 'completion_id' is generated at the completion of
-    # the request and all of these error types occur
-    # before the response is generated.
-    #
-    api_key_LFD = None
-    if openai.api_key:
-        api_key_LFD = f"sk-{openai.api_key[-4:]}"
-
-    error_code = "None"
-    status_code = getattr(exception, "http_status", "None")
-    if status_code and status_code >= 400 and status_code < 600:
-        error_code = status_code
+    api_key = getattr(openai, "api_key", None)
+    api_key_LFD = f"sk-{api_key[-4:]}" if api_key else ""
 
     error_attributes = {
-        "id": "None",
         "api_key_last_four_digits": api_key_LFD,
-        "request.model": request_args.get("model") or request_args.get("engine", "None"),
-        "temperature": request_args.get("temperature", "None"),
-        "max_tokens": request_args.get("max_tokens", "None"),
+        "request.model": request_args.get("model") or request_args.get("engine") or "",
+        "request.temperature": request_args.get("temperature", ""),
+        "request.max_tokens": request_args.get("max_tokens", ""),
         "vendor": "openAI",
         "ingest_source": "Python",
-        "organization": getattr(exception, "organization", "None"),
-        "number_of_messages": len(request_args.get("messages", [])),
-        "status_code": status_code,
-        "error_message": getattr(exception, "_message", "None"),
-        "error_type": exception.__class__.__name__ or "None",
-        "error_code": error_code,
-        "error_param": getattr(exception, "param", "None"),
+        "response.organization": getattr(exception, "organization", ""),
+        "response.number_of_messages": len(request_args.get("messages", [])),
+        "status_code": getattr(exception, "http_status", ""),
+        "error.message": getattr(exception, "_message", ""),
+        "error.code": getattr(getattr(exception, "error", ""), "code", ""),
+        "error.param": getattr(exception, "param", ""),
     }
     return error_attributes
 
@@ -74,7 +61,11 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             error_attributes = openai_error_attributes(exc, kwargs)
-            transaction.notice_error(attributes=error_attributes)
+            ft.notice_error(
+                status_code=error_attributes.pop("status_code"),
+                message=error_attributes.pop("error.message"),
+                attributes=error_attributes,
+            )
             raise
 
     if not response:
@@ -148,7 +139,11 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             error_attributes = openai_error_attributes(exc, kwargs)
-            transaction.notice_error(attributes=error_attributes)
+            ft.notice_error(
+                status_code=error_attributes.pop("status_code"),
+                message=error_attributes.pop("error.message"),
+                attributes=error_attributes,
+            )
             raise
 
     if not response:

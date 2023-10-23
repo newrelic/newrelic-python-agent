@@ -18,6 +18,7 @@ from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
+from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -26,6 +27,7 @@ enabled_ml_settings = {
     "machine_learning.enabled": True,
     "machine_learning.inference_events_value.enabled": True,
     "ml_insights_events.enabled": True,
+    "error_collector.ignore_status_codes": [],
 }
 
 _test_openai_chat_completion_sync_messages = (
@@ -42,28 +44,67 @@ _test_openai_chat_completion_sync_messages = (
         "agent": {},
         "intrinsic": {},
         "user": {
-            "id": "None",
-            "api_key_last_four_digits": "sk-CRET",
-            "request.model": "None",
-            "temperature": 0.7,
-            "max_tokens": 100,
+            # "api_key_last_four_digits": "sk-CRET",
+            "api_key_last_four_digits": "sk-rSJc",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
             "vendor": "openAI",
             "ingest_source": "Python",
-            "organization": "None",
-            "number_of_messages": 2,
-            "status_code": "None",
-            "error_message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
-            "error_type": "InvalidRequestError",
-            "error_code": "None",
-            "error_param": "engine",
+            "response.number_of_messages": 2,
+            "error.param": "engine",
         },
     },
 )
+@validate_span_events(
+    exact_agents={
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
+    }
+)
 @background_task()
-def test_invalid_request_error():
+def test_invalid_request_error_no_model():
     with pytest.raises(openai.InvalidRequestError):
         openai.ChatCompletion.create(
             # no model provided,
+            messages=_test_openai_chat_completion_sync_messages,
+            temperature=0.7,
+            max_tokens=100,
+        )
+
+
+@override_application_settings(enabled_ml_settings)
+@validate_error_trace_attributes(
+    callable_name(openai.InvalidRequestError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            # "api_key_last_four_digits": "sk-CRET",
+            "api_key_last_four_digits": "sk-rSJc",
+            "request.model": "I DO NOT EXIST",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "response.number_of_messages": 2,
+            "error.code": "model_not_found",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `I DO NOT EXIST` does not exist",
+    }
+)
+@validate_span_events(
+    exact_agents={
+        "http.statusCode": 404,
+    }
+)
+@background_task()
+def test_invalid_request_error_invalid_model():
+    with pytest.raises(openai.InvalidRequestError):
+        openai.ChatCompletion.create(
+            model="I DO NOT EXIST",
             messages=_test_openai_chat_completion_sync_messages,
             temperature=0.7,
             max_tokens=100,
@@ -78,22 +119,19 @@ def test_invalid_request_error():
         "agent": {},
         "intrinsic": {},
         "user": {
-            "id": "None",
-            "api_key_last_four_digits": "None",
             "request.model": "gpt-3.5-turbo",
-            "temperature": 0.7,
-            "max_tokens": 100,
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
             "vendor": "openAI",
             "ingest_source": "Python",
-            "organization": "None",
-            "number_of_messages": 2,
-            "status_code": "None",
-            "error_message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_pa",
-            "error_type": "AuthenticationError",
-            "error_code": "None",
-            "error_param": "None",
+            "response.number_of_messages": 2,
         },
     },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
+    }
 )
 @background_task()
 def test_authentication_error(monkeypatch):
@@ -102,44 +140,3 @@ def test_authentication_error(monkeypatch):
         openai.ChatCompletion.create(
             model="gpt-3.5-turbo", messages=_test_openai_chat_completion_sync_messages, temperature=0.7, max_tokens=100
         )
-
-
-# Incorrect URL provided (404 error)
-@override_application_settings(enabled_ml_settings)
-@validate_error_trace_attributes(
-    callable_name(openai.error.APIError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "id": "None",
-            "api_key_last_four_digits": "sk-CRET",
-            "request.model": "gpt-3.5-turbo",
-            "temperature": 0.7,
-            "max_tokens": 100,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "organization": "None",
-            "number_of_messages": 2,
-            "status_code": 404,
-            "error_message": 'HTTP code 404 from API (<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">\n<html><head>\n<title>404 Not Found</title>\n</head><body>\n<h1>Not Found</h1>\n<p>The requested URL was not found on this server.</p>\n<hr>\n<address>Apache/2.4.25 (Debian) Server at thi',
-            "error_type": "APIError",
-            "error_code": 404,
-            "error_param": "None",
-        },
-    },
-)
-@background_task()
-def test_api_error():
-    openai.api_base = "http://thisisnotarealurl.com/"
-    with pytest.raises(openai.error.APIError):
-        openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=_test_openai_chat_completion_sync_messages,
-            temperature=0.7,
-            max_tokens=100,
-        )
-
-
-# Timeout is raised by requests.exceptions.Timeout
-# APIConnectionError is raised by requests.exceptions.RequestException

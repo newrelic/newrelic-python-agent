@@ -29,7 +29,6 @@ from newrelic.core.code_level_metrics import (
 )
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
-
 from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
@@ -220,7 +219,7 @@ class TimeTrace(object):
                     % (source, exc)
                 )
 
-    def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
+    def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None, message=None):
         # Bail out if the transaction is not active or
         # collection of errors not enabled.
 
@@ -262,10 +261,14 @@ class TimeTrace(object):
 
         # Check to see if we need to strip the message before recording it.
 
-        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
-            message = STRIP_EXCEPTION_MESSAGE
-        else:
-            message = message_raw
+        if not message:
+            if (
+                settings.strip_exception_messages.enabled
+                and fullname not in settings.strip_exception_messages.allowlist
+            ):
+                message = STRIP_EXCEPTION_MESSAGE
+            else:
+                message = message_raw
 
         # Where expected or ignore are a callable they should return a
         # tri-state variable with the following behavior.
@@ -359,7 +362,7 @@ class TimeTrace(object):
 
         return fullname, message, message_raw, tb, is_expected
 
-    def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
+    def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None, message=None):
         attributes = attributes if attributes is not None else {}
 
         # If no exception details provided, use current exception.
@@ -379,6 +382,7 @@ class TimeTrace(object):
             ignore=ignore,
             expected=expected,
             status_code=status_code,
+            message=message,
         )
         if recorded:
             fullname, message, message_raw, tb, is_expected = recorded
@@ -422,23 +426,32 @@ class TimeTrace(object):
                         input_attributes = {}
                         input_attributes.update(transaction._custom_params)
                         input_attributes.update(attributes)
-                        error_group_name_raw = settings.error_collector.error_group_callback(value, {
-                            "traceback": tb,
-                            "error.class": exc,
-                            "error.message": message_raw,
-                            "error.expected": is_expected,
-                            "custom_params": input_attributes,
-                            "transactionName": getattr(transaction, "name", None),
-                            "response.status": getattr(transaction, "_response_code", None),
-                            "request.method": getattr(transaction, "_request_method", None),
-                            "request.uri": getattr(transaction, "_request_uri", None),
-                        })
+                        error_group_name_raw = settings.error_collector.error_group_callback(
+                            value,
+                            {
+                                "traceback": tb,
+                                "error.class": exc,
+                                "error.message": message_raw,
+                                "error.expected": is_expected,
+                                "custom_params": input_attributes,
+                                "transactionName": getattr(transaction, "name", None),
+                                "response.status": getattr(transaction, "_response_code", None),
+                                "request.method": getattr(transaction, "_request_method", None),
+                                "request.uri": getattr(transaction, "_request_uri", None),
+                            },
+                        )
                         if error_group_name_raw:
                             _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
                             if error_group_name is None or not isinstance(error_group_name, six.string_types):
-                                raise ValueError("Invalid attribute value for error.group.name. Expected string, got: %s" % repr(error_group_name_raw))
+                                raise ValueError(
+                                    "Invalid attribute value for error.group.name. Expected string, got: %s"
+                                    % repr(error_group_name_raw)
+                                )
                     except Exception:
-                        _logger.error("Encountered error when calling error group callback:\n%s", "".join(traceback.format_exception(*sys.exc_info())))
+                        _logger.error(
+                            "Encountered error when calling error group callback:\n%s",
+                            "".join(traceback.format_exception(*sys.exc_info())),
+                        )
                         error_group_name = None
 
             transaction._create_error_node(

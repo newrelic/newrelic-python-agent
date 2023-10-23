@@ -34,22 +34,17 @@ runs:
 
     - name: Verify agent version is valid
       shell: bash
-      run: curl -qs -L http://download.newrelic.com/${{inputs.agent-language}}_agent/archive | awk -F \" '{print $2}' | awk -F/ '{print $4}' | grep -q -w "${{ env.AGENT_VERSION }}"
+      run: curl -qs -L http://download.newrelic.com/${{inputs.agent-language}}_agent/release | awk -F \" '{print $2}' | awk -F/ '{print $4}' | grep -q -w "${{ env.AGENT_VERSION }}"
 
     - name: Generate Payload
       shell: bash
       run: |
-        echo "PAYLOAD={
-            \"system_configuration\": {
-                \"key\":   \"${{inputs.agent-language}}_agent_version\",
-                \"value\": \"${{ env.AGENT_VERSION }}\"
-            }
-        }" >> $GITHUB_ENV
+        echo "PAYLOAD='{ \"system_configuration\": { \"key\": \"${{ inputs.agent-language }}_agent_version\", \"value\": \"${{ env.AGENT_VERSION }}\" } }'" >> $GITHUB_ENV
 
     - name: Generate Content-Type
       shell: bash
       run: |
-        echo "CONTENT_TYPE='Content-Type: application/json'" >> $GITHUB_ENV"
+        echo "CONTENT_TYPE='Content-Type: application/json'" >> $GITHUB_ENV
 
     - name: Update Staging system configuration page
       shell: bash
@@ -57,8 +52,8 @@ runs:
       run: |
         curl -X POST 'https://staging-api.newrelic.com/v2/system_configuration.json' \
         -H "X-Api-Key:${{ inputs.staging-api-key }}" -i \
-        -H "${{ env.CONTENT_TYPE }}" \
-        -d "${{ env.PAYLOAD }}"
+        -H ${{ env.CONTENT_TYPE }} \
+        -d ${{ env.PAYLOAD }}
 
     - name: Update Production system configuration page
       shell: bash
@@ -66,8 +61,8 @@ runs:
       run: |
         curl -X POST 'https://api.newrelic.com/v2/system_configuration.json' \
         -H "X-Api-Key:${{ inputs.production-api-key }}" -i \
-        -H "${{ env.CONTENT_TYPE }}" \
-        -d "${{ env.PAYLOAD }}"
+        -H ${{ env.CONTENT_TYPE }} \
+        -d ${{ env.PAYLOAD }}
 
     - name: Verify Staging system configuration update
       shell: bash
@@ -102,8 +97,8 @@ runs:
         cat << EOF
             curl -X POST 'https://staging-api.newrelic.com/v2/system_configuration.json' \
             -H "X-Api-Key:**REDACTED**" -i \
-            -H "${{ env.CONTENT_TYPE }}" \
-            -d "${{ env.PAYLOAD }}"
+            -H ${{ env.CONTENT_TYPE }} \
+            -d ${{ env.PAYLOAD }}
         EOF
 
     - name: (dry-run) Update Production system configuration page
@@ -113,6 +108,6 @@ runs:
         cat << EOF
             curl -X POST 'https://api.newrelic.com/v2/system_configuration.json' \
             -H "X-Api-Key:**REDACTED**" -i \
-            -H "${{ env.CONTENT_TYPE }}" \
-            -d "${{ env.PAYLOAD }}"   
+            -H ${{ env.CONTENT_TYPE }} \
+            -d ${{ env.PAYLOAD }}
         EOF

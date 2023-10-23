@@ -608,13 +608,11 @@ class TimeTrace(object):
     def process_child(self, node, is_async):
         self.children.append(node)
         if is_async:
-
             # record the lowest start time
             self.min_child_start_time = min(self.min_child_start_time, node.start_time)
 
             # if there are no children running, finalize exclusive time
             if self.child_count == len(self.children):
-
                 exclusive_duration = node.end_time - self.min_child_start_time
 
                 self.update_async_exclusive_time(self.min_child_start_time, exclusive_duration)

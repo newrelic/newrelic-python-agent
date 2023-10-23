@@ -32,10 +32,6 @@ runs:
         AGENT_VERSION=${{ inputs.agent-version }}
         echo "AGENT_VERSION=${AGENT_VERSION#"v"}" >> $GITHUB_ENV
 
-    - name: Verify agent version is valid
-      shell: bash
-      run: curl -qs -L http://download.newrelic.com/${{inputs.agent-language}}_agent/release | awk -F \" '{print $2}' | awk -F/ '{print $4}' | grep -q -w "${{ env.AGENT_VERSION }}"
-
     - name: Generate Payload
       shell: bash
       run: |

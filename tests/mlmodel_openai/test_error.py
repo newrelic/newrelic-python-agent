@@ -44,8 +44,7 @@ _test_openai_chat_completion_sync_messages = (
         "agent": {},
         "intrinsic": {},
         "user": {
-            # "api_key_last_four_digits": "sk-CRET",
-            "api_key_last_four_digits": "sk-rSJc",
+            "api_key_last_four_digits": "sk-CRET",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "vendor": "openAI",
@@ -78,21 +77,20 @@ def test_invalid_request_error_no_model():
         "agent": {},
         "intrinsic": {},
         "user": {
-            # "api_key_last_four_digits": "sk-CRET",
-            "api_key_last_four_digits": "sk-rSJc",
-            "request.model": "I DO NOT EXIST",
+            "api_key_last_four_digits": "sk-CRET",
+            "request.model": "does-not-exist",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "vendor": "openAI",
             "ingest_source": "Python",
-            "response.number_of_messages": 2,
+            "response.number_of_messages": 1,
             "error.code": "model_not_found",
         },
     },
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `I DO NOT EXIST` does not exist",
+        "error.message": "The model `does-not-exist` does not exist",
     }
 )
 @validate_span_events(
@@ -104,8 +102,8 @@ def test_invalid_request_error_no_model():
 def test_invalid_request_error_invalid_model():
     with pytest.raises(openai.InvalidRequestError):
         openai.ChatCompletion.create(
-            model="I DO NOT EXIST",
-            messages=_test_openai_chat_completion_sync_messages,
+            model="does-not-exist",
+            messages=({"role": "user", "content": "Model does not exist."},),
             temperature=0.7,
             max_tokens=100,
         )
@@ -139,4 +137,44 @@ def test_authentication_error(monkeypatch):
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         openai.ChatCompletion.create(
             model="gpt-3.5-turbo", messages=_test_openai_chat_completion_sync_messages, temperature=0.7, max_tokens=100
+        )
+
+
+# Wrong api_key provided
+@override_application_settings(enabled_ml_settings)
+@validate_error_trace_attributes(
+    callable_name(openai.error.AuthenticationError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "api_key_last_four_digits": "sk-BEEF",
+            "request.model": "gpt-3.5-turbo",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "response.number_of_messages": 1,
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys."
+    }
+)
+@validate_span_events(
+    exact_agents={
+        "http.statusCode": 401,
+    }
+)
+@background_task()
+def test_wrong_api_key_error(monkeypatch):
+    with pytest.raises(openai.error.AuthenticationError):
+        monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
+        openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=({"role": "user", "content": "Invalid API key."},),
+            temperature=0.7,
+            max_tokens=100,
         )

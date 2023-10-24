@@ -44,7 +44,8 @@ def test_invalid_request_error_model_does_not_exist():
 
 
 @background_task()
-def test_authentication_error_invalid_api_key():
+def test_authentication_error_invalid_api_key(monkeypatch):
+    monkeypatch.setattr(openai, "api_key", "InvalidKey")
     with pytest.raises(openai.error.AuthenticationError):
         openai.ChatCompletion.create(
             model="gpt-3.5-turbo",

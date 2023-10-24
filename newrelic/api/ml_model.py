@@ -49,10 +49,6 @@ def get_ai_message_ids(response_id=None):
 
         conversation_id, request_id, ids = message_id_info
 
-        def message_ids():
-            for _id in ids:
-                yield {"conversation_id": conversation_id, "request_id": request_id, "message_id": _id}
-
-        return message_ids()
+        return [{"conversation_id": conversation_id, "request_id": request_id, "message_id": _id} for _id in ids]
     warnings.warn("No message ids found. get_ai_message_ids must be called within the scope of a transaction.")
     return []

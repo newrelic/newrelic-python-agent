@@ -93,7 +93,7 @@ def bedrock_server():
 
 
 # Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = set(["x-request-id", "contentType"])
+RECORDED_HEADERS = set(["x-amzn-requestid", "content-type"])
 
 
 def wrap_botocore_client_BaseClient__make_api_call(wrapped, instance, args, kwargs):
@@ -118,11 +118,10 @@ def wrap_botocore_client_BaseClient__make_api_call(wrapped, instance, args, kwar
 
     # Clean up data
     data = json.loads(streamed_body.decode("utf-8"))
-    headers = dict(result["ResponseMetadata"].items())
-    headers["contentType"] = result["contentType"]
+    headers = dict(result["ResponseMetadata"]["HTTPHeaders"].items())
     headers = dict(
         filter(
-            lambda k: k[0].lower() in RECORDED_HEADERS or k[0].lower().startswith("x-ratelimit"),
+            lambda k: k[0] in RECORDED_HEADERS or k[0].startswith("x-ratelimit"),
             headers.items(),
         )
     )

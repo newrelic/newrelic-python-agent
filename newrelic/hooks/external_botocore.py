@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import uuid
+
+from io import BytesIO
 
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import ExternalTrace
@@ -25,6 +28,7 @@ from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapp
 from newrelic.core.attribute import MAX_LOG_MESSAGE_LENGTH
 from newrelic.core.config import global_settings
 
+from botocore.response import StreamingBody
 
 def extract_sqs(*args, **kwargs):
     queue_value = kwargs.get("QueueUrl", "Unknown")
@@ -84,12 +88,58 @@ def create_chat_completion_message_event(transaction, app_name, message_list, ch
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
 
+def _extract_bedrock_titan_model_message(message):
+    role, content = message.split(":", 1)
+    return {"role": role, "content": content.lstrip(" ")}
+
+
+def extract_bedrock_titan_model(request_body, response_body):
+    response_body = json.loads(response_body)
+    request_body = json.loads(request_body)
+
+    input_tokens = response_body["inputTextTokenCount"]
+    completion_tokens = sum(result["tokenCount"] for result in response_body["results"])
+    total_tokens = input_tokens + completion_tokens
+
+    request_config = request_body.get("textGenerationConfig", {})
+    # TODO: Is this right? When does results have more than 1 item?
+    message_list = []
+    # message_list = request_body.get("inputText", "").split("\n")
+    # message_list = [request_body.get("inputText", ""), response_body.get("results", [])[0]["outputText"]]
+
+    # # Transform message list to isolate role and content
+    # message_list = [_extract_bedrock_titan_model_message(message) for message in message_list]
+
+    chat_completion_summary_dict = {
+        "request.max_tokens": request_config.get("maxTokenCount", ""),
+        "request.temperature": request_config.get("temperature", ""),
+        # "response.api_type": response.api_type,
+        "response.choices.finish_reason": response_body["results"][0]["completionReason"],
+        # "response.headers.llmVersion": response_headers.get("openai-version", ""),
+        # "response.organization": response.organization,
+        "response.usage.completion_tokens": completion_tokens,
+        "response.usage.prompt_tokens": input_tokens,
+        "response.usage.total_tokens": total_tokens,
+        # TODO: Is this right? When does results have more than 1 item?
+        "response.number_of_messages": len(response_body.get("results", [])) + 1,
+    }
+    return message_list, chat_completion_summary_dict
+
+
 @function_wrapper
 def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
+    # Wrapped function only takes keyword arguments, no need for binding
+    
     transaction = current_transaction()
 
     if not transaction:
         return wrapped(*args, **kwargs)
+
+    # Read and replace request file stream bodies
+    request_body = kwargs["body"]
+    if hasattr(request_body, "read"):
+        request_body = request_body.read()
+        kwargs["body"] = request_body
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
@@ -97,6 +147,15 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
 
     if not response:
         return response
+
+    # Determine model to be used with extractor
+    model = kwargs.get("modelId")
+    if not model:
+        return response
+
+    # Read and replace response streaming bodies
+    response_body = response["body"].read()
+    response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
 
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("conversation_id", str(uuid.uuid4()))
@@ -107,15 +166,23 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     trace_id = available_metadata.get("trace.id", "")
 
     response_headers = response["ResponseMetadata"]["HTTPHeaders"]
-    # Function only takes keyword arguments, no need for binding
-    response_model = kwargs.get("modelId")
     response_id = response.get("id", "")
-    request_id = response_headers.get("x-request-id", "")
+    request_id = response_headers.get("x-amzn-requestid", "")
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    # return response
-    breakpoint()
-    chat_completion_summary_dict = {
+    # Determine extractor by model type
+    if "titan" in model:
+        extractor = extract_bedrock_titan_model
+    else:
+        # TODO: log warning here
+        return response
+
+    message_list, chat_completion_summary_dict = extractor(request_body, response_body)
+    message_list = []  # TODO REMOVE THIS
+    chat_completion_summary_dict.update({
+        "vendor": "bedrock",
+        "ingest_source": "Python",
+        "access_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
         "id": chat_completion_id,
         "appName": settings.app_name,
         "conversation_id": conversation_id,
@@ -123,45 +190,30 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         "trace_id": trace_id,
         "transaction_id": transaction._transaction_id,
         "request_id": request_id,
-        # "api_key_last_four_digits": f"sk-{response.api_key[-4:]}",
         "duration": ft.duration,
-        "request.model": kwargs.get("modelId"),
-        "response.model": response_model,
-        # "response.organization": response.organization,
-        # "response.usage.completion_tokens": response.usage.completion_tokens,
-        # "response.usage.total_tokens": response.usage.total_tokens,
-        # "response.usage.prompt_tokens": response.usage.prompt_tokens,
-        # "request.temperature": kwargs.get("temperature", ""),
-        # "request.max_tokens": kwargs.get("max_tokens", ""),
-        # "response.choices.finish_reason": response.choices[0].finish_reason,
-        # "response.api_type": response.api_type,
-        # "response.headers.llmVersion": response_headers.get("openai-version", ""),
-        "response.headers.ratelimitLimitRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-limit-requests", True
-        ),
-        "response.headers.ratelimitLimitTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-limit-tokens", True
-        ),
-        "response.headers.ratelimitResetTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-reset-tokens", False
-        ),
-        "response.headers.ratelimitResetRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-reset-requests", False
-        ),
-        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-remaining-tokens", True
-        ),
-        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-remaining-requests", True
-        ),
-        "vendor": "openAI",
-        "ingest_source": "Python",
-        # "number_of_messages": len(kwargs.get("messages", [])) + len(response.choices),
-    }
+        "request.model": model,
+        "response.model": model,  # Model not returned by bedrock APIs, assume same as requested
+        # "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-limit-requests", True
+        # ),
+        # "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-limit-tokens", True
+        # ),
+        # "response.headers.ratelimitResetTokens": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-reset-tokens", False
+        # ),
+        # "response.headers.ratelimitResetRequests": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-reset-requests", False
+        # ),
+        # "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-remaining-tokens", True
+        # ),
+        # "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-remaining-requests", True
+        # ),
+    })
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
-    # message_list = list(kwargs.get("messages", [])) + [response.choices[0].message]
-    message_list = []
 
     create_chat_completion_message_event(
         transaction,
@@ -170,7 +222,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         chat_completion_id,
         span_id,
         trace_id,
-        response_model,
+        model,
         response_id,
         request_id,
     )

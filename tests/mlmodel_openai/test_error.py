@@ -14,7 +14,11 @@
 
 import openai
 import pytest
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import (
+    dt_enabled,
+    override_application_settings,
+    reset_core_stats_engine,
+)
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
@@ -27,7 +31,7 @@ enabled_ml_settings = {
     "machine_learning.enabled": True,
     "machine_learning.inference_events_value.enabled": True,
     "ml_insights_events.enabled": True,
-    "error_collector.ignore_status_codes": [],
+    "error_collector.ignore_status_codes": set(),
 }
 
 _test_openai_chat_completion_sync_messages = (
@@ -38,6 +42,8 @@ _test_openai_chat_completion_sync_messages = (
 
 # No model provided
 @override_application_settings(enabled_ml_settings)
+@dt_enabled
+@reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
     exact_attrs={
@@ -70,7 +76,10 @@ def test_invalid_request_error_no_model():
         )
 
 
+# Invalid model provided
 @override_application_settings(enabled_ml_settings)
+@dt_enabled
+@reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
     exact_attrs={
@@ -111,6 +120,8 @@ def test_invalid_request_error_invalid_model():
 
 # No api_key provided
 @override_application_settings(enabled_ml_settings)
+@dt_enabled
+@reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.error.AuthenticationError),
     exact_attrs={
@@ -136,12 +147,17 @@ def test_authentication_error(monkeypatch):
     with pytest.raises(openai.error.AuthenticationError):
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         openai.ChatCompletion.create(
-            model="gpt-3.5-turbo", messages=_test_openai_chat_completion_sync_messages, temperature=0.7, max_tokens=100
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_sync_messages,
+            temperature=0.7,
+            max_tokens=100,
         )
 
 
 # Wrong api_key provided
 @override_application_settings(enabled_ml_settings)
+@dt_enabled
+@reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.error.AuthenticationError),
     exact_attrs={

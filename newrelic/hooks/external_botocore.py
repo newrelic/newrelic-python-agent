@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import logging
 import uuid
 
 from io import BytesIO
@@ -29,6 +30,11 @@ from newrelic.core.attribute import MAX_LOG_MESSAGE_LENGTH
 from newrelic.core.config import global_settings
 
 from botocore.response import StreamingBody
+
+
+_logger = logging.getLogger(__name__)
+UNSUPPORTED_MODEL_WARNING_SENT = False
+
 
 def extract_sqs(*args, **kwargs):
     queue_value = kwargs.get("QueueUrl", "Unknown")
@@ -88,11 +94,6 @@ def create_chat_completion_message_event(transaction, app_name, message_list, ch
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
 
-def _extract_bedrock_titan_model_message(message):
-    role, content = message.split(":", 1)
-    return {"role": role, "content": content.lstrip(" ")}
-
-
 def extract_bedrock_titan_model(request_body, response_body):
     response_body = json.loads(response_body)
     request_body = json.loads(request_body)
@@ -103,20 +104,13 @@ def extract_bedrock_titan_model(request_body, response_body):
 
     request_config = request_body.get("textGenerationConfig", {})
     # TODO: Is this right? When does results have more than 1 item?
-    message_list = []
-    # message_list = request_body.get("inputText", "").split("\n")
-    # message_list = [request_body.get("inputText", ""), response_body.get("results", [])[0]["outputText"]]
-
-    # # Transform message list to isolate role and content
-    # message_list = [_extract_bedrock_titan_model_message(message) for message in message_list]
+    message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
+    message_list.extend({"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", []))
 
     chat_completion_summary_dict = {
         "request.max_tokens": request_config.get("maxTokenCount", ""),
         "request.temperature": request_config.get("temperature", ""),
-        # "response.api_type": response.api_type,
         "response.choices.finish_reason": response_body["results"][0]["completionReason"],
-        # "response.headers.llmVersion": response_headers.get("openai-version", ""),
-        # "response.organization": response.organization,
         "response.usage.completion_tokens": completion_tokens,
         "response.usage.prompt_tokens": input_tokens,
         "response.usage.total_tokens": total_tokens,
@@ -124,6 +118,11 @@ def extract_bedrock_titan_model(request_body, response_body):
         "response.number_of_messages": len(response_body.get("results", [])) + 1,
     }
     return message_list, chat_completion_summary_dict
+
+
+MODEL_EXTRACTORS = {
+    "amazon.titan": extract_bedrock_titan_model,
+}
 
 
 @function_wrapper
@@ -152,6 +151,20 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     model = kwargs.get("modelId")
     if not model:
         return response
+    
+    # Determine extractor by model type
+    for extractor_name, extractor in MODEL_EXTRACTORS.items():
+        if model.startswith(extractor_name):
+            break
+    else:
+        # Model was not found in extractor list
+        global UNSUPPORTED_MODEL_WARNING_SENT
+        if not UNSUPPORTED_MODEL_WARNING_SENT:
+            # Only send warning once to avoid spam
+            _logger.warning("Unsupported AWS Bedrock model in use (%s). Upgrade to a newer version of the agent, and contact New Relic support if the issue persists.", model)
+            UNSUPPORTED_MODEL_WARNING_SENT = True
+        
+        return response
 
     # Read and replace response streaming bodies
     response_body = response["body"].read()
@@ -170,15 +183,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     request_id = response_headers.get("x-amzn-requestid", "")
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    # Determine extractor by model type
-    if "titan" in model:
-        extractor = extract_bedrock_titan_model
-    else:
-        # TODO: log warning here
-        return response
-
     message_list, chat_completion_summary_dict = extractor(request_body, response_body)
-    message_list = []  # TODO REMOVE THIS
     chat_completion_summary_dict.update({
         "vendor": "bedrock",
         "ingest_source": "Python",
@@ -193,24 +198,6 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         "duration": ft.duration,
         "request.model": model,
         "response.model": model,  # Model not returned by bedrock APIs, assume same as requested
-        # "response.headers.ratelimitLimitRequests": check_rate_limit_header(
-        #     response_headers, "x-ratelimit-limit-requests", True
-        # ),
-        # "response.headers.ratelimitLimitTokens": check_rate_limit_header(
-        #     response_headers, "x-ratelimit-limit-tokens", True
-        # ),
-        # "response.headers.ratelimitResetTokens": check_rate_limit_header(
-        #     response_headers, "x-ratelimit-reset-tokens", False
-        # ),
-        # "response.headers.ratelimitResetRequests": check_rate_limit_header(
-        #     response_headers, "x-ratelimit-reset-requests", False
-        # ),
-        # "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
-        #     response_headers, "x-ratelimit-remaining-tokens", True
-        # ),
-        # "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
-        #     response_headers, "x-ratelimit-remaining-requests", True
-        # ),
     })
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)

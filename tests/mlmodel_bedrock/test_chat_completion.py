@@ -24,7 +24,7 @@ _test_bedrock_chat_completion_prompt = "Write me a blog about making strong busi
 @pytest.mark.parametrize(
     "model_id,payload",
     [
-        ("amazon.titan-text-express-v1", {"inputText": "Command: %s\n\nBlog:", "textGenerationConfig": {"temperature": 0.1, "maxTokenCount": 20}}),
+        ("amazon.titan-text-express-v1", {"inputText": "%s", "textGenerationConfig": {"temperature": 0.1, "maxTokenCount": 20}}),
         # ("anthropic.claude-instant-v1", {"prompt": "Human: %s\n\nAssistant:", "max_tokens_to_sample": 500}),
         # ("ai21.j2-mid-v1", {"prompt": "%s", "maxTokens": 200}),
         # ("cohere.command-text-v14", {"prompt": "%s", "max_tokens": 200, "temperature": 0.75}),

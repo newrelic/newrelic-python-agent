@@ -41,7 +41,181 @@ RESPONSES = {
                 }
             ],
         },
-    ]
+    ],
+    "ai21.j2-mid-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
+        {"content-type": "application/json", "x-amzn-requestid": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e"},
+        {
+            "id": 1234,
+            "prompt": {
+                "text": "What is 212 degrees Fahrenheit converted to Celsius?",
+                "tokens": [
+                    {
+                        "generatedToken": {
+                            "token": "\u2581What\u2581is",
+                            "logprob": -7.446773529052734,
+                            "raw_logprob": -7.446773529052734,
+                        },
+                        "topTokens": None,
+                        "textRange": {"start": 0, "end": 7},
+                    },
+                    {
+                        "generatedToken": {
+                            "token": "\u2581",
+                            "logprob": -3.8046724796295166,
+                            "raw_logprob": -3.8046724796295166,
+                        },
+                        "topTokens": None,
+                        "textRange": {"start": 7, "end": 8},
+                    },
+                    {
+                        "generatedToken": {
+                            "token": "212",
+                            "logprob": -9.287349700927734,
+                            "raw_logprob": -9.287349700927734,
+                        },
+                        "topTokens": None,
+                        "textRange": {"start": 8, "end": 11},
+                    },
+                    {
+                        "generatedToken": {
+                            "token": "\u2581degrees\u2581Fahrenheit",
+                            "logprob": -7.953181743621826,
+                            "raw_logprob": -7.953181743621826,
+                        },
+                        "topTokens": None,
+                        "textRange": {"start": 11, "end": 30},
+                    },
+                    {
+                        "generatedToken": {
+                            "token": "\u2581converted\u2581to",
+                            "logprob": -6.168096542358398,
+                            "raw_logprob": -6.168096542358398,
+                        },
+                        "topTokens": None,
+                        "textRange": {"start": 30, "end": 43},
+                    },
+                    {
+                        "generatedToken": {
+                            "token": "\u2581Celsius",
+                            "logprob": -0.09790332615375519,
+                            "raw_logprob": -0.09790332615375519,
+                        },
+                        "topTokens": None,
+                        "textRange": {"start": 43, "end": 51},
+                    },
+                    {
+                        "generatedToken": {
+                            "token": "?",
+                            "logprob": -6.5795369148254395,
+                            "raw_logprob": -6.5795369148254395,
+                        },
+                        "topTokens": None,
+                        "textRange": {"start": 51, "end": 52},
+                    },
+                ],
+            },
+            "completions": [
+                {
+                    "data": {
+                        "text": "\n212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                        "tokens": [
+                            {
+                                "generatedToken": {
+                                    "token": "<|newline|>",
+                                    "logprob": -1.6689286894688848e-06,
+                                    "raw_logprob": -0.00015984688070602715,
+                                },
+                                "topTokens": None,
+                                "textRange": {"start": 0, "end": 1},
+                            },
+                            {
+                                "generatedToken": {
+                                    "token": "\u2581",
+                                    "logprob": -0.03473362699151039,
+                                    "raw_logprob": -0.11261807382106781,
+                                },
+                                "topTokens": None,
+                                "textRange": {"start": 1, "end": 1},
+                            },
+                            {
+                                "generatedToken": {
+                                    "token": "212",
+                                    "logprob": -0.003316262038424611,
+                                    "raw_logprob": -0.019686665385961533,
+                                },
+                                "topTokens": None,
+                                "textRange": {"start": 1, "end": 4},
+                            },
+                            {
+                                "generatedToken": {
+                                    "token": "\u2581degrees\u2581Fahrenheit",
+                                    "logprob": -0.003579758107662201,
+                                    "raw_logprob": -0.03144374489784241,
+                                },
+                                "topTokens": None,
+                                "textRange": {"start": 4, "end": 23},
+                            },
+                            {
+                                "generatedToken": {
+                                    "token": "\u2581is\u2581equal\u2581to",
+                                    "logprob": -0.0027733694296330214,
+                                    "raw_logprob": -0.027207009494304657,
+                                },
+                                "topTokens": None,
+                                "textRange": {"start": 23, "end": 35},
+                            },
+                            {
+                                "generatedToken": {
+                                    "token": "\u2581",
+                                    "logprob": -0.0003392120997887105,
+                                    "raw_logprob": -0.005458095110952854,
+                                },
+                                "topTokens": None,
+                                "textRange": {"start": 35, "end": 36},
+                            },
+                            {
+                                "generatedToken": {
+                                    "token": "100",
+                                    "logprob": -2.145764938177308e-06,
+                                    "raw_logprob": -0.00012730741582345217,
+                                },
+                                "topTokens": None,
+                                "textRange": {"start": 36, "end": 39},
+                            },
+                            {
+                                "generatedToken": {
+                                    "token": "\u2581degrees\u2581Celsius",
+                                    "logprob": -0.31207239627838135,
+                                    "raw_logprob": -0.402545303106308,
+                                },
+                                "topTokens": None,
+                                "textRange": {"start": 39, "end": 55},
+                            },
+                            {
+                                "generatedToken": {
+                                    "token": ".",
+                                    "logprob": -0.023684674873948097,
+                                    "raw_logprob": -0.0769972875714302,
+                                },
+                                "topTokens": None,
+                                "textRange": {"start": 55, "end": 56},
+                            },
+                            {
+                                "generatedToken": {
+                                    "token": "<|endoftext|>",
+                                    "logprob": -0.0073706600815057755,
+                                    "raw_logprob": -0.06265579164028168,
+                                },
+                                "topTokens": None,
+                                "textRange": {"start": 56, "end": 56},
+                            },
+                        ],
+                    },
+                    "finishReason": {"reason": "endoftext"},
+                }
+            ],
+        },
+    ],
 }
 
 MODEL_PATH_RE = re.compile(r"/model/([^/]+)/invoke")

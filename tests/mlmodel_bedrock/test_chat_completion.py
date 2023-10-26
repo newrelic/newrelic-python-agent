@@ -51,6 +51,7 @@ def is_file_payload(request):
     scope="session",
     params=[
         "amazon.titan-text-express-v1",
+        "ai21.j2-mid-v1",
         # ("anthropic.claude-instant-v1", '{"prompt": "Human: {prompt}\n\nAssistant:", "max_tokens_to_sample": {max_tokens:d}}'),
         # ("ai21.j2-mid-v1", '{"prompt": "{prompt}", "maxTokens": {max_tokens:d}}'),
         # ("cohere.command-text-v14", '{"prompt": "{prompt}", "max_tokens": {max_tokens:d}, "temperature": {temperature:f}}'),

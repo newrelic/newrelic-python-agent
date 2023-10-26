@@ -71,14 +71,25 @@ def check_rate_limit_header(response_headers, header_name, is_int):
         return ""
 
 
-def create_chat_completion_message_event(transaction, app_name, message_list, chat_completion_id, span_id, trace_id, request_model, response_id, request_id):
+def create_chat_completion_message_event(
+    transaction,
+    app_name,
+    message_list,
+    chat_completion_id,
+    span_id,
+    trace_id,
+    request_model,
+    request_id,
+    conversation_id,
+):
     if not transaction:
         return
 
     for index, message in enumerate(message_list):
         chat_completion_message_dict = {
-            "id": "%s-%s" % (response_id, index),
+            "id": str(uuid.uuid4()),  # No response IDs, use random UUID
             "appName": app_name,
+            "conversation_id": conversation_id,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -104,7 +115,9 @@ def extract_bedrock_titan_model(request_body, response_body):
 
     request_config = request_body.get("textGenerationConfig", {})
     message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
-    message_list.extend({"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", []))
+    message_list.extend(
+        {"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", [])
+    )
 
     chat_completion_summary_dict = {
         "request.max_tokens": request_config.get("maxTokenCount", ""),
@@ -113,20 +126,39 @@ def extract_bedrock_titan_model(request_body, response_body):
         "response.usage.completion_tokens": completion_tokens,
         "response.usage.prompt_tokens": input_tokens,
         "response.usage.total_tokens": total_tokens,
-        "number_of_messages": len(response_body.get("results", [])) + 1,
+        "number_of_messages": len(message_list),
+    }
+    return message_list, chat_completion_summary_dict
+
+
+def extract_bedrock_ai21_j2_model(request_body, response_body):
+    response_body = json.loads(response_body)
+    request_body = json.loads(request_body)
+
+    message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+    message_list.extend(
+        {"role": "assistant", "content": result["data"]["text"]} for result in response_body.get("completions", [])
+    )
+
+    chat_completion_summary_dict = {
+        "request.max_tokens": request_body.get("maxTokens", ""),
+        "request.temperature": request_body.get("temperature", ""),
+        "response.choices.finish_reason": response_body["completions"][0]["finishReason"]["reason"],
+        "number_of_messages": len(message_list),
     }
     return message_list, chat_completion_summary_dict
 
 
 MODEL_EXTRACTORS = {
     "amazon.titan": extract_bedrock_titan_model,
+    "ai21.j2": extract_bedrock_ai21_j2_model,
 }
 
 
 @function_wrapper
 def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     # Wrapped function only takes keyword arguments, no need for binding
-    
+
     transaction = current_transaction()
 
     if not transaction:
@@ -149,7 +181,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     model = kwargs.get("modelId")
     if not model:
         return response
-    
+
     # Determine extractor by model type
     for extractor_name, extractor in MODEL_EXTRACTORS.items():
         if model.startswith(extractor_name):
@@ -159,9 +191,12 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         global UNSUPPORTED_MODEL_WARNING_SENT
         if not UNSUPPORTED_MODEL_WARNING_SENT:
             # Only send warning once to avoid spam
-            _logger.warning("Unsupported Amazon Bedrock model in use (%s). Upgrade to a newer version of the agent, and contact New Relic support if the issue persists.", model)
+            _logger.warning(
+                "Unsupported Amazon Bedrock model in use (%s). Upgrade to a newer version of the agent, and contact New Relic support if the issue persists.",
+                model,
+            )
             UNSUPPORTED_MODEL_WARNING_SENT = True
-        
+
         return response
 
     # Read and replace response streaming bodies
@@ -181,20 +216,22 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     message_list, chat_completion_summary_dict = extractor(request_body, response_body)
-    chat_completion_summary_dict.update({
-        "vendor": "bedrock",
-        "ingest_source": "Python",
-        "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
-        "id": chat_completion_id,
-        "appName": settings.app_name,
-        "conversation_id": conversation_id,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "transaction_id": transaction._transaction_id,
-        "request_id": request_id,
-        "duration": ft.duration,
-        "request.model": model,
-    })
+    chat_completion_summary_dict.update(
+        {
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+            "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
+            "id": chat_completion_id,
+            "appName": settings.app_name,
+            "conversation_id": conversation_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction._transaction_id,
+            "request_id": request_id,
+            "duration": ft.duration,
+            "request.model": model,
+        }
+    )
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
@@ -206,8 +243,8 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         span_id,
         trace_id,
         model,
-        None,  # TODO: Response ID? Make it a random UUID4
         request_id,
+        conversation_id,
     )
 
     return response

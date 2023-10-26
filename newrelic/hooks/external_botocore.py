@@ -169,7 +169,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
 
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("conversation_id", str(uuid.uuid4()))
+    conversation_id = custom_attrs_dict.get("conversation_id", "")
 
     chat_completion_id = str(uuid.uuid4())
     available_metadata = get_trace_linking_metadata()

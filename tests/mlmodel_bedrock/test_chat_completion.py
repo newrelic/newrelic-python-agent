@@ -16,6 +16,11 @@ import json
 from io import BytesIO
 
 import pytest
+from _test_chat_completion import (
+    chat_completion_expected_events,
+    chat_completion_expected_events_no_convo_id,
+    chat_completion_payload_templates,
+)
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
@@ -25,10 +30,7 @@ from testing_support.validators.validate_ml_events import validate_ml_events
 
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import (
-    add_custom_attribute,
-    current_transaction,
-)
+from newrelic.api.transaction import add_custom_attribute, current_transaction
 
 
 def set_trace_info():
@@ -48,18 +50,21 @@ def is_file_payload(request):
 @pytest.fixture(
     scope="session",
     params=[
-        (
-            "amazon.titan-text-express-v1",
-            '{ "inputText": "%s", "textGenerationConfig": {"temperature": %f, "maxTokenCount": %d }}',
-        ),
+        "amazon.titan-text-express-v1",
         # ("anthropic.claude-instant-v1", '{"prompt": "Human: {prompt}\n\nAssistant:", "max_tokens_to_sample": {max_tokens:d}}'),
         # ("ai21.j2-mid-v1", '{"prompt": "{prompt}", "maxTokens": {max_tokens:d}}'),
         # ("cohere.command-text-v14", '{"prompt": "{prompt}", "max_tokens": {max_tokens:d}, "temperature": {temperature:f}}'),
     ],
 )
-def exercise_model(request, bedrock_server, is_file_payload):
+def model_id(request):
+    return request.param
+
+
+@pytest.fixture(scope="session")
+def exercise_model(bedrock_server, is_file_payload, model_id):
+    payload_template = chat_completion_payload_templates[model_id]
+
     def _exercise_model(prompt, temperature=0.7, max_tokens=100):
-        model_id, payload_template = request.param
         body = (payload_template % (prompt, temperature, max_tokens)).encode("utf-8")
         if is_file_payload:
             body = BytesIO(body)
@@ -76,90 +81,52 @@ def exercise_model(request, bedrock_server, is_file_payload):
     return _exercise_model
 
 
-_test_openai_chat_completion_sync_messages = "What is 212 degrees Fahrenheit converted to Celsius?"
+@pytest.fixture(scope="session")
+def expected_events(model_id):
+    return chat_completion_expected_events[model_id]
 
 
-sync_chat_completion_recorded_events = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_bedrock)",
-            "conversation_id": "my-awesome-id",
-            "transaction_id": None,
-            "span_id": "span-id",
-            "trace_id": "trace-id",
-            "request_id": "660d4de9-6804-460e-8556-4ab2a019d1e3",
-            "api_key_last_four_digits": "CRET",
-            "duration": None,  # Response time varies each test run
-            "request.model": "amazon.titan-text-express-v1",
-            "response.usage.completion_tokens": 55,
-            "response.usage.total_tokens": 67,
-            "response.usage.prompt_tokens": 12,
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "response.choices.finish_reason": "FINISH",
-            "vendor": "bedrock",
-            "ingest_source": "Python",
-            "number_of_messages": 2,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_bedrock)",
-            "request_id": "660d4de9-6804-460e-8556-4ab2a019d1e3",
-            "span_id": "span-id",
-            "trace_id": "trace-id",
-            "transaction_id": None,
-            "content": "What is 212 degrees Fahrenheit converted to Celsius?",
-            "role": "user",
-            "completion_id": None,
-            "sequence": 0,
-            "request.model": "amazon.titan-text-express-v1",
-            "vendor": "bedrock",
-            "ingest_source": "Python",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_bedrock)",
-            "request_id": "660d4de9-6804-460e-8556-4ab2a019d1e3",
-            "span_id": "span-id",
-            "trace_id": "trace-id",
-            "transaction_id": None,
-            "content": "\nUse the formula,\n°C = (°F - 32) x 5/9\n= 212 x 5/9\n= 100 degrees Celsius\n212 degrees Fahrenheit is 100 degrees Celsius.",
-            "role": "assistant",
-            "completion_id": None,
-            "sequence": 1,
-            "request.model": "amazon.titan-text-express-v1",
-            "vendor": "bedrock",
-            "ingest_source": "Python",
-        },
-    ),
-]
+@pytest.fixture(scope="session")
+def expected_events_no_convo_id(model_id):
+    return chat_completion_expected_events_no_convo_id[model_id]
+
+
+_test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted to Celsius?"
 
 
 @reset_core_stats_engine()
-@validate_ml_events(sync_chat_completion_recorded_events)
-# One summary event, one user message, and one response message from the assistant
-@validate_ml_event_count(count=3)
-@background_task()
-def test_openai_chat_completion_sync_in_txn(exercise_model):
-    set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
-    exercise_model(prompt=_test_openai_chat_completion_sync_messages, temperature=0.7, max_tokens=100)
+def test_bedrock_chat_completion_in_txn(exercise_model, expected_events):
+    @validate_ml_events(expected_events)
+    # One summary event, one user message, and one response message from the assistant
+    @validate_ml_event_count(count=3)
+    @background_task()
+    def _test():
+        set_trace_info()
+        add_custom_attribute("conversation_id", "my-awesome-id")
+        exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_bedrock_chat_completion_in_txn_no_convo_id(exercise_model, expected_events_no_convo_id):
+    @validate_ml_events(expected_events_no_convo_id)
+    # One summary event, one user message, and one response message from the assistant
+    @validate_ml_event_count(count=3)
+    @background_task()
+    def _test():
+        set_trace_info()
+        exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+
+    _test()
 
 
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
-def test_openai_chat_completion_sync_outside_txn(exercise_model):
+def test_bedrock_chat_completion_outside_txn(exercise_model):
     set_trace_info()
     add_custom_attribute("conversation_id", "my-awesome-id")
-    exercise_model(prompt=_test_openai_chat_completion_sync_messages, temperature=0.7, max_tokens=100)
+    exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
 
 disabled_ml_settings = {"machine_learning.enabled": False, "ml_insights_events.enabled": False}
@@ -168,6 +135,6 @@ disabled_ml_settings = {"machine_learning.enabled": False, "ml_insights_events.e
 @override_application_settings(disabled_ml_settings)
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
-def test_openai_chat_completion_sync_disabled_settings(exercise_model):
+def test_bedrock_chat_completion_disabled_settings(exercise_model):
     set_trace_info()
-    exercise_model(prompt=_test_openai_chat_completion_sync_messages, temperature=0.7, max_tokens=100)
+    exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)

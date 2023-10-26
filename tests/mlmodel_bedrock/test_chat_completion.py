@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import json
 from io import BytesIO
 
 import pytest
 from _test_chat_completion import (
     chat_completion_expected_events,
-    chat_completion_expected_events_no_convo_id,
     chat_completion_payload_templates,
 )
 from testing_support.fixtures import (
@@ -42,7 +42,7 @@ def set_trace_info():
         trace.guid = "span-id"
 
 
-@pytest.fixture(scope="session", params=[False, True])
+@pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])
 def is_file_payload(request):
     return request.param
 
@@ -53,7 +53,6 @@ def is_file_payload(request):
         "amazon.titan-text-express-v1",
         "ai21.j2-mid-v1",
         # ("anthropic.claude-instant-v1", '{"prompt": "Human: {prompt}\n\nAssistant:", "max_tokens_to_sample": {max_tokens:d}}'),
-        # ("ai21.j2-mid-v1", '{"prompt": "{prompt}", "maxTokens": {max_tokens:d}}'),
         # ("cohere.command-text-v14", '{"prompt": "{prompt}", "max_tokens": {max_tokens:d}, "temperature": {temperature:f}}'),
     ],
 )
@@ -62,7 +61,7 @@ def model_id(request):
 
 
 @pytest.fixture(scope="session")
-def exercise_model(bedrock_server, is_file_payload, model_id):
+def exercise_model(bedrock_server, model_id, is_file_payload):
     payload_template = chat_completion_payload_templates[model_id]
 
     def _exercise_model(prompt, temperature=0.7, max_tokens=100):
@@ -89,7 +88,10 @@ def expected_events(model_id):
 
 @pytest.fixture(scope="session")
 def expected_events_no_convo_id(model_id):
-    return chat_completion_expected_events_no_convo_id[model_id]
+    events = copy.deepcopy(chat_completion_expected_events[model_id])
+    for event in events:
+        event[1]["conversation_id"] = ""
+    return events
 
 
 _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted to Celsius?"

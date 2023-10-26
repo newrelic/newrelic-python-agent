@@ -88,7 +88,7 @@ def create_chat_completion_message_event(transaction, app_name, message_list, ch
             "completion_id": chat_completion_id,
             "sequence": index,
             "response.model": response_model,
-            "vendor": "openAI",
+            "vendor": "bedrock",
             "ingest_source": "Python",
         }
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
@@ -103,7 +103,6 @@ def extract_bedrock_titan_model(request_body, response_body):
     total_tokens = input_tokens + completion_tokens
 
     request_config = request_body.get("textGenerationConfig", {})
-    # TODO: Is this right? When does results have more than 1 item?
     message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
     message_list.extend({"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", []))
 
@@ -114,8 +113,7 @@ def extract_bedrock_titan_model(request_body, response_body):
         "response.usage.completion_tokens": completion_tokens,
         "response.usage.prompt_tokens": input_tokens,
         "response.usage.total_tokens": total_tokens,
-        # TODO: Is this right? When does results have more than 1 item?
-        "response.number_of_messages": len(response_body.get("results", [])) + 1,
+        "number_of_messages": len(response_body.get("results", [])) + 1,
     }
     return message_list, chat_completion_summary_dict
 
@@ -179,8 +177,8 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     trace_id = available_metadata.get("trace.id", "")
 
     response_headers = response["ResponseMetadata"]["HTTPHeaders"]
-    response_id = response.get("id", "")
     request_id = response_headers.get("x-amzn-requestid", "")
+    response_id = request_id  # No other id is available for response
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     message_list, chat_completion_summary_dict = extractor(request_body, response_body)

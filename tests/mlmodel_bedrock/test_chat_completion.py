@@ -117,7 +117,7 @@ def is_file_payload(request):
 
 
 @pytest.fixture(scope="session", params=[
-    ("amazon.titan-text-express-v1", '\{"inputText": "{prompt}", "textGenerationConfig": \{"temperature": {temperature:f}, "maxTokenCount": {max_tokens:d}\}\}'),
+    ("amazon.titan-text-express-v1", '{ "inputText": "%s", "textGenerationConfig": {"temperature": %f, "maxTokenCount": %d }}'),
     # ("anthropic.claude-instant-v1", '{"prompt": "Human: {prompt}\n\nAssistant:", "max_tokens_to_sample": {max_tokens:d}}'),
     # ("ai21.j2-mid-v1", '{"prompt": "{prompt}", "maxTokens": {max_tokens:d}}'),
     # ("cohere.command-text-v14", '{"prompt": "{prompt}", "max_tokens": {max_tokens:d}, "temperature": {temperature:f}}'),
@@ -125,7 +125,7 @@ def is_file_payload(request):
 def exercise_model(request, bedrock_server, is_file_payload):
     def _exercise_model(prompt, temperature=0.7, max_tokens=100):
         model_id, payload_template = request.param
-        body = payload_template.format(prompt=prompt, temperature=temperature, max_tokens=max_tokens).encode("utf-8")
+        body = (payload_template % (prompt, temperature, max_tokens)).encode("utf-8")
         if is_file_payload:
             body = BytesIO(body)
 
@@ -141,17 +141,6 @@ def exercise_model(request, bedrock_server, is_file_payload):
     return _exercise_model
 
 
-# @pytest.mark.parametrize(
-#     "model_id,payload",
-#     [
-#         ("amazon.titan-text-express-v1", {"inputText": "%s", "textGenerationConfig": {"temperature": 0.1, "maxTokenCount": 20}}),
-#         # ("anthropic.claude-instant-v1", {"prompt": "Human: %s\n\nAssistant:", "max_tokens_to_sample": 500}),
-#         # ("ai21.j2-mid-v1", {"prompt": "%s", "maxTokens": 200}),
-#         # ("cohere.command-text-v14", {"prompt": "%s", "max_tokens": 200, "temperature": 0.75}),
-#     ],
-# )
-
-
 _test_openai_chat_completion_sync_messages = "What is 212 degrees Fahrenheit converted to Celsius?"
 
 
@@ -160,69 +149,60 @@ sync_chat_completion_recorded_events = [
         {'type': 'LlmChatCompletionSummary'},
         {
             'id': None, # UUID that varies with each run
-            'appName': 'Python Agent Test (mlmodel_openai)',
+            'appName': 'Python Agent Test (mlmodel_bedrock)',
             'conversation_id': 'my-awesome-id',
             'transaction_id': None,
             'span_id': "span-id",
             'trace_id': "trace-id",
-            'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
-            'api_key_last_four_digits': 'CRET',
+            'request_id': None,  # Varies each time
+            'access_key_last_four_digits': None,  # Varies each time
             'duration': None,  # Response time varies each test run
-            'request.model': 'gpt-3.5-turbo',
-            'response.model': 'gpt-3.5-turbo-0613',
-            'response.organization': 'new-relic-nkmd8b',
-            'response.usage.completion_tokens': 11,
-            'response.usage.total_tokens': 64,
-            'response.usage.prompt_tokens': 53,
+            'request.model': 'amazon.titan-text-express-v1',
+            'response.model': 'amazon.titan-text-express-v1',
+            'response.usage.completion_tokens': None,
+            'response.usage.total_tokens': None,
+            'response.usage.prompt_tokens': None,
             'request.temperature': 0.7,
             'request.max_tokens': 100,
-            'response.choices.finish_reason': 'stop',
-            'response.api_type': 'None',
-            'response.headers.llmVersion': '2020-10-01',
-            'response.headers.ratelimitLimitRequests': 200,
-            'response.headers.ratelimitLimitTokens': 40000,
-            'response.headers.ratelimitResetTokens': "90ms",
-            'response.headers.ratelimitResetRequests': "7m12s",
-            'response.headers.ratelimitRemainingTokens': 39940,
-            'response.headers.ratelimitRemainingRequests': 199,
-            'vendor': 'openAI',
+            'response.choices.finish_reason': 'FINISH',
+            'vendor': 'bedrock',
             'ingest_source': 'Python',
-            'number_of_messages': 3,
+            'number_of_messages': 2,
         },
     ),
     (
         {'type': 'LlmChatCompletionMessage'},
         {
-            'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-1",
-            'appName': 'Python Agent Test (mlmodel_openai)',
-            'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
+            'id': None, # UUID that varies with each run
+            'appName': 'Python Agent Test (mlmodel_bedrock)',
+            'request_id': None,  # Varies each time
             'span_id': "span-id",
             'trace_id': "trace-id",
             'transaction_id': None,
             'content': 'What is 212 degrees Fahrenheit converted to Celsius?',
             'role': 'user',
             'completion_id': None,
-            'sequence': 1,
-            'response.model': 'gpt-3.5-turbo-0613',
-            'vendor': 'openAI',
+            'sequence': 0,
+            'response.model': 'amazon.titan-text-express-v1',
+            'vendor': 'bedrock',
             'ingest_source': 'Python'
         },
     ),
     (
         {'type': 'LlmChatCompletionMessage'},
         {
-            'id': "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
-            'appName': 'Python Agent Test (mlmodel_openai)',
-            'request_id': "49dbbffbd3c3f4612aa48def69059ccd",
+            'id': None, # UUID that varies with each run
+            'appName': 'Python Agent Test (mlmodel_bedrock)',
+            'request_id': None,  # Varies each time
             'span_id': "span-id",
             'trace_id': "trace-id",
             'transaction_id': None,
-            'content': '212 degrees Fahrenheit is equal to 100 degrees Celsius.',
+            'content': None,
             'role': 'assistant',
             'completion_id': None,
-            'sequence': 2,
-            'response.model': 'gpt-3.5-turbo-0613',
-            'vendor': 'openAI',
+            'sequence': 1,
+            'response.model': 'amazon.titan-text-express-v1',
+            'vendor': 'bedrock',
             'ingest_source': 'Python'
         }
     ),
@@ -238,49 +218,46 @@ def test_openai_chat_completion_sync_in_txn(exercise_model):
     set_trace_info()
     add_custom_attribute("conversation_id", "my-awesome-id")
     exercise_model(
-        # model="gpt-3.5-turbo",
         prompt=_test_openai_chat_completion_sync_messages,
         temperature=0.7,
         max_tokens=100
     )
 
 
-# @reset_core_stats_engine()
-# @validate_ml_event_count(count=0)
-# def test_openai_chat_completion_sync_outside_txn():
-#     set_trace_info()
-#     add_custom_attribute("conversation_id", "my-awesome-id")
-#     openai.ChatCompletion.create(
-#         model="gpt-3.5-turbo",
-#         messages=_test_openai_chat_completion_sync_messages,
-#         temperature=0.7,
-#         max_tokens=100
-#     )
+@reset_core_stats_engine()
+@validate_ml_event_count(count=0)
+def test_openai_chat_completion_sync_outside_txn(exercise_model):
+    set_trace_info()
+    add_custom_attribute("conversation_id", "my-awesome-id")
+    exercise_model(
+        prompt=_test_openai_chat_completion_sync_messages,
+        temperature=0.7,
+        max_tokens=100
+    )
 
 
-# disabled_ml_settings = {
-#     "machine_learning.enabled": False,
-#     "ml_insights_events.enabled": False
-# }
+disabled_ml_settings = {
+    "machine_learning.enabled": False,
+    "ml_insights_events.enabled": False
+}
 
 
-# @override_application_settings(disabled_ml_settings)
-# @reset_core_stats_engine()
-# @validate_ml_event_count(count=0)
-# def test_openai_chat_completion_sync_disabled_settings():
-#     set_trace_info()
-#     openai.ChatCompletion.create(
-#         model="gpt-3.5-turbo",
-#         messages=_test_openai_chat_completion_sync_messages,
-#         temperature=0.7,
-#         max_tokens=100
-#     )
+@override_application_settings(disabled_ml_settings)
+@reset_core_stats_engine()
+@validate_ml_event_count(count=0)
+def test_openai_chat_completion_sync_disabled_settings(exercise_model):
+    set_trace_info()
+    exercise_model(
+        prompt=_test_openai_chat_completion_sync_messages,
+        temperature=0.7,
+        max_tokens=100
+    )
 
 
 # def test_openai_chat_completion_async(loop):
 #     loop.run_until_complete(
 #         openai.ChatCompletion.acreate(
-#             model="gpt-3.5-turbo",
+#             model="amazon.titan-text-express-v1",
 #             messages=_test_openai_chat_completion_sync_messages,
 #         )
 #     )

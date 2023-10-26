@@ -55,7 +55,7 @@ def validate_ml_events(events):
             for captured in found_events:
                 if _check_event_attributes(expected, captured, mismatches):
                     matching_ml_events += 1
-            assert matching_ml_events == 1, _event_details(matching_ml_events, events, mismatches)
+            assert matching_ml_events == 1, _event_details(matching_ml_events, found_events, mismatches)
 
         return val
 

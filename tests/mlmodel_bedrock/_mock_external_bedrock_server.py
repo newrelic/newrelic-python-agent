@@ -29,18 +29,18 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
 RESPONSES = {
-    "amazon.titan-text-express-v1::Command: Write me a blog about making strong business decisions as a leader.": [
+    "amazon.titan-text-express-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
         {
             "content-type": "application/json",
-            "x-amzn-requestid": "754408e9-672c-43e9-a62f-25d51596be42"
+            "x-amzn-requestid": "660d4de9-6804-460e-8556-4ab2a019d1e3"
         },
         {
-            "inputTextTokenCount": 19,
+            "inputTextTokenCount": 12,
             "results": [
                 {
-                    "tokenCount": 20,
-                    "outputText": " Making strong business decisions as a leader requires a combination of strategic thinking, careful analysis, and insight into",
-                    "completionReason": "LENGTH"
+                    "tokenCount": 55,
+                    "outputText": "\nUse the formula,\n\u00b0C = (\u00b0F - 32) x 5/9\n= 212 x 5/9\n= 100 degrees Celsius\n212 degrees Fahrenheit is 100 degrees Celsius.",
+                    "completionReason": "FINISH"
                 }
             ]
         }

@@ -898,6 +898,7 @@ _settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNIN
 _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
 )
+_settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 
 
 def global_settings():

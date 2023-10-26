@@ -30,20 +30,17 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 RESPONSES = {
     "amazon.titan-text-express-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
-        {
-            "content-type": "application/json",
-            "x-amzn-requestid": "660d4de9-6804-460e-8556-4ab2a019d1e3"
-        },
+        {"content-type": "application/json", "x-amzn-requestid": "660d4de9-6804-460e-8556-4ab2a019d1e3"},
         {
             "inputTextTokenCount": 12,
             "results": [
                 {
                     "tokenCount": 55,
                     "outputText": "\nUse the formula,\n\u00b0C = (\u00b0F - 32) x 5/9\n= 212 x 5/9\n= 100 degrees Celsius\n212 degrees Fahrenheit is 100 degrees Celsius.",
-                    "completionReason": "FINISH"
+                    "completionReason": "FINISH",
                 }
-            ]
-        }
+            ],
+        },
     ]
 }
 

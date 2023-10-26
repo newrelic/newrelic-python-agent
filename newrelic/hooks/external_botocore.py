@@ -71,7 +71,7 @@ def check_rate_limit_header(response_headers, header_name, is_int):
         return ""
 
 
-def create_chat_completion_message_event(transaction, app_name, message_list, chat_completion_id, span_id, trace_id, response_model, response_id, request_id):
+def create_chat_completion_message_event(transaction, app_name, message_list, chat_completion_id, span_id, trace_id, request_model, response_id, request_id):
     if not transaction:
         return
 
@@ -87,7 +87,7 @@ def create_chat_completion_message_event(transaction, app_name, message_list, ch
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
-            "response.model": response_model,
+            "request.model": request_model,
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
@@ -159,7 +159,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         global UNSUPPORTED_MODEL_WARNING_SENT
         if not UNSUPPORTED_MODEL_WARNING_SENT:
             # Only send warning once to avoid spam
-            _logger.warning("Unsupported AWS Bedrock model in use (%s). Upgrade to a newer version of the agent, and contact New Relic support if the issue persists.", model)
+            _logger.warning("Unsupported Amazon Bedrock model in use (%s). Upgrade to a newer version of the agent, and contact New Relic support if the issue persists.", model)
             UNSUPPORTED_MODEL_WARNING_SENT = True
         
         return response
@@ -178,14 +178,13 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
 
     response_headers = response["ResponseMetadata"]["HTTPHeaders"]
     request_id = response_headers.get("x-amzn-requestid", "")
-    response_id = request_id  # No other id is available for response
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     message_list, chat_completion_summary_dict = extractor(request_body, response_body)
     chat_completion_summary_dict.update({
         "vendor": "bedrock",
         "ingest_source": "Python",
-        "access_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
+        "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
         "id": chat_completion_id,
         "appName": settings.app_name,
         "conversation_id": conversation_id,
@@ -195,7 +194,6 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         "request_id": request_id,
         "duration": ft.duration,
         "request.model": model,
-        "response.model": model,  # Model not returned by bedrock APIs, assume same as requested
     })
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
@@ -208,7 +206,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         span_id,
         trace_id,
         model,
-        response_id,
+        None,  # TODO: Response ID? Make it a random UUID4
         request_id,
     )
 

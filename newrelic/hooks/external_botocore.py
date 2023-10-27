@@ -15,8 +15,9 @@
 import json
 import logging
 import uuid
-
 from io import BytesIO
+
+from botocore.response import StreamingBody
 
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import ExternalTrace
@@ -28,9 +29,6 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.attribute import MAX_LOG_MESSAGE_LENGTH
 from newrelic.core.config import global_settings
-
-from botocore.response import StreamingBody
-
 
 _logger = logging.getLogger(__name__)
 UNSUPPORTED_MODEL_WARNING_SENT = False
@@ -149,9 +147,28 @@ def extract_bedrock_ai21_j2_model(request_body, response_body):
     return message_list, chat_completion_summary_dict
 
 
+def extract_bedrock_cohere_model(request_body, response_body):
+    response_body = json.loads(response_body)
+    request_body = json.loads(request_body)
+
+    message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+    message_list.extend(
+        {"role": "assistant", "content": result["text"]} for result in response_body.get("generations", [])
+    )
+
+    chat_completion_summary_dict = {
+        "request.max_tokens": request_body.get("max_tokens", ""),
+        "request.temperature": request_body.get("temperature", ""),
+        "response.choices.finish_reason": response_body["generations"][0]["finish_reason"],
+        "number_of_messages": len(message_list),
+    }
+    return message_list, chat_completion_summary_dict
+
+
 MODEL_EXTRACTORS = {
     "amazon.titan": extract_bedrock_titan_model,
     "ai21.j2": extract_bedrock_ai21_j2_model,
+    "cohere": extract_bedrock_cohere_model,
 }
 
 

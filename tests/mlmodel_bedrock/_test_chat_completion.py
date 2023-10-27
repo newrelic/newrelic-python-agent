@@ -1,6 +1,7 @@
 chat_completion_payload_templates = {
     "amazon.titan-text-express-v1": '{ "inputText": "%s", "textGenerationConfig": {"temperature": %f, "maxTokenCount": %d }}',
     "ai21.j2-mid-v1": '{"prompt": "%s", "temperature": %f, "maxTokens": %d}',
+    "cohere.command-text-v14": '{"prompt": "%s", "temperature": %f, "max_tokens": %d}',
 }
 
 chat_completion_expected_events = {
@@ -124,6 +125,67 @@ chat_completion_expected_events = {
                 "completion_id": None,
                 "sequence": 1,
                 "request.model": "ai21.j2-mid-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+    ],
+    "cohere.command-text-v14": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "conversation_id": "my-awesome-id",
+                "transaction_id": None,
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "request_id": "c5188fb5-dc58-4cbe-948d-af173c69ce0d",
+                "api_key_last_four_digits": "CRET",
+                "duration": None,  # Response time varies each test run
+                "request.model": "cohere.command-text-v14",
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "MAX_TOKENS",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "conversation_id": "my-awesome-id",
+                "request_id": "c5188fb5-dc58-4cbe-948d-af173c69ce0d",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "content": "What is 212 degrees Fahrenheit converted to Celsius?",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "request.model": "cohere.command-text-v14",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "conversation_id": "my-awesome-id",
+                "request_id": "c5188fb5-dc58-4cbe-948d-af173c69ce0d",
+                "span_id": "span-id",
+                "trace_id": "trace-id",
+                "transaction_id": None,
+                "content": " To convert 212 degrees Fahrenheit to Celsius, we can use the conversion factor that Celsius is equal to (Fahrenheit - 32) x 5/9. \\n\\nApplying this formula, we have:\\n212Â°F = (212Â°F - 32) x 5/9\\n= (180) x 5/9\\n= 100Â°C.\\n\\nTherefore, 212 degrees F",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "request.model": "cohere.command-text-v14",
                 "vendor": "bedrock",
                 "ingest_source": "Python",
             },

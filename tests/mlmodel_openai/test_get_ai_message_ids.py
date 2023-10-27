@@ -44,6 +44,24 @@ expected_message_ids_1 = [
         "message_id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
     },
 ]
+
+expected_message_ids_1_no_conversation_id = [
+    {
+        "conversation_id": "",
+        "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+        "message_id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-0",
+    },
+    {
+        "conversation_id": "",
+        "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+        "message_id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-1",
+    },
+    {
+        "conversation_id": "",
+        "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+        "message_id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
+    },
+]
 expected_message_ids_2 = [
     {
         "conversation_id": "my-awesome-id",
@@ -57,6 +75,23 @@ expected_message_ids_2 = [
     },
     {
         "conversation_id": "my-awesome-id",
+        "request_id": "49dbbffbd3c3f4612aa48def69059aad",
+        "message_id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTeat-2",
+    },
+]
+expected_message_ids_2_no_conversation_id = [
+    {
+        "conversation_id": "",
+        "request_id": "49dbbffbd3c3f4612aa48def69059aad",
+        "message_id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTeat-0",
+    },
+    {
+        "conversation_id": "",
+        "request_id": "49dbbffbd3c3f4612aa48def69059aad",
+        "message_id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTeat-1",
+    },
+    {
+        "conversation_id": "",
         "request_id": "49dbbffbd3c3f4612aa48def69059aad",
         "message_id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTeat-2",
     },
@@ -106,6 +141,33 @@ def test_get_ai_message_ids_mulitple_async(loop, set_trace_info):
 
 @reset_core_stats_engine()
 @background_task()
+def test_get_ai_message_ids_mulitple_async_no_conversation_id(loop, set_trace_info):
+    set_trace_info()
+
+    async def _run():
+        res1 = await openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages_1, temperature=0.7, max_tokens=100
+        )
+        res2 = await openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages_2, temperature=0.7, max_tokens=100
+        )
+        return [res1, res2]
+
+    results = loop.run_until_complete(_run())
+
+    message_ids = [m for m in get_ai_message_ids(results[0].id)]
+    assert message_ids == expected_message_ids_1_no_conversation_id
+
+    message_ids = [m for m in get_ai_message_ids(results[1].id)]
+    assert message_ids == expected_message_ids_2_no_conversation_id
+
+    # Make sure we aren't causing a memory leak.
+    transaction = current_transaction()
+    assert not transaction._nr_message_ids
+
+
+@reset_core_stats_engine()
+@background_task()
 def test_get_ai_message_ids_mulitple_sync(set_trace_info):
     set_trace_info()
     add_custom_attribute("conversation_id", "my-awesome-id")
@@ -121,6 +183,28 @@ def test_get_ai_message_ids_mulitple_sync(set_trace_info):
     )
     message_ids = [m for m in get_ai_message_ids(results.id)]
     assert message_ids == expected_message_ids_2
+
+    # Make sure we aren't causing a memory leak.
+    transaction = current_transaction()
+    assert not transaction._nr_message_ids
+
+
+@reset_core_stats_engine()
+@background_task()
+def test_get_ai_message_ids_mulitple_sync_no_conversation_id(set_trace_info):
+    set_trace_info()
+
+    results = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages_1, temperature=0.7, max_tokens=100
+    )
+    message_ids = [m for m in get_ai_message_ids(results.id)]
+    assert message_ids == expected_message_ids_1_no_conversation_id
+
+    results = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages_2, temperature=0.7, max_tokens=100
+    )
+    message_ids = [m for m in get_ai_message_ids(results.id)]
+    assert message_ids == expected_message_ids_2_no_conversation_id
 
     # Make sure we aren't causing a memory leak.
     transaction = current_transaction()

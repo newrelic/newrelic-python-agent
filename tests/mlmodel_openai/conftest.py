@@ -90,6 +90,9 @@ def openai_server():
 
         # Apply function wrappers to record data
         wrap_function_wrapper("openai.api_requestor", "APIRequestor.request", wrap_openai_api_requestor_request)
+        wrap_function_wrapper(
+            "openai.api_requestor", "APIRequestor._interpret_response", wrap_openai_api_requestor_interpret_response
+        )
         yield  # Run tests
 
         # Write responses to audit log
@@ -99,6 +102,23 @@ def openai_server():
 
 # Intercept outgoing requests and log to file for mocking
 RECORDED_HEADERS = set(["x-request-id", "content-type"])
+
+
+def wrap_openai_api_requestor_interpret_response(wrapped, instance, args, kwargs):
+    rbody, rcode, rheaders = bind_request_interpret_response_params(*args, **kwargs)
+    headers = dict(
+        filter(
+            lambda k: k[0].lower() in RECORDED_HEADERS
+            or k[0].lower().startswith("openai")
+            or k[0].lower().startswith("x-ratelimit"),
+            rheaders.items(),
+        )
+    )
+
+    if rcode >= 400 or rcode < 200:
+        rbody = json.loads(rbody)
+        OPENAI_AUDIT_LOG_CONTENTS["error"] = headers, rcode, rbody  # Append response data to audit log
+    return wrapped(*args, **kwargs)
 
 
 def wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
@@ -124,9 +144,13 @@ def wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
     )
 
     # Log response
-    OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, data  # Append response data to audit log
+    OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, result.http_status, data  # Append response data to audit log
     return result
 
 
 def bind_request_params(method, url, params=None, *args, **kwargs):
     return params
+
+
+def bind_request_interpret_response_params(result, stream):
+    return result.content.decode("utf-8"), result.status_code, result.headers

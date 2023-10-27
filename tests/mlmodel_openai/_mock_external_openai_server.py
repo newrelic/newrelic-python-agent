@@ -28,6 +28,33 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
 RESPONSES = {
+    "Invalid API key.": (
+        {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
+        401,
+        {
+            "error": {
+                "message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
+                "type": "invalid_request_error",
+                "param": "null",
+                "code": "invalid_api_key",
+            }
+        },
+    ),
+    "Model does not exist.": (
+        {
+            "Content-Type": "application/json",
+            "x-request-id": "cfdf51fb795362ae578c12a21796262c",
+        },
+        404,
+        {
+            "error": {
+                "message": "The model `does-not-exist` does not exist",
+                "type": "invalid_request_error",
+                "param": "null",
+                "code": "model_not_found",
+            }
+        },
+    ),
     "This is an embedding test.": (
         {
             "Content-Type": "application/json",
@@ -42,6 +69,7 @@ RESPONSES = {
             "x-ratelimit-reset-tokens": "2ms",
             "x-request-id": "c70828b2293314366a76a2b1dcb20688",
         },
+        200,
         {
             "data": [
                 {
@@ -70,6 +98,7 @@ RESPONSES = {
             "x-ratelimit-reset-tokens": "90ms",
             "x-request-id": "49dbbffbd3c3f4612aa48def69059ccd",
         },
+        200,
         {
             "choices": [
                 {
@@ -105,7 +134,7 @@ def simple_get(self):
     headers, response = ({}, "")
     for k, v in RESPONSES.items():
         if prompt.startswith(k):
-            headers, response = v
+            headers, status_code, response = v
             break
     else:  # If no matches found
         self.send_response(500)
@@ -114,7 +143,7 @@ def simple_get(self):
         return
 
     # Send response code
-    self.send_response(200)
+    self.send_response(status_code)
 
     # Send headers
     for k, v in headers.items():

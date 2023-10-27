@@ -132,6 +132,7 @@ RESPONSES = {
             "x-ratelimit-reset-tokens": "90ms",
             "x-request-id": "49dbbffbd3c3f4612aa48def69059aad",
         },
+        200,
         {
             "choices": [
                 {

@@ -34,11 +34,13 @@ enabled_ml_settings = {
     "error_collector.ignore_status_codes": set(),
 }
 
-_test_openai_chat_completion_sync_messages = (
+_test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
 )
 
+
+# Sync tests:
 
 # No model provided
 @override_application_settings(enabled_ml_settings)
@@ -66,11 +68,11 @@ _test_openai_chat_completion_sync_messages = (
     }
 )
 @background_task()
-def test_invalid_request_error_no_model():
+def test_chat_completion_invalid_request_error_no_model():
     with pytest.raises(openai.InvalidRequestError):
         openai.ChatCompletion.create(
             # no model provided,
-            messages=_test_openai_chat_completion_sync_messages,
+            messages=_test_openai_chat_completion_messages,
             temperature=0.7,
             max_tokens=100,
         )
@@ -108,7 +110,7 @@ def test_invalid_request_error_no_model():
     }
 )
 @background_task()
-def test_invalid_request_error_invalid_model():
+def test_chat_completion_invalid_request_error_invalid_model():
     with pytest.raises(openai.InvalidRequestError):
         openai.ChatCompletion.create(
             model="does-not-exist",
@@ -143,12 +145,12 @@ def test_invalid_request_error_invalid_model():
     }
 )
 @background_task()
-def test_authentication_error(monkeypatch):
+def test_chat_completion_authentication_error(monkeypatch):
     with pytest.raises(openai.error.AuthenticationError):
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=_test_openai_chat_completion_sync_messages,
+            messages=_test_openai_chat_completion_messages,
             temperature=0.7,
             max_tokens=100,
         )
@@ -185,7 +187,7 @@ def test_authentication_error(monkeypatch):
     }
 )
 @background_task()
-def test_wrong_api_key_error(monkeypatch):
+def test_chat_completion_wrong_api_key_error(monkeypatch):
     with pytest.raises(openai.error.AuthenticationError):
         monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
         openai.ChatCompletion.create(
@@ -193,4 +195,159 @@ def test_wrong_api_key_error(monkeypatch):
             messages=({"role": "user", "content": "Invalid API key."},),
             temperature=0.7,
             max_tokens=100,
+        )
+
+
+# Async tests:
+
+# No model provided
+@override_application_settings(enabled_ml_settings)
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(openai.InvalidRequestError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "api_key_last_four_digits": "sk-CRET",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "response.number_of_messages": 2,
+            "error.param": "engine",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
+    }
+)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_async(loop):
+    with pytest.raises(openai.InvalidRequestError):
+        loop.run_until_complete(
+            openai.ChatCompletion.acreate(
+                # no model provided,
+                messages=_test_openai_chat_completion_messages,
+                temperature=0.7,
+                max_tokens=100,
+            )
+        )
+
+
+# Invalid model provided
+@override_application_settings(enabled_ml_settings)
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(openai.InvalidRequestError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "api_key_last_four_digits": "sk-CRET",
+            "request.model": "does-not-exist",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "response.number_of_messages": 1,
+            "error.code": "model_not_found",
+            "status_code": 404,
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist",
+    }
+)
+@background_task()
+def test_chat_completion_invalid_request_error_invalid_model_async(loop):
+    with pytest.raises(openai.InvalidRequestError):
+        loop.run_until_complete(
+            openai.ChatCompletion.acreate(
+                model="does-not-exist",
+                messages=({"role": "user", "content": "Model does not exist."},),
+                temperature=0.7,
+                max_tokens=100,
+            )
+        )
+
+
+# No api_key provided
+@override_application_settings(enabled_ml_settings)
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(openai.error.AuthenticationError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "request.model": "gpt-3.5-turbo",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "response.number_of_messages": 2,
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
+    }
+)
+@background_task()
+def test_chat_completion_authentication_error_async(loop, monkeypatch):
+    with pytest.raises(openai.error.AuthenticationError):
+        monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
+        loop.run_until_complete(
+            openai.ChatCompletion.acreate(
+                model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+            )
+        )
+
+
+# Wrong api_key provided
+@override_application_settings(enabled_ml_settings)
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(openai.error.AuthenticationError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "api_key_last_four_digits": "sk-BEEF",
+            "request.model": "gpt-3.5-turbo",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "response.number_of_messages": 1,
+            "status_code": 401,
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys."
+    }
+)
+@background_task()
+def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch):
+    with pytest.raises(openai.error.AuthenticationError):
+        monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
+        loop.run_until_complete(
+            openai.ChatCompletion.acreate(
+                model="gpt-3.5-turbo",
+                messages=({"role": "user", "content": "Invalid API key."},),
+                temperature=0.7,
+                max_tokens=100,
+            )
         )

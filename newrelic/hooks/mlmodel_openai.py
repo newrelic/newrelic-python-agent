@@ -29,17 +29,18 @@ OPENAI_VERSION = get_package_version("openai")
 
 def openai_error_attributes(exception, request_args):
     api_key = getattr(openai, "api_key", None)
-    api_key_LFD = f"sk-{api_key[-4:]}" if api_key else ""
+    api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
+    number_of_messages = len(request_args.get("messages", []))
 
     error_attributes = {
-        "api_key_last_four_digits": api_key_LFD,
+        "api_key_last_four_digits": api_key_last_four_digits,
         "request.model": request_args.get("model") or request_args.get("engine") or "",
         "request.temperature": request_args.get("temperature", ""),
         "request.max_tokens": request_args.get("max_tokens", ""),
         "vendor": "openAI",
         "ingest_source": "Python",
         "response.organization": getattr(exception, "organization", ""),
-        "response.number_of_messages": len(request_args.get("messages", [])),
+        "response.number_of_messages": number_of_messages if number_of_messages > 0 else "",
         "status_code": getattr(exception, "http_status", ""),
         "error.message": getattr(exception, "_message", ""),
         "error.code": getattr(getattr(exception, "error", ""), "code", ""),
@@ -289,7 +290,16 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
-        response = await wrapped(*args, **kwargs)
+        try:
+            response = await wrapped(*args, **kwargs)
+        except Exception as exc:
+            error_attributes = openai_error_attributes(exc, kwargs)
+            ft.notice_error(
+                status_code=error_attributes["status_code"],
+                message=error_attributes.pop("error.message"),
+                attributes=error_attributes,
+            )
+            raise
 
     if not response:
         return response
@@ -362,7 +372,16 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
-        response = await wrapped(*args, **kwargs)
+        try:
+            response = await wrapped(*args, **kwargs)
+        except Exception as exc:
+            error_attributes = openai_error_attributes(exc, kwargs)
+            ft.notice_error(
+                status_code=error_attributes["status_code"],
+                message=error_attributes.pop("error.message"),
+                attributes=error_attributes,
+            )
+            raise
 
     if not response:
         return response

@@ -42,6 +42,7 @@ _test_openai_chat_completion_messages = (
 
 # Sync tests:
 
+
 # No model provided
 @override_application_settings(enabled_ml_settings)
 @dt_enabled
@@ -199,6 +200,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch):
 
 
 # Async tests:
+
 
 # No model provided
 @override_application_settings(enabled_ml_settings)

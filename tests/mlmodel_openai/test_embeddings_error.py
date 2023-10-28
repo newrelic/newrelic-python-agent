@@ -37,6 +37,7 @@ enabled_ml_settings = {
 
 # Sync tests:
 
+
 # No model provided
 @override_application_settings(enabled_ml_settings)
 @dt_enabled
@@ -165,6 +166,7 @@ def test_embeddings_wrong_api_key_error(monkeypatch):
 
 
 # Async tests:
+
 
 # No model provided
 @override_application_settings(enabled_ml_settings)

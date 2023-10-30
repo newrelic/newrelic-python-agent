@@ -97,13 +97,13 @@ def test_chat_completion_invalid_request_error_no_model():
             "ingest_source": "Python",
             "response.number_of_messages": 1,
             "error.code": "model_not_found",
+            "http.statusCode": 404,
         },
     },
 )
 @validate_span_events(
     exact_agents={
         "error.message": "The model `does-not-exist` does not exist",
-        "http.statusCode": 404,
     }
 )
 @background_task()
@@ -170,13 +170,13 @@ def test_chat_completion_authentication_error(monkeypatch):
             "vendor": "openAI",
             "ingest_source": "Python",
             "response.number_of_messages": 1,
+            "http.statusCode": 401,
         },
     },
 )
 @validate_span_events(
     exact_agents={
         "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
-        "http.statusCode": 401,
     }
 )
 @background_task()
@@ -250,13 +250,13 @@ def test_chat_completion_invalid_request_error_no_model_async(loop):
             "ingest_source": "Python",
             "response.number_of_messages": 1,
             "error.code": "model_not_found",
+            "http.statusCode": 404,
         },
     },
 )
 @validate_span_events(
     exact_agents={
         "error.message": "The model `does-not-exist` does not exist",
-        "http.statusCode": 404,
     }
 )
 @background_task()
@@ -324,13 +324,13 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch):
             "vendor": "openAI",
             "ingest_source": "Python",
             "response.number_of_messages": 1,
+            "http.statusCode": 401,
         },
     },
 )
 @validate_span_events(
     exact_agents={
         "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
-        "http.statusCode": 401,
     }
 )
 @background_task()

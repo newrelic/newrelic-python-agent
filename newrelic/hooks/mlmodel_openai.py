@@ -41,7 +41,7 @@ def openai_error_attributes(exception, request_args):
         "ingest_source": "Python",
         "response.organization": getattr(exception, "organization", ""),
         "response.number_of_messages": number_of_messages,
-        "status_code": getattr(exception, "http_status", ""),
+        "http.statusCode": getattr(exception, "http_status", ""),
         "error.message": getattr(exception, "_message", ""),
         "error.code": getattr(getattr(exception, "error", ""), "code", ""),
         "error.param": getattr(exception, "param", ""),
@@ -62,12 +62,8 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             error_attributes = openai_error_attributes(exc, kwargs)
-            status_code = error_attributes.pop("status_code")
-            # Usually the status_code is only added to an external error trace's attrs.
-            ft._add_agent_attribute("http.statusCode", status_code)
+            exc._nr_message = error_attributes.pop("error.message")
             ft.notice_error(
-                status_code=status_code,
-                message=error_attributes.pop("error.message"),
                 attributes=error_attributes,
             )
             raise
@@ -143,12 +139,8 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             error_attributes = openai_error_attributes(exc, kwargs)
-            status_code = error_attributes.pop("status_code")
-            # Usually the status_code is only added to an external error trace's attrs.
-            ft._add_agent_attribute("http.statusCode", status_code)
+            exc._nr_message = error_attributes.pop("error.message")
             ft.notice_error(
-                status_code=status_code,
-                message=error_attributes.pop("error.message"),
                 attributes=error_attributes,
             )
             raise
@@ -300,12 +292,8 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
             response = await wrapped(*args, **kwargs)
         except Exception as exc:
             error_attributes = openai_error_attributes(exc, kwargs)
-            status_code = error_attributes.pop("status_code")
-            # Usually the status_code is only added to an external error trace's attrs.
-            ft._add_agent_attribute("http.statusCode", status_code)
+            exc._nr_message = error_attributes.pop("error.message")
             ft.notice_error(
-                status_code=status_code,
-                message=error_attributes.pop("error.message"),
                 attributes=error_attributes,
             )
             raise
@@ -385,12 +373,8 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
             response = await wrapped(*args, **kwargs)
         except Exception as exc:
             error_attributes = openai_error_attributes(exc, kwargs)
-            status_code = error_attributes.pop("status_code")
-            # Usually the status_code is only added to an external error trace's attrs.
-            ft._add_agent_attribute("http.statusCode", status_code)
+            exc._nr_message = error_attributes.pop("error.message")
             ft.notice_error(
-                status_code=status_code,
-                message=error_attributes.pop("error.message"),
                 attributes=error_attributes,
             )
             raise

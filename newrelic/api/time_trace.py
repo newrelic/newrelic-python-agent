@@ -219,7 +219,7 @@ class TimeTrace(object):
                     % (source, exc)
                 )
 
-    def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None, message=None):
+    def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
         # Bail out if the transaction is not active or
         # collection of errors not enabled.
 
@@ -259,16 +259,17 @@ class TimeTrace(object):
         module, name, fullnames, message_raw = parse_exc_info((exc, value, tb))
         fullname = fullnames[0]
 
+        # In case message is in JSON format for OpenAI models
+        # this will result in a "cleaner" message format
+        if getattr(value, "_nr_message", None):
+            message_raw = value._nr_message
+
         # Check to see if we need to strip the message before recording it.
 
-        if not message:
-            if (
-                settings.strip_exception_messages.enabled
-                and fullname not in settings.strip_exception_messages.allowlist
-            ):
-                message = STRIP_EXCEPTION_MESSAGE
-            else:
-                message = message_raw
+        if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
+            message = STRIP_EXCEPTION_MESSAGE
+        else:
+            message = message_raw
 
         # Where expected or ignore are a callable they should return a
         # tri-state variable with the following behavior.
@@ -362,7 +363,7 @@ class TimeTrace(object):
 
         return fullname, message, message_raw, tb, is_expected
 
-    def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None, message=None):
+    def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         attributes = attributes if attributes is not None else {}
 
         # If no exception details provided, use current exception.
@@ -382,7 +383,6 @@ class TimeTrace(object):
             ignore=ignore,
             expected=expected,
             status_code=status_code,
-            message=message,
         )
         if recorded:
             fullname, message, message_raw, tb, is_expected = recorded

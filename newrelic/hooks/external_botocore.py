@@ -15,8 +15,9 @@
 import json
 import logging
 import uuid
-
 from io import BytesIO
+
+from botocore.response import StreamingBody
 
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import ExternalTrace
@@ -28,9 +29,6 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.attribute import MAX_LOG_MESSAGE_LENGTH
 from newrelic.core.config import global_settings
-
-from botocore.response import StreamingBody
-
 
 _logger = logging.getLogger(__name__)
 UNSUPPORTED_MODEL_WARNING_SENT = False

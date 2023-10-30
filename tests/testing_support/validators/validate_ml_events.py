@@ -24,7 +24,6 @@ from newrelic.packages import six
 def validate_ml_events(events):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_called = []
         recorded_events = []
 

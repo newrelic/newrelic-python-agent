@@ -18,6 +18,7 @@ chat_completion_expected_events = {
                 "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-text-express-v1",
+                "response.model": "amazon.titan-text-express-v1",
                 "response.usage.completion_tokens": 55,
                 "response.usage.total_tokens": 67,
                 "response.usage.prompt_tokens": 12,
@@ -44,6 +45,7 @@ chat_completion_expected_events = {
                 "completion_id": None,
                 "sequence": 0,
                 "request.model": "amazon.titan-text-express-v1",
+                "response.model": "amazon.titan-text-express-v1",
                 "vendor": "bedrock",
                 "ingest_source": "Python",
             },
@@ -63,6 +65,7 @@ chat_completion_expected_events = {
                 "completion_id": None,
                 "sequence": 1,
                 "request.model": "amazon.titan-text-express-v1",
+                "response.model": "amazon.titan-text-express-v1",
                 "vendor": "bedrock",
                 "ingest_source": "Python",
             },
@@ -79,9 +82,11 @@ chat_completion_expected_events = {
                 "span_id": "span-id",
                 "trace_id": "trace-id",
                 "request_id": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e",
+                "response_id": "1234",
                 "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "request.model": "ai21.j2-mid-v1",
+                "response.model": "ai21.j2-mid-v1",
                 "request.temperature": 0.7,
                 "request.max_tokens": 100,
                 "response.choices.finish_reason": "endoftext",
@@ -93,7 +98,7 @@ chat_completion_expected_events = {
         (
             {"type": "LlmChatCompletionMessage"},
             {
-                "id": None,  # UUID that varies with each run
+                "id": "1234-0",
                 "appName": "Python Agent Test (mlmodel_bedrock)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e",
@@ -105,6 +110,7 @@ chat_completion_expected_events = {
                 "completion_id": None,
                 "sequence": 0,
                 "request.model": "ai21.j2-mid-v1",
+                "response.model": "ai21.j2-mid-v1",
                 "vendor": "bedrock",
                 "ingest_source": "Python",
             },
@@ -112,7 +118,7 @@ chat_completion_expected_events = {
         (
             {"type": "LlmChatCompletionMessage"},
             {
-                "id": None,  # UUID that varies with each run
+                "id": "1234-1",
                 "appName": "Python Agent Test (mlmodel_bedrock)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e",
@@ -124,6 +130,7 @@ chat_completion_expected_events = {
                 "completion_id": None,
                 "sequence": 1,
                 "request.model": "ai21.j2-mid-v1",
+                "response.model": "ai21.j2-mid-v1",
                 "vendor": "bedrock",
                 "ingest_source": "Python",
             },

@@ -40,7 +40,7 @@ def openai_error_attributes(exception, request_args):
         "vendor": "openAI",
         "ingest_source": "Python",
         "response.organization": getattr(exception, "organization", ""),
-        "response.number_of_messages": number_of_messages if number_of_messages > 0 else "",
+        "response.number_of_messages": number_of_messages,
         "status_code": getattr(exception, "http_status", ""),
         "error.message": getattr(exception, "_message", ""),
         "error.code": getattr(getattr(exception, "error", ""), "code", ""),

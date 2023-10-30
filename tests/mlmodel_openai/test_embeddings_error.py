@@ -90,10 +90,6 @@ def test_embeddings_invalid_request_error_no_model():
 @validate_span_events(
     exact_agents={
         "error.message": "The model `does-not-exist` does not exist",
-    }
-)
-@validate_span_events(
-    exact_agents={
         "http.statusCode": 404,
     }
 )
@@ -150,11 +146,7 @@ def test_embeddings_authentication_error(monkeypatch):
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys."
-    }
-)
-@validate_span_events(
-    exact_agents={
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
         "http.statusCode": 401,
     }
 )
@@ -216,13 +208,13 @@ def test_embeddings_invalid_request_error_no_model_async(loop):
             "vendor": "openAI",
             "ingest_source": "Python",
             "error.code": "model_not_found",
-            "status_code": 404,
         },
     },
 )
 @validate_span_events(
     exact_agents={
         "error.message": "The model `does-not-exist` does not exist",
+        "http.statusCode": 404,
     }
 )
 @background_task()
@@ -273,13 +265,13 @@ def test_embeddings_authentication_error_async(loop, monkeypatch):
             "request.model": "text-embedding-ada-002",
             "vendor": "openAI",
             "ingest_source": "Python",
-            "status_code": 401,
         },
     },
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys."
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "http.statusCode": 401,
     }
 )
 @background_task()

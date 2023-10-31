@@ -40,6 +40,18 @@ RESPONSES = {
             }
         },
     ),
+    "Embedded: Invalid API key.": (
+        {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
+        401,
+        {
+            "error": {
+                "message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+                "type": "invalid_request_error",
+                "param": "null",
+                "code": "invalid_api_key",
+            }
+        },
+    ),
     "Model does not exist.": (
         {
             "Content-Type": "application/json",

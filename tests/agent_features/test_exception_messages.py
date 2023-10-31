@@ -100,7 +100,6 @@ def test_py2_transaction_exception_message_bytes_implicit_encoding_non_english()
     MESSAGE IS WRONG. We do not expect it to work now, or in the future.
     """
     try:
-
         # Bytes literal with non-ascii compatible characters only allowed in
         # python 2
 
@@ -132,7 +131,6 @@ def test_py2_transaction_exception_message_bytes_utf8_encoding_non_english():
     encoding is also utf-8.
     """
     try:
-
         # Bytes literal with non-ascii compatible characters only allowed in
         # python 2
 
@@ -257,7 +255,6 @@ def test_py2_application_exception_message_bytes_implicit_encoding_non_english()
     MESSAGE IS WRONG. We do not expect it to work now, or in the future.
     """
     try:
-
         # Bytes literal with non-ascii compatible characters only allowed in
         # python 2
 
@@ -291,7 +288,6 @@ def test_py2_application_exception_message_bytes_utf8_encoding_non_english():
     encoding is also utf-8.
     """
     try:
-
         # Bytes literal with non-ascii compatible characters only allowed in
         # python 2
 

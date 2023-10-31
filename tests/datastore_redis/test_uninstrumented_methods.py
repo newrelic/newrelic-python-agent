@@ -65,7 +65,6 @@ IGNORED_METHODS = {
     "get_property",
     "get_relation",
     "get_retry",
-    "hscan_iter",
     "index_name",
     "labels",
     "list_keys",

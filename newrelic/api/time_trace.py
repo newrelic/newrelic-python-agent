@@ -29,7 +29,6 @@ from newrelic.core.code_level_metrics import (
 )
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
-
 from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
@@ -260,6 +259,11 @@ class TimeTrace(object):
         module, name, fullnames, message_raw = parse_exc_info((exc, value, tb))
         fullname = fullnames[0]
 
+        # In case message is in JSON format for OpenAI models
+        # this will result in a "cleaner" message format
+        if getattr(value, "_nr_message", None):
+            message_raw = value._nr_message
+
         # Check to see if we need to strip the message before recording it.
 
         if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
@@ -422,23 +426,32 @@ class TimeTrace(object):
                         input_attributes = {}
                         input_attributes.update(transaction._custom_params)
                         input_attributes.update(attributes)
-                        error_group_name_raw = settings.error_collector.error_group_callback(value, {
-                            "traceback": tb,
-                            "error.class": exc,
-                            "error.message": message_raw,
-                            "error.expected": is_expected,
-                            "custom_params": input_attributes,
-                            "transactionName": getattr(transaction, "name", None),
-                            "response.status": getattr(transaction, "_response_code", None),
-                            "request.method": getattr(transaction, "_request_method", None),
-                            "request.uri": getattr(transaction, "_request_uri", None),
-                        })
+                        error_group_name_raw = settings.error_collector.error_group_callback(
+                            value,
+                            {
+                                "traceback": tb,
+                                "error.class": exc,
+                                "error.message": message_raw,
+                                "error.expected": is_expected,
+                                "custom_params": input_attributes,
+                                "transactionName": getattr(transaction, "name", None),
+                                "response.status": getattr(transaction, "_response_code", None),
+                                "request.method": getattr(transaction, "_request_method", None),
+                                "request.uri": getattr(transaction, "_request_uri", None),
+                            },
+                        )
                         if error_group_name_raw:
                             _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
                             if error_group_name is None or not isinstance(error_group_name, six.string_types):
-                                raise ValueError("Invalid attribute value for error.group.name. Expected string, got: %s" % repr(error_group_name_raw))
+                                raise ValueError(
+                                    "Invalid attribute value for error.group.name. Expected string, got: %s"
+                                    % repr(error_group_name_raw)
+                                )
                     except Exception:
-                        _logger.error("Encountered error when calling error group callback:\n%s", "".join(traceback.format_exception(*sys.exc_info())))
+                        _logger.error(
+                            "Encountered error when calling error group callback:\n%s",
+                            "".join(traceback.format_exception(*sys.exc_info())),
+                        )
                         error_group_name = None
 
             transaction._create_error_node(
@@ -595,13 +608,11 @@ class TimeTrace(object):
     def process_child(self, node, is_async):
         self.children.append(node)
         if is_async:
-
             # record the lowest start time
             self.min_child_start_time = min(self.min_child_start_time, node.start_time)
 
             # if there are no children running, finalize exclusive time
             if self.child_count == len(self.children):
-
                 exclusive_duration = node.end_time - self.min_child_start_time
 
                 self.update_async_exclusive_time(self.min_child_start_time, exclusive_duration)

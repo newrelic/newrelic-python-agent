@@ -14,11 +14,7 @@
 
 import openai
 import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    override_application_settings,
-    reset_core_stats_engine,
-)
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
@@ -27,19 +23,10 @@ from testing_support.validators.validate_span_events import validate_span_events
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
-enabled_ml_settings = {
-    "machine_learning.enabled": True,
-    "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": True,
-    "error_collector.ignore_status_codes": set(),
-}
-
-
 # Sync tests:
 
 
 # No model provided
-@override_application_settings(enabled_ml_settings)
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
@@ -70,7 +57,6 @@ def test_embeddings_invalid_request_error_no_model():
 
 
 # Invalid model provided
-@override_application_settings(enabled_ml_settings)
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
@@ -101,7 +87,6 @@ def test_embeddings_invalid_request_error_invalid_model():
 
 
 # No api_key provided
-@override_application_settings(enabled_ml_settings)
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
@@ -129,7 +114,6 @@ def test_embeddings_authentication_error(monkeypatch):
 
 
 # Wrong api_key provided
-@override_application_settings(enabled_ml_settings)
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
@@ -162,7 +146,6 @@ def test_embeddings_wrong_api_key_error(monkeypatch):
 
 
 # No model provided
-@override_application_settings(enabled_ml_settings)
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
@@ -195,7 +178,6 @@ def test_embeddings_invalid_request_error_no_model_async(loop):
 
 
 # Invalid model provided
-@override_application_settings(enabled_ml_settings)
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
@@ -225,7 +207,6 @@ def test_embeddings_invalid_request_error_invalid_model_async(loop):
 
 
 # No api_key provided
-@override_application_settings(enabled_ml_settings)
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
@@ -253,7 +234,6 @@ def test_embeddings_authentication_error_async(loop, monkeypatch):
 
 
 # Wrong api_key provided
-@override_application_settings(enabled_ml_settings)
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(

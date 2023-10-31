@@ -26,12 +26,18 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import notice_error
 
-UNICODE_MESSAGE = "I💜🐍"
-UNICODE_ENGLISH = "I love python"
-BYTES_ENGLISH = b"I love python"
-BYTES_UTF8_ENCODED = b"I\xf0\x9f\x92\x9c\xf0\x9f\x90\x8d"
-INCORRECTLY_DECODED_BYTES_PY2 = "I\u00f0\u009f\u0092\u009c\u00f0\u009f\u0090\u008d"
-INCORRECTLY_DECODED_BYTES_PY3 = "b'I\\xf0\\x9f\\x92\\x9c\\xf0\\x9f\\x90\\x8d'"
+# Turn off black formatting for this section of the code.
+# While Python 2 has been EOL'd since 2020, New Relic still
+# supports it and therefore these messages need to keep this
+# specific formatting.
+# fmt: off
+UNICODE_MESSAGE = u'I💜🐍'
+UNICODE_ENGLISH = u'I love python'
+BYTES_ENGLISH = b'I love python'
+BYTES_UTF8_ENCODED = b'I\xf0\x9f\x92\x9c\xf0\x9f\x90\x8d'
+INCORRECTLY_DECODED_BYTES_PY2 = u'I\u00f0\u009f\u0092\u009c\u00f0\u009f\u0090\u008d'
+INCORRECTLY_DECODED_BYTES_PY3 = u"b'I\\xf0\\x9f\\x92\\x9c\\xf0\\x9f\\x90\\x8d'"
+# fmt: on
 # =================== Exception messages during transaction ====================
 
 # ---------------- Python 2

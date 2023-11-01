@@ -27,7 +27,6 @@ from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
-from newrelic.core.attribute import MAX_LOG_MESSAGE_LENGTH
 from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)

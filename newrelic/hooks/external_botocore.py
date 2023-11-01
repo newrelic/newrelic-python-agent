@@ -56,19 +56,6 @@ def extract(argument_names, default=None):
     return extractor_list
 
 
-def check_rate_limit_header(response_headers, header_name, is_int):
-    if not response_headers:
-        return ""
-
-    if header_name in response_headers:
-        header_value = response_headers.get(header_name)
-        if is_int:
-            header_value = int(header_value)
-        return header_value
-    else:
-        return ""
-
-
 def create_chat_completion_message_event(
     transaction,
     app_name,
@@ -98,12 +85,11 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction._transaction_id,
-            "content": message.get("content", "")[:MAX_LOG_MESSAGE_LENGTH],
+            "content": message.get("content", ""),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
-            "request.model": request_model,
-            "response.model": request_model,  # Duplicate data required by the UI
+            "response.model": request_model,
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
@@ -131,7 +117,7 @@ def extract_bedrock_titan_model(request_body, response_body):
         "response.usage.completion_tokens": completion_tokens,
         "response.usage.prompt_tokens": input_tokens,
         "response.usage.total_tokens": total_tokens,
-        "number_of_messages": len(message_list),
+        "response.number_of_messages": len(message_list),
     }
     return message_list, chat_completion_summary_dict
 
@@ -149,7 +135,7 @@ def extract_bedrock_ai21_j2_model(request_body, response_body):
         "request.max_tokens": request_body.get("maxTokens", ""),
         "request.temperature": request_body.get("temperature", ""),
         "response.choices.finish_reason": response_body["completions"][0]["finishReason"]["reason"],
-        "number_of_messages": len(message_list),
+        "response.number_of_messages": len(message_list),
         "response_id": str(response_body.get("id", "")),
     }
     return message_list, chat_completion_summary_dict

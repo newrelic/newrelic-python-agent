@@ -70,11 +70,13 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
+    message_ids = []
     for index, message in enumerate(message_list):
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
         else:
             id_ = str(uuid.uuid4())  # No response IDs, use random UUID
+        message_ids.append(id_)
 
         chat_completion_message_dict = {
             "id": id_,
@@ -93,6 +95,8 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
         }
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
+
+    return message_ids
 
 
 def extract_bedrock_titan_model(request_body, response_body):
@@ -228,7 +232,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
-    create_chat_completion_message_event(
+    message_ids = create_chat_completion_message_event(
         transaction=transaction,
         app_name=settings.app_name,
         message_list=message_list,
@@ -240,6 +244,10 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         conversation_id=conversation_id,
         response_id=response_id,
     )
+
+    if not hasattr(transaction, "_nr_message_ids"):
+        transaction._nr_message_ids = {}
+    transaction._nr_message_ids[conversation_id] = message_ids  # (conversation_id:UUID, ids:dict)
 
     return response
 

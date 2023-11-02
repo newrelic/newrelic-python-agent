@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import sys
+import warnings
 
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.hooks.mlmodel_sklearn import _nr_instrument_model
 
@@ -33,3 +35,35 @@ def wrap_mlmodel(model, name=None, version=None, feature_names=None, label_names
         model._nr_wrapped_label_names = label_names
     if metadata:
         model._nr_wrapped_metadata = metadata
+
+
+def get_ai_message_ids(response_id=None, conversation_id=None):
+    transaction = current_transaction()
+    # Open AI:
+    if response_id and transaction:
+        nr_message_ids = getattr(transaction, "_nr_message_ids", {})
+        message_id_info = nr_message_ids.pop(response_id, ())
+
+        if not message_id_info:
+            warnings.warn("No message ids found for %s" % response_id)
+            return []
+
+        # Change to "conversation_id, ids = message_id_info" for Bedrock
+        conversation_id, request_id, ids = message_id_info
+
+        return [{"conversation_id": conversation_id, "request_id": request_id, "message_id": _id} for _id in ids]
+    # Bedrock:
+    elif conversation_id and transaction:
+        nr_message_ids = getattr(transaction, "_nr_message_ids", {})
+        message_id_info = nr_message_ids.pop(conversation_id, ())
+
+        if not message_id_info:
+            warnings.warn("No message ids found for %s" % conversation_id)
+            return []
+
+        # Change to "conversation_id, ids = message_id_info" for Bedrock
+        conversation_id, ids = message_id_info
+
+        return [{"conversation_id": conversation_id, "message_id": _id} for _id in ids]
+    warnings.warn("No message ids found. get_ai_message_ids must be called within the scope of a transaction.")
+    return []

@@ -27,7 +27,6 @@ from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
-from newrelic.core.attribute import MAX_LOG_MESSAGE_LENGTH
 from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
@@ -56,19 +55,6 @@ def extract(argument_names, default=None):
     return extractor_list
 
 
-def check_rate_limit_header(response_headers, header_name, is_int):
-    if not response_headers:
-        return ""
-
-    if header_name in response_headers:
-        header_value = response_headers.get(header_name)
-        if is_int:
-            header_value = int(header_value)
-        return header_value
-    else:
-        return ""
-
-
 def create_chat_completion_message_event(
     transaction,
     app_name,
@@ -79,24 +65,30 @@ def create_chat_completion_message_event(
     request_model,
     request_id,
     conversation_id,
+    response_id="",
 ):
     if not transaction:
         return
 
     for index, message in enumerate(message_list):
+        if response_id:
+            id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
+        else:
+            id_ = str(uuid.uuid4())  # No response IDs, use random UUID
+
         chat_completion_message_dict = {
-            "id": str(uuid.uuid4()),  # No response IDs, use random UUID
+            "id": id_,
             "appName": app_name,
             "conversation_id": conversation_id,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction._transaction_id,
-            "content": message.get("content", "")[:MAX_LOG_MESSAGE_LENGTH],
+            "content": message.get("content", ""),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
-            "request.model": request_model,
+            "response.model": request_model,
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
@@ -124,7 +116,7 @@ def extract_bedrock_titan_model(request_body, response_body):
         "response.usage.completion_tokens": completion_tokens,
         "response.usage.prompt_tokens": input_tokens,
         "response.usage.total_tokens": total_tokens,
-        "number_of_messages": len(message_list),
+        "response.number_of_messages": len(message_list),
     }
     return message_list, chat_completion_summary_dict
 
@@ -142,7 +134,8 @@ def extract_bedrock_ai21_j2_model(request_body, response_body):
         "request.max_tokens": request_body.get("maxTokens", ""),
         "request.temperature": request_body.get("temperature", ""),
         "response.choices.finish_reason": response_body["completions"][0]["finishReason"]["reason"],
-        "number_of_messages": len(message_list),
+        "response.number_of_messages": len(message_list),
+        "response_id": str(response_body.get("id", "")),
     }
     return message_list, chat_completion_summary_dict
 
@@ -160,7 +153,8 @@ def extract_bedrock_cohere_model(request_body, response_body):
         "request.max_tokens": request_body.get("max_tokens", ""),
         "request.temperature": request_body.get("temperature", ""),
         "response.choices.finish_reason": response_body["generations"][0]["finish_reason"],
-        "number_of_messages": len(message_list),
+        "response.number_of_messages": len(message_list),
+        "response_id": str(response_body.get("id", "")),
     }
     return message_list, chat_completion_summary_dict
 
@@ -233,6 +227,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     message_list, chat_completion_summary_dict = extractor(request_body, response_body)
+    response_id = chat_completion_summary_dict.get("response_id", "")
     chat_completion_summary_dict.update(
         {
             "vendor": "bedrock",
@@ -247,21 +242,23 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
             "request_id": request_id,
             "duration": ft.duration,
             "request.model": model,
+            "response.model": model,  # Duplicate data required by the UI
         }
     )
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
     create_chat_completion_message_event(
-        transaction,
-        settings.app_name,
-        message_list,
-        chat_completion_id,
-        span_id,
-        trace_id,
-        model,
-        request_id,
-        conversation_id,
+        transaction=transaction,
+        app_name=settings.app_name,
+        message_list=message_list,
+        chat_completion_id=chat_completion_id,
+        span_id=span_id,
+        trace_id=trace_id,
+        request_model=model,
+        request_id=request_id,
+        conversation_id=conversation_id,
+        response_id=response_id,
     )
 
     return response

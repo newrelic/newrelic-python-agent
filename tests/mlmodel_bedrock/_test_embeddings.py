@@ -1,4 +1,4 @@
-embedding_expected_events = {
+embedding_payload_templates = {
     "amazon.titan-embed-text-v1": '{ "inputText": "%s" }',
     "amazon.titan-embed-g1-text-02": '{ "inputText": "%s" }',
 }

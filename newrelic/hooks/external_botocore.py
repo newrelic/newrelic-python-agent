@@ -95,12 +95,12 @@ def create_chat_completion_message_event(
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
 
-def extract_bedrock_titan_model(request_body, response_body):
+def extract_bedrock_titan_text_model(request_body, response_body):
     response_body = json.loads(response_body)
     request_body = json.loads(request_body)
 
     input_tokens = response_body["inputTextTokenCount"]
-    completion_tokens = sum(result["tokenCount"] for result in response_body["results"])
+    completion_tokens = sum(result["tokenCount"] for result in response_body.get("results", []))
     total_tokens = input_tokens + completion_tokens
 
     request_config = request_body.get("textGenerationConfig", {})
@@ -119,6 +119,20 @@ def extract_bedrock_titan_model(request_body, response_body):
         "response.number_of_messages": len(message_list),
     }
     return message_list, chat_completion_summary_dict
+
+
+def extract_bedrock_titan_embedding_model(request_body, response_body):
+    response_body = json.loads(response_body)
+    request_body = json.loads(request_body)
+
+    input_tokens = response_body["inputTextTokenCount"]
+
+    embedding_dict = {
+        "input": request_body.get("inputText", ""),
+        "response.usage.prompt_tokens": input_tokens,
+        "response.usage.total_tokens": input_tokens,
+    }
+    return embedding_dict
 
 
 def extract_bedrock_ai21_j2_model(request_body, response_body):
@@ -159,11 +173,12 @@ def extract_bedrock_cohere_model(request_body, response_body):
     return message_list, chat_completion_summary_dict
 
 
-MODEL_EXTRACTORS = {
-    "amazon.titan": extract_bedrock_titan_model,
-    "ai21.j2": extract_bedrock_ai21_j2_model,
-    "cohere": extract_bedrock_cohere_model,
-}
+MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
+    ("amazon.titan-embed", extract_bedrock_titan_embedding_model),
+    ("amazon.titan", extract_bedrock_titan_text_model),
+    ("ai21.j2", extract_bedrock_ai21_j2_model),
+    ("cohere", extract_bedrock_cohere_model),
+]
 
 
 @function_wrapper
@@ -194,7 +209,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         return response
 
     # Determine extractor by model type
-    for extractor_name, extractor in MODEL_EXTRACTORS.items():
+    for extractor_name, extractor in MODEL_EXTRACTORS:
         if model.startswith(extractor_name):
             break
     else:
@@ -213,7 +228,45 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     # Read and replace response streaming bodies
     response_body = response["body"].read()
     response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
+    response_headers = response["ResponseMetadata"]["HTTPHeaders"]
 
+    if model.startswith("amazon.titan-embed"):  # Only available embedding models
+        handle_embedding_event(instance, transaction, extractor, model, response_body, response_headers, request_body, ft.duration)
+    else:
+        handle_chat_completion_event(instance, transaction, extractor, model, response_body, response_headers, request_body, ft.duration)
+
+    return response
+
+def handle_embedding_event(client, transaction, extractor, model, response_body, response_headers, request_body, duration):
+    embedding_id = str(uuid.uuid4())
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+
+    request_id = response_headers.get("x-amzn-requestid", "")
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+
+    embedding_dict = extractor(request_body, response_body)
+
+    embedding_dict.update({
+        "vendor": "bedrock",
+        "ingest_source": "Python",
+        "id": embedding_id,
+        "appName": settings.app_name,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "request_id": request_id,
+        "transaction_id": transaction._transaction_id,
+        "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
+        "duration": duration,
+        "request.model": model,
+        "response.model": model,
+    })
+
+    transaction.record_ml_event("LlmEmbedding", embedding_dict)
+
+
+def handle_chat_completion_event(client, transaction, extractor, model, response_body, response_headers, request_body, duration):
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("conversation_id", "")
 
@@ -222,7 +275,6 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
 
-    response_headers = response["ResponseMetadata"]["HTTPHeaders"]
     request_id = response_headers.get("x-amzn-requestid", "")
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
@@ -232,7 +284,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         {
             "vendor": "bedrock",
             "ingest_source": "Python",
-            "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
+            "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "id": chat_completion_id,
             "appName": settings.app_name,
             "conversation_id": conversation_id,
@@ -240,7 +292,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
             "trace_id": trace_id,
             "transaction_id": transaction._transaction_id,
             "request_id": request_id,
-            "duration": ft.duration,
+            "duration": duration,
             "request.model": model,
             "response.model": model,  # Duplicate data required by the UI
         }
@@ -260,8 +312,6 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         conversation_id=conversation_id,
         response_id=response_id,
     )
-
-    return response
 
 
 CUSTOM_TRACE_POINTS = {

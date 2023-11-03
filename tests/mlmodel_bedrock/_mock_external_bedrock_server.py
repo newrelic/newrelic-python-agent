@@ -42,6 +42,20 @@ RESPONSES = {
             ],
         },
     ],
+    "cohere.command-text-v14::What is 212 degrees Fahrenheit converted to Celsius?": [
+        {"content-type": "application/json", "x-amzn-requestid": "c5188fb5-dc58-4cbe-948d-af173c69ce0d"},
+        {
+            "generations": [
+                {
+                    "finish_reason": "MAX_TOKENS",
+                    "id": "0730f5c0-9a49-4f35-af94-cf8f77327740",
+                    "text": " To convert 212 degrees Fahrenheit to Celsius, we can use the conversion factor that Celsius is equal to (Fahrenheit - 32) x 5/9. \\n\\nApplying this formula, we have:\\n212Â°F = (212Â°F - 32) x 5/9\\n= (180) x 5/9\\n= 100Â°C.\\n\\nTherefore, 212 degrees F",
+                }
+            ],
+            "id": "a9cc8ce6-50b6-40b6-bf77-cf24561d8de7",
+            "prompt": "What is 212 degrees Fahrenheit converted to Celsius?",
+        },
+    ],
     "ai21.j2-mid-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"content-type": "application/json", "x-amzn-requestid": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e"},
         {

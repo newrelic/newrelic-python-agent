@@ -29,7 +29,7 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 
-from _test_embeddings import embedding_expected_events, embedding_payload_templates
+from _test_bedrock_embeddings import embedding_expected_events, embedding_payload_templates
 
 disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
 

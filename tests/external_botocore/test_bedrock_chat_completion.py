@@ -17,7 +17,7 @@ import json
 from io import BytesIO
 
 import pytest
-from _test_chat_completion import (
+from _test_bedrock_chat_completion import (
     chat_completion_expected_events,
     chat_completion_payload_templates,
 )

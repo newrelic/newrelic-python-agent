@@ -140,9 +140,29 @@ def extract_bedrock_ai21_j2_model(request_body, response_body):
     return message_list, chat_completion_summary_dict
 
 
+def extract_bedrock_cohere_model(request_body, response_body):
+    response_body = json.loads(response_body)
+    request_body = json.loads(request_body)
+
+    message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+    message_list.extend(
+        {"role": "assistant", "content": result["text"]} for result in response_body.get("generations", [])
+    )
+
+    chat_completion_summary_dict = {
+        "request.max_tokens": request_body.get("max_tokens", ""),
+        "request.temperature": request_body.get("temperature", ""),
+        "response.choices.finish_reason": response_body["generations"][0]["finish_reason"],
+        "response.number_of_messages": len(message_list),
+        "response_id": str(response_body.get("id", "")),
+    }
+    return message_list, chat_completion_summary_dict
+
+
 MODEL_EXTRACTORS = {
     "amazon.titan": extract_bedrock_titan_model,
     "ai21.j2": extract_bedrock_ai21_j2_model,
+    "cohere": extract_bedrock_cohere_model,
 }
 
 

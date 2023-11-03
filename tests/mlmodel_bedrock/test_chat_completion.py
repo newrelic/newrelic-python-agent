@@ -52,7 +52,7 @@ def is_file_payload(request):
     params=[
         "amazon.titan-text-express-v1",
         "ai21.j2-mid-v1",
-        # ("anthropic.claude-instant-v1", '{"prompt": "Human: {prompt}\n\nAssistant:", "max_tokens_to_sample": {max_tokens:d}}'),
+        "anthropic.claude-instant-v1",
         "cohere.command-text-v14",
     ],
 )

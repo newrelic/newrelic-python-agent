@@ -96,7 +96,7 @@ def create_chat_completion_message_event(
         }
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
-    return message_ids
+    return (conversation_id, message_ids) if not response_id else (conversation_id, response_id, message_ids)
 
 
 def extract_bedrock_titan_model(request_body, response_body):
@@ -247,7 +247,10 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
 
     if not hasattr(transaction, "_nr_message_ids"):
         transaction._nr_message_ids = {}
-    transaction._nr_message_ids[conversation_id] = message_ids  # (conversation_id:UUID, ids:dict)
+    if not response_id:
+        transaction._nr_message_ids["bedrock_key"] = message_ids
+    else:
+        transaction._nr_message_ids[response_id] = message_ids
 
     return response
 

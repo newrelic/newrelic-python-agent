@@ -25,6 +25,8 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_available_fixture,
 )
 
+from newrelic.api.time_trace import current_trace
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _default_settings = {
@@ -133,3 +135,16 @@ def wrap_botocore_client_BaseClient__make_api_call(wrapped, instance, args, kwar
 
 def bind_make_api_call_params(operation_name, api_params):
     return api_params
+
+
+@pytest.fixture(scope="session")
+def set_trace_info():
+    def _set_trace_info():
+        txn = current_transaction()
+        if txn:
+            txn._trace_id = "trace-id"
+        trace = current_trace()
+        if trace:
+            trace.guid = "span-id"
+
+    return _set_trace_info

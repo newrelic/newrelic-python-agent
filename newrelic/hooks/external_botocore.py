@@ -55,6 +55,38 @@ def extract(argument_names, default=None):
     return extractor_list
 
 
+def bedrock_error_attributes(exception, request_args):
+
+    response_body = json.loads(request_args.get("body", ""))
+    # "api_key_last_four_digits": api_key_last_four_digits,
+    # "request.model": request_args.get("model") or request_args.get("engine") or "",
+    # "request.temperature": request_args.get("temperature", ""),
+    # "request.max_tokens": request_args.get("max_tokens", ""),
+    # "vendor": "openAI",
+    # "ingest_source": "Python",
+    # "response.organization": getattr(exception, "organization", ""),
+    # "response.number_of_messages": number_of_messages,
+    # "http.statusCode": getattr(exception, "http_status", ""),
+    # "error.message": getattr(exception, "_message", ""),
+    # "error.code": getattr(getattr(exception, "error", ""), "code", ""),
+    # "error.param": getattr(exception, "param", ""),
+
+    breakpoint()
+    error_attributes = {
+        "request.id": exception.response.get("ResponseMetadata", "").get("RequestId", ""),
+        "api_key_last_four_digits": None,
+        "request.model": request_args.get("modelId", ""),
+        "request.temperature": response_body.get("textGenerationConfig", "").get("temperature", ""),
+        "request.max_tokens": response_body.get("textGenerationConfig", "").get("maxTokenCount", ""),
+        "vendor": "Bedrock",
+        "ingest_source": "Python",
+        "http.statusCode": exception.response.get("ResponseMetadata", "").get("HTTPStatusCode", ""),
+        "error.message": exception.response.get("Error", "").get("Message", ""),
+        "error.code": exception.response.get("Error", "").get("Code", ""),
+    }
+    return error_attributes
+
+
 def create_chat_completion_message_event(
     transaction,
     app_name,
@@ -217,7 +249,16 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
-        response = wrapped(*args, **kwargs)
+        try:
+            response = wrapped(*args, **kwargs)
+        except Exception as exc:
+            breakpoint()
+            error_attributes = bedrock_error_attributes(exc, kwargs)
+            # exc._nr_message = error_attributes.pop("error.message")
+            ft.notice_error(
+                attributes=error_attributes,
+            )
+            raise
 
     if not response:
         return response

@@ -9,7 +9,7 @@ embedding_expected_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": None,
                 "span_id": "span-id",
                 "trace_id": "trace-id",
@@ -31,7 +31,7 @@ embedding_expected_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": None,
                 "span_id": "span-id",
                 "trace_id": "trace-id",

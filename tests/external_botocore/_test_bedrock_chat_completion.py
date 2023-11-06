@@ -25,7 +25,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionSummary"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "transaction_id": None,
                 "span_id": "span-id",
@@ -50,7 +50,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "660d4de9-6804-460e-8556-4ab2a019d1e3",
                 "span_id": "span-id",
@@ -69,7 +69,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "660d4de9-6804-460e-8556-4ab2a019d1e3",
                 "span_id": "span-id",
@@ -90,7 +90,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionSummary"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "transaction_id": None,
                 "span_id": "span-id",
@@ -113,7 +113,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": "1234-0",
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e",
                 "span_id": "span-id",
@@ -132,7 +132,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": "1234-1",
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e",
                 "span_id": "span-id",
@@ -153,7 +153,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionSummary"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "transaction_id": None,
                 "span_id": "span-id",
@@ -175,7 +175,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "f354b9a7-9eac-4f50-a8d7-7d5d23566176",
                 "span_id": "span-id",
@@ -194,7 +194,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "f354b9a7-9eac-4f50-a8d7-7d5d23566176",
                 "span_id": "span-id",
@@ -215,7 +215,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionSummary"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "transaction_id": None,
                 "span_id": "span-id",
@@ -238,7 +238,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "c5188fb5-dc58-4cbe-948d-af173c69ce0d",
                 "span_id": "span-id",
@@ -257,7 +257,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "c5188fb5-dc58-4cbe-948d-af173c69ce0d",
                 "span_id": "span-id",

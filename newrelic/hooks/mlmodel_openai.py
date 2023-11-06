@@ -216,7 +216,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     if choices:
         message_list.extend([choices[0].message])
 
-    create_chat_completion_message_event(
+    message_ids = create_chat_completion_message_event(
         transaction,
         settings.app_name,
         message_list,
@@ -228,6 +228,11 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         request_id,
         conversation_id,
     )
+
+    # Cache message ids on transaction for retrieval after open ai call completion.
+    if not hasattr(transaction, "_nr_message_ids"):
+        transaction._nr_message_ids = {}
+    transaction._nr_message_ids[response_id] = message_ids
 
     return response
 
@@ -260,9 +265,12 @@ def create_chat_completion_message_event(
     request_id,
     conversation_id,
 ):
+    message_ids = []
     for index, message in enumerate(message_list):
+        message_id = "%s-%s" % (response_id, index)
+        message_ids.append(message_id)
         chat_completion_message_dict = {
-            "id": "%s-%s" % (response_id, index),
+            "id": message_id,
             "appName": app_name,
             "conversation_id": conversation_id,
             "request_id": request_id,
@@ -277,6 +285,7 @@ def create_chat_completion_message_event(
             "vendor": "openAI",
         }
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
+    return (conversation_id, request_id, message_ids)
 
 
 async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
@@ -456,7 +465,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     if choices:
         message_list.extend([choices[0].message])
 
-    create_chat_completion_message_event(
+    message_ids = create_chat_completion_message_event(
         transaction,
         settings.app_name,
         message_list,
@@ -468,6 +477,11 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
         request_id,
         conversation_id,
     )
+
+    # Cache message ids on transaction for retrieval after open ai call completion.
+    if not hasattr(transaction, "_nr_message_ids"):
+        transaction._nr_message_ids = {}
+    transaction._nr_message_ids[response_id] = message_ids
 
     return response
 

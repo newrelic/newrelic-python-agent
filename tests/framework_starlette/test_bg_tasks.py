@@ -15,7 +15,6 @@
 import sys
 
 import pytest
-from starlette import __version__
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
@@ -23,7 +22,9 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-starlette_version = tuple(int(x) for x in __version__.split("."))
+from newrelic.common.package_version_utils import get_package_version_tuple
+
+starlette_version = get_package_version_tuple("starlette")[:3]
 
 try:
     from starlette.middleware import Middleware  # noqa: F401

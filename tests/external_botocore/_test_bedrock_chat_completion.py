@@ -139,7 +139,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionSummary"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "transaction_id": None,
                 "span_id": "span-id",
@@ -161,7 +161,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "f354b9a7-9eac-4f50-a8d7-7d5d23566176",
                 "span_id": "span-id",
@@ -180,7 +180,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (mlmodel_bedrock)",
+                "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
                 "request_id": "f354b9a7-9eac-4f50-a8d7-7d5d23566176",
                 "span_id": "span-id",

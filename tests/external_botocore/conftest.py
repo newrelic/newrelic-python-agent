@@ -28,6 +28,7 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -50,7 +51,7 @@ BEDROCK_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)
 BEDROCK_AUDIT_LOG_CONTENTS = {}
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(scope="session")
 def bedrock_server():
     """
     This fixture will either create a mocked backend for testing purposes, or will
@@ -61,6 +62,9 @@ def bedrock_server():
     import boto3
 
     from newrelic.core.config import _environ_as_bool
+
+    if get_package_version_tuple("botocore") < (1, 31, 57):
+        pytest.skip(reason="Bedrock Runtime not available.")
 
     if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_BEDROCK_RESPONSES", False):
         # Use mocked Bedrock backend and prerecorded responses

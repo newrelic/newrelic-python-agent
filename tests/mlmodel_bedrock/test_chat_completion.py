@@ -33,26 +33,17 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import add_custom_attribute, current_transaction
 
 
-def set_trace_info():
-    txn = current_transaction()
-    if txn:
-        txn._trace_id = "trace-id"
-    trace = current_trace()
-    if trace:
-        trace.guid = "span-id"
-
-
 @pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])
 def is_file_payload(request):
     return request.param
 
 
 @pytest.fixture(
-    scope="session",
+    scope="module",
     params=[
         "amazon.titan-text-express-v1",
         "ai21.j2-mid-v1",
-        # ("anthropic.claude-instant-v1", '{"prompt": "Human: {prompt}\n\nAssistant:", "max_tokens_to_sample": {max_tokens:d}}'),
+        "anthropic.claude-instant-v1",
         "cohere.command-text-v14",
     ],
 )
@@ -60,7 +51,7 @@ def model_id(request):
     return request.param
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def exercise_model(bedrock_server, model_id, is_file_payload):
     payload_template = chat_completion_payload_templates[model_id]
 
@@ -81,12 +72,12 @@ def exercise_model(bedrock_server, model_id, is_file_payload):
     return _exercise_model
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def expected_events(model_id):
     return chat_completion_expected_events[model_id]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def expected_events_no_convo_id(model_id):
     events = copy.deepcopy(chat_completion_expected_events[model_id])
     for event in events:
@@ -98,11 +89,18 @@ _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted
 
 
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn(exercise_model, expected_events):
+def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_model, expected_events):
     @validate_ml_events(expected_events)
     # One summary event, one user message, and one response message from the assistant
     @validate_ml_event_count(count=3)
-    @background_task()
+    # @validate_transaction_metrics(
+    #     name="test_bedrock_chat_completion_in_txn_with_convo_id",
+    #     custom_metrics=[
+    #         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    #     ],
+    #     background_task=True,
+    # )
+    @background_task(name="test_bedrock_chat_completion_in_txn_with_convo_id")
     def _test():
         set_trace_info()
         add_custom_attribute("conversation_id", "my-awesome-id")
@@ -112,11 +110,18 @@ def test_bedrock_chat_completion_in_txn(exercise_model, expected_events):
 
 
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_no_convo_id(exercise_model, expected_events_no_convo_id):
+def test_bedrock_chat_completion_in_txn_no_convo_id(set_trace_info, exercise_model, expected_events_no_convo_id):
     @validate_ml_events(expected_events_no_convo_id)
     # One summary event, one user message, and one response message from the assistant
     @validate_ml_event_count(count=3)
-    @background_task()
+    # @validate_transaction_metrics(
+    #     name="test_bedrock_chat_completion_in_txn_no_convo_id",
+    #     custom_metrics=[
+    #         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    #     ],
+    #     background_task=True,
+    # )
+    @background_task(name="test_bedrock_chat_completion_in_txn_no_convo_id")
     def _test():
         set_trace_info()
         exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
@@ -126,7 +131,7 @@ def test_bedrock_chat_completion_in_txn_no_convo_id(exercise_model, expected_eve
 
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
-def test_bedrock_chat_completion_outside_txn(exercise_model):
+def test_bedrock_chat_completion_outside_txn(set_trace_info, exercise_model):
     set_trace_info()
     add_custom_attribute("conversation_id", "my-awesome-id")
     exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
@@ -138,6 +143,14 @@ disabled_ml_settings = {"machine_learning.enabled": False, "ml_insights_events.e
 @override_application_settings(disabled_ml_settings)
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
-def test_bedrock_chat_completion_disabled_settings(exercise_model):
+# @validate_transaction_metrics(
+#     name="test_bedrock_chat_completion_disabled_settings",
+#     custom_metrics=[
+#         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+#     ],
+#     background_task=True,
+# )
+@background_task(name="test_bedrock_chat_completion_disabled_settings")
+def test_bedrock_chat_completion_disabled_settings(set_trace_info, exercise_model):
     set_trace_info()
     exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)

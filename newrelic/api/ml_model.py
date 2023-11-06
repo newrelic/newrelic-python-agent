@@ -54,7 +54,7 @@ def get_ai_message_ids(response_id=None):
     # Bedrock with no response_id:
     elif transaction:
         nr_message_ids = getattr(transaction, "_nr_message_ids", {})
-        message_id_info = nr_message_ids.pop("bedrock_key", ())  # dict not necessary but will keep to remain consistent
+        message_id_info = nr_message_ids.pop("bedrock_key", ())  # dict not necessary but will use to remain consistent
 
         if not message_id_info:
             warnings.warn("No message ids found.")

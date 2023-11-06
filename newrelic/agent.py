@@ -153,6 +153,7 @@ from newrelic.api.message_transaction import (
 from newrelic.api.message_transaction import (
     wrap_message_transaction as __wrap_message_transaction,
 )
+from newrelic.api.ml_model import get_ai_message_ids as __get_ai_message_ids
 from newrelic.api.ml_model import wrap_mlmodel as __wrap_mlmodel
 from newrelic.api.profile_trace import ProfileTraceWrapper as __ProfileTraceWrapper
 from newrelic.api.profile_trace import profile_trace as __profile_trace
@@ -340,3 +341,4 @@ wrap_out_function = __wrap_api_call(__wrap_out_function, "wrap_out_function")
 insert_html_snippet = __wrap_api_call(__insert_html_snippet, "insert_html_snippet")
 verify_body_exists = __wrap_api_call(__verify_body_exists, "verify_body_exists")
 wrap_mlmodel = __wrap_api_call(__wrap_mlmodel, "wrap_mlmodel")
+get_ai_message_ids = __wrap_api_call(__get_ai_message_ids, "get_ai_message_ids")

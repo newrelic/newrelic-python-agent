@@ -119,6 +119,7 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
             response_headers, "x-ratelimit-remaining-requests", True
         ),
         "vendor": "openAI",
+        "ingest_source": "Python",
     }
 
     transaction.record_ml_event("LlmEmbedding", embedding_dict)
@@ -208,6 +209,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
             response_headers, "x-ratelimit-remaining-requests", True
         ),
         "vendor": "openAI",
+        "ingest_source": "Python",
         "response.number_of_messages": len(messages) + len(choices),
     }
 
@@ -275,6 +277,7 @@ def create_chat_completion_message_event(
             "sequence": index,
             "response.model": response_model,
             "vendor": "openAI",
+            "ingest_source": "Python",
         }
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
@@ -353,6 +356,7 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
             response_headers, "x-ratelimit-remaining-requests", True
         ),
         "vendor": "openAI",
+        "ingest_source": "Python",
     }
 
     transaction.record_ml_event("LlmEmbedding", embedding_dict)
@@ -449,6 +453,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
             response_headers, "x-ratelimit-remaining-requests", True
         ),
         "vendor": "openAI",
+        "ingest_source": "Python",
     }
 
     transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)

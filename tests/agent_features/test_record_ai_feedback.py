@@ -31,7 +31,7 @@ ai_feedback_all_args_recorded_events = [
             "conversation_id": "conversation_id",
             "ingest_source": "Python",
             "message": "message",
-            "metadata": "metadata"
+            "metadata": "metadata",
         },
     ),
 ]
@@ -42,7 +42,15 @@ def test_record_ai_feedback_all_args_supplied():
     @validate_ml_events(ai_feedback_all_args_recorded_events)
     @background_task()
     def _test():
-        record_ai_feedback(rating=1, message_id="message_id", category="informative", request_id="request_id", conversation_id="conversation_id", message="message", metadata="metadata")
+        record_ai_feedback(
+            rating=1,
+            message_id="message_id",
+            category="informative",
+            request_id="request_id",
+            conversation_id="conversation_id",
+            message="message",
+            metadata="metadata",
+        )
 
     _test()
 
@@ -59,7 +67,7 @@ ai_feedback_required_args_recorded_events = [
             "conversation_id": "",
             "ingest_source": "Python",
             "message": "",
-            "metadata": ""
+            "metadata": "",
         },
     ),
 ]
@@ -79,6 +87,14 @@ def test_record_ai_feedback_required_args_supplied():
 def test_record_ai_feedback_outside_txn():
     @validate_ml_event_count(count=0)
     def _test():
-        record_ai_feedback(rating=1, message_id="message_id", category="informative", request_id="request_id", conversation_id="conversation_id", message="message", metadata="metadata")
+        record_ai_feedback(
+            rating=1,
+            message_id="message_id",
+            category="informative",
+            request_id="request_id",
+            conversation_id="conversation_id",
+            message="message",
+            metadata="metadata",
+        )
 
     _test()

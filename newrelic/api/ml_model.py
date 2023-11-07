@@ -55,10 +55,14 @@ def get_ai_message_ids(response_id=None):
     return []
 
 
-def record_ai_feedback(message_id, rating, conversation_id=None, request_id=None, category=None, message=None, metadata=None):
+def record_ai_feedback(
+    message_id, rating, conversation_id=None, request_id=None, category=None, message=None, metadata=None
+):
     transaction = current_transaction()
     if not transaction:
-        warnings.warn("No message feedback events will be recorded. record_ai_feedback must be called within the scope of a transaction.")
+        warnings.warn(
+            "No message feedback events will be recorded. record_ai_feedback must be called within the scope of a transaction."
+        )
         return
 
     feedback_message_id = str(uuid.uuid4())

@@ -17,7 +17,7 @@ from testing_support.validators.validate_ml_event_count import validate_ml_event
 from testing_support.validators.validate_ml_events import validate_ml_events
 
 from newrelic.api.background_task import background_task
-from newrelic.api.ml_model import record_ai_feedback
+from newrelic.api.ml_model import record_ai_feedback_event
 
 ai_feedback_all_args_recorded_events = [
     (
@@ -38,11 +38,11 @@ ai_feedback_all_args_recorded_events = [
 
 
 @reset_core_stats_engine()
-def test_record_ai_feedback_all_args_supplied():
+def test_record_ai_feedback_event_all_args_supplied():
     @validate_ml_events(ai_feedback_all_args_recorded_events)
     @background_task()
     def _test():
-        record_ai_feedback(rating=1, message_id="message_id", category="informative", request_id="request_id", conversation_id="conversation_id", message="message", metadata="metadata")
+        record_ai_feedback_event(rating=1, message_id="message_id", category="informative", request_id="request_id", conversation_id="conversation_id", message="message", metadata="metadata")
 
     _test()
 
@@ -66,19 +66,19 @@ ai_feedback_required_args_recorded_events = [
 
 
 @reset_core_stats_engine()
-def test_record_ai_feedback_required_args_supplied():
+def test_record_ai_feedback_event_required_args_supplied():
     @validate_ml_events(ai_feedback_required_args_recorded_events)
     @background_task()
     def _test():
-        record_ai_feedback(message_id="message_id", rating=1)
+        record_ai_feedback_event(message_id="message_id", rating=1)
 
     _test()
 
 
 @reset_core_stats_engine()
-def test_record_ai_feedback_outside_txn():
+def test_record_ai_feedback_event_outside_txn():
     @validate_ml_event_count(count=0)
     def _test():
-        record_ai_feedback(rating=1, message_id="message_id", category="informative", request_id="request_id", conversation_id="conversation_id", message="message", metadata="metadata")
+        record_ai_feedback_event(rating=1, message_id="message_id", category="informative", request_id="request_id", conversation_id="conversation_id", message="message", metadata="metadata")
 
     _test()

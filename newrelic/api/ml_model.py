@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+import uuid
 import warnings
 
 from newrelic.api.transaction import current_transaction
@@ -52,3 +53,30 @@ def get_ai_message_ids(response_id=None):
         return [{"conversation_id": conversation_id, "request_id": request_id, "message_id": _id} for _id in ids]
     warnings.warn("No message ids found. get_ai_message_ids must be called within the scope of a transaction.")
     return []
+
+
+def record_ai_feedback(message_id, rating, conversation_id=None, request_id=None, category=None, message=None, metadata=None):
+    transaction = current_transaction()
+    if not transaction:
+        warnings.warn("No message feedback events will be recorded. record_ai_feedback must be called within the scope of a transaction.")
+        return
+
+    feedback_message_id = str(uuid.uuid4())
+    try:
+        rating = str(rating)
+    except Exception:
+        pass
+
+    feedback_message_event = {
+        "id": feedback_message_id,
+        "message_id": message_id,
+        "rating": rating,
+        "metadata": metadata or "",
+        "conversation_id": conversation_id or "",
+        "request_id": request_id or "",
+        "category": category or "",
+        "message": message or "",
+        "ingest_source": "Python",
+    }
+
+    transaction.record_ml_event("LlmFeedbackMessage", feedback_message_event)

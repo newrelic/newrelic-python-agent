@@ -29,46 +29,13 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
 RESPONSES = {
-    "amazon.titan-text-express-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
-        {"content-type": "application/json", "x-amzn-requestid": "660d4de9-6804-460e-8556-4ab2a019d1e3"},
-        200,
-        {
-            "inputTextTokenCount": 12,
-            "results": [
-                {
-                    "tokenCount": 55,
-                    "outputText": "\nUse the formula,\n\u00b0C = (\u00b0F - 32) x 5/9\n= 212 x 5/9\n= 100 degrees Celsius\n212 degrees Fahrenheit is 100 degrees Celsius.",
-                    "completionReason": "FINISH",
-                }
-            ],
-        },
-    ],
-    "anthropic.claude-instant-v1::Human: What is 212 degrees Fahrenheit converted to Celsius? Assistant:": [
-        {"content-type": "application/json", "x-amzn-requestid": "f354b9a7-9eac-4f50-a8d7-7d5d23566176"},
-        200,
-        {
-            "completion": " Here are the step-by-step workings:\n1) 212 degrees Fahrenheit \n2) To convert to Celsius, use the formula: C = (F - 32) * 5/9\n3) Plug in the values: C = (212 - 32) * 5/9 = 100 * 5/9 = 100 degrees Celsius\n\nSo, 212 degrees Fahrenheit converted to Celsius is 100 degrees Celsius.",
-            "stop_reason": "stop_sequence",
-            "stop": "\n\nHuman:",
-        },
-    ],
-    "cohere.command-text-v14::What is 212 degrees Fahrenheit converted to Celsius?": [
-        {"content-type": "application/json", "x-amzn-requestid": "c5188fb5-dc58-4cbe-948d-af173c69ce0d"},
-        200,
-        {
-            "generations": [
-                {
-                    "finish_reason": "MAX_TOKENS",
-                    "id": "0730f5c0-9a49-4f35-af94-cf8f77327740",
-                    "text": " To convert 212 degrees Fahrenheit to Celsius, we can use the conversion factor that Celsius is equal to (Fahrenheit - 32) x 5/9. \\n\\nApplying this formula, we have:\\n212Â°F = (212Â°F - 32) x 5/9\\n= (180) x 5/9\\n= 100Â°C.\\n\\nTherefore, 212 degrees F",
-                }
-            ],
-            "id": "a9cc8ce6-50b6-40b6-bf77-cf24561d8de7",
-            "prompt": "What is 212 degrees Fahrenheit converted to Celsius?",
-        },
+    "ai21.j2-mid-v1::Invalid Token": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "b393ba08-c838-4503-a489-a43bf9bbaccd"},
+        403,
+        {"message": "The security token included in the request is invalid."},
     ],
     "ai21.j2-mid-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
-        {"content-type": "application/json", "x-amzn-requestid": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e"},
+        {"Content-Type": "application/json", "x-amzn-RequestId": "c863d9fc-888b-421c-a175-ac5256baec62"},
         200,
         {
             "id": 1234,
@@ -77,7 +44,7 @@ RESPONSES = {
                 "tokens": [
                     {
                         "generatedToken": {
-                            "token": "\u2581What\u2581is",
+                            "token": "▁What▁is",
                             "logprob": -7.446773529052734,
                             "raw_logprob": -7.446773529052734,
                         },
@@ -86,7 +53,7 @@ RESPONSES = {
                     },
                     {
                         "generatedToken": {
-                            "token": "\u2581",
+                            "token": "▁",
                             "logprob": -3.8046724796295166,
                             "raw_logprob": -3.8046724796295166,
                         },
@@ -104,7 +71,7 @@ RESPONSES = {
                     },
                     {
                         "generatedToken": {
-                            "token": "\u2581degrees\u2581Fahrenheit",
+                            "token": "▁degrees▁Fahrenheit",
                             "logprob": -7.953181743621826,
                             "raw_logprob": -7.953181743621826,
                         },
@@ -113,7 +80,7 @@ RESPONSES = {
                     },
                     {
                         "generatedToken": {
-                            "token": "\u2581converted\u2581to",
+                            "token": "▁converted▁to",
                             "logprob": -6.168096542358398,
                             "raw_logprob": -6.168096542358398,
                         },
@@ -122,7 +89,7 @@ RESPONSES = {
                     },
                     {
                         "generatedToken": {
-                            "token": "\u2581Celsius",
+                            "token": "▁Celsius",
                             "logprob": -0.09790332615375519,
                             "raw_logprob": -0.09790332615375519,
                         },
@@ -156,7 +123,7 @@ RESPONSES = {
                             },
                             {
                                 "generatedToken": {
-                                    "token": "\u2581",
+                                    "token": "▁",
                                     "logprob": -0.03473362699151039,
                                     "raw_logprob": -0.11261807382106781,
                                 },
@@ -174,7 +141,7 @@ RESPONSES = {
                             },
                             {
                                 "generatedToken": {
-                                    "token": "\u2581degrees\u2581Fahrenheit",
+                                    "token": "▁degrees▁Fahrenheit",
                                     "logprob": -0.003579758107662201,
                                     "raw_logprob": -0.03144374489784241,
                                 },
@@ -183,7 +150,7 @@ RESPONSES = {
                             },
                             {
                                 "generatedToken": {
-                                    "token": "\u2581is\u2581equal\u2581to",
+                                    "token": "▁is▁equal▁to",
                                     "logprob": -0.0027733694296330214,
                                     "raw_logprob": -0.027207009494304657,
                                 },
@@ -192,7 +159,7 @@ RESPONSES = {
                             },
                             {
                                 "generatedToken": {
-                                    "token": "\u2581",
+                                    "token": "▁",
                                     "logprob": -0.0003392120997887105,
                                     "raw_logprob": -0.005458095110952854,
                                 },
@@ -210,7 +177,7 @@ RESPONSES = {
                             },
                             {
                                 "generatedToken": {
-                                    "token": "\u2581degrees\u2581Celsius",
+                                    "token": "▁degrees▁Celsius",
                                     "logprob": -0.31207239627838135,
                                     "raw_logprob": -0.402545303106308,
                                 },
@@ -242,8 +209,8 @@ RESPONSES = {
             ],
         },
     ],
-    "amazon.titan-embed-text-v1::This is an embedding test.": [
-        {"content-type": "application/json", "x-amzn-requestid": "75f1d3fe-6cde-4cf5-bdaf-7101f746ccfe"},
+    "amazon.titan-embed-g1-text-02::This is an embedding test.": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "b10ac895-eae3-4f07-b926-10b2866c55ed"},
         200,
         {
             "embedding": [
@@ -1787,8 +1754,8 @@ RESPONSES = {
             "inputTextTokenCount": 6,
         },
     ],
-    "amazon.titan-embed-g1-text-02::This is an embedding test.": [
-        {"content-type": "application/json", "x-amzn-requestid": "f7e78265-6b7c-4b3a-b750-0c1d00347258"},
+    "amazon.titan-embed-text-v1::This is an embedding test.": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "11233989-07e8-4ecb-9ba6-79601ba6d8cc"},
         200,
         {
             "embedding": [
@@ -3330,9 +3297,63 @@ RESPONSES = {
                 0.72265625,
             ],
             "inputTextTokenCount": 6,
+        },
+    ],
+    "amazon.titan-text-express-v1::Invalid Token": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "041a580c-c3a4-4d99-aafc-00dc0698da5a"},
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "amazon.titan-text-express-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "03524118-8d77-430f-9e08-63b5c03a40cf"},
+        200,
+        {
+            "inputTextTokenCount": 12,
+            "results": [
+                {
+                    "tokenCount": 75,
+                    "outputText": "\nUse the formula,\n°C = °F - 32) x (5/9)\n= 212 - 32 x (5/9)\n= 212 - 16.11\n= 195.89\n\nThe answer is 195.89 degrees Celsius.",
+                    "completionReason": "FINISH",
+                }
+            ],
+        },
+    ],
+    "anthropic.claude-instant-v1::Human: Invalid Token Assistant:": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "cdc4ea3e-8724-45e3-97a3-9c2dec3376ca"},
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "anthropic.claude-instant-v1::Human: What is 212 degrees Fahrenheit converted to Celsius? Assistant:": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18"},
+        200,
+        {
+            "completion": " Okay, here are the conversion steps:\n212 degrees Fahrenheit\n- Subtract 32 from 212 to get 180 (to convert from Fahrenheit to Celsius scale)\n- Multiply by 5/9 (because the formula is °C = (°F - 32) × 5/9)\n- 180 × 5/9 = 100\n\nSo 212 degrees Fahrenheit converted to Celsius is 100 degrees Celsius.",
+            "stop_reason": "stop_sequence",
+            "stop": "\n\nHuman:",
+        },
+    ],
+    "cohere.command-text-v14::Invalid Token": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "cc797330-6fc2-4570-a3c2-f60ef63d37b0"},
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "cohere.command-text-v14::What is 212 degrees Fahrenheit converted to Celsius?": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "e77422c8-fbbf-4e17-afeb-c758425c9f97"},
+        200,
+        {
+            "generations": [
+                {
+                    "finish_reason": "MAX_TOKENS",
+                    "id": "d20c06b0-aafe-4230-b2c7-200f4069355e",
+                    "text": " 212°F is equivalent to 100°C. \n\nFahrenheit and Celsius are two temperature scales commonly used in everyday life. The Fahrenheit scale is based on 32°F for the freezing point of water and 212°F for the boiling point of water. On the other hand, the Celsius scale uses 0°C and 100°C as the freezing and boiling points of water, respectively. \n\nTo convert from Fahrenheit to Celsius, we subtract 32 from the Fahrenheit temperature and multiply the result",
+                }
+            ],
+            "id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+            "prompt": "What is 212 degrees Fahrenheit converted to Celsius?",
         },
     ],
 }
+
 
 MODEL_PATH_RE = re.compile(r"/model/([^/]+)/invoke")
 
@@ -3374,7 +3395,7 @@ def simple_get(self):
 
 
 def extract_shortened_prompt(content, model):
-    prompt = content.get("inputText", None) or content.get("prompt", None)
+    prompt = content.get("inputText", "") or content.get("prompt", "")
     prompt = "::".join((model, prompt))  # Prepend model name to prompt key to keep separate copies
     return prompt.lstrip().split("\n")[0]
 

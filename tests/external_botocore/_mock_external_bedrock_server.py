@@ -31,6 +31,7 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 RESPONSES = {
     "amazon.titan-text-express-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"content-type": "application/json", "x-amzn-requestid": "660d4de9-6804-460e-8556-4ab2a019d1e3"},
+        200,
         {
             "inputTextTokenCount": 12,
             "results": [
@@ -44,6 +45,7 @@ RESPONSES = {
     ],
     "anthropic.claude-instant-v1::Human: What is 212 degrees Fahrenheit converted to Celsius? Assistant:": [
         {"content-type": "application/json", "x-amzn-requestid": "f354b9a7-9eac-4f50-a8d7-7d5d23566176"},
+        200,
         {
             "completion": " Here are the step-by-step workings:\n1) 212 degrees Fahrenheit \n2) To convert to Celsius, use the formula: C = (F - 32) * 5/9\n3) Plug in the values: C = (212 - 32) * 5/9 = 100 * 5/9 = 100 degrees Celsius\n\nSo, 212 degrees Fahrenheit converted to Celsius is 100 degrees Celsius.",
             "stop_reason": "stop_sequence",
@@ -52,6 +54,7 @@ RESPONSES = {
     ],
     "cohere.command-text-v14::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"content-type": "application/json", "x-amzn-requestid": "c5188fb5-dc58-4cbe-948d-af173c69ce0d"},
+        200,
         {
             "generations": [
                 {
@@ -66,6 +69,7 @@ RESPONSES = {
     ],
     "ai21.j2-mid-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"content-type": "application/json", "x-amzn-requestid": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e"},
+        200,
         {
             "id": 1234,
             "prompt": {
@@ -240,6 +244,7 @@ RESPONSES = {
     ],
     "amazon.titan-embed-text-v1::This is an embedding test.": [
         {"content-type": "application/json", "x-amzn-requestid": "75f1d3fe-6cde-4cf5-bdaf-7101f746ccfe"},
+        200,
         {
             "embedding": [
                 -0.14160156,
@@ -1784,6 +1789,7 @@ RESPONSES = {
     ],
     "amazon.titan-embed-g1-text-02::This is an embedding test.": [
         {"content-type": "application/json", "x-amzn-requestid": "f7e78265-6b7c-4b3a-b750-0c1d00347258"},
+        200,
         {
             "embedding": [
                 -0.14160156,
@@ -3346,7 +3352,7 @@ def simple_get(self):
     headers, response = ({}, "")
     for k, v in RESPONSES.items():
         if prompt.startswith(k):
-            headers, response = v
+            headers, status_code, response = v
             break
     else:  # If no matches found
         self.send_response(500)
@@ -3355,7 +3361,7 @@ def simple_get(self):
         return
 
     # Send response code
-    self.send_response(200)
+    self.send_response(status_code)
 
     # Send headers
     for k, v in headers.items():

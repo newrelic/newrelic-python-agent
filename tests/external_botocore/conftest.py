@@ -134,9 +134,10 @@ def wrap_botocore_client_BaseClient__make_api_call(wrapped, instance, args, kwar
             headers.items(),
         )
     )
+    status_code = result["ResponseMetadata"]["HTTPStatusCode"]
 
     # Log response
-    BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, data  # Append response data to audit log
+    BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, status_code, data  # Append response data to audit log
     return result
 
 

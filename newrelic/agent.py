@@ -154,7 +154,9 @@ from newrelic.api.message_transaction import (
     wrap_message_transaction as __wrap_message_transaction,
 )
 from newrelic.api.ml_model import get_llm_message_ids as __get_llm_message_ids
-from newrelic.api.ml_model import record_llm_feedback_event as __record_llm_feedback_event
+from newrelic.api.ml_model import (
+    record_llm_feedback_event as __record_llm_feedback_event,
+)
 from newrelic.api.ml_model import wrap_mlmodel as __wrap_mlmodel
 from newrelic.api.profile_trace import ProfileTraceWrapper as __ProfileTraceWrapper
 from newrelic.api.profile_trace import profile_trace as __profile_trace

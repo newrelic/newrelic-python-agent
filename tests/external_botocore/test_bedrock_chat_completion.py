@@ -176,37 +176,36 @@ _client_error_name = callable_name(_client_error)
 
 
 # No prompt provided
-@dt_enabled
-@reset_core_stats_engine()
-# @validate_error_trace_attributes(
-#     callable_name(botocore.InvalidRequestError),
-#     exact_attrs={
-#         "agent": {},
-#         "intrinsic": {},
-#         "user": {
-#             # "api_key_last_four_digits": "sk-CRET",
-#             # "request.temperature": 0.7,
-#             # "request.max_tokens": 100,
-#             # "vendor": "openAI",
-#             # "ingest_source": "Python",
-#             # "response.number_of_messages": 2,
-#             # "error.param": "engine",
-#         },
-#     },
-# )
-# @validate_span_events(
-#     exact_agents={
-#         # "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
-#     }
-# )
-def test_bedrock_chat_completion_error_no_prompt(exercise_model_no_prompt, set_trace_info):
-    @background_task()
-    def _test():
-        set_trace_info()
-        add_custom_attribute("conversation_id", "my-awesome-id")
-        exercise_model_no_prompt(temperature=0.7, max_tokens=100)
 
-    _test()
+@validate_error_trace_attributes(
+    "botocore.errorfactory:ValidationException",
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "conversation_id": "my-awesome-id",
+            "request.id": "f4908827-3db9-4742-9103-2bbc34578b03",
+            "api_key_last_four_digits": "CRET",
+            "request.model": "does-not-exist",
+            "vendor": "Bedrock",
+            "ingest_source": "Python",
+            "http.statusCode": 400,
+            "error.message": "The provided model identifier is invalid.",
+            "error.code": "ValidationException",
+        },
+    },
+)
+@background_task()
+def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_info):
+    set_trace_info()
+    add_custom_attribute("conversation_id", "my-awesome-id")
+    with pytest.raises(_client_error):
+        bedrock_server.invoke_model(
+            body=b"{}",
+            modelId="does-not-exist",
+            accept="application/json",
+            contentType="application/json",
+        )
 
 
 @dt_enabled

@@ -55,24 +55,24 @@ def extract(argument_names, default=None):
     return extractor_list
 
 
-def bedrock_error_attributes(exception, request_args, client):
+def bedrock_error_attributes(exception, request_args, client, extractor):
     response = getattr(exception, "response", None)
     if not response:
         return {}
     
-    response_body = json.loads(request_args.get("body", ""))
-    error_attributes = {
+    request_body = request_args.get("body", "")
+    error_attributes = extractor(request_body)[1]
+
+    error_attributes.update({
         "request.id": response.get("ResponseMetadata", "").get("RequestId", ""),
         "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
         "request.model": request_args.get("modelId", ""),
-        "request.temperature": response_body.get("textGenerationConfig", "").get("temperature", ""),
-        "request.max_tokens": response_body.get("textGenerationConfig", "").get("maxTokenCount", ""),
         "vendor": "Bedrock",
         "ingest_source": "Python",
         "http.statusCode": response.get("ResponseMetadata", "").get("HTTPStatusCode", ""),
         "error.message": response.get("Error", "").get("Message", ""),
         "error.code": response.get("Error", "").get("Code", ""),
-    }
+    })
     return error_attributes
 
 
@@ -116,37 +116,47 @@ def create_chat_completion_message_event(
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
 
-def extract_bedrock_titan_text_model(request_body, response_body):
-    response_body = json.loads(response_body)
+def extract_bedrock_titan_text_model(request_body, response_body=None):
     request_body = json.loads(request_body)
-
-    input_tokens = response_body["inputTextTokenCount"]
-    completion_tokens = sum(result["tokenCount"] for result in response_body.get("results", []))
-    total_tokens = input_tokens + completion_tokens
+    if response_body:
+        response_body = json.loads(response_body)
 
     request_config = request_body.get("textGenerationConfig", {})
-    message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
-    message_list.extend(
-        {"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", [])
-    )
 
     chat_completion_summary_dict = {
         "request.max_tokens": request_config.get("maxTokenCount", ""),
         "request.temperature": request_config.get("temperature", ""),
-        "response.choices.finish_reason": response_body["results"][0]["completionReason"],
-        "response.usage.completion_tokens": completion_tokens,
-        "response.usage.prompt_tokens": input_tokens,
-        "response.usage.total_tokens": total_tokens,
-        "response.number_of_messages": len(message_list),
     }
+
+    if response_body:
+        input_tokens = response_body["inputTextTokenCount"]
+        completion_tokens = sum(result["tokenCount"] for result in response_body.get("results", []))
+        total_tokens = input_tokens + completion_tokens
+
+        message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
+        message_list.extend(
+            {"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", [])
+        )
+
+        chat_completion_summary_dict.update({
+            "response.choices.finish_reason": response_body["results"][0]["completionReason"],
+            "response.usage.completion_tokens": completion_tokens,
+            "response.usage.prompt_tokens": input_tokens,
+            "response.usage.total_tokens": total_tokens,
+            "response.number_of_messages": len(message_list),
+        })
+    else:
+        message_list = []
+
     return message_list, chat_completion_summary_dict
 
 
-def extract_bedrock_titan_embedding_model(request_body, response_body):
-    response_body = json.loads(response_body)
+def extract_bedrock_titan_embedding_model(request_body, response_body=None):
     request_body = json.loads(request_body)
+    if response_body:
+        response_body = json.loads(response_body)
 
-    input_tokens = response_body["inputTextTokenCount"]
+    input_tokens = response_body.get("inputTextTokenCount", None)
 
     embedding_dict = {
         "input": request_body.get("inputText", ""),
@@ -156,59 +166,85 @@ def extract_bedrock_titan_embedding_model(request_body, response_body):
     return embedding_dict
 
 
-def extract_bedrock_ai21_j2_model(request_body, response_body):
-    response_body = json.loads(response_body)
+def extract_bedrock_ai21_j2_model(request_body, response_body=None):
     request_body = json.loads(request_body)
-
-    message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
-    message_list.extend(
-        {"role": "assistant", "content": result["data"]["text"]} for result in response_body.get("completions", [])
-    )
+    if response_body:
+        response_body = json.loads(response_body)
 
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("maxTokens", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.choices.finish_reason": response_body["completions"][0]["finishReason"]["reason"],
-        "response.number_of_messages": len(message_list),
-        "response_id": str(response_body.get("id", "")),
     }
+
+    if response_body:
+        message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+        message_list.extend(
+            {"role": "assistant", "content": result["data"]["text"]} for result in response_body.get("completions", [])
+        )
+
+        chat_completion_summary_dict.update({
+            "response.choices.finish_reason": response_body["completions"][0]["finishReason"]["reason"],
+            "response.number_of_messages": len(message_list),
+            "response_id": str(response_body.get("id", "")),
+        })
+    else:
+        message_list = []
+
     return message_list, chat_completion_summary_dict
 
 
-def extract_bedrock_claude_model(request_body, response_body):
-    response_body = json.loads(response_body)
+def extract_bedrock_claude_model(request_body, response_body=None):
     request_body = json.loads(request_body)
-
-    message_list = [
-        {"role": "user", "content": request_body.get("prompt", "")},
-        {"role": "assistant", "content": response_body.get("completion", "")},
-    ]
+    if response_body:
+        response_body = json.loads(response_body)
 
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens_to_sample", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.choices.finish_reason": response_body.get("stop_reason", ""),
-        "response.number_of_messages": len(message_list),
     }
+
+    if response_body:
+        message_list = [
+            {"role": "user", "content": request_body.get("prompt", "")},
+            {"role": "assistant", "content": response_body.get("completion", "")},
+        ]
+
+        chat_completion_summary_dict.update({
+            "response.choices.finish_reason": response_body.get("stop_reason", ""),
+            "response.number_of_messages": len(message_list),
+        })
+    else:
+        message_list = []
+
     return message_list, chat_completion_summary_dict
 
 
-def extract_bedrock_cohere_model(request_body, response_body):
-    response_body = json.loads(response_body)
+def extract_bedrock_cohere_model(request_body, response_body=None):
     request_body = json.loads(request_body)
-
-    message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
-    message_list.extend(
-        {"role": "assistant", "content": result["text"]} for result in response_body.get("generations", [])
-    )
+    if response_body:
+        response_body = json.loads(response_body)
 
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.choices.finish_reason": response_body["generations"][0]["finish_reason"],
-        "response.number_of_messages": len(message_list),
-        "response_id": str(response_body.get("id", "")),
     }
+
+    if response_body:
+        message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+        message_list.extend(
+            {"role": "assistant", "content": result["text"]} for result in response_body.get("generations", [])
+        )
+
+        chat_completion_summary_dict.update({
+            "request.max_tokens": request_body.get("max_tokens", ""),
+            "request.temperature": request_body.get("temperature", ""),
+            "response.choices.finish_reason": response_body["generations"][0]["finish_reason"],
+            "response.number_of_messages": len(message_list),
+            "response_id": str(response_body.get("id", "")),
+        })
+    else:
+        message_list = []
+
     return message_list, chat_completion_summary_dict
 
 
@@ -236,26 +272,10 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         request_body = request_body.read()
         kwargs["body"] = request_body
 
-    ft_name = callable_name(wrapped)
-    with FunctionTrace(ft_name) as ft:
-        try:
-            response = wrapped(*args, **kwargs)
-        except Exception as exc:
-            try:
-                error_attributes = bedrock_error_attributes(exc, kwargs, instance)
-                ft.notice_error(
-                    attributes=error_attributes,
-                )
-            finally:
-                raise
-
-    if not response:
-        return response
-
     # Determine model to be used with extractor
     model = kwargs.get("modelId")
     if not model:
-        return response
+        return wrapped(*args, **kwargs)
 
     # Determine extractor by model type
     for extractor_name, extractor in MODEL_EXTRACTORS:
@@ -271,7 +291,24 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                 model,
             )
             UNSUPPORTED_MODEL_WARNING_SENT = True
+        
+        extractor = lambda *args: ([], {})  # Empty extractor that returns nothing
 
+    ft_name = callable_name(wrapped)
+    with FunctionTrace(ft_name) as ft:
+        try:
+            response = wrapped(*args, **kwargs)
+        except Exception as exc:
+            try:
+                error_attributes = extractor(request_body)
+                error_attributes = bedrock_error_attributes(exc, kwargs, instance, extractor)
+                ft.notice_error(
+                    attributes=error_attributes,
+                )
+            finally:
+                raise
+
+    if not response:
         return response
 
     # Read and replace response streaming bodies

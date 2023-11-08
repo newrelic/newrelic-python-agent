@@ -98,13 +98,13 @@ def bedrock_server():
         yield client  # Run tests
 
         # Write responses to audit log
-        BEDROCK_AUDIT_LOG_CONTENTS = dict(sorted(BEDROCK_AUDIT_LOG_CONTENTS.items(), key=lambda i: i[0]))
+        bedrock_audit_log_contents = dict(sorted(BEDROCK_AUDIT_LOG_CONTENTS.items(), key=lambda i: i[0]))
         with open(BEDROCK_AUDIT_LOG_FILE, "w") as audit_log_fp:
-            json.dump(BEDROCK_AUDIT_LOG_CONTENTS, fp=audit_log_fp, indent=4)
+            json.dump(bedrock_audit_log_contents, fp=audit_log_fp, indent=4)
 
 
 # Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = set(["x-amzn-requestid", "content-type"])
+RECORDED_HEADERS = set(["x-amzn-requestid", "x-amzn-errortype", "content-type"])
 
 
 def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kwargs):

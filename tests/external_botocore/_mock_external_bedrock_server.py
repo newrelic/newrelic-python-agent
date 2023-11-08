@@ -30,9 +30,49 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 RESPONSES = {
     "ai21.j2-mid-v1::Invalid Token": [
-        {"Content-Type": "application/json", "x-amzn-RequestId": "b393ba08-c838-4503-a489-a43bf9bbaccd"},
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "9021791d-3797-493d-9277-e33aa6f6d544",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
         403,
         {"message": "The security token included in the request is invalid."},
+    ],
+    "amazon.titan-text-express-v1::Invalid Token": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "15b39c8b-8e85-42c9-9623-06720301bda3",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "anthropic.claude-instant-v1::Human: Invalid Token Assistant:": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "37396f55-b721-4bae-9461-4c369f5a080d",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "cohere.command-text-v14::Invalid Token": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "does-not-exist::": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "f4908827-3db9-4742-9103-2bbc34578b03",
+            "x-amzn-ErrorType": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/",
+        },
+        400,
+        {"message": "The provided model identifier is invalid."},
     ],
     "ai21.j2-mid-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "c863d9fc-888b-421c-a175-ac5256baec62"},
@@ -3299,11 +3339,6 @@ RESPONSES = {
             "inputTextTokenCount": 6,
         },
     ],
-    "amazon.titan-text-express-v1::Invalid Token": [
-        {"Content-Type": "application/json", "x-amzn-RequestId": "041a580c-c3a4-4d99-aafc-00dc0698da5a"},
-        403,
-        {"message": "The security token included in the request is invalid."},
-    ],
     "amazon.titan-text-express-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "03524118-8d77-430f-9e08-63b5c03a40cf"},
         200,
@@ -3312,16 +3347,11 @@ RESPONSES = {
             "results": [
                 {
                     "tokenCount": 75,
-                    "outputText": "\nUse the formula,\n°C = °F - 32) x (5/9)\n= 212 - 32 x (5/9)\n= 212 - 16.11\n= 195.89\n\nThe answer is 195.89 degrees Celsius.",
+                    "outputText": "\nUse the formula,\n°C = (°F - 32) x 5/9\n= 212 x 5/9\n= 100 degrees Celsius\n212 degrees Fahrenheit is 100 degrees Celsius.",
                     "completionReason": "FINISH",
                 }
             ],
         },
-    ],
-    "anthropic.claude-instant-v1::Human: Invalid Token Assistant:": [
-        {"Content-Type": "application/json", "x-amzn-RequestId": "cdc4ea3e-8724-45e3-97a3-9c2dec3376ca"},
-        403,
-        {"message": "The security token included in the request is invalid."},
     ],
     "anthropic.claude-instant-v1::Human: What is 212 degrees Fahrenheit converted to Celsius? Assistant:": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18"},
@@ -3331,11 +3361,6 @@ RESPONSES = {
             "stop_reason": "stop_sequence",
             "stop": "\n\nHuman:",
         },
-    ],
-    "cohere.command-text-v14::Invalid Token": [
-        {"Content-Type": "application/json", "x-amzn-RequestId": "cc797330-6fc2-4570-a3c2-f60ef63d37b0"},
-        403,
-        {"message": "The security token included in the request is invalid."},
     ],
     "cohere.command-text-v14::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "e77422c8-fbbf-4e17-afeb-c758425c9f97"},

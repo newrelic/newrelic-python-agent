@@ -175,8 +175,6 @@ _client_error = botocore.exceptions.ClientError
 _client_error_name = callable_name(_client_error)
 
 
-# No prompt provided
-
 @validate_error_trace_attributes(
     "botocore.errorfactory:ValidationException",
     exact_attrs={

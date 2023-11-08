@@ -14,12 +14,11 @@
 
 import openai
 from testing_support.fixtures import reset_core_stats_engine
+from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 
 from newrelic.api.background_task import background_task
 from newrelic.api.ml_model import get_ai_message_ids, record_ai_feedback_event
 from newrelic.api.transaction import add_custom_attribute, current_transaction
-from testing_support.validators.validate_ml_event_count import validate_ml_event_count
-
 
 _test_openai_chat_completion_messages_1 = (
     {"role": "system", "content": "You are a scientist."},
@@ -184,7 +183,13 @@ def test_get_ai_message_ids_mulitple_sync(set_trace_info):
     assert message_ids == expected_message_ids_1
 
     for message_id in message_ids:
-        record_ai_feedback_event(category="informative", rating=1, message_id=message_id.get("message_id"), request_id=message_id.get("request_id"), conversation_id=message_id.get("conversation_id"))
+        record_ai_feedback_event(
+            category="informative",
+            rating=1,
+            message_id=message_id.get("message_id"),
+            request_id=message_id.get("request_id"),
+            conversation_id=message_id.get("conversation_id"),
+        )
 
     results = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages_2, temperature=0.7, max_tokens=100
@@ -210,7 +215,13 @@ def test_get_ai_message_ids_mulitple_sync_no_conversation_id(set_trace_info):
     assert message_ids == expected_message_ids_1_no_conversation_id
 
     for message_id in message_ids:
-        record_ai_feedback_event(category="informative", rating=1, message_id=message_id.get("message_id"), request_id=message_id.get("request_id"), conversation_id=message_id.get("conversation_id"))
+        record_ai_feedback_event(
+            category="informative",
+            rating=1,
+            message_id=message_id.get("message_id"),
+            request_id=message_id.get("request_id"),
+            conversation_id=message_id.get("conversation_id"),
+        )
 
     results = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages_2, temperature=0.7, max_tokens=100

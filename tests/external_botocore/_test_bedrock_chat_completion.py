@@ -260,3 +260,32 @@ chat_completion_expected_events = {
         ),
     ],
 }
+
+chat_completion_expected_client_errors = {
+    "amazon.titan-text-express-v1": {
+        "conversation_id": "my-awesome-id",
+        "request.id": "041a580c-c3a4-4d99-aafc-00dc0698da5a",
+        "api_key_last_four_digits": "-KEY",
+        "request.model": "amazon.titan-text-express-v1",
+        "request.temperature": 0.7,
+        "request.max_tokens": 100,
+        "vendor": "Bedrock",
+        "ingest_source": "Python",
+        "http.statusCode": 403,
+        "error.message": "The security token included in the request is invalid.",
+        "error.code": "403",
+    },
+    "ai21.j2-mid-v1": {
+        "conversation_id": "my-awesome-id",
+        "request.id": "041a580c-c3a4-4d99-aafc-00dc0698da5a",
+        "api_key_last_four_digits": "-KEY",
+        "request.model": "amazon.titan-text-express-v1",
+        "request.temperature": 0.7,
+        "request.max_tokens": 100,
+        "vendor": "Bedrock",
+        "ingest_source": "Python",
+        "http.statusCode": 403,
+        "error.message": "The security token included in the request is invalid.",
+        "error.code": "403",
+    }
+}

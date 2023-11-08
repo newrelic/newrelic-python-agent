@@ -42,7 +42,7 @@ def test_record_ai_feedback_event_all_args_supplied():
     @validate_ml_events(ai_feedback_all_args_recorded_events)
     @background_task()
     def _test():
-        record_ai_feedback(
+        record_ai_feedback_event(
             rating=1,
             message_id="message_id",
             category="informative",
@@ -78,7 +78,7 @@ def test_record_ai_feedback_event_required_args_supplied():
     @validate_ml_events(ai_feedback_required_args_recorded_events)
     @background_task()
     def _test():
-        record_ai_feedback(message_id="message_id", rating=1)
+        record_ai_feedback_event(message_id="message_id", rating=1)
 
     _test()
 
@@ -87,7 +87,7 @@ def test_record_ai_feedback_event_required_args_supplied():
 def test_record_ai_feedback_event_outside_txn():
     @validate_ml_event_count(count=0)
     def _test():
-        record_ai_feedback(
+        record_ai_feedback_event(
             rating=1,
             message_id="message_id",
             category="informative",

@@ -98,7 +98,7 @@ def bedrock_server():
         yield client  # Run tests
 
         # Write responses to audit log
-        bedrock_audit_log_contents = dict(sorted(BEDROCK_AUDIT_LOG_CONTENTS.items(), key=lambda i: i[0]))
+        bedrock_audit_log_contents = dict(sorted(BEDROCK_AUDIT_LOG_CONTENTS.items(), key=lambda i: (i[1][1], i[0])))
         with open(BEDROCK_AUDIT_LOG_FILE, "w") as audit_log_fp:
             json.dump(bedrock_audit_log_contents, fp=audit_log_fp, indent=4)
 

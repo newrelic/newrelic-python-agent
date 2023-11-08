@@ -264,7 +264,7 @@ chat_completion_expected_events = {
 chat_completion_expected_client_errors = {
     "amazon.titan-text-express-v1": {
         "conversation_id": "my-awesome-id",
-        "request.id": "15b39c8b-8e85-42c9-9623-06720301bda3",
+        "request_id": "15b39c8b-8e85-42c9-9623-06720301bda3",
         "api_key_last_four_digits": "-KEY",
         "request.model": "amazon.titan-text-express-v1",
         "request.temperature": 0.7,
@@ -277,7 +277,7 @@ chat_completion_expected_client_errors = {
     },
     "ai21.j2-mid-v1": {
         "conversation_id": "my-awesome-id",
-        "request.id": "9021791d-3797-493d-9277-e33aa6f6d544",
+        "request_id": "9021791d-3797-493d-9277-e33aa6f6d544",
         "api_key_last_four_digits": "-KEY",
         "request.model": "ai21.j2-mid-v1",
         "request.temperature": 0.7,
@@ -290,7 +290,7 @@ chat_completion_expected_client_errors = {
     },
     "anthropic.claude-instant-v1": {
         "conversation_id": "my-awesome-id",
-        "request.id": "37396f55-b721-4bae-9461-4c369f5a080d",
+        "request_id": "37396f55-b721-4bae-9461-4c369f5a080d",
         "api_key_last_four_digits": "-KEY",
         "request.model": "anthropic.claude-instant-v1",
         "request.temperature": 0.7,
@@ -303,7 +303,7 @@ chat_completion_expected_client_errors = {
     },
     "cohere.command-text-v14": {
         "conversation_id": "my-awesome-id",
-        "request.id": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
+        "request_id": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
         "api_key_last_four_digits": "-KEY",
         "request.model": "cohere.command-text-v14",
         "request.temperature": 0.7,

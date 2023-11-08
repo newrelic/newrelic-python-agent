@@ -184,7 +184,7 @@ _client_error_name = callable_name(_client_error)
         "intrinsic": {},
         "user": {
             "conversation_id": "my-awesome-id",
-            "request.id": "f4908827-3db9-4742-9103-2bbc34578b03",
+            "request_id": "f4908827-3db9-4742-9103-2bbc34578b03",
             "api_key_last_four_digits": "CRET",
             "request.model": "does-not-exist",
             "vendor": "Bedrock",

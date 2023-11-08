@@ -29,51 +29,6 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
 RESPONSES = {
-    "ai21.j2-mid-v1::Invalid Token": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "9021791d-3797-493d-9277-e33aa6f6d544",
-            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
-        },
-        403,
-        {"message": "The security token included in the request is invalid."},
-    ],
-    "amazon.titan-text-express-v1::Invalid Token": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "15b39c8b-8e85-42c9-9623-06720301bda3",
-            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
-        },
-        403,
-        {"message": "The security token included in the request is invalid."},
-    ],
-    "anthropic.claude-instant-v1::Human: Invalid Token Assistant:": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "37396f55-b721-4bae-9461-4c369f5a080d",
-            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
-        },
-        403,
-        {"message": "The security token included in the request is invalid."},
-    ],
-    "cohere.command-text-v14::Invalid Token": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
-            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
-        },
-        403,
-        {"message": "The security token included in the request is invalid."},
-    ],
-    "does-not-exist::": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "f4908827-3db9-4742-9103-2bbc34578b03",
-            "x-amzn-ErrorType": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/",
-        },
-        400,
-        {"message": "The provided model identifier is invalid."},
-    ],
     "ai21.j2-mid-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "c863d9fc-888b-421c-a175-ac5256baec62"},
         200,
@@ -3377,8 +3332,70 @@ RESPONSES = {
             "prompt": "What is 212 degrees Fahrenheit converted to Celsius?",
         },
     ],
+    "does-not-exist::": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "f4908827-3db9-4742-9103-2bbc34578b03",
+            "x-amzn-ErrorType": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/",
+        },
+        400,
+        {"message": "The provided model identifier is invalid."},
+    ],
+    "ai21.j2-mid-v1::Invalid Token": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "9021791d-3797-493d-9277-e33aa6f6d544",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "amazon.titan-embed-g1-text-02::Invalid Token": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "73328313-506e-4da8-af0f-51017fa6ca3f",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "amazon.titan-embed-text-v1::Invalid Token": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "aece6ad7-e2ff-443b-a953-ba7d385fd0cc",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "amazon.titan-text-express-v1::Invalid Token": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "15b39c8b-8e85-42c9-9623-06720301bda3",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "anthropic.claude-instant-v1::Human: Invalid Token Assistant:": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "37396f55-b721-4bae-9461-4c369f5a080d",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "cohere.command-text-v14::Invalid Token": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
 }
-
 
 MODEL_PATH_RE = re.compile(r"/model/([^/]+)/invoke")
 
@@ -3435,6 +3452,9 @@ class MockExternalBedrockServer(MockExternalHTTPServer):
 
 
 if __name__ == "__main__":
+    # Use this to sort dict for easier future incremental updates
+    print("RESPONSES = %s" % dict(sorted(RESPONSES.items(), key=lambda i: (i[1][1], i[0]))))
+    
     with MockExternalBedrockServer() as server:
         print("MockExternalBedrockServer serving on port %s" % str(server.port))
         while True:

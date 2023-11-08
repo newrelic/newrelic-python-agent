@@ -64,7 +64,7 @@ def bedrock_error_attributes(exception, request_args, client, extractor):
     error_attributes = extractor(request_body)[1]
 
     error_attributes.update({
-        "request.id": response.get("ResponseMetadata", "").get("RequestId", ""),
+        "request_id": response.get("ResponseMetadata", {}).get("RequestId", ""),
         "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
         "request.model": request_args.get("modelId", ""),
         "vendor": "Bedrock",
@@ -152,9 +152,11 @@ def extract_bedrock_titan_text_model(request_body, response_body=None):
 
 
 def extract_bedrock_titan_embedding_model(request_body, response_body=None):
+    if not response_body:
+        return [], {}  # No extracted information necessary for embedding
+
     request_body = json.loads(request_body)
-    if response_body:
-        response_body = json.loads(response_body)
+    response_body = json.loads(response_body)
 
     input_tokens = response_body.get("inputTextTokenCount", None)
 
@@ -163,7 +165,7 @@ def extract_bedrock_titan_embedding_model(request_body, response_body=None):
         "response.usage.prompt_tokens": input_tokens,
         "response.usage.total_tokens": input_tokens,
     }
-    return embedding_dict
+    return [], embedding_dict
 
 
 def extract_bedrock_ai21_j2_model(request_body, response_body=None):
@@ -332,7 +334,7 @@ def handle_embedding_event(client, transaction, extractor, model, response_body,
     request_id = response_headers.get("x-amzn-requestid", "")
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    embedding_dict = extractor(request_body, response_body)
+    _, embedding_dict = extractor(request_body, response_body)
 
     embedding_dict.update({
         "vendor": "bedrock",

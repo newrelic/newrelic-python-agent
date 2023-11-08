@@ -25,13 +25,13 @@ llm_feedback_all_args_recorded_events = [
         {
             "id": None,
             "category": "informative",
-            "rating": "1",
+            "rating": 1,
             "message_id": "message_id",
             "request_id": "request_id",
             "conversation_id": "conversation_id",
             "ingest_source": "Python",
             "message": "message",
-            "metadata": "metadata",
+            "foo": "bar",
         },
     ),
 ]
@@ -49,7 +49,7 @@ def test_record_llm_feedback_event_all_args_supplied():
             request_id="request_id",
             conversation_id="conversation_id",
             message="message",
-            metadata="metadata",
+            metadata={"foo": "bar"},
         )
 
     _test()
@@ -61,13 +61,12 @@ llm_feedback_required_args_recorded_events = [
         {
             "id": None,
             "category": "",
-            "rating": "1",
+            "rating": 1,
             "message_id": "message_id",
             "request_id": "",
             "conversation_id": "",
             "ingest_source": "Python",
             "message": "",
-            "metadata": "",
         },
     ),
 ]
@@ -94,7 +93,7 @@ def test_record_llm_feedback_event_outside_txn():
             request_id="request_id",
             conversation_id="conversation_id",
             message="message",
-            metadata="metadata",
+            metadata={"foo": "bar"},
         )
 
     _test()

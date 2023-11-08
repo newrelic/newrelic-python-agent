@@ -67,21 +67,18 @@ def record_llm_feedback_event(
         return
 
     feedback_message_id = str(uuid.uuid4())
-    try:
-        rating = str(rating)
-    except Exception:
-        pass
+    metadata = metadata or {}
 
     feedback_message_event = {
         "id": feedback_message_id,
         "message_id": message_id,
         "rating": rating,
-        "metadata": metadata or "",
         "conversation_id": conversation_id or "",
         "request_id": request_id or "",
         "category": category or "",
         "message": message or "",
         "ingest_source": "Python",
     }
+    feedback_message_event.update(metadata)
 
     transaction.record_ml_event("LlmFeedbackMessage", feedback_message_event)

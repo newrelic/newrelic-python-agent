@@ -64,6 +64,7 @@ chat_completion_recorded_events = [
             "response.headers.ratelimitRemainingTokens": 39940,
             "response.headers.ratelimitRemainingRequests": 199,
             "vendor": "openAI",
+            "ingest_source": "Python",
             "response.number_of_messages": 3,
         },
     ),
@@ -83,6 +84,7 @@ chat_completion_recorded_events = [
             "sequence": 0,
             "response.model": "gpt-3.5-turbo-0613",
             "vendor": "openAI",
+            "ingest_source": "Python",
         },
     ),
     (
@@ -101,6 +103,7 @@ chat_completion_recorded_events = [
             "sequence": 1,
             "response.model": "gpt-3.5-turbo-0613",
             "vendor": "openAI",
+            "ingest_source": "Python",
         },
     ),
     (
@@ -119,6 +122,7 @@ chat_completion_recorded_events = [
             "sequence": 2,
             "response.model": "gpt-3.5-turbo-0613",
             "vendor": "openAI",
+            "ingest_source": "Python",
         },
     ),
 ]
@@ -175,6 +179,7 @@ chat_completion_recorded_events_no_convo_id = [
             "response.headers.ratelimitRemainingTokens": 39940,
             "response.headers.ratelimitRemainingRequests": 199,
             "vendor": "openAI",
+            "ingest_source": "Python",
             "response.number_of_messages": 3,
         },
     ),
@@ -194,6 +199,7 @@ chat_completion_recorded_events_no_convo_id = [
             "sequence": 0,
             "response.model": "gpt-3.5-turbo-0613",
             "vendor": "openAI",
+            "ingest_source": "Python",
         },
     ),
     (
@@ -212,6 +218,7 @@ chat_completion_recorded_events_no_convo_id = [
             "sequence": 1,
             "response.model": "gpt-3.5-turbo-0613",
             "vendor": "openAI",
+            "ingest_source": "Python",
         },
     ),
     (
@@ -230,6 +237,7 @@ chat_completion_recorded_events_no_convo_id = [
             "sequence": 2,
             "response.model": "gpt-3.5-turbo-0613",
             "vendor": "openAI",
+            "ingest_source": "Python",
         },
     ),
 ]

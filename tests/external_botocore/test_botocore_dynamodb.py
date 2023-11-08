@@ -80,7 +80,7 @@ _dynamodb_rollup_metrics = [
     background_task=True,
 )
 @background_task()
-@moto.mock_dynamodb2
+@moto.mock_dynamodb
 def test_dynamodb():
     session = botocore.session.get_session()
     client = session.create_client(

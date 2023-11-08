@@ -38,6 +38,7 @@ def test_register_json():
         host=DB_SETTINGS["host"],
         port=DB_SETTINGS["port"],
     ) as connection:
+
         cursor = connection.cursor()
 
         psycopg2.extras.register_json(connection, loads=lambda x: x)
@@ -55,6 +56,7 @@ def test_register_range():
         host=DB_SETTINGS["host"],
         port=DB_SETTINGS["port"],
     ) as connection:
+
         type_name = "floatrange_" + str(os.getpid())
 
         create_sql = "CREATE TYPE %s AS RANGE (" % type_name + "subtype = float8," "subtype_diff = float8mi)"

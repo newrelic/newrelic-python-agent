@@ -38,7 +38,7 @@ def wrap_mlmodel(model, name=None, version=None, feature_names=None, label_names
         model._nr_wrapped_metadata = metadata
 
 
-def get_ai_message_ids(response_id=None):
+def get_llm_message_ids(response_id=None):
     transaction = current_transaction()
     if response_id and transaction:
         nr_message_ids = getattr(transaction, "_nr_message_ids", {})
@@ -51,17 +51,17 @@ def get_ai_message_ids(response_id=None):
         conversation_id, request_id, ids = message_id_info
 
         return [{"conversation_id": conversation_id, "request_id": request_id, "message_id": _id} for _id in ids]
-    warnings.warn("No message ids found. get_ai_message_ids must be called within the scope of a transaction.")
+    warnings.warn("No message ids found. get_llm_message_ids must be called within the scope of a transaction.")
     return []
 
 
-def record_ai_feedback_event(
+def record_llm_feedback_event(
     message_id, rating, conversation_id=None, request_id=None, category=None, message=None, metadata=None
 ):
     transaction = current_transaction()
     if not transaction:
         warnings.warn(
-            "No message feedback events will be recorded. record_ai_feedback must be called within the "
+            "No message feedback events will be recorded. record_llm_feedback_event must be called within the "
             "scope of a transaction."
         )
         return

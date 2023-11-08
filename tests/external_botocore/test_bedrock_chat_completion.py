@@ -19,6 +19,7 @@ from io import BytesIO
 import pytest
 from _test_bedrock_chat_completion import (
     chat_completion_expected_events,
+    chat_completion_get_ai_message_ids,
     chat_completion_payload_templates,
 )
 from testing_support.fixtures import (
@@ -29,7 +30,7 @@ from testing_support.validators.validate_ml_event_count import validate_ml_event
 from testing_support.validators.validate_ml_events import validate_ml_events
 
 from newrelic.api.background_task import background_task
-from newrelic.api.time_trace import current_trace
+from newrelic.api.ml_model import get_ai_message_ids
 from newrelic.api.transaction import add_custom_attribute, current_transaction
 
 
@@ -83,6 +84,11 @@ def expected_events_no_convo_id(model_id):
     for event in events:
         event[1]["conversation_id"] = ""
     return events
+
+
+@pytest.fixture(scope="module")
+def expected_ai_message_ids(model_id):
+    return chat_completion_get_ai_message_ids[model_id]
 
 
 _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted to Celsius?"
@@ -154,3 +160,82 @@ disabled_ml_settings = {"machine_learning.enabled": False, "ml_insights_events.e
 def test_bedrock_chat_completion_disabled_settings(set_trace_info, exercise_model):
     set_trace_info()
     exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+
+
+# Testing get_ai_message_ids:
+
+
+@reset_core_stats_engine()
+@background_task()
+def test_get_ai_message_ids_when_nr_message_ids_not_set():
+    message_ids = get_ai_message_ids("request-id-1")
+    assert message_ids == []
+
+
+@reset_core_stats_engine()
+def test_get_ai_message_ids_outside_transaction():
+    message_ids = get_ai_message_ids("request-id-1")
+    assert message_ids == []
+
+
+@reset_core_stats_engine()
+def test_get_ai_message_ids_bedrock_chat_completion_in_txn(
+    set_trace_info, exercise_model, expected_ai_message_ids
+):  # noqa: F811
+    @background_task()
+    def _test():
+        set_trace_info()
+        add_custom_attribute("conversation_id", "my-awesome-id")
+        exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+
+        id = [key for key in expected_ai_message_ids.keys()][0]
+        expected_message_ids = [value for value in expected_ai_message_ids.values()][0]
+        if id == "bedrock_key":
+            message_ids = [m for m in get_ai_message_ids()]
+            for index, message_id_info in enumerate(message_ids):
+                expected_message_id_info = expected_message_ids[index]
+                assert message_id_info["conversation_id"] == expected_message_id_info["conversation_id"]
+                assert message_id_info["request_id"] == expected_message_id_info["request_id"]
+                assert message_id_info["message_id"]
+
+        else:
+            message_ids = [m for m in get_ai_message_ids(id)]
+            for index, message_id_info in enumerate(message_ids):
+                expected_message_id_info = expected_message_ids[index]
+                assert message_id_info["conversation_id"] == expected_message_id_info["conversation_id"]
+                assert message_id_info["request_id"] == expected_message_id_info["request_id"]
+                assert message_id_info["message_id"] == expected_message_id_info["message_id"]
+
+        assert current_transaction()._nr_message_ids == {}
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_get_ai_message_ids_bedrock_chat_completion_no_convo_id(
+    set_trace_info, exercise_model, expected_ai_message_ids
+):  # noqa: F811
+    @background_task()
+    def _test():
+        set_trace_info()
+        exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+
+        id = [key for key in expected_ai_message_ids.keys()][0]
+        expected_message_ids = [value for value in expected_ai_message_ids.values()][0]
+        if id == "bedrock_key":
+            message_ids = [m for m in get_ai_message_ids()]
+            for index, message_id_info in enumerate(message_ids):
+                expected_message_id_info = expected_message_ids[index]
+                assert message_id_info["request_id"] == expected_message_id_info["request_id"]
+                assert message_id_info["message_id"]
+
+        else:
+            message_ids = [m for m in get_ai_message_ids(id)]
+            for index, message_id_info in enumerate(message_ids):
+                expected_message_id_info = expected_message_ids[index]
+                assert message_id_info["request_id"] == expected_message_id_info["request_id"]
+                assert message_id_info["message_id"] == expected_message_id_info["message_id"]
+
+        assert current_transaction()._nr_message_ids == {}
+
+    _test()

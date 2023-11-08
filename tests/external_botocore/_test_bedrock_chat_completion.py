@@ -19,6 +19,65 @@ chat_completion_payload_templates = {
     "cohere.command-text-v14": '{"prompt": "%s", "temperature": %f, "max_tokens": %d}',
 }
 
+chat_completion_get_ai_message_ids = {
+    "amazon.titan-text-express-v1": {
+        "bedrock_key": [
+            {
+                "conversation_id": "my-awesome-id",
+                "request_id": "660d4de9-6804-460e-8556-4ab2a019d1e3",
+                "message_id": None,  # UUID that varies with each run
+            },
+            {
+                "conversation_id": "my-awesome-id",
+                "request_id": "660d4de9-6804-460e-8556-4ab2a019d1e3",
+                "message_id": None,  # UUID that varies with each run
+            },
+        ]
+    },
+    "ai21.j2-mid-v1": {
+        "1234": [
+            {
+                "conversation_id": "my-awesome-id",
+                "request_id": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e",
+                "message_id": "1234-0",
+            },
+            {
+                "conversation_id": "my-awesome-id",
+                "request_id": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e",
+                "message_id": "1234-1",
+            },
+        ]
+    },
+    "anthropic.claude-instant-v1": {
+        "bedrock_key": [
+            {
+                "conversation_id": "my-awesome-id",
+                "request_id": "f354b9a7-9eac-4f50-a8d7-7d5d23566176",
+                "message_id": None,  # UUID that varies with each run
+            },
+            {
+                "conversation_id": "my-awesome-id",
+                "request_id": "f354b9a7-9eac-4f50-a8d7-7d5d23566176",
+                "message_id": None,  # UUID that varies with each run
+            },
+        ]
+    },
+    "cohere.command-text-v14": {
+        "a9cc8ce6-50b6-40b6-bf77-cf24561d8de7": [
+            {
+                "conversation_id": "my-awesome-id",
+                "request_id": "c5188fb5-dc58-4cbe-948d-af173c69ce0d",
+                "message_id": "a9cc8ce6-50b6-40b6-bf77-cf24561d8de7-0",
+            },
+            {
+                "conversation_id": "my-awesome-id",
+                "request_id": "c5188fb5-dc58-4cbe-948d-af173c69ce0d",
+                "message_id": "a9cc8ce6-50b6-40b6-bf77-cf24561d8de7-1",
+            },
+        ]
+    },
+}
+
 chat_completion_expected_events = {
     "amazon.titan-text-express-v1": [
         (

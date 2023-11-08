@@ -96,7 +96,7 @@ def create_chat_completion_message_event(
         }
         transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
-    return (conversation_id, message_ids) if not response_id else (conversation_id, response_id, message_ids)
+    return (conversation_id, request_id, message_ids)
 
 
 def extract_bedrock_titan_text_model(request_body, response_body):

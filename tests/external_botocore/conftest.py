@@ -14,6 +14,7 @@
 
 import json
 import os
+import re
 
 import pytest
 from _mock_external_bedrock_server import (
@@ -92,56 +93,56 @@ def bedrock_server():
 
         # Apply function wrappers to record data
         wrap_function_wrapper(
-            "botocore.client", "BaseClient._make_api_call", wrap_botocore_client_BaseClient__make_api_call
+            "botocore.endpoint", "Endpoint._do_get_response", wrap_botocore_endpoint_Endpoint__do_get_response
         )
         yield client  # Run tests
 
         # Write responses to audit log
+        bedrock_audit_log_contents = dict(sorted(BEDROCK_AUDIT_LOG_CONTENTS.items(), key=lambda i: (i[1][1], i[0])))
         with open(BEDROCK_AUDIT_LOG_FILE, "w") as audit_log_fp:
-            json.dump(BEDROCK_AUDIT_LOG_CONTENTS, fp=audit_log_fp, indent=4)
+            json.dump(bedrock_audit_log_contents, fp=audit_log_fp, indent=4)
 
 
 # Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = set(["x-amzn-requestid", "content-type"])
+RECORDED_HEADERS = set(["x-amzn-requestid", "x-amzn-errortype", "content-type"])
 
 
-def wrap_botocore_client_BaseClient__make_api_call(wrapped, instance, args, kwargs):
-    from io import BytesIO
-
-    from botocore.response import StreamingBody
-
-    params = bind_make_api_call_params(*args, **kwargs)
-    if not params:
+def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kwargs):
+    request = bind__do_get_response(*args, **kwargs)
+    if not request:
         return wrapped(*args, **kwargs)
 
-    body = json.loads(params["body"])
-    model = params["modelId"]
+    body = json.loads(request.body)
+
+    match = re.search(r"/model/([0-9a-zA-Z.-]+)/", request.url)
+    model = match.group(1)
     prompt = extract_shortened_prompt(body, model)
 
     # Send request
     result = wrapped(*args, **kwargs)
 
-    # Intercept body data, and replace stream
-    streamed_body = result["body"].read()
-    result["body"] = StreamingBody(BytesIO(streamed_body), len(streamed_body))
+    # Unpack response
+    success, exception = result
+    response = (success or exception)[0]
 
     # Clean up data
-    data = json.loads(streamed_body.decode("utf-8"))
-    headers = dict(result["ResponseMetadata"]["HTTPHeaders"].items())
+    data = json.loads(response.content.decode("utf-8"))
+    headers = dict(response.headers.items())
     headers = dict(
         filter(
-            lambda k: k[0] in RECORDED_HEADERS or k[0].startswith("x-ratelimit"),
+            lambda k: k[0].lower() in RECORDED_HEADERS or k[0].startswith("x-ratelimit"),
             headers.items(),
         )
     )
+    status_code = response.status_code
 
     # Log response
-    BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, data  # Append response data to audit log
+    BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, status_code, data  # Append response data to audit log
     return result
 
 
-def bind_make_api_call_params(operation_name, api_params):
-    return api_params
+def bind__do_get_response(request, operation_model, context):
+    return request
 
 
 @pytest.fixture(scope="session")

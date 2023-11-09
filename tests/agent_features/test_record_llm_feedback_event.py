@@ -19,26 +19,26 @@ from testing_support.validators.validate_ml_events import validate_ml_events
 from newrelic.api.background_task import background_task
 from newrelic.api.ml_model import record_llm_feedback_event
 
-llm_feedback_all_args_recorded_events = [
-    (
-        {"type": "LlmFeedbackMessage"},
-        {
-            "id": None,
-            "category": "informative",
-            "rating": 1,
-            "message_id": "message_id",
-            "request_id": "request_id",
-            "conversation_id": "conversation_id",
-            "ingest_source": "Python",
-            "message": "message",
-            "foo": "bar",
-        },
-    ),
-]
-
 
 @reset_core_stats_engine()
 def test_record_llm_feedback_event_all_args_supplied():
+    llm_feedback_all_args_recorded_events = [
+        (
+            {"type": "LlmFeedbackMessage"},
+            {
+                "id": None,
+                "category": "informative",
+                "rating": 1,
+                "message_id": "message_id",
+                "request_id": "request_id",
+                "conversation_id": "conversation_id",
+                "ingest_source": "Python",
+                "message": "message",
+                "foo": "bar",
+            },
+        ),
+    ]
+
     @validate_ml_events(llm_feedback_all_args_recorded_events)
     @background_task()
     def _test():
@@ -55,45 +55,42 @@ def test_record_llm_feedback_event_all_args_supplied():
     _test()
 
 
-llm_feedback_required_args_recorded_events = [
-    (
-        {"type": "LlmFeedbackMessage"},
-        {
-            "id": None,
-            "category": "",
-            "rating": 1,
-            "message_id": "message_id",
-            "request_id": "",
-            "conversation_id": "",
-            "ingest_source": "Python",
-            "message": "",
-        },
-    ),
-]
-
-
 @reset_core_stats_engine()
 def test_record_llm_feedback_event_required_args_supplied():
+    llm_feedback_required_args_recorded_events = [
+        (
+            {"type": "LlmFeedbackMessage"},
+            {
+                "id": None,
+                "category": "",
+                "rating": "Good",
+                "message_id": "message_id",
+                "request_id": "",
+                "conversation_id": "",
+                "ingest_source": "Python",
+                "message": "",
+            },
+        ),
+    ]
+
     @validate_ml_events(llm_feedback_required_args_recorded_events)
     @background_task()
     def _test():
-        record_llm_feedback_event(message_id="message_id", rating=1)
+        record_llm_feedback_event(message_id="message_id", rating="Good")
 
     _test()
 
 
 @reset_core_stats_engine()
+@validate_ml_event_count(count=0)
 def test_record_llm_feedback_event_outside_txn():
-    @validate_ml_event_count(count=0)
-    def _test():
-        record_llm_feedback_event(
-            rating=1,
-            message_id="message_id",
-            category="informative",
-            request_id="request_id",
-            conversation_id="conversation_id",
-            message="message",
-            metadata={"foo": "bar"},
-        )
+    record_llm_feedback_event(
+        rating="Good",
+        message_id="message_id",
+        category="informative",
+        request_id="request_id",
+        conversation_id="conversation_id",
+        message="message",
+        metadata={"foo": "bar"},
+    )
 
-    _test()

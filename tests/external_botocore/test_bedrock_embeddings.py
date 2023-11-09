@@ -15,15 +15,21 @@
 import json
 from io import BytesIO
 
+import botocore.exceptions
 import pytest
 from _test_bedrock_embeddings import (
+    embedding_expected_client_errors,
     embedding_expected_events,
     embedding_payload_templates,
 )
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import (  # override_application_settings,
+    dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
+)
+from testing_support.validators.validate_error_trace_attributes import (
+    validate_error_trace_attributes,
 )
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.validators.validate_ml_events import validate_ml_events
@@ -32,6 +38,7 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.object_names import callable_name
 
 disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
 
@@ -78,6 +85,11 @@ def expected_events(model_id):
     return embedding_expected_events[model_id]
 
 
+@pytest.fixture(scope="module")
+def expected_client_error(model_id):
+    return embedding_expected_client_errors[model_id]
+
+
 @reset_core_stats_engine()
 def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
     @validate_ml_events(expected_events)
@@ -103,6 +115,10 @@ def test_bedrock_embedding_outside_txn(exercise_model):
     exercise_model(prompt="This is an embedding test.")
 
 
+_client_error = botocore.exceptions.ClientError
+_client_error_name = callable_name(_client_error)
+
+
 @override_application_settings(disabled_ml_insights_settings)
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
@@ -117,3 +133,27 @@ def test_bedrock_embedding_outside_txn(exercise_model):
 def test_bedrock_embedding_disabled_settings(set_trace_info, exercise_model):
     set_trace_info()
     exercise_model(prompt="This is an embedding test.")
+
+
+@dt_enabled
+@reset_core_stats_engine()
+def test_bedrock_embedding_error_incorrect_access_key(
+    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_client_error
+):
+    @validate_error_trace_attributes(
+        _client_error_name,
+        exact_attrs={
+            "agent": {},
+            "intrinsic": {},
+            "user": expected_client_error,
+        },
+    )
+    @background_task()
+    def _test():
+        monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
+
+        with pytest.raises(_client_error):  # not sure where this exception actually comes from
+            set_trace_info()
+            exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
+
+    _test()

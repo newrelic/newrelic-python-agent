@@ -24,12 +24,12 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "660d4de9-6804-460e-8556-4ab2a019d1e3",
+                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
                 "message_id": None,  # UUID that varies with each run
             },
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "660d4de9-6804-460e-8556-4ab2a019d1e3",
+                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
                 "message_id": None,  # UUID that varies with each run
             },
         ]
@@ -38,12 +38,12 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e",
+                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
                 "message_id": "1234-0",
             },
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e",
+                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
                 "message_id": "1234-1",
             },
         ]
@@ -52,12 +52,12 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "f354b9a7-9eac-4f50-a8d7-7d5d23566176",
+                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
                 "message_id": None,  # UUID that varies with each run
             },
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "f354b9a7-9eac-4f50-a8d7-7d5d23566176",
+                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
                 "message_id": None,  # UUID that varies with each run
             },
         ]
@@ -66,13 +66,13 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "c5188fb5-dc58-4cbe-948d-af173c69ce0d",
-                "message_id": "a9cc8ce6-50b6-40b6-bf77-cf24561d8de7-0",
+                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "message_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97-0",
             },
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "c5188fb5-dc58-4cbe-948d-af173c69ce0d",
-                "message_id": "a9cc8ce6-50b6-40b6-bf77-cf24561d8de7-1",
+                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "message_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97-1",
             },
         ]
     },

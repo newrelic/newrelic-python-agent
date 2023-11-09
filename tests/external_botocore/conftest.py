@@ -28,7 +28,12 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.package_version_utils import get_package_version_tuple
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
+
+BOTOCORE_VERSION = get_package_version("botocore")
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,

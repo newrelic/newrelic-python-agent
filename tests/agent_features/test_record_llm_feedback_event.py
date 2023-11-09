@@ -93,4 +93,3 @@ def test_record_llm_feedback_event_outside_txn():
         message="message",
         metadata={"foo": "bar"},
     )
-

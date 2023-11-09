@@ -188,23 +188,18 @@ def test_get_ai_message_ids_bedrock_chat_completion_in_txn(
         add_custom_attribute("conversation_id", "my-awesome-id")
         exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
-        id = [key for key in expected_ai_message_ids.keys()][0]
         expected_message_ids = [value for value in expected_ai_message_ids.values()][0]
-        if id == "bedrock_key":
-            message_ids = [m for m in get_ai_message_ids()]
-            for index, message_id_info in enumerate(message_ids):
-                expected_message_id_info = expected_message_ids[index]
-                assert message_id_info["conversation_id"] == expected_message_id_info["conversation_id"]
-                assert message_id_info["request_id"] == expected_message_id_info["request_id"]
-                assert message_id_info["message_id"]
-
-        else:
-            message_ids = [m for m in get_ai_message_ids(id)]
-            for index, message_id_info in enumerate(message_ids):
-                expected_message_id_info = expected_message_ids[index]
-                assert message_id_info["conversation_id"] == expected_message_id_info["conversation_id"]
-                assert message_id_info["request_id"] == expected_message_id_info["request_id"]
+        message_ids = [m for m in get_ai_message_ids()]
+        for index, message_id_info in enumerate(message_ids):
+            expected_message_id_info = expected_message_ids[index]
+            assert message_id_info["conversation_id"] == expected_message_id_info["conversation_id"]
+            assert message_id_info["request_id"] == expected_message_id_info["request_id"]
+            if expected_message_id_info["message_id"]:
                 assert message_id_info["message_id"] == expected_message_id_info["message_id"]
+            else:
+                # We are checking for the presence of a message_id since in this case it is
+                # a UUID that changes with each run.
+                assert message_id_info["message_id"]
 
         assert current_transaction()._nr_message_ids == {}
 
@@ -220,21 +215,18 @@ def test_get_ai_message_ids_bedrock_chat_completion_no_convo_id(
         set_trace_info()
         exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
-        id = [key for key in expected_ai_message_ids.keys()][0]
         expected_message_ids = [value for value in expected_ai_message_ids.values()][0]
-        if id == "bedrock_key":
-            message_ids = [m for m in get_ai_message_ids()]
-            for index, message_id_info in enumerate(message_ids):
-                expected_message_id_info = expected_message_ids[index]
-                assert message_id_info["request_id"] == expected_message_id_info["request_id"]
-                assert message_id_info["message_id"]
-
-        else:
-            message_ids = [m for m in get_ai_message_ids(id)]
-            for index, message_id_info in enumerate(message_ids):
-                expected_message_id_info = expected_message_ids[index]
-                assert message_id_info["request_id"] == expected_message_id_info["request_id"]
+        message_ids = [m for m in get_ai_message_ids()]
+        for index, message_id_info in enumerate(message_ids):
+            expected_message_id_info = expected_message_ids[index]
+            assert message_id_info["request_id"] == expected_message_id_info["request_id"]
+            if expected_message_id_info["message_id"]:
                 assert message_id_info["message_id"] == expected_message_id_info["message_id"]
+            else:
+                # We are checking for the presence of a message_id since in this case it is
+                # a UUID that changes with each run.
+                assert message_id_info["message_id"]
+            assert message_id_info["conversation_id"] == ""
 
         assert current_transaction()._nr_message_ids == {}
 

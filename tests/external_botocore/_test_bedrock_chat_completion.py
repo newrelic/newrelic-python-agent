@@ -35,7 +35,7 @@ chat_completion_get_ai_message_ids = {
         ]
     },
     "ai21.j2-mid-v1": {
-        "1234": [
+        "bedrock_key": [
             {
                 "conversation_id": "my-awesome-id",
                 "request_id": "3bf1bb6b-b6f0-4901-85a1-2fa0e814440e",
@@ -63,7 +63,7 @@ chat_completion_get_ai_message_ids = {
         ]
     },
     "cohere.command-text-v14": {
-        "a9cc8ce6-50b6-40b6-bf77-cf24561d8de7": [
+        "bedrock_key": [
             {
                 "conversation_id": "my-awesome-id",
                 "request_id": "c5188fb5-dc58-4cbe-948d-af173c69ce0d",

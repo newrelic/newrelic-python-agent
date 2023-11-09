@@ -348,10 +348,7 @@ def handle_chat_completion_event(
     )
     if not hasattr(transaction, "_nr_message_ids"):
         transaction._nr_message_ids = {}
-    if not response_id:
-        transaction._nr_message_ids["bedrock_key"] = message_ids
-    else:
-        transaction._nr_message_ids[response_id] = message_ids
+    transaction._nr_message_ids["bedrock_key"] = message_ids
 
 
 CUSTOM_TRACE_POINTS = {

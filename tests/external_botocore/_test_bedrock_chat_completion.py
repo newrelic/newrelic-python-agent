@@ -19,7 +19,7 @@ chat_completion_payload_templates = {
     "cohere.command-text-v14": '{"prompt": "%s", "temperature": %f, "max_tokens": %d}',
 }
 
-chat_completion_get_ai_message_ids = {
+chat_completion_get_llm_message_ids = {
     "amazon.titan-text-express-v1": {
         "bedrock_key": [
             {

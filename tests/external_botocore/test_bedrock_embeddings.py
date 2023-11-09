@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import json
 from io import BytesIO
 
 import pytest
+from _test_bedrock_embeddings import (
+    embedding_expected_events,
+    embedding_payload_templates,
+)
+from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,
     reset_core_stats_engine,
@@ -28,8 +32,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-
-from _test_bedrock_embeddings import embedding_expected_events, embedding_payload_templates
 
 disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
 
@@ -80,13 +82,13 @@ def expected_events(model_id):
 def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
     @validate_ml_events(expected_events)
     @validate_ml_event_count(count=1)
-    # @validate_transaction_metrics(
-    #     name="test_bedrock_embedding",
-    #     custom_metrics=[
-    #         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
-    #     ],
-    #     background_task=True,
-    # )
+    @validate_transaction_metrics(
+        name="test_bedrock_embedding",
+        custom_metrics=[
+            ("Python/ML/Botocore/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
     @background_task(name="test_bedrock_embedding")
     def _test():
         set_trace_info()
@@ -104,13 +106,13 @@ def test_bedrock_embedding_outside_txn(exercise_model):
 @override_application_settings(disabled_ml_insights_settings)
 @reset_core_stats_engine()
 @validate_ml_event_count(count=0)
-# @validate_transaction_metrics(
-#     name="test_embeddings:test_bedrock_embedding_disabled_settings",
-#     custom_metrics=[
-#         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
-#     ],
-#     background_task=True,
-# )
+@validate_transaction_metrics(
+    name="test_bedrock_embeddings:test_bedrock_embedding_disabled_settings",
+    custom_metrics=[
+        ("Python/ML/Botocore/%s" % BOTOCORE_VERSION, 1),
+    ],
+    background_task=True,
+)
 @background_task()
 def test_bedrock_embedding_disabled_settings(set_trace_info, exercise_model):
     set_trace_info()

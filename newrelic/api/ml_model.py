@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+import uuid
 import warnings
 
 from newrelic.api.transaction import current_transaction
@@ -37,7 +38,7 @@ def wrap_mlmodel(model, name=None, version=None, feature_names=None, label_names
         model._nr_wrapped_metadata = metadata
 
 
-def get_ai_message_ids(response_id=None):
+def get_llm_message_ids(response_id=None):
     transaction = current_transaction()
     if response_id and transaction:
         nr_message_ids = getattr(transaction, "_nr_message_ids", {})
@@ -50,5 +51,34 @@ def get_ai_message_ids(response_id=None):
         conversation_id, request_id, ids = message_id_info
 
         return [{"conversation_id": conversation_id, "request_id": request_id, "message_id": _id} for _id in ids]
-    warnings.warn("No message ids found. get_ai_message_ids must be called within the scope of a transaction.")
+    warnings.warn("No message ids found. get_llm_message_ids must be called within the scope of a transaction.")
     return []
+
+
+def record_llm_feedback_event(
+    message_id, rating, conversation_id=None, request_id=None, category=None, message=None, metadata=None
+):
+    transaction = current_transaction()
+    if not transaction:
+        warnings.warn(
+            "No message feedback events will be recorded. record_llm_feedback_event must be called within the "
+            "scope of a transaction."
+        )
+        return
+
+    feedback_message_id = str(uuid.uuid4())
+    metadata = metadata or {}
+
+    feedback_message_event = {
+        "id": feedback_message_id,
+        "message_id": message_id,
+        "rating": rating,
+        "conversation_id": conversation_id or "",
+        "request_id": request_id or "",
+        "category": category or "",
+        "message": message or "",
+        "ingest_source": "Python",
+    }
+    feedback_message_event.update(metadata)
+
+    transaction.record_ml_event("LlmFeedbackMessage", feedback_message_event)

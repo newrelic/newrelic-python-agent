@@ -84,7 +84,6 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     method = request_dict.get("method", None)
 
     with ExternalTrace(library="botocore", url=url, method=method, source=wrapped) as trace:
-
         try:
             trace._add_agent_attribute("aws.operation", operation_model.name)
         except:

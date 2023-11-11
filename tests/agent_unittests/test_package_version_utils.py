@@ -73,7 +73,6 @@ def test_get_package_version(monkeypatch, attr, value, expected_value):
     monkeypatch.setattr(pytest, attr, value, raising=False)
     version = get_package_version("pytest")
     assert version == expected_value
-    delattr(pytest, attr)
 
 
 # This test only works on Python 3.7

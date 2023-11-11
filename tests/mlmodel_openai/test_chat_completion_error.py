@@ -22,15 +22,6 @@ from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-try:
-    from openai import InvalidRequestError as request_error
-except ImportError:
-    from openai import BadRequestError as request_error
-
-try:
-    from openai.error import AuthenticationError as auth_error
-except ImportError:
-    from openai._exceptions import AuthenticationError as auth_error
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -38,12 +29,14 @@ _test_openai_chat_completion_messages = (
 )
 
 
-# Sync tests
+# Sync tests:
+
+
 # No model provided
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(request_error),
+    callable_name(openai.InvalidRequestError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -65,7 +58,7 @@ _test_openai_chat_completion_messages = (
 )
 @background_task()
 def test_chat_completion_invalid_request_error_no_model():
-    with pytest.raises(request_error):
+    with pytest.raises(openai.InvalidRequestError):
         openai.ChatCompletion.create(
             # no model provided,
             messages=_test_openai_chat_completion_messages,
@@ -78,7 +71,7 @@ def test_chat_completion_invalid_request_error_no_model():
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(request_error),
+    callable_name(openai.InvalidRequestError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -102,7 +95,7 @@ def test_chat_completion_invalid_request_error_no_model():
 )
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model():
-    with pytest.raises(request_error):
+    with pytest.raises(openai.InvalidRequestError):
         openai.ChatCompletion.create(
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
@@ -115,7 +108,7 @@ def test_chat_completion_invalid_request_error_invalid_model():
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(auth_error),
+    callable_name(openai.error.AuthenticationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -136,7 +129,7 @@ def test_chat_completion_invalid_request_error_invalid_model():
 )
 @background_task()
 def test_chat_completion_authentication_error(monkeypatch):
-    with pytest.raises(auth_error):
+    with pytest.raises(openai.error.AuthenticationError):
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -150,7 +143,7 @@ def test_chat_completion_authentication_error(monkeypatch):
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(auth_error),
+    callable_name(openai.error.AuthenticationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -173,7 +166,7 @@ def test_chat_completion_authentication_error(monkeypatch):
 )
 @background_task()
 def test_chat_completion_wrong_api_key_error(monkeypatch):
-    with pytest.raises(auth_error):
+    with pytest.raises(openai.error.AuthenticationError):
         monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
         openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -190,7 +183,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch):
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(request_error),
+    callable_name(openai.InvalidRequestError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -212,7 +205,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch):
 )
 @background_task()
 def test_chat_completion_invalid_request_error_no_model_async(loop):
-    with pytest.raises(request_error):
+    with pytest.raises(openai.InvalidRequestError):
         loop.run_until_complete(
             openai.ChatCompletion.acreate(
                 # no model provided,
@@ -227,7 +220,7 @@ def test_chat_completion_invalid_request_error_no_model_async(loop):
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(request_error),
+    callable_name(openai.InvalidRequestError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -251,7 +244,7 @@ def test_chat_completion_invalid_request_error_no_model_async(loop):
 )
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model_async(loop):
-    with pytest.raises(request_error):
+    with pytest.raises(openai.InvalidRequestError):
         loop.run_until_complete(
             openai.ChatCompletion.acreate(
                 model="does-not-exist",
@@ -266,7 +259,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop):
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(auth_error),
+    callable_name(openai.error.AuthenticationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -287,7 +280,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop):
 )
 @background_task()
 def test_chat_completion_authentication_error_async(loop, monkeypatch):
-    with pytest.raises(auth_error):
+    with pytest.raises(openai.error.AuthenticationError):
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         loop.run_until_complete(
             openai.ChatCompletion.acreate(
@@ -300,7 +293,7 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch):
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(auth_error),
+    callable_name(openai.error.AuthenticationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -323,7 +316,7 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch):
 )
 @background_task()
 def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch):
-    with pytest.raises(auth_error):
+    with pytest.raises(openai.error.AuthenticationError):
         monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
         loop.run_until_complete(
             openai.ChatCompletion.acreate(

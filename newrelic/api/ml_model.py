@@ -18,7 +18,6 @@ import warnings
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
-from newrelic.api.transaction import current_transaction
 from newrelic.hooks.mlmodel_sklearn import _nr_instrument_model
 
 

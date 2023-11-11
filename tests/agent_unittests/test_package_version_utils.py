@@ -105,7 +105,6 @@ def test_get_package_version_tuple(monkeypatch, attr, value, expected_value):
     monkeypatch.setattr(pytest, attr, value, raising=False)
     version = get_package_version_tuple("pytest")
     assert version == expected_value
-    delattr(pytest, attr)
 
 
 @SKIP_IF_NOT_IMPORTLIB_METADATA

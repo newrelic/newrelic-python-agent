@@ -18,6 +18,7 @@ import warnings
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.api.transaction import current_transaction
 from newrelic.hooks.mlmodel_sklearn import _nr_instrument_model
 
 
@@ -81,4 +82,4 @@ def record_llm_feedback_event(
     }
     feedback_message_event.update(metadata)
 
-    transaction.record_ml_event("LlmFeedbackMessage", feedback_message_event)
+    transaction.record_custom_event("LlmFeedbackMessage", feedback_message_event)

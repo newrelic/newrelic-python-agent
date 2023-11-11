@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import openai
 from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,
     reset_core_stats_engine,
+    validate_custom_event_count,
 )
-from testing_support.validators.validate_ml_event_count import validate_ml_event_count
-from testing_support.validators.validate_ml_events import validate_ml_events
+from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
 
-disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
-
+disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 embedding_recorded_events = [
     (
@@ -62,8 +62,8 @@ embedding_recorded_events = [
 
 
 @reset_core_stats_engine()
-@validate_ml_events(embedding_recorded_events)
-@validate_ml_event_count(count=1)
+@validate_custom_events(embedding_recorded_events)
+@validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_embeddings:test_openai_embedding_sync",
     custom_metrics=[
@@ -78,30 +78,30 @@ def test_openai_embedding_sync(set_trace_info):
 
 
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 def test_openai_embedding_sync_outside_txn():
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
-@override_application_settings(disabled_ml_insights_settings)
+@override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
-    name="test_embeddings:test_openai_chat_completion_sync_disabled_settings",
+    name="test_embeddings:test_openai_embedding_sync_disabled_settings",
     custom_metrics=[
         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
 @background_task()
-def test_openai_chat_completion_sync_disabled_settings(set_trace_info):
+def test_openai_embedding_sync_disabled_settings(set_trace_info):
     set_trace_info()
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
 @reset_core_stats_engine()
-@validate_ml_events(embedding_recorded_events)
-@validate_ml_event_count(count=1)
+@validate_custom_events(embedding_recorded_events)
+@validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_embeddings:test_openai_embedding_async",
     custom_metrics=[
@@ -119,25 +119,25 @@ def test_openai_embedding_async(loop, set_trace_info):
 
 
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 def test_openai_embedding_async_outside_transaction(loop):
     loop.run_until_complete(
         openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
     )
 
 
-@override_application_settings(disabled_ml_insights_settings)
+@override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
-    name="test_embeddings:test_openai_embedding_async_disabled_ml_insights_events",
+    name="test_embeddings:test_openai_embedding_async_disabled_custom_insights_events",
     custom_metrics=[
         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
 @background_task()
-def test_openai_embedding_async_disabled_ml_insights_events(loop):
+def test_openai_embedding_async_disabled_custom_insights_events(loop):
     loop.run_until_complete(
         openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
     )

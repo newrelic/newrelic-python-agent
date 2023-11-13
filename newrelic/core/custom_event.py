@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import logging
 import re
 import time
@@ -19,18 +18,22 @@ import time
 from newrelic.core.attribute import (check_name_is_string, check_name_length,
         process_user_attribute, NameIsNotStringException, NameTooLongException,
         MAX_NUM_USER_ATTRIBUTES, MAX_ML_ATTRIBUTE_LENGTH, MAX_NUM_ML_USER_ATTRIBUTES, MAX_ATTRIBUTE_LENGTH)
-
+from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
-EVENT_TYPE_VALID_CHARS_REGEX = re.compile(r'^[a-zA-Z0-9:_ ]+$')
+EVENT_TYPE_VALID_CHARS_REGEX = re.compile(r"^[a-zA-Z0-9:_ ]+$")
 
-class NameInvalidCharactersException(Exception): pass
+
+class NameInvalidCharactersException(Exception):
+    pass
+
 
 def check_event_type_valid_chars(name):
     regex = EVENT_TYPE_VALID_CHARS_REGEX
     if not regex.match(name):
         raise NameInvalidCharactersException()
+
 
 def process_event_type(name):
     """Perform all necessary validation on a potential event type.
@@ -55,25 +58,22 @@ def process_event_type(name):
         check_event_type_valid_chars(name)
 
     except NameIsNotStringException:
-        _logger.debug('Event type must be a string. Dropping '
-                'event: %r', name)
+        _logger.debug("Event type must be a string. Dropping " "event: %r", name)
         return FAILED_RESULT
 
     except NameTooLongException:
-        _logger.debug('Event type exceeds maximum length. Dropping '
-                'event: %r', name)
+        _logger.debug("Event type exceeds maximum length. Dropping " "event: %r", name)
         return FAILED_RESULT
 
     except NameInvalidCharactersException:
-        _logger.debug('Event type has invalid characters. Dropping '
-                'event: %r', name)
+        _logger.debug("Event type has invalid characters. Dropping " "event: %r", name)
         return FAILED_RESULT
 
     else:
         return name
 
 
-def create_custom_event(event_type, params, is_ml_event=False):
+def create_custom_event(event_type, params, settings=None, is_ml_event=False):
     """Creates a valid custom event.
 
     Ensures that the custom event has a valid name, and also checks
@@ -84,6 +84,7 @@ def create_custom_event(event_type, params, is_ml_event=False):
     Args:
         event_type (str): The type (name) of the custom event.
         params (dict): Attributes to add to the event.
+        settings: Optional config settings.
         is_ml_event (bool): Boolean indicating whether create_custom_event was called from
         record_ml_event for truncation purposes
 
@@ -92,6 +93,7 @@ def create_custom_event(event_type, params, is_ml_event=False):
         None, if not successful.
 
     """
+    settings = settings or global_settings()
 
     name = process_event_type(event_type)
 
@@ -106,7 +108,7 @@ def create_custom_event(event_type, params, is_ml_event=False):
                 max_length = MAX_ML_ATTRIBUTE_LENGTH
                 max_num_attrs = MAX_NUM_ML_USER_ATTRIBUTES
             else:
-                max_length = MAX_ATTRIBUTE_LENGTH
+                max_length=settings.custom_insights_events.max_attribute_value
                 max_num_attrs = MAX_NUM_USER_ATTRIBUTES
             key, value = process_user_attribute(k, v, max_length=max_length)
             if key:

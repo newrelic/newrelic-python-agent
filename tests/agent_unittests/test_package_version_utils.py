@@ -16,6 +16,7 @@ import sys
 import warnings
 
 import pytest
+import six
 from testing_support.validators.validate_function_called import validate_function_called
 
 from newrelic.common.package_version_utils import (
@@ -136,6 +137,7 @@ def _getattr_deprecation_warning(attr):
         raise NotImplementedError()
 
 
+@pytest.mark.skipif(six.PY2, reason="Can't add Deprecation in __version__ in Python 2.")
 def test_deprecation_warning_suppression(monkeypatch, recwarn):
     # Add fake module to be deleted later
     monkeypatch.setattr(pytest, "__getattr__", _getattr_deprecation_warning, raising=False)

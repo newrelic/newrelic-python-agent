@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+import warnings
 
 try:
     from functools import cache as _cache_package_versions
@@ -110,6 +111,23 @@ def _get_package_version(name):
     module = sys.modules.get(name, None)
     version = None
 
+    with warnings.catch_warnings(record=True):
+        for attr in VERSION_ATTRS:
+            try:
+                version = getattr(module, attr, None)
+                
+                # In certain cases like importlib_metadata.version, version is a callable
+                # function.
+                if callable(version):
+                    continue
+
+                # Cast any version specified as a list into a tuple.
+                version = tuple(version) if isinstance(version, list) else version
+                if version not in NULL_VERSIONS:
+                    return version
+            except Exception:
+                pass
+
     # importlib was introduced into the standard library starting in Python3.8.
     if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
         try:
@@ -127,22 +145,6 @@ def _get_package_version(name):
         except Exception:
             pass
 
-    # __version__ has been deprecated in Python 3.12 and will be removed in future versions
-    for attr in VERSION_ATTRS:
-        try:
-            version = getattr(module, attr, None)
-            # In certain cases like importlib_metadata.version, version is a callable
-            # function.
-            if callable(version):
-                continue
-            # Cast any version specified as a list into a tuple.
-            version = tuple(version) if isinstance(version, list) else version
-            if version not in NULL_VERSIONS:
-                return version
-        except Exception:
-            pass
-
-    # pkg_resources has been removed in Python 3.12
     if "pkg_resources" in sys.modules:
         try:
             version = sys.modules["pkg_resources"].get_distribution(name).version

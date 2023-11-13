@@ -17,7 +17,7 @@ import uuid
 
 import botocore.session
 import moto
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
@@ -56,7 +56,7 @@ _ec2_rollup_metrics = [
 ]
 
 
-@override_application_settings({"distributed_tracing.enabled": True})
+@dt_enabled
 @validate_span_events(expected_agents=("aws.requestId",), count=3)
 @validate_span_events(exact_agents={"aws.operation": "RunInstances"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "DescribeInstances"}, count=1)

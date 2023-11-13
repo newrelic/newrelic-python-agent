@@ -17,7 +17,7 @@ import sys
 import boto3
 import moto
 import pytest
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
@@ -46,7 +46,7 @@ sns_metrics = [("MessageBroker/SNS/Topic" "/Produce/Named/%s" % TOPIC, 1)]
 sns_metrics_phone = [("MessageBroker/SNS/Topic" "/Produce/Named/PhoneNumber", 1)]
 
 
-@override_application_settings({"distributed_tracing.enabled": True})
+@dt_enabled
 @validate_span_events(expected_agents=("aws.requestId",), count=2)
 @validate_span_events(exact_agents={"aws.operation": "CreateTopic"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "Publish"}, count=1)
@@ -75,7 +75,7 @@ def test_publish_to_sns_topic(topic_argument):
     assert "MessageId" in published_message
 
 
-@override_application_settings({"distributed_tracing.enabled": True})
+@dt_enabled
 @validate_span_events(expected_agents=("aws.requestId",), count=3)
 @validate_span_events(exact_agents={"aws.operation": "CreateTopic"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "Subscribe"}, count=1)

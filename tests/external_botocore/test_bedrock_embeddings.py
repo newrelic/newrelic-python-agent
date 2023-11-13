@@ -97,7 +97,7 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
     @validate_transaction_metrics(
         name="test_bedrock_embedding",
         custom_metrics=[
-            ("Python/ML/Botocore/%s" % BOTOCORE_VERSION, 1),
+            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
         background_task=True,
     )
@@ -125,7 +125,7 @@ _client_error_name = callable_name(_client_error)
 @validate_transaction_metrics(
     name="test_bedrock_embeddings:test_bedrock_embedding_disabled_settings",
     custom_metrics=[
-        ("Python/ML/Botocore/%s" % BOTOCORE_VERSION, 1),
+        ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
     ],
     background_task=True,
 )

@@ -15,9 +15,16 @@ import logging
 import re
 import time
 
-from newrelic.core.attribute import (check_name_is_string, check_name_length,
-        process_user_attribute, NameIsNotStringException, NameTooLongException,
-        MAX_NUM_USER_ATTRIBUTES, MAX_ML_ATTRIBUTE_LENGTH, MAX_NUM_ML_USER_ATTRIBUTES, MAX_ATTRIBUTE_LENGTH)
+from newrelic.core.attribute import (
+    MAX_ML_ATTRIBUTE_LENGTH,
+    MAX_NUM_ML_USER_ATTRIBUTES,
+    MAX_NUM_USER_ATTRIBUTES,
+    NameIsNotStringException,
+    NameTooLongException,
+    check_name_is_string,
+    check_name_length,
+    process_user_attribute,
+)
 from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
@@ -58,15 +65,15 @@ def process_event_type(name):
         check_event_type_valid_chars(name)
 
     except NameIsNotStringException:
-        _logger.debug("Event type must be a string. Dropping " "event: %r", name)
+        _logger.debug("Event type must be a string. Dropping event: %r", name)
         return FAILED_RESULT
 
     except NameTooLongException:
-        _logger.debug("Event type exceeds maximum length. Dropping " "event: %r", name)
+        _logger.debug("Event type exceeds maximum length. Dropping event: %r", name)
         return FAILED_RESULT
 
     except NameInvalidCharactersException:
-        _logger.debug("Event type has invalid characters. Dropping " "event: %r", name)
+        _logger.debug("Event type has invalid characters. Dropping event: %r", name)
         return FAILED_RESULT
 
     else:
@@ -108,25 +115,30 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
                 max_length = MAX_ML_ATTRIBUTE_LENGTH
                 max_num_attrs = MAX_NUM_ML_USER_ATTRIBUTES
             else:
-                max_length=settings.custom_insights_events.max_attribute_value
+                max_length = settings.custom_insights_events.max_attribute_value
                 max_num_attrs = MAX_NUM_USER_ATTRIBUTES
             key, value = process_user_attribute(k, v, max_length=max_length)
             if key:
                 if len(attributes) >= max_num_attrs:
-                    _logger.debug('Maximum number of attributes already '
-                                  'added to event %r. Dropping attribute: %r=%r',
-                                  name, key, value)
+                    _logger.debug(
+                        "Maximum number of attributes already " "added to event %r. Dropping attribute: %r=%r",
+                        name,
+                        key,
+                        value,
+                    )
                 else:
                     attributes[key] = value
     except Exception:
-        _logger.debug('Attributes failed to validate for unknown reason. '
-                'Check traceback for clues. Dropping event: %r.', name,
-                exc_info=True)
+        _logger.debug(
+            "Attributes failed to validate for unknown reason. " "Check traceback for clues. Dropping event: %r.",
+            name,
+            exc_info=True,
+        )
         return None
 
     intrinsics = {
-        'type': name,
-        'timestamp': int(1000.0 * time.time()),
+        "type": name,
+        "timestamp": int(1000.0 * time.time()),
     }
 
     event = [intrinsics, attributes]

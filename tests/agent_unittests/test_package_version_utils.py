@@ -143,7 +143,7 @@ def test_deprecation_warning_suppression(monkeypatch, recwarn):
     monkeypatch.setattr(pytest, "__getattr__", _getattr_deprecation_warning, raising=False)
 
     assert get_package_version("pytest") == "3.2.1"
-    
+
     assert not recwarn.list, "Warnings not suppressed."
 
 

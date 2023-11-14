@@ -40,7 +40,7 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
-disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
+disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])
@@ -119,7 +119,7 @@ _client_error = botocore.exceptions.ClientError
 _client_error_name = callable_name(_client_error)
 
 
-@override_application_settings(disabled_ml_insights_settings)
+@override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics(

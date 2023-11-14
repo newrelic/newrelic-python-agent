@@ -154,10 +154,10 @@ def test_bedrock_chat_completion_outside_txn(set_trace_info, exercise_model):
     exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
 
-disabled_ml_settings = {"machine_learning.enabled": False, "ml_insights_events.enabled": False}
+disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 
-@override_application_settings(disabled_ml_settings)
+@override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics(

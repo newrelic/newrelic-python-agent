@@ -14,7 +14,6 @@
 
 from testing_support.fixtures import reset_core_stats_engine, validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-
 from newrelic.api.background_task import background_task
 from newrelic.api.ml_model import record_llm_feedback_event
 
@@ -37,7 +36,7 @@ def test_record_llm_feedback_event_all_args_supplied():
             },
         ),
     ]
-
+    
     @validate_custom_events(llm_feedback_all_args_recorded_events)
     @background_task()
     def _test():

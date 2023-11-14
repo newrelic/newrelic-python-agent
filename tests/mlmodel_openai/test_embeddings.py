@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import openai
 from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,

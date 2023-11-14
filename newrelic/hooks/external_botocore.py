@@ -282,7 +282,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    transaction.add_ml_model_info("Botocore", BOTOCORE_VERSION)
+    transaction.add_ml_model_info("Bedrock", BOTOCORE_VERSION)
 
     # Read and replace request file stream bodies
     request_body = kwargs["body"]

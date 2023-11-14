@@ -123,6 +123,7 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     }
 
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
+
     return response
 
 
@@ -214,6 +215,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     }
 
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
+
     message_list = list(messages)
     if choices:
         message_list.extend([choices[0].message])
@@ -287,7 +289,9 @@ def create_chat_completion_message_event(
             "vendor": "openAI",
             "ingest_source": "Python",
         }
+        
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
+
     return (conversation_id, request_id, message_ids)
 
 
@@ -369,6 +373,7 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     }
 
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
+
     return response
 
 
@@ -466,6 +471,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     }
 
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
+
     message_list = list(messages)
     if choices:
         message_list.extend([choices[0].message])

@@ -19,7 +19,6 @@ from testing_support.fixtures import (
     validate_custom_event_count,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
-
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )

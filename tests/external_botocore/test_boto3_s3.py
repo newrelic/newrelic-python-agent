@@ -18,7 +18,7 @@ import uuid
 import boto3
 import botocore
 import moto
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
@@ -73,7 +73,7 @@ _s3_rollup_metrics = [
 ]
 
 
-@override_application_settings({"distributed_tracing.enabled": True})
+@dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateBucket"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "PutObject"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "ListObjects"}, count=1)

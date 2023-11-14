@@ -18,7 +18,7 @@ import uuid
 import botocore.session
 import moto
 import pytest
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
@@ -70,7 +70,7 @@ _sqs_rollup_metrics_malformed = [
 ]
 
 
-@override_application_settings({"distributed_tracing.enabled": True})
+@dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateQueue"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "SendMessage"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "ReceiveMessage"}, count=1)
@@ -124,7 +124,7 @@ def test_sqs():
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
-@override_application_settings({"distributed_tracing.enabled": True})
+@dt_enabled
 @validate_transaction_metrics(
     "test_botocore_sqs:test_sqs_malformed",
     scoped_metrics=_sqs_scoped_metrics_malformed,

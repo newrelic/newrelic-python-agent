@@ -3184,9 +3184,10 @@ def _setup_security_module():
         if not _settings.security.agent.enabled:
             return
         from newrelic_security.api.agent import Agent as SecurityAgent
+
         # initialize security agent
         security_agent = SecurityAgent()
-         # create a callback to reinitialise the security module
+        # create a callback to reinitialise the security module
         newrelic.core.agent.Agent.run_on_startup(security_agent.refresh_agent)
     except Exception as csec_error:
         _logger.error("Security Agent Startup failed with error %s", csec_error)

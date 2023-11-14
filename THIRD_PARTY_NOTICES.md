@@ -14,7 +14,25 @@ Copyright (c) Django Software Foundation and individual contributors.
 
 Distributed under the following license(s):
 
-  * [The BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause)
+* [The BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause)
+
+
+## [isort](https://pypi.org/project/isort)
+
+Copyright (c) 2013 Timothy Edmund Crosley
+
+Distributed under the following license(s):
+
+* [The MIT License](http://opensource.org/licenses/MIT)
+
+
+## [opentelemetry-proto](https://pypi.org/project/opentelemetry-proto)
+
+Copyright (c) The OpenTelemetry Authors
+
+Distributed under the following license(s):
+
+* [The Apache License, Version 2.0 License](https://opensource.org/license/apache-2-0/)
 
 
 ## [six](https://pypi.org/project/six)
@@ -23,7 +41,7 @@ Copyright (c) 2010-2013 Benjamin Peterson
 
 Distributed under the following license(s):
 
-  * [The MIT License](http://opensource.org/licenses/MIT)
+* [The MIT License](http://opensource.org/licenses/MIT)
 
 
 ## [time.monotonic](newrelic/common/_monotonic.c)
@@ -32,7 +50,7 @@ Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 
 
 Distributed under the following license(s):
 
-  * [Python Software Foundation](https://docs.python.org/3/license.html)
+* [Python Software Foundation](https://docs.python.org/3/license.html)
 
 
 ## [urllib3](https://pypi.org/project/urllib3)
@@ -41,7 +59,7 @@ Copyright (c) 2008-2019 Andrey Petrov and contributors (see CONTRIBUTORS.txt)
 
 Distributed under the following license(s):
 
-  * [The MIT License](http://opensource.org/licenses/MIT)
+* [The MIT License](http://opensource.org/licenses/MIT)
 
 
 ## [wrapt](https://pypi.org/project/wrapt)
@@ -51,5 +69,5 @@ All rights reserved.
 
 Distributed under the following license(s):
 
-  * [The BSD 2-Clause License](http://opensource.org/licenses/BSD-2-Clause)
+* [The BSD 2-Clause License](http://opensource.org/licenses/BSD-2-Clause)
 

@@ -59,6 +59,7 @@ from newrelic.api.transaction import record_custom_event as __record_custom_even
 from newrelic.api.transaction import record_custom_metric as __record_custom_metric
 from newrelic.api.transaction import record_custom_metrics as __record_custom_metrics
 from newrelic.api.transaction import record_log_event as __record_log_event
+from newrelic.api.transaction import record_ml_event as __record_ml_event
 from newrelic.api.transaction import set_background_task as __set_background_task
 from newrelic.api.transaction import set_transaction_name as __set_transaction_name
 from newrelic.api.transaction import suppress_apdex_metric as __suppress_apdex_metric
@@ -152,6 +153,7 @@ from newrelic.api.message_transaction import (
 from newrelic.api.message_transaction import (
     wrap_message_transaction as __wrap_message_transaction,
 )
+from newrelic.api.ml_model import wrap_mlmodel as __wrap_mlmodel
 from newrelic.api.profile_trace import ProfileTraceWrapper as __ProfileTraceWrapper
 from newrelic.api.profile_trace import profile_trace as __profile_trace
 from newrelic.api.profile_trace import wrap_profile_trace as __wrap_profile_trace
@@ -206,11 +208,6 @@ from newrelic.common.object_wrapper import wrap_pre_function as __wrap_pre_funct
 # EXPERIMENTAL - Generator traces are currently experimental and may not
 # exist in this form in future versions of the agent.
 
-
-# EXPERIMENTAL - Profile traces are currently experimental and may not
-# exist in this form in future versions of the agent.
-
-
 initialize = __initialize
 extra_settings = __wrap_api_call(__extra_settings, "extra_settings")
 global_settings = __wrap_api_call(__global_settings, "global_settings")
@@ -248,6 +245,7 @@ record_custom_metric = __wrap_api_call(__record_custom_metric, "record_custom_me
 record_custom_metrics = __wrap_api_call(__record_custom_metrics, "record_custom_metrics")
 record_custom_event = __wrap_api_call(__record_custom_event, "record_custom_event")
 record_log_event = __wrap_api_call(__record_log_event, "record_log_event")
+record_ml_event = __wrap_api_call(__record_ml_event, "record_ml_event")
 accept_distributed_trace_payload = __wrap_api_call(
     __accept_distributed_trace_payload, "accept_distributed_trace_payload"
 )
@@ -341,3 +339,4 @@ OutFunctionWrapper = __wrap_api_call(__OutFunctionWrapper, "OutFunctionWrapper")
 wrap_out_function = __wrap_api_call(__wrap_out_function, "wrap_out_function")
 insert_html_snippet = __wrap_api_call(__insert_html_snippet, "insert_html_snippet")
 verify_body_exists = __wrap_api_call(__verify_body_exists, "verify_body_exists")
+wrap_mlmodel = __wrap_api_call(__wrap_mlmodel, "wrap_mlmodel")

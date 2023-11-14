@@ -1182,7 +1182,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     apply_config_setting(
         settings_snapshot,
         "custom_insights_events.max_attribute_value",
-        max(settings_snapshot.custom_insights_events.max_attribute_value, 4095),
+        min(settings_snapshot.custom_insights_events.max_attribute_value, 4095),
     )
 
     # This will be removed at some future point

@@ -1640,7 +1640,7 @@ class Transaction(object):
         if not settings.custom_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings)
         if event:
             self._custom_events.add(event, priority=self.priority)
 
@@ -1653,7 +1653,7 @@ class Transaction(object):
         if not settings.ml_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params, is_ml_event=True)
+        event = create_custom_event(event_type, params, settings=settings, is_ml_event=True)
         if event:
             self._ml_events.add(event, priority=self.priority)
 

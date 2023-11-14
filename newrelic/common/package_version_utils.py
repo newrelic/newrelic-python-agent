@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+import warnings
 
 try:
     from functools import cache as _cache_package_versions
@@ -110,6 +111,23 @@ def _get_package_version(name):
     module = sys.modules.get(name, None)
     version = None
 
+    with warnings.catch_warnings(record=True):
+        for attr in VERSION_ATTRS:
+            try:
+                version = getattr(module, attr, None)
+
+                # In certain cases like importlib_metadata.version, version is a callable
+                # function.
+                if callable(version):
+                    continue
+
+                # Cast any version specified as a list into a tuple.
+                version = tuple(version) if isinstance(version, list) else version
+                if version not in NULL_VERSIONS:
+                    return version
+            except Exception:
+                pass
+
     # importlib was introduced into the standard library starting in Python3.8.
     if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
         try:
@@ -121,20 +139,6 @@ def _get_package_version(name):
                 distribution_name = name
 
             version = sys.modules["importlib"].metadata.version(distribution_name)  # pylint: disable=E1101
-            if version not in NULL_VERSIONS:
-                return version
-        except Exception:
-            pass
-
-    for attr in VERSION_ATTRS:
-        try:
-            version = getattr(module, attr, None)
-            # In certain cases like importlib_metadata.version, version is a callable
-            # function.
-            if callable(version):
-                continue
-            # Cast any version specified as a list into a tuple.
-            version = tuple(version) if isinstance(version, list) else version
             if version not in NULL_VERSIONS:
                 return version
         except Exception:

@@ -811,6 +811,10 @@ _settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_in
     "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", CUSTOM_EVENT_RESERVOIR_SIZE
 )
 
+_settings.custom_insights_events.max_attribute_value = _environ_as_int(
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_ATTRIBUTE_VALUE", 255
+)
+
 _settings.event_harvest_config.harvest_limits.ml_event_data = _environ_as_int(
     "NEW_RELIC_ML_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", ML_EVENT_RESERVOIR_SIZE
 )

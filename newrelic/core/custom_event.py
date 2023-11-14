@@ -121,7 +121,7 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
             if key:
                 if len(attributes) >= max_num_attrs:
                     _logger.debug(
-                        "Maximum number of attributes already " "added to event %r. Dropping attribute: %r=%r",
+                        "Maximum number of attributes already added to event %r. Dropping attribute: %r=%r",
                         name,
                         key,
                         value,
@@ -130,7 +130,7 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
                     attributes[key] = value
     except Exception:
         _logger.debug(
-            "Attributes failed to validate for unknown reason. " "Check traceback for clues. Dropping event: %r.",
+            "Attributes failed to validate for unknown reason. Check traceback for clues. Dropping event: %r.",
             name,
             exc_info=True,
         )

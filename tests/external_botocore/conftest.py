@@ -42,7 +42,7 @@ _default_settings = {
     "transaction_tracer.stack_trace_threshold": 0.0,
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
-    "custom_insights_events.max_attribute_value": 4096
+    "custom_insights_events.max_attribute_value": 4096,
 }
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (external_botocore)",
@@ -154,8 +154,8 @@ def bind__do_get_response(request, operation_model, context):
 def set_trace_info():
     def _set_trace_info():
         txn = current_transaction()
-        txn.guid = "transaction-id"
         if txn:
+            txn.guid = "transaction-id"
             txn._trace_id = "trace-id"
         trace = current_trace()
         if trace:

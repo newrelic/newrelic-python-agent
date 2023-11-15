@@ -34,7 +34,7 @@ embedding_recorded_events = [
         {
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
-            "transaction_id": None,
+            "transaction_id": "transaction-id",
             "span_id": "span-id",
             "trace_id": "trace-id",
             "input": "This is an embedding test.",

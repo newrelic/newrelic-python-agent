@@ -55,6 +55,7 @@ OPENAI_AUDIT_LOG_CONTENTS = {}
 def set_trace_info():
     def set_info():
         txn = current_transaction()
+        txn.guid = "transaction-id"
         if txn:
             txn._trace_id = "trace-id"
         trace = current_trace()

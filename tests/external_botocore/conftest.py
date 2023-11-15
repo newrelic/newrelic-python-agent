@@ -154,6 +154,7 @@ def bind__do_get_response(request, operation_model, context):
 def set_trace_info():
     def _set_trace_info():
         txn = current_transaction()
+        txn.guid = "transaction-id"
         if txn:
             txn._trace_id = "trace-id"
         trace = current_trace()

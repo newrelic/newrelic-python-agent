@@ -14,9 +14,7 @@ RUN mkdir -p ${HOME} && \
 
 # Fix pyenv installation
 RUN echo 'eval "$(pyenv init -)"' >>${HOME}/.bashrc && \
-    find ${PYENV_ROOT}/ -perm 644 -exec chmod 666 {} \; && \
-    find ${PYENV_ROOT}/ -perm 755 -exec chmod 777 {} \; && \
-    pyenv update
+    chown -R vscode:vscode ${PYENV_ROOT}
 
 # Set user
 USER ${UID}:${GID}

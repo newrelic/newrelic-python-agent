@@ -67,8 +67,7 @@ def record_llm_feedback_event(
         return
 
     feedback_message_id = str(uuid.uuid4())
-    feedback_message_event = {}
-    feedback_message_event.update(metadata or {})
+    feedback_message_event = metadata.copy() if metadata else {}
     feedback_message_event.update(
         {
             "id": feedback_message_id,

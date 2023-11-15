@@ -265,16 +265,18 @@ class PCFUtilization(CommonUtilization):
 class DockerUtilization(CommonUtilization):
     VENDOR_NAME = 'docker'
     EXPECTED_KEYS = ('id',)
-    METADATA_FILE_CGROUPS = '/proc/self/cgroup'
-    DOCKER_RE_CGROUPS = re.compile(r'([0-9a-f]{64,})')
-    METADATA_FILE_MOUNTINFO = '/proc/self/mountinfo'
-    DOCKER_RE_MOUNTINFO = re.compile(r'/docker/containers/([0-9a-f]{64,})')
+
+    METADATA_FILE_CGROUPS_V1 = '/proc/self/cgroup'
+    METADATA_RE_CGROUPS_V1 = re.compile(r'([0-9a-f]{64,})')
+    
+    METADATA_FILE_CGROUPS_V2 = '/proc/self/mountinfo'
+    METADATA_RE_CGROUPS_V2 = re.compile(r'^.*/docker/containers/([0-9a-f]{64,})/.*$')
 
     @classmethod
     def fetch(cls):
         # Try to read from cgroups
         try:
-            with open(cls.METADATA_FILE_CGROUPS, 'rb') as f:
+            with open(cls.METADATA_FILE_CGROUPS_V1, 'rb') as f:
                 for line in f:
                     stripped = line.decode('utf-8').strip()
                     cgroup = stripped.split(':')
@@ -282,7 +284,10 @@ class DockerUtilization(CommonUtilization):
                         continue
                     subsystems = cgroup[1].split(',')
                     if 'cpu' in subsystems:
-                        return cgroup[2]
+                        contents = cgroup[2].split('/')[-1]
+                        match = cls.METADATA_RE_CGROUPS_V1.search(contents)
+                        if match:
+                            return match.group(1)
         except:
             # There are all sorts of exceptions that can occur here
             # (i.e. permissions, non-existent file, etc)
@@ -290,11 +295,12 @@ class DockerUtilization(CommonUtilization):
 
         # Fallback to reading from mountinfo
         try:
-            with open(cls.METADATA_FILE_MOUNTINFO, 'rb') as f:
+            with open(cls.METADATA_FILE_CGROUPS_V2, 'rb') as f:
                 for line in f:
                     stripped = line.decode('utf-8').strip()
-                    if '/docker/containers/' in stripped:
-                        return stripped
+                    match = cls.METADATA_RE_CGROUPS_V2.match(stripped)
+                    if match:
+                        return match.group(1)
         except:
             # There are all sorts of exceptions that can occur here
             # (i.e. permissions, non-existent file, etc)
@@ -305,16 +311,7 @@ class DockerUtilization(CommonUtilization):
         if contents is None:
             return
 
-        # Try to match the format in mountinfo file
-        match = cls.DOCKER_RE_MOUNTINFO.search(contents)
-        if match:
-            return {'id': match.group(1)}
-        else:
-            # Try again searching for cgroup file format
-            value = contents.split('/')[-1]
-            match = cls.DOCKER_RE.search(value)
-            if match:
-                return {'id': match.group(0)}
+        return {'id': contents}
 
     @classmethod
     def valid_chars(cls, data):
@@ -335,11 +332,7 @@ class DockerUtilization(CommonUtilization):
             return False
 
         # Must be exactly 64 characters
-        valid = len(data) == 64
-        if valid:
-            return True
-
-        return False
+        return bool(len(data) == 64)
 
 
 class KubernetesUtilization(CommonUtilization):

@@ -27,12 +27,12 @@ from testing_support.fixtures import (  # override_application_settings,
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
+    validate_custom_event_count
 )
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
-from testing_support.validators.validate_ml_event_count import validate_ml_event_count
-from testing_support.validators.validate_ml_events import validate_ml_events
+from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -40,7 +40,7 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
-disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
+disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])
@@ -92,8 +92,8 @@ def expected_client_error(model_id):
 
 @reset_core_stats_engine()
 def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
-    @validate_ml_events(expected_events)
-    @validate_ml_event_count(count=1)
+    @validate_custom_events(expected_events)
+    @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
         name="test_bedrock_embedding",
         custom_metrics=[
@@ -110,7 +110,7 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
 
 
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 def test_bedrock_embedding_outside_txn(exercise_model):
     exercise_model(prompt="This is an embedding test.")
 
@@ -119,9 +119,9 @@ _client_error = botocore.exceptions.ClientError
 _client_error_name = callable_name(_client_error)
 
 
-@override_application_settings(disabled_ml_insights_settings)
+@override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     name="test_bedrock_embeddings:test_bedrock_embedding_disabled_settings",
     custom_metrics=[

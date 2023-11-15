@@ -81,4 +81,4 @@ def record_llm_feedback_event(
     }
     feedback_message_event.update(metadata)
 
-    transaction.record_ml_event("LlmFeedbackMessage", feedback_message_event)
+    transaction.record_custom_event("LlmFeedbackMessage", feedback_message_event)

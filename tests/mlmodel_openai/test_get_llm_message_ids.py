@@ -13,12 +13,10 @@
 # limitations under the License.
 
 import openai
-from testing_support.fixtures import reset_core_stats_engine
-from testing_support.validators.validate_ml_event_count import validate_ml_event_count
-
 from newrelic.api.background_task import background_task
 from newrelic.api.ml_model import get_llm_message_ids, record_llm_feedback_event
 from newrelic.api.transaction import add_custom_attribute, current_transaction
+from testing_support.fixtures import reset_core_stats_engine, validate_custom_event_count
 
 _test_openai_chat_completion_messages_1 = (
     {"role": "system", "content": "You are a scientist."},
@@ -170,7 +168,7 @@ def test_get_llm_message_ids_mulitple_async_no_conversation_id(loop, set_trace_i
 @reset_core_stats_engine()
 # Three chat completion messages and one chat completion summary for each create call (8 in total)
 # Three feedback events for the first create call
-@validate_ml_event_count(11)
+@validate_custom_event_count(11)
 @background_task()
 def test_get_llm_message_ids_mulitple_sync(set_trace_info):
     set_trace_info()
@@ -203,7 +201,7 @@ def test_get_llm_message_ids_mulitple_sync(set_trace_info):
 
 
 @reset_core_stats_engine()
-@validate_ml_event_count(11)
+@validate_custom_event_count(11)
 @background_task()
 def test_get_llm_message_ids_mulitple_sync_no_conversation_id(set_trace_info):
     set_trace_info()

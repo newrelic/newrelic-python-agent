@@ -119,7 +119,7 @@ def create_chat_completion_message_event(
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
-        transaction.record_ml_event("LlmChatCompletionMessage", chat_completion_message_dict)
+        transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
 
 def extract_bedrock_titan_text_model(request_body, response_body=None):
@@ -376,7 +376,7 @@ def handle_embedding_event(
         }
     )
 
-    transaction.record_ml_event("LlmEmbedding", embedding_dict)
+    transaction.record_custom_event("LlmEmbedding", embedding_dict)
 
 
 def handle_chat_completion_event(
@@ -413,7 +413,7 @@ def handle_chat_completion_event(
         }
     )
 
-    transaction.record_ml_event("LlmChatCompletionSummary", chat_completion_summary_dict)
+    transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
     create_chat_completion_message_event(
         transaction=transaction,

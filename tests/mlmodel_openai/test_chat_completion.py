@@ -16,9 +16,9 @@ import openai
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
+    validate_custom_event_count,
 )
-from testing_support.validators.validate_ml_event_count import validate_ml_event_count
-from testing_support.validators.validate_ml_events import validate_ml_events
+from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -26,7 +26,7 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 
-disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
+disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -129,9 +129,9 @@ chat_completion_recorded_events = [
 
 
 @reset_core_stats_engine()
-@validate_ml_events(chat_completion_recorded_events)
+@validate_custom_events(chat_completion_recorded_events)
 # One summary event, one system message, one user message, and one response message from the assistant
-@validate_ml_event_count(count=4)
+@validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_sync_in_txn_with_convo_id",
     custom_metrics=[
@@ -244,9 +244,9 @@ chat_completion_recorded_events_no_convo_id = [
 
 
 @reset_core_stats_engine()
-@validate_ml_events(chat_completion_recorded_events_no_convo_id)
+@validate_custom_events(chat_completion_recorded_events_no_convo_id)
 # One summary event, one system message, one user message, and one response message from the assistant
-@validate_ml_event_count(count=4)
+@validate_custom_event_count(count=4)
 @background_task()
 def test_openai_chat_completion_sync_in_txn_no_convo_id(set_trace_info):
     set_trace_info()
@@ -256,7 +256,7 @@ def test_openai_chat_completion_sync_in_txn_no_convo_id(set_trace_info):
 
 
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 def test_openai_chat_completion_sync_outside_txn():
     add_custom_attribute("conversation_id", "my-awesome-id")
     openai.ChatCompletion.create(
@@ -264,18 +264,18 @@ def test_openai_chat_completion_sync_outside_txn():
     )
 
 
-@override_application_settings(disabled_ml_insights_settings)
+@override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
-    name="test_chat_completion:test_openai_chat_completion_sync_ml_insights_disabled",
+    name="test_chat_completion:test_openai_chat_completion_sync_custom_events_insights_disabled",
     custom_metrics=[
         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
 @background_task()
-def test_openai_chat_completion_sync_ml_insights_disabled(set_trace_info):
+def test_openai_chat_completion_sync_custom_events_insights_disabled(set_trace_info):
     set_trace_info()
     openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
@@ -283,8 +283,8 @@ def test_openai_chat_completion_sync_ml_insights_disabled(set_trace_info):
 
 
 @reset_core_stats_engine()
-@validate_ml_events(chat_completion_recorded_events_no_convo_id)
-@validate_ml_event_count(count=4)
+@validate_custom_events(chat_completion_recorded_events_no_convo_id)
+@validate_custom_event_count(count=4)
 @background_task()
 def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info):
     set_trace_info()
@@ -297,8 +297,8 @@ def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info
 
 
 @reset_core_stats_engine()
-@validate_ml_events(chat_completion_recorded_events)
-@validate_ml_event_count(count=4)
+@validate_custom_events(chat_completion_recorded_events)
+@validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_async_conversation_id_set",
     custom_metrics=[
@@ -319,7 +319,7 @@ def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info):
 
 
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 def test_openai_chat_completion_async_outside_transaction(loop):
     loop.run_until_complete(
         openai.ChatCompletion.acreate(
@@ -328,18 +328,18 @@ def test_openai_chat_completion_async_outside_transaction(loop):
     )
 
 
-@override_application_settings(disabled_ml_insights_settings)
+@override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
-    name="test_chat_completion:test_openai_chat_completion_async_disabled_ml_settings",
+    name="test_chat_completion:test_openai_chat_completion_async_disabled_custom_event_settings",
     custom_metrics=[
         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
 @background_task()
-def test_openai_chat_completion_async_disabled_ml_settings(loop):
+def test_openai_chat_completion_async_disabled_custom_event_settings(loop):
     loop.run_until_complete(
         openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100

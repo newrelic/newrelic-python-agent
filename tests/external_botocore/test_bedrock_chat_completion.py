@@ -28,12 +28,12 @@ from testing_support.fixtures import (
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
+    validate_custom_event_count,
 )
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
-from testing_support.validators.validate_ml_event_count import validate_ml_event_count
-from testing_support.validators.validate_ml_events import validate_ml_events
+from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -106,9 +106,9 @@ _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted
 # not working with claude
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_model, expected_events):
-    @validate_ml_events(expected_events)
+    @validate_custom_events(expected_events)
     # One summary event, one user message, and one response message from the assistant
-    @validate_ml_event_count(count=3)
+    @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_in_txn_with_convo_id",
         custom_metrics=[
@@ -128,9 +128,9 @@ def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_m
 # not working with claude
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_no_convo_id(set_trace_info, exercise_model, expected_events_no_convo_id):
-    @validate_ml_events(expected_events_no_convo_id)
+    @validate_custom_events(expected_events_no_convo_id)
     # One summary event, one user message, and one response message from the assistant
-    @validate_ml_event_count(count=3)
+    @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_in_txn_no_convo_id",
         custom_metrics=[
@@ -147,19 +147,19 @@ def test_bedrock_chat_completion_in_txn_no_convo_id(set_trace_info, exercise_mod
 
 
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 def test_bedrock_chat_completion_outside_txn(set_trace_info, exercise_model):
     set_trace_info()
     add_custom_attribute("conversation_id", "my-awesome-id")
     exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
 
-disabled_ml_settings = {"machine_learning.enabled": False, "ml_insights_events.enabled": False}
+disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 
-@override_application_settings(disabled_ml_settings)
+@override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     name="test_bedrock_chat_completion_disabled_settings",
     custom_metrics=[

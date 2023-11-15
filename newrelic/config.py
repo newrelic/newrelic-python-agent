@@ -45,7 +45,6 @@ import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import expand_builtin_exception_name
 from newrelic.core import trace_cache
-from newrelic.core.attribute import MAX_ATTRIBUTE_LENGTH
 from newrelic.core.config import (
     Settings,
     apply_config_setting,
@@ -444,7 +443,7 @@ def _process_configuration(section):
     )
     _process_setting(section, "custom_insights_events.enabled", "getboolean", None)
     _process_setting(section, "custom_insights_events.max_samples_stored", "getint", None)
-    _process_setting(section, "custom_insights_events.max_attribute_value", "getint", MAX_ATTRIBUTE_LENGTH)
+    _process_setting(section, "custom_insights_events.max_attribute_value", "getint", None)
     _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)

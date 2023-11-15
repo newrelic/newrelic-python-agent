@@ -718,7 +718,10 @@ _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
-_settings.custom_insights_events.max_attribute_value = MAX_ATTRIBUTE_LENGTH
+_settings.custom_insights_events.max_attribute_value = _environ_as_int(
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_ATTRIBUTE_VALUE", default=MAX_ATTRIBUTE_LENGTH
+)
+
 _settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
@@ -810,10 +813,6 @@ _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_
 
 _settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_int(
     "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", CUSTOM_EVENT_RESERVOIR_SIZE
-)
-
-_settings.custom_insights_events.max_attribute_value = _environ_as_int(
-    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_ATTRIBUTE_VALUE", MAX_ATTRIBUTE_LENGTH
 )
 
 _settings.event_harvest_config.harvest_limits.ml_event_data = _environ_as_int(

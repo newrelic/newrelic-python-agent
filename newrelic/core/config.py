@@ -143,6 +143,10 @@ class MachineLearningInferenceEventsValueSettings(Settings):
     pass
 
 
+class PackageReportingSettings(Settings):
+    pass
+
+
 class CodeLevelMetricsSettings(Settings):
     pass
 
@@ -398,6 +402,7 @@ _settings.application_logging.local_decorating = ApplicationLoggingLocalDecorati
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.machine_learning = MachineLearningSettings()
 _settings.machine_learning.inference_events_value = MachineLearningInferenceEventsValueSettings()
+_settings.package_reporting = PackageReportingSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
@@ -898,6 +903,7 @@ _settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNIN
 _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
 )
+_settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 
 
 def global_settings():

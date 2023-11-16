@@ -125,27 +125,6 @@ def _parse_synthetics_header(header):
     return synthetics
 
 
-def _parse_synthetics_info_header(header):
-    # Return a dictionary of values from SyntheticsInfo header
-    # Returns empty dict, if version is not supported.
-
-    synthetics_info = {}
-    version = None
-
-    try:
-        version = int(header.get("version"))
-
-        if version == 1:
-            synthetics_info['version'] = version
-            synthetics_info['type'] = header.get("type")
-            synthetics_info['initiator'] = header.get("initiator")
-            synthetics_info['attributes'] = header.get("attributes")
-    except Exception:
-        return
-
-    return synthetics_info
-
-
 def _remove_query_string(url):
     url = ensure_str(url)
     out = urlparse.urlsplit(url)
@@ -252,7 +231,6 @@ class WebTransaction(Transaction):
                 settings.trusted_account_ids and \
                 settings.encoding_key:
 
-            # Synthetics Header
             encoded_header = self._request_headers.get('x-newrelic-synthetics')
             encoded_header = encoded_header and ensure_str(encoded_header)
             if not encoded_header:
@@ -263,32 +241,17 @@ class WebTransaction(Transaction):
                     settings.encoding_key)
             synthetics = _parse_synthetics_header(decoded_header)
 
-            # Synthetics Info Header
-            encoded_info_header = self._request_headers.get('x-newrelic-synthetics-info')
-            encoded_info_header = encoded_info_header and ensure_str(encoded_info_header)
-
-            decoded_info_header = decode_newrelic_header(
-                    encoded_info_header,
-                    settings.encoding_key)
-            synthetics_info = _parse_synthetics_info_header(decoded_info_header)
-
             if synthetics and \
                     synthetics['account_id'] in \
                     settings.trusted_account_ids:
 
-                # Save obfuscated headers, because we will pass them along
+                # Save obfuscated header, because we will pass it along
                 # unchanged in all external requests.
 
                 self.synthetics_header = encoded_header
                 self.synthetics_resource_id = synthetics['resource_id']
                 self.synthetics_job_id = synthetics['job_id']
                 self.synthetics_monitor_id = synthetics['monitor_id']
-
-                if synthetics_info:
-                    self.synthetics_info_header = encoded_info_header
-                    self.synthetics_type = synthetics_info['type']
-                    self.synthetics_initiator = synthetics_info['initiator']
-                    self.synthetics_attributes = synthetics_info['attributes']
 
     def _process_context_headers(self):
         # Process the New Relic cross process ID header and extract

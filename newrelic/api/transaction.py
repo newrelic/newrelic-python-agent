@@ -174,7 +174,7 @@ class Transaction(object):
 
         self.thread_id = None
 
-        self._transaction_id = id(self)
+        self._identity = id(self)
         self._transaction_lock = threading.Lock()
 
         self._dead = False
@@ -273,6 +273,7 @@ class Transaction(object):
         trace_id = "%032x" % random.getrandbits(128)
 
         # 16-digit random hex. Padded with zeros in the front.
+        # This is the official transactionId in the UI.
         self.guid = trace_id[:16]
 
         # 32-digit random hex. Padded with zeros in the front.
@@ -413,7 +414,7 @@ class Transaction(object):
         if not self.enabled:
             return
 
-        if self._transaction_id != id(self):
+        if self._identity != id(self):
             return
 
         if not self._settings:

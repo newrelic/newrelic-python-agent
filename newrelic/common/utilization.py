@@ -267,7 +267,7 @@ class DockerUtilization(CommonUtilization):
     EXPECTED_KEYS = ('id',)
 
     METADATA_FILE_CGROUPS_V1 = '/proc/self/cgroup'
-    METADATA_RE_CGROUPS_V1 = re.compile(r'([0-9a-f]{64,})')
+    METADATA_RE_CGROUPS_V1 = re.compile(r'[0-9a-f]{64,}')
     
     METADATA_FILE_CGROUPS_V2 = '/proc/self/mountinfo'
     METADATA_RE_CGROUPS_V2 = re.compile(r'^.*/docker/containers/([0-9a-f]{64,})/.*$')
@@ -287,7 +287,7 @@ class DockerUtilization(CommonUtilization):
                         contents = cgroup[2].split('/')[-1]
                         match = cls.METADATA_RE_CGROUPS_V1.search(contents)
                         if match:
-                            return match.group(1)
+                            return match.group(0)
         except:
             # There are all sorts of exceptions that can occur here
             # (i.e. permissions, non-existent file, etc)

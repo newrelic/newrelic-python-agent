@@ -598,7 +598,7 @@ class TransactionNode(_TransactionNode):
                 # Add all synthetics attributes
                 for k, v in self.synthetics_attributes.items():
                     if k:
-                        intrinsics["nr.synthetics%s" % camel_case(k)] = v
+                        intrinsics["nr.synthetics%s" % camel_case(k, upper=True)] = v
 
         def _add_call_time(source, target):
             # include time for keys previously added to stats table via

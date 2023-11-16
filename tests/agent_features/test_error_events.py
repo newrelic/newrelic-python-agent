@@ -140,7 +140,7 @@ _intrinsic_attributes = {
     "nr.syntheticsMonitorId": SYNTHETICS_MONITOR_ID,
     "nr.syntheticsType": SYNTHETICS_TYPE,
     "nr.syntheticsInitiator": SYNTHETICS_INITIATOR,
-    "nr.syntheticsExampleAttr": "1",
+    "nr.syntheticsExampleAttribute": "1",
 }
 
 

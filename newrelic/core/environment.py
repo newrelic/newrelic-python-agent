@@ -204,7 +204,7 @@ def environment_settings():
     plugins = []
 
     settings = global_settings()
-    if settings and settings.capture_dependencies.enabled:
+    if settings and settings.package_reporting.enabled:
         # Using any iterable to create a snapshot of sys.modules can occassionally
         # fail in a rare case when modules are imported in parallel by different
         # threads.

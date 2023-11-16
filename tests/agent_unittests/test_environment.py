@@ -51,8 +51,8 @@ def test_plugin_list():
     assert "pytest (%s)" % (pytest.__version__) in plugin_list
 
 
-@override_generic_settings(settings, {"capture_dependencies.enabled": False})
-def test_plugin_list_when_capture_dependencies_disabled():
+@override_generic_settings(settings, {"package_reporting.enabled": False})
+def test_plugin_list_when_package_reporting_disabled():
     # Let's pretend we fired an import hook
     import newrelic.hooks.adapter_gunicorn  # noqa: F401
 

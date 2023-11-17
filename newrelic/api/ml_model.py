@@ -67,18 +67,18 @@ def record_llm_feedback_event(
         return
 
     feedback_message_id = str(uuid.uuid4())
-    metadata = metadata or {}
-
-    feedback_message_event = {
-        "id": feedback_message_id,
-        "message_id": message_id,
-        "rating": rating,
-        "conversation_id": conversation_id or "",
-        "request_id": request_id or "",
-        "category": category or "",
-        "message": message or "",
-        "ingest_source": "Python",
-    }
-    feedback_message_event.update(metadata)
+    feedback_message_event = metadata.copy() if metadata else {}
+    feedback_message_event.update(
+        {
+            "id": feedback_message_id,
+            "message_id": message_id,
+            "rating": rating,
+            "conversation_id": conversation_id or "",
+            "request_id": request_id or "",
+            "category": category or "",
+            "message": message or "",
+            "ingest_source": "Python",
+        }
+    )
 
     transaction.record_custom_event("LlmFeedbackMessage", feedback_message_event)

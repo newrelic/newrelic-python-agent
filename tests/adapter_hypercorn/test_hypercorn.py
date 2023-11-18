@@ -63,6 +63,7 @@ def wsgi_app(environ, start_response):
 
 
 @pytest.fixture(
+    scope="session",
     params=(
         pytest.param(
             simple_app_v2_raw,
@@ -81,7 +82,7 @@ def app(request):
     return request.param
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def port(loop, app):
     import hypercorn.asyncio
     import hypercorn.config

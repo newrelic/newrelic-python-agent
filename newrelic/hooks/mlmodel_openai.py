@@ -149,7 +149,6 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     }
 
     full_embedding_dict = {**base_embedding_dict, **embedding_response_dict}
-    breakpoint()
 
     transaction.record_custom_event("LlmEmbedding", full_embedding_dict)
 

@@ -106,7 +106,7 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
                 "duration": ft.duration,
                 "error": True
             }
-            error_embedding_dict = base_embedding_dict | error_summary_attributes
+            error_embedding_dict = {**base_embedding_dict, **error_summary_attributes}
             transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
 
             raise
@@ -148,7 +148,8 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
         ),
     }
 
-    full_embedding_dict = base_embedding_dict | embedding_response_dict
+    full_embedding_dict = {**base_embedding_dict, **embedding_response_dict}
+    breakpoint()
 
     transaction.record_custom_event("LlmEmbedding", full_embedding_dict)
 
@@ -230,7 +231,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
                 "duration": ft.duration,
                 "error": True
             }
-            error_chat_completion_summary_dict = base_chat_completion_dict | error_summary_attributes
+            error_chat_completion_summary_dict = {**base_chat_completion_dict, **error_summary_attributes}
             transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_summary_dict)
 
             error_response_id = str(uuid.uuid4())
@@ -302,7 +303,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "response.number_of_messages": len(messages) + len(choices),
     }
 
-    full_chat_completion_summary_dict = base_chat_completion_dict | chat_completion_summary_dict
+    full_chat_completion_summary_dict = {**base_chat_completion_dict, **chat_completion_summary_dict}
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
@@ -455,7 +456,7 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
                 "duration": ft.duration,
                 "error": True
             }
-            error_embedding_dict = base_embedding_dict | error_summary_attributes
+            error_embedding_dict = {**base_embedding_dict, **error_summary_attributes}
             transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
 
             raise
@@ -497,7 +498,7 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
         ),
     }
 
-    full_embedding_dict = base_embedding_dict | embedding_response_dict
+    full_embedding_dict = {**base_embedding_dict, **embedding_response_dict}
 
     transaction.record_custom_event("LlmEmbedding", full_embedding_dict)
 
@@ -578,7 +579,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
                 "duration": ft.duration,
                 "error": True
             }
-            error_chat_completion_summary_dict = base_chat_completion_dict | error_summary_attributes
+            error_chat_completion_summary_dict = {**base_chat_completion_dict, **error_summary_attributes}
             transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_summary_dict)
 
             error_response_id = str(uuid.uuid4())
@@ -650,7 +651,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
         "response.number_of_messages": len(messages) + len(choices),
     }
 
-    full_chat_completion_summary_dict = base_chat_completion_dict | chat_completion_summary_dict
+    full_chat_completion_summary_dict = {**base_chat_completion_dict, **chat_completion_summary_dict}
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 

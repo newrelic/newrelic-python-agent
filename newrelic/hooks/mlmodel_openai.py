@@ -120,7 +120,7 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
     embedding_response_dict = {
-        "request_id": request_id,=======
+        "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
         "response.organization": response.organization,

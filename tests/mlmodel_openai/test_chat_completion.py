@@ -37,7 +37,7 @@ chat_completion_recorded_events = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
-            "id": None,  # UUID that varies with each run
+            "completion_id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "my-awesome-id",
             "transaction_id": None,
@@ -122,6 +122,7 @@ chat_completion_recorded_events = [
             "sequence": 2,
             "response.model": "gpt-3.5-turbo-0613",
             "vendor": "openAI",
+            "is_response": True,
             "ingest_source": "Python",
         },
     ),
@@ -152,7 +153,7 @@ chat_completion_recorded_events_no_convo_id = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
-            "id": None,  # UUID that varies with each run
+            "completion_id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "",
             "transaction_id": None,
@@ -237,6 +238,7 @@ chat_completion_recorded_events_no_convo_id = [
             "sequence": 2,
             "response.model": "gpt-3.5-turbo-0613",
             "vendor": "openAI",
+            "is_response": True,
             "ingest_source": "Python",
         },
     ),

@@ -51,7 +51,7 @@ def openai_error_attributes(exception, request_args):
 
 def wrap_embedding_create(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if not transaction:
+    if not transaction or kwargs.get("stream", False):
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
@@ -130,7 +130,7 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
 def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
-    if not transaction:
+    if not transaction or kwargs.get("stream", False):
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
@@ -289,7 +289,7 @@ def create_chat_completion_message_event(
             "vendor": "openAI",
             "ingest_source": "Python",
         }
-        
+
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
     return (conversation_id, request_id, message_ids)
@@ -297,7 +297,7 @@ def create_chat_completion_message_event(
 
 async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if not transaction:
+    if not transaction or kwargs.get("stream", False):
         return await wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
@@ -380,7 +380,7 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
 async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
-    if not transaction:
+    if not transaction or kwargs.get("stream", False):
         return await wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)

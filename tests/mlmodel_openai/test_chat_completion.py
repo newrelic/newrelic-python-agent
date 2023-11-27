@@ -37,7 +37,7 @@ chat_completion_recorded_events = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
-            "completion_id": None,  # UUID that varies with each run
+            "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "my-awesome-id",
             "transaction_id": "transaction-id",
@@ -153,7 +153,7 @@ chat_completion_recorded_events_no_convo_id = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
-            "completion_id": None,  # UUID that varies with each run
+            "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "",
             "transaction_id": "transaction-id",

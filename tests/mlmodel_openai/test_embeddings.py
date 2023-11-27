@@ -31,7 +31,7 @@ embedding_recorded_events = [
     (
         {"type": "LlmEmbedding"},
         {
-            "embedding_id": None,  # UUID that varies with each run
+            "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": "span-id",

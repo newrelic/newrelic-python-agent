@@ -32,21 +32,20 @@ _test_openai_chat_completion_messages = (
 )
 
 # Sync tests:
-no_model_events = [
+expected_events_on_no_model_error = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
-            "completion_id": None,  # UUID that varies with each run
+            "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "conversation_id": "my-awesome-id",
-            "request_id": None,
             "span_id": "span-id",
             "trace_id": "trace-id",
             "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "", # No model in this test case
-            "response.organization": None,
+            "response.organization": "",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.number_of_messages": 2,
@@ -61,13 +60,13 @@ no_model_events = [
             "id": None,
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "my-awesome-id",
-            "request_id": None,
+            "request_id": "",
             "span_id": "span-id",
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
             "content": "You are a scientist.",
             "role": "system",
-            "response.model": None,
+            "response.model": "",
             "completion_id": None,
             "sequence": 0,
             "vendor": "openAI",
@@ -80,14 +79,14 @@ no_model_events = [
             "id": None,
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "my-awesome-id",
-            "request_id": None,
+            "request_id": "",
             "span_id": "span-id",
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
             "content": "What is 212 degrees Fahrenheit converted to Celsius?",
             "role": "user",
             "completion_id": None,
-            "response.model": None,
+            "response.model": "",
             "sequence": 1,
             "vendor": "openAI",
             "ingest_source": "Python",
@@ -109,11 +108,11 @@ no_model_events = [
     },
 )
 @validate_span_events(
-   exact_agents={
+    exact_agents={
        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
    }
 )
-@validate_custom_events(no_model_events)
+@validate_custom_events(expected_events_on_no_model_error)
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model(set_trace_info):
@@ -128,21 +127,20 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info):
         )
 
 
-invalid_model_events = [
+expected_events_on_invalid_model_error = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
-            "completion_id": None,  # UUID that varies with each run
+            "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "conversation_id": "my-awesome-id",
-            "request_id": None,
             "span_id": "span-id",
             "trace_id": "trace-id",
             "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
-            "request.model": "does-not-exist", # No model in this test case
-            "response.organization": None,
+            "request.model": "does-not-exist",
+            "response.organization": "",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.number_of_messages": 1,
@@ -157,13 +155,13 @@ invalid_model_events = [
             "id": None,
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "my-awesome-id",
-            "request_id": None,
+            "request_id": "",
             "span_id": "span-id",
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
             "content": "Model does not exist.",
             "role": "user",
-            "response.model": None,
+            "response.model": "",
             "completion_id": None,
             "sequence": 0,
             "vendor": "openAI",
@@ -171,6 +169,8 @@ invalid_model_events = [
         },
     ),
 ]
+
+
 # Invalid model provided
 @dt_enabled
 @reset_core_stats_engine()
@@ -190,7 +190,7 @@ invalid_model_events = [
        "error.message": "The model `does-not-exist` does not exist",
    }
 )
-@validate_custom_events(invalid_model_events)
+@validate_custom_events(expected_events_on_invalid_model_error)
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model(set_trace_info):
@@ -204,21 +204,21 @@ def test_chat_completion_invalid_request_error_invalid_model(set_trace_info):
             max_tokens=100,
         )
 
-auth_error_events = [
+
+expected_events_on_auth_error = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
-            "completion_id": None,  # UUID that varies with each run
+            "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "conversation_id": "my-awesome-id",
-            "request_id": None,
             "span_id": "span-id",
             "trace_id": "trace-id",
             "api_key_last_four_digits": "",
             "duration": None,  # Response time varies each test run
-            "request.model": "gpt-3.5-turbo", # No model in this test case
-            "response.organization": None,
+            "request.model": "gpt-3.5-turbo",
+            "response.organization": "",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.number_of_messages": 2,
@@ -233,13 +233,13 @@ auth_error_events = [
             "id": None,
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "my-awesome-id",
-            "request_id": None,
+            "request_id": "",
             "span_id": "span-id",
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
             "content": "You are a scientist.",
             "role": "system",
-            "response.model": None,
+            "response.model": "",
             "completion_id": None,
             "sequence": 0,
             "vendor": "openAI",
@@ -252,20 +252,21 @@ auth_error_events = [
             "id": None,
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "my-awesome-id",
-            "request_id": None,
+            "request_id": "",
             "span_id": "span-id",
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
             "content": "What is 212 degrees Fahrenheit converted to Celsius?",
             "role": "user",
             "completion_id": None,
-            "response.model": None,
+            "response.model": "",
             "sequence": 1,
             "vendor": "openAI",
             "ingest_source": "Python",
         },
     ),
 ]
+
 
 # No api_key provided
 @dt_enabled
@@ -284,7 +285,7 @@ auth_error_events = [
        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
    }
 )
-@validate_custom_events(auth_error_events)
+@validate_custom_events(expected_events_on_auth_error)
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_authentication_error(monkeypatch, set_trace_info):
@@ -300,22 +301,20 @@ def test_chat_completion_authentication_error(monkeypatch, set_trace_info):
         )
 
 
-
-wrong_api_key_error_events = [
+expected_events_on_wrong_api_key_error = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
-            "completion_id": None,  # UUID that varies with each run
+            "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "conversation_id": "",
-            "request_id": None,
             "span_id": "span-id",
             "trace_id": "trace-id",
             "api_key_last_four_digits": "sk-BEEF",
             "duration": None,  # Response time varies each test run
-            "request.model": "gpt-3.5-turbo", # No model in this test case
-            "response.organization": None,
+            "request.model": "gpt-3.5-turbo",
+            "response.organization": "",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.number_of_messages": 1,
@@ -330,14 +329,14 @@ wrong_api_key_error_events = [
             "id": None,
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "",
-            "request_id": None,
+            "request_id": "",
             "span_id": "span-id",
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
             "content": "Invalid API key.",
             "role": "user",
             "completion_id": None,
-            "response.model": None,
+            "response.model": "",
             "sequence": 0,
             "vendor": "openAI",
             "ingest_source": "Python",
@@ -362,7 +361,7 @@ wrong_api_key_error_events = [
        "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
   }
 )
-@validate_custom_events(wrong_api_key_error_events)
+@validate_custom_events(expected_events_on_wrong_api_key_error)
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
@@ -398,7 +397,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
    }
 )
-@validate_custom_events(no_model_events)
+@validate_custom_events(expected_events_on_no_model_error)
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_info):
@@ -434,7 +433,7 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
        "error.message": "The model `does-not-exist` does not exist",
    }
 )
-@validate_custom_events(invalid_model_events)
+@validate_custom_events(expected_events_on_invalid_model_error)
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_trace_info):
@@ -467,7 +466,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
    }
 )
-@validate_custom_events(auth_error_events)
+@validate_custom_events(expected_events_on_auth_error)
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace_info):
@@ -500,7 +499,7 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace
        "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
    }
 )
-@validate_custom_events(wrong_api_key_error_events)
+@validate_custom_events(expected_events_on_wrong_api_key_error)
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch, set_trace_info):

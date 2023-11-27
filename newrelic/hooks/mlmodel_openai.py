@@ -27,27 +27,6 @@ from newrelic.core.config import global_settings
 OPENAI_VERSION = get_package_version("openai")
 
 
-def openai_error_attributes(exception, request_args):
-    api_key = getattr(openai, "api_key", None)
-    api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
-    number_of_messages = len(request_args.get("messages", []))
-    error_attributes = {
-        "api_key_last_four_digits": api_key_last_four_digits,
-        "request.model": request_args.get("model") or request_args.get("engine") or "",
-        "request.temperature": request_args.get("temperature", ""),
-        "request.max_tokens": request_args.get("max_tokens", ""),
-        "vendor": "openAI",
-        "ingest_source": "Python",
-        "response.organization": getattr(exception, "organization", ""),
-        "response.number_of_messages": number_of_messages,
-        "http.statusCode": getattr(exception, "http_status", ""),
-        "error.message": getattr(exception, "_message", ""),
-        "error.code": getattr(getattr(exception, "error", ""), "code", ""),
-        "error.param": getattr(exception, "param", ""),
-    }
-    return error_attributes
-
-
 def wrap_embedding_create(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -71,19 +50,6 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    # Shared attributes that will be included on all embedding events (error or not)
-    base_embedding_dict = {
-        "embedding_id": embedding_id,
-        "appName": settings.app_name,
-        "api_key_last_four_digits": api_key_last_four_digits,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "transaction_id": transaction.guid,
-        "input": request_args.get("input", ""),
-        "request.model": request_args.get("model") or request_args.get("engine") or "",
-        "vendor": "openAI",
-        "ingest_source": "Python",
-    }
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
@@ -95,18 +61,30 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
                 "error.message": getattr(exc, "_message", ""),
                 "error.code": getattr(getattr(exc, "error", ""), "code", ""),
                 "error.param": getattr(exc, "param", ""),
+                "embedding_id": embedding_id,
             }
             exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
             # Gather attributes to add to embedding summary event in error context
-            error_summary_attributes = {
-                "response.organization": getattr(exc, "organization", ""),
+            exc_organization = getattr(exc, "organization", "")
+            error_embedding_dict = {
+                "id": embedding_id,
+                "appName": settings.app_name,
+                "api_key_last_four_digits": api_key_last_four_digits,
+                "span_id": span_id,
+                "trace_id": trace_id,
+                "transaction_id": transaction.guid,
+                "input": request_args.get("input", ""),
+                "request.model": request_args.get("model") or request_args.get("engine") or "",
+                "vendor": "openAI",
+                "ingest_source": "Python",
+                "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
                 "error": True
             }
-            error_embedding_dict = {**base_embedding_dict, **error_summary_attributes}
+
             transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
 
             raise
@@ -119,7 +97,15 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     response_headers = getattr(response, "_nr_response_headers", None)
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    embedding_response_dict = {
+    full_embedding_response_dict = {
+        "id": embedding_id,
+        "appName": settings.app_name,
+        "api_key_last_four_digits": api_key_last_four_digits,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "input": request_args.get("input", ""),
+        "request.model": request_args.get("model") or request_args.get("engine") or "",
         "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
@@ -146,11 +132,11 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
+        "vendor": "openAI",
+        "ingest_source": "Python",
     }
 
-    full_embedding_dict = {**base_embedding_dict, **embedding_response_dict}
-
-    transaction.record_custom_event("LlmEmbedding", full_embedding_dict)
+    transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
     return response
 
@@ -181,70 +167,60 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     conversation_id = custom_attrs_dict.get("conversation_id", "")
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
+    app_name = settings.app_name
     completion_id = str(uuid.uuid4())
-
-
-    # Shared attributes that will be included on all chat completion summary events (error or not)
-    base_chat_completion_dict = {
-        "completion_id": completion_id,
-        "appName": settings.app_name,
-        "conversation_id": conversation_id,
-        "api_key_last_four_digits": api_key_last_four_digits,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "transaction_id": transaction.guid,
-        "response.number_of_messages": len(request_message_list),
-        "request.model": request_args.get("model") or request_args.get("engine") or "",
-        "request.temperature": request_args.get("temperature", ""),
-        "request.max_tokens": request_args.get("max_tokens", ""),
-        "vendor": "openAI",
-        "ingest_source": "Python",
-    }
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
-            # Store request ID for summary event and to pass to message event creation
-            request_id =  getattr(exc, "request_id", ""),
-
-            # req
-            if isinstance(request_id, tuple) and not all(request_id):
-                request_id = ""
+            exc_organization = getattr(exc, "organization", "")
 
             notice_error_attributes = {
                 "http.statusCode": getattr(exc, "http_status", ""),
                 "error.message": getattr(exc, "_message", ""),
                 "error.code": getattr(getattr(exc, "error", ""), "code", ""),
                 "error.param": getattr(exc, "param", ""),
+                "completion_id": completion_id
             }
             exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
             # Gather attributes to add to embedding summary event in error context
-            error_summary_attributes = {
-                "response.organization": getattr(exc, "organization", ""),
-                "request_id": request_id,
+            error_chat_completion_dict = {
+                "id": completion_id,
+                "appName": app_name,
+                "conversation_id": conversation_id,
+                "api_key_last_four_digits": api_key_last_four_digits,
+                "span_id": span_id,
+                "trace_id": trace_id,
+                "transaction_id": transaction.guid,
+                "response.number_of_messages": len(request_message_list),
+                "request.model": request_args.get("model") or request_args.get("engine") or "",
+                "request.temperature": request_args.get("temperature", ""),
+                "request.max_tokens": request_args.get("max_tokens", ""),
+                "vendor": "openAI",
+                "ingest_source": "Python",
+                "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
                 "error": True
             }
-            error_chat_completion_summary_dict = {**base_chat_completion_dict, **error_summary_attributes}
-            transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_summary_dict)
+            transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
             error_response_id = str(uuid.uuid4())
 
             message_ids = create_chat_completion_message_event(
                 transaction,
-                settings.app_name,
+                app_name,
                 request_message_list,
                 completion_id,
                 span_id,
                 trace_id,
-                None,
+                "",
                 error_response_id,
-                request_id,
+                "",
                 conversation_id,
                 None
             )
@@ -270,7 +246,19 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     messages = request_args.get("messages", [])
     choices = response.get("choices", [])
 
-    chat_completion_summary_dict = {
+    full_chat_completion_summary_dict = {
+        "id": completion_id,
+        "appName": app_name,
+        "conversation_id": conversation_id,
+        "api_key_last_four_digits": api_key_last_four_digits,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "request.model": request_args.get("model") or request_args.get("engine") or "",
+        "request.temperature": request_args.get("temperature", ""),
+        "request.max_tokens": request_args.get("max_tokens", ""),
+        "vendor": "openAI",
+        "ingest_source": "Python",
         "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
@@ -301,8 +289,6 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         ),
         "response.number_of_messages": len(messages) + len(choices),
     }
-
-    full_chat_completion_summary_dict = {**base_chat_completion_dict, **chat_completion_summary_dict}
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
@@ -371,7 +357,12 @@ def create_chat_completion_message_event(
         if choices_message and message_content:
             choices_message_content = choices_message.get("content", "")
             is_response = choices_message_content == message_content
-        message_id = "%s-%s" % (response_id, index)
+
+        if response_id:
+            message_id = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
+        else:
+            message_id = str(uuid.uuid4())  # No response IDs, use random UUID
+
         message_ids.append(message_id)
         chat_completion_message_dict = {
             "id": message_id,
@@ -420,20 +411,6 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    # Shared attributes that will be included on all embedding events (error or not)
-    base_embedding_dict = {
-        "embedding_id": embedding_id,
-        "appName": settings.app_name,
-        "api_key_last_four_digits": api_key_last_four_digits,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "transaction_id": transaction.guid,
-        "input": request_args.get("input", ""),
-        "request.model": request_args.get("model") or request_args.get("engine") or "",
-        "vendor": "openAI",
-        "ingest_source": "Python",
-    }
-
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
         try:
@@ -444,18 +421,30 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
                 "error.message": getattr(exc, "_message", ""),
                 "error.code": getattr(getattr(exc, "error", ""), "code", ""),
                 "error.param": getattr(exc, "param", ""),
+                "embedding_id": embedding_id,
             }
             exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
             # Gather attributes to add to embedding summary event in error context
-            error_summary_attributes = {
-                "response.organization": getattr(exc, "organization", ""),
+            exc_organization = getattr(exc, "organization", "")
+            error_embedding_dict = {
+                "id": embedding_id,
+                "appName": settings.app_name,
+                "api_key_last_four_digits": api_key_last_four_digits,
+                "span_id": span_id,
+                "trace_id": trace_id,
+                "transaction_id": transaction.guid,
+                "input": request_args.get("input", ""),
+                "request.model": request_args.get("model") or request_args.get("engine") or "",
+                "vendor": "openAI",
+                "ingest_source": "Python",
+                "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
                 "error": True
             }
-            error_embedding_dict = {**base_embedding_dict, **error_summary_attributes}
+
             transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
 
             raise
@@ -468,7 +457,15 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     response_headers = getattr(response, "_nr_response_headers", None)
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    embedding_response_dict = {
+    full_embedding_response_dict = {
+        "id": embedding_id,
+        "appName": settings.app_name,
+        "api_key_last_four_digits": api_key_last_four_digits,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "input": request_args.get("input", ""),
+        "request.model": request_args.get("model") or request_args.get("engine") or "",
         "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
@@ -495,11 +492,11 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
+        "vendor": "openAI",
+        "ingest_source": "Python",
     }
 
-    full_embedding_dict = {**base_embedding_dict, **embedding_response_dict}
-
-    transaction.record_custom_event("LlmEmbedding", full_embedding_dict)
+    transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
     return response
 
@@ -530,73 +527,63 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     conversation_id = custom_attrs_dict.get("conversation_id", "")
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
+    app_name = settings.app_name
     completion_id = str(uuid.uuid4())
-
-    # Shared attributes that will be included on all chat completion summary events (error or not)
-    base_chat_completion_dict = {
-        "completion_id": completion_id,
-        "appName": settings.app_name,
-        "conversation_id": conversation_id,
-        "api_key_last_four_digits": api_key_last_four_digits,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "transaction_id": transaction.guid,
-        "response.number_of_messages": len(request_message_list),
-        "request.model": request_args.get("model") or request_args.get("engine") or "",
-        "request.temperature": request_args.get("temperature", ""),
-        "request.max_tokens": request_args.get("max_tokens", ""),
-        "vendor": "openAI",
-        "ingest_source": "Python",
-    }
 
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
         try:
             response = await wrapped(*args, **kwargs)
         except Exception as exc:
-            # Store request ID for summary event and to pass to message event creation
-            request_id = getattr(exc, "request_id", ""),
-
-            # req
-            if isinstance(request_id, tuple) and not all(request_id):
-                request_id = ""
+            exc_organization = getattr(exc, "organization", "")
 
             notice_error_attributes = {
                 "http.statusCode": getattr(exc, "http_status", ""),
                 "error.message": getattr(exc, "_message", ""),
                 "error.code": getattr(getattr(exc, "error", ""), "code", ""),
                 "error.param": getattr(exc, "param", ""),
+                "completion_id": completion_id
             }
             exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
             # Gather attributes to add to embedding summary event in error context
-            error_summary_attributes = {
-                "response.organization": getattr(exc, "organization", ""),
-                "request_id": request_id,
+            error_chat_completion_dict = {
+                "id": completion_id,
+                "appName": app_name,
+                "conversation_id": conversation_id,
+                "api_key_last_four_digits": api_key_last_four_digits,
+                "span_id": span_id,
+                "trace_id": trace_id,
+                "transaction_id": transaction.guid,
+                "response.number_of_messages": len(request_message_list),
+                "request.model": request_args.get("model") or request_args.get("engine") or "",
+                "request.temperature": request_args.get("temperature", ""),
+                "request.max_tokens": request_args.get("max_tokens", ""),
+                "vendor": "openAI",
+                "ingest_source": "Python",
+                "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
                 "error": True
             }
-            error_chat_completion_summary_dict = {**base_chat_completion_dict, **error_summary_attributes}
-            transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_summary_dict)
+            transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
             error_response_id = str(uuid.uuid4())
 
             message_ids = create_chat_completion_message_event(
                 transaction,
-                settings.app_name,
+                app_name,
                 request_message_list,
                 completion_id,
                 span_id,
                 trace_id,
-                None,
+                "",
                 error_response_id,
-                request_id,
+                "",
                 conversation_id,
                 None
             )
-
             # Cache message IDs on transaction for retrieval after OpenAI call completion
             if not hasattr(transaction, "_nr_message_ids"):
                 transaction._nr_message_ids = {}
@@ -618,7 +605,19 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     messages = request_args.get("messages", [])
     choices = response.get("choices", [])
 
-    chat_completion_summary_dict = {
+    full_chat_completion_summary_dict = {
+        "id": completion_id,
+        "appName": app_name,
+        "conversation_id": conversation_id,
+        "api_key_last_four_digits": api_key_last_four_digits,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "request.model": request_args.get("model") or request_args.get("engine") or "",
+        "request.temperature": request_args.get("temperature", ""),
+        "request.max_tokens": request_args.get("max_tokens", ""),
+        "vendor": "openAI",
+        "ingest_source": "Python",
         "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
@@ -650,8 +649,6 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
         "response.number_of_messages": len(messages) + len(choices),
     }
 
-    full_chat_completion_summary_dict = {**base_chat_completion_dict, **chat_completion_summary_dict}
-
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
     message_list = list(messages)
@@ -659,7 +656,6 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     if choices:
         choices_message = choices[0].message
         message_list.extend([choices_message])
-
 
     message_ids = create_chat_completion_message_event(
         transaction,

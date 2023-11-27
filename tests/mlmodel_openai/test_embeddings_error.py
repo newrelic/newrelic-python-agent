@@ -60,11 +60,11 @@ embedding_recorded_events = [
         },
     },
 )
-# @validate_span_events(
-#   exact_agents={
-#       "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
-#   }
-# )
+@validate_span_events(
+    exact_agents={
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
+    }
+)
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -112,12 +112,12 @@ invalid_model_events = [
         },
     },
 )
-# @validate_span_events(
-#   exact_agents={
-#       "error.message": "The model `does-not-exist` does not exist",
-#       # "http.statusCode": 404,
-#   }
-# )
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist",
+        # "http.statusCode": 404,
+    }
+)
 @validate_custom_events(invalid_model_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -159,11 +159,11 @@ embedding_auth_error_events = [
         "user": {},
     },
 )
-# @validate_span_events(
-#   exact_agents={
-#       "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
-#   }
-# )
+@validate_span_events(
+    exact_agents={
+        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
+    }
+)
 @validate_custom_events(embedding_auth_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -209,11 +209,11 @@ embedding_invalid_key_error_events = [
         },
     },
 )
-# @validate_span_events(
-#   exact_agents={
-#       "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
-#   }
-# )
+@validate_span_events(
+    exact_agents={
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+    }
+)
 @validate_custom_events(embedding_invalid_key_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -272,11 +272,11 @@ def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
         },
     },
 )
-# @validate_span_events(
-#   exact_agents={
-#       "error.message": "The model `does-not-exist` does not exist",
-#   }
-# )
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist",
+    }
+)
 @validate_custom_events(invalid_model_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -297,11 +297,11 @@ def test_embeddings_invalid_request_error_invalid_model_async(loop, set_trace_in
         "user": {},
     },
 )
-# @validate_span_events(
-#   exact_agents={
-#       "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
-#   }
-# )
+@validate_span_events(
+    exact_agents={
+        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
+    }
+)
 @validate_custom_events(embedding_auth_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -325,11 +325,11 @@ def test_embeddings_authentication_error_async(loop, monkeypatch, set_trace_info
         },
     },
 )
-# @validate_span_events(
-#   exact_agents={
-#       "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
-#   }
-# )
+@validate_span_events(
+    exact_agents={
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+    }
+)
 @validate_custom_events(embedding_invalid_key_error_events)
 @validate_custom_event_count(count=1)
 @background_task()

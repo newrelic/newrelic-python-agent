@@ -44,14 +44,14 @@ expected_events_on_no_model_error = [
             "trace_id": "trace-id",
             "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
-            "request.model": "", # No model in this test case
+            "request.model": "",  # No model in this test case
             "response.organization": "",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.number_of_messages": 2,
             "vendor": "openAI",
             "ingest_source": "Python",
-            "error": True
+            "error": True,
         },
     ),
     (
@@ -109,8 +109,8 @@ expected_events_on_no_model_error = [
 )
 @validate_span_events(
     exact_agents={
-       "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
-   }
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
+    }
 )
 @validate_custom_events(expected_events_on_no_model_error)
 @validate_custom_event_count(count=3)
@@ -146,7 +146,7 @@ expected_events_on_invalid_model_error = [
             "response.number_of_messages": 1,
             "vendor": "openAI",
             "ingest_source": "Python",
-            "error": True
+            "error": True,
         },
     ),
     (
@@ -186,9 +186,9 @@ expected_events_on_invalid_model_error = [
     },
 )
 @validate_span_events(
-   exact_agents={
-       "error.message": "The model `does-not-exist` does not exist",
-   }
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist",
+    }
 )
 @validate_custom_events(expected_events_on_invalid_model_error)
 @validate_custom_event_count(count=2)
@@ -224,7 +224,7 @@ expected_events_on_auth_error = [
             "response.number_of_messages": 2,
             "vendor": "openAI",
             "ingest_source": "Python",
-            "error": True
+            "error": True,
         },
     ),
     (
@@ -276,14 +276,13 @@ expected_events_on_auth_error = [
     exact_attrs={
         "agent": {},
         "intrinsic": {},
-        "user": {
-        },
+        "user": {},
     },
 )
 @validate_span_events(
-   exact_agents={
-       "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
-   }
+    exact_agents={
+        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
+    }
 )
 @validate_custom_events(expected_events_on_auth_error)
 @validate_custom_event_count(count=3)
@@ -320,7 +319,7 @@ expected_events_on_wrong_api_key_error = [
             "response.number_of_messages": 1,
             "vendor": "openAI",
             "ingest_source": "Python",
-            "error": True
+            "error": True,
         },
     ),
     (
@@ -357,9 +356,9 @@ expected_events_on_wrong_api_key_error = [
     },
 )
 @validate_span_events(
-   exact_agents={
-       "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
-  }
+    exact_agents={
+        "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
+    }
 )
 @validate_custom_events(expected_events_on_wrong_api_key_error)
 @validate_custom_event_count(count=2)
@@ -393,9 +392,9 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
     },
 )
 @validate_span_events(
-   exact_agents={
-       "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
-   }
+    exact_agents={
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
+    }
 )
 @validate_custom_events(expected_events_on_no_model_error)
 @validate_custom_event_count(count=3)
@@ -429,9 +428,9 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
     },
 )
 @validate_span_events(
-   exact_agents={
-       "error.message": "The model `does-not-exist` does not exist",
-   }
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist",
+    }
 )
 @validate_custom_events(expected_events_on_invalid_model_error)
 @validate_custom_event_count(count=2)
@@ -462,9 +461,9 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
     },
 )
 @validate_span_events(
-   exact_agents={
-       "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
-   }
+    exact_agents={
+        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
+    }
 )
 @validate_custom_events(expected_events_on_auth_error)
 @validate_custom_event_count(count=3)
@@ -495,9 +494,9 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace
     },
 )
 @validate_span_events(
-   exact_agents={
-       "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
-   }
+    exact_agents={
+        "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
+    }
 )
 @validate_custom_events(expected_events_on_wrong_api_key_error)
 @validate_custom_event_count(count=2)

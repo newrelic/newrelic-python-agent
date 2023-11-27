@@ -50,7 +50,6 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-
     ft_name = callable_name(wrapped)
     with FunctionTrace(ft_name) as ft:
         try:
@@ -82,7 +81,7 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
-                "error": True
+                "error": True,
             }
 
             transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
@@ -182,7 +181,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
                 "error.message": getattr(exc, "_message", ""),
                 "error.code": getattr(getattr(exc, "error", ""), "code", ""),
                 "error.param": getattr(exc, "param", ""),
-                "completion_id": completion_id
+                "completion_id": completion_id,
             }
             exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
@@ -205,7 +204,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
-                "error": True
+                "error": True,
             }
             transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
@@ -222,7 +221,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
                 error_response_id,
                 "",
                 conversation_id,
-                None
+                None,
             )
 
             # Cache message IDs on transaction for retrieval after OpenAI call completion
@@ -298,7 +297,6 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         choices_message = choices[0].message
         message_list.extend([choices_message])
 
-
     message_ids = create_chat_completion_message_event(
         transaction,
         settings.app_name,
@@ -310,7 +308,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         response_id,
         request_id,
         conversation_id,
-        choices_message
+        choices_message,
     )
 
     # Cache message ids on transaction for retrieval after open ai call completion.
@@ -348,7 +346,7 @@ def create_chat_completion_message_event(
     response_id,
     request_id,
     conversation_id,
-    choices_message
+    choices_message,
 ):
     message_ids = []
     for index, message in enumerate(message_list):
@@ -382,7 +380,7 @@ def create_chat_completion_message_event(
         }
         if is_response:
             chat_completion_message_dict.update({"is_response": True})
-        
+
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
     return (conversation_id, request_id, message_ids)
@@ -442,7 +440,7 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
-                "error": True
+                "error": True,
             }
 
             transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
@@ -542,7 +540,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
                 "error.message": getattr(exc, "_message", ""),
                 "error.code": getattr(getattr(exc, "error", ""), "code", ""),
                 "error.param": getattr(exc, "param", ""),
-                "completion_id": completion_id
+                "completion_id": completion_id,
             }
             exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
@@ -565,7 +563,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
-                "error": True
+                "error": True,
             }
             transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
@@ -582,7 +580,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
                 error_response_id,
                 "",
                 conversation_id,
-                None
+                None,
             )
             # Cache message IDs on transaction for retrieval after OpenAI call completion
             if not hasattr(transaction, "_nr_message_ids"):
@@ -668,7 +666,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
         response_id,
         request_id,
         conversation_id,
-        choices_message
+        choices_message,
     )
 
     # Cache message ids on transaction for retrieval after open ai call completion.

@@ -14,7 +14,7 @@
 
 import openai
 import pytest
-from testing_support.fixtures import dt_enabled, reset_core_stats_engine,validate_custom_event_count
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_custom_event_count
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
@@ -37,11 +37,11 @@ embedding_recorded_events = [
             "input": "This is an embedding test with no model.",
             "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
-            "request.model": "", # No model in this test case
+            "request.model": "",  # No model in this test case
             "response.organization": "",
             "vendor": "openAI",
             "ingest_source": "Python",
-            "error": True
+            "error": True,
         },
     ),
 ]
@@ -60,11 +60,11 @@ embedding_recorded_events = [
         },
     },
 )
-#@validate_span_events(
+# @validate_span_events(
 #   exact_agents={
 #       "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
 #   }
-#)
+# )
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -89,11 +89,11 @@ invalid_model_events = [
             "input": "Model does not exist.",
             "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
-            "request.model": "does-not-exist", # No model in this test case
+            "request.model": "does-not-exist",  # No model in this test case
             "response.organization": None,
             "vendor": "openAI",
             "ingest_source": "Python",
-            "error": True
+            "error": True,
         },
     ),
 ]
@@ -112,12 +112,12 @@ invalid_model_events = [
         },
     },
 )
-#@validate_span_events(
+# @validate_span_events(
 #   exact_agents={
 #       "error.message": "The model `does-not-exist` does not exist",
 #       # "http.statusCode": 404,
 #   }
-#)
+# )
 @validate_custom_events(invalid_model_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -139,11 +139,11 @@ embedding_auth_error_events = [
             "input": "Invalid API key.",
             "api_key_last_four_digits": "",
             "duration": None,  # Response time varies each test run
-            "request.model": "text-embedding-ada-002", # No model in this test case
+            "request.model": "text-embedding-ada-002",  # No model in this test case
             "response.organization": None,
             "vendor": "openAI",
             "ingest_source": "Python",
-            "error": True
+            "error": True,
         },
     ),
 ]
@@ -156,19 +156,18 @@ embedding_auth_error_events = [
     exact_attrs={
         "agent": {},
         "intrinsic": {},
-        "user": {
-        },
+        "user": {},
     },
 )
-#@validate_span_events(
+# @validate_span_events(
 #   exact_agents={
 #       "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
 #   }
-#)
+# )
 @validate_custom_events(embedding_auth_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
-def test_embeddings_authentication_error(monkeypatch,set_trace_info):
+def test_embeddings_authentication_error(monkeypatch, set_trace_info):
     with pytest.raises(openai.error.AuthenticationError):
         set_trace_info()
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
@@ -187,11 +186,11 @@ embedding_invalid_key_error_events = [
             "input": "Embedded: Invalid API key.",
             "api_key_last_four_digits": "sk-BEEF",
             "duration": None,  # Response time varies each test run
-            "request.model": "text-embedding-ada-002", # No model in this test case
+            "request.model": "text-embedding-ada-002",  # No model in this test case
             "response.organization": None,
             "vendor": "openAI",
             "ingest_source": "Python",
-            "error": True
+            "error": True,
         },
     ),
 ]
@@ -210,11 +209,11 @@ embedding_invalid_key_error_events = [
         },
     },
 )
-#@validate_span_events(
+# @validate_span_events(
 #   exact_agents={
 #       "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
 #   }
-#)
+# )
 @validate_custom_events(embedding_invalid_key_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -241,11 +240,11 @@ def test_embeddings_wrong_api_key_error(monkeypatch, set_trace_info):
         },
     },
 )
-#@validate_span_events(
+# @validate_span_events(
 #   exact_agents={
 #       "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
 #  }
-#)
+# )
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -273,11 +272,11 @@ def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
         },
     },
 )
-#@validate_span_events(
+# @validate_span_events(
 #   exact_agents={
 #       "error.message": "The model `does-not-exist` does not exist",
 #   }
-#)
+# )
 @validate_custom_events(invalid_model_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -298,11 +297,11 @@ def test_embeddings_invalid_request_error_invalid_model_async(loop, set_trace_in
         "user": {},
     },
 )
-#@validate_span_events(
+# @validate_span_events(
 #   exact_agents={
 #       "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
 #   }
-#)
+# )
 @validate_custom_events(embedding_auth_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -326,11 +325,11 @@ def test_embeddings_authentication_error_async(loop, monkeypatch, set_trace_info
         },
     },
 )
-#@validate_span_events(
+# @validate_span_events(
 #   exact_agents={
 #       "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
 #   }
-#)
+# )
 @validate_custom_events(embedding_invalid_key_error_events)
 @validate_custom_event_count(count=1)
 @background_task()

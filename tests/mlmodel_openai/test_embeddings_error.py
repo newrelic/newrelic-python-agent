@@ -61,7 +61,7 @@ embedding_recorded_events = [
         "intrinsic": {},
         "user": {
             "error.param": "engine",
-        }
+        },
     },
 )
 @validate_span_events(

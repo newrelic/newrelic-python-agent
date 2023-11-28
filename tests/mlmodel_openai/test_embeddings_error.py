@@ -14,11 +14,15 @@
 
 import openai
 import pytest
-from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_custom_event_count
+from testing_support.fixtures import (
+    dt_enabled,
+    reset_core_stats_engine,
+    validate_custom_event_count,
+)
+from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
-from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
@@ -55,10 +59,7 @@ embedding_recorded_events = [
     exact_attrs={
         "agent": {},
         "intrinsic": {},
-        "user": {
-            "error.param": "engine",
-            "embedding_id": None
-        },
+        "user": {"error.param": "engine", "embedding_id": None},
     },
 )
 @validate_span_events(

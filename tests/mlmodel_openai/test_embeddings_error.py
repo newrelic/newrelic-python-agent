@@ -57,6 +57,7 @@ embedding_recorded_events = [
         "intrinsic": {},
         "user": {
             "error.param": "engine",
+            "embedding_id": None
         },
     },
 )
@@ -147,6 +148,7 @@ embedding_auth_error_events = [
         },
     ),
 ]
+
 
 # No api_key provided
 @dt_enabled

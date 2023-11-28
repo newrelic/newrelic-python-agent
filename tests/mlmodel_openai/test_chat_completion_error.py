@@ -94,6 +94,7 @@ expected_events_on_no_model_error = [
     ),
 ]
 
+
 # No model provided
 @dt_enabled
 @reset_core_stats_engine()
@@ -342,6 +343,8 @@ expected_events_on_wrong_api_key_error = [
         },
     ),
 ]
+
+
 # Wrong api_key provided
 @dt_enabled
 @reset_core_stats_engine()
@@ -376,8 +379,6 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
 
 
 # Async tests:
-
-
 # No model provided
 @dt_enabled
 @reset_core_stats_engine()

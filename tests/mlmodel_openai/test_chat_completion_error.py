@@ -14,17 +14,20 @@
 
 import openai
 import pytest
-from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_custom_event_count
+from testing_support.fixtures import (
+    dt_enabled,
+    reset_core_stats_engine,
+    validate_custom_event_count,
+)
+from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
-from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
-from newrelic.common.object_names import callable_name
 from newrelic.api.transaction import add_custom_attribute
-
+from newrelic.common.object_names import callable_name
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},

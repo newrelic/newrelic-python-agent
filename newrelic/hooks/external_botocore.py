@@ -294,6 +294,8 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     if not model:
         return wrapped(*args, **kwargs)
 
+    is_embedding = model.startswith("amazon.titan-embed")
+
     # Determine extractor by model type
     for extractor_name, extractor in MODEL_EXTRACTORS:
         if model.startswith(extractor_name):
@@ -329,8 +331,19 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
             try:
                 error_attributes = extractor(request_body)
                 error_attributes = bedrock_error_attributes(exc, kwargs, instance, extractor)
+                notice_error_attributes = {
+                    "http.statusCode": error_attributes["http.statusCode"],
+                    "error.message": error_attributes["error.message"],
+                    "error.code": error_attributes["error.code"]
+                }
+
+                if is_embedding:
+                    notice_error_attributes.update({"embedding_id": str(uuid.uuid4())})
+                else:
+                    notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
+
                 ft.notice_error(
-                    attributes=error_attributes,
+                    attributes=notice_error_attributes,
                 )
             finally:
                 raise
@@ -343,7 +356,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
     response_headers = response["ResponseMetadata"]["HTTPHeaders"]
 
-    if model.startswith("amazon.titan-embed"):  # Only available embedding models
+    if is_embedding:  # Only available embedding models
         handle_embedding_event(
             instance,
             transaction,

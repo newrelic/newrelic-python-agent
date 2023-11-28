@@ -57,7 +57,6 @@ embedding_recorded_events = [
         "intrinsic": {},
         "user": {
             "error.param": "engine",
-            "embedding_id": None
         },
     },
 )
@@ -242,11 +241,11 @@ def test_embeddings_wrong_api_key_error(monkeypatch, set_trace_info):
         },
     },
 )
-# @validate_span_events(
-#   exact_agents={
-#       "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
-#  }
-# )
+@validate_span_events(
+    exact_agents={
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
+    }
+)
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
 @background_task()

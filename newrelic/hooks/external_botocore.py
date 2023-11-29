@@ -391,7 +391,7 @@ def handle_embedding_event(
 ):
     embedding_id = str(uuid.uuid4())
 
-    request_id = response_headers.get("x-amzn-requestid", "")
+    request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     _, embedding_dict = extractor(request_body, response_body)

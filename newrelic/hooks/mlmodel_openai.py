@@ -36,7 +36,6 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
 
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
-    request_args = kwargs
     embedding_id = str(uuid.uuid4())
 
     # Get API key without using the response so we can store it before the response is returned in case of errors
@@ -75,8 +74,8 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
-                "input": request_args.get("input", ""),
-                "request.model": request_args.get("model") or request_args.get("engine") or "",
+                "input": kwargs.get("input", ""),
+                "request.model": kwargs.get("model") or kwargs.get("engine") or "",
                 "vendor": "openAI",
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
@@ -103,8 +102,8 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "input": request_args.get("input", ""),
-        "request.model": request_args.get("model") or request_args.get("engine") or "",
+        "input": kwargs.get("input", ""),
+        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
@@ -149,8 +148,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
 
-    request_args = kwargs
-    request_message_list = request_args.get("messages", [])
+    request_message_list = kwargs.get("messages", [])
 
     # Get API key without using the response so we can store it before the response is returned in case of errors
     api_key = getattr(openai, "api_key", None)
@@ -197,9 +195,9 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
                 "response.number_of_messages": len(request_message_list),
-                "request.model": request_args.get("model") or request_args.get("engine") or "",
-                "request.temperature": request_args.get("temperature", ""),
-                "request.max_tokens": request_args.get("max_tokens", ""),
+                "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+                "request.temperature": kwargs.get("temperature", ""),
+                "request.max_tokens": kwargs.get("max_tokens", ""),
                 "vendor": "openAI",
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
@@ -210,7 +208,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
             error_response_id = str(uuid.uuid4())
 
-            message_ids = create_chat_completion_message_event(
+            create_chat_completion_message_event(
                 transaction,
                 app_name,
                 request_message_list,
@@ -223,11 +221,6 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
                 conversation_id,
                 None,
             )
-
-            # Cache message IDs on transaction for retrieval after OpenAI call completion
-            if not hasattr(transaction, "_nr_message_ids"):
-                transaction._nr_message_ids = {}
-            transaction._nr_message_ids[error_response_id] = message_ids
 
             raise
 
@@ -242,7 +235,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
     response_usage = response.get("usage", {})
 
-    messages = request_args.get("messages", [])
+    messages = kwargs.get("messages", [])
     choices = response.get("choices", [])
 
     full_chat_completion_summary_dict = {
@@ -253,9 +246,9 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "request.model": request_args.get("model") or request_args.get("engine") or "",
-        "request.temperature": request_args.get("temperature", ""),
-        "request.max_tokens": request_args.get("max_tokens", ""),
+        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+        "request.temperature": kwargs.get("temperature", ""),
+        "request.max_tokens": kwargs.get("max_tokens", ""),
         "vendor": "openAI",
         "ingest_source": "Python",
         "request_id": request_id,
@@ -291,16 +284,13 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
-    message_list = list(messages)
-    choices_message = None
-    if choices:
-        choices_message = choices[0].message
-        message_list.extend([choices_message])
+    input_message_list = list(messages)
+    output_message_list = [choices[0].message] if choices else None
 
     message_ids = create_chat_completion_message_event(
         transaction,
         settings.app_name,
-        message_list,
+        input_message_list,
         completion_id,
         span_id,
         trace_id,
@@ -308,10 +298,10 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         response_id,
         request_id,
         conversation_id,
-        choices_message,
+        output_message_list,
     )
 
-    # Cache message ids on transaction for retrieval after open ai call completion.
+    # Cache message IDs on transaction for retrieval after OpenAI call completion.
     if not hasattr(transaction, "_nr_message_ids"):
         transaction._nr_message_ids = {}
     transaction._nr_message_ids[response_id] = message_ids
@@ -338,7 +328,7 @@ def check_rate_limit_header(response_headers, header_name, is_int):
 def create_chat_completion_message_event(
     transaction,
     app_name,
-    message_list,
+    input_message_list,
     chat_completion_id,
     span_id,
     trace_id,
@@ -346,23 +336,24 @@ def create_chat_completion_message_event(
     response_id,
     request_id,
     conversation_id,
-    choices_message,
+    output_message_list,
 ):
     message_ids = []
-    for index, message in enumerate(message_list):
-        message_content = message.get("content", "")
-        is_response = False
-        if choices_message and message_content:
-            choices_message_content = choices_message.get("content", "")
-            is_response = choices_message_content == message_content
 
+    # Loop through all input messages received from the create request and emit a custom event for each one
+    for index, message in enumerate(input_message_list):
+        message_content = message.get("content", "")
+
+        # Response ID was set, append message index to it.
         if response_id:
-            message_id = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
+            message_id = "%s-%d" % (response_id, index)
+        # No response IDs, use random UUID
         else:
-            message_id = str(uuid.uuid4())  # No response IDs, use random UUID
+            message_id = str(uuid.uuid4())
 
         message_ids.append(message_id)
-        chat_completion_message_dict = {
+
+        chat_completion_input_message_dict = {
             "id": message_id,
             "appName": app_name,
             "conversation_id": conversation_id,
@@ -378,10 +369,45 @@ def create_chat_completion_message_event(
             "vendor": "openAI",
             "ingest_source": "Python",
         }
-        if is_response:
-            chat_completion_message_dict.update({"is_response": True})
 
-        transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
+        transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_input_message_dict)
+
+    if output_message_list:
+        # Loop through all output messages received from the LLM response and emit a custom event for each one
+        for index, message in enumerate(output_message_list):
+            message_content = message.get("content", "")
+
+            # Add offset of input_message_length so we don't receive any duplicate index values that match the input message IDs
+            index += len(input_message_list)
+
+            # Response ID was set, append message index to it.
+            if response_id:
+                message_id = "%s-%d" % (response_id, index)
+            # No response IDs, use random UUID
+            else:
+                message_id = str(uuid.uuid4())
+
+            message_ids.append(message_id)
+
+            chat_completion_output_message_dict = {
+                "id": message_id,
+                "appName": app_name,
+                "conversation_id": conversation_id,
+                "request_id": request_id,
+                "span_id": span_id,
+                "trace_id": trace_id,
+                "transaction_id": transaction.guid,
+                "content": message_content,
+                "role": message.get("role", ""),
+                "completion_id": chat_completion_id,
+                "sequence": index,
+                "response.model": response_model if response_model else "",
+                "vendor": "openAI",
+                "ingest_source": "Python",
+                "is_response": True
+            }
+
+            transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
 
     return (conversation_id, request_id, message_ids)
 
@@ -395,7 +421,6 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
 
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
-    request_args = kwargs
     embedding_id = str(uuid.uuid4())
 
     # Get API key without using the response so we can store it before the response is returned in case of errors
@@ -434,8 +459,8 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
-                "input": request_args.get("input", ""),
-                "request.model": request_args.get("model") or request_args.get("engine") or "",
+                "input": kwargs.get("input", ""),
+                "request.model": kwargs.get("model") or kwargs.get("engine") or "",
                 "vendor": "openAI",
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
@@ -462,8 +487,8 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "input": request_args.get("input", ""),
-        "request.model": request_args.get("model") or request_args.get("engine") or "",
+        "input": kwargs.get("input", ""),
+        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
@@ -508,8 +533,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
 
-    request_args = kwargs
-    request_message_list = request_args.get("messages", [])
+    request_message_list = kwargs.get("messages", [])
 
     # Get API key without using the response so we can store it before the response is returned in case of errors
     api_key = getattr(openai, "api_key", None)
@@ -556,9 +580,9 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
                 "response.number_of_messages": len(request_message_list),
-                "request.model": request_args.get("model") or request_args.get("engine") or "",
-                "request.temperature": request_args.get("temperature", ""),
-                "request.max_tokens": request_args.get("max_tokens", ""),
+                "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+                "request.temperature": kwargs.get("temperature", ""),
+                "request.max_tokens": kwargs.get("max_tokens", ""),
                 "vendor": "openAI",
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
@@ -569,7 +593,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
 
             error_response_id = str(uuid.uuid4())
 
-            message_ids = create_chat_completion_message_event(
+            create_chat_completion_message_event(
                 transaction,
                 app_name,
                 request_message_list,
@@ -582,10 +606,6 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
                 conversation_id,
                 None,
             )
-            # Cache message IDs on transaction for retrieval after OpenAI call completion
-            if not hasattr(transaction, "_nr_message_ids"):
-                transaction._nr_message_ids = {}
-            transaction._nr_message_ids[error_response_id] = message_ids
 
             raise
 
@@ -600,7 +620,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
 
     response_usage = response.get("usage", {})
 
-    messages = request_args.get("messages", [])
+    messages = kwargs.get("messages", [])
     choices = response.get("choices", [])
 
     full_chat_completion_summary_dict = {
@@ -611,9 +631,9 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "request.model": request_args.get("model") or request_args.get("engine") or "",
-        "request.temperature": request_args.get("temperature", ""),
-        "request.max_tokens": request_args.get("max_tokens", ""),
+        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+        "request.temperature": kwargs.get("temperature", ""),
+        "request.max_tokens": kwargs.get("max_tokens", ""),
         "vendor": "openAI",
         "ingest_source": "Python",
         "request_id": request_id,
@@ -649,16 +669,13 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
-    message_list = list(messages)
-    choices_message = None
-    if choices:
-        choices_message = choices[0].message
-        message_list.extend([choices_message])
+    input_message_list = list(messages)
+    output_message_list = [choices[0].message] if choices else None
 
     message_ids = create_chat_completion_message_event(
         transaction,
         settings.app_name,
-        message_list,
+        input_message_list,
         completion_id,
         span_id,
         trace_id,
@@ -666,7 +683,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
         response_id,
         request_id,
         conversation_id,
-        choices_message,
+        output_message_list,
     )
 
     # Cache message ids on transaction for retrieval after open ai call completion.

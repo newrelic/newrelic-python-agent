@@ -367,7 +367,7 @@ def handle_embedding_event(
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
 
-    request_id = response_headers.get("x-amzn-requestid", "")
+    request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     _, embedding_dict = extractor(request_body, response_body)

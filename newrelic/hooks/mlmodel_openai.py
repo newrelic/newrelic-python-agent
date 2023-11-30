@@ -404,7 +404,7 @@ def create_chat_completion_message_event(
                 "response.model": response_model if response_model else "",
                 "vendor": "openAI",
                 "ingest_source": "Python",
-                "is_response": True
+                "is_response": True,
             }
 
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)

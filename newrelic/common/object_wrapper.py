@@ -145,6 +145,11 @@ class ObjectWrapper(ObjectProxy, _FunctionWrapperBase):
 # Function for creating a decorator for applying to functions, as well as
 # short cut functions for applying wrapper functions via monkey patching.
 
+# WARNING: These functions are reproduced directly from wrapt, but using
+# our FunctionWrapper class which includes the _nr_ attriubte overrides
+# that are inherited from our subclass of wrapt.ObjectProxy.These MUST be 
+# kept in sync with wrapt when upgrading, or drift may introduce bugs.
+
 
 def function_wrapper(wrapper):
     def _wrapper(wrapped, instance, args, kwargs):

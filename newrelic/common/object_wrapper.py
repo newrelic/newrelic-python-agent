@@ -24,6 +24,12 @@ import inspect
 
 from newrelic.packages import six
 
+from newrelic.packages.wrapt import (
+    resolve_path,
+    apply_patch,
+    wrap_object,
+    wrap_object_attribute,
+)
 from newrelic.packages.wrapt import (ObjectProxy as _ObjectProxy,
         FunctionWrapper as _FunctionWrapper,
         BoundFunctionWrapper as _BoundFunctionWrapper)
@@ -165,93 +171,6 @@ class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
         super(ObjectWrapper, self).__init__(wrapped, instance, wrapper,
                 binding=binding)
 
-
-# Helper functions for performing monkey patching.
-
-
-def resolve_path(module, name):
-    if isinstance(module, six.string_types):
-        __import__(module)
-        module = sys.modules[module]
-
-    parent = module
-
-    path = name.split('.')
-    attribute = path[0]
-
-    original = getattr(parent, attribute)
-    for attribute in path[1:]:
-        parent = original
-
-        # We can't just always use getattr() because in doing
-        # that on a class it will cause binding to occur which
-        # will complicate things later and cause some things not
-        # to work. For the case of a class we therefore access
-        # the __dict__ directly. To cope though with the wrong
-        # class being given to us, or a method being moved into
-        # a base class, we need to walk the class hierarchy to
-        # work out exactly which __dict__ the method was defined
-        # in, as accessing it from __dict__ will fail if it was
-        # not actually on the class given. Fallback to using
-        # getattr() if we can't find it. If it truly doesn't
-        # exist, then that will fail.
-
-        if inspect.isclass(original):
-            for cls in inspect.getmro(original):
-                if attribute in vars(cls):
-                    original = vars(cls)[attribute]
-                    break
-            else:
-                original = getattr(original, attribute)
-
-        else:
-            original = getattr(original, attribute)
-
-    return (parent, attribute, original)
-
-
-def apply_patch(parent, attribute, replacement):
-    setattr(parent, attribute, replacement)
-
-
-def wrap_object(module, name, factory, args=(), kwargs={}):
-    (parent, attribute, original) = resolve_path(module, name)
-    wrapper = factory(original, *args, **kwargs)
-    apply_patch(parent, attribute, wrapper)
-    return wrapper
-
-# Function for apply a proxy object to an attribute of a class instance.
-# The wrapper works by defining an attribute of the same name on the
-# class which is a descriptor and which intercepts access to the
-# instance attribute. Note that this cannot be used on attributes which
-# are themselves defined by a property object.
-
-
-class AttributeWrapper(object):
-
-    def __init__(self, attribute, factory, args, kwargs):
-        self.attribute = attribute
-        self.factory = factory
-        self.args = args
-        self.kwargs = kwargs
-
-    def __get__(self, instance, owner):
-        value = instance.__dict__[self.attribute]
-        return self.factory(value, *self.args, **self.kwargs)
-
-    def __set__(self, instance, value):
-        instance.__dict__[self.attribute] = value
-
-    def __delete__(self, instance):
-        del instance.__dict__[self.attribute]
-
-
-def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
-    path, attribute = name.rsplit('.', 1)
-    parent = resolve_path(module, path)[2]
-    wrapper = AttributeWrapper(attribute, factory, args, kwargs)
-    apply_patch(parent, attribute, wrapper)
-    return wrapper
 
 # Function for creating a decorator for applying to functions, as well as
 # short cut functions for applying wrapper functions via monkey patching.

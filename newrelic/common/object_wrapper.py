@@ -52,11 +52,12 @@ from newrelic.packages.wrapt.__wrapt__ import _FunctionWrapperBase
 
 class ObjectProxy(_ObjectProxy):
     """
-    This class provides method overrides for all object wrappers used by the agent.
-
-    These methods allow attributes to be defined with the special prefix _nr_ to be interpretted as
-    attributes on the wrapper, rather than the wrapped object. Inheriting from the base class wrapt.ObjectProxy
-    preserves method resolution order (MRO) through multiple inheritance. (See https://www.python.org/download/releases/2.3/mro/).
+    This class provides method overrides for all object wrappers used by the
+    agent. These methods allow attributes to be defined with the special prefix
+    _nr_ to be interpretted as attributes on the wrapper, rather than the
+    wrapped object. Inheriting from the base class wrapt.ObjectProxy preserves
+    method resolution order (MRO) through multiple inheritance.
+    (See https://www.python.org/download/releases/2.3/mro/).
     """
 
     def __setattr__(self, name, value):

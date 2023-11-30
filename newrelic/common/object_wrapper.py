@@ -19,23 +19,18 @@ make use of when doing monkey patching.
 
 """
 
-import sys
 import inspect
 
-from newrelic.packages import six
-
-from newrelic.packages.wrapt import (
-    resolve_path,
+from newrelic.packages.wrapt import BoundFunctionWrapper as _BoundFunctionWrapper
+from newrelic.packages.wrapt import CallableObjectProxy as _CallableObjectProxy
+from newrelic.packages.wrapt import FunctionWrapper as _FunctionWrapper
+from newrelic.packages.wrapt import ObjectProxy as _ObjectProxy
+from newrelic.packages.wrapt import (  # noqa: F401; pylint: disable=W0611
     apply_patch,
+    resolve_path,
     wrap_object,
     wrap_object_attribute,
 )
-from newrelic.packages.wrapt import (ObjectProxy as _ObjectProxy,
-        FunctionWrapper as _FunctionWrapper,
-        BoundFunctionWrapper as _BoundFunctionWrapper,
-        CallableObjectProxy as _CallableObjectProxy)
-
-
 from newrelic.packages.wrapt.__wrapt__ import _FunctionWrapperBase
 
 # We previously had our own pure Python implementation of the generic
@@ -58,28 +53,29 @@ from newrelic.packages.wrapt.__wrapt__ import _FunctionWrapperBase
 class ObjectProxy(_ObjectProxy):
     """
     This class provides method overrides for all object wrappers used by the agent.
-    
+
     These methods allow attributes to be defined with the special prefix _nr_ to be interpretted as
     attributes on the wrapper, rather than the wrapped object. Inheriting from the base class wrapt.ObjectProxy
     preserves method resolution order (MRO) through multiple inheritance. (See https://www.python.org/download/releases/2.3/mro/).
     """
+
     def __setattr__(self, name, value):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
+        if name.startswith("_nr_"):
+            name = name.replace("_nr_", "_self_", 1)
             setattr(self, name, value)
         else:
             _ObjectProxy.__setattr__(self, name, value)
 
     def __getattr__(self, name):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
+        if name.startswith("_nr_"):
+            name = name.replace("_nr_", "_self_", 1)
             return getattr(self, name)
         else:
             return _ObjectProxy.__getattr__(self, name)
 
     def __delattr__(self, name):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
+        if name.startswith("_nr_"):
+            name = name.replace("_nr_", "_self_", 1)
             delattr(self, name)
         else:
             _ObjectProxy.__delattr__(self, name)
@@ -93,8 +89,7 @@ class ObjectProxy(_ObjectProxy):
         try:
             return self._self_last_object
         except AttributeError:
-            self._self_last_object = getattr(self.__wrapped__,
-                    '_nr_last_object', self.__wrapped__)
+            self._self_last_object = getattr(self.__wrapped__, "_nr_last_object", self.__wrapped__)
             return self._self_last_object
 
     @property
@@ -132,14 +127,13 @@ class ObjectWrapper(ObjectProxy, _FunctionWrapperBase):
 
     def __init__(self, wrapped, instance, wrapper):
         if isinstance(wrapped, classmethod):
-            binding = 'classmethod'
+            binding = "classmethod"
         elif isinstance(wrapped, staticmethod):
-            binding = 'staticmethod'
+            binding = "staticmethod"
         else:
-            binding = 'function'
+            binding = "function"
 
-        super(ObjectWrapper, self).__init__(wrapped, instance, wrapper,
-                binding=binding)
+        super(ObjectWrapper, self).__init__(wrapped, instance, wrapper, binding=binding)
 
 
 # Function for creating a decorator for applying to functions, as well as
@@ -147,7 +141,7 @@ class ObjectWrapper(ObjectProxy, _FunctionWrapperBase):
 
 # WARNING: These functions are reproduced directly from wrapt, but using
 # our FunctionWrapper class which includes the _nr_ attriubte overrides
-# that are inherited from our subclass of wrapt.ObjectProxy.These MUST be 
+# that are inherited from our subclass of wrapt.ObjectProxy.These MUST be
 # kept in sync with wrapt when upgrading, or drift may introduce bugs.
 
 
@@ -161,6 +155,7 @@ def function_wrapper(wrapper):
         else:
             target_wrapper = wrapper.__get__(instance, type(instance))
         return FunctionWrapper(target_wrapped, target_wrapper)
+
     return FunctionWrapper(wrapper, _wrapper)
 
 
@@ -171,6 +166,7 @@ def wrap_function_wrapper(module, name, wrapper):
 def patch_function_wrapper(module, name, enabled=None):
     def _wrapper(wrapper):
         return wrap_object(module, name, FunctionWrapper, (wrapper, enabled))
+
     return _wrapper
 
 
@@ -193,9 +189,13 @@ def transient_function_wrapper(module, name):
                     return wrapped(*args, **kwargs)
                 finally:
                     setattr(parent, attribute, original)
+
             return FunctionWrapper(target_wrapped, _execute)
+
         return FunctionWrapper(wrapper, _wrapper)
+
     return _decorator
+
 
 # Generic decorators for performing actions before and after a wrapped
 # function is called, or modifying the inbound arguments or return value.
@@ -209,6 +209,7 @@ def pre_function(function):
         else:
             function(*args, **kwargs)
         return wrapped(*args, **kwargs)
+
     return _wrapper
 
 
@@ -229,6 +230,7 @@ def post_function(function):
         else:
             function(*args, **kwargs)
         return result
+
     return _wrapper
 
 
@@ -276,6 +278,7 @@ def out_function(function):
     @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
         return function(wrapped(*args, **kwargs))
+
     return _wrapper
 
 

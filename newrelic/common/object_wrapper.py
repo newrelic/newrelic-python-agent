@@ -64,21 +64,21 @@ class ObjectProxy(_ObjectProxy):
             name = name.replace("_nr_", "_self_", 1)
             setattr(self, name, value)
         else:
-            _ObjectProxy.__setattr__(self, name, value)
+            super(ObjectProxy, self).__setattr__(name, value)
 
     def __getattr__(self, name):
         if name.startswith("_nr_"):
             name = name.replace("_nr_", "_self_", 1)
             return getattr(self, name)
         else:
-            return _ObjectProxy.__getattr__(self, name)
+            return super(ObjectProxy, self).__getattr__(name)
 
     def __delattr__(self, name):
         if name.startswith("_nr_"):
             name = name.replace("_nr_", "_self_", 1)
             delattr(self, name)
         else:
-            _ObjectProxy.__delattr__(self, name)
+            super(ObjectProxy, self).__delattr__(name)
 
     @property
     def _nr_next_object(self):

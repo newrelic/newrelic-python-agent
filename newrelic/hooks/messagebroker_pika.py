@@ -278,7 +278,7 @@ def _ConsumeGeneratorWrapper(wrapped):
                     if any(exc):
                         to_throw = exc
                         exc = (None, None, None)
-                        yielded = generator.throw(*to_throw)
+                        yielded = generator.throw(to_throw[1])
                     else:
                         yielded = generator.send(value)
 

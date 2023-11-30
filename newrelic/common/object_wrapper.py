@@ -32,9 +32,11 @@ from newrelic.packages.wrapt import (
 )
 from newrelic.packages.wrapt import (ObjectProxy as _ObjectProxy,
         FunctionWrapper as _FunctionWrapper,
-        BoundFunctionWrapper as _BoundFunctionWrapper)
+        BoundFunctionWrapper as _BoundFunctionWrapper,
+        CallableObjectProxy as _CallableObjectProxy)
 
-from newrelic.packages.wrapt.wrappers import _FunctionWrapperBase
+
+from newrelic.packages.wrapt.__wrapt__ import _FunctionWrapperBase
 
 # We previously had our own pure Python implementation of the generic
 # object wrapper but we now defer to using the wrapt module as its C
@@ -53,8 +55,14 @@ from newrelic.packages.wrapt.wrappers import _FunctionWrapperBase
 # ObjectProxy or FunctionWrapper should be used going forward.
 
 
-class _ObjectWrapperBase(object):
-
+class ObjectProxy(_ObjectProxy):
+    """
+    This class provides method overrides for all object wrappers used by the agent.
+    
+    These methods allow attributes to be defined with the special prefix _nr_ to be interpretted as
+    attributes on the wrapper, rather than the wrapped object. Inheriting from the base class wrapt.ObjectProxy
+    preserves method resolution order (MRO) through multiple inheritance. (See https://www.python.org/download/releases/2.3/mro/).
+    """
     def __setattr__(self, name, value):
         if name.startswith('_nr_'):
             name = name.replace('_nr_', '_self_', 1)
@@ -102,62 +110,24 @@ class _ObjectWrapperBase(object):
         return self._self_parent
 
 
-class _NRBoundFunctionWrapper(_ObjectWrapperBase, _BoundFunctionWrapper):
+class _NRBoundFunctionWrapper(ObjectProxy, _BoundFunctionWrapper):
     pass
 
 
-class FunctionWrapper(_ObjectWrapperBase, _FunctionWrapper):
+class FunctionWrapper(ObjectProxy, _FunctionWrapper):
     __bound_function_wrapper__ = _NRBoundFunctionWrapper
 
 
-class ObjectProxy(_ObjectProxy):
+class CallableObjectProxy(ObjectProxy, _CallableObjectProxy):
+    pass
 
-    def __setattr__(self, name, value):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
-            setattr(self, name, value)
-        else:
-            _ObjectProxy.__setattr__(self, name, value)
-
-    def __getattr__(self, name):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
-            return getattr(self, name)
-        else:
-            return _ObjectProxy.__getattr__(self, name)
-
-    def __delattr__(self, name):
-        if name.startswith('_nr_'):
-            name = name.replace('_nr_', '_self_', 1)
-            delattr(self, name)
-        else:
-            _ObjectProxy.__delattr__(self, name)
-
-    @property
-    def _nr_next_object(self):
-        return self.__wrapped__
-
-    @property
-    def _nr_last_object(self):
-        try:
-            return self._self_last_object
-        except AttributeError:
-            self._self_last_object = getattr(self.__wrapped__,
-                    '_nr_last_object', self.__wrapped__)
-            return self._self_last_object
-
-
-class CallableObjectProxy(ObjectProxy):
-
-    def __call__(self, *args, **kwargs):
-        return self.__wrapped__(*args, **kwargs)
 
 # The ObjectWrapper class needs to be deprecated and removed once all our
 # own code no longer uses it. It reaches down into what are wrapt internals
 # at present which shouldn't be doing.
 
 
-class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
+class ObjectWrapper(ObjectProxy, _FunctionWrapperBase):
     __bound_function_wrapper__ = _NRBoundFunctionWrapper
 
     def __init__(self, wrapped, instance, wrapper):
@@ -193,9 +163,9 @@ def wrap_function_wrapper(module, name, wrapper):
     return wrap_object(module, name, FunctionWrapper, (wrapper,))
 
 
-def patch_function_wrapper(module, name):
+def patch_function_wrapper(module, name, enabled=None):
     def _wrapper(wrapper):
-        return wrap_object(module, name, FunctionWrapper, (wrapper,))
+        return wrap_object(module, name, FunctionWrapper, (wrapper, enabled))
     return _wrapper
 
 

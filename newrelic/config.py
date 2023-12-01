@@ -2476,7 +2476,6 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.logger_structlog",
         "instrument_structlog__frames",
     )
-
     _process_module_definition(
         "paste.httpserver",
         "newrelic.hooks.adapter_paste",

@@ -67,7 +67,9 @@ def set_trace_ids():
         trace = current_trace()
         if trace:
             trace.guid = "abcdefgh"
+
     return _set
+
 
 def drop_event_processor(logger, method_name, event_dict):
     if method_name == "info":
@@ -84,6 +86,7 @@ def structlog_caplog():
 @pytest.fixture(scope="function")
 def logger(structlog_caplog):
     import structlog
+
     structlog.configure(processors=[], logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog))
     _logger = structlog.get_logger()
     return _logger
@@ -92,9 +95,45 @@ def logger(structlog_caplog):
 @pytest.fixture(scope="function")
 def filtering_logger(structlog_caplog):
     import structlog
-    structlog.configure(processors=[drop_event_processor], logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog))
+
+    structlog.configure(
+        processors=[drop_event_processor], logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog)
+    )
     _filtering_logger = structlog.get_logger()
     return _filtering_logger
+
+
+@pytest.fixture(scope="function")
+def callsite_parameter_logger(structlog_caplog):
+    import structlog
+
+    structlog.configure(
+        processors=[
+            structlog.processors.CallsiteParameterAdder(
+                [
+                    structlog.processors.CallsiteParameter.FILENAME,
+                    structlog.processors.CallsiteParameter.FUNC_NAME,
+                    structlog.processors.CallsiteParameter.LINENO,
+                ],
+            ),
+            structlog.processors.KeyValueRenderer(),
+        ],
+        logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog),
+    )
+
+    _callsite_logger = structlog.get_logger()
+    return _callsite_logger
+
+
+@pytest.fixture
+def exercise_callsite_parameter_processor(callsite_parameter_logger, structlog_caplog):
+    def _exercise():
+        callsite_parameter_logger.msg("Dog")
+        assert "Dog" in structlog_caplog[0]
+        assert "filename='test_structlog_processors.py'" in structlog_caplog[0]
+        assert "func_name='test_callsite_parameter_processor'" in structlog_caplog[0]
+
+    return _exercise
 
 
 @pytest.fixture

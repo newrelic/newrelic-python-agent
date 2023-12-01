@@ -1,4 +1,4 @@
-# Copyright 2010 New Relic, Inc.
+ # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import pytest
 from _test_bedrock_embeddings import (
     embedding_expected_client_errors,
     embedding_expected_events,
+    embedding_expected_error_events,
     embedding_payload_templates,
 )
 from conftest import BOTOCORE_VERSION
@@ -86,6 +87,11 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
+def expected_error_events(model_id):
+    return embedding_expected_error_events[model_id]
+
+
+@pytest.fixture(scope="module")
 def expected_client_error(model_id):
     return embedding_expected_client_errors[model_id]
 
@@ -138,8 +144,9 @@ def test_bedrock_embedding_disabled_settings(set_trace_info, exercise_model):
 @dt_enabled
 @reset_core_stats_engine()
 def test_bedrock_embedding_error_incorrect_access_key(
-    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_client_error
+    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_error_events, expected_client_error
 ):
+    @validate_custom_events(expected_error_events)
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={

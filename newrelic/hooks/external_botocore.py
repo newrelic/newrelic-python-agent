@@ -64,7 +64,7 @@ def bedrock_error_attributes(exception, request_args, client, extractor):
         return {}
 
     request_body = request_args.get("body", "")
-    error_attributes = extractor(request_body)[1]
+    error_attributes = extractor(request_body)[2]
 
     error_attributes.update(
         {
@@ -84,7 +84,8 @@ def bedrock_error_attributes(exception, request_args, client, extractor):
 def create_chat_completion_message_event(
     transaction,
     app_name,
-    message_list,
+    input_message_list,
+    output_message_list,
     chat_completion_id,
     span_id,
     trace_id,
@@ -96,7 +97,7 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
-    for index, message in enumerate(message_list):
+    for index, message in enumerate(input_message_list):
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
         else:
@@ -115,8 +116,33 @@ def create_chat_completion_message_event(
             "completion_id": chat_completion_id,
             "sequence": index,
             "response.model": request_model,
-            "vendor": "bedrock",
+            "vendor": "Bedrock",
             "ingest_source": "Python",
+        }
+        transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
+
+    for index, message in enumerate(output_message_list):
+        if response_id:
+            id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
+        else:
+            id_ = str(uuid.uuid4())  # No response IDs, use random UUID
+
+        chat_completion_message_dict = {
+            "id": id_,
+            "appName": app_name,
+            "conversation_id": conversation_id,
+            "request_id": request_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "content": message.get("content", ""),
+            "role": message.get("role"),
+            "completion_id": chat_completion_id,
+            "sequence": index,
+            "response.model": request_model,
+            "vendor": "Bedrock",
+            "ingest_source": "Python",
+            "is_response": True
         }
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
@@ -128,9 +154,13 @@ def extract_bedrock_titan_text_model(request_body, response_body=None):
 
     request_config = request_body.get("textGenerationConfig", {})
 
+    input_message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
+
+
     chat_completion_summary_dict = {
         "request.max_tokens": request_config.get("maxTokenCount", ""),
         "request.temperature": request_config.get("temperature", ""),
+        "response.number_of_messages": len(input_message_list),
     }
 
     if response_body:
@@ -138,10 +168,7 @@ def extract_bedrock_titan_text_model(request_body, response_body=None):
         completion_tokens = sum(result["tokenCount"] for result in response_body.get("results", []))
         total_tokens = input_tokens + completion_tokens
 
-        message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
-        message_list.extend(
-            {"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", [])
-        )
+        output_message_list = [{"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", [])]
 
         chat_completion_summary_dict.update(
             {
@@ -149,18 +176,18 @@ def extract_bedrock_titan_text_model(request_body, response_body=None):
                 "response.usage.completion_tokens": completion_tokens,
                 "response.usage.prompt_tokens": input_tokens,
                 "response.usage.total_tokens": total_tokens,
-                "response.number_of_messages": len(message_list),
+                "response.number_of_messages": len(input_message_list) + len(output_message_list),
             }
         )
     else:
-        message_list = []
+        output_message_list = []
 
-    return message_list, chat_completion_summary_dict
+    return input_message_list, output_message_list, chat_completion_summary_dict
 
 
 def extract_bedrock_titan_embedding_model(request_body, response_body=None):
     if not response_body:
-        return [], {}  # No extracted information necessary for embedding
+        return [], [], {}  # No extracted information necessary for embedding
 
     request_body = json.loads(request_body)
     response_body = json.loads(response_body)
@@ -172,7 +199,7 @@ def extract_bedrock_titan_embedding_model(request_body, response_body=None):
         "response.usage.prompt_tokens": input_tokens,
         "response.usage.total_tokens": input_tokens,
     }
-    return [], embedding_dict
+    return [], [], embedding_dict
 
 
 def extract_bedrock_ai21_j2_model(request_body, response_body=None):
@@ -180,28 +207,28 @@ def extract_bedrock_ai21_j2_model(request_body, response_body=None):
     if response_body:
         response_body = json.loads(response_body)
 
+    input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("maxTokens", ""),
         "request.temperature": request_body.get("temperature", ""),
+        "response.number_of_messages": len(input_message_list),
     }
 
     if response_body:
-        message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
-        message_list.extend(
-            {"role": "assistant", "content": result["data"]["text"]} for result in response_body.get("completions", [])
-        )
+        output_message_list =[{"role": "assistant", "content": result["data"]["text"]} for result in response_body.get("completions", [])]
 
         chat_completion_summary_dict.update(
             {
                 "response.choices.finish_reason": response_body["completions"][0]["finishReason"]["reason"],
-                "response.number_of_messages": len(message_list),
+                "response.number_of_messages": len(input_message_list) + len(output_message_list),
                 "response_id": str(response_body.get("id", "")),
             }
         )
     else:
-        message_list = []
+        output_message_list = []
 
-    return message_list, chat_completion_summary_dict
+    return input_message_list, output_message_list, chat_completion_summary_dict
 
 
 def extract_bedrock_claude_model(request_body, response_body=None):
@@ -209,27 +236,27 @@ def extract_bedrock_claude_model(request_body, response_body=None):
     if response_body:
         response_body = json.loads(response_body)
 
+    input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens_to_sample", ""),
         "request.temperature": request_body.get("temperature", ""),
+        "response.number_of_messages": len(input_message_list)
     }
 
     if response_body:
-        message_list = [
-            {"role": "user", "content": request_body.get("prompt", "")},
-            {"role": "assistant", "content": response_body.get("completion", "")},
-        ]
+        output_message_list = [{"role": "assistant", "content": response_body.get("completion", "")}]
 
         chat_completion_summary_dict.update(
             {
                 "response.choices.finish_reason": response_body.get("stop_reason", ""),
-                "response.number_of_messages": len(message_list),
+                "response.number_of_messages": len(input_message_list) + len(output_message_list),
             }
         )
     else:
-        message_list = []
+        output_message_list = []
 
-    return message_list, chat_completion_summary_dict
+    return input_message_list, output_message_list, chat_completion_summary_dict
 
 
 def extract_bedrock_cohere_model(request_body, response_body=None):
@@ -237,30 +264,27 @@ def extract_bedrock_cohere_model(request_body, response_body=None):
     if response_body:
         response_body = json.loads(response_body)
 
+    input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens", ""),
         "request.temperature": request_body.get("temperature", ""),
+        "response.number_of_messages": len(input_message_list)
     }
 
     if response_body:
-        message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
-        message_list.extend(
-            {"role": "assistant", "content": result["text"]} for result in response_body.get("generations", [])
-        )
-
+        output_message_list = [{"role": "assistant", "content": result["text"]} for result in response_body.get("generations", [])]
         chat_completion_summary_dict.update(
             {
-                "request.max_tokens": request_body.get("max_tokens", ""),
-                "request.temperature": request_body.get("temperature", ""),
                 "response.choices.finish_reason": response_body["generations"][0]["finish_reason"],
-                "response.number_of_messages": len(message_list),
+                "response.number_of_messages": len(input_message_list) + len(output_message_list),
                 "response_id": str(response_body.get("id", "")),
             }
         )
     else:
-        message_list = []
+        output_message_list = []
 
-    return message_list, chat_completion_summary_dict
+    return input_message_list, output_message_list, chat_completion_summary_dict
 
 
 MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
@@ -311,7 +335,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
             )
             UNSUPPORTED_MODEL_WARNING_SENT = True
 
-        extractor = lambda *args: ([], {})  # Empty extractor that returns nothing
+        extractor = lambda *args: ([], [], {})  # Empty extractor that returns nothing
 
     span_id = None
     trace_id = None
@@ -345,6 +369,18 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                 ft.notice_error(
                     attributes=notice_error_attributes,
                 )
+
+                if is_embedding:  # Only available embedding models
+                    handle_embedding_event(
+                        instance, transaction, extractor, model, None, None, request_body,
+                        ft.duration, True, trace_id, span_id
+                    )
+                else:
+                    handle_chat_completion_event(
+                        instance, transaction, extractor, model, None, None, request_body,
+                        ft.duration, True, trace_id, span_id
+                    )
+
             finally:
                 raise
 
@@ -366,6 +402,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
             response_headers,
             request_body,
             ft.duration,
+            False,
             trace_id,
             span_id,
         )
@@ -379,6 +416,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
             response_headers,
             request_body,
             ft.duration,
+            False,
             trace_id,
             span_id,
         )
@@ -387,7 +425,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
 
 
 def handle_embedding_event(
-    client, transaction, extractor, model, response_body, response_headers, request_body, duration, trace_id, span_id
+    client, transaction, extractor, model, response_body, response_headers, request_body, duration, is_error, trace_id, span_id
 ):
     embedding_id = str(uuid.uuid4())
 
@@ -396,15 +434,18 @@ def handle_embedding_event(
 
     _, embedding_dict = extractor(request_body, response_body)
 
+    request_body = json.loads(request_body)
+
     embedding_dict.update(
         {
-            "vendor": "bedrock",
+            "vendor": "Bedrock",
             "ingest_source": "Python",
             "id": embedding_id,
             "appName": settings.app_name,
             "span_id": span_id,
             "trace_id": trace_id,
             "request_id": request_id,
+            "input": request_body.get("inputText", ""),
             "transaction_id": transaction.guid,
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "duration": duration,
@@ -412,26 +453,28 @@ def handle_embedding_event(
             "response.model": model,
         }
     )
+    if is_error:
+        embedding_dict.update({"error": True})
 
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
 
 
 def handle_chat_completion_event(
-    client, transaction, extractor, model, response_body, response_headers, request_body, duration, trace_id, span_id
+    client, transaction, extractor, model, response_body, response_headers, request_body, duration, is_error, trace_id, span_id
 ):
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("conversation_id", "")
 
     chat_completion_id = str(uuid.uuid4())
 
-    request_id = response_headers.get("x-amzn-requestid", "")
+    request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    message_list, chat_completion_summary_dict = extractor(request_body, response_body)
+    input_message_list, output_message_list, chat_completion_summary_dict = extractor(request_body, response_body)
     response_id = chat_completion_summary_dict.get("response_id", "")
     chat_completion_summary_dict.update(
         {
-            "vendor": "bedrock",
+            "vendor": "Bedrock",
             "ingest_source": "Python",
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "id": chat_completion_id,
@@ -446,13 +489,16 @@ def handle_chat_completion_event(
             "response.model": model,  # Duplicate data required by the UI
         }
     )
+    if is_error:
+        chat_completion_summary_dict.update({"error": True})
 
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
     create_chat_completion_message_event(
         transaction=transaction,
         app_name=settings.app_name,
-        message_list=message_list,
+        input_message_list=input_message_list,
+        output_message_list=output_message_list,
         chat_completion_id=chat_completion_id,
         span_id=span_id,
         trace_id=trace_id,

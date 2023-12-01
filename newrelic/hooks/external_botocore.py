@@ -122,6 +122,8 @@ def create_chat_completion_message_event(
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
     for index, message in enumerate(output_message_list):
+        index += len(input_message_list)
+
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
         else:
@@ -432,7 +434,7 @@ def handle_embedding_event(
     request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    _, embedding_dict = extractor(request_body, response_body)
+    _, _, embedding_dict = extractor(request_body, response_body)
 
     request_body = json.loads(request_body)
 

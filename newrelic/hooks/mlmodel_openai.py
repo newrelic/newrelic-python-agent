@@ -206,8 +206,6 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
             }
             transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
-            error_response_id = str(uuid.uuid4())
-
             create_chat_completion_message_event(
                 transaction,
                 app_name,
@@ -216,7 +214,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
                 span_id,
                 trace_id,
                 "",
-                error_response_id,
+                None,
                 "",
                 conversation_id,
                 None,
@@ -591,8 +589,6 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
             }
             transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
-            error_response_id = str(uuid.uuid4())
-
             create_chat_completion_message_event(
                 transaction,
                 app_name,
@@ -601,7 +597,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
                 span_id,
                 trace_id,
                 "",
-                error_response_id,
+                None,
                 "",
                 conversation_id,
                 None,

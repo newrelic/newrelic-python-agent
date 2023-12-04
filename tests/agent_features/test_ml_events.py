@@ -15,7 +15,7 @@
 import time
 
 import pytest
-from testing_support.fixtures import (  # function_not_called,; override_application_settings,
+from testing_support.fixtures import (
     function_not_called,
     override_application_settings,
     reset_core_stats_engine,
@@ -150,6 +150,7 @@ def test_record_ml_event_outside_transaction_params_not_a_dict():
 
 
 # Tests for ML Events configuration settings
+
 
 @override_application_settings({"ml_insights_events.enabled": False})
 @reset_core_stats_engine()

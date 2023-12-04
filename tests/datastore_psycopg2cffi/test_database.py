@@ -32,6 +32,7 @@ from testing_support.validators.validate_transaction_slow_sql_count import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = postgresql_settings()[0]
 
@@ -91,7 +92,6 @@ def test_execute_via_cursor():
         host=DB_SETTINGS["host"],
         port=DB_SETTINGS["port"],
     ) as connection:
-
         cursor = connection.cursor()
 
         psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE)
@@ -161,7 +161,6 @@ def test_rollback_on_exception():
             host=DB_SETTINGS["host"],
             port=DB_SETTINGS["port"],
         ):
-
             raise RuntimeError("error")
     except RuntimeError:
         pass
@@ -202,11 +201,11 @@ _test_async_mode_rollup_metrics = [
 @validate_transaction_errors(errors=[])
 @background_task()
 def test_async_mode():
-
     wait = psycopg2cffi.extras.wait_select
 
     kwargs = {}
-    version = tuple(int(_) for _ in psycopg2cffi.__version__.split("."))
+    version = get_package_version_tuple("psycopg2cffi")
+    assert version is not None
     if version >= (2, 8):
         kwargs["async_"] = 1
     else:

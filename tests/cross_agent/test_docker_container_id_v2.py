@@ -20,7 +20,7 @@ import pytest
 import newrelic.common.utilization as u
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-DOCKER_FIXTURE = os.path.join(CURRENT_DIR, 'fixtures', 'docker_container_id')
+DOCKER_FIXTURE = os.path.join(CURRENT_DIR, 'fixtures', 'docker_container_id_v2')
 
 
 def _load_docker_test_attributes():
@@ -39,13 +39,23 @@ def _load_docker_test_attributes():
     return docker_test_attributes
 
 
+def mock_open(mock_file):
+    def _mock_open(filename, mode):
+        if filename == "/proc/self/cgroup":
+            raise FileNotFoundError()
+        elif filename == "/proc/self/mountinfo":
+            return mock_file
+        raise RuntimeError()
+    return _mock_open
+
+
 @pytest.mark.parametrize('filename, containerId',
                           _load_docker_test_attributes())
-def test_docker_container_id(filename, containerId):
+def test_docker_container_id_v2(monkeypatch, filename, containerId):
     path = os.path.join(DOCKER_FIXTURE, filename)
     with open(path, 'rb') as f:
-        with mock.patch.object(u, 'open', create=True, return_value=f):
-            if containerId is not None:
-                assert u.DockerUtilization.detect() == {'id': containerId}
-            else:
-                assert u.DockerUtilization.detect() is None
+        monkeypatch.setattr(u, "open", mock_open(f), raising=False)
+        if containerId is not None:
+            assert u.DockerUtilization.detect() == {'id': containerId}
+        else:
+            assert u.DockerUtilization.detect() is None

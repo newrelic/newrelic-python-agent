@@ -17,7 +17,6 @@ import threading
 import time
 from urllib.request import HTTPError, urlopen
 
-import pkg_resources
 import pytest
 from testing_support.fixtures import (
     override_application_settings,
@@ -39,8 +38,12 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.transaction import ignore_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
 
-HYPERCORN_VERSION = tuple(int(v) for v in pkg_resources.get_distribution("hypercorn").version.split("."))
+HYPERCORN_VERSION = get_package_version_tuple("hypercorn")
 asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14, 1)
 wsgi_unsupported = HYPERCORN_VERSION < (0, 14, 1)
 
@@ -60,6 +63,7 @@ def wsgi_app(environ, start_response):
 
 
 @pytest.fixture(
+    scope="session",
     params=(
         pytest.param(
             simple_app_v2_raw,
@@ -78,7 +82,7 @@ def app(request):
     return request.param
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def port(loop, app):
     import hypercorn.asyncio
     import hypercorn.config
@@ -132,7 +136,7 @@ def wait_for_port(port, retries=10):
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 def test_hypercorn_200(port, app):
-    hypercorn_version = pkg_resources.get_distribution("hypercorn").version
+    hypercorn_version = get_package_version("hypercorn")
 
     @validate_transaction_metrics(
         callable_name(app),

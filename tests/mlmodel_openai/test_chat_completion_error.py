@@ -14,13 +14,19 @@
 
 import openai
 import pytest
-from testing_support.fixtures import dt_enabled, reset_core_stats_engine
+from testing_support.fixtures import (
+    dt_enabled,
+    reset_core_stats_engine,
+    validate_custom_event_count,
+)
+from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 
 _test_openai_chat_completion_messages = (
@@ -28,8 +34,68 @@ _test_openai_chat_completion_messages = (
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
 )
 
-
 # Sync tests:
+expected_events_on_no_model_error = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "transaction_id": "transaction-id",
+            "conversation_id": "my-awesome-id",
+            "span_id": "span-id",
+            "trace_id": "trace-id",
+            "api_key_last_four_digits": "sk-CRET",
+            "duration": None,  # Response time varies each test run
+            "request.model": "",  # No model in this test case
+            "response.organization": "",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "response.number_of_messages": 2,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "error": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "conversation_id": "my-awesome-id",
+            "request_id": "",
+            "span_id": "span-id",
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "You are a scientist.",
+            "role": "system",
+            "response.model": "",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "conversation_id": "my-awesome-id",
+            "request_id": "",
+            "span_id": "span-id",
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "What is 212 degrees Fahrenheit converted to Celsius?",
+            "role": "user",
+            "completion_id": None,
+            "response.model": "",
+            "sequence": 1,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+        },
+    ),
+]
 
 
 # No model provided
@@ -41,12 +107,6 @@ _test_openai_chat_completion_messages = (
         "agent": {},
         "intrinsic": {},
         "user": {
-            "api_key_last_four_digits": "sk-CRET",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": 2,
             "error.param": "engine",
         },
     },
@@ -56,15 +116,63 @@ _test_openai_chat_completion_messages = (
         "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
     }
 )
+@validate_custom_events(expected_events_on_no_model_error)
+@validate_custom_event_count(count=3)
 @background_task()
-def test_chat_completion_invalid_request_error_no_model():
+def test_chat_completion_invalid_request_error_no_model(set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
+        set_trace_info()
+        add_custom_attribute("conversation_id", "my-awesome-id")
         openai.ChatCompletion.create(
             # no model provided,
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
             max_tokens=100,
         )
+
+
+expected_events_on_invalid_model_error = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "transaction_id": "transaction-id",
+            "conversation_id": "my-awesome-id",
+            "span_id": "span-id",
+            "trace_id": "trace-id",
+            "api_key_last_four_digits": "sk-CRET",
+            "duration": None,  # Response time varies each test run
+            "request.model": "does-not-exist",
+            "response.organization": "",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "response.number_of_messages": 1,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "error": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "conversation_id": "my-awesome-id",
+            "request_id": "",
+            "span_id": "span-id",
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "Model does not exist.",
+            "role": "user",
+            "response.model": "",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+        },
+    ),
+]
 
 
 # Invalid model provided
@@ -76,13 +184,6 @@ def test_chat_completion_invalid_request_error_no_model():
         "agent": {},
         "intrinsic": {},
         "user": {
-            "api_key_last_four_digits": "sk-CRET",
-            "request.model": "does-not-exist",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": 1,
             "error.code": "model_not_found",
             "http.statusCode": 404,
         },
@@ -93,15 +194,82 @@ def test_chat_completion_invalid_request_error_no_model():
         "error.message": "The model `does-not-exist` does not exist",
     }
 )
+@validate_custom_events(expected_events_on_invalid_model_error)
+@validate_custom_event_count(count=2)
 @background_task()
-def test_chat_completion_invalid_request_error_invalid_model():
+def test_chat_completion_invalid_request_error_invalid_model(set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
+        set_trace_info()
+        add_custom_attribute("conversation_id", "my-awesome-id")
         openai.ChatCompletion.create(
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
             temperature=0.7,
             max_tokens=100,
         )
+
+
+expected_events_on_auth_error = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "transaction_id": "transaction-id",
+            "conversation_id": "my-awesome-id",
+            "span_id": "span-id",
+            "trace_id": "trace-id",
+            "api_key_last_four_digits": "",
+            "duration": None,  # Response time varies each test run
+            "request.model": "gpt-3.5-turbo",
+            "response.organization": "",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "response.number_of_messages": 2,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "error": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "conversation_id": "my-awesome-id",
+            "request_id": "",
+            "span_id": "span-id",
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "You are a scientist.",
+            "role": "system",
+            "response.model": "",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "conversation_id": "my-awesome-id",
+            "request_id": "",
+            "span_id": "span-id",
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "What is 212 degrees Fahrenheit converted to Celsius?",
+            "role": "user",
+            "completion_id": None,
+            "response.model": "",
+            "sequence": 1,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+        },
+    ),
+]
 
 
 # No api_key provided
@@ -112,14 +280,7 @@ def test_chat_completion_invalid_request_error_invalid_model():
     exact_attrs={
         "agent": {},
         "intrinsic": {},
-        "user": {
-            "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": 2,
-        },
+        "user": {},
     },
 )
 @validate_span_events(
@@ -127,9 +288,13 @@ def test_chat_completion_invalid_request_error_invalid_model():
         "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
     }
 )
+@validate_custom_events(expected_events_on_auth_error)
+@validate_custom_event_count(count=3)
 @background_task()
-def test_chat_completion_authentication_error(monkeypatch):
+def test_chat_completion_authentication_error(monkeypatch, set_trace_info):
     with pytest.raises(openai.error.AuthenticationError):
+        set_trace_info()
+        add_custom_attribute("conversation_id", "my-awesome-id")
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -137,6 +302,50 @@ def test_chat_completion_authentication_error(monkeypatch):
             temperature=0.7,
             max_tokens=100,
         )
+
+
+expected_events_on_wrong_api_key_error = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "transaction_id": "transaction-id",
+            "conversation_id": "",
+            "span_id": "span-id",
+            "trace_id": "trace-id",
+            "api_key_last_four_digits": "sk-BEEF",
+            "duration": None,  # Response time varies each test run
+            "request.model": "gpt-3.5-turbo",
+            "response.organization": "",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "response.number_of_messages": 1,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "error": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "conversation_id": "",
+            "request_id": "",
+            "span_id": "span-id",
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "Invalid API key.",
+            "role": "user",
+            "completion_id": None,
+            "response.model": "",
+            "sequence": 0,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+        },
+    ),
+]
 
 
 # Wrong api_key provided
@@ -148,13 +357,6 @@ def test_chat_completion_authentication_error(monkeypatch):
         "agent": {},
         "intrinsic": {},
         "user": {
-            "api_key_last_four_digits": "sk-BEEF",
-            "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": 1,
             "http.statusCode": 401,
         },
     },
@@ -164,9 +366,12 @@ def test_chat_completion_authentication_error(monkeypatch):
         "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
     }
 )
+@validate_custom_events(expected_events_on_wrong_api_key_error)
+@validate_custom_event_count(count=2)
 @background_task()
-def test_chat_completion_wrong_api_key_error(monkeypatch):
+def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
     with pytest.raises(openai.error.AuthenticationError):
+        set_trace_info()
         monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
         openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -177,8 +382,6 @@ def test_chat_completion_wrong_api_key_error(monkeypatch):
 
 
 # Async tests:
-
-
 # No model provided
 @dt_enabled
 @reset_core_stats_engine()
@@ -188,12 +391,6 @@ def test_chat_completion_wrong_api_key_error(monkeypatch):
         "agent": {},
         "intrinsic": {},
         "user": {
-            "api_key_last_four_digits": "sk-CRET",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": 2,
             "error.param": "engine",
         },
     },
@@ -203,9 +400,13 @@ def test_chat_completion_wrong_api_key_error(monkeypatch):
         "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
     }
 )
+@validate_custom_events(expected_events_on_no_model_error)
+@validate_custom_event_count(count=3)
 @background_task()
-def test_chat_completion_invalid_request_error_no_model_async(loop):
+def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
+        set_trace_info()
+        add_custom_attribute("conversation_id", "my-awesome-id")
         loop.run_until_complete(
             openai.ChatCompletion.acreate(
                 # no model provided,
@@ -225,13 +426,6 @@ def test_chat_completion_invalid_request_error_no_model_async(loop):
         "agent": {},
         "intrinsic": {},
         "user": {
-            "api_key_last_four_digits": "sk-CRET",
-            "request.model": "does-not-exist",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": 1,
             "error.code": "model_not_found",
             "http.statusCode": 404,
         },
@@ -242,9 +436,13 @@ def test_chat_completion_invalid_request_error_no_model_async(loop):
         "error.message": "The model `does-not-exist` does not exist",
     }
 )
+@validate_custom_events(expected_events_on_invalid_model_error)
+@validate_custom_event_count(count=2)
 @background_task()
-def test_chat_completion_invalid_request_error_invalid_model_async(loop):
+def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
+        set_trace_info()
+        add_custom_attribute("conversation_id", "my-awesome-id")
         loop.run_until_complete(
             openai.ChatCompletion.acreate(
                 model="does-not-exist",
@@ -263,14 +461,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop):
     exact_attrs={
         "agent": {},
         "intrinsic": {},
-        "user": {
-            "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": 2,
-        },
+        "user": {},
     },
 )
 @validate_span_events(
@@ -278,9 +469,13 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop):
         "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
     }
 )
+@validate_custom_events(expected_events_on_auth_error)
+@validate_custom_event_count(count=3)
 @background_task()
-def test_chat_completion_authentication_error_async(loop, monkeypatch):
+def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace_info):
     with pytest.raises(openai.error.AuthenticationError):
+        set_trace_info()
+        add_custom_attribute("conversation_id", "my-awesome-id")
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         loop.run_until_complete(
             openai.ChatCompletion.acreate(
@@ -298,13 +493,6 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch):
         "agent": {},
         "intrinsic": {},
         "user": {
-            "api_key_last_four_digits": "sk-BEEF",
-            "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": 1,
             "http.statusCode": 401,
         },
     },
@@ -314,9 +502,12 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch):
         "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
     }
 )
+@validate_custom_events(expected_events_on_wrong_api_key_error)
+@validate_custom_event_count(count=2)
 @background_task()
-def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch):
+def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch, set_trace_info):
     with pytest.raises(openai.error.AuthenticationError):
+        set_trace_info()
         monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
         loop.run_until_complete(
             openai.ChatCompletion.acreate(

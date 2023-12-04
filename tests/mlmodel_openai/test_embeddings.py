@@ -71,15 +71,15 @@ embedding_recorded_events = [
     background_task=True,
 )
 @background_task()
-def test_openai_embedding_sync(set_trace_info):
+def test_openai_embedding_sync(set_trace_info, embedding_sync_func):
     set_trace_info()
-    openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    embedding_sync_func()
 
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
-def test_openai_embedding_sync_outside_txn():
-    openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
+def test_openai_embedding_sync_outside_txn(embedding_sync_func):
+    embedding_sync_func()
 
 
 @override_application_settings(disabled_custom_insights_settings)
@@ -93,9 +93,9 @@ def test_openai_embedding_sync_outside_txn():
     background_task=True,
 )
 @background_task()
-def test_openai_embedding_sync_disabled_settings(set_trace_info):
+def test_openai_embedding_sync_disabled_settings(set_trace_info, embedding_sync_func):
     set_trace_info()
-    openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    embedding_sync_func()
 
 
 @reset_core_stats_engine()
@@ -109,20 +109,14 @@ def test_openai_embedding_sync_disabled_settings(set_trace_info):
     background_task=True,
 )
 @background_task()
-def test_openai_embedding_async(loop, set_trace_info):
+def test_openai_embedding_async(loop, set_trace_info, embedding_async_func):
     set_trace_info()
-
-    loop.run_until_complete(
-        openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
-    )
-
+    embedding_async_func()
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
-def test_openai_embedding_async_outside_transaction(loop):
-    loop.run_until_complete(
-        openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
-    )
+def test_openai_embedding_async_outside_transaction(loop, embedding_async_func):
+    embedding_async_func()
 
 
 @override_application_settings(disabled_custom_insights_settings)
@@ -136,7 +130,5 @@ def test_openai_embedding_async_outside_transaction(loop):
     background_task=True,
 )
 @background_task()
-def test_openai_embedding_async_disabled_custom_insights_events(loop):
-    loop.run_until_complete(
-        openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
-    )
+def test_openai_embedding_async_disabled_custom_insights_events(loop, embedding_async_func):
+    embedding_async_func()

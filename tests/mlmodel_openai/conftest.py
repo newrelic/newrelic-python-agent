@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import json
+import openai
 import os
 
 import pytest
+from newrelic.common.package_version_utils import get_package_version
 from _mock_external_openai_server import (
     MockExternalOpenAIServer,
     extract_shortened_prompt,
@@ -31,6 +33,10 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
+try:
+    from openai import OpenAI, AsyncOpenAI
+except ImportError:
+    pass
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -38,7 +44,6 @@ _default_settings = {
     "transaction_tracer.stack_trace_threshold": 0.0,
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
-    "ml_insights_events.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -50,6 +55,13 @@ collector_agent_registration = collector_agent_registration_fixture(
 OPENAI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "openai_audit.log")
 OPENAI_AUDIT_LOG_CONTENTS = {}
 
+OPENAI_VERSION = tuple(map(int, get_package_version("openai").split(".")))
+OPENAI_V1 = OPENAI_VERSION >= (1,)
+OPENAI_V028 = OPENAI_VERSION <= (1,)
+
+if OPENAI_V1:
+    sync_client = OpenAI()
+    async_client = AsyncOpenAI()
 
 @pytest.fixture
 def set_trace_info():
@@ -155,3 +167,23 @@ def bind_request_params(method, url, params=None, *args, **kwargs):
 
 def bind_request_interpret_response_params(result, stream):
     return result.content.decode("utf-8"), result.status_code, result.headers
+
+
+@pytest.fixture
+def embedding_sync_func():
+    def _embedding_func():
+        if OPENAI_V028:
+            openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
+        if OPENAI_V1:
+            sync_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    return _embedding_func
+
+
+@pytest.fixture
+def embedding_async_func():
+    def _embedding_func():
+        if OPENAI_V028:
+            openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
+        if OPENAI_V1:
+            async_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    return _embedding_func

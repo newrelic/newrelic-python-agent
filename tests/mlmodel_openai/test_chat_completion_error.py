@@ -28,6 +28,15 @@ from testing_support.validators.validate_span_events import validate_span_events
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
+try:
+    from openai import InvalidRequestError as request_error
+except ImportError:
+    from openai import BadRequestError as request_error
+
+try:
+    from openai.error import AuthenticationError as auth_error
+except ImportError:
+    from openai._exceptions import AuthenticationError as auth_error
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -102,7 +111,7 @@ expected_events_on_no_model_error = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.InvalidRequestError),
+    callable_name(request_error),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -120,7 +129,7 @@ expected_events_on_no_model_error = [
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model(set_trace_info):
-    with pytest.raises(openai.InvalidRequestError):
+    with pytest.raises(request_error):
         set_trace_info()
         add_custom_attribute("conversation_id", "my-awesome-id")
         openai.ChatCompletion.create(
@@ -179,7 +188,7 @@ expected_events_on_invalid_model_error = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.InvalidRequestError),
+    callable_name(request_error),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -198,7 +207,7 @@ expected_events_on_invalid_model_error = [
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model(set_trace_info):
-    with pytest.raises(openai.InvalidRequestError):
+    with pytest.raises(request_error):
         set_trace_info()
         add_custom_attribute("conversation_id", "my-awesome-id")
         openai.ChatCompletion.create(
@@ -276,7 +285,7 @@ expected_events_on_auth_error = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.error.AuthenticationError),
+    callable_name(auth_error),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -292,7 +301,7 @@ expected_events_on_auth_error = [
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_authentication_error(monkeypatch, set_trace_info):
-    with pytest.raises(openai.error.AuthenticationError):
+    with pytest.raises(auth_error):
         set_trace_info()
         add_custom_attribute("conversation_id", "my-awesome-id")
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
@@ -352,7 +361,7 @@ expected_events_on_wrong_api_key_error = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.error.AuthenticationError),
+    callable_name(auth_error),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -370,7 +379,7 @@ expected_events_on_wrong_api_key_error = [
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
-    with pytest.raises(openai.error.AuthenticationError):
+    with pytest.raises(auth_error):
         set_trace_info()
         monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
         openai.ChatCompletion.create(
@@ -386,7 +395,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.InvalidRequestError),
+    callable_name(request_error),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -404,7 +413,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_info):
-    with pytest.raises(openai.InvalidRequestError):
+    with pytest.raises(request_error):
         set_trace_info()
         add_custom_attribute("conversation_id", "my-awesome-id")
         loop.run_until_complete(
@@ -421,7 +430,7 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.InvalidRequestError),
+    callable_name(request_error),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -440,7 +449,7 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_trace_info):
-    with pytest.raises(openai.InvalidRequestError):
+    with pytest.raises(request_error):
         set_trace_info()
         add_custom_attribute("conversation_id", "my-awesome-id")
         loop.run_until_complete(
@@ -457,7 +466,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.error.AuthenticationError),
+    callable_name(auth_error),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -473,7 +482,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace_info):
-    with pytest.raises(openai.error.AuthenticationError):
+    with pytest.raises(auth_error):
         set_trace_info()
         add_custom_attribute("conversation_id", "my-awesome-id")
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
@@ -488,7 +497,7 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.error.AuthenticationError),
+    callable_name(auth_error),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -506,7 +515,7 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch, set_trace_info):
-    with pytest.raises(openai.error.AuthenticationError):
+    with pytest.raises(auth_error):
         set_trace_info()
         monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
         loop.run_until_complete(

@@ -31,7 +31,6 @@ from newrelic.packages.wrapt import (  # noqa: F401; pylint: disable=W0611
     wrap_object,
     wrap_object_attribute,
 )
-from newrelic.packages.wrapt.__wrapt__ import _FunctionWrapperBase
 
 # We previously had our own pure Python implementation of the generic
 # object wrapper but we now defer to using the wrapt module as its C

@@ -173,7 +173,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     return response
 
-
 def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
@@ -630,7 +629,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     return response
 
-
 async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
@@ -888,7 +886,6 @@ def instrument_openai_api_resources_chat_completion(module):
         wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_async)
 
 
-# OpenAI v1 instrumentation points
 def instrument_openai_resources_chat_completions(module):
     if hasattr(module.Completions, "create"):
         wrap_function_wrapper(module, "Completions.create", wrap_chat_completion_sync)
@@ -896,6 +893,7 @@ def instrument_openai_resources_chat_completions(module):
         wrap_function_wrapper(module, "AsyncCompletions.create", wrap_chat_completion_async)
 
 
+# OpenAI v1 instrumentation points
 def instrument_openai_resources_embeddings(module):
     if hasattr(module, "Embeddings"):
         if hasattr(module.Embeddings, "create"):

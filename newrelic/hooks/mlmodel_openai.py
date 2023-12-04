@@ -48,7 +48,6 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-
     function_name = wrapped.__name__
 
     with FunctionTrace(name=function_name, group="Llm/embedding/OpenAI") as ft:

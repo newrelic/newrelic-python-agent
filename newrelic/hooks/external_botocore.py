@@ -25,7 +25,6 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import message_trace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
@@ -312,8 +311,10 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
 
         extractor = lambda *args: ([], {})  # Empty extractor that returns nothing
 
-    ft_name = callable_name(wrapped)
-    with FunctionTrace(ft_name) as ft:
+    function_name = wrapped.__name__
+    operation = "embedding" if model.startswith("amazon.titan-embed") else "completion"
+
+    with FunctionTrace(name=function_name, group="Llm/%s/Bedrock" % (operation)) as ft:
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:

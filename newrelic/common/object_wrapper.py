@@ -122,19 +122,9 @@ class CallableObjectProxy(ObjectProxy, _CallableObjectProxy):
 # own code no longer uses it. It reaches down into what are wrapt internals
 # at present which shouldn't be doing.
 
-
-class ObjectWrapper(ObjectProxy, _FunctionWrapperBase):
-    __bound_function_wrapper__ = _NRBoundFunctionWrapper
-
+class ObjectWrapper(FunctionWrapper):
     def __init__(self, wrapped, instance, wrapper):
-        if isinstance(wrapped, classmethod):
-            binding = "classmethod"
-        elif isinstance(wrapped, staticmethod):
-            binding = "staticmethod"
-        else:
-            binding = "function"
-
-        super(ObjectWrapper, self).__init__(wrapped, instance, wrapper, binding=binding)
+        super(ObjectWrapper, self).__init__(wrapped, wrapper)
 
 
 # Function for creating a decorator for applying to functions, as well as

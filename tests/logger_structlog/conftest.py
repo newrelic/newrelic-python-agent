@@ -14,7 +14,6 @@
 
 import logging
 import pytest
-from structlog import DropEvent, PrintLogger
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from testing_support.fixtures import (
@@ -41,21 +40,27 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-class StructLogCapLog(PrintLogger):
-    def __init__(self, caplog):
-        self.caplog = caplog if caplog is not None else []
+@pytest.fixture(scope="session")
+def StructLogCapLog():
+    from structlog import PrintLogger
 
-    def msg(self, event, **kwargs):
-        self.caplog.append(event)
-        return
+    class _StructLogCapLog(PrintLogger):
+        def __init__(self, caplog=None):
+            self.caplog = caplog if caplog is not None else []
 
-    log = debug = info = warn = warning = msg
-    fatal = failure = err = error = critical = exception = msg
+        def msg(self, event, **kwargs):
+            self.caplog.append(event)
+            return
 
-    def __repr__(self):
-        return "<StructLogCapLog %s>" % str(id(self))
+        log = debug = info = warn = warning = msg
+        fatal = failure = err = error = critical = exception = msg
 
-    __str__ = __repr__
+        def __repr__(self):
+            return "<StructLogCapLog %s>" % str(id(self))
+
+        __str__ = __repr__
+
+    return _StructLogCapLog
 
 
 @pytest.fixture
@@ -72,6 +77,8 @@ def set_trace_ids():
 
 
 def drop_event_processor(logger, method_name, event_dict):
+    from structlog import DropEvent
+
     if method_name == "info":
         raise DropEvent
     else:
@@ -79,15 +86,15 @@ def drop_event_processor(logger, method_name, event_dict):
 
 
 @pytest.fixture(scope="function")
-def structlog_caplog():
-    return list()
+def structlog_caplog(StructLogCapLog):
+    return StructLogCapLog()
 
 
 @pytest.fixture(scope="function")
 def logger(structlog_caplog):
     import structlog
 
-    structlog.configure(processors=[], logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog))
+    structlog.configure(processors=[], logger_factory=lambda *args, **kwargs: structlog_caplog)
     _logger = structlog.get_logger()
     return _logger
 
@@ -97,7 +104,7 @@ def filtering_logger(structlog_caplog):
     import structlog
 
     structlog.configure(
-        processors=[drop_event_processor], logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog)
+        processors=[drop_event_processor], logger_factory=lambda *args, **kwargs: structlog_caplog
     )
     _filtering_logger = structlog.get_logger()
     return _filtering_logger
@@ -118,7 +125,7 @@ def callsite_parameter_logger(structlog_caplog):
             ),
             structlog.processors.KeyValueRenderer(),
         ],
-        logger_factory=lambda *args, **kwargs: StructLogCapLog(structlog_caplog),
+        logger_factory=lambda *args, **kwargs: structlog_caplog,
     )
 
     _callsite_logger = structlog.get_logger()
@@ -129,9 +136,9 @@ def callsite_parameter_logger(structlog_caplog):
 def exercise_callsite_parameter_processor(callsite_parameter_logger, structlog_caplog):
     def _exercise():
         callsite_parameter_logger.msg("Dog")
-        assert "Dog" in structlog_caplog[0]
-        assert "filename='test_structlog_processors.py'" in structlog_caplog[0]
-        assert "func_name='test_callsite_parameter_processor'" in structlog_caplog[0]
+        assert "Dog" in structlog_caplog.caplog[0]
+        assert "filename='conftest.py'" in structlog_caplog.caplog[0]
+        assert "func_name='_exercise'" in structlog_caplog.caplog[0]
 
     return _exercise
 
@@ -145,11 +152,11 @@ def exercise_logging_multiple_lines(set_trace_ids, logger, structlog_caplog):
         logger.error("Dog")
         logger.critical("Elephant")
 
-        assert len(structlog_caplog) == 3
+        assert len(structlog_caplog.caplog) == 3
 
-        assert "Cat" in structlog_caplog[0]
-        assert "Dog" in structlog_caplog[1]
-        assert "Elephant" in structlog_caplog[2]
+        assert "Cat" in structlog_caplog.caplog[0]
+        assert "Dog" in structlog_caplog.caplog[1]
+        assert "Elephant" in structlog_caplog.caplog[2]
 
     return _exercise
 
@@ -163,11 +170,11 @@ def exercise_filtering_logging_multiple_lines(set_trace_ids, filtering_logger, s
         filtering_logger.error("Dog")
         filtering_logger.critical("Elephant")
 
-        assert len(structlog_caplog) == 2
+        assert len(structlog_caplog.caplog) == 2
 
-        assert "Cat" not in structlog_caplog[0]
-        assert "Dog" in structlog_caplog[0]
-        assert "Elephant" in structlog_caplog[1]
+        assert "Cat" not in structlog_caplog.caplog[0]
+        assert "Dog" in structlog_caplog.caplog[0]
+        assert "Elephant" in structlog_caplog.caplog[1]
 
     return _exercise
 
@@ -177,6 +184,6 @@ def exercise_logging_single_line(set_trace_ids, logger, structlog_caplog):
     def _exercise():
         set_trace_ids()
         logger.error("A", key="value")
-        assert len(structlog_caplog) == 1
+        assert len(structlog_caplog.caplog) == 1
 
     return _exercise

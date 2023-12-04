@@ -39,7 +39,7 @@ def test_local_log_decoration_inside_transaction(exercise_logging_single_line, s
     @background_task()
     def test():
         exercise_logging_single_line()
-        assert get_metadata_string('A', True) in structlog_caplog[0]
+        assert get_metadata_string('A', True) in structlog_caplog.caplog[0]
 
     test()
 
@@ -49,6 +49,6 @@ def test_local_log_decoration_outside_transaction(exercise_logging_single_line, 
     @validate_log_event_count_outside_transaction(1)
     def test():
         exercise_logging_single_line()
-        assert get_metadata_string('A', False) in structlog_caplog[0]
+        assert get_metadata_string('A', False) in structlog_caplog.caplog[0]
 
     test()

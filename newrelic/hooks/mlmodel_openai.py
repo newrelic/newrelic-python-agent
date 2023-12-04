@@ -19,7 +19,6 @@ import openai
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
@@ -49,8 +48,10 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    ft_name = callable_name(wrapped)
-    with FunctionTrace(ft_name) as ft:
+
+    function_name = wrapped.__name__
+
+    with FunctionTrace(name=function_name, group="Llm/embedding/OpenAI") as ft:
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
@@ -167,8 +168,9 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     app_name = settings.app_name
     completion_id = str(uuid.uuid4())
 
-    ft_name = callable_name(wrapped)
-    with FunctionTrace(ft_name) as ft:
+    function_name = wrapped.__name__
+
+    with FunctionTrace(name=function_name, group="Llm/completion/OpenAI") as ft:
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
@@ -432,8 +434,9 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    ft_name = callable_name(wrapped)
-    with FunctionTrace(ft_name) as ft:
+    function_name = wrapped.__name__
+
+    with FunctionTrace(name=function_name, group="Llm/embedding/OpenAI") as ft:
         try:
             response = await wrapped(*args, **kwargs)
         except Exception as exc:
@@ -550,8 +553,9 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     app_name = settings.app_name
     completion_id = str(uuid.uuid4())
 
-    ft_name = callable_name(wrapped)
-    with FunctionTrace(ft_name) as ft:
+    function_name = wrapped.__name__
+
+    with FunctionTrace(name=function_name, group="Llm/completion/OpenAI") as ft:
         try:
             response = await wrapped(*args, **kwargs)
         except Exception as exc:

@@ -24,6 +24,9 @@ from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
@@ -116,6 +119,12 @@ expected_events_on_no_model_error = [
         "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
     }
 )
+@validate_transaction_metrics(
+    "test_chat_completion_error:test_chat_completion_invalid_request_error_no_model",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
 @validate_custom_events(expected_events_on_no_model_error)
 @validate_custom_event_count(count=3)
 @background_task()
@@ -193,6 +202,12 @@ expected_events_on_invalid_model_error = [
     exact_agents={
         "error.message": "The model `does-not-exist` does not exist",
     }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error:test_chat_completion_invalid_request_error_invalid_model",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
 )
 @validate_custom_events(expected_events_on_invalid_model_error)
 @validate_custom_event_count(count=2)
@@ -288,6 +303,12 @@ expected_events_on_auth_error = [
         "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
     }
 )
+@validate_transaction_metrics(
+    "test_chat_completion_error:test_chat_completion_authentication_error",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
 @validate_custom_events(expected_events_on_auth_error)
 @validate_custom_event_count(count=3)
 @background_task()
@@ -366,6 +387,12 @@ expected_events_on_wrong_api_key_error = [
         "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
     }
 )
+@validate_transaction_metrics(
+    "test_chat_completion_error:test_chat_completion_wrong_api_key_error",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
 @validate_custom_events(expected_events_on_wrong_api_key_error)
 @validate_custom_event_count(count=2)
 @background_task()
@@ -399,6 +426,12 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
     exact_agents={
         "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
     }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error:test_chat_completion_invalid_request_error_no_model_async",
+    scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    background_task=True,
 )
 @validate_custom_events(expected_events_on_no_model_error)
 @validate_custom_event_count(count=3)
@@ -436,6 +469,12 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
         "error.message": "The model `does-not-exist` does not exist",
     }
 )
+@validate_transaction_metrics(
+    "test_chat_completion_error:test_chat_completion_invalid_request_error_invalid_model_async",
+    scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    background_task=True,
+)
 @validate_custom_events(expected_events_on_invalid_model_error)
 @validate_custom_event_count(count=2)
 @background_task()
@@ -469,6 +508,12 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
         "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
     }
 )
+@validate_transaction_metrics(
+    "test_chat_completion_error:test_chat_completion_authentication_error_async",
+    scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    background_task=True,
+)
 @validate_custom_events(expected_events_on_auth_error)
 @validate_custom_event_count(count=3)
 @background_task()
@@ -501,6 +546,12 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace
     exact_agents={
         "error.message": "Incorrect API key provided: invalid. You can find your API key at https://platform.openai.com/account/api-keys.",
     }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error:test_chat_completion_wrong_api_key_error_async",
+    scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    background_task=True,
 )
 @validate_custom_events(expected_events_on_wrong_api_key_error)
 @validate_custom_event_count(count=2)

@@ -5,10 +5,6 @@ inputs:
     description: "Language agent to configure (eg. python)"
     required: true
     default: "python"
-  target-system:
-    description: "Target System: prod|staging|all"
-    required: true
-    default: "all"
   agent-version:
     description: "3-4 digit agent version number (eg. 1.2.3) with optional leading v (ignored)"
     required: true
@@ -18,9 +14,6 @@ inputs:
     default: "false"
   production-api-key:
     description: "API key for New Relic Production"
-    required: false
-  staging-api-key:
-    description: "API key for New Relic Staging"
     required: false
 
 runs:
@@ -42,64 +35,31 @@ runs:
       run: |
         echo "CONTENT_TYPE='Content-Type: application/json'" >> $GITHUB_ENV
 
-    - name: Update Staging system configuration page
+    - name: Update system configuration page
       shell: bash
-      if: ${{ inputs.dry-run == 'false' && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
-      run: |
-        curl -X POST 'https://staging-api.newrelic.com/v2/system_configuration.json' \
-        -H "X-Api-Key:${{ inputs.staging-api-key }}" -i \
-        -H ${{ env.CONTENT_TYPE }} \
-        -d ${{ env.PAYLOAD }}
-
-    - name: Update Production system configuration page
-      shell: bash
-      if: ${{ inputs.dry-run == 'false' && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
+      if: ${{ inputs.dry-run == 'false' }}
       run: |
         curl -X POST 'https://api.newrelic.com/v2/system_configuration.json' \
         -H "X-Api-Key:${{ inputs.production-api-key }}" -i \
         -H ${{ env.CONTENT_TYPE }} \
         -d ${{ env.PAYLOAD }}
 
-    - name: Verify Staging system configuration update
+    - name: Verify system configuration update
       shell: bash
-      if: ${{ inputs.dry-run == 'false' && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
-      run: |
-        STAGING_VERSION=$(curl -X GET 'https://staging-api.newrelic.com/v2/system_configuration.json' \
-        -H "X-Api-Key:${{ inputs.staging-api-key }}" \
-        -H "${{ env.CONTENT_TYPE }}" | jq ".system_configurations | from_entries | .${{inputs.agent-language}}_agent_version")
-
-        if [ "${{ env.AGENT_VERSION }}" != "$STAGING_VERSION" ]; then
-            echo "Staging version mismatch: $STAGING_VERSION"
-            exit 1
-        fi
-
-    - name: Verify Production system configuration update
-      shell: bash
-      if: ${{ inputs.dry-run == 'false' && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
+      if: ${{ inputs.dry-run == 'false' }}
       run: |
         PROD_VERSION=$(curl -X GET 'https://api.newrelic.com/v2/system_configuration.json' \
         -H "X-Api-Key:${{ inputs.production-api-key }}" \
         -H "${{ env.CONTENT_TYPE }}" | jq ".system_configurations | from_entries | .${{inputs.agent-language}}_agent_version")
 
         if [ "${{ env.AGENT_VERSION }}" != "$PROD_VERSION" ]; then
-            echo "Production version mismatch: $PROD_VERSION"
+            echo "Version mismatch: $PROD_VERSION"
             exit 1
         fi
 
-    - name: (dry-run) Update Staging system configuration page
+    - name: (dry-run) Update system configuration page
       shell: bash
-      if: ${{ inputs.dry-run != 'false' && (inputs.target-system == 'staging' || inputs.target-system == 'all') }}
-      run: |
-        cat << EOF
-            curl -X POST 'https://staging-api.newrelic.com/v2/system_configuration.json' \
-            -H "X-Api-Key:**REDACTED**" -i \
-            -H ${{ env.CONTENT_TYPE }} \
-            -d ${{ env.PAYLOAD }}
-        EOF
-
-    - name: (dry-run) Update Production system configuration page
-      shell: bash
-      if: ${{ inputs.dry-run != 'false' && (inputs.target-system == 'prod' || inputs.target-system == 'all') }}
+      if: ${{ inputs.dry-run != 'false' }}
       run: |
         cat << EOF
             curl -X POST 'https://api.newrelic.com/v2/system_configuration.json' \

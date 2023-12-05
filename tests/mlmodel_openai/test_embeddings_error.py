@@ -39,7 +39,7 @@ embedding_recorded_events = [
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
-            "span_id": "span-id",
+            "span_id": None,
             "trace_id": "trace-id",
             "input": "This is an embedding test with no model.",
             "api_key_last_four_digits": "sk-CRET",
@@ -100,7 +100,7 @@ invalid_model_events = [
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
-            "span_id": "span-id",
+            "span_id": None,
             "trace_id": "trace-id",
             "input": "Model does not exist.",
             "api_key_last_four_digits": "sk-CRET",
@@ -159,7 +159,7 @@ embedding_auth_error_events = [
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
-            "span_id": "span-id",
+            "span_id": None,
             "trace_id": "trace-id",
             "input": "Invalid API key.",
             "api_key_last_four_digits": "",
@@ -216,7 +216,7 @@ embedding_invalid_key_error_events = [
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
-            "span_id": "span-id",
+            "span_id": None,
             "trace_id": "trace-id",
             "input": "Embedded: Invalid API key.",
             "api_key_last_four_digits": "sk-BEEF",

@@ -41,16 +41,19 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     api_key = getattr(openai, "api_key", None)
     api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
-    # Get trace information
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
+    span_id = None
+    trace_id = None
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     function_name = wrapped.__name__
 
     with FunctionTrace(name=function_name, group="Llm/embedding/OpenAI") as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
@@ -154,10 +157,8 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     api_key = getattr(openai, "api_key", None)
     api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
-    # Get trace information
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
+    span_id = None
+    trace_id = None
 
     # Get conversation ID off of the transaction
     custom_attrs_dict = transaction._custom_params
@@ -170,6 +171,11 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     function_name = wrapped.__name__
 
     with FunctionTrace(name=function_name, group="Llm/completion/OpenAI") as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
@@ -426,16 +432,19 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     api_key = getattr(openai, "api_key", None)
     api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
-    # Get trace information
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
+    span_id = None
+    trace_id = None
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     function_name = wrapped.__name__
 
     with FunctionTrace(name=function_name, group="Llm/embedding/OpenAI") as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
         try:
             response = await wrapped(*args, **kwargs)
         except Exception as exc:
@@ -539,10 +548,8 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     api_key = getattr(openai, "api_key", None)
     api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
-    # Get trace information
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
+    span_id = None
+    trace_id = None
 
     # Get conversation ID off of the transaction
     custom_attrs_dict = transaction._custom_params
@@ -555,6 +562,11 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     function_name = wrapped.__name__
 
     with FunctionTrace(name=function_name, group="Llm/completion/OpenAI") as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
         try:
             response = await wrapped(*args, **kwargs)
         except Exception as exc:

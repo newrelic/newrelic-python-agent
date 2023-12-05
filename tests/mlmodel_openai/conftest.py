@@ -28,7 +28,6 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_available_fixture,
 )
 
-from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
@@ -58,9 +57,6 @@ def set_trace_info():
         if txn:
             txn.guid = "transaction-id"
             txn._trace_id = "trace-id"
-        trace = current_trace()
-        if trace:
-            trace.guid = "span-id"
 
     return set_info
 

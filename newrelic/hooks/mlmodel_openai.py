@@ -109,7 +109,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     response_model = response.get("model", "")
     response_usage = response.get("usage", {})
     api_type = getattr(response, "api_type", "")
-    api_key_last_four_digits = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(response, "api_key", "")
+    #api_key_last_four_digits = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(response, "api_key", "")
     organization = response_headers.get("openai-version", "") if OPENAI_V1 else response.organization
 
 
@@ -513,7 +513,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     response_model = response.get("model", "")
     response_usage = response.get("usage", {})
     api_type = getattr(response, "api_type", "")
-    api_key_last_four_digits = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(response, "api_key", "")
+    #api_key_last_four_digits = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(response, "api_key", "")
     organization = response_headers.get("openai-version", "") if OPENAI_V1 else response.organization
 
 
@@ -559,6 +559,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
     return response
+
 
 async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     transaction = current_transaction()

@@ -30,15 +30,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-try:
-    from openai import InvalidRequestError as request_error
-except ImportError:
-    from openai import BadRequestError as request_error
-
-try:
-    from openai.error import AuthenticationError as auth_error
-except ImportError:
-    from openai._exceptions import AuthenticationError as auth_error
 
 # Sync tests:
 embedding_recorded_events = [
@@ -67,7 +58,7 @@ embedding_recorded_events = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(request_error),
+    callable_name(openai.InvalidRequestError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -94,7 +85,7 @@ embedding_recorded_events = [
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model(set_trace_info):
-    with pytest.raises(request_error):
+    with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
         openai.Embedding.create(
             input="This is an embedding test with no model.",
@@ -128,7 +119,7 @@ invalid_model_events = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(request_error),
+    callable_name(openai.InvalidRequestError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -156,8 +147,8 @@ invalid_model_events = [
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model(set_trace_info):
-    with pytest.raises(request_error):
-        set_trace_info()
+    set_trace_info()
+    with pytest.raises(openai.InvalidRequestError):
         openai.Embedding.create(input="Model does not exist.", model="does-not-exist")
 
 
@@ -187,7 +178,7 @@ embedding_auth_error_events = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(auth_error),
+    callable_name(openai.error.AuthenticationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -212,7 +203,7 @@ embedding_auth_error_events = [
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_authentication_error(monkeypatch, set_trace_info):
-    with pytest.raises(auth_error):
+    with pytest.raises(openai.error.AuthenticationError):
         set_trace_info()
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         openai.Embedding.create(input="Invalid API key.", model="text-embedding-ada-002")
@@ -244,7 +235,7 @@ embedding_invalid_key_error_events = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(auth_error),
+    callable_name(openai.error.AuthenticationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -271,7 +262,7 @@ embedding_invalid_key_error_events = [
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_wrong_api_key_error(monkeypatch, set_trace_info):
-    with pytest.raises(auth_error):
+    with pytest.raises(openai.error.AuthenticationError):
         set_trace_info()
         monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
         openai.Embedding.create(input="Embedded: Invalid API key.", model="text-embedding-ada-002")
@@ -284,7 +275,7 @@ def test_embeddings_wrong_api_key_error(monkeypatch, set_trace_info):
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(request_error),
+    callable_name(openai.InvalidRequestError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -311,7 +302,7 @@ def test_embeddings_wrong_api_key_error(monkeypatch, set_trace_info):
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
-    with pytest.raises(request_error):
+    with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
         loop.run_until_complete(
             openai.Embedding.acreate(
@@ -325,7 +316,7 @@ def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(request_error),
+    callable_name(openai.InvalidRequestError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -352,7 +343,7 @@ def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model_async(loop, set_trace_info):
-    with pytest.raises(request_error):
+    with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
         loop.run_until_complete(openai.Embedding.acreate(input="Model does not exist.", model="does-not-exist"))
 
@@ -361,7 +352,7 @@ def test_embeddings_invalid_request_error_invalid_model_async(loop, set_trace_in
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(auth_error),
+    callable_name(openai.error.AuthenticationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -386,7 +377,7 @@ def test_embeddings_invalid_request_error_invalid_model_async(loop, set_trace_in
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_authentication_error_async(loop, monkeypatch, set_trace_info):
-    with pytest.raises(auth_error):
+    with pytest.raises(openai.error.AuthenticationError):
         set_trace_info()
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         loop.run_until_complete(openai.Embedding.acreate(input="Invalid API key.", model="text-embedding-ada-002"))
@@ -396,7 +387,7 @@ def test_embeddings_authentication_error_async(loop, monkeypatch, set_trace_info
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(auth_error),
+    callable_name(openai.error.AuthenticationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -423,7 +414,7 @@ def test_embeddings_authentication_error_async(loop, monkeypatch, set_trace_info
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_wrong_api_key_error_async(loop, monkeypatch, set_trace_info):
-    with pytest.raises(auth_error):
+    with pytest.raises(openai.error.AuthenticationError):
         set_trace_info()
         monkeypatch.setattr(openai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
         loop.run_until_complete(

@@ -60,8 +60,12 @@ OPENAI_V1 = OPENAI_VERSION >= (1,)
 OPENAI_V028 = OPENAI_VERSION <= (1,)
 
 if OPENAI_V1:
-    sync_client = OpenAI()
-    async_client = AsyncOpenAI()
+    sync_client = OpenAI(api_key= "NOT-A-REAL-SECRET")
+    async_client = AsyncOpenAI(api_key= "NOT-A-REAL-SECRET")
+else:
+    sync_client = None
+    async_client = None
+
 
 @pytest.fixture
 def set_trace_info():
@@ -180,10 +184,10 @@ def embedding_sync_func():
 
 
 @pytest.fixture
-def embedding_async_func():
+def embedding_async_func(loop):
     def _embedding_func():
         if OPENAI_V028:
-            openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
+            loop.run_until_complete(openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002"))
         if OPENAI_V1:
             async_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
     return _embedding_func

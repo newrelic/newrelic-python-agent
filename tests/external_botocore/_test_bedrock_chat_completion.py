@@ -68,7 +68,7 @@ chat_completion_expected_events = {
                 "response.model": "amazon.titan-text-express-v1",
                 "vendor": "Bedrock",
                 "ingest_source": "Python",
-                "is_response": True
+                "is_response": True,
             },
         ),
     ],
@@ -132,7 +132,7 @@ chat_completion_expected_events = {
                 "response.model": "ai21.j2-mid-v1",
                 "vendor": "Bedrock",
                 "ingest_source": "Python",
-                "is_response": True
+                "is_response": True,
             },
         ),
     ],
@@ -195,7 +195,7 @@ chat_completion_expected_events = {
                 "response.model": "anthropic.claude-instant-v1",
                 "vendor": "Bedrock",
                 "ingest_source": "Python",
-                "is_response": True
+                "is_response": True,
             },
         ),
     ],
@@ -259,7 +259,7 @@ chat_completion_expected_events = {
                 "response.model": "cohere.command-text-v14",
                 "vendor": "Bedrock",
                 "ingest_source": "Python",
-                "is_response": True
+                "is_response": True,
             },
         ),
     ],
@@ -293,7 +293,7 @@ chat_completion_invalid_model_error_events = [
             "appName": "Python Agent Test (mlmodel_openai)",
             "conversation_id": "my-awesome-id",
             "request_id": "",
-            "span_id": "span-id",
+            "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
             "content": "You are a scientist.",

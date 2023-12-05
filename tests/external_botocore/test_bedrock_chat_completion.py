@@ -21,8 +21,8 @@ import pytest
 from _test_bedrock_chat_completion import (
     chat_completion_expected_client_errors,
     chat_completion_expected_events,
-    chat_completion_payload_templates,
     chat_completion_invalid_access_key_error_events,
+    chat_completion_payload_templates,
 )
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import (
@@ -205,8 +205,10 @@ chat_completion_invalid_model_error_events = [
             "ingest_source": "Python",
             "error": True,
         },
-    },
-)
+    ),
+]
+
+
 @validate_transaction_metrics(
     name="test_bedrock_chat_completion:test_bedrock_chat_completion_error_invalid_model",
     scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
@@ -242,13 +244,19 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
                 accept="application/json",
                 contentType="application/json",
             )
+
     _test()
 
 
 @dt_enabled
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_error_incorrect_access_key(
-    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_client_error, expected_invalid_access_key_error_events
+    monkeypatch,
+    bedrock_server,
+    exercise_model,
+    set_trace_info,
+    expected_client_error,
+    expected_invalid_access_key_error_events,
 ):
     @validate_custom_events(expected_invalid_access_key_error_events)
     @validate_error_trace_attributes(

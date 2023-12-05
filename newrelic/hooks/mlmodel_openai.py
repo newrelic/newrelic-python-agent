@@ -629,6 +629,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     return response
 
+
 async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 

@@ -27,12 +27,12 @@ from testing_support.fixtures import (  # override_application_settings,
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
-    validate_custom_event_count
+    validate_custom_event_count,
 )
+from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
-from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -96,6 +96,8 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
         name="test_bedrock_embedding",
+        scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         custom_metrics=[
             ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -148,7 +150,13 @@ def test_bedrock_embedding_error_incorrect_access_key(
             "user": expected_client_error,
         },
     )
-    @background_task()
+    @validate_transaction_metrics(
+        name="test_bedrock_embedding",
+        scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_embedding")
     def _test():
         monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
 

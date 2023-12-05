@@ -24,6 +24,9 @@ from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -68,6 +71,15 @@ embedding_recorded_events = [
     exact_agents={
         "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
     }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error:test_embeddings_invalid_request_error_no_model",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
 )
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
@@ -122,6 +134,15 @@ invalid_model_events = [
         # "http.statusCode": 404,
     }
 )
+@validate_transaction_metrics(
+    name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
 @validate_custom_events(invalid_model_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -168,6 +189,15 @@ embedding_auth_error_events = [
     exact_agents={
         "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
     }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error:test_embeddings_authentication_error",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
 )
 @validate_custom_events(embedding_auth_error_events)
 @validate_custom_event_count(count=1)
@@ -219,6 +249,15 @@ embedding_invalid_key_error_events = [
         "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
     }
 )
+@validate_transaction_metrics(
+    name="test_embeddings_error:test_embeddings_wrong_api_key_error",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
 @validate_custom_events(embedding_invalid_key_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -249,6 +288,15 @@ def test_embeddings_wrong_api_key_error(monkeypatch, set_trace_info):
     exact_agents={
         "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
     }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_async",
+    scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
 )
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
@@ -282,6 +330,15 @@ def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
         "error.message": "The model `does-not-exist` does not exist",
     }
 )
+@validate_transaction_metrics(
+    name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model_async",
+    scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
 @validate_custom_events(invalid_model_events)
 @validate_custom_event_count(count=1)
 @background_task()
@@ -306,6 +363,15 @@ def test_embeddings_invalid_request_error_invalid_model_async(loop, set_trace_in
     exact_agents={
         "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
     }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error:test_embeddings_authentication_error_async",
+    scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
 )
 @validate_custom_events(embedding_auth_error_events)
 @validate_custom_event_count(count=1)
@@ -334,6 +400,15 @@ def test_embeddings_authentication_error_async(loop, monkeypatch, set_trace_info
     exact_agents={
         "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
     }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error:test_embeddings_wrong_api_key_error_async",
+    scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
 )
 @validate_custom_events(embedding_invalid_key_error_events)
 @validate_custom_event_count(count=1)

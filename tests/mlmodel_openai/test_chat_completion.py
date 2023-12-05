@@ -249,6 +249,12 @@ chat_completion_recorded_events_no_convo_id = [
 @validate_custom_events(chat_completion_recorded_events_no_convo_id)
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    "test_chat_completion:test_openai_chat_completion_sync_in_txn_no_convo_id",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
 @background_task()
 def test_openai_chat_completion_sync_in_txn_no_convo_id(set_trace_info):
     set_trace_info()
@@ -287,6 +293,12 @@ def test_openai_chat_completion_sync_custom_events_insights_disabled(set_trace_i
 @reset_core_stats_engine()
 @validate_custom_events(chat_completion_recorded_events_no_convo_id)
 @validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    "test_chat_completion:test_openai_chat_completion_async_conversation_id_unset",
+    scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    background_task=True,
+)
 @background_task()
 def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info):
     set_trace_info()
@@ -301,6 +313,12 @@ def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info
 @reset_core_stats_engine()
 @validate_custom_events(chat_completion_recorded_events)
 @validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    "test_chat_completion:test_openai_chat_completion_async_conversation_id_set",
+    scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    background_task=True,
+)
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_async_conversation_id_set",
     custom_metrics=[

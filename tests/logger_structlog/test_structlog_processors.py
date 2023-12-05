@@ -18,5 +18,8 @@ from testing_support.fixtures import reset_core_stats_engine
 
 @reset_core_stats_engine()
 @background_task()
-def test_callsite_parameter_processor(exercise_callsite_parameter_processor):
-    exercise_callsite_parameter_processor()
+def test_callsite_parameter_processor(callsite_parameter_logger, structlog_caplog):
+    callsite_parameter_logger.msg("Dog")
+    assert "Dog" in structlog_caplog.caplog[0]
+    assert "filename='test_structlog_processors.py'" in structlog_caplog.caplog[0]
+    assert "func_name='test_callsite_parameter_processor'" in structlog_caplog.caplog[0]

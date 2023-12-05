@@ -133,17 +133,6 @@ def callsite_parameter_logger(structlog_caplog):
 
 
 @pytest.fixture
-def exercise_callsite_parameter_processor(callsite_parameter_logger, structlog_caplog):
-    def _exercise():
-        callsite_parameter_logger.msg("Dog")
-        assert "Dog" in structlog_caplog.caplog[0]
-        assert "filename='conftest.py'" in structlog_caplog.caplog[0]
-        assert "func_name='_exercise'" in structlog_caplog.caplog[0]
-
-    return _exercise
-
-
-@pytest.fixture
 def exercise_logging_multiple_lines(set_trace_ids, logger, structlog_caplog):
     def _exercise():
         set_trace_ids()

@@ -34,7 +34,7 @@ embedding_recorded_events = [
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
-            "span_id": "span-id",
+            "span_id": None,
             "trace_id": "trace-id",
             "input": "This is an embedding test.",
             "api_key_last_four_digits": "sk-CRET",
@@ -65,6 +65,8 @@ embedding_recorded_events = [
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_embeddings:test_openai_embedding_sync",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
@@ -87,6 +89,8 @@ def test_openai_embedding_sync_outside_txn():
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     name="test_embeddings:test_openai_embedding_sync_disabled_settings",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
@@ -103,6 +107,8 @@ def test_openai_embedding_sync_disabled_settings(set_trace_info):
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_embeddings:test_openai_embedding_async",
+    scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[
         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
@@ -130,6 +136,8 @@ def test_openai_embedding_async_outside_transaction(loop):
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     name="test_embeddings:test_openai_embedding_async_disabled_custom_insights_events",
+    scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[
         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],

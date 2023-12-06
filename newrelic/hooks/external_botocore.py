@@ -25,7 +25,6 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import message_trace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
@@ -340,8 +339,18 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
 
         extractor = lambda *args: ([], [], {})  # Empty extractor that returns nothing
 
-    ft_name = callable_name(wrapped)
-    with FunctionTrace(ft_name) as ft:
+    span_id = None
+    trace_id = None
+
+    function_name = wrapped.__name__
+    operation = "embedding" if model.startswith("amazon.titan-embed") else "completion"
+
+    with FunctionTrace(name=function_name, group="Llm/%s/Bedrock" % (operation)) as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
@@ -363,15 +372,15 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                     attributes=notice_error_attributes,
                 )
 
-                if is_embedding:  # Only available embedding models
+                if operation == "embedding":  # Only available embedding models
                     handle_embedding_event(
                         instance, transaction, extractor, model, None, None, request_body,
-                        ft.duration, True
+                        ft.duration, True, trace_id, span_id
                     )
                 else:
                     handle_chat_completion_event(
                         instance, transaction, extractor, model, None, None, request_body,
-                        ft.duration, True
+                        ft.duration, True, trace_id, span_id
                     )
 
             finally:
@@ -385,25 +394,42 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
     response_headers = response["ResponseMetadata"]["HTTPHeaders"]
 
-    if is_embedding:  # Only available embedding models
+    if operation == "embedding":  # Only available embedding models
         handle_embedding_event(
-            instance, transaction, extractor, model, response_body, response_headers, request_body, ft.duration, False
+            instance,
+            transaction,
+            extractor,
+            model,
+            response_body,
+            response_headers,
+            request_body,
+            ft.duration,
+            False,
+            trace_id,
+            span_id,
         )
     else:
         handle_chat_completion_event(
-            instance, transaction, extractor, model, response_body, response_headers, request_body, ft.duration, False
+            instance,
+            transaction,
+            extractor,
+            model,
+            response_body,
+            response_headers,
+            request_body,
+            ft.duration,
+            False,
+            trace_id,
+            span_id,
         )
 
     return response
 
 
 def handle_embedding_event(
-    client, transaction, extractor, model, response_body, response_headers, request_body, duration, is_error
+    client, transaction, extractor, model, response_body, response_headers, request_body, duration, is_error, trace_id, span_id
 ):
     embedding_id = str(uuid.uuid4())
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
 
     request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
     settings = transaction.settings if transaction.settings is not None else global_settings()
@@ -414,7 +440,7 @@ def handle_embedding_event(
 
     embedding_dict.update(
         {
-            "vendor": "Bedrock",
+            "vendor": "bedrock",
             "ingest_source": "Python",
             "id": embedding_id,
             "appName": settings.app_name,
@@ -436,15 +462,12 @@ def handle_embedding_event(
 
 
 def handle_chat_completion_event(
-    client, transaction, extractor, model, response_body, response_headers, request_body, duration, is_error
+   client, transaction, extractor, model, response_body, response_headers, request_body, duration, is_error, trace_id, span_id
 ):
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("conversation_id", "")
 
     chat_completion_id = str(uuid.uuid4())
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
 
     request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
     settings = transaction.settings if transaction.settings is not None else global_settings()

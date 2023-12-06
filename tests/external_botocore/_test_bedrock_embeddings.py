@@ -11,7 +11,7 @@ embedding_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": "transaction-id",
-                "span_id": "span-id",
+                "span_id": None,
                 "trace_id": "trace-id",
                 "input": "This is an embedding test.",
                 "api_key_last_four_digits": "CRET",
@@ -21,7 +21,7 @@ embedding_expected_events = {
                 "request_id": "11233989-07e8-4ecb-9ba6-79601ba6d8cc",
                 "response.usage.total_tokens": 6,
                 "response.usage.prompt_tokens": 6,
-                "vendor": "bedrock",
+                "vendor": "Bedrock",
                 "ingest_source": "Python",
             },
         ),
@@ -33,7 +33,7 @@ embedding_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": "transaction-id",
-                "span_id": "span-id",
+                "span_id": None,
                 "trace_id": "trace-id",
                 "input": "This is an embedding test.",
                 "api_key_last_four_digits": "CRET",
@@ -43,7 +43,7 @@ embedding_expected_events = {
                 "request_id": "b10ac895-eae3-4f07-b926-10b2866c55ed",
                 "response.usage.total_tokens": 6,
                 "response.usage.prompt_tokens": 6,
-                "vendor": "bedrock",
+                "vendor": "Bedrock",
                 "ingest_source": "Python",
             },
         ),
@@ -58,7 +58,7 @@ embedding_expected_error_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": "transaction-id",
-                "span_id": "span-id",
+                "span_id": None,
                 "trace_id": "trace-id",
                 "input": "Invalid Token",
                 "api_key_last_four_digits": "-KEY",
@@ -79,7 +79,7 @@ embedding_expected_error_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": "transaction-id",
-                "span_id": "span-id",
+                "span_id": None,
                 "trace_id": "trace-id",
                 "input": "Invalid Token",
                 "api_key_last_four_digits": "-KEY",

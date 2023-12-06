@@ -17,7 +17,7 @@ import pytest
 from newrelic.common.object_wrapper import function_wrapper
 
 
-@pytest.fixutre(scope="function")
+@pytest.fixture(scope="function")
 def wrapper():
     @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
@@ -26,7 +26,7 @@ def wrapper():
     return _wrapper
 
 
-@pytest.fixutre(scope="function")
+@pytest.fixture(scope="function")
 def wrapped_function(wrapper):
     @wrapper
     def wrapped():

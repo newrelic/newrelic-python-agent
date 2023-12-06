@@ -22,6 +22,7 @@ def wrapper():
     @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
+
     return _wrapper
 
 
@@ -54,7 +55,9 @@ def test_prefixed_attributes_share_namespace(wrapped_function):
     wrapped_function._nr_attr = 1
     wrapped_function._self_attr = 2
 
-    assert wrapped_function._nr_attr == 2, "_nr_ attributes share a namespace with _self_ attributes and should be overwritten."
+    assert (
+        wrapped_function._nr_attr == 2
+    ), "_nr_ attributes share a namespace with _self_ attributes and should be overwritten."
 
 
 def test_wrapped_function_attributes(wrapped_function):

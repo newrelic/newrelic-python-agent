@@ -19,6 +19,7 @@ from newrelic.common.object_wrapper import function_wrapper
 def wrapper(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
+
 def test_function_wrapper_attributes():
     @wrapper
     def exercise():

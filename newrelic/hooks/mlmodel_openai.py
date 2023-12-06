@@ -28,7 +28,7 @@ OPENAI_VERSION = get_package_version("openai")
 
 def wrap_embedding_create(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if not transaction:
+    if not transaction or kwargs.get("stream", False):
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -145,7 +145,7 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
 def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
-    if not transaction:
+    if not transaction or kwargs.get("stream", False):
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -419,7 +419,7 @@ def create_chat_completion_message_event(
 
 async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if not transaction:
+    if not transaction or kwargs.get("stream", False):
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -536,7 +536,7 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
 async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
-    if not transaction:
+    if not transaction or kwargs.get("stream", False):
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI

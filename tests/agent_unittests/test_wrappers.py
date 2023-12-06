@@ -20,34 +20,61 @@ def wrapper(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-def test_function_wrapper_attributes():
+def test_nr_prefix_attributes():
     @wrapper
     def exercise():
         return True
 
     exercise._nr_attr = 1
-    assert exercise._nr_attr == 1, "_nr_ attributes should be stored on wrapper object and retrievable."
+    vars_ = vars(exercise)
 
+    assert exercise._nr_attr == 1, "_nr_ attributes should be stored on wrapper object and retrievable."
+    assert "_nr_attr" not in vars_, "_nr_ attributes should NOT appear in __dict__."
+
+
+def test_self_prefix_attributes():
+    @wrapper
+    def exercise():
+        return True
+
+    exercise._self_attr = 1
+    vars_ = vars(exercise)
+
+    assert exercise._self_attr == 1, "_self_ attributes should be stored on wrapper object and retrievable."
+    assert "_nr_attr" not in vars_, "_self_ attributes should NOT appear in __dict__."
+
+
+def test_prefixed_attributes_share_namespace():
+    @wrapper
+    def exercise():
+        return True
+
+    exercise._nr_attr = 1
     exercise._self_attr = 2
-    assert exercise._self_attr == 2, "_self_ attributes should be stored on wrapper object and retrievable."
 
     assert exercise._nr_attr == 2, "_nr_ attributes share a namespace with _self_ attributes and should be overwritten."
 
-    exercise._other_attr = 3
-    assert exercise._other_attr == 3, "All other attributes should be stored on wrapped object and retrievable."
 
+def test_wrapped_function_attributes():
+    @wrapper
+    def exercise():
+        return True
+
+    exercise._other_attr = 1
     vars_ = vars(exercise)
-    assert "_nr_attr" not in vars_, "_nr_ attributes should NOT appear in __dict__."
-    assert "_self_attr" not in vars_, "_self_ attributes should NOT appear in __dict__."
+
+    assert exercise._other_attr == 1, "All other attributes should be stored on wrapped object and retrievable."
     assert "_other_attr" in vars_, "Other types of attributes SHOULD appear in __dict__."
 
     assert exercise()
 
 
 def test_multiple_wrapper_last_object():
-    def exercise():
+    def wrapped():
         pass
 
-    wrapped = wrapper(wrapper(exercise))
+    wrapper_1 = wrapper(wrapped)
+    wrapper_2 = wrapper(wrapper_1)
 
-    assert wrapped._nr_last_object is exercise
+    assert wrapper_2._nr_last_object is wrapped, "Last object in chain should be the wrapped function."
+    assert wrapper_2._nr_next_object is wrapper_1, "Next object in chain should be the middle function."

@@ -211,16 +211,6 @@ chat_completion_invalid_model_error_events = [
 
 
 @reset_core_stats_engine()
-@validate_transaction_metrics(
-    name="test_bedrock_chat_completion:test_bedrock_chat_completion_error_invalid_model",
-    scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-    rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-    custom_metrics=[
-        ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
-    ],
-    background_task=True,
-)
-@background_task()
 def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_info):
     @validate_custom_events(chat_completion_invalid_model_error_events)
     @validate_error_trace_attributes(
@@ -235,7 +225,16 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
             },
         },
     )
-    @background_task()
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion_error_invalid_model",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        custom_metrics=[
+            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_chat_completion_error_invalid_model")
     def _test():
         set_trace_info()
         add_custom_attribute("conversation_id", "my-awesome-id")

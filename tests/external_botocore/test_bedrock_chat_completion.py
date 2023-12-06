@@ -197,7 +197,7 @@ chat_completion_invalid_model_error_events = [
             "request.model": "does-not-exist",
             "response.model": "does-not-exist",
             "request_id": "",
-            "vendor": "Bedrock",
+            "vendor": "bedrock",
             "ingest_source": "Python",
             "error": True,
         },
@@ -217,6 +217,7 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
                 "http.statusCode": 400,
                 "error.message": "The provided model identifier is invalid.",
                 "error.code": "ValidationException",
+                "completion_id": None
             },
         },
     )

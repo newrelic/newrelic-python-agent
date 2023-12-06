@@ -72,7 +72,7 @@ def bedrock_error_attributes(exception, request_args, client, extractor):
             "request_id": response.get("ResponseMetadata", {}).get("RequestId", ""),
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "request.model": request_args.get("modelId", ""),
-            "vendor": "Bedrock",
+            "vendor": "bedrock",
             "ingest_source": "Python",
             "http.statusCode": response.get("ResponseMetadata", "").get("HTTPStatusCode", ""),
             "error.message": response.get("Error", "").get("Message", ""),
@@ -117,7 +117,7 @@ def create_chat_completion_message_event(
             "completion_id": chat_completion_id,
             "sequence": index,
             "response.model": request_model,
-            "vendor": "Bedrock",
+            "vendor": "bedrock",
             "ingest_source": "Python",
         }
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
@@ -143,7 +143,7 @@ def create_chat_completion_message_event(
             "completion_id": chat_completion_id,
             "sequence": index,
             "response.model": request_model,
-            "vendor": "Bedrock",
+            "vendor": "bedrock",
             "ingest_source": "Python",
             "is_response": True
         }
@@ -453,7 +453,7 @@ def handle_chat_completion_event(
     response_id = chat_completion_summary_dict.get("response_id", "")
     chat_completion_summary_dict.update(
         {
-            "vendor": "Bedrock",
+            "vendor": "bedrock",
             "ingest_source": "Python",
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "id": chat_completion_id,

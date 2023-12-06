@@ -12,20 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.packages import six
+from newrelic.api.background_task import background_task
+from testing_support.fixtures import reset_core_stats_engine
 
-if six.PY3:
-    from inspect import Signature
 
-    def bind_args(func, args, kwargs):
-        """Bind arguments and apply defaults to missing arguments for a callable."""
-        bound_args = Signature.from_callable(func).bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        return bound_args.arguments
-
-else:
-    from inspect import getcallargs
-
-    def bind_args(func, args, kwargs):
-        """Bind arguments and apply defaults to missing arguments for a callable."""
-        return getcallargs(func, *args, **kwargs)
+@reset_core_stats_engine()
+@background_task()
+def test_callsite_parameter_processor(callsite_parameter_logger, structlog_caplog):
+    callsite_parameter_logger.msg("Dog")
+    assert "Dog" in structlog_caplog.caplog[0]
+    assert "filename='test_structlog_processors.py'" in structlog_caplog.caplog[0]
+    assert "func_name='test_callsite_parameter_processor'" in structlog_caplog.caplog[0]

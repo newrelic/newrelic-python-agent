@@ -342,6 +342,9 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     span_id = None
     trace_id = None
 
+    span_id = None
+    trace_id = None
+
     function_name = wrapped.__name__
     operation = "embedding" if model.startswith("amazon.titan-embed") else "completion"
 

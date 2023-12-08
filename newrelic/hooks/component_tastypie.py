@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from newrelic.api.function_trace import FunctionTraceWrapper
-from newrelic.common.object_wrapper import wrap_function_wrapper, callable_name, function_wrapper
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
 

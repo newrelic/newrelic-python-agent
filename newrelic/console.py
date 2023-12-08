@@ -72,7 +72,7 @@ except ImportError:
         return formatargspec(args[1:], varargs, keywords, defaults)
 
 
-from newrelic.api.object_wrapper import ObjectProxy
+from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.agent import agent_instance
 from newrelic.core.config import flatten_settings, global_settings
 from newrelic.core.trace_cache import trace_cache

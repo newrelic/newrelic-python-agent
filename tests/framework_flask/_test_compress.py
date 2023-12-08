@@ -24,8 +24,7 @@ from flask import Response
 from flask import send_file
 from flask_compress import Compress
 
-from newrelic.api.transaction import (get_browser_timing_header,
-        get_browser_timing_footer)
+from newrelic.api.transaction import get_browser_timing_header
 
 application = Flask(__name__)
 
@@ -48,13 +47,9 @@ def html_insertion():
 @application.route('/html_insertion_manual')
 def html_insertion_manual():
     header = get_browser_timing_header()
-    footer = get_browser_timing_footer()
-
     header = get_browser_timing_header()
-    footer = get_browser_timing_footer()
 
     assert header == ''
-    assert footer == ''
 
     return ('<!DOCTYPE html><html><head>Some header</head>'
             '<body><h1>My First Heading</h1><p>My first paragraph.</p>'

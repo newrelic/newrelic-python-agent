@@ -62,7 +62,7 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    # Only insert RUM JavaScript headers and footers if enabled
+    # Only insert RUM JavaScript headers if enabled
     # in configuration and not already likely inserted.
 
     if not transaction.settings.browser_monitoring.enabled:
@@ -136,16 +136,13 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
         else:
             return wrapped(*args, **kwargs)
 
-    def html_to_be_inserted():
-        return six.b(header) + six.b(transaction.browser_timing_footer())
-
     # Make sure we flatten any content first as it could be
     # stored as a list of strings in the response object. We
     # assign it back to the response object to avoid having
     # multiple copies of the string in memory at the same time
     # as we progress through steps below.
 
-    result = insert_html_snippet(response.get_data(), html_to_be_inserted)
+    result = insert_html_snippet(response.get_data(), lambda: six.b(header))
 
     if result is not None:
         if transaction.settings.debug.log_autorum_middleware:

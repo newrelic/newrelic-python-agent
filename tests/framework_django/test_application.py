@@ -300,7 +300,7 @@ def test_html_insertion_django_middleware():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # footer added by the agent.
+    # header added by the agent.
 
     response.mustcontain('NREUM HEADER', 'NREUM.info')
 
@@ -317,7 +317,7 @@ def test_html_insertion_django_gzip_middleware_enabled():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # footer added by the agent.
+    # header added by the agent.
 
     # The response.text will already be gunzipped
 
@@ -343,7 +343,7 @@ def test_html_insertion_django_gzip_middleware_disabled():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # footer added by the agent.
+    # header added by the agent.
 
     # The response.text will already be gunzipped
 
@@ -364,7 +364,7 @@ def test_html_insertion_manual_django_middleware():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # footer added by the agent.
+    # header added by the agent.
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
 
@@ -377,7 +377,7 @@ def test_html_insertion_unnamed_attachment_header_django_middleware():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # footer added by the agent.
+    # header added by the agent.
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
 
@@ -390,7 +390,7 @@ def test_html_insertion_named_attachment_header_django_middleware():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # footer added by the agent.
+    # header added by the agent.
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
 

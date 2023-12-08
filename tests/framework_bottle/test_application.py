@@ -223,7 +223,7 @@ def test_html_insertion(target_application):
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # footer added by the agent.
+    # header added by the agent.
 
     response.mustcontain('NREUM HEADER', 'NREUM.info')
 

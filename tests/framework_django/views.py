@@ -18,8 +18,7 @@ from django.shortcuts import render
 from django.core.exceptions import PermissionDenied
 from middleware import Custom410
 
-from newrelic.api.transaction import (get_browser_timing_header,
-    get_browser_timing_footer)
+from newrelic.api.transaction import get_browser_timing_header
 
 
 def index(request):
@@ -64,13 +63,9 @@ def html_insertion_content_length(request):
 
 def html_insertion_manual(request):
     header = get_browser_timing_header()
-    footer = get_browser_timing_footer()
-
     header = get_browser_timing_header()
-    footer = get_browser_timing_footer()
 
     assert header == ''
-    assert footer == ''
 
     return HttpResponse('<!DOCTYPE html><html><head>Some header</head>'
             '<body><h1>My First Heading</h1><p>My first paragraph.</p>'

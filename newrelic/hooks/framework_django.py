@@ -16,6 +16,7 @@ import functools
 import logging
 import sys
 import threading
+import warnings
 
 from newrelic.api.application import register_application
 from newrelic.api.background_task import BackgroundTaskWrapper
@@ -111,7 +112,7 @@ def should_add_browser_timing(response, transaction):
     if not transaction or not transaction.enabled:
         return False
 
-    # Only insert RUM JavaScript headers and footers if enabled
+    # Only insert RUM JavaScript headers if enabled
     # in configuration and not already likely inserted.
 
     if not transaction.settings.browser_monitoring.enabled:
@@ -152,38 +153,22 @@ def should_add_browser_timing(response, transaction):
     return True
 
 
-# Response middleware for automatically inserting RUM header and
-# footer into HTML response returned by application
+# Response middleware for automatically inserting RUM header into HTML response returned by application
 
 
 def browser_timing_insertion(response, transaction):
 
-    # No point continuing if header is empty. This can occur if
-    # RUM is not enabled within the UI. It is assumed at this
-    # point that if header is not empty, then footer will not be
-    # empty. We don't want to generate the footer just yet as
-    # want to do that as late as possible so that application
-    # server time in footer is as accurate as possible. In
-    # particular, if the response content is generated on demand
-    # then the flattening of the response could take some time
-    # and we want to track that. We thus generate footer below
-    # at point of insertion.
+    # No point continuing if header is empty. This can occur if RUM is not enabled within the UI. We don't want to
+    # generate the header just yet as we want to do that as late as possible so that application server time in header
+    # is as accurate as possible. In particular, if the response content is generated on demand then the flattening 
+    # of the response could take some time and we want to track that. We thus generate header below at 
+    # the point of insertion.
 
-    header = transaction.browser_timing_header()
-
-    if not header:
-        return response
-
-    def html_to_be_inserted():
-        return six.b(header) + six.b(transaction.browser_timing_footer())
-
-    # Make sure we flatten any content first as it could be
-    # stored as a list of strings in the response object. We
-    # assign it back to the response object to avoid having
-    # multiple copies of the string in memory at the same time
+    # Make sure we flatten any content first as it could be stored as a list of strings in the response object. We
+    # assign it back to the response object to avoid having multiple copies of the string in memory at the same time
     # as we progress through steps below.
 
-    result = insert_html_snippet(response.content, html_to_be_inserted)
+    result = insert_html_snippet(response.content, lambda: six.b(transaction.browser_timing_header()))
 
     if result is not None:
         if transaction.settings.debug.log_autorum_middleware:
@@ -200,10 +185,8 @@ def browser_timing_insertion(response, transaction):
     return response
 
 
-# Template tag functions for manually inserting RUM header and
-# footer into HTML response. A template tag library for
-# 'newrelic' will be automatically inserted into set of tag
-# libraries when performing step to instrument the middleware.
+# Template tag functions for manually inserting RUM header into HTML response. A template tag library for 'newrelic'
+# will be automatically inserted into set of tag libraries when performing step to instrument the middleware.
 
 
 def newrelic_browser_timing_header():
@@ -214,10 +197,8 @@ def newrelic_browser_timing_header():
 
 
 def newrelic_browser_timing_footer():
-    from django.utils.safestring import mark_safe
-
-    transaction = current_transaction()
-    return transaction and mark_safe(transaction.browser_timing_footer()) or ""  # nosec
+    warnings.warn("The newrelic_browser_timing_footer function is deprecated. Please migrate to only using the newrelic_browser_timing_header api instead.", DeprecationWarning)
+    return ""  # nosec
 
 
 # Addition of instrumentation for middleware. Can only do this
@@ -753,8 +734,7 @@ def instrument_django_template(module):
     if not hasattr(module, "libraries"):
         return
 
-    # Register template tags used for manual insertion of RUM
-    # header and footer.
+    # Register template tags used for manual insertion of RUM header.
     #
     # TODO This can now be installed as a separate tag library
     # so should possibly look at deprecating this automatic

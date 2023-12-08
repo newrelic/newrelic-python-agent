@@ -172,11 +172,8 @@ class WebTransaction(Transaction):
 
         super(WebTransaction, self).__init__(application, enabled, source=source)
 
-        # Flags for tracking whether RUM header and footer have been
-        # generated.
-
+        # Flag for tracking whether RUM header has been generated.
         self.rum_header_generated = False
-        self.rum_footer_generated = False
 
         if not self.enabled:
             return
@@ -429,7 +426,7 @@ class WebTransaction(Transaction):
 
         # Requirement is that the first 13 characters of the account
         # license key is used as the key when obfuscating values for
-        # the RUM footer. Will not be able to perform the obfuscation
+        # the RUM configuration. Will not be able to perform the obfuscation
         # if license key isn't that long for some reason.
 
         if len(self._settings.license_key) < 13:
@@ -510,9 +507,7 @@ class WebTransaction(Transaction):
             header = ''
 
         # We remember if we have returned a non empty string value and
-        # if called a second time we will not return it again. The flag
-        # will also be used to check whether the footer should be
-        # generated.
+        # if called a second time we will not return it again.
 
         if header:
             self.rum_header_generated = True

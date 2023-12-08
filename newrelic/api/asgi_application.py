@@ -161,8 +161,7 @@ class ASGIBrowserMiddleware(object):
                     await self.send_buffered()
                     return
 
-                footer = self.transaction.browser_timing_footer()
-                browser_agent_data = six.b(header) + six.b(footer)
+                browser_agent_data = six.b(header)
 
                 body = insert_html_snippet(self.body, lambda: browser_agent_data, self.search_maximum)
 

@@ -210,9 +210,7 @@ class _WSGIApplicationMiddleware(object):
             if not header:
                 return b""
 
-            footer = self.transaction.browser_timing_footer()
-
-            return six.b(header) + six.b(footer)
+            return six.b(header)
 
         if not self.response_data:
             modified = insert_html_snippet(data, html_to_be_inserted)

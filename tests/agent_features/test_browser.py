@@ -1031,19 +1031,30 @@ _test_get_browser_timing_snippet_with_nonces = {
 }
 _test_get_browser_timing_snippet_with_nonces_rum_info_re = re.compile(r"NREUM\.info={[^}]*}")
 
+
 @override_application_settings(_test_get_browser_timing_snippet_with_nonces)
-@web_transaction(scheme="http", host="127.0.0.1", port=80, request_method="GET", request_path="/", query_string=None, headers={})
+@web_transaction(
+    scheme="http", host="127.0.0.1", port=80, request_method="GET", request_path="/", query_string=None, headers={}
+)
 def test_get_browser_timing_snippet_with_nonces():
     header = get_browser_timing_header("NONCE")
 
     header = _test_get_browser_timing_snippet_with_nonces_rum_info_re.sub("NREUM.info={}", header)
-    assert header == '<script type="text/javascript" nonce="NONCE">window.NREUM||(NREUM={});NREUM.info={};\n<!-- NREUM HEADER --></script>'
+    assert (
+        header
+        == '<script type="text/javascript" nonce="NONCE">window.NREUM||(NREUM={});NREUM.info={};\n<!-- NREUM HEADER --></script>'
+    )
 
 
 @override_application_settings(_test_get_browser_timing_snippet_with_nonces)
-@web_transaction(scheme="http", host="127.0.0.1", port=80, request_method="GET", request_path="/", query_string=None, headers={})
+@web_transaction(
+    scheme="http", host="127.0.0.1", port=80, request_method="GET", request_path="/", query_string=None, headers={}
+)
 def test_get_browser_timing_snippet_without_nonces():
     header = get_browser_timing_header()
 
     header = _test_get_browser_timing_snippet_with_nonces_rum_info_re.sub("NREUM.info={}", header)
-    assert header == '<script type="text/javascript">window.NREUM||(NREUM={});NREUM.info={};\n<!-- NREUM HEADER --></script>'
+    assert (
+        header
+        == '<script type="text/javascript">window.NREUM||(NREUM={});NREUM.info={};\n<!-- NREUM HEADER --></script>'
+    )

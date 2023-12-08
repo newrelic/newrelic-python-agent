@@ -192,7 +192,6 @@ def test_cat_map(
     @override_application_settings(_custom_settings)
     @override_application_name(appName)
     def run_cat_test():
-
         if six.PY2:
             txn_name = transactionName.encode("UTF-8")
             guid = transactionGuid.encode("UTF-8")

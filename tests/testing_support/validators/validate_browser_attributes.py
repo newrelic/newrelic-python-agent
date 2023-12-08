@@ -42,7 +42,6 @@ def validate_browser_attributes(required_params=None, forgone_params=None):
             obfuscation_key = instance._settings.license_key[:13]
             attributes = json_decode(deobfuscate(header_data["atts"], obfuscation_key))
         else:
-
             # if there are no user or agent attributes, there will be no dict
             # for them in the browser data
 

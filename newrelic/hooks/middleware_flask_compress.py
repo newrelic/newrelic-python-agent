@@ -18,35 +18,41 @@ from newrelic.api.html_insertion import insert_html_snippet
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.config import extra_settings
-
 from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
 _boolean_states = {
-    '1': True, 'yes': True, 'true': True, 'on': True,
-    '0': False, 'no': False, 'false': False, 'off': False
+    "1": True,
+    "yes": True,
+    "true": True,
+    "on": True,
+    "0": False,
+    "no": False,
+    "false": False,
+    "off": False,
 }
 
 
 def _setting_boolean(value):
     if value.lower() not in _boolean_states:
-        raise ValueError('Not a boolean: %s' % value)
+        raise ValueError("Not a boolean: %s" % value)
     return _boolean_states[value.lower()]
 
 
 _settings_types = {
-    'browser_monitoring.auto_instrument': _setting_boolean,
-    'browser_monitoring.auto_instrument_passthrough': _setting_boolean,
+    "browser_monitoring.auto_instrument": _setting_boolean,
+    "browser_monitoring.auto_instrument_passthrough": _setting_boolean,
 }
 
 _settings_defaults = {
-    'browser_monitoring.auto_instrument': True,
-    'browser_monitoring.auto_instrument_passthrough': True,
+    "browser_monitoring.auto_instrument": True,
+    "browser_monitoring.auto_instrument_passthrough": True,
 }
 
-flask_compress_settings = extra_settings('import-hook:flask_compress',
-        types=_settings_types, defaults=_settings_defaults)
+flask_compress_settings = extra_settings(
+    "import-hook:flask_compress", types=_settings_types, defaults=_settings_defaults
+)
 
 
 def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
@@ -83,35 +89,34 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     # a user may want to also perform insertion for
     # 'application/xhtml+xml'.
 
-    ctype = (response.mimetype or '').lower()
+    ctype = (response.mimetype or "").lower()
 
     if ctype not in transaction.settings.browser_monitoring.content_type:
         return wrapped(*args, **kwargs)
 
     # Don't risk it if content encoding already set.
 
-    if 'Content-Encoding' in response.headers:
+    if "Content-Encoding" in response.headers:
         return wrapped(*args, **kwargs)
 
     # Don't risk it if content is actually within an attachment.
 
-    cdisposition = response.headers.get('Content-Disposition', '').lower()
+    cdisposition = response.headers.get("Content-Disposition", "").lower()
 
-    if cdisposition.split(';')[0].strip() == 'attachment':
+    if cdisposition.split(";")[0].strip() == "attachment":
         return wrapped(*args, **kwargs)
 
     # No point continuing if header is empty. This can occur if RUM is not enabled within the UI. We don't want to
     # generate the header just yet as we want to do that as late as possible so that application server time in header
-    # is as accurate as possible. In particular, if the response content is generated on demand then the flattening 
-    # of the response could take some time and we want to track that. We thus generate header below at 
+    # is as accurate as possible. In particular, if the response content is generated on demand then the flattening
+    # of the response could take some time and we want to track that. We thus generate header below at
     # the point of insertion.
 
     # If the response has direct_passthrough flagged, then is
     # likely to be streaming a file or other large response.
-    direct_passthrough = getattr(response, 'direct_passthrough', None)
+    direct_passthrough = getattr(response, "direct_passthrough", None)
     if direct_passthrough:
-        if not (flask_compress_settings.
-                browser_monitoring.auto_instrument_passthrough):
+        if not (flask_compress_settings.browser_monitoring.auto_instrument_passthrough):
             return wrapped(*args, **kwargs)
 
         # In those cases, if the mimetype is still a supported browser
@@ -121,7 +126,7 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
         #
         # In order to do that, we have to disable direct_passthrough on the
         # response since we have to immediately read the contents of the file.
-        elif ctype == 'text/html':
+        elif ctype == "text/html":
             response.direct_passthrough = False
         else:
             return wrapped(*args, **kwargs)
@@ -136,16 +141,16 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
 
     if result is not None:
         if transaction.settings.debug.log_autorum_middleware:
-            _logger.debug('RUM insertion from flask_compress '
-                    'triggered. Bytes added was %r.',
-                    len(result) - len(response.get_data()))
+            _logger.debug(
+                "RUM insertion from flask_compress " "triggered. Bytes added was %r.",
+                len(result) - len(response.get_data()),
+            )
 
         response.set_data(result)
-        response.headers['Content-Length'] = str(len(response.get_data()))
+        response.headers["Content-Length"] = str(len(response.get_data()))
 
     return wrapped(*args, **kwargs)
 
 
 def instrument_flask_compress(module):
-    wrap_function_wrapper(module, 'Compress.after_request',
-            _nr_wrapper_Compress_after_request)
+    wrap_function_wrapper(module, "Compress.after_request", _nr_wrapper_Compress_after_request)

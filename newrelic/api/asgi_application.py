@@ -155,7 +155,9 @@ class ASGIBrowserMiddleware(object):
 
             # if there's a valid body string, attempt to insert the HTML
             if verify_body_exists(self.body):
-                body = insert_html_snippet(self.body, lambda: six.b(self.transaction.browser_timing_header()), self.search_maximum)
+                body = insert_html_snippet(
+                    self.body, lambda: six.b(self.transaction.browser_timing_header()), self.search_maximum
+                )
 
                 # If we have inserted the browser agent
                 if len(body) != len(self.body):
@@ -309,7 +311,6 @@ def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
                 send=send,
                 source=wrapped,
             ) as transaction:
-
                 # Record details of framework against the transaction for later
                 # reporting as supportability metrics.
                 if framework:

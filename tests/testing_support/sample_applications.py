@@ -105,7 +105,7 @@ def fully_featured_app(environ, start_response):
                 else:
                     notice_error()
 
-    text = "<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>"
+    text = "<html><head>%s</head><body><p>RESPONSE</p></body></html>"
 
     output = (text % get_browser_timing_header()).encode("UTF-8")
 

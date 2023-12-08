@@ -40,7 +40,7 @@ _runtime_error_name = RuntimeError.__module__ + ":" + RuntimeError.__name__
 
 @asgi_application()
 async def target_asgi_application_manual_rum(scope, receive, send):
-    text = "<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>"
+    text = "<html><head>%s</head><body><p>RESPONSE</p></body></html>"
 
     output = (text % get_browser_timing_header()).encode("UTF-8")
 
@@ -95,7 +95,7 @@ def test_header_attributes():
     # Now validate the various fields of the header. The fields are
     # held by a JSON dictionary.
 
-    data = json.loads(header.split("NREUM.info=")[1]).split("\n;")[0]
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert data["licenseKey"] == settings.browser_key
     assert data["applicationID"] == settings.application_id
@@ -135,8 +135,8 @@ def test_ssl_for_http_is_none():
 
     response = target_application_manual_rum.get("/")
     html = BeautifulSoup(response.body, "html.parser")
-    header = html.html.body.script.string
-    data = json.loads(header.split("NREUM.info=")[1].split("\n;")[0])
+    header = html.html.head.script.string
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "sslForHttp" not in data
 
@@ -157,8 +157,8 @@ def test_ssl_for_http_is_true():
 
     response = target_application_manual_rum.get("/")
     html = BeautifulSoup(response.body, "html.parser")
-    header = html.html.body.script.string
-    data = json.loads(header.split("NREUM.info=")[1].split("\n;")[0])
+    header = html.html.head.script.string
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert data["sslForHttp"] is True
 
@@ -179,8 +179,8 @@ def test_ssl_for_http_is_false():
 
     response = target_application_manual_rum.get("/")
     html = BeautifulSoup(response.body, "html.parser")
-    header = html.html.body.script.string
-    data = json.loads(header.split("NREUM.info=")[1].split("\n;")[0])
+    header = html.html.head.script.string
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert data["sslForHttp"] is False
 

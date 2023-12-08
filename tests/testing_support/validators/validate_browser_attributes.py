@@ -31,7 +31,7 @@ def validate_browser_attributes(required_params=None, forgone_params=None):
 
         # pick out attributes from header string_types
 
-        header_data = result.split("NREUM.info=")[1].split("\n;")[0]
+        header_data = result.split("NREUM.info=")[1].split(";\n")[0]
         header_data = json.loads(header_data)
 
         if "intrinsic" in required_params:

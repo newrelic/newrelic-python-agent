@@ -73,7 +73,7 @@ def test_capture_attributes_enabled():
     # Now validate the various fields of the header related to analytics.
     # The fields are held by a JSON dictionary.
 
-    data = json.loads(header.split("NREUM.info=")[1].split("\n;")[0])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     obfuscation_key = settings.license_key[:13]
 
@@ -129,7 +129,7 @@ def test_no_attributes_recorded():
     # Now validate the various fields of the header related to analytics.
     # The fields are held by a JSON dictionary.
 
-    data = json.loads(header.split("NREUM.info=")[1].split("\n;")[0])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     # As we are not recording any user or agent attributes, we should not
     # actually have an entry at all in the header.
@@ -175,7 +175,7 @@ def test_analytic_events_capture_attributes_disabled():
     # Now validate that attributes are present, since browser monitoring should
     # be enabled.
 
-    data = json.loads(header.split("NREUM.info=")[1].split("\n;")[0])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "atts" in data
 
@@ -207,7 +207,7 @@ def test_capture_attributes_default():
     # Now validate that attributes are not present, since should
     # be disabled.
 
-    data = json.loads(header.split("NREUM.info=")[1].split("\n;")[0])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "atts" not in data
 
@@ -268,7 +268,7 @@ def test_capture_attributes_disabled():
     # Now validate that attributes are not present, since should
     # be disabled.
 
-    data = json.loads(header.split("NREUM.info=")[1].split("\n;")[0])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "atts" not in data
 
@@ -316,7 +316,7 @@ def test_collect_analytic_events_disabled():
     # Now validate that attributes are present, since should
     # be enabled.
 
-    data = json.loads(header.split("NREUM.info=")[1].split("\n;")[0])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "atts" in data
 
@@ -359,7 +359,7 @@ def test_analytic_events_disabled():
     # Now validate that attributes are present, since should
     # be enabled.
 
-    data = json.loads(header.split("NREUM.info=")[1].split("\n;")[0])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "atts" in data
 

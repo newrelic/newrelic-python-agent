@@ -32,6 +32,7 @@ from newrelic.api.transaction import (
     get_browser_timing_footer,
     get_browser_timing_header,
 )
+from newrelic.api.web_transaction import web_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import deobfuscate
 
@@ -1026,3 +1027,31 @@ def test_html_insertion_manual_rum_insertion():
     # footer added by the agent.
 
     response.mustcontain(no=["NREUM HEADER", "NREUM.info"])
+
+
+_test_get_browser_timing_nonces_settings = {
+    "browser_monitoring.enabled": True,
+    "browser_monitoring.auto_instrument": False,
+    "js_agent_loader": "<!-- NREUM HEADER -->",
+}
+
+@override_application_settings(_test_get_browser_timing_nonces_settings)
+@web_transaction(scheme="http", host="127.0.0.1", port=80, request_method="GET",
+        request_path="/", query_string=None, headers={})
+def test_get_browser_timing_nonces():
+    header = get_browser_timing_header("NONCE")
+    footer = get_browser_timing_footer("NONCE")
+
+    assert header == '<script type="text/javascript" nonce="NONCE"><!-- NREUM HEADER --></script>'
+    assert '<script type="text/javascript" nonce="NONCE">' in footer
+
+
+@override_application_settings(_test_get_browser_timing_nonces_settings)
+@web_transaction(scheme="http", host="127.0.0.1", port=80, request_method="GET",
+        request_path="/", query_string=None, headers={})
+def test_get_browser_timing_no_nonces():
+    header = get_browser_timing_header()
+    footer = get_browser_timing_footer()
+
+    assert header == '<script type="text/javascript"><!-- NREUM HEADER --></script>'
+    assert '<script type="text/javascript">' in footer

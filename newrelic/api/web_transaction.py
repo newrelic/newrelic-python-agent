@@ -39,8 +39,8 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 _logger = logging.getLogger(__name__)
 
-_js_agent_header_fragment = '<script type="text/javascript">%s</script>'
-_js_agent_footer_fragment = '<script type="text/javascript">'\
+_js_agent_header_fragment = '<script%s type="text/javascript">%s</script>'
+_js_agent_footer_fragment = '<script%s type="text/javascript">'\
                             'window.NREUM||(NREUM={});NREUM.info=%s</script>'
 
 # Seconds since epoch for Jan 1 2000
@@ -154,6 +154,13 @@ def _remove_query_string(url):
 
 def _is_websocket(environ):
     return environ.get('HTTP_UPGRADE', '').lower() == 'websocket'
+
+
+def _encode_nonce(nonce):
+    if not nonce:
+        return ""
+    else:
+        return ' nonce="%s"' % ensure_str(nonce)  # Extra space intentional
 
 
 class WebTransaction(Transaction):
@@ -386,7 +393,7 @@ class WebTransaction(Transaction):
 
         return super(WebTransaction, self)._update_agent_attributes()
 
-    def browser_timing_header(self):
+    def browser_timing_header(self, nonce=None):
         """Returns the JavaScript header to be included in any HTML
         response to perform real user monitoring. This function returns
         the header as a native Python string. In Python 2 native strings
@@ -437,7 +444,7 @@ class WebTransaction(Transaction):
         # 'none'.
 
         if self._settings.js_agent_loader:
-            header = _js_agent_header_fragment % self._settings.js_agent_loader
+            header = _js_agent_header_fragment % (_encode_nonce(nonce), self._settings.js_agent_loader)
 
             # To avoid any issues with browser encodings, we will make sure
             # that the javascript we inject for the browser agent is ASCII
@@ -476,7 +483,7 @@ class WebTransaction(Transaction):
 
         return header
 
-    def browser_timing_footer(self):
+    def browser_timing_footer(self, nonce=None):
         """Returns the JavaScript footer to be included in any HTML
         response to perform real user monitoring. This function returns
         the footer as a native Python string. In Python 2 native strings
@@ -541,7 +548,7 @@ class WebTransaction(Transaction):
             attributes = obfuscate(json_encode(attributes), obfuscation_key)
             footer_data['atts'] = attributes
 
-        footer = _js_agent_footer_fragment % json_encode(footer_data)
+        footer = _js_agent_footer_fragment % (_encode_nonce(nonce), json_encode(footer_data))
 
         # To avoid any issues with browser encodings, we will make sure that
         # the javascript we inject for the browser agent is ASCII encodable.

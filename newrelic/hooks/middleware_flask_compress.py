@@ -100,21 +100,11 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     if cdisposition.split(';')[0].strip() == 'attachment':
         return wrapped(*args, **kwargs)
 
-    # No point continuing if header is empty. This can occur if
-    # RUM is not enabled within the UI. It is assumed at this
-    # point that if header is not empty, then footer will not be
-    # empty. We don't want to generate the footer just yet as
-    # want to do that as late as possible so that application
-    # server time in footer is as accurate as possible. In
-    # particular, if the response content is generated on demand
-    # then the flattening of the response could take some time
-    # and we want to track that. We thus generate footer below
-    # at point of insertion.
-
-    header = transaction.browser_timing_header()
-
-    if not header:
-        return wrapped(*args, **kwargs)
+    # No point continuing if header is empty. This can occur if RUM is not enabled within the UI. We don't want to
+    # generate the header just yet as we want to do that as late as possible so that application server time in header
+    # is as accurate as possible. In particular, if the response content is generated on demand then the flattening 
+    # of the response could take some time and we want to track that. We thus generate header below at 
+    # the point of insertion.
 
     # If the response has direct_passthrough flagged, then is
     # likely to be streaming a file or other large response.
@@ -142,7 +132,7 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     # multiple copies of the string in memory at the same time
     # as we progress through steps below.
 
-    result = insert_html_snippet(response.get_data(), lambda: six.b(header))
+    result = insert_html_snippet(response.get_data(), lambda: six.b(transaction.browser_timing_header()))
 
     if result is not None:
         if transaction.settings.debug.log_autorum_middleware:

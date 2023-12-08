@@ -39,7 +39,7 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 _logger = logging.getLogger(__name__)
 
-_js_agent_header_fragment = '<script type="text/javascript" nonce="%s">window.NREUM||(NREUM={});NREUM.info=%s;\%s</script>'
+_js_agent_header_fragment = '<script type="text/javascript"%s>window.NREUM||(NREUM={});NREUM.info=%s;\n%s</script>'
 
 # Seconds since epoch for Jan 1 2000
 JAN_1_2000 = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, 0))

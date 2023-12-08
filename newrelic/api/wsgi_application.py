@@ -204,14 +204,7 @@ class _WSGIApplicationMiddleware(object):
         # works then we are done, else we move to next phase of
         # buffering up content until we find the body element.
 
-        def html_to_be_inserted():
-            header = self.transaction.browser_timing_header()
-
-            if not header:
-                return b""
-
-            return six.b(header)
-
+        html_to_be_inserted = lambda: six.b(self.transaction.browser_timing_header())
         if not self.response_data:
             modified = insert_html_snippet(data, html_to_be_inserted)
 

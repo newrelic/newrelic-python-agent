@@ -35,7 +35,7 @@ RESPONSES_V1 = {
         {
             "content-type": "application/json",
             "openai-model": "gpt-3.5-turbo-0613",
-            "openai-organization": "foobar-jtbczk",
+            "openai-organization": "new-relic-nkmd8b",
             "openai-processing-ms": "6326",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "200",
@@ -60,7 +60,7 @@ RESPONSES_V1 = {
                     "index": 0,
                     "message": {
                         "role": "assistant",
-                        "content": "To convert 212 degrees Fahrenheit to Celsius, you can use the formula:\n\n\u00b0C = (\u00b0F - 32) x 5/9\n\nSubstituting the value, we get:\n\n\u00b0C = (212 - 32) x 5/9\n   = 180 x 5/9\n   = 100\n\nTherefore, 212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                        "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
                     },
                     "finish_reason": "stop",
                 }

@@ -236,7 +236,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     response_headers = getattr(response, "_nr_response_headers", None)
     response_model = response.get("model", "")
     response_id = response.get("id")
-    request_id = response_headers.get("x-request-id", "")
+    request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
     response_usage = response.get("usage", {})
 
@@ -380,7 +380,7 @@ def create_chat_completion_message_event(
     if output_message_list:
         # Loop through all output messages received from the LLM response and emit a custom event for each one
         for index, message in enumerate(output_message_list):
-            message_content = message.get("content", "")
+            message_content = getattr(message, "content", "")
 
             # Add offset of input_message_length so we don't receive any duplicate index values that match the input message IDs
             index += len(input_message_list)
@@ -403,7 +403,7 @@ def create_chat_completion_message_event(
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
                 "content": message_content,
-                "role": message.get("role", ""),
+                "role": getattr(message, "role", ""),
                 "completion_id": chat_completion_id,
                 "sequence": index,
                 "response.model": response_model if response_model else "",
@@ -627,7 +627,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     response_headers = getattr(response, "_nr_response_headers", None)
     response_model = response.get("model", "")
     response_id = response.get("id")
-    request_id = response_headers.get("x-request-id", "")
+    request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
     response_usage = response.get("usage", {})
 
@@ -715,6 +715,26 @@ def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
     return returned_response
 
 
+def bind_base_client_process_response(
+    cast_to,
+    options,
+    response,
+    stream,
+    stream_cls,
+):
+    return response
+
+
+def wrap_base_client_process_response(wrapped, instance, args, kwargs):
+    response = bind_base_client_process_response(*args, **kwargs)
+    nr_response_headers = getattr(response, "headers")
+
+    return_val = wrapped(*args, **kwargs)
+
+    return_val._nr_response_headers = nr_response_headers
+    return return_val
+
+
 def instrument_openai_util(module):
     wrap_function_wrapper(module, "convert_to_openai_object", wrap_convert_to_openai_object)
 
@@ -731,3 +751,8 @@ def instrument_openai_api_resources_chat_completion(module):
         wrap_function_wrapper(module, "ChatCompletion.create", wrap_chat_completion_create)
     if hasattr(module.ChatCompletion, "acreate"):
         wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_acreate)
+
+
+def instrument_openai_base_client(module):
+    if hasattr(module.BaseClient, "_process_response"):
+        wrap_function_wrapper(module, "BaseClient._process_response", wrap_base_client_process_response)

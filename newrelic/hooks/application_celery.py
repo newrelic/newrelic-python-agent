@@ -27,7 +27,7 @@ from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.pre_function import wrap_pre_function
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import CallableObjectProxy
+from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.core.agent import shutdown_agent
 
@@ -119,7 +119,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
     # versions included a monkey-patching provision which did not perform this
     # optimization on functions that were monkey-patched.
 
-    class TaskWrapper(CallableObjectProxy):
+    class TaskWrapper(FunctionWrapper):
         def run(self, *args, **kwargs):
             return self.__call__(*args, **kwargs)
 

@@ -34,7 +34,7 @@ def set_trace_ids():
 def exercise_logging(logger):
     set_trace_ids()
 
-    logger.error({"message": "A", "my_attr": 3})
+    logger.error({"message": "A", "other_attr": 2})
     
     assert len(logger.caplog.records) == 1
 
@@ -49,7 +49,7 @@ _common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh
 _common_attributes_trace_linking.update(_common_attributes_service_linking)
 
 _test_json_logging_inside_transaction_events = [
-    {"message": "A", "level": "ERROR"},
+    {"message": {"message": "A", "other_attr": 2}, "level": "ERROR"},
 ]
 update_all(_test_json_logging_inside_transaction_events, _common_attributes_trace_linking)
 
@@ -64,19 +64,17 @@ def test_json_logging_inside_transaction(logger):
     test()
 
 
-# _test_json_logging_outside_transaction_events = [
-#     {"message": "C", "level": "WARNING"},
-#     {"message": "D", "level": "ERROR"},
-#     {"message": "E", "level": "CRITICAL"},
-# ]
-# update_all(_test_json_logging_outside_transaction_events, _common_attributes_service_linking)
+_test_json_logging_outside_transaction_events = [
+    {"message": {"message": "A", "other_attr": 2}, "level": "ERROR"},
+]
+update_all(_test_json_logging_outside_transaction_events, _common_attributes_service_linking)
 
 
-# @reset_core_stats_engine()
-# def test_json_logging_outside_transaction(logger):
-#     @validate_log_events_outside_transaction(_test_json_logging_outside_transaction_events)
-#     @validate_log_event_count_outside_transaction(3)
-#     def test():
-#         exercise_logging(logger)
+@reset_core_stats_engine()
+def test_json_logging_outside_transaction(logger):
+    @validate_log_events_outside_transaction(_test_json_logging_outside_transaction_events)
+    @validate_log_event_count_outside_transaction(1)
+    def test():
+        exercise_logging(logger)
 
-#     test()
+    test()

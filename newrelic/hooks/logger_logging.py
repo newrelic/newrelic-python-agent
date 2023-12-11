@@ -89,7 +89,10 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
 
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             try:
-                message = record.getMessage()
+                message = record.msg
+                if isinstance(message, dict):
+                    # Allow python to convert the message to a string and template it with args.
+                    message = record.getMessage()
                 attrs = filter_record_attributes(record)
                 record_log_event(
                     message=message, level=level_name, timestamp=int(record.created * 1000), attributes=attrs

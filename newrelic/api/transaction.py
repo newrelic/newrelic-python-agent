@@ -1540,11 +1540,21 @@ class Transaction(object):
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
 
-        if not message or message.isspace():
+        is_string = isinstance(message, six.string_types)
+        is_hashmap = isinstance(message, dict)
+
+        if not is_string and not is_hashmap:
+            _logger.debug("record_log_event called where message was not a string type or dictionary. No log event will be sent.")
+            return
+
+        if not message or is_string and message.isspace():
             _logger.debug("record_log_event called where message was missing. No log event will be sent.")
             return
 
-        message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+        if is_string:
+            message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+        else:
+            message = message
 
         collected_attributes = get_linking_metadata()
         if attributes and (settings and settings.application_logging.forwarding.context_data.enabled):

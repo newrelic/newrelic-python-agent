@@ -68,7 +68,6 @@ else:
         "test_embeddings_error_v1.py",
     ]
 
-
 OPENAI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "openai_audit.log")
 OPENAI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking

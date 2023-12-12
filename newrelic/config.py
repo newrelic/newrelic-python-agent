@@ -2054,11 +2054,6 @@ def _process_module_builtin_defaults():
         "instrument_openai_resources_embeddings",
     )
     _process_module_definition(
-        "openai._base_client",
-        "newrelic.hooks.mlmodel_openai",
-        "instrument_openai_base_client",
-    )
-    _process_module_definition(
         "openai.util",
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_util",
@@ -2068,7 +2063,6 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_base_client",
     )
-
     _process_module_definition(
         "asyncio.base_events",
         "newrelic.hooks.coroutines_asyncio",

@@ -41,8 +41,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     embedding_id = str(uuid.uuid4())
 
     # Get API key without using the response so we can store it before the response is returned in case of errors
-    # This approach will not work in OpenAI v1
-    api_key = getattr(openai, "api_key", None)
+    api_key = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(openai, "api_key", None)
     api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
     span_id = None
@@ -103,16 +102,12 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     if OPENAI_V1:
         response = response.model_dump()
 
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
-    embedding_id = str(uuid.uuid4())
 
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
+
     response_model = response.get("model", "")
     response_usage = response.get("usage", {})
     api_type = getattr(response, "api_type", "")
-    api_key = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(response, "api_key", "")
     organization = response_headers.get("openai-organization", "") if OPENAI_V1 else response.organization
 
     full_embedding_response_dict = {
@@ -446,7 +441,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     embedding_id = str(uuid.uuid4())
 
     # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(openai, "api_key", None)
+    api_key = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(openai, "api_key", None)
     api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
     span_id = None
@@ -503,21 +498,16 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     response_headers = getattr(response, "_nr_response_headers", None)
 
+    # In v1, response objects are pydantic models so this function call converts the object back to a dictionary for backwards compatibility
     if OPENAI_V1:
         response = response.model_dump()
 
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
-    embedding_id = str(uuid.uuid4())
-
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
+
     response_model = response.get("model", "")
     response_usage = response.get("usage", {})
     api_type = getattr(response, "api_type", "")
-    api_key = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(response, "api_key", "")
     organization = response_headers.get("openai-organization", "") if OPENAI_V1 else response.organization
-
 
     full_embedding_response_dict = {
         "id": embedding_id,
@@ -532,7 +522,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "duration": ft.duration,
         "response.model": response_model,
         "response.organization": organization,
-        "response.api_type": api_type,
+        "response.api_type": api_type,  # API type was removed in v1
         "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
         "response.headers.llmVersion": response_headers.get("openai-version", ""),

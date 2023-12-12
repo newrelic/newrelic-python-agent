@@ -190,7 +190,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         trace_id = available_metadata.get("trace.id", "")
 
         try:
-            response = wrapped(*args, **kwargs)
+            return_val = wrapped(*args, **kwargs)
         except Exception as exc:
             exc_organization = getattr(exc, "organization", "")
 
@@ -242,13 +242,14 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
             raise
 
-    if not response:
-        return response
+    if not return_val:
+        return return_val
 
     # At this point, we have a response so we can grab attributes only available on the response object
-    response_headers = getattr(response, "_nr_response_headers", None)
+    response_headers = getattr(return_val, "_nr_response_headers", None)
     # In v1, response objects are pydantic models so this function call converts the
     # object back to a dictionary for backwards compatibility.
+    response = return_val
     if OPENAI_V1:
         response = response.model_dump()
 
@@ -260,7 +261,9 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     messages = kwargs.get("messages", [])
     choices = response.get("choices", [])
-    organization = response_headers.get("openai-organization", "") if OPENAI_V1 else getattr(response, "organization", "")
+    organization = (
+        response_headers.get("openai-organization", "") if OPENAI_V1 else getattr(response, "organization", "")
+    )
 
     full_chat_completion_summary_dict = {
         "id": completion_id,
@@ -306,17 +309,19 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         "response.number_of_messages": len(messages) + len(choices),
     }
     if OPENAI_V1:
-        full_chat_completion_summary_dict.update({
-            "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
-                response_headers, "x-ratelimit-limit-tokens_usage_based", True
-            ),
-            "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
-                response_headers, "x-ratelimit-reset-tokens_usage_based", False
-            ),
-            "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
-                response_headers, "x-ratelimit-remaining-tokens_usage_based", True
-            )
-        })
+        full_chat_completion_summary_dict.update(
+            {
+                "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
+                    response_headers, "x-ratelimit-limit-tokens_usage_based", True
+                ),
+                "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
+                    response_headers, "x-ratelimit-reset-tokens_usage_based", False
+                ),
+                "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
+                    response_headers, "x-ratelimit-remaining-tokens_usage_based", True
+                ),
+            }
+        )
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
@@ -342,7 +347,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         transaction._nr_message_ids = {}
     transaction._nr_message_ids[response_id] = message_ids
 
-    return response
+    return return_val
 
 
 def check_rate_limit_header(response_headers, header_name, is_int):
@@ -610,7 +615,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         trace_id = available_metadata.get("trace.id", "")
 
         try:
-            response = await wrapped(*args, **kwargs)
+            return_val = await wrapped(*args, **kwargs)
         except Exception as exc:
             exc_organization = getattr(exc, "organization", "")
 
@@ -662,13 +667,14 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
             raise
 
-    if not response:
-        return response
+    if not return_val:
+        return return_val
 
     # At this point, we have a response so we can grab attributes only available on the response object
-    response_headers = getattr(response, "_nr_response_headers", None)
+    response_headers = getattr(return_val, "_nr_response_headers", None)
     # In v1, response objects are pydantic models so this function call converts the
     # object back to a dictionary for backwards compatibility.
+    response = return_val
     if OPENAI_V1:
         response = response.model_dump()
 
@@ -680,7 +686,9 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     messages = kwargs.get("messages", [])
     choices = response.get("choices", [])
-    organization = response_headers.get("openai-organization", "") if OPENAI_V1 else getattr(response, "organization", "")
+    organization = (
+        response_headers.get("openai-organization", "") if OPENAI_V1 else getattr(response, "organization", "")
+    )
 
     full_chat_completion_summary_dict = {
         "id": completion_id,
@@ -726,17 +734,19 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         "response.number_of_messages": len(messages) + len(choices),
     }
     if OPENAI_V1:
-        full_chat_completion_summary_dict.update({
-            "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
-                response_headers, "x-ratelimit-limit-tokens_usage_based", True
-            ),
-            "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
-                response_headers, "x-ratelimit-reset-tokens_usage_based", False
-            ),
-            "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
-                response_headers, "x-ratelimit-remaining-tokens_usage_based", True
-            )
-        })
+        full_chat_completion_summary_dict.update(
+            {
+                "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
+                    response_headers, "x-ratelimit-limit-tokens_usage_based", True
+                ),
+                "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
+                    response_headers, "x-ratelimit-reset-tokens_usage_based", False
+                ),
+                "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
+                    response_headers, "x-ratelimit-remaining-tokens_usage_based", True
+                ),
+            }
+        )
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
@@ -762,7 +772,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         transaction._nr_message_ids = {}
     transaction._nr_message_ids[response_id] = message_ids
 
-    return response
+    return return_val
 
 
 def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):

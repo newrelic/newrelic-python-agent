@@ -173,6 +173,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     return response
 
+
 def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 

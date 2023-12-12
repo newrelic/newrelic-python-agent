@@ -155,8 +155,12 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
             "page_content": page_content,
         }
 
-        LLMVectorSearchResult_dict |= LLMVectorSearch_dict
-        LLMVectorSearchResult_dict |= metadata_dict
+        LLMVectorSearchResult_dict.update(LLMVectorSearch_dict)
+        LLMVectorSearchResult_dict.update(metadata_dict)
+        # This works in Python 3.9.8+
+        # https://peps.python.org/pep-0584/
+        # LLMVectorSearchResult_dict |= LLMVectorSearch_dict
+        # LLMVectorSearchResult_dict |= metadata_dict
 
         transaction.record_custom_event("LlmVectorSearchResult", LLMVectorSearchResult_dict)
 

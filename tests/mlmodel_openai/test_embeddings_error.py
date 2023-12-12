@@ -131,7 +131,6 @@ invalid_model_events = [
 @validate_span_events(
     exact_agents={
         "error.message": "The model `does-not-exist` does not exist",
-        # "http.statusCode": 404,
     }
 )
 @validate_transaction_metrics(

@@ -117,7 +117,7 @@ vectorstore_recorded_events = [
             "request.k": 1,
             "duration": None,  # Changes with every run
             "response.number_of_documents": 1,
-            "metadata.source": "/Users/lrafeei/repo/newrelic-python-agent/tests/mlmodel_langchain/hello.pdf",
+            "metadata.source": "/__w/newrelic-python-agent/newrelic-python-agent/tests/mlmodel_langchain/hello.pdf",
             "metadata.page": 0,
         },
     ),

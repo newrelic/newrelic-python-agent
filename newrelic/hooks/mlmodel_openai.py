@@ -99,16 +99,19 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     response_headers = getattr(response, "_nr_response_headers", None)
 
     # In v1, response objects are pydantic models so this function call converts the object back to a dictionary for backwards compatibility
+    # Use standard response object returned from create call for v0
     if OPENAI_V1:
-        response = response.model_dump()
+        attribute_response = response.model_dump()
+    else:
+        attribute_response = response
 
 
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    response_model = response.get("model", "")
-    response_usage = response.get("usage", {})
-    api_type = getattr(response, "api_type", "")
-    organization = response_headers.get("openai-organization", "") if OPENAI_V1 else response.organization
+    response_model = attribute_response.get("model", "")
+    response_usage = attribute_response.get("usage", {})
+    api_type = getattr(attribute_response, "api_type", "")
+    organization = response_headers.get("openai-organization", "") if OPENAI_V1 else attribute_response.organization
 
     full_embedding_response_dict = {
         "id": embedding_id,
@@ -499,15 +502,18 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     response_headers = getattr(response, "_nr_response_headers", None)
 
     # In v1, response objects are pydantic models so this function call converts the object back to a dictionary for backwards compatibility
+    # Use standard response object returned from create call for v0
     if OPENAI_V1:
-        response = response.model_dump()
+        attribute_response = response.model_dump()
+    else:
+        attribute_response = response
 
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    response_model = response.get("model", "")
-    response_usage = response.get("usage", {})
-    api_type = getattr(response, "api_type", "")
-    organization = response_headers.get("openai-organization", "") if OPENAI_V1 else response.organization
+    response_model = attribute_response.get("model", "")
+    response_usage = attribute_response.get("usage", {})
+    api_type = getattr(attribute_response, "api_type", "")
+    organization = response_headers.get("openai-organization", "") if OPENAI_V1 else attribute_response.organization
 
     full_embedding_response_dict = {
         "id": embedding_id,

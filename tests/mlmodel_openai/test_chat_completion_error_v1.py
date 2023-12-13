@@ -345,6 +345,7 @@ expected_events_on_wrong_api_key_error = [
         "intrinsic": {},
         "user": {
             "http.statusCode": 401,
+            "error.code": "invalid_api_key",
         },
     },
 )
@@ -383,6 +384,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info, sync_o
         "intrinsic": {},
         "user": {
             "http.statusCode": 401,
+            "error.code": "invalid_api_key",
         },
     },
 )

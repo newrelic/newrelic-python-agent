@@ -107,6 +107,30 @@ RESPONSES_V1 = {
             "system_fingerprint": None,
         },
     ],
+    "Invalid API key.": [
+        {"content-type": "application/json; charset=utf-8", "x-request-id": "a51821b9fd83d8e0e04542bedc174310"},
+        401,
+        {
+            "error": {
+                "message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "invalid_api_key",
+            }
+        },
+    ],
+    "Model does not exist.": [
+        {"content-type": "application/json; charset=utf-8", "x-request-id": "3b0f8e510ee8a67c08a227a98eadbbe6"},
+        404,
+        {
+            "error": {
+                "message": "The model `does-not-exist` does not exist",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "model_not_found",
+            }
+        },
+    ],
     "This is an embedding test.": [
         {
             "content-type": "application/json",

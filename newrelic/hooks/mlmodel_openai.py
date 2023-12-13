@@ -19,6 +19,7 @@ import openai
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
+from newrelic.common.encoding_utils import json_decode
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
@@ -192,16 +193,36 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         try:
             return_val = wrapped(*args, **kwargs)
         except Exception as exc:
-            exc_organization = getattr(exc, "organization", "")
+            if OPENAI_V1:
+                response = getattr(exc, "response", "")
+                response_headers = getattr(response, "headers", "")
+                exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
+                # There appears to be a bug here in openai v1 where despite having code,
+                # param, etc in the error response, they are not populated on the exception
+                # object so grab them from the response object instead.
+                content = getattr(response, "content", b"{}")
+                response = json_decode(content.decode("utf-8")).get("error", {})
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "status_code", "") or "",
+                    "error.message": response.get("message", "") or "",
+                    "error.code": response.get("code", "") or "",
+                    "error.param": response.get("param", "") or "",
+                    "completion_id": completion_id,
+                }
+            else:
+                exc_organization = getattr(exc, "organization", "")
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "http_status", ""),
+                    "error.message": getattr(exc, "_message", ""),
+                    "error.code": getattr(getattr(exc, "error", ""), "code", ""),
+                    "error.param": getattr(exc, "param", ""),
+                    "completion_id": completion_id,
+                }
+            # Override the default message if it is not empty.
+            message = notice_error_attributes.pop("error.message")
+            if message:
+                exc._nr_message = message
 
-            notice_error_attributes = {
-                "http.statusCode": getattr(exc, "http_status", ""),
-                "error.message": getattr(exc, "_message", ""),
-                "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                "error.param": getattr(exc, "param", ""),
-                "completion_id": completion_id,
-            }
-            exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
@@ -617,16 +638,36 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         try:
             return_val = await wrapped(*args, **kwargs)
         except Exception as exc:
-            exc_organization = getattr(exc, "organization", "")
+            if OPENAI_V1:
+                response = getattr(exc, "response", "")
+                response_headers = getattr(response, "headers", "")
+                exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
+                # There appears to be a bug here in openai v1 where despite having code,
+                # param, etc in the error response, they are not populated on the exception
+                # object so grab them from the response object instead.
+                content = getattr(response, "content", b"{}")
+                response = json_decode(content.decode("utf-8")).get("error", {})
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "status_code", "") or "",
+                    "error.message": response.get("message", "") or "",
+                    "error.code": response.get("code", "") or "",
+                    "error.param": response.get("param", "") or "",
+                    "completion_id": completion_id,
+                }
+            else:
+                exc_organization = getattr(exc, "organization", "")
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "http_status", ""),
+                    "error.message": getattr(exc, "_message", ""),
+                    "error.code": getattr(getattr(exc, "error", ""), "code", ""),
+                    "error.param": getattr(exc, "param", ""),
+                    "completion_id": completion_id,
+                }
+            # Override the default message if it is not empty.
+            message = notice_error_attributes.pop("error.message")
+            if message:
+                exc._nr_message = message
 
-            notice_error_attributes = {
-                "http.statusCode": getattr(exc, "http_status", ""),
-                "error.message": getattr(exc, "_message", ""),
-                "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                "error.param": getattr(exc, "param", ""),
-                "completion_id": completion_id,
-            }
-            exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
                 attributes=notice_error_attributes,
             )

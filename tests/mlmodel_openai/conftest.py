@@ -52,6 +52,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 if get_openai_version() < (1, 0):
     collect_ignore = [
         "test_chat_completion_v1.py",
+        "test_chat_completion_error_v1.py",
         "test_embeddings_v1.py",
         "test_get_llm_message_ids_v1.py",
         "test_chat_completion_error_v1.py",
@@ -144,9 +145,9 @@ def set_trace_info():
 def openai_server(
     openai_version,  # noqa: F811
     openai_clients,
-    wrap_openai_base_client_process_response,
     wrap_openai_api_requestor_request,
     wrap_openai_api_requestor_interpret_response,
+    wrap_httpx_client_send,
 ):
     """
     This fixture will either create a mocked backend for testing purposes, or will
@@ -166,9 +167,7 @@ def openai_server(
             yield  # Run tests
         else:
             # Apply function wrappers to record data
-            wrap_function_wrapper(
-                "openai._base_client", "BaseClient._process_response", wrap_openai_base_client_process_response
-            )
+            wrap_function_wrapper("httpx._client", "Client.send", wrap_httpx_client_send)
             yield  # Run tests
         # Write responses to audit log
         with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log_fp:
@@ -176,6 +175,43 @@ def openai_server(
     else:
         # We are mocking openai responses so we don't need to do anything in this case.
         yield
+
+
+def bind_send_params(request, *, stream=False, **kwargs):
+    return request
+
+
+@pytest.fixture(scope="session")
+def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
+    def _wrap_httpx_client_send(wrapped, instance, args, kwargs):
+        request = bind_send_params(*args, **kwargs)
+        if not request:
+            return wrapped(*args, **kwargs)
+
+        params = json.loads(request.content.decode("utf-8"))
+        prompt = extract_shortened_prompt(params)
+
+        # Send request
+        response = wrapped(*args, **kwargs)
+
+        if response.status_code >= 400 or response.status_code < 200:
+            prompt = "error"
+
+        rheaders = getattr(response, "headers")
+
+        headers = dict(
+            filter(
+                lambda k: k[0].lower() in RECORDED_HEADERS
+                or k[0].lower().startswith("openai")
+                or k[0].lower().startswith("x-ratelimit"),
+                rheaders.items(),
+            )
+        )
+        body = json.loads(response.content.decode("utf-8"))
+        OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to log
+        return response
+
+    return _wrap_httpx_client_send
 
 
 @pytest.fixture(scope="session")
@@ -236,39 +272,3 @@ def bind_request_params(method, url, params=None, *args, **kwargs):
 
 def bind_request_interpret_response_params(result, stream):
     return result.content.decode("utf-8"), result.status_code, result.headers
-
-
-def bind_base_client_process_response(
-    cast_to,
-    options,
-    response,
-    stream,
-    stream_cls,
-):
-    return options, response
-
-
-@pytest.fixture(scope="session")
-def wrap_openai_base_client_process_response(extract_shortened_prompt):  # noqa: F811
-    def _wrap_openai_base_client_process_response(wrapped, instance, args, kwargs):
-        options, response = bind_base_client_process_response(*args, **kwargs)
-        if not options:
-            return wrapped(*args, **kwargs)
-
-        data = getattr(options, "json_data", {})
-        prompt = extract_shortened_prompt(data)
-        rheaders = getattr(response, "headers")
-
-        headers = dict(
-            filter(
-                lambda k: k[0].lower() in RECORDED_HEADERS
-                or k[0].lower().startswith("openai")
-                or k[0].lower().startswith("x-ratelimit"),
-                rheaders.items(),
-            )
-        )
-        body = json.loads(response.content.decode("utf-8"))
-        OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to audit log
-        return wrapped(*args, **kwargs)
-
-    return _wrap_openai_base_client_process_response

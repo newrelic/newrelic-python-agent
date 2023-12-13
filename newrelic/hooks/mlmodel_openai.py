@@ -28,6 +28,7 @@ OPENAI_VERSION = get_package_version("openai")
 OPENAI_VERSION_TUPLE = tuple(map(int, OPENAI_VERSION.split(".")))
 OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
 
+
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction or kwargs.get("stream", False):
@@ -104,7 +105,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     else:
         attribute_response = response
 
-
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
     response_model = attribute_response.get("model", "")
@@ -125,7 +125,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "duration": ft.duration,
         "response.model": response_model,
         "response.organization": organization,
-        "response.api_type": api_type, # API type was removed in v1
+        "response.api_type": api_type,  # API type was removed in v1
         "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
@@ -327,22 +327,17 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
+        "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-tokens_usage_based", True
+        ),
+        "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-tokens_usage_based", False
+        ),
+        "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-tokens_usage_based", True
+        ),
         "response.number_of_messages": len(messages) + len(choices),
     }
-    if OPENAI_V1:
-        full_chat_completion_summary_dict.update(
-            {
-                "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
-                    response_headers, "x-ratelimit-limit-tokens_usage_based", True
-                ),
-                "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
-                    response_headers, "x-ratelimit-reset-tokens_usage_based", False
-                ),
-                "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
-                    response_headers, "x-ratelimit-remaining-tokens_usage_based", True
-                ),
-            }
-        )
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
@@ -772,22 +767,17 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
+        "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-tokens_usage_based", True
+        ),
+        "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-tokens_usage_based", False
+        ),
+        "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-tokens_usage_based", True
+        ),
         "response.number_of_messages": len(messages) + len(choices),
     }
-    if OPENAI_V1:
-        full_chat_completion_summary_dict.update(
-            {
-                "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
-                    response_headers, "x-ratelimit-limit-tokens_usage_based", True
-                ),
-                "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
-                    response_headers, "x-ratelimit-reset-tokens_usage_based", False
-                ),
-                "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
-                    response_headers, "x-ratelimit-remaining-tokens_usage_based", True
-                ),
-            }
-        )
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 

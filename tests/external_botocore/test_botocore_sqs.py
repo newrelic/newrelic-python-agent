@@ -25,9 +25,10 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-MOTO_VERSION = tuple(int(v) for v in moto.__version__.split(".")[:3])
+MOTO_VERSION = get_package_version_tuple("moto")
+BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 # patch earlier versions of moto to support py37
 if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
@@ -36,8 +37,8 @@ if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
     moto.packages.responses.responses.re._pattern_type = re.Pattern
 
 url = "sqs.us-east-1.amazonaws.com"
-botocore_version = tuple([int(n) for n in get_package_version("botocore").split(".")])
-if botocore_version < (1, 29, 0):
+
+if BOTOCORE_VERSION < (1, 29, 0):
     url = "queue.amazonaws.com"
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"

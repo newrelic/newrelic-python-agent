@@ -4071,7 +4071,7 @@ def _setup_security_module():
     callback to agent startup to propagate NR config
     """
     try:
-        if not _settings.security.agent.enabled:
+        if not _settings.security.agent.enabled or _settings.high_security:
             return
         from newrelic_security.api.agent import Agent as SecurityAgent
 

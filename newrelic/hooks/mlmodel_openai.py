@@ -23,10 +23,13 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
 
+
 OPENAI_VERSION = get_package_version("openai")
+OPENAI_VERSION_TUPLE = tuple(map(int, OPENAI_VERSION.split(".")))
+OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
 
 
-def wrap_embedding_create(wrapped, instance, args, kwargs):
+def wrap_embedding_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction or kwargs.get("stream", False):
         return wrapped(*args, **kwargs)
@@ -38,7 +41,7 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     embedding_id = str(uuid.uuid4())
 
     # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(openai, "api_key", None)
+    api_key = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(openai, "api_key", None)
     api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
     span_id = None
@@ -93,25 +96,37 @@ def wrap_embedding_create(wrapped, instance, args, kwargs):
     if not response:
         return response
 
-    response_model = response.get("model", "")
-    response_usage = response.get("usage", {})
     response_headers = getattr(response, "_nr_response_headers", None)
+
+    # In v1, response objects are pydantic models so this function call converts the object back to a dictionary for backwards compatibility
+    # Use standard response object returned from create call for v0
+    if OPENAI_V1:
+        attribute_response = response.model_dump()
+    else:
+        attribute_response = response
+
+
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
+
+    response_model = attribute_response.get("model", "")
+    response_usage = attribute_response.get("usage", {})
+    api_type = getattr(attribute_response, "api_type", "")
+    organization = response_headers.get("openai-organization", "") if OPENAI_V1 else attribute_response.organization
 
     full_embedding_response_dict = {
         "id": embedding_id,
         "appName": settings.app_name,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "input": kwargs.get("input", ""),
+        "api_key_last_four_digits": f"sk-{api_key[-4:]}" if api_key else "",
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
-        "response.organization": response.organization,
-        "response.api_type": response.api_type,
+        "response.organization": organization,
+        "response.api_type": api_type, # API type was removed in v1
         "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
@@ -417,7 +432,7 @@ def create_chat_completion_message_event(
     return (conversation_id, request_id, message_ids)
 
 
-async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
+async def wrap_embedding_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction or kwargs.get("stream", False):
         return await wrapped(*args, **kwargs)
@@ -429,7 +444,7 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     embedding_id = str(uuid.uuid4())
 
     # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(openai, "api_key", None)
+    api_key = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(openai, "api_key", None)
     api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
     span_id = None
@@ -484,25 +499,36 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     if not response:
         return response
 
-    response_model = response.get("model", "")
-    response_usage = response.get("usage", {})
     response_headers = getattr(response, "_nr_response_headers", None)
+
+    # In v1, response objects are pydantic models so this function call converts the object back to a dictionary for backwards compatibility
+    # Use standard response object returned from create call for v0
+    if OPENAI_V1:
+        attribute_response = response.model_dump()
+    else:
+        attribute_response = response
+
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
+
+    response_model = attribute_response.get("model", "")
+    response_usage = attribute_response.get("usage", {})
+    api_type = getattr(attribute_response, "api_type", "")
+    organization = response_headers.get("openai-organization", "") if OPENAI_V1 else attribute_response.organization
 
     full_embedding_response_dict = {
         "id": embedding_id,
         "appName": settings.app_name,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "input": kwargs.get("input", ""),
+        "api_key_last_four_digits": f"sk-{api_key[-4:]}" if api_key else "",
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
-        "response.organization": response.organization,
-        "response.api_type": response.api_type,
+        "response.organization": organization,
+        "response.api_type": api_type,  # API type was removed in v1
         "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
@@ -531,6 +557,7 @@ async def wrap_embedding_acreate(wrapped, instance, args, kwargs):
     transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
     return response
+
 
 
 async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
@@ -730,7 +757,7 @@ def wrap_base_client_process_response(wrapped, instance, args, kwargs):
     nr_response_headers = getattr(response, "headers")
 
     return_val = wrapped(*args, **kwargs)
-
+    # Obtain reponse headers for v1
     return_val._nr_response_headers = nr_response_headers
     return return_val
 
@@ -741,9 +768,9 @@ def instrument_openai_util(module):
 
 def instrument_openai_api_resources_embedding(module):
     if hasattr(module.Embedding, "create"):
-        wrap_function_wrapper(module, "Embedding.create", wrap_embedding_create)
+        wrap_function_wrapper(module, "Embedding.create", wrap_embedding_sync)
     if hasattr(module.Embedding, "acreate"):
-        wrap_function_wrapper(module, "Embedding.acreate", wrap_embedding_acreate)
+        wrap_function_wrapper(module, "Embedding.acreate", wrap_embedding_async)
 
 
 def instrument_openai_api_resources_chat_completion(module):
@@ -751,6 +778,17 @@ def instrument_openai_api_resources_chat_completion(module):
         wrap_function_wrapper(module, "ChatCompletion.create", wrap_chat_completion_create)
     if hasattr(module.ChatCompletion, "acreate"):
         wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_acreate)
+
+
+# OpenAI v1 instrumentation points
+def instrument_openai_resources_embeddings(module):
+    if hasattr(module, "Embeddings"):
+        if hasattr(module.Embeddings, "create"):
+            wrap_function_wrapper(module, "Embeddings.create", wrap_embedding_sync)
+
+    if hasattr(module, "AsyncEmbeddings"):
+        if hasattr(module.Embeddings, "create"):
+            wrap_function_wrapper(module, "AsyncEmbeddings.create", wrap_embedding_async)
 
 
 def instrument_openai_base_client(module):

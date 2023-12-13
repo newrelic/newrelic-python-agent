@@ -122,6 +122,10 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         attribute_response = response.model_dump()
     else:
         attribute_response = response
+<<<<<<< HEAD
+=======
+
+>>>>>>> 28e9695a1 (Store converted response object in new var for v1.)
 
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 

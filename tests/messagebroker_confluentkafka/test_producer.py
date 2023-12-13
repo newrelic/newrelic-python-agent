@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 import threading
+import time
 
 import pytest
 from conftest import cache_kafka_producer_headers
@@ -28,6 +28,7 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
@@ -133,6 +134,25 @@ def test_distributed_tracing_headers(topic, send_producer_message):
     @validate_messagebroker_headers
     def test():
         send_producer_message()
+
+    test()
+
+
+def test_distributed_tracing_headers_under_terminal(topic, send_producer_message):
+    @validate_transaction_metrics(
+        "test_distributed_tracing_headers_under_terminal",
+        rollup_metrics=[
+            ("Supportability/TraceContext/Create/Success", 1),
+            ("Supportability/DistributedTrace/CreatePayload/Success", 1),
+        ],
+        background_task=True,
+    )
+    @background_task(name="test_distributed_tracing_headers_under_terminal")
+    @cache_kafka_producer_headers()
+    @validate_messagebroker_headers
+    def test():
+        with FunctionTrace(name="terminal_trace", terminal=True):
+            send_producer_message()
 
     test()
 

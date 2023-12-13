@@ -58,11 +58,16 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
         destination_name=topic or "Default",
         source=wrapped,
         terminal=False,
-    ) as trace:
-        dt_headers = [(k, v.encode("utf-8")) for k, v in trace.generate_request_headers(transaction)]
-        headers.extend(dt_headers)
+    ):
+        dt_headers = [(k, v.encode("utf-8")) for k, v in MessageTrace.generate_request_headers(transaction)]
+        # headers can be a list of tuples or a dict so convert to dict for consistency.
+        if headers:
+            dt_headers.extend(headers)
+
         try:
-            return wrapped(topic, value=value, key=key, headers=headers, partition=partition, timestamp_ms=timestamp_ms)
+            return wrapped(
+                topic, value=value, key=key, headers=dt_headers, partition=partition, timestamp_ms=timestamp_ms
+            )
         except Exception:
             notice_error()
             raise

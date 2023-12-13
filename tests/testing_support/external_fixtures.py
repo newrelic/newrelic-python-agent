@@ -51,8 +51,10 @@ def create_incoming_headers(transaction):
     return headers
 
 
-def validate_synthetics_external_trace_header(required_header=(),
-        should_exist=True):
+def validate_synthetics_external_trace_header(
+        synthetics_header,
+        synthetics_info_header,
+    ):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _validate_synthetics_external_trace_header(wrapped, instance,
@@ -67,34 +69,46 @@ def validate_synthetics_external_trace_header(required_header=(),
         except:
             raise
         else:
-            if should_exist:
-                # XXX This validation routine is technically
-                # broken as the argument to record_transaction()
-                # is not actually an instance of the Transaction
-                # object. Instead it is a TransactionNode object.
-                # The static method generate_request_headers() is
-                # expecting a Transaction object and not
-                # TransactionNode. The latter provides attributes
-                # which are not updatable by the static method
-                # generate_request_headers(), which it wants to
-                # update, so would fail. For now what we do is use
-                # a little proxy wrapper so that updates do not
-                # fail. The use of this wrapper needs to be
-                # reviewed and a better way of achieving what is
-                # required found.
+            # XXX This validation routine is technically
+            # broken as the argument to record_transaction()
+            # is not actually an instance of the Transaction
+            # object. Instead it is a TransactionNode object.
+            # The static method generate_request_headers() is
+            # expecting a Transaction object and not
+            # TransactionNode. The latter provides attributes
+            # which are not updatable by the static method
+            # generate_request_headers(), which it wants to
+            # update, so would fail. For now what we do is use
+            # a little proxy wrapper so that updates do not
+            # fail. The use of this wrapper needs to be
+            # reviewed and a better way of achieving what is
+            # required found.
 
-                class _Transaction(object):
-                    def __init__(self, wrapped):
-                        self.__wrapped__ = wrapped
+            class _Transaction(object):
+                def __init__(self, wrapped):
+                    self.__wrapped__ = wrapped
 
-                    def __getattr__(self, name):
-                        return getattr(self.__wrapped__, name)
+                def __getattr__(self, name):
+                    return getattr(self.__wrapped__, name, lambda *args, **kwargs: None)
 
-                external_headers = ExternalTrace.generate_request_headers(
-                        _Transaction(transaction))
-                assert required_header in external_headers, (
-                        'required_header=%r, ''external_headers=%r' % (
-                        required_header, external_headers))
+            external_headers = ExternalTrace.generate_request_headers(
+                    _Transaction(transaction))
+            external_headers = {header[0]: header[1] for header in external_headers}
+
+            if synthetics_header:
+                assert synthetics_header == external_headers["X-NewRelic-Synthetics"], (
+                        'synthetics_header=%r, external_headers=%r' % (
+                        synthetics_header, external_headers))
+            else:
+                assert "X-NewRelic-Synthetics" not in external_headers
+
+            if synthetics_info_header:
+                assert synthetics_info_header == external_headers["X-NewRelic-Synthetics-Info"], (
+                        'synthetics_info_header=%r, external_headers=%r' % (
+                        synthetics_info_header, external_headers))
+            else:
+                assert "X-NewRelic-Synthetics-Info" not in external_headers
+
 
         return result
 

@@ -16,7 +16,7 @@ import functools
 import logging
 
 from newrelic.api.time_trace import TimeTrace, current_trace
-from newrelic.common.async_wrapper import async_wrapper
+from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.database_node import DatabaseNode
 from newrelic.core.stack_trace import current_stack
@@ -44,11 +44,6 @@ def register_database_client(
     dbapi2_module._nr_explain_query = explain_query
     dbapi2_module._nr_explain_stmts = explain_stmts
     dbapi2_module._nr_instance_info = instance_info
-    dbapi2_module._nr_datastore_instance_feature_flag = False
-
-
-def enable_datastore_instance_feature(dbapi2_module):
-    dbapi2_module._nr_datastore_instance_feature_flag = True
 
 
 class DatabaseTrace(TimeTrace):
@@ -153,12 +148,7 @@ class DatabaseTrace(TimeTrace):
 
         if instance_enabled or db_name_enabled:
 
-            if (
-                self.dbapi2_module
-                and self.connect_params
-                and self.dbapi2_module._nr_datastore_instance_feature_flag
-                and self.dbapi2_module._nr_instance_info is not None
-            ):
+            if self.dbapi2_module and self.connect_params and self.dbapi2_module._nr_instance_info is not None:
 
                 instance_info = self.dbapi2_module._nr_instance_info(*self.connect_params)
 
@@ -244,9 +234,9 @@ class DatabaseTrace(TimeTrace):
         )
 
 
-def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
+def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None, async_wrapper=None):
     def _nr_database_trace_wrapper_(wrapped, instance, args, kwargs):
-        wrapper = async_wrapper(wrapped)
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
             if not parent:
@@ -273,9 +263,9 @@ def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
     return FunctionWrapper(wrapped, _nr_database_trace_wrapper_)
 
 
-def database_trace(sql, dbapi2_module=None):
-    return functools.partial(DatabaseTraceWrapper, sql=sql, dbapi2_module=dbapi2_module)
+def database_trace(sql, dbapi2_module=None, async_wrapper=None):
+    return functools.partial(DatabaseTraceWrapper, sql=sql, dbapi2_module=dbapi2_module, async_wrapper=async_wrapper)
 
 
-def wrap_database_trace(module, object_path, sql, dbapi2_module=None):
-    wrap_object(module, object_path, DatabaseTraceWrapper, (sql, dbapi2_module))
+def wrap_database_trace(module, object_path, sql, dbapi2_module=None, async_wrapper=None):
+    wrap_object(module, object_path, DatabaseTraceWrapper, (sql, dbapi2_module, async_wrapper))

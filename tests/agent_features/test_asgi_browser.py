@@ -111,7 +111,7 @@ def test_footer_attributes():
 
     obfuscation_key = settings.license_key[:13]
 
-    type_transaction_data = unicode if six.PY2 else str  # noqa: F821
+    type_transaction_data = unicode if six.PY2 else str  # noqa: F821, pylint: disable=E0602
     assert isinstance(data["transactionName"], type_transaction_data)
 
     txn_name = deobfuscate(data["transactionName"], obfuscation_key)

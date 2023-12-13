@@ -22,6 +22,27 @@ _NormalizationRule = namedtuple(
 
 
 class NormalizationRule(_NormalizationRule):
+    def __new__(
+        cls,
+        match_expression="",
+        replacement="",
+        ignore=False,
+        eval_order=0,
+        terminate_chain=False,
+        each_segment=False,
+        replace_all=False,
+    ):
+        return _NormalizationRule.__new__(
+            cls,
+            match_expression=match_expression,
+            replacement=replacement,
+            ignore=ignore,
+            eval_order=eval_order,
+            terminate_chain=terminate_chain,
+            each_segment=each_segment,
+            replace_all=replace_all,
+        )
+
     def __init__(self, *args, **kwargs):
         self.match_expression_re = re.compile(self.match_expression, re.IGNORECASE)
 

@@ -16,7 +16,7 @@ import functools
 
 from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace, current_trace
-from newrelic.common.async_wrapper import async_wrapper
+from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.external_node import ExternalNode
 
@@ -66,9 +66,9 @@ class ExternalTrace(CatHeaderMixin, TimeTrace):
         )
 
 
-def ExternalTraceWrapper(wrapped, library, url, method=None):
+def ExternalTraceWrapper(wrapped, library, url, method=None, async_wrapper=None):
     def dynamic_wrapper(wrapped, instance, args, kwargs):
-        wrapper = async_wrapper(wrapped)
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
             if not parent:
@@ -103,7 +103,7 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
             return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
-        wrapper = async_wrapper(wrapped)
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
             if not parent:
@@ -125,9 +125,9 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
     return FunctionWrapper(wrapped, literal_wrapper)
 
 
-def external_trace(library, url, method=None):
-    return functools.partial(ExternalTraceWrapper, library=library, url=url, method=method)
+def external_trace(library, url, method=None, async_wrapper=None):
+    return functools.partial(ExternalTraceWrapper, library=library, url=url, method=method, async_wrapper=async_wrapper)
 
 
-def wrap_external_trace(module, object_path, library, url, method=None):
-    wrap_object(module, object_path, ExternalTraceWrapper, (library, url, method))
+def wrap_external_trace(module, object_path, library, url, method=None, async_wrapper=None):
+    wrap_object(module, object_path, ExternalTraceWrapper, (library, url, method, async_wrapper))

@@ -33,7 +33,7 @@ type Magazine {
 }
 
 type Mutation {
-  storage_add(string: String!): StorageAdd
+  storage_add(string: String!): String
 }
 
 type Query {
@@ -44,8 +44,5 @@ type Query {
   echo(echo: String!): String
   error: String
   error_non_null: String!
-}
-
-type StorageAdd {
-  string: String
+  error_middleware: String
 }

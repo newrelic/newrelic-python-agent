@@ -142,9 +142,21 @@ class Application(object):
         if self.active and metrics:
             self._agent.record_custom_metrics(self._name, metrics)
 
+    def record_dimensional_metric(self, name, value, tags=None):
+        if self.active:
+            self._agent.record_dimensional_metric(self._name, name, value, tags)
+
+    def record_dimensional_metrics(self, metrics):
+        if self.active and metrics:
+            self._agent.record_dimensional_metrics(self._name, metrics)
+
     def record_custom_event(self, event_type, params):
         if self.active:
             self._agent.record_custom_event(self._name, event_type, params)
+
+    def record_ml_event(self, event_type, params):
+        if self.active:
+            self._agent.record_ml_event(self._name, event_type, params)
 
     def record_transaction(self, data):
         if self.active:

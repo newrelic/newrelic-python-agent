@@ -15,8 +15,8 @@
 import json
 
 import pytest
-from testing_support.fixtures import (
-    reset_core_stats_engine,
+from testing_support.fixtures import reset_core_stats_engine
+from testing_support.validators.validate_error_event_attributes_outside_transaction import (
     validate_error_event_attributes_outside_transaction,
 )
 from testing_support.validators.validate_transaction_errors import (

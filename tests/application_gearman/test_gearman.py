@@ -20,14 +20,16 @@ import threading
 import gearman
 
 from newrelic.api.background_task import background_task
+from testing_support.db_settings import gearman_settings
 
 worker_thread = None
 worker_event = threading.Event()
 
 gm_client = None
 
-GEARMAND_HOST = os.environ.get("GEARMAND_PORT_4730_TCP_ADDR", "localhost")
-GEARMAND_PORT = os.environ.get("GEARMAND_PORT_4730_TCP_PORT", "4730")
+GEARMAND_SETTINGS = gearman_settings()[0]
+GEARMAND_HOST = GEARMAND_SETTINGS["host"]
+GEARMAND_PORT = GEARMAND_SETTINGS["port"]
 
 GEARMAND_ADDR = "%s:%s" % (GEARMAND_HOST, GEARMAND_PORT)
 

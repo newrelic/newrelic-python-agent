@@ -19,7 +19,6 @@ from testing_support.fixtures import (
     dt_enabled,
     function_not_called,
     override_application_settings,
-    validate_tt_segment_params,
 )
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_event_attributes import (
@@ -27,6 +26,9 @@ from testing_support.validators.validate_transaction_event_attributes import (
 )
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
+)
+from testing_support.validators.validate_tt_segment_params import (
+    validate_tt_segment_params,
 )
 
 from newrelic.api.background_task import background_task
@@ -139,7 +141,6 @@ def test_each_span_type(trace_type, args):
     )
     @background_task(name="test_each_span_type")
     def _test():
-
         transaction = current_transaction()
         transaction._sampled = True
 
@@ -305,7 +306,6 @@ def test_external_spans(exclude_url):
     }
 )
 def test_external_span_limits(kwarg_override, attr_override):
-
     exact_intrinsics = {
         "type": "Span",
         "sampled": True,
@@ -362,7 +362,6 @@ def test_external_span_limits(kwarg_override, attr_override):
     }
 )
 def test_datastore_span_limits(kwarg_override, attribute_override):
-
     exact_intrinsics = {
         "type": "Span",
         "sampled": True,
@@ -414,10 +413,6 @@ def test_datastore_span_limits(kwarg_override, attribute_override):
 @pytest.mark.parametrize("span_events_enabled", (False, True))
 def test_collect_span_events_override(collect_span_events, span_events_enabled):
     spans_expected = collect_span_events and span_events_enabled
-    # if collect_span_events and span_events_enabled:
-    #     spans_expected = True
-    # else:
-    #     spans_expected = False
 
     span_count = 2 if spans_expected else 0
 
@@ -507,7 +502,6 @@ class FakeTrace(object):
 )
 @pytest.mark.parametrize("exclude_attributes", (True, False))
 def test_span_event_user_attributes(trace_type, args, exclude_attributes):
-
     _settings = {
         "distributed_tracing.enabled": True,
         "span_events.enabled": True,
@@ -624,7 +618,6 @@ _span_event_metrics = [("Supportability/SpanEvent/Errors/Dropped", None)]
     ),
 )
 def test_span_event_error_attributes_notice_error(trace_type, args):
-
     _settings = {
         "distributed_tracing.enabled": True,
         "span_events.enabled": True,
@@ -672,7 +665,6 @@ def test_span_event_error_attributes_notice_error(trace_type, args):
     ),
 )
 def test_span_event_error_attributes_observed(trace_type, args):
-
     error = ValueError("whoops")
 
     exact_agents = {
@@ -725,7 +717,7 @@ def test_span_event_notice_error_overrides_observed(trace_type, args):
                 raise ERROR
             except Exception:
                 notice_error()
-                raise ValueError  # pylint: disable
+                raise ValueError  # pylint: disable (Py2/Py3 compatibility)
     except ValueError:
         pass
 

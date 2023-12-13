@@ -25,19 +25,28 @@ from newrelic.common.agent_http import (
     DeveloperModeClient,
     ServerlessModeClient,
 )
-from newrelic.core.agent_protocol import AgentProtocol, ServerlessModeProtocol
+from newrelic.core.agent_protocol import (
+    AgentProtocol,
+    OtlpProtocol,
+    ServerlessModeProtocol,
+)
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.config import global_settings
+from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data
 
 _logger = logging.getLogger(__name__)
 
 
 class Session(object):
     PROTOCOL = AgentProtocol
+    OTLP_PROTOCOL = OtlpProtocol
     CLIENT = ApplicationModeClient
 
     def __init__(self, app_name, linked_applications, environment, settings):
         self._protocol = self.PROTOCOL.connect(
+            app_name, linked_applications, environment, settings, client_cls=self.CLIENT
+        )
+        self._otlp_protocol = self.OTLP_PROTOCOL.connect(
             app_name, linked_applications, environment, settings, client_cls=self.CLIENT
         )
         self._rpc = None
@@ -112,6 +121,11 @@ class Session(object):
         payload = (self.agent_run_id, sampling_info, custom_event_data)
         return self._protocol.send("custom_event_data", payload)
 
+    def send_ml_events(self, sampling_info, custom_event_data):
+        """Called to submit sample set for machine learning events."""
+        payload = encode_ml_event_data(custom_event_data, str(self.agent_run_id))
+        return self._otlp_protocol.send("ml_event_data", payload, path="/v1/logs")
+
     def send_span_events(self, sampling_info, span_event_data):
         """Called to submit sample set for span events."""
 
@@ -127,6 +141,20 @@ class Session(object):
 
         payload = (self.agent_run_id, start_time, end_time, metric_data)
         return self._protocol.send("metric_data", payload)
+
+    def send_dimensional_metric_data(self, start_time, end_time, metric_data):
+        """Called to submit dimensional metric data for specified period of time.
+        Time values are seconds since UNIX epoch as returned by the
+        time.time() function. The metric data should be iterable of
+        specific metrics.
+
+        NOTE: This data is sent not sent to the normal agent endpoints but is sent
+        to the OTLP API endpoints to keep the entity separate. This is for use
+        with the machine learning integration only.
+        """
+
+        payload = encode_metric_data(metric_data, start_time, end_time)
+        return self._otlp_protocol.send("dimensional_metric_data", payload, path="/v1/metrics")
 
     def send_log_events(self, sampling_info, log_event_data):
         """Called to submit sample set for log events."""

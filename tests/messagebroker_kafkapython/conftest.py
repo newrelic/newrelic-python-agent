@@ -86,7 +86,7 @@ def producer(client_type, json_serializer, json_callable_serializer):
 
 
 @pytest.fixture(scope="function")
-def consumer(topic, producer, client_type, json_deserializer, json_callable_deserializer):
+def consumer(group_id, topic, producer, client_type, json_deserializer, json_callable_deserializer):
     if client_type == "no_serializer":
         consumer = kafka.KafkaConsumer(
             topic,
@@ -94,7 +94,7 @@ def consumer(topic, producer, client_type, json_deserializer, json_callable_dese
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
     elif client_type == "serializer_function":
         consumer = kafka.KafkaConsumer(
@@ -105,7 +105,7 @@ def consumer(topic, producer, client_type, json_deserializer, json_callable_dese
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
     elif client_type == "callable_object":
         consumer = kafka.KafkaConsumer(
@@ -116,7 +116,7 @@ def consumer(topic, producer, client_type, json_deserializer, json_callable_dese
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
     elif client_type == "serializer_object":
         consumer = kafka.KafkaConsumer(
@@ -127,7 +127,7 @@ def consumer(topic, producer, client_type, json_deserializer, json_callable_dese
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
 
     yield consumer
@@ -200,6 +200,11 @@ def topic():
     yield topic
 
     admin.delete_topics([topic])
+
+
+@pytest.fixture(scope="session")
+def group_id():
+    return str(uuid.uuid4())
 
 
 @pytest.fixture()

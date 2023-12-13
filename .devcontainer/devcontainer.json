@@ -5,7 +5,7 @@
 		// To target other architectures, change the --platform directive in the Dockerfile.
 		"dockerfile": "Dockerfile",
 		"args": {
-			"IMAGE": "ghcr.io/newrelic-experimental/pyenv-devcontainer:latest"
+			"IMAGE_TAG": "latest"
 		}
 	},
 	"remoteUser": "vscode",

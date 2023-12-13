@@ -18,16 +18,17 @@ import uuid
 import botocore
 import botocore.session
 import moto
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-MOTO_VERSION = tuple(int(v) for v in moto.__version__.split(".")[:3])
-BOTOCORE_VERSION = tuple(int(v) for v in botocore.__version__.split(".")[:3])
+MOTO_VERSION = MOTO_VERSION = get_package_version_tuple("moto")
+BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 
 # patch earlier versions of moto to support py37
@@ -67,7 +68,7 @@ _s3_rollup_metrics = [
 ]
 
 
-@override_application_settings({"distributed_tracing.enabled": True})
+@dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateBucket"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "PutObject"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "ListObjects"}, count=1)

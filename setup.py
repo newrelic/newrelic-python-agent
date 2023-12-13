@@ -102,6 +102,8 @@ packages = [
     "newrelic.hooks",
     "newrelic.network",
     "newrelic/packages",
+    "newrelic/packages/isort",
+    "newrelic/packages/isort/stdlibs",
     "newrelic/packages/urllib3",
     "newrelic/packages/urllib3/util",
     "newrelic/packages/urllib3/contrib",
@@ -109,6 +111,7 @@ packages = [
     "newrelic/packages/urllib3/packages",
     "newrelic/packages/urllib3/packages/backports",
     "newrelic/packages/wrapt",
+    "newrelic/packages/opentelemetry_proto",
     "newrelic.samplers",
 ]
 
@@ -121,6 +124,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Monitoring",
@@ -152,6 +156,7 @@ kwargs = dict(
         "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
     },
     extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
+    install_requires=["newrelic_security @ git+https://github.com/newrelic/csec-python-agent.git@develop"]
 )
 
 if with_setuptools:

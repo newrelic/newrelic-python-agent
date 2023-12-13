@@ -12,15 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import importlib
 
 import pytest
 from testing_support.fixtures import dt_enabled
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
 
 from newrelic.common.object_names import callable_name
@@ -36,7 +41,7 @@ def is_graphql_2():
 
 @pytest.fixture(scope="session", params=("Sanic", "Flask"))
 def target_application(request):
-    import _test_graphql
+    from . import _test_graphql
 
     framework = request.param
     version = importlib.import_module(framework.lower()).__version__
@@ -186,7 +191,7 @@ def test_middleware(target_application):
     _test_middleware_metrics = [
         ("GraphQL/operation/GraphQLServer/query/<anonymous>/hello", 1),
         ("GraphQL/resolve/GraphQLServer/hello", 1),
-        ("Function/test_graphql:example_middleware", 1),
+        ("Function/component_graphqlserver.test_graphql:example_middleware", 1),
     ]
 
     # Base span count 6: Transaction, View, Operation, Middleware, and 1 Resolver and Resolver function
@@ -220,7 +225,7 @@ def test_exception_in_middleware(target_application):
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
         ("Errors/allWeb", 1),
-        ("Errors/WebTransaction/GraphQL/test_graphql:error_middleware", 1),
+        ("Errors/WebTransaction/GraphQL/component_graphqlserver.test_graphql:error_middleware", 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -237,7 +242,7 @@ def test_exception_in_middleware(target_application):
     }
 
     @validate_transaction_metrics(
-        "test_graphql:error_middleware",
+        "component_graphqlserver.test_graphql:error_middleware",
         "GraphQL",
         scoped_metrics=_test_exception_scoped_metrics,
         rollup_metrics=_test_exception_rollup_metrics + _graphql_base_rollup_metrics,
@@ -257,7 +262,7 @@ def test_exception_in_resolver(target_application, field):
     framework, version, target_application = target_application
     query = "query MyQuery { %s }" % field
 
-    txn_name = "framework_graphql._target_application:resolve_error"
+    txn_name = "framework_graphql._target_schema_sync:resolve_error"
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -488,7 +493,7 @@ _test_queries = [
 def test_deepest_unique_path(target_application, query, expected_path):
     framework, version, target_application = target_application
     if expected_path == "/error":
-        txn_name = "framework_graphql._target_application:resolve_error"
+        txn_name = "framework_graphql._target_schema_sync:resolve_error"
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 

@@ -25,20 +25,22 @@ from testing_support.external_fixtures import (
     cache_outgoing_headers,
     insert_incoming_headers,
 )
-from testing_support.fixtures import (
-    cat_enabled,
-    override_application_settings,
-)
-from testing_support.util import version2tuple
+from testing_support.fixtures import cat_enabled, override_application_settings
 from testing_support.validators.validate_cross_process_headers import (
     validate_cross_process_headers,
 )
 from testing_support.validators.validate_external_node_params import (
     validate_external_node_params,
 )
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 
 @pytest.fixture(scope="session")
@@ -185,7 +187,7 @@ def test_port_included(server):
 # HTTPConnection class. Previously the httplib/http.client HTTPConnection class
 # was used. We test httplib in a different test directory so we skip this test.
 @pytest.mark.skipif(
-    version2tuple(urllib3.__version__) < (1, 8), reason="urllib3.connection.HTTPConnection added in 1.8"
+    get_package_version_tuple("urllib3") < (1, 8), reason="urllib3.connection.HTTPConnection added in 1.8"
 )
 def test_HTTPConnection_port_included(server):
     scoped = [("External/localhost:%d/urllib3/" % server.port, 1)]

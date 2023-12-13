@@ -23,42 +23,46 @@ from newrelic.api.background_task import background_task
 
 @background_task()
 @pytest.mark.parametrize("in_transaction", (True, False))
-def test_pipelines_no_harm(client, in_transaction, loop):
+def test_pipelines_no_harm(client, in_transaction, loop, key):
     async def exercise():
         if AIOREDIS_VERSION >= (2,):
             pipe = client.pipeline(transaction=in_transaction)
         else:
             pipe = client.pipeline()  # Transaction kwarg unsupported
 
-        pipe.set("TXN", 1)
+        pipe.set(key, 1)
         return await pipe.execute()
 
     status = loop.run_until_complete(exercise())
     assert status == [True]
 
 
-def exercise_transaction_sync(pipe):
-    pipe.set("TXN", 1)
+def exercise_transaction_sync(key):
+    def _run(pipe):
+        pipe.set(key, 1)
+    return _run
 
 
-async def exercise_transaction_async(pipe):
-    await pipe.set("TXN", 1)
+def exercise_transaction_async(key):
+    async def _run(pipe):
+        await pipe.set(key, 1)
+    return _run
 
 
 @SKIPIF_AIOREDIS_V1
 @pytest.mark.parametrize("exercise", (exercise_transaction_sync, exercise_transaction_async))
 @background_task()
-def test_transactions_no_harm(client, loop, exercise):
-    status = loop.run_until_complete(client.transaction(exercise))
+def test_transactions_no_harm(client, loop, key, exercise):
+    status = loop.run_until_complete(client.transaction(exercise(key)))
     assert status == [True]
 
 
 @SKIPIF_AIOREDIS_V2
 @background_task()
-def test_multi_exec_no_harm(client, loop):
+def test_multi_exec_no_harm(client, loop, key):
     async def exercise():
         pipe = client.multi_exec()
-        pipe.set("key", "value")
+        pipe.set(key, "value")
         status = await pipe.execute()
         assert status == [True]
 
@@ -67,9 +71,7 @@ def test_multi_exec_no_harm(client, loop):
 
 @SKIPIF_AIOREDIS_V1
 @background_task()
-def test_pipeline_immediate_execution_no_harm(client, loop):
-    key = "TXN_WATCH"
-
+def test_pipeline_immediate_execution_no_harm(client, loop, key):
     async def exercise():
         await client.set(key, 1)
 
@@ -94,9 +96,7 @@ def test_pipeline_immediate_execution_no_harm(client, loop):
 
 @SKIPIF_AIOREDIS_V1
 @background_task()
-def test_transaction_immediate_execution_no_harm(client, loop):
-    key = "TXN_WATCH"
-
+def test_transaction_immediate_execution_no_harm(client, loop, key):
     async def exercise():
         async def exercise_transaction(pipe):
             value = int(await pipe.get(key))
@@ -119,9 +119,7 @@ def test_transaction_immediate_execution_no_harm(client, loop):
 @SKIPIF_AIOREDIS_V1
 @validate_transaction_errors([])
 @background_task()
-def test_transaction_watch_error_no_harm(client, loop):
-    key = "TXN_WATCH"
-
+def test_transaction_watch_error_no_harm(client, loop, key):
     async def exercise():
         async def exercise_transaction(pipe):
             value = int(await pipe.get(key))

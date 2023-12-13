@@ -564,6 +564,7 @@ def _process_configuration(section):
 
     _process_setting(section, "machine_learning.enabled", "getboolean", None)
     _process_setting(section, "machine_learning.inference_events_value.enabled", "getboolean", None)
+    _process_setting(section, "package_reporting.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -2477,7 +2478,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.logger_structlog",
         "instrument_structlog__base",
     )
-
+    _process_module_definition(
+        "structlog._frames",
+        "newrelic.hooks.logger_structlog",
+        "instrument_structlog__frames",
+    )
     _process_module_definition(
         "paste.httpserver",
         "newrelic.hooks.adapter_paste",
@@ -3952,13 +3957,21 @@ def _process_module_builtin_defaults():
 
 def _process_module_entry_points():
     try:
-        import pkg_resources
+        # Preferred after Python 3.10
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import entry_points
+        # Introduced in Python 3.8
+        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+            from importlib_metadata import entry_points
+        # Removed in Python 3.12
+        else:
+            from pkg_resources import iter_entry_points as entry_points
     except ImportError:
         return
 
     group = "newrelic.hooks"
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
+    for entrypoint in entry_points(group=group):
         target = entrypoint.name
 
         if target in _module_import_hook_registry:
@@ -4016,13 +4029,21 @@ def _setup_instrumentation():
 
 def _setup_extensions():
     try:
-        import pkg_resources
+        # Preferred after Python 3.10
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import entry_points
+        # Introduced in Python 3.8
+        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+            from importlib_metadata import entry_points
+        # Removed in Python 3.12
+        else:
+            from pkg_resources import iter_entry_points as entry_points
     except ImportError:
         return
 
     group = "newrelic.extension"
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
+    for entrypoint in entry_points(group=group):
         __import__(entrypoint.module_name)
         module = sys.modules[entrypoint.module_name]
         module.initialize()

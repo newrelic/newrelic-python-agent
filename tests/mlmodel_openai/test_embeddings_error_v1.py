@@ -399,5 +399,5 @@ def test_embeddings_authentication_error_async(set_trace_info, monkeypatch, asyn
         set_trace_info()
         monkeypatch.setattr(async_openai_client, "api_key", "")
         loop.run_until_complete(
-            async_openai_client.embeddings.create(input="Invalid API key.", model="text-embedding-ada-002")
+            async_openai_client.embeddings.create(input="No API key.", model="text-embedding-ada-002")
         )

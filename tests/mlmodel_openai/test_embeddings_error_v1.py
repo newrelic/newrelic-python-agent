@@ -32,6 +32,62 @@ from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
 
+# Sync tests:
+embedding_recorded_events = [
+    (
+        {"type": "LlmEmbedding"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "transaction_id": "transaction-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "input": "This is an embedding test with no model.",
+            "api_key_last_four_digits": "sk-CRET",
+            "duration": None,  # Response time varies each test run
+            "request.model": "",  # No model in this test case
+            "response.organization": "",
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "error": True,
+        },
+    ),
+]
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "create() missing 1 required keyword-only argument: 'model'",
+    }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error_v1:test_embeddings_invalid_request_error_no_model",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_custom_events(embedding_recorded_events)
+@validate_custom_event_count(count=1)
+@background_task()
+def test_embeddings_invalid_request_error_no_model(set_trace_info, sync_openai_client):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        sync_openai_client.embeddings.create(input="This is an embedding test with no model.")  # no model provided
+
+
 invalid_model_events = [
     (
         {"type": "LlmEmbedding"},
@@ -96,7 +152,7 @@ embedding_invalid_key_error_events = [
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "input": "Embedded: Invalid API key.",
+            "input": "Invalid API key.",
             "api_key_last_four_digits": "sk-BEEF",
             "duration": None,  # Response time varies each test run
             "request.model": "text-embedding-ada-002",
@@ -116,7 +172,10 @@ embedding_invalid_key_error_events = [
     exact_attrs={
         "agent": {},
         "intrinsic": {},
-        "user": {},
+        "user": {
+            "http.statusCode": 401,
+            "error.code": "invalid_api_key",
+        },
     },
 )
 @validate_span_events(
@@ -136,11 +195,11 @@ embedding_invalid_key_error_events = [
 @validate_custom_events(embedding_invalid_key_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
-def test_embeddings_wrong_api_key_error(set_trace_info):
+def test_embeddings_wrong_api_key_error(set_trace_info, monkeypatch, sync_openai_client):
     with pytest.raises(openai.AuthenticationError):
         set_trace_info()
-        wrong_api_key_client = openai.OpenAI(api_key="DEADBEEF")
-        wrong_api_key_client.embeddings.create(input="Embedded: Invalid API key.", model="text-embedding-ada-002")
+        monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
+        sync_openai_client.embeddings.create(input="Invalid API key.", model="text-embedding-ada-002")
 
 
 embedding_auth_error_events = [
@@ -192,11 +251,46 @@ embedding_auth_error_events = [
 @validate_custom_events(embedding_auth_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
-def test_embeddings_authentication_error(set_trace_info):
+def test_embeddings_authentication_error(set_trace_info, monkeypatch, sync_openai_client):
     with pytest.raises(openai.APIConnectionError):
         set_trace_info()
-        no_api_key_client = openai.OpenAI(api_key="")
-        no_api_key_client.embeddings.create(input="No API key.", model="text-embedding-ada-002")
+        monkeypatch.setattr(sync_openai_client, "api_key", "")
+        sync_openai_client.embeddings.create(input="No API key.", model="text-embedding-ada-002")
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "create() missing 1 required keyword-only argument: 'model'",
+    }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error_v1:test_embeddings_invalid_request_error_no_model_async",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_custom_events(embedding_recorded_events)
+@validate_custom_event_count(count=1)
+@background_task()
+def test_embeddings_invalid_request_error_no_model_async(set_trace_info, async_openai_client, loop):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        loop.run_until_complete(
+            async_openai_client.embeddings.create(input="This is an embedding test with no model.")
+        )  # no model provided
 
 
 @dt_enabled
@@ -229,7 +323,9 @@ def test_embeddings_authentication_error(set_trace_info):
 def test_embeddings_invalid_request_error_invalid_model_async(set_trace_info, async_openai_client, loop):
     with pytest.raises(openai.InternalServerError):
         set_trace_info()
-        loop.run_until_complete(async_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist"))
+        loop.run_until_complete(
+            async_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
+        )
 
 
 @dt_enabled
@@ -239,7 +335,10 @@ def test_embeddings_invalid_request_error_invalid_model_async(set_trace_info, as
     exact_attrs={
         "agent": {},
         "intrinsic": {},
-        "user": {},
+        "user": {
+            "http.statusCode": 401,
+            "error.code": "invalid_api_key",
+        },
     },
 )
 @validate_span_events(
@@ -259,12 +358,13 @@ def test_embeddings_invalid_request_error_invalid_model_async(set_trace_info, as
 @validate_custom_events(embedding_invalid_key_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
-def test_embeddings_wrong_api_key_error_async(set_trace_info, loop):
+def test_embeddings_wrong_api_key_error_async(set_trace_info, monkeypatch, async_openai_client, loop):
     with pytest.raises(openai.AuthenticationError):
         set_trace_info()
-        wrong_api_key_client = openai.AsyncOpenAI(api_key="DEADBEEF")
-        loop.run_until_complete(wrong_api_key_client.embeddings.create(input="Embedded: Invalid API key.", model="text-embedding-ada-002"))
-
+        monkeypatch.setattr(async_openai_client, "api_key", "DEADBEEF")
+        loop.run_until_complete(
+            async_openai_client.embeddings.create(input="Invalid API key.", model="text-embedding-ada-002")
+        )
 
 
 @dt_enabled
@@ -298,6 +398,6 @@ def test_embeddings_authentication_error_async(set_trace_info, loop):
     with pytest.raises(openai.APIConnectionError):
         set_trace_info()
         no_api_key_client = openai.AsyncOpenAI(api_key="")
-        loop.run_until_complete(no_api_key_client.embeddings.create(input="No API key.", model="text-embedding-ada-002"))
-
-
+        loop.run_until_complete(
+            no_api_key_client.embeddings.create(input="No API key.", model="text-embedding-ada-002")
+        )

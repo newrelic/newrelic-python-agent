@@ -84,9 +84,13 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                     "error.param": getattr(exc, "param", ""),
                     "embedding_id": embedding_id,
                 }
+<<<<<<< HEAD
             message = notice_error_attributes.pop("error.message")
             if message:
                 exc._nr_message = message
+=======
+            exc._nr_message = notice_error_attributes.pop("error.message")
+>>>>>>> 525470157 (Fix exc parsing.)
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
@@ -545,13 +549,21 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                     "error.param": getattr(exc, "param", ""),
                     "embedding_id": embedding_id,
                 }
+<<<<<<< HEAD
             message = notice_error_attributes.pop("error.message")
             if message:
                 exc._nr_message = message
+=======
+            exc._nr_message = notice_error_attributes.pop("error.message")
+>>>>>>> 525470157 (Fix exc parsing.)
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
 
+<<<<<<< HEAD
+=======
+            # Gather attributes to add to embedding summary event in error context
+>>>>>>> 525470157 (Fix exc parsing.)
             error_embedding_dict = {
                 "id": embedding_id,
                 "appName": settings.app_name,

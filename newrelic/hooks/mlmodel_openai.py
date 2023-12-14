@@ -19,7 +19,6 @@ import openai
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.encoding_utils import json_decode
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
@@ -199,14 +198,13 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
                 exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
                 # There appears to be a bug here in openai v1 where despite having code,
                 # param, etc in the error response, they are not populated on the exception
-                # object so grab them from the response object instead.
-                content = getattr(response, "content", b"{}")
-                response = json_decode(content.decode("utf-8")).get("error", {})
+                # object so grab them from the response body object instead.
+                body = getattr(exc, "body", {})
                 notice_error_attributes = {
                     "http.statusCode": getattr(exc, "status_code", "") or "",
-                    "error.message": response.get("message", "") or "",
-                    "error.code": response.get("code", "") or "",
-                    "error.param": response.get("param", "") or "",
+                    "error.message": body.get("message", "") or "",
+                    "error.code": body.get("code", "") or "",
+                    "error.param": body.get("param", "") or "",
                     "completion_id": completion_id,
                 }
             else:
@@ -639,14 +637,13 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
                 exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
                 # There appears to be a bug here in openai v1 where despite having code,
                 # param, etc in the error response, they are not populated on the exception
-                # object so grab them from the response object instead.
-                content = getattr(response, "content", b"{}")
-                response = json_decode(content.decode("utf-8")).get("error", {})
+                # object so grab them from the response body object instead.
+                body = getattr(exc, "body", {})
                 notice_error_attributes = {
                     "http.statusCode": getattr(exc, "status_code", "") or "",
-                    "error.message": response.get("message", "") or "",
-                    "error.code": response.get("code", "") or "",
-                    "error.param": response.get("param", "") or "",
+                    "error.message": body.get("message", "") or "",
+                    "error.code": body.get("code", "") or "",
+                    "error.param": body.get("param", "") or "",
                     "completion_id": completion_id,
                 }
             else:

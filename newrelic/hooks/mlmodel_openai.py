@@ -199,7 +199,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
                 # There appears to be a bug here in openai v1 where despite having code,
                 # param, etc in the error response, they are not populated on the exception
                 # object so grab them from the response body object instead.
-                body = getattr(exc, "body", {})
+                body = getattr(exc, "body", {}) or {}
                 notice_error_attributes = {
                     "http.statusCode": getattr(exc, "status_code", "") or "",
                     "error.message": body.get("message", "") or "",
@@ -638,7 +638,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
                 # There appears to be a bug here in openai v1 where despite having code,
                 # param, etc in the error response, they are not populated on the exception
                 # object so grab them from the response body object instead.
-                body = getattr(exc, "body", {})
+                body = getattr(exc, "body", {}) or {}
                 notice_error_attributes = {
                     "http.statusCode": getattr(exc, "status_code", "") or "",
                     "error.message": body.get("message", "") or "",

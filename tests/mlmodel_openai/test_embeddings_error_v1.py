@@ -394,10 +394,10 @@ def test_embeddings_wrong_api_key_error_async(set_trace_info, monkeypatch, async
 @validate_custom_events(embedding_auth_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
-def test_embeddings_authentication_error_async(set_trace_info, loop):
+def test_embeddings_authentication_error_async(set_trace_info, monkeypatch, async_openai_client, loop):
     with pytest.raises(openai.APIConnectionError):
         set_trace_info()
-        no_api_key_client = openai.AsyncOpenAI(api_key="")
+        monkeypatch.setattr(async_openai_client, "api_key", "")
         loop.run_until_complete(
-            no_api_key_client.embeddings.create(input="No API key.", model="text-embedding-ada-002")
+            async_openai_client.embeddings.create(input="Invalid API key.", model="text-embedding-ada-002")
         )

@@ -20,8 +20,9 @@ from newrelic.common.object_wrapper import (transient_function_wrapper,
         function_wrapper)
 from testing_support.fixtures import catch_background_exceptions
 
-def validate_log_events(events=None, forgone_attrs=None):
-    events = events or [{}]  # Empty event allows assertions based on only forgone attrs to still run and validate
+def validate_log_events(events=None, required_attrs=None, forgone_attrs=None):
+    events = events or [{}]  # Empty event allows assertions based on only required or forgone attrs to still run and validate
+    required_attrs = required_attrs or []
     forgone_attrs = forgone_attrs or []
 
     @function_wrapper
@@ -57,14 +58,14 @@ def validate_log_events(events=None, forgone_attrs=None):
             matching_log_events = 0
             mismatches = []
             for captured in logs:
-                if _check_log_attributes(expected, forgone_attrs, captured, mismatches):
+                if _check_log_attributes(expected, required_attrs, forgone_attrs, captured, mismatches):
                     matching_log_events += 1
             assert matching_log_events == 1, _log_details(matching_log_events, logs, mismatches)
 
         return val
 
 
-    def _check_log_attributes(expected, forgone_attrs, captured, mismatches):
+    def _check_log_attributes(expected, required_attrs, forgone_attrs, captured, mismatches):
         for key, value in six.iteritems(expected):
             if hasattr(captured, key):
                 captured_value = getattr(captured, key, None)
@@ -78,6 +79,11 @@ def validate_log_events(events=None, forgone_attrs=None):
                 if value != captured_value:
                     mismatches.append("key: %s, value:<%s><%s>" % (key, value, captured_value))
                     return False
+
+        for key in required_attrs:
+            if not hasattr(captured, key) and key not in captured.attributes:
+                mismatches.append("required_key: %s" % key)
+                return False
 
         for key in forgone_attrs:
             if hasattr(captured, key):

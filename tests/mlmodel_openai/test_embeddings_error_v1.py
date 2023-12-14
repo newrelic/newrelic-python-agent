@@ -399,5 +399,9 @@ def test_embeddings_authentication_error_async(set_trace_info, loop):
         set_trace_info()
         no_api_key_client = openai.AsyncOpenAI(api_key="")
         loop.run_until_complete(
+<<<<<<< HEAD
             no_api_key_client.embeddings.create(input="No API key.", model="text-embedding-ada-002")
+=======
+            async_openai_client.embeddings.create(input="No API key.", model="text-embedding-ada-002")
+>>>>>>> fd0d93159 (Fix auth test.)
         )

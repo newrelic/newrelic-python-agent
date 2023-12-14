@@ -55,7 +55,7 @@ RESPONSES_V1 = {
             }
         },
     ),
-    "Embedded: Invalid API key.": (
+    "Invalid API key.": (
         {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
         401,
         {
@@ -164,7 +164,7 @@ RESPONSES = {
             "Content-Type": "application/json",
             "x-request-id": "cfdf51fb795362ae578c12a21796262c",
         },
-        404,
+        500,
         {
             "error": {
                 "message": "The model `does-not-exist` does not exist",

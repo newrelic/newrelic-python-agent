@@ -60,19 +60,35 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
-            notice_error_attributes = {
-                "http.statusCode": getattr(exc, "http_status", ""),
-                "error.message": getattr(exc, "_message", ""),
-                "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                "error.param": getattr(exc, "param", ""),
-                "embedding_id": embedding_id,
-            }
+            if OPENAI_V1:
+                response = getattr(exc, "response", "")
+                response_headers = getattr(response, "headers", "")
+                exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
+                # There appears to be a bug here in openai v1 where despite having code,
+                # param, etc in the error response, they are not populated on the exception
+                # object so grab them from the response body object instead.
+                body = getattr(exc, "body", {})
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "status_code", "") or "",
+                    "error.message": body.get("message", "") if body else "",
+                    "error.code": body.get("code", "") if body else "",
+                    "error.param": body.get("param", "") if body else "",
+                    "embedding_id": embedding_id,
+                }
+            else:
+                exc_organization = getattr(exc, "organization", "")
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "http_status", ""),
+                    "error.message": getattr(exc, "_message", ""),
+                    "error.code": getattr(getattr(exc, "error", ""), "code", ""),
+                    "error.param": getattr(exc, "param", ""),
+                    "embedding_id": embedding_id,
+                }
             exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
-            # Gather attributes to add to embedding summary event in error context
-            exc_organization = getattr(exc, "organization", "")
+
             error_embedding_dict = {
                 "id": embedding_id,
                 "appName": settings.app_name,
@@ -463,19 +479,36 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         try:
             response = await wrapped(*args, **kwargs)
         except Exception as exc:
-            notice_error_attributes = {
-                "http.statusCode": getattr(exc, "http_status", ""),
-                "error.message": getattr(exc, "_message", ""),
-                "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                "error.param": getattr(exc, "param", ""),
-                "embedding_id": embedding_id,
-            }
+            if OPENAI_V1:
+                response = getattr(exc, "response", "")
+                response_headers = getattr(response, "headers", "")
+                exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
+                # There appears to be a bug here in openai v1 where despite having code,
+                # param, etc in the error response, they are not populated on the exception
+                # object so grab them from the response body object instead.
+                body = getattr(exc, "body", {})
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "status_code", "") or "",
+                    "error.message": body.get("message", "") if body else "",
+                    "error.code": body.get("code", "") if body else "",
+                    "error.param": body.get("param", "") if body else "",
+                    "embedding_id": embedding_id,
+                }
+            else:
+                exc_organization = getattr(exc, "organization", "")
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "http_status", ""),
+                    "error.message": getattr(exc, "_message", ""),
+                    "error.code": getattr(getattr(exc, "error", ""), "code", ""),
+                    "error.param": getattr(exc, "param", ""),
+                    "embedding_id": embedding_id,
+                }
             exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
+
             # Gather attributes to add to embedding summary event in error context
-            exc_organization = getattr(exc, "organization", "")
             error_embedding_dict = {
                 "id": embedding_id,
                 "appName": settings.app_name,

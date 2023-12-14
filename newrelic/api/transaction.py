@@ -309,7 +309,7 @@ class Transaction(object):
         self.synthetics_job_id = None
         self.synthetics_monitor_id = None
         self.synthetics_header = None
-        
+
         # Synthetics Info Header
         self.synthetics_type = None
         self.synthetics_initiator = None
@@ -866,6 +866,10 @@ class Transaction(object):
             i_attrs["totalTime"] = self.total_time
         if self._loop_time:
             i_attrs["eventLoopTime"] = self._loop_time
+
+        # Add here instead of only when DT is enabled
+        if self.guid:
+            i_attrs["guid"] = self.guid
 
         # Add in special CPU time value for UI to display CPU burn.
 

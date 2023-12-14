@@ -559,6 +559,11 @@ class TransactionNode(_TransactionNode):
         intrinsics["spanId"] = error.span_id
 
         intrinsics["nr.transactionGuid"] = self.guid
+
+        # Add guid in intrinsics to link error event
+        # to Transaction in the UI
+        intrinsics["guid"] = self.guid
+
         if self.referring_transaction_guid:
             guid = self.referring_transaction_guid
             intrinsics["nr.referringTransactionGuid"] = guid

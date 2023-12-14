@@ -84,7 +84,9 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                     "error.param": getattr(exc, "param", ""),
                     "embedding_id": embedding_id,
                 }
-            exc._nr_message = notice_error_attributes.pop("error.message")
+            message = notice_error_attributes.pop("error.message")
+            if message:
+                exc._nr_message = message
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
@@ -503,7 +505,9 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                     "error.param": getattr(exc, "param", ""),
                     "embedding_id": embedding_id,
                 }
-            exc._nr_message = notice_error_attributes.pop("error.message")
+            message = notice_error_attributes.pop("error.message")
+            if message:
+                exc._nr_message = message
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
@@ -590,7 +594,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
     return response
-
 
 
 async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):

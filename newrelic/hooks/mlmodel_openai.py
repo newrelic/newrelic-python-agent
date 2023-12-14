@@ -85,12 +85,18 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                     "embedding_id": embedding_id,
                 }
 <<<<<<< HEAD
+<<<<<<< HEAD
             message = notice_error_attributes.pop("error.message")
             if message:
                 exc._nr_message = message
 =======
             exc._nr_message = notice_error_attributes.pop("error.message")
 >>>>>>> 525470157 (Fix exc parsing.)
+=======
+            message = notice_error_attributes.pop("error.message")
+            if message:
+                exc._nr_message = message
+>>>>>>> 1ca28ca7f (Fix error message for Python 3.10 +.)
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
@@ -550,12 +556,18 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                     "embedding_id": embedding_id,
                 }
 <<<<<<< HEAD
+<<<<<<< HEAD
             message = notice_error_attributes.pop("error.message")
             if message:
                 exc._nr_message = message
 =======
             exc._nr_message = notice_error_attributes.pop("error.message")
 >>>>>>> 525470157 (Fix exc parsing.)
+=======
+            message = notice_error_attributes.pop("error.message")
+            if message:
+                exc._nr_message = message
+>>>>>>> 1ca28ca7f (Fix error message for Python 3.10 +.)
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
@@ -647,7 +659,11 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     return response
 
 
+<<<<<<< HEAD
 async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
+=======
+async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
+>>>>>>> 1ca28ca7f (Fix error message for Python 3.10 +.)
     transaction = current_transaction()
 
     if not transaction or kwargs.get("stream", False):

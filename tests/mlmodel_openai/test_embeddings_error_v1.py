@@ -14,6 +14,7 @@
 
 import openai
 import pytest
+import sys
 from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
@@ -67,7 +68,7 @@ embedding_recorded_events = [
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "create() missing 1 required keyword-only argument: 'model'",
+        "error.message": "create() missing 1 required keyword-only argument: 'model'" if sys.version_info < (3, 10) else "Embeddings.create() missing 1 required keyword-only argument: 'model'",
     }
 )
 @validate_transaction_metrics(
@@ -270,7 +271,7 @@ def test_embeddings_authentication_error(set_trace_info, monkeypatch, sync_opena
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "create() missing 1 required keyword-only argument: 'model'",
+        "error.message": "create() missing 1 required keyword-only argument: 'model'" if sys.version_info < (3, 10) else "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'",
     }
 )
 @validate_transaction_metrics(

@@ -158,8 +158,8 @@ invalid_model_events = [
         "agent": {},
         "intrinsic": {},
         "user": {
-            'http.statusCode': 404,
-            'error.code': 'model_not_found',
+            "http.statusCode": 404,
+            "error.code": "model_not_found",
         },
     },
 )
@@ -194,8 +194,8 @@ def test_embeddings_invalid_request_error_invalid_model(set_trace_info, sync_ope
         "agent": {},
         "intrinsic": {},
         "user": {
-            'http.statusCode': 404,
-            'error.code': 'model_not_found',
+            "http.statusCode": 404,
+            "error.code": "model_not_found",
         },
     },
 )

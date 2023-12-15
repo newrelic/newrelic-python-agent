@@ -23,7 +23,6 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
 
-
 OPENAI_VERSION = get_package_version("openai")
 OPENAI_VERSION_TUPLE = tuple(map(int, OPENAI_VERSION.split(".")))
 OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
@@ -32,7 +31,7 @@ OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction or kwargs.get("stream", False):
-        return wrapped(*args, **kwargs)
+        return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
@@ -58,7 +57,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         trace_id = available_metadata.get("trace.id", "")
 
         try:
-            response = wrapped(*args, **kwargs)
+            response = await wrapped(*args, **kwargs)
         except Exception as exc:
             if OPENAI_V1:
                 response = getattr(exc, "response", "")

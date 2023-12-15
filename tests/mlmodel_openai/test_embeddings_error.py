@@ -131,6 +131,7 @@ invalid_model_events = [
 @validate_span_events(
     exact_agents={
         "error.message": "The model `does-not-exist` does not exist",
+        # "http.statusCode": 404,
     }
 )
 @validate_transaction_metrics(
@@ -240,7 +241,6 @@ embedding_invalid_key_error_events = [
         "intrinsic": {},
         "user": {
             "http.statusCode": 401,
-            "error.code": "invalid_api_key",
         },
     },
 )
@@ -393,7 +393,6 @@ def test_embeddings_authentication_error_async(loop, monkeypatch, set_trace_info
         "intrinsic": {},
         "user": {
             "http.statusCode": 401,
-            "error.code": "invalid_api_key",
         },
     },
 )

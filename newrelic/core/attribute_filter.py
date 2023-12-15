@@ -15,13 +15,14 @@
 # Attribute "destinations" represented as bitfields.
 
 DST_NONE = 0x0
-DST_ALL  = 0x3F
+DST_ALL  = 0x7F
 DST_TRANSACTION_EVENTS   = 1 << 0
 DST_TRANSACTION_TRACER   = 1 << 1
 DST_ERROR_COLLECTOR      = 1 << 2
 DST_BROWSER_MONITORING   = 1 << 3
 DST_SPAN_EVENTS          = 1 << 4
 DST_TRANSACTION_SEGMENTS = 1 << 5
+DST_LOG_EVENT_CONTEXT_DATA = 1 << 6
 
 class AttributeFilter(object):
 
@@ -92,6 +93,9 @@ class AttributeFilter(object):
         if settings.get('browser_monitoring.attributes.enabled', None):
             enabled_destinations |= DST_BROWSER_MONITORING
 
+        if settings.get('application_logging.forwarding.context_data.enabled', None):
+            enabled_destinations |= DST_LOG_EVENT_CONTEXT_DATA
+
         if not settings.get('attributes.enabled', None):
             enabled_destinations = DST_NONE
 
@@ -121,6 +125,8 @@ class AttributeFilter(object):
             ('span_events.attributes.exclude', DST_SPAN_EVENTS, False),
             ('transaction_segments.attributes.include', DST_TRANSACTION_SEGMENTS, True),
             ('transaction_segments.attributes.exclude', DST_TRANSACTION_SEGMENTS, False),
+            ('application_logging.forwarding.context_data.include', DST_LOG_EVENT_CONTEXT_DATA, True),
+            ('application_logging.forwarding.context_data.exclude', DST_LOG_EVENT_CONTEXT_DATA, False),
         )
 
         rules = []

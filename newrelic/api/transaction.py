@@ -54,6 +54,7 @@ from newrelic.core.attribute import (
     create_agent_attributes,
     create_attributes,
     create_user_attributes,
+    resolve_logging_context_attributes,
     process_user_attribute,
     truncate,
 )
@@ -1545,16 +1546,17 @@ class Transaction(object):
 
         message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
 
-        attrs = get_linking_metadata()
-        if attributes and (settings and settings.application_logging and settings.application_logging.forwarding and settings.application_logging.forwarding.context_data and settings.application_logging.forwarding.context_data.enabled):
-            # TODO add attibute filtering
-            attrs.update({"context." + k: safe_json_encode(v, ignore_string_types=True) for k, v in six.iteritems(attributes)})
+        collected_attributes = get_linking_metadata()
+        if attributes and (settings and settings.application_logging.forwarding.context_data.enabled):
+            context_attributes = resolve_logging_context_attributes(attributes, settings.attribute_filter, "context.")
+            if context_attributes:
+                collected_attributes.update(context_attributes)
 
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=attrs,
+            attributes=collected_attributes,
         )
 
         self._log_events.add(event, priority=priority)

@@ -21,8 +21,8 @@ from logging import Formatter, LogRecord
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common import agent_http
-from newrelic.common.object_names import parse_exc_info
 from newrelic.common.encoding_utils import safe_json_encode
+from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error
 from newrelic.packages import six
@@ -133,8 +133,8 @@ class NewRelicLogHandler(logging.Handler):
             "The contributed NewRelicLogHandler has been superseded by automatic instrumentation for "
             "logging in the standard lib. If for some reason you need to manually configure a handler, "
             "please use newrelic.api.log.NewRelicLogForwardingHandler to take advantage of all the "
-            "features included in application log forwarding such as proper batching.", 
-            DeprecationWarning
+            "features included in application log forwarding such as proper batching.",
+            DeprecationWarning,
         )
         super(NewRelicLogHandler, self).__init__(level=level)
         self.license_key = license_key or self.settings.license_key

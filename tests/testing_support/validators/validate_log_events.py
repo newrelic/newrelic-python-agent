@@ -14,20 +14,21 @@
 
 import copy
 
-from newrelic.packages import six
-
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
 from testing_support.fixtures import catch_background_exceptions
 
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
+from newrelic.packages import six
+
+
 def validate_log_events(events=None, required_attrs=None, forgone_attrs=None):
-    events = events or [{}]  # Empty event allows assertions based on only required or forgone attrs to still run and validate
+    events = events or [
+        {}
+    ]  # Empty event allows assertions based on only required or forgone attrs to still run and validate
     required_attrs = required_attrs or []
     forgone_attrs = forgone_attrs or []
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_called = []
         recorded_logs = []
 
@@ -45,12 +46,11 @@ def validate_log_events(events=None, required_attrs=None, forgone_attrs=None):
 
             return result
 
-
         _new_wrapper = _validate_log_events(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_called
         logs = copy.copy(recorded_logs)
-        
+
         record_called[:] = []
         recorded_logs[:] = []
 
@@ -63,7 +63,6 @@ def validate_log_events(events=None, required_attrs=None, forgone_attrs=None):
             assert matching_log_events == 1, _log_details(matching_log_events, logs, mismatches)
 
         return val
-
 
     def _check_log_attributes(expected, required_attrs, forgone_attrs, captured, mismatches):
         for key, value in six.iteritems(expected):

@@ -13,20 +13,27 @@
 # limitations under the License.
 
 import pytest
-
-from newrelic.api.background_task import background_task
-from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction, record_log_event, ignore_transaction
-
-from newrelic.core.config import _parse_attributes
-
-from testing_support.fixtures import override_application_settings, reset_core_stats_engine
+from testing_support.fixtures import (
+    override_application_settings,
+    reset_core_stats_engine,
+)
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import (
     validate_log_event_count_outside_transaction,
 )
 from testing_support.validators.validate_log_events import validate_log_events
-from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
+from testing_support.validators.validate_log_events_outside_transaction import (
+    validate_log_events_outside_transaction,
+)
+
+from newrelic.api.background_task import background_task
+from newrelic.api.time_trace import current_trace
+from newrelic.api.transaction import (
+    current_transaction,
+    ignore_transaction,
+    record_log_event,
+)
+from newrelic.core.config import _parse_attributes
 
 
 class NonPrintableObject(object):
@@ -124,7 +131,9 @@ _exercise_record_log_event_outside_transaction_events = [
     combine_dicts(_common_attributes_service_linking, log) for log in _exercise_record_log_event_events
 ]
 _exercise_record_log_event_forgone_attrs = [
-    "context.non_printable_attr", "attr_name_too_long_", "attr_name_with_prefix_too_long_"
+    "context.non_printable_attr",
+    "attr_name_too_long_",
+    "attr_name_with_prefix_too_long_",
 ]
 
 
@@ -133,7 +142,9 @@ _exercise_record_log_event_forgone_attrs = [
 
 @enable_log_forwarding
 def test_record_log_event_inside_transaction():
-    @validate_log_events(_exercise_record_log_event_inside_transaction_events, forgone_attrs=_exercise_record_log_event_forgone_attrs)
+    @validate_log_events(
+        _exercise_record_log_event_inside_transaction_events, forgone_attrs=_exercise_record_log_event_forgone_attrs
+    )
     @validate_log_event_count(len(_exercise_record_log_event_inside_transaction_events))
     @background_task()
     def test():
@@ -145,7 +156,9 @@ def test_record_log_event_inside_transaction():
 @enable_log_forwarding
 @reset_core_stats_engine()
 def test_record_log_event_outside_transaction():
-    @validate_log_events_outside_transaction(_exercise_record_log_event_outside_transaction_events, forgone_attrs=_exercise_record_log_event_forgone_attrs)
+    @validate_log_events_outside_transaction(
+        _exercise_record_log_event_outside_transaction_events, forgone_attrs=_exercise_record_log_event_forgone_attrs
+    )
     @validate_log_event_count_outside_transaction(len(_exercise_record_log_event_outside_transaction_events))
     def test():
         exercise_record_log_event()
@@ -246,21 +259,21 @@ _test_record_log_event_attribute_filtering_params = [
     ("A B", "*", "context.A", True),
     ("A B", "*", "context.B", True),
     ("A B", "*", "context.C", False),
-    ("A B", "C" , "context.A", True),
-    ("A B", "C" , "context.C", False),
-    ("A B", "B" , "context.A", True),
-    ("A B", "B" , "context.B", False),
-    ("A", "A *" , "context.A", False),
-    ("A", "A *" , "context.B", False),
-    ("A*", "" , "context.A", True),
-    ("A*", "" , "context.AB", True),
-    ("", "A*" , "context.A", False),
-    ("", "A*" , "context.B", True),
-    ("A*", "AB" , "context.AC", True),
-    ("A*", "AB" , "context.AB", False),
-    ("AB", "A*" , "context.AB", True),
-    ("A*", "AB*" , "context.ACB", True),
-    ("A*", "AB*" , "context.ABC", False),
+    ("A B", "C", "context.A", True),
+    ("A B", "C", "context.C", False),
+    ("A B", "B", "context.A", True),
+    ("A B", "B", "context.B", False),
+    ("A", "A *", "context.A", False),
+    ("A", "A *", "context.B", False),
+    ("A*", "", "context.A", True),
+    ("A*", "", "context.AB", True),
+    ("", "A*", "context.A", False),
+    ("", "A*", "context.B", True),
+    ("A*", "AB", "context.AC", True),
+    ("A*", "AB", "context.AB", False),
+    ("AB", "A*", "context.AB", True),
+    ("A*", "AB*", "context.ACB", True),
+    ("A*", "AB*", "context.ABC", False),
     # Linking attributes not affected by filtering
     ("", "", "entity.name", True),
     ("A", "*", "entity.name", True),

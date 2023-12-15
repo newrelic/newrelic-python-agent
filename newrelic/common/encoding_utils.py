@@ -31,14 +31,14 @@ from collections import OrderedDict
 
 from newrelic.packages import six
 
-HEXDIGLC_RE = re.compile('^[0-9a-f]+$')
-DELIMITER_FORMAT_RE = re.compile('[ \t]*,[ \t]*')
+HEXDIGLC_RE = re.compile("^[0-9a-f]+$")
+DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
 PARENT_TYPE = {
-    '0': 'App',
-    '1': 'Browser',
-    '2': 'Mobile',
+    "0": "App",
+    "1": "Browser",
+    "2": "Mobile",
 }
-BASE64_DECODE_STR = getattr(base64, 'decodestring', None)
+BASE64_DECODE_STR = getattr(base64, "decodestring", None)
 
 
 # Functions for encoding/decoding JSON. These wrappers are used in order
@@ -47,6 +47,7 @@ BASE64_DECODE_STR = getattr(base64, 'decodestring', None)
 # for the handling on unknown objects. All but the first argument must
 # be supplied as key word arguments to allow the wrappers to supply
 # defaults.
+
 
 def json_encode(obj, **kwargs):
     _kwargs = {}
@@ -79,21 +80,21 @@ def json_encode(obj, **kwargs):
     # The third is eliminate white space after separators to trim the
     # size of the data being sent.
 
-    if type(b'') is type(''):  # NOQA
-        _kwargs['encoding'] = 'latin-1'
+    if type(b"") is type(""):  # NOQA
+        _kwargs["encoding"] = "latin-1"
 
     def _encode(o):
         if isinstance(o, bytes):
-            return o.decode('latin-1')
+            return o.decode("latin-1")
         elif isinstance(o, types.GeneratorType):
             return list(o)
-        elif hasattr(o, '__iter__'):
+        elif hasattr(o, "__iter__"):
             return list(iter(o))
-        raise TypeError(repr(o) + ' is not JSON serializable')
+        raise TypeError(repr(o) + " is not JSON serializable")
 
-    _kwargs['default'] = _encode
+    _kwargs["default"] = _encode
 
-    _kwargs['separators'] = (',', ':')
+    _kwargs["separators"] = (",", ":")
 
     # We still allow supplied arguments to override internal defaults if
     # necessary, but the caller must be sure they aren't dependent on
@@ -116,7 +117,7 @@ def safe_json_encode(obj, ignore_string_types=False, **kwargs):
     # Performs the same operation as json_encode but replaces unserializable objects with a string containing their class name.
     # If ignore_string_types is True, do not encode string types further.
     # Currently used for safely encoding logging attributes.
-    
+
     if ignore_string_types and isinstance(obj, (six.string_types, six.binary_type)):
         return obj
 
@@ -147,7 +148,7 @@ def xor_cipher_genkey(key, length=None):
 
     """
 
-    return bytearray(key[:length], encoding='ascii')
+    return bytearray(key[:length], encoding="ascii")
 
 
 def xor_cipher_encrypt(text, key):
@@ -213,8 +214,8 @@ def xor_cipher_encrypt_base64(text, key):
     # isn't UTF-8 and so fail with a Unicode decoding error.
 
     if isinstance(text, bytes):
-        text = text.decode('latin-1')
-    text = text.encode('utf-8').decode('latin-1')
+        text = text.decode("latin-1")
+    text = text.encode("utf-8").decode("latin-1")
 
     result = base64.b64encode(bytes(xor_cipher_encrypt(text, key)))
 
@@ -225,7 +226,7 @@ def xor_cipher_encrypt_base64(text, key):
     # produces characters within that codeset.
 
     if six.PY3:
-        return result.decode('ascii')
+        return result.decode("ascii")
 
     return result
 
@@ -246,7 +247,7 @@ def xor_cipher_decrypt_base64(text, key):
 
     result = xor_cipher_decrypt(bytearray(base64.b64decode(text)), key)
 
-    return bytes(result).decode('utf-8')
+    return bytes(result).decode("utf-8")
 
 
 obfuscate = xor_cipher_encrypt_base64
@@ -263,13 +264,13 @@ def unpack_field(field):
     """
 
     if not isinstance(field, bytes):
-        field = field.encode('UTF-8')
+        field = field.encode("UTF-8")
 
-    data = getattr(base64, 'decodebytes', BASE64_DECODE_STR)(field)
+    data = getattr(base64, "decodebytes", BASE64_DECODE_STR)(field)
     data = zlib.decompress(data)
 
     if isinstance(data, bytes):
-        data = data.decode('Latin-1')
+        data = data.decode("Latin-1")
 
     data = json_decode(data)
     return data
@@ -283,13 +284,13 @@ def generate_path_hash(name, seed):
 
     """
 
-    rotated = ((seed << 1) | (seed >> 31)) & 0xffffffff
+    rotated = ((seed << 1) | (seed >> 31)) & 0xFFFFFFFF
 
     if not isinstance(name, bytes):
-        name = name.encode('UTF-8')
+        name = name.encode("UTF-8")
 
-    path_hash = (rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16))
-    return '%08x' % path_hash
+    path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)
+    return "%08x" % path_hash
 
 
 def base64_encode(text):
@@ -314,11 +315,11 @@ def base64_encode(text):
     # and so fail with a Unicode decoding error.
 
     if isinstance(text, bytes):
-        text = text.decode('latin-1')
-    text = text.encode('utf-8').decode('latin-1')
+        text = text.decode("latin-1")
+    text = text.encode("utf-8").decode("latin-1")
 
     # Re-encode as utf-8 when passing to b64 encoder
-    result = base64.b64encode(text.encode('utf-8'))
+    result = base64.b64encode(text.encode("utf-8"))
 
     # The result from base64 encoding will be a byte string but since
     # dealing with byte strings in Python 2 and Python 3 is quite
@@ -327,7 +328,7 @@ def base64_encode(text):
     # produces characters within that codeset.
 
     if six.PY3:
-        return result.decode('ascii')
+        return result.decode("ascii")
 
     return result
 
@@ -337,7 +338,7 @@ def base64_decode(text):
     the decoded text is UTF-8 encoded.
 
     """
-    return base64.b64decode(text).decode('utf-8')
+    return base64.b64decode(text).decode("utf-8")
 
 
 def gzip_compress(text):
@@ -348,9 +349,9 @@ def gzip_compress(text):
     compressed_data = io.BytesIO()
 
     if six.PY3 and isinstance(text, str):
-        text = text.encode('utf-8')
+        text = text.encode("utf-8")
 
-    with gzip.GzipFile(fileobj=compressed_data, mode='wb') as f:
+    with gzip.GzipFile(fileobj=compressed_data, mode="wb") as f:
         f.write(text)
 
     return compressed_data.getvalue()
@@ -363,7 +364,7 @@ def gzip_decompress(payload):
     """
     data_bytes = io.BytesIO(payload)
     decoded_data = gzip.GzipFile(fileobj=data_bytes).read()
-    return decoded_data.decode('utf-8')
+    return decoded_data.decode("utf-8")
 
 
 def serverless_payload_encode(payload):
@@ -381,7 +382,7 @@ def serverless_payload_encode(payload):
 def ensure_str(s):
     if not isinstance(s, six.string_types):
         try:
-            s = s.decode('utf-8')
+            s = s.decode("utf-8")
         except Exception:
             return
     return s
@@ -393,8 +394,8 @@ def serverless_payload_decode(text):
     Python object.
 
     """
-    if hasattr(text, 'decode'):
-        text = text.decode('utf-8')
+    if hasattr(text, "decode"):
+        text = text.decode("utf-8")
 
     decoded_bytes = base64.b64decode(text)
     uncompressed_data = gzip_decompress(decoded_bytes)
@@ -407,8 +408,7 @@ def decode_newrelic_header(encoded_header, encoding_key):
     decoded_header = None
     if encoded_header:
         try:
-            decoded_header = json_decode(deobfuscate(
-                    encoded_header, encoding_key))
+            decoded_header = json_decode(deobfuscate(encoded_header, encoding_key))
         except Exception:
             pass
 
@@ -425,7 +425,6 @@ def convert_to_cat_metadata_value(nr_headers):
 
 
 class DistributedTracePayload(dict):
-
     version = (0, 1)
 
     def text(self):
@@ -460,17 +459,16 @@ class DistributedTracePayload(dict):
 
 
 class W3CTraceParent(dict):
-
     def text(self):
-        if 'id' in self:
-            guid = self['id']
+        if "id" in self:
+            guid = self["id"]
         else:
-            guid = '{:016x}'.format(random.getrandbits(64))
+            guid = "{:016x}".format(random.getrandbits(64))
 
-        return '00-{}-{}-{:02x}'.format(
-            self['tr'].lower().zfill(32),
+        return "00-{}-{}-{:02x}".format(
+            self["tr"].lower().zfill(32),
             guid,
-            int(self.get('sa', 0)),
+            int(self.get("sa", 0)),
         )
 
     @classmethod
@@ -479,7 +477,7 @@ class W3CTraceParent(dict):
         if len(payload) < 55:
             return None
 
-        fields = payload.split('-', 4)
+        fields = payload.split("-", 4)
 
         # Expect that there are at least 4 fields
         if len(fields) < 4:
@@ -492,11 +490,11 @@ class W3CTraceParent(dict):
             return None
 
         # Version 255 is invalid
-        if version == 'ff':
+        if version == "ff":
             return None
 
         # Expect exactly 4 fields if version 00
-        if version == '00' and len(fields) != 4:
+        if version == "00" and len(fields) != 4:
             return None
 
         # Check field lengths and values
@@ -506,18 +504,15 @@ class W3CTraceParent(dict):
 
         # trace_id or parent_id of all 0's are invalid
         trace_id, parent_id = fields[1:3]
-        if parent_id == '0' * 16 or trace_id == '0' * 32:
+        if parent_id == "0" * 16 or trace_id == "0" * 32:
             return None
 
         return cls(tr=trace_id, id=parent_id)
 
 
 class W3CTraceState(OrderedDict):
-
     def text(self, limit=32):
-        return ','.join(
-                    '{}={}'.format(k, v)
-                    for k, v in itertools.islice(self.items(), limit))
+        return ",".join("{}={}".format(k, v) for k, v in itertools.islice(self.items(), limit))
 
     @classmethod
     def decode(cls, tracestate):
@@ -525,9 +520,8 @@ class W3CTraceState(OrderedDict):
 
         vendors = cls()
         for entry in entries:
-            vendor_value = entry.split('=', 2)
-            if (len(vendor_value) != 2 or
-                    any(len(v) > 256 for v in vendor_value)):
+            vendor_value = entry.split("=", 2)
+            if len(vendor_value) != 2 or any(len(v) > 256 for v in vendor_value):
                 continue
 
             vendor, value = vendor_value
@@ -537,36 +531,38 @@ class W3CTraceState(OrderedDict):
 
 
 class NrTraceState(dict):
-    FIELDS = ('ty', 'ac', 'ap', 'id', 'tx', 'sa', 'pr')
+    FIELDS = ("ty", "ac", "ap", "id", "tx", "sa", "pr")
 
     def text(self):
-        pr = self.get('pr', '')
+        pr = self.get("pr", "")
         if pr:
-            pr = ('%.6f' % pr).rstrip('0').rstrip('.')
+            pr = ("%.6f" % pr).rstrip("0").rstrip(".")
 
-        payload = '-'.join((
-            '0-0',
-            self['ac'],
-            self['ap'],
-            self.get('id', ''),
-            self.get('tx', ''),
-            '1' if self.get('sa') else '0',
-            pr,
-            str(self['ti']),
-        ))
-        return '{}@nr={}'.format(
-            self.get('tk', self['ac']),
+        payload = "-".join(
+            (
+                "0-0",
+                self["ac"],
+                self["ap"],
+                self.get("id", ""),
+                self.get("tx", ""),
+                "1" if self.get("sa") else "0",
+                pr,
+                str(self["ti"]),
+            )
+        )
+        return "{}@nr={}".format(
+            self.get("tk", self["ac"]),
             payload,
         )
 
     @classmethod
     def decode(cls, payload, tk):
-        fields = payload.split('-', 9)
+        fields = payload.split("-", 9)
         if len(fields) >= 9 and all(fields[:4]) and fields[8]:
             data = cls(tk=tk)
 
             try:
-                data['ti'] = int(fields[8])
+                data["ti"] = int(fields[8])
             except:
                 return
 
@@ -574,24 +570,24 @@ class NrTraceState(dict):
                 if value:
                     data[name] = value
 
-            if data['ty'] in PARENT_TYPE:
-                data['ty'] = PARENT_TYPE[data['ty']]
+            if data["ty"] in PARENT_TYPE:
+                data["ty"] = PARENT_TYPE[data["ty"]]
             else:
                 return
 
-            if 'sa' in data:
-                if data['sa'] == '1':
-                    data['sa'] = True
-                elif data['sa'] == '0':
-                    data['sa'] = False
+            if "sa" in data:
+                if data["sa"] == "1":
+                    data["sa"] = True
+                elif data["sa"] == "0":
+                    data["sa"] = False
                 else:
-                    data['sa'] = None
+                    data["sa"] = None
 
-            if 'pr' in data:
+            if "pr" in data:
                 try:
-                    data['pr'] = float(fields[7])
+                    data["pr"] = float(fields[7])
                 except:
-                    data['pr'] = None
+                    data["pr"] = None
 
             return data
 
@@ -609,7 +605,7 @@ def capitalize(string):
 def camel_case(string, upper=False):
     """
     Convert a string of snake case to camel case.
-    
+
     Setting upper=True will capitalize the first letter. Defaults to False, where no change is made to the first letter.
     """
     string = ensure_str(string)
@@ -630,6 +626,8 @@ def camel_case(string, upper=False):
 
 
 _snake_case_re = re.compile(r"([A-Z]+[a-z]*)")
+
+
 def snake_case(string):
     """Convert a string of camel case to snake case. Assumes no repeated runs of capital letters."""
     string = ensure_str(string)

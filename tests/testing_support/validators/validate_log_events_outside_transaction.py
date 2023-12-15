@@ -27,7 +27,6 @@ def validate_log_events_outside_transaction(events=None, required_attrs=None, fo
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_called = []
         recorded_logs = []
 
@@ -61,7 +60,6 @@ def validate_log_events_outside_transaction(events=None, required_attrs=None, fo
             assert matching_log_events == 1, _log_details(matching_log_events, logs, mismatches)
 
         return val
-
 
     def _check_log_attributes(expected, required_attrs, forgone_attrs, captured, mismatches):
         for key, value in six.iteritems(expected):

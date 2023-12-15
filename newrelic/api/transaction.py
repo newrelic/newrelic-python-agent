@@ -54,8 +54,8 @@ from newrelic.core.attribute import (
     create_agent_attributes,
     create_attributes,
     create_user_attributes,
-    resolve_logging_context_attributes,
     process_user_attribute,
+    resolve_logging_context_attributes,
     truncate,
 )
 from newrelic.core.attribute_filter import (
@@ -311,7 +311,7 @@ class Transaction(object):
         self.synthetics_job_id = None
         self.synthetics_monitor_id = None
         self.synthetics_header = None
-        
+
         # Synthetics Info Header
         self.synthetics_type = None
         self.synthetics_initiator = None

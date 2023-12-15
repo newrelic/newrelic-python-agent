@@ -1219,7 +1219,6 @@ class StatsEngine(object):
         ):
             self._log_events.merge(transaction.log_events, priority=transaction.priority)
 
-
     def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         settings = self.__settings
         if not (
@@ -1250,7 +1249,7 @@ class StatsEngine(object):
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=collected_attributes, 
+            attributes=collected_attributes,
         )
 
         if priority is None:

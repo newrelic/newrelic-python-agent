@@ -84,19 +84,9 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                     "error.param": getattr(exc, "param", ""),
                     "embedding_id": embedding_id,
                 }
-<<<<<<< HEAD
-<<<<<<< HEAD
             message = notice_error_attributes.pop("error.message")
             if message:
                 exc._nr_message = message
-=======
-            exc._nr_message = notice_error_attributes.pop("error.message")
->>>>>>> 525470157 (Fix exc parsing.)
-=======
-            message = notice_error_attributes.pop("error.message")
-            if message:
-                exc._nr_message = message
->>>>>>> 1ca28ca7f (Fix error message for Python 3.10 +.)
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
@@ -132,10 +122,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         attribute_response = response.model_dump()
     else:
         attribute_response = response
-<<<<<<< HEAD
-=======
-
->>>>>>> 28e9695a1 (Store converted response object in new var for v1.)
 
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
@@ -555,27 +541,13 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                     "error.param": getattr(exc, "param", ""),
                     "embedding_id": embedding_id,
                 }
-<<<<<<< HEAD
-<<<<<<< HEAD
             message = notice_error_attributes.pop("error.message")
             if message:
                 exc._nr_message = message
-=======
-            exc._nr_message = notice_error_attributes.pop("error.message")
->>>>>>> 525470157 (Fix exc parsing.)
-=======
-            message = notice_error_attributes.pop("error.message")
-            if message:
-                exc._nr_message = message
->>>>>>> 1ca28ca7f (Fix error message for Python 3.10 +.)
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
 
-<<<<<<< HEAD
-=======
-            # Gather attributes to add to embedding summary event in error context
->>>>>>> 525470157 (Fix exc parsing.)
             error_embedding_dict = {
                 "id": embedding_id,
                 "appName": settings.app_name,
@@ -659,11 +631,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     return response
 
 
-<<<<<<< HEAD
 async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
-=======
-async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
->>>>>>> 1ca28ca7f (Fix error message for Python 3.10 +.)
     transaction = current_transaction()
 
     if not transaction or kwargs.get("stream", False):

@@ -153,16 +153,19 @@ invalid_model_events = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.InternalServerError),
+    callable_name(openai.NotFoundError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
-        "user": {},
+        "user": {
+            'http.statusCode': 404,
+            'error.code': 'model_not_found',
+        },
     },
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Unknown Prompt:\nModel does not exist.",
+        "error.message": "The model `does-not-exist` does not exist",
     }
 )
 @validate_transaction_metrics(
@@ -178,7 +181,7 @@ invalid_model_events = [
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model(set_trace_info, sync_openai_client):
-    with pytest.raises(openai.InternalServerError):
+    with pytest.raises(openai.NotFoundError):
         set_trace_info()
         sync_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
 
@@ -186,16 +189,19 @@ def test_embeddings_invalid_request_error_invalid_model(set_trace_info, sync_ope
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.InternalServerError),
+    callable_name(openai.NotFoundError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
-        "user": {},
+        "user": {
+            'http.statusCode': 404,
+            'error.code': 'model_not_found',
+        },
     },
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Unknown Prompt:\nModel does not exist.",
+        "error.message": "The model `does-not-exist` does not exist",
     }
 )
 @validate_transaction_metrics(
@@ -211,7 +217,7 @@ def test_embeddings_invalid_request_error_invalid_model(set_trace_info, sync_ope
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model_async(set_trace_info, async_openai_client, loop):
-    with pytest.raises(openai.InternalServerError):
+    with pytest.raises(openai.NotFoundError):
         set_trace_info()
         loop.run_until_complete(
             async_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")

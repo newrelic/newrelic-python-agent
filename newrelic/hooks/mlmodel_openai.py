@@ -66,12 +66,12 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                 # There appears to be a bug here in openai v1 where despite having code,
                 # param, etc in the error response, they are not populated on the exception
                 # object so grab them from the response body object instead.
-                body = getattr(exc, "body", {})
+                body = getattr(exc, "body", {}) or {}
                 notice_error_attributes = {
                     "http.statusCode": getattr(exc, "status_code", "") or "",
-                    "error.message": body.get("message", "") if body else "",
-                    "error.code": body.get("code", "") if body else "",
-                    "error.param": body.get("param", "") if body else "",
+                    "error.message": body.get("message", "") or "",
+                    "error.code": body.get("code", "") or "",
+                    "error.param": body.get("param", "") or "",
                     "embedding_id": embedding_id,
                 }
             else:
@@ -523,12 +523,12 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                 # There appears to be a bug here in openai v1 where despite having code,
                 # param, etc in the error response, they are not populated on the exception
                 # object so grab them from the response body object instead.
-                body = getattr(exc, "body", {})
+                body = getattr(exc, "body", {}) or {}
                 notice_error_attributes = {
                     "http.statusCode": getattr(exc, "status_code", "") or "",
-                    "error.message": body.get("message", "") if body else "",
-                    "error.code": body.get("code", "") if body else "",
-                    "error.param": body.get("param", "") if body else "",
+                    "error.message": body.get("message", "") or "",
+                    "error.code": body.get("code", "") or "",
+                    "error.param": body.get("param", "") or "",
                     "embedding_id": embedding_id,
                 }
             else:

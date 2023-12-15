@@ -31,7 +31,7 @@ OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction or kwargs.get("stream", False):
-        return await wrapped(*args, **kwargs)
+        return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
@@ -57,7 +57,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         trace_id = available_metadata.get("trace.id", "")
 
         try:
-            response = await wrapped(*args, **kwargs)
+            response = wrapped(*args, **kwargs)
         except Exception as exc:
             if OPENAI_V1:
                 response = getattr(exc, "response", "")

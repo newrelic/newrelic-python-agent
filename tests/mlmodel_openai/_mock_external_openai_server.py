@@ -31,42 +31,6 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
 RESPONSES_V1 = {
-    # "Model does not exist.": (
-    #     {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
-    #     500,
-    #     {
-    #         "error": {
-    #             "message": 'Unknown Prompt:\nModel does not exist.',
-    #             "type": None,
-    #             "param": None,
-    #             "code": None,
-    #         }
-    #     },
-    # ),
-    "No API key.": (
-        {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
-        401,
-        {
-            "error": {
-                "message": "Connection error.",
-                "type": None,
-                "param": None,
-                "code": None,
-            }
-        },
-    ),
-    "Invalid API key.": (
-        {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
-        401,
-        {
-            "error": {
-                "message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
-                "type": "invalid_request_error",
-                "param": None,
-                "code": "invalid_api_key",
-            }
-        },
-    ),
     "You are a scientist.": [
         {
             "content-type": "application/json",
@@ -143,6 +107,18 @@ RESPONSES_V1 = {
             "system_fingerprint": None,
         },
     ],
+    "Invalid API key.": [
+        {"content-type": "application/json; charset=utf-8", "x-request-id": "a51821b9fd83d8e0e04542bedc174310"},
+        401,
+        {
+            "error": {
+                "message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "invalid_api_key",
+            }
+        },
+    ],
     "Model does not exist.": [
         {"content-type": "application/json; charset=utf-8", "x-request-id": "3b0f8e510ee8a67c08a227a98eadbbe6"},
         404,
@@ -214,7 +190,7 @@ RESPONSES = {
             "Content-Type": "application/json",
             "x-request-id": "cfdf51fb795362ae578c12a21796262c",
         },
-        500,
+        404,
         {
             "error": {
                 "message": "The model `does-not-exist` does not exist",

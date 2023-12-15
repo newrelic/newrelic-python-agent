@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import openai
 import pytest
-import sys
 from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
@@ -31,7 +32,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-
 
 # Sync tests:
 no_model_events = [
@@ -68,7 +68,9 @@ no_model_events = [
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "create() missing 1 required keyword-only argument: 'model'" if sys.version_info < (3, 10) else "Embeddings.create() missing 1 required keyword-only argument: 'model'",
+        "error.message": "create() missing 1 required keyword-only argument: 'model'"
+        if sys.version_info < (3, 10)
+        else "Embeddings.create() missing 1 required keyword-only argument: 'model'",
     }
 )
 @validate_transaction_metrics(
@@ -101,7 +103,9 @@ def test_embeddings_invalid_request_error_no_model(set_trace_info, sync_openai_c
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "create() missing 1 required keyword-only argument: 'model'" if sys.version_info < (3, 10) else "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'",
+        "error.message": "create() missing 1 required keyword-only argument: 'model'"
+        if sys.version_info < (3, 10)
+        else "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'",
     }
 )
 @validate_transaction_metrics(

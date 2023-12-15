@@ -35,7 +35,7 @@ RESPONSES_V1 = {
         {
             "content-type": "application/json",
             "openai-model": "gpt-3.5-turbo-0613",
-            "openai-organization": "foobar-jtbczk",
+            "openai-organization": "new-relic-nkmd8b",
             "openai-processing-ms": "6326",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "200",
@@ -60,13 +60,75 @@ RESPONSES_V1 = {
                     "index": 0,
                     "message": {
                         "role": "assistant",
-                        "content": "To convert 212 degrees Fahrenheit to Celsius, you can use the formula:\n\n\u00b0C = (\u00b0F - 32) x 5/9\n\nSubstituting the value, we get:\n\n\u00b0C = (212 - 32) x 5/9\n   = 180 x 5/9\n   = 100\n\nTherefore, 212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                        "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
                     },
                     "finish_reason": "stop",
                 }
             ],
             "usage": {"prompt_tokens": 26, "completion_tokens": 82, "total_tokens": 108},
             "system_fingerprint": None,
+        },
+    ],
+    "You are a mathematician.": [
+        {
+            "content-type": "application/json",
+            "openai-model": "gpt-3.5-turbo-0613",
+            "openai-organization": "new-relic-nkmd8b",
+            "openai-processing-ms": "6326",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "200",
+            "x-ratelimit-limit-tokens": "40000",
+            "x-ratelimit-limit-tokens_usage_based": "40000",
+            "x-ratelimit-remaining-requests": "198",
+            "x-ratelimit-remaining-tokens": "39880",
+            "x-ratelimit-remaining-tokens_usage_based": "39880",
+            "x-ratelimit-reset-requests": "11m32.334s",
+            "x-ratelimit-reset-tokens": "180ms",
+            "x-ratelimit-reset-tokens_usage_based": "180ms",
+            "x-request-id": "f8d0f53b6881c5c0a3698e55f8f410cd",
+        },
+        200,
+        {
+            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTeat",
+            "object": "chat.completion",
+            "created": 1701995833,
+            "model": "gpt-3.5-turbo-0613",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "1 plus 2 is 3.",
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 26, "completion_tokens": 82, "total_tokens": 108},
+            "system_fingerprint": None,
+        },
+    ],
+    "Invalid API key.": [
+        {"content-type": "application/json; charset=utf-8", "x-request-id": "a51821b9fd83d8e0e04542bedc174310"},
+        401,
+        {
+            "error": {
+                "message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "invalid_api_key",
+            }
+        },
+    ],
+    "Model does not exist.": [
+        {"content-type": "application/json; charset=utf-8", "x-request-id": "3b0f8e510ee8a67c08a227a98eadbbe6"},
+        404,
+        {
+            "error": {
+                "message": "The model `does-not-exist` does not exist",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "model_not_found",
+            }
         },
     ],
     "This is an embedding test.": [

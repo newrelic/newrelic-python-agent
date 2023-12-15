@@ -23,7 +23,6 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
 
-
 OPENAI_VERSION = get_package_version("openai")
 OPENAI_VERSION_TUPLE = tuple(map(int, OPENAI_VERSION.split(".")))
 OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
@@ -105,7 +104,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     else:
         attribute_response = response
 
-
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
     response_model = attribute_response.get("model", "")
@@ -126,7 +124,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "duration": ft.duration,
         "response.model": response_model,
         "response.organization": organization,
-        "response.api_type": api_type, # API type was removed in v1
+        "response.api_type": api_type,  # API type was removed in v1
         "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
@@ -157,7 +155,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     return response
 
 
-def wrap_chat_completion_create(wrapped, instance, args, kwargs):
+def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if not transaction or kwargs.get("stream", False):
@@ -169,7 +167,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
     request_message_list = kwargs.get("messages", [])
 
     # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(openai, "api_key", None)
+    api_key = getattr(instance._client, "api_key", None) if OPENAI_V1 else getattr(openai, "api_key", None)
     api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
     span_id = None
@@ -192,18 +190,37 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         trace_id = available_metadata.get("trace.id", "")
 
         try:
-            response = wrapped(*args, **kwargs)
+            return_val = wrapped(*args, **kwargs)
         except Exception as exc:
-            exc_organization = getattr(exc, "organization", "")
+            if OPENAI_V1:
+                response = getattr(exc, "response", "")
+                response_headers = getattr(response, "headers", "")
+                exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
+                # There appears to be a bug here in openai v1 where despite having code,
+                # param, etc in the error response, they are not populated on the exception
+                # object so grab them from the response body object instead.
+                body = getattr(exc, "body", {}) or {}
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "status_code", "") or "",
+                    "error.message": body.get("message", "") or "",
+                    "error.code": body.get("code", "") or "",
+                    "error.param": body.get("param", "") or "",
+                    "completion_id": completion_id,
+                }
+            else:
+                exc_organization = getattr(exc, "organization", "")
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "http_status", ""),
+                    "error.message": getattr(exc, "_message", ""),
+                    "error.code": getattr(getattr(exc, "error", ""), "code", ""),
+                    "error.param": getattr(exc, "param", ""),
+                    "completion_id": completion_id,
+                }
+            # Override the default message if it is not empty.
+            message = notice_error_attributes.pop("error.message")
+            if message:
+                exc._nr_message = message
 
-            notice_error_attributes = {
-                "http.statusCode": getattr(exc, "http_status", ""),
-                "error.message": getattr(exc, "_message", ""),
-                "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                "error.param": getattr(exc, "param", ""),
-                "completion_id": completion_id,
-            }
-            exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
@@ -244,11 +261,17 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
             raise
 
-    if not response:
-        return response
+    if not return_val:
+        return return_val
 
     # At this point, we have a response so we can grab attributes only available on the response object
-    response_headers = getattr(response, "_nr_response_headers", None)
+    response_headers = getattr(return_val, "_nr_response_headers", None)
+    # In v1, response objects are pydantic models so this function call converts the
+    # object back to a dictionary for backwards compatibility.
+    response = return_val
+    if OPENAI_V1:
+        response = response.model_dump()
+
     response_model = response.get("model", "")
     response_id = response.get("id")
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
@@ -257,6 +280,9 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
 
     messages = kwargs.get("messages", [])
     choices = response.get("choices", [])
+    organization = (
+        response_headers.get("openai-organization", "") if OPENAI_V1 else getattr(response, "organization", "")
+    )
 
     full_chat_completion_summary_dict = {
         "id": completion_id,
@@ -274,11 +300,11 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
-        "response.organization": getattr(response, "organization", ""),
+        "response.organization": organization,
         "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if any(response_usage) else "",
         "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
-        "response.choices.finish_reason": choices[0].finish_reason if choices else "",
+        "response.choices.finish_reason": choices[0].get("finish_reason", "") if choices else "",
         "response.api_type": getattr(response, "api_type", ""),
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
         "response.headers.ratelimitLimitRequests": check_rate_limit_header(
@@ -299,13 +325,22 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
+        "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-tokens_usage_based", True
+        ),
+        "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-tokens_usage_based", False
+        ),
+        "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-tokens_usage_based", True
+        ),
         "response.number_of_messages": len(messages) + len(choices),
     }
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
     input_message_list = list(messages)
-    output_message_list = [choices[0].message] if choices else None
+    output_message_list = [choices[0].get("message", "")] if choices else None
 
     message_ids = create_chat_completion_message_event(
         transaction,
@@ -326,7 +361,7 @@ def wrap_chat_completion_create(wrapped, instance, args, kwargs):
         transaction._nr_message_ids = {}
     transaction._nr_message_ids[response_id] = message_ids
 
-    return response
+    return return_val
 
 
 def check_rate_limit_header(response_headers, header_name, is_int):
@@ -395,7 +430,7 @@ def create_chat_completion_message_event(
     if output_message_list:
         # Loop through all output messages received from the LLM response and emit a custom event for each one
         for index, message in enumerate(output_message_list):
-            message_content = getattr(message, "content", "")
+            message_content = message.get("content", "")
 
             # Add offset of input_message_length so we don't receive any duplicate index values that match the input message IDs
             index += len(input_message_list)
@@ -418,7 +453,7 @@ def create_chat_completion_message_event(
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
                 "content": message_content,
-                "role": getattr(message, "role", ""),
+                "role": message.get("role", ""),
                 "completion_id": chat_completion_id,
                 "sequence": index,
                 "response.model": response_model if response_model else "",
@@ -559,8 +594,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     return response
 
 
-
-async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
+async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if not transaction or kwargs.get("stream", False):
@@ -572,7 +606,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
     request_message_list = kwargs.get("messages", [])
 
     # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(openai, "api_key", None)
+    api_key = getattr(instance._client, "api_key", None) if OPENAI_V1 else getattr(openai, "api_key", None)
     api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
     span_id = None
@@ -595,18 +629,37 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
         trace_id = available_metadata.get("trace.id", "")
 
         try:
-            response = await wrapped(*args, **kwargs)
+            return_val = await wrapped(*args, **kwargs)
         except Exception as exc:
-            exc_organization = getattr(exc, "organization", "")
+            if OPENAI_V1:
+                response = getattr(exc, "response", "")
+                response_headers = getattr(response, "headers", "")
+                exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
+                # There appears to be a bug here in openai v1 where despite having code,
+                # param, etc in the error response, they are not populated on the exception
+                # object so grab them from the response body object instead.
+                body = getattr(exc, "body", {}) or {}
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "status_code", "") or "",
+                    "error.message": body.get("message", "") or "",
+                    "error.code": body.get("code", "") or "",
+                    "error.param": body.get("param", "") or "",
+                    "completion_id": completion_id,
+                }
+            else:
+                exc_organization = getattr(exc, "organization", "")
+                notice_error_attributes = {
+                    "http.statusCode": getattr(exc, "http_status", ""),
+                    "error.message": getattr(exc, "_message", ""),
+                    "error.code": getattr(getattr(exc, "error", ""), "code", ""),
+                    "error.param": getattr(exc, "param", ""),
+                    "completion_id": completion_id,
+                }
+            # Override the default message if it is not empty.
+            message = notice_error_attributes.pop("error.message")
+            if message:
+                exc._nr_message = message
 
-            notice_error_attributes = {
-                "http.statusCode": getattr(exc, "http_status", ""),
-                "error.message": getattr(exc, "_message", ""),
-                "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                "error.param": getattr(exc, "param", ""),
-                "completion_id": completion_id,
-            }
-            exc._nr_message = notice_error_attributes.pop("error.message")
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
@@ -647,11 +700,17 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
 
             raise
 
-    if not response:
-        return response
+    if not return_val:
+        return return_val
 
     # At this point, we have a response so we can grab attributes only available on the response object
-    response_headers = getattr(response, "_nr_response_headers", None)
+    response_headers = getattr(return_val, "_nr_response_headers", None)
+    # In v1, response objects are pydantic models so this function call converts the
+    # object back to a dictionary for backwards compatibility.
+    response = return_val
+    if OPENAI_V1:
+        response = response.model_dump()
+
     response_model = response.get("model", "")
     response_id = response.get("id")
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
@@ -660,6 +719,9 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
 
     messages = kwargs.get("messages", [])
     choices = response.get("choices", [])
+    organization = (
+        response_headers.get("openai-organization", "") if OPENAI_V1 else getattr(response, "organization", "")
+    )
 
     full_chat_completion_summary_dict = {
         "id": completion_id,
@@ -677,11 +739,11 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
         "request_id": request_id,
         "duration": ft.duration,
         "response.model": response_model,
-        "response.organization": getattr(response, "organization", ""),
+        "response.organization": organization,
         "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if any(response_usage) else "",
         "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
-        "response.choices.finish_reason": choices[0].finish_reason if choices else "",
+        "response.choices.finish_reason": choices[0].get("finish_reason", "") if choices else "",
         "response.api_type": getattr(response, "api_type", ""),
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
         "response.headers.ratelimitLimitRequests": check_rate_limit_header(
@@ -702,13 +764,22 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
+        "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-tokens_usage_based", True
+        ),
+        "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-tokens_usage_based", False
+        ),
+        "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-tokens_usage_based", True
+        ),
         "response.number_of_messages": len(messages) + len(choices),
     }
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
     input_message_list = list(messages)
-    output_message_list = [choices[0].message] if choices else None
+    output_message_list = [choices[0].get("message", "")] if choices else None
 
     message_ids = create_chat_completion_message_event(
         transaction,
@@ -729,7 +800,7 @@ async def wrap_chat_completion_acreate(wrapped, instance, args, kwargs):
         transaction._nr_message_ids = {}
     transaction._nr_message_ids[response_id] = message_ids
 
-    return response
+    return return_val
 
 
 def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
@@ -775,9 +846,16 @@ def instrument_openai_api_resources_embedding(module):
 
 def instrument_openai_api_resources_chat_completion(module):
     if hasattr(module.ChatCompletion, "create"):
-        wrap_function_wrapper(module, "ChatCompletion.create", wrap_chat_completion_create)
+        wrap_function_wrapper(module, "ChatCompletion.create", wrap_chat_completion_sync)
     if hasattr(module.ChatCompletion, "acreate"):
-        wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_acreate)
+        wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_async)
+
+
+def instrument_openai_resources_chat_completions(module):
+    if hasattr(module.Completions, "create"):
+        wrap_function_wrapper(module, "Completions.create", wrap_chat_completion_sync)
+    if hasattr(module.AsyncCompletions, "create"):
+        wrap_function_wrapper(module, "AsyncCompletions.create", wrap_chat_completion_async)
 
 
 # OpenAI v1 instrumentation points

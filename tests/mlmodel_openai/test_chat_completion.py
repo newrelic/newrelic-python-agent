@@ -375,5 +375,4 @@ def test_openai_chat_completion_async_disabled_custom_event_settings(loop):
 
 def test_openai_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility():
     assert openai.ChatCompletion._nr_wrapped
-    assert openai.ChatCompletion._nr_wrapped
     assert openai.util.convert_to_openai_object

@@ -152,5 +152,4 @@ def test_openai_embedding_async_disabled_custom_insights_events(loop):
 
 def test_openai_embedding_functions_marked_as_wrapped_for_sdk_compatibility():
     assert openai.Embedding._nr_wrapped
-    assert openai.Embedding._nr_wrapped
     assert openai.util.convert_to_openai_object

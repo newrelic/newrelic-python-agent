@@ -148,3 +148,8 @@ def test_openai_embedding_async_disabled_custom_insights_events(loop):
     loop.run_until_complete(
         openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
     )
+
+
+def test_openai_embedding_functions_marked_as_wrapped_for_sdk_compatibility():
+    assert openai.Embedding._nr_wrapped
+    assert openai.util.convert_to_openai_object._nr_wrapped

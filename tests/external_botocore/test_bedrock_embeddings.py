@@ -1,4 +1,4 @@
- # Copyright 2010 New Relic, Inc.
+# Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -172,3 +172,7 @@ def test_bedrock_embedding_error_incorrect_access_key(
             exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
 
     _test()
+
+
+def test_bedrock_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility(bedrock_server):
+    assert bedrock_server._nr_wrapped

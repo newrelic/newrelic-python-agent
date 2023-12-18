@@ -14,10 +14,9 @@
 
 import os
 
-import langchain
 from langchain.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_custom_event_count,
@@ -28,6 +27,10 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version
+from newrelic.hooks.mlmodel_langchain import VECTORSTORE_CLASSES
+
+LANGCHAIN_VERSION = get_package_version("langchain")
 
 vectorstore_recorded_events = [
     (
@@ -91,11 +94,13 @@ vectorstore_recorded_events = [
     (
         {"type": "LlmVectorSearch", "timestamp": 1702052394890},
         {
-            "span_id": "span-id",
+            "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
             "id": None,  # UUID that changes with each run
-            "vendor": "LangChain",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "appName": "Python Agent Test (mlmodel_langchain)",
             "request.query": "Complete this sentence: Hello",
             "request.k": 1,
             "duration": None,  # Changes with every run
@@ -108,32 +113,53 @@ vectorstore_recorded_events = [
             "search_id": None,  # UUID that changes with each run
             "sequence": 0,
             "page_content": "Hello world!\n1",
-            "span_id": "span-id",
+            "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
             "id": None,  # UUID that changes with each run
-            "vendor": "LangChain",
-            "request.query": "Complete this sentence: Hello",
-            "request.k": 1,
-            "duration": None,  # Changes with every run
-            "response.number_of_documents": 1,
-            "metadata.source": "/__w/newrelic-python-agent/newrelic-python-agent/tests/mlmodel_langchain/hello.pdf",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            # "metadata.source": "/__w/newrelic-python-agent/newrelic-python-agent/tests/mlmodel_langchain/hello.pdf",
+            "metadata.source": "/Users/lrafeei/repo/newrelic-python-agent/tests/mlmodel_langchain/hello.pdf",
             "metadata.page": 0,
         },
     ),
 ]
 
 
+def test_vectorstore():
+    import importlib
+
+    script_dir = os.path.dirname(__file__)
+    loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+    docs = loader.load()
+
+    for dir, vector_class in VECTORSTORE_CLASSES.items():
+        module_name = importlib.import_module(dir, package=vector_class)
+        class_object = getattr(module_name, vector_class)
+
+        # This will not work with this method because each command
+        # has *slightly* different arguments
+        vectorstore_index = class_object.from_documents(docs, OpenAIEmbeddings())
+        docs = vectorstore_index.similarity_search("Complete this sentence: Hello", k=1)
+        # assert "Hello world" in docs[0].page_content
+
+        # Check to see if it contains the __wrapped__ attribute
+        assert hasattr(getattr(vectorstore_index, "similarity_search"), "__wrapped__")
+
+
 @reset_core_stats_engine()
 @validate_custom_events(vectorstore_recorded_events)
+# Two OpenAI LlmEmbedded, two LangChain LlmVectorSearch
 @validate_custom_event_count(count=4)
-# @validate_transaction_metrics(
-#     name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn",
-#     custom_metrics=[
-#         ("Python/ML/LangChain/%s" % langchain.__version__, 1),
-#     ],
-#     background_task=True,
-# )
+@validate_transaction_metrics(
+    name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+    ],
+    background_task=True,
+)
 @background_task()
 def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info):
     set_trace_info()

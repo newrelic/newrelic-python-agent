@@ -2064,380 +2064,386 @@ def _process_module_builtin_defaults():
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.alibabacloud_opensearch",
+        "langchain_community.vectorstores.alibabacloud_opensearch",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.redis.base",
+        "langchain_community.vectorstores.redis.base",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.analyticdb",
+        "langchain_community.vectorstores.analyticdb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.annoy",
+        "langchain_community.vectorstores.annoy",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.astradb",
+        "langchain_community.vectorstores.astradb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.atlas",
+        "langchain_community.vectorstores.atlas",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.awadb",
+        "langchain_community.vectorstores.awadb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.azure_cosmos_db",
+        "langchain_community.vectorstores.azure_cosmos_db",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.azuresearch",
+        "langchain_community.vectorstores.azuresearch",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.bageldb",
+        "langchain_community.vectorstores.bageldb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.baiducloud_vector_search",
+        "langchain_community.vectorstores.baiducloud_vector_search",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.cassandra",
-        "newrelic.hooks.mlmodel_langchain",
-        "instrument_langchain_vectorstore_similarity_search",
-    )
-
-    _process_module_definition(
-        "langchain.vectorstores.chroma",
+        "langchain_community.vectorstores.cassandra",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.clarifai",
+        "langchain_community.vectorstores.chroma",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.clickhouse",
+        "langchain_community.vectorstores.clarifai",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.dashvector",
+        "langchain_community.vectorstores.clickhouse",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.databricks_vector_search",
+        "langchain_community.vectorstores.dashvector",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.deeplake",
+        "langchain_community.vectorstores.databricks_vector_search",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.dingo",
+        "langchain_community.vectorstores.deeplake",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.elastic_vector_search",
+        "langchain_community.vectorstores.dingo",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.elasticsearch",
+        "langchain_community.vectorstores.elastic_vector_search",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.epsilla",
+        "langchain_community.vectorstores.elasticsearch",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.faiss",
+        "langchain_community.vectorstores.epsilla",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.hippo",
+        "langchain_community.vectorstores.faiss",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    # _process_module_definition(
+    #     "langchain_community.vectorstores.faiss",
+    #     "newrelic.hooks.mlmodel_langchain",
+    #     "instrument_langchain_vectorstore_similarity_search",
+    # )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.hippo",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.hologres",
+        "langchain_community.vectorstores.hologres",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.lancedb",
+        "langchain_community.vectorstores.lancedb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.llm_rails",
+        "langchain_community.vectorstores.llm_rails",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.marqo",
+        "langchain_community.vectorstores.marqo",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.matching_engine",
+        "langchain_community.vectorstores.matching_engine",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.meilisearch",
+        "langchain_community.vectorstores.meilisearch",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.milvus",
+        "langchain_community.vectorstores.milvus",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.momento_vector_index",
+        "langchain_community.vectorstores.momento_vector_index",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.mongodb_atlas",
+        "langchain_community.vectorstores.mongodb_atlas",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.myscale",
+        "langchain_community.vectorstores.myscale",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.neo4j_vector",
+        "langchain_community.vectorstores.neo4j_vector",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.nucliadb",
+        "langchain_community.vectorstores.nucliadb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.opensearch_vector_search",
+        "langchain_community.vectorstores.opensearch_vector_search",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.pgembedding",
+        "langchain_community.vectorstores.pgembedding",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.pgvecto_rs",
+        "langchain_community.vectorstores.pgvecto_rs",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.pgvector",
+        "langchain_community.vectorstores.pgvector",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.pinecone",
+        "langchain_community.vectorstores.pinecone",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.qdrant",
+        "langchain_community.vectorstores.qdrant",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.rocksetdb",
+        "langchain_community.vectorstores.rocksetdb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.scann",
+        "langchain_community.vectorstores.scann",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.semadb",
+        "langchain_community.vectorstores.semadb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.singlestoredb",
+        "langchain_community.vectorstores.singlestoredb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.sklearn",
+        "langchain_community.vectorstores.sklearn",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.sqlitevss",
+        "langchain_community.vectorstores.sqlitevss",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.starrocks",
+        "langchain_community.vectorstores.starrocks",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.supabase",
+        "langchain_community.vectorstores.supabase",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.tair",
+        "langchain_community.vectorstores.tair",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.tencentvectordb",
+        "langchain_community.vectorstores.tencentvectordb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.tigris",
+        "langchain_community.vectorstores.tigris",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.tiledb",
+        "langchain_community.vectorstores.tiledb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.timescalevector",
+        "langchain_community.vectorstores.timescalevector",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.typesense",
+        "langchain_community.vectorstores.typesense",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.usearch",
+        "langchain_community.vectorstores.usearch",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.vald",
+        "langchain_community.vectorstores.vald",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.vearch",
+        "langchain_community.vectorstores.vearch",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.vectara",
+        "langchain_community.vectorstores.vectara",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.vespa",
+        "langchain_community.vectorstores.vespa",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.weaviate",
+        "langchain_community.vectorstores.weaviate",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.xata",
+        "langchain_community.vectorstores.xata",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.yellowbrick",
+        "langchain_community.vectorstores.yellowbrick",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
 
     _process_module_definition(
-        "langchain.vectorstores.zep",
+        "langchain_community.vectorstores.zep",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )

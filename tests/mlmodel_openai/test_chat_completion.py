@@ -371,3 +371,8 @@ def test_openai_chat_completion_async_disabled_custom_event_settings(loop):
             model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
         )
     )
+
+
+def test_openai_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility():
+    assert openai.ChatCompletion._nr_wrapped
+    assert openai.util.convert_to_openai_object._nr_wrapped

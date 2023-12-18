@@ -884,21 +884,33 @@ async def wrap_base_client_process_response_async(wrapped, instance, args, kwarg
 
 
 def instrument_openai_util(module):
-    wrap_function_wrapper(module, "convert_to_openai_object", wrap_convert_to_openai_object)
+    if hasattr(module, "convert_to_openai_object"):
+        wrap_function_wrapper(module, "convert_to_openai_object", wrap_convert_to_openai_object)
+        # This is to mark where we instrument so the SDK knows not to instrument them
+        # again.
+        setattr(module.convert_to_openai_object, "_nr_wrapped", True)
 
 
 def instrument_openai_api_resources_embedding(module):
-    if hasattr(module.Embedding, "create"):
-        wrap_function_wrapper(module, "Embedding.create", wrap_embedding_sync)
-    if hasattr(module.Embedding, "acreate"):
-        wrap_function_wrapper(module, "Embedding.acreate", wrap_embedding_async)
+    if hasattr(module, "Embedding"):
+        if hasattr(module.Embedding, "create"):
+            wrap_function_wrapper(module, "Embedding.create", wrap_embedding_sync)
+        if hasattr(module.Embedding, "acreate"):
+            wrap_function_wrapper(module, "Embedding.acreate", wrap_embedding_async)
+        # This is to mark where we instrument so the SDK knows not to instrument them
+        # again.
+        setattr(module.Embedding, "_nr_wrapped", True)
 
 
 def instrument_openai_api_resources_chat_completion(module):
-    if hasattr(module.ChatCompletion, "create"):
-        wrap_function_wrapper(module, "ChatCompletion.create", wrap_chat_completion_sync)
-    if hasattr(module.ChatCompletion, "acreate"):
-        wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_async)
+    if hasattr(module, "ChatCompletion"):
+        if hasattr(module.ChatCompletion, "create"):
+            wrap_function_wrapper(module, "ChatCompletion.create", wrap_chat_completion_sync)
+        if hasattr(module.ChatCompletion, "acreate"):
+            wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_async)
+        # This is to mark where we instrument so the SDK knows not to instrument them
+        # again.
+        setattr(module.ChatCompletion, "_nr_wrapped", True)
 
 
 def instrument_openai_resources_chat_completions(module):
@@ -908,7 +920,6 @@ def instrument_openai_resources_chat_completions(module):
         wrap_function_wrapper(module, "AsyncCompletions.create", wrap_chat_completion_async)
 
 
-# OpenAI v1 instrumentation points
 def instrument_openai_resources_embeddings(module):
     if hasattr(module, "Embeddings"):
         if hasattr(module.Embeddings, "create"):

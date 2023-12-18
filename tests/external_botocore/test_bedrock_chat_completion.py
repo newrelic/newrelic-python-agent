@@ -287,3 +287,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
             exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
 
     _test()
+
+
+def test_bedrock_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility(bedrock_server):
+    assert bedrock_server._nr_wrapped

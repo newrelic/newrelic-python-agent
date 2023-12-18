@@ -2071,6 +2071,13 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_base_client",
     )
+
+    _process_module_definition(
+        "langchain.chains.base",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_chains_base",
+    )
+
     _process_module_definition(
         "asyncio.base_events",
         "newrelic.hooks.coroutines_asyncio",

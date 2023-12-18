@@ -382,13 +382,31 @@ def wrap_on_tool_start(wrapped, instance, args, kwargs):
 
 
 def instrument_langchain_vectorstore_similarity_search(module):
-    print(module.__name__)
     vector_class = VECTORSTORE_CLASSES.get(module.__name__)
 
     if vector_class and hasattr(getattr(module, vector_class, ""), "similarity_search"):
         wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
     if vector_class and hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
         wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)
+
+def wrap_chain_sync_run(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+    breakpoint()
+
+
+def wrap_chain_async_run(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+
+def instrument_langchain_chains_base(module):
+    if hasattr(getattr(module, "Chain"), "run"):
+        wrap_function_wrapper(module, "Chain.run", wrap_chain_sync_run)
+    if hasattr(getattr(module, "Chain"), "arun"):
+        wrap_function_wrapper(module, "Chain.arun", wrap_chain_async_run)
 
 
 def instrument_langchain_core_tools(module):

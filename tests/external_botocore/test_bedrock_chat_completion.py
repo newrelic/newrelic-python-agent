@@ -21,7 +21,9 @@ import pytest
 from _test_bedrock_chat_completion import (
     chat_completion_expected_client_errors,
     chat_completion_expected_events,
+    chat_completion_invalid_access_key_error_events,
     chat_completion_payload_templates,
+    chat_completion_invalid_access_key_error_events,
 )
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import (
@@ -30,10 +32,10 @@ from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_custom_event_count,
 )
+from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
-from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -88,6 +90,11 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
+def expected_invalid_access_key_error_events(model_id):
+    return chat_completion_invalid_access_key_error_events[model_id]
+
+
+@pytest.fixture(scope="module")
 def expected_events_no_convo_id(model_id):
     events = copy.deepcopy(chat_completion_expected_events[model_id])
     for event in events:
@@ -111,6 +118,8 @@ def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_m
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_in_txn_with_convo_id",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         custom_metrics=[
             ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -133,6 +142,8 @@ def test_bedrock_chat_completion_in_txn_no_convo_id(set_trace_info, exercise_mod
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_in_txn_no_convo_id",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         custom_metrics=[
             ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -176,42 +187,79 @@ _client_error = botocore.exceptions.ClientError
 _client_error_name = callable_name(_client_error)
 
 
-@validate_error_trace_attributes(
-    "botocore.errorfactory:ValidationException",
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
+chat_completion_invalid_model_error_events = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (external_botocore)",
+            "transaction_id": "transaction-id",
             "conversation_id": "my-awesome-id",
-            "request_id": "f4908827-3db9-4742-9103-2bbc34578b03",
+            "span_id": None,
+            "trace_id": "trace-id",
             "api_key_last_four_digits": "CRET",
+            "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",
-            "vendor": "Bedrock",
+            "response.model": "does-not-exist",
+            "request_id": "",
+            "vendor": "bedrock",
             "ingest_source": "Python",
-            "http.statusCode": 400,
-            "error.message": "The provided model identifier is invalid.",
-            "error.code": "ValidationException",
+            "error": True,
         },
-    },
-)
-@background_task()
+    ),
+]
+
+
+@reset_core_stats_engine()
 def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_info):
-    set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
-    with pytest.raises(_client_error):
-        bedrock_server.invoke_model(
-            body=b"{}",
-            modelId="does-not-exist",
-            accept="application/json",
-            contentType="application/json",
-        )
+    @validate_custom_events(chat_completion_invalid_model_error_events)
+    @validate_error_trace_attributes(
+        "botocore.errorfactory:ValidationException",
+        exact_attrs={
+            "agent": {},
+            "intrinsic": {},
+            "user": {
+                "http.statusCode": 400,
+                "error.message": "The provided model identifier is invalid.",
+                "error.code": "ValidationException",
+            },
+        },
+    )
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion_error_invalid_model",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        custom_metrics=[
+            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_chat_completion_error_invalid_model")
+    def _test():
+        set_trace_info()
+        add_custom_attribute("conversation_id", "my-awesome-id")
+        with pytest.raises(_client_error):
+            bedrock_server.invoke_model(
+                body=b"{}",
+                modelId="does-not-exist",
+                accept="application/json",
+                contentType="application/json",
+            )
+
+    _test()
 
 
 @dt_enabled
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_error_incorrect_access_key(
-    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_client_error
+    monkeypatch,
+    bedrock_server,
+    exercise_model,
+    set_trace_info,
+    expected_client_error,
+    expected_invalid_access_key_error_events,
 ):
+    @validate_custom_events(expected_invalid_access_key_error_events)
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={
@@ -220,7 +268,16 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
             "user": expected_client_error,
         },
     )
-    @background_task()
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        custom_metrics=[
+            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_chat_completion")
     def _test():
         monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
 

@@ -45,7 +45,6 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.elastic_vector_search": "ElasticVectorSearch",
     "langchain_community.vectorstores.elasticsearch": "ElasticsearchStore",
     "langchain_community.vectorstores.epsilla": "Epsilla",
-    # "langchain.vectorstores.faiss": "FAISS",
     "langchain_community.vectorstores.faiss": "FAISS",
     "langchain_community.vectorstores.hippo": "Hippo",
     "langchain_community.vectorstores.hologres": "Hologres",

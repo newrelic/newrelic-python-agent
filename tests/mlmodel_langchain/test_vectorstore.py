@@ -28,8 +28,7 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version
-
-# from newrelic.hooks.mlmodel_langchain import VECTORSTORE_CLASSES
+from newrelic.hooks.mlmodel_langchain import VECTORSTORE_CLASSES
 
 LANGCHAIN_VERSION = get_package_version("langchain")
 
@@ -128,26 +127,49 @@ vectorstore_recorded_events = [
     ),
 ]
 
+
 # Work in progress
-# def test_vectorstore():
-#     import importlib
+def test_vectorstore():
+    import importlib
 
-#     script_dir = os.path.dirname(__file__)
-#     loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
-#     docs = loader.load()
+    script_dir = os.path.dirname(__file__)
+    loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+    docs = loader.load()
 
-#     for dir, vector_class in VECTORSTORE_CLASSES.items():
-#         module_name = importlib.import_module(dir, package=vector_class)
-#         class_object = getattr(module_name, vector_class)
+    for dir, vector_class in VECTORSTORE_CLASSES.items():
+        module_name = importlib.import_module(dir, package=vector_class)
+        class_object = getattr(module_name, vector_class)
 
-#         # This will not work with this method because each command
-#         # has *slightly* different arguments
-#         vectorstore_index = class_object.from_documents(docs, OpenAIEmbeddings())
-#         docs = vectorstore_index.similarity_search("Complete this sentence: Hello", k=1)
-#         # assert "Hello world" in docs[0].page_content
+        # This will not work with this method because each command
+        # has *slightly* different arguments
+        vectorstore_index = class_object.from_documents(docs, OpenAIEmbeddings())
+        docs = vectorstore_index.similarity_search("Complete this sentence: Hello", k=1)
+        # assert "Hello world" in docs[0].page_content
 
-#         # Check to see if it contains the __wrapped__ attribute
-#         assert hasattr(getattr(vectorstore_index, "similarity_search"), "__wrapped__")
+        # Check to see if it contains the __wrapped__ attribute
+        assert hasattr(getattr(vectorstore_index, "similarity_search"), "__wrapped__")
+
+
+_test_vectorstore_modules_instrumented_ignored_classes = set(["VectorStore"])
+
+
+def test_vectorstore_modules_instrumented():
+    from langchain_community import vectorstores
+
+    vector_store_classes = tuple(vectorstores.__all__)
+    uninstrumented_classes = []
+    for class_name in vector_store_classes:
+        class_ = getattr(vectorstores, class_name)
+        if (
+            not hasattr(class_, "similarity_search")
+            or class_name in _test_vectorstore_modules_instrumented_ignored_classes
+        ):
+            continue
+
+        if not hasattr(getattr(class_, "similarity_search"), "__wrapped__"):
+            uninstrumented_classes.append(class_name)
+
+    assert not uninstrumented_classes, "Uninstrumented classes found: %s" % str(uninstrumented_classes)
 
 
 @reset_core_stats_engine()

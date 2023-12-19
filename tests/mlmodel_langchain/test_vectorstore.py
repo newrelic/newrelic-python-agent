@@ -28,7 +28,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version
-from newrelic.hooks.mlmodel_langchain import VECTORSTORE_CLASSES
 
 LANGCHAIN_VERSION = get_package_version("langchain")
 
@@ -120,37 +119,19 @@ vectorstore_recorded_events = [
             "vendor": "langchain",
             "ingest_source": "Python",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            # "metadata.source": "/__w/newrelic-python-agent/newrelic-python-agent/tests/mlmodel_langchain/hello.pdf",
-            "metadata.source": "/Users/lrafeei/repo/newrelic-python-agent/tests/mlmodel_langchain/hello.pdf",
+            "metadata.source": "/__w/newrelic-python-agent/newrelic-python-agent/tests/mlmodel_langchain/hello.pdf",
             "metadata.page": 0,
         },
     ),
 ]
 
 
-# Work in progress
-def test_vectorstore():
-    import importlib
-
-    script_dir = os.path.dirname(__file__)
-    loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
-    docs = loader.load()
-
-    for dir, vector_class in VECTORSTORE_CLASSES.items():
-        module_name = importlib.import_module(dir, package=vector_class)
-        class_object = getattr(module_name, vector_class)
-
-        # This will not work with this method because each command
-        # has *slightly* different arguments
-        vectorstore_index = class_object.from_documents(docs, OpenAIEmbeddings())
-        docs = vectorstore_index.similarity_search("Complete this sentence: Hello", k=1)
-        # assert "Hello world" in docs[0].page_content
-
-        # Check to see if it contains the __wrapped__ attribute
-        assert hasattr(getattr(vectorstore_index, "similarity_search"), "__wrapped__")
-
-
-_test_vectorstore_modules_instrumented_ignored_classes = set(["VectorStore"])
+_test_vectorstore_modules_instrumented_ignored_classes = set(
+    [
+        "VectorStore",  # Base class
+        "ElasticKnnSearch",  # Deprecated, so we will not be instrumenting this.
+    ]
+)
 
 
 def test_vectorstore_modules_instrumented():

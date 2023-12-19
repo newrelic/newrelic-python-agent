@@ -2074,12 +2074,12 @@ def _process_module_builtin_defaults():
         "instrument_asyncio_base_events",
     )
     _process_module_definition(
-        "langchain.vectorstores.docarray.hnsw",
+        "langchain_community.vectorstores.docarray.hnsw",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain.vectorstores.docarray.in_memory",
+        "langchain_community.vectorstores.docarray.in_memory",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )

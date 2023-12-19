@@ -65,7 +65,6 @@ else:
         "test_chat_completion.py",
         "test_get_llm_message_ids.py",
         "test_chat_completion_error.py",
-        "test_embeddings_error_v1.py",
     ]
 
 

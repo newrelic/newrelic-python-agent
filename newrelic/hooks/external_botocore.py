@@ -584,6 +584,12 @@ def _nr_clientcreator__create_api_method_(wrapped, instance, args, kwargs):
     return tracer(wrapped)
 
 
+def _nr_clientcreator__create_methods(wrapped, instance, args, kwargs):
+    class_attributes = wrapped(*args, **kwargs)
+    class_attributes["_nr_wrapped"] = True
+    return class_attributes
+
+
 def _bind_make_request_params(operation_model, request_dict, *args, **kwargs):
     return operation_model, request_dict
 
@@ -614,3 +620,4 @@ def instrument_botocore_endpoint(module):
 
 def instrument_botocore_client(module):
     wrap_function_wrapper(module, "ClientCreator._create_api_method", _nr_clientcreator__create_api_method_)
+    wrap_function_wrapper(module, "ClientCreator._create_methods", _nr_clientcreator__create_methods)

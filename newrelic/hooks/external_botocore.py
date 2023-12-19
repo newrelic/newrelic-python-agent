@@ -261,6 +261,40 @@ def extract_bedrock_claude_model(request_body, response_body=None):
     return input_message_list, output_message_list, chat_completion_summary_dict
 
 
+def extract_bedrock_llama_model(request_body, response_body=None):
+    request_body = json.loads(request_body)
+    if response_body:
+        response_body = json.loads(response_body)
+
+    input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+
+    chat_completion_summary_dict = {
+        "request.max_tokens": request_body.get("max_gen_len", ""),
+        "request.temperature": request_body.get("temperature", ""),
+        "response.number_of_messages": len(input_message_list)
+    }
+
+    if response_body:
+        output_message_list = [{"role": "assistant", "content": response_body.get("generation", "")}]
+        prompt_tokens = response_body.get("prompt_token_count", None)
+        completion_tokens = response_body.get("generation_token_count", None)
+        total_tokens = prompt_tokens + completion_tokens if prompt_tokens and completion_tokens else None
+
+        chat_completion_summary_dict.update(
+            {
+                "response.usage.completion_tokens": completion_tokens,
+                "response.usage.prompt_tokens": prompt_tokens,
+                "response.usage.total_tokens": total_tokens,
+                "response.choices.finish_reason": response_body.get("stop_reason", ""),
+                "response.number_of_messages": len(input_message_list) + len(output_message_list),
+            }
+        )
+    else:
+        output_message_list = []
+
+    return input_message_list, output_message_list, chat_completion_summary_dict
+
+
 def extract_bedrock_cohere_model(request_body, response_body=None):
     request_body = json.loads(request_body)
     if response_body:
@@ -295,6 +329,7 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
     ("ai21.j2", extract_bedrock_ai21_j2_model),
     ("cohere", extract_bedrock_cohere_model),
     ("anthropic.claude", extract_bedrock_claude_model),
+    ("meta.llama2", extract_bedrock_llama_model),
 ]
 
 

@@ -828,7 +828,7 @@ def wrap_base_client_process_response(wrapped, instance, args, kwargs):
     nr_response_headers = getattr(response, "headers")
 
     return_val = wrapped(*args, **kwargs)
-    # Obtain reponse headers for v1
+    # Obtain response headers for v1
     return_val._nr_response_headers = nr_response_headers
     return return_val
 

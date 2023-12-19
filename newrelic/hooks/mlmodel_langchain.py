@@ -75,6 +75,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.sqlitevss": "SQLiteVSS",
     "langchain_community.vectorstores.starrocks": "StarRocks",
     "langchain_community.vectorstores.supabase": "SupabaseVectorStore",
+    "langchain_community.vectorstores.surrealdb": "SurrealDBStore",
     "langchain_community.vectorstores.tair": "Tair",
     "langchain_community.vectorstores.tencentvectordb": "TencentVectorDB",
     "langchain_community.vectorstores.tigris": "Tigris",

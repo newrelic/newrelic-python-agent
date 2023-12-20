@@ -144,7 +144,7 @@ def create_chat_completion_message_event(
             "response.model": request_model,
             "vendor": "bedrock",
             "ingest_source": "Python",
-            "is_response": True,
+            "is_response": True
         }
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
@@ -246,7 +246,7 @@ def extract_bedrock_claude_model(request_body, response_body=None):
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens_to_sample", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.number_of_messages": len(input_message_list),
+        "response.number_of_messages": len(input_message_list)
     }
 
     if response_body:
@@ -274,7 +274,7 @@ def extract_bedrock_cohere_model(request_body, response_body=None):
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.number_of_messages": len(input_message_list),
+        "response.number_of_messages": len(input_message_list)
     }
 
     if response_body:
@@ -368,7 +368,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                 notice_error_attributes = {
                     "http.statusCode": error_attributes["http.statusCode"],
                     "error.message": error_attributes["error.message"],
-                    "error.code": error_attributes["error.code"],
+                    "error.code": error_attributes["error.code"]
                 }
 
                 if is_embedding:
@@ -392,7 +392,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                         ft.duration,
                         True,
                         trace_id,
-                        span_id,
+                        span_id
                     )
                 else:
                     handle_chat_completion_event(
@@ -406,7 +406,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                         ft.duration,
                         True,
                         trace_id,
-                        span_id,
+                        span_id
                     )
 
             finally:
@@ -463,7 +463,7 @@ def handle_embedding_event(
     duration,
     is_error,
     trace_id,
-    span_id,
+    span_id
 ):
     embedding_id = str(uuid.uuid4())
 
@@ -508,7 +508,7 @@ def handle_chat_completion_event(
     duration,
     is_error,
     trace_id,
-    span_id,
+    span_id
 ):
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("llm.conversation_id", "")

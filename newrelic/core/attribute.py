@@ -184,9 +184,6 @@ def resolve_logging_context_attributes(attr_dict, attribute_filter, attr_prefix,
     c_attrs = attr_class()
 
     for attr_name, attr_value in attr_dict.items():
-        if attr_value is None:
-            continue
-
         dest = attribute_filter.apply(attr_name, DST_LOG_EVENT_CONTEXT_DATA)
 
         if dest & DST_LOG_EVENT_CONTEXT_DATA:

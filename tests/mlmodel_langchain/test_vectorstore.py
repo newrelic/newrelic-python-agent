@@ -107,6 +107,7 @@ def test_vectorstore_modules_instrumented():
 
 # Sync tests
 
+
 # Checks metrics for FAISS "similarity_search" instrumentation
 @reset_core_stats_engine()
 @validate_custom_events(vectorstore_recorded_events)

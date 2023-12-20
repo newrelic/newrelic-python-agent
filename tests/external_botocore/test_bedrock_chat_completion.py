@@ -23,7 +23,6 @@ from _test_bedrock_chat_completion import (
     chat_completion_expected_events,
     chat_completion_invalid_access_key_error_events,
     chat_completion_payload_templates,
-    chat_completion_invalid_access_key_error_events,
 )
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import (

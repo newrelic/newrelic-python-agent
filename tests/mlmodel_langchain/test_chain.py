@@ -12,20 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import langchain
 import openai
-from langchain.chains.openai_functions.openapi import get_openapi_chain
+import pytest
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema import BaseOutputParser
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
+    validate_transaction_error_event_count,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
+from testing_support.validators.validate_error_trace_attributes import (
+    validate_error_trace_attributes,
+)
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
+from newrelic.common.object_names import callable_name
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
@@ -33,101 +40,249 @@ _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
 )
+chat_completion_recorded_events_uuid_message_ids = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": None,
+            "duration": None,
+            "response.number_of_messages": 6,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "colors",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "red",
+            "completion_id": None,
+            "sequence": 1,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "is_response": True,
+            "virtual_llm": True,
+        },
+    ),
+]
+
+chat_completion_recorded_events_missing_conversation_id = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": None,
+            "duration": None,
+            "response.number_of_messages": 6,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": "message-id-0",
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "colors",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": "message-id-1",
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "red",
+            "completion_id": None,
+            "sequence": 1,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "is_response": True,
+            "virtual_llm": True,
+        },
+    ),
+]
 
 chat_completion_recorded_events = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
-            "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
             "conversation_id": "my-awesome-id",
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
-            "api_key_last_four_digits": "sk-CRET",
-            "duration": None,  # Response time varies each test run
-            "request.model": "gpt-3.5-turbo",
-            "response.model": "gpt-3.5-turbo-0613",
-            "response.organization": "new-relic-nkmd8b",
-            "response.usage.completion_tokens": 11,
-            "response.usage.total_tokens": 64,
-            "response.usage.prompt_tokens": 53,
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "response.choices.finish_reason": "stop",
-            "response.api_type": "None",
-            "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 200,
-            "response.headers.ratelimitLimitTokens": 40000,
-            "response.headers.ratelimitResetTokens": "90ms",
-            "response.headers.ratelimitResetRequests": "7m12s",
-            "response.headers.ratelimitRemainingTokens": 39940,
-            "response.headers.ratelimitRemainingRequests": 199,
-            "response.headers.ratelimitLimitTokensUsageBased": "",
-            "response.headers.ratelimitResetTokensUsageBased": "",
-            "response.headers.ratelimitRemainingTokensUsageBased": "",
-            "vendor": "openAI",
+            "transaction_id": "transaction-id",
+            "vendor": "langchain",
             "ingest_source": "Python",
-            "response.number_of_messages": 3,
+            "virtual_llm": True,
+            "request_id": None,
+            "duration": None,
+            "response.number_of_messages": 6,
         },
     ),
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-0",
-            "appName": "Python Agent Test (mlmodel_openai)",
+            "id": "message-id-0",
+            "appName": "Python Agent Test (mlmodel_langchain)",
             "conversation_id": "my-awesome-id",
-            "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+            "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
-            "content": "You are a scientist.",
-            "role": "system",
+            "content": "colors",
             "completion_id": None,
             "sequence": 0,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openAI",
+            "vendor": "langchain",
             "ingest_source": "Python",
+            "virtual_llm": True,
         },
     ),
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-1",
-            "appName": "Python Agent Test (mlmodel_openai)",
+            "id": "message-id-1",
+            "appName": "Python Agent Test (mlmodel_langchain)",
             "conversation_id": "my-awesome-id",
-            "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+            "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
-            "content": "What is 212 degrees Fahrenheit converted to Celsius?",
-            "role": "user",
+            "content": "red",
             "completion_id": None,
             "sequence": 1,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openAI",
+            "vendor": "langchain",
             "ingest_source": "Python",
+            "is_response": True,
+            "virtual_llm": True,
+        },
+    ),
+]
+
+chat_completion_recorded_events_error_in_openai = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": None,
+            "duration": None,
+            "response.number_of_messages": 1,
         },
     ),
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
-            "appName": "Python Agent Test (mlmodel_openai)",
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
             "conversation_id": "my-awesome-id",
-            "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
+            "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
-            "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
-            "role": "assistant",
+            "content": "openai failure",
             "completion_id": None,
-            "sequence": 2,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openAI",
-            "is_response": True,
+            "sequence": 0,
+            "vendor": "langchain",
             "ingest_source": "Python",
+            "virtual_llm": True,
+        },
+    ),
+]
+
+chat_completion_recorded_events_error_in_langchain = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": None,
+            "duration": None,
+            "response.number_of_messages": 1,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "colors",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
         },
     ),
 ]
@@ -135,7 +290,7 @@ chat_completion_recorded_events = [
 
 @reset_core_stats_engine()
 @validate_custom_events(chat_completion_recorded_events)
-@validate_custom_event_count(count=4)
+@validate_custom_event_count(count=7)
 @validate_transaction_metrics(
     name="test_chain:test_langchain_chain",
     custom_metrics=[
@@ -144,9 +299,196 @@ chat_completion_recorded_events = [
     background_task=True,
 )
 @background_task()
-def test_langchain_chain(set_trace_info):
+def test_langchain_chain(set_trace_info, comma_separated_list_output_parser, chat_openai_client):
     set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
 
-    chain = get_openapi_chain("https://www.klarna.com/us/shopping/public/openai/v0/api-docs/")
-    chain.run("What are some options for a men's large blue button down shirt")
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+    chain.invoke({"text": "colors"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+
+
+@reset_core_stats_engine()
+@validate_custom_events(chat_completion_recorded_events_missing_conversation_id)
+@validate_custom_event_count(count=7)
+@validate_transaction_metrics(
+    name="test_chain:test_langchain_chain_without_conversation_id",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_langchain_chain_without_conversation_id(
+    set_trace_info, comma_separated_list_output_parser, chat_openai_client
+):
+    set_trace_info()
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+    chain.invoke({"text": "colors"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+
+
+@reset_core_stats_engine()
+@validate_custom_events(chat_completion_recorded_events_uuid_message_ids)
+@validate_custom_event_count(count=7)
+@validate_transaction_metrics(
+    name="test_chain:test_langchain_chain_without_message_ids",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_langchain_chain_without_message_ids(set_trace_info, comma_separated_list_output_parser, chat_openai_client):
+    set_trace_info()
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+    chain.invoke({"text": "colors"})
+
+
+@reset_core_stats_engine()
+@validate_transaction_error_event_count(1)
+@validate_custom_events(chat_completion_recorded_events_error_in_openai)
+@validate_custom_event_count(count=5)
+@validate_transaction_metrics(
+    name="test_chain:test_langchain_chain_error_in_openai",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_langchain_chain_error_in_openai(set_trace_info, comma_separated_list_output_parser, chat_openai_client):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 4 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+
+    with pytest.raises(openai.AuthenticationError):
+        chain.invoke({"text": "openai failure"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+
+
+@reset_core_stats_engine()
+@validate_transaction_error_event_count(1)
+@validate_error_trace_attributes(
+    callable_name(AttributeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_custom_events(chat_completion_recorded_events_error_in_langchain)
+@validate_custom_event_count(count=2)
+@validate_transaction_metrics(
+    name="test_chain:test_langchain_chain_error",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_langchain_chain_error_in_lanchain(set_trace_info, comma_separated_list_output_parser, chat_openai_client):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+
+    with pytest.raises(AttributeError):
+        chain.invoke({"text": "colors"}, config=[])
+
+
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@validate_transaction_metrics(
+    name="test_chat_completion:test_langchain_chain_outside_transaction",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_langchain_chain_outside_transaction(set_trace_info, comma_separated_list_output_parser, chat_openai_client):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+
+    chain.invoke({"text": "colors"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+
+
+@pytest.fixture
+def comma_separated_list_output_parser():
+    class _CommaSeparatedListOutputParser(BaseOutputParser):
+        """Parse the output of an LLM call to a comma-separated list."""
+
+        def parse(self, text):
+            """Parse the output of an LLM call."""
+            return text.strip().split(", ")
+
+    return _CommaSeparatedListOutputParser()

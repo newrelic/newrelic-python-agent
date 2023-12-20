@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import uuid
 
 from newrelic.api.function_trace import FunctionTrace
@@ -23,6 +24,7 @@ from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 
+_logger = logging.getLogger(__name__)
 LANGCHAIN_VERSION = get_package_version("langchain")
 
 VECTORSTORE_CLASSES = {
@@ -393,7 +395,128 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
-    breakpoint()
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+
+    run_args = bind_args(wrapped, args, kwargs)
+    message_ids = ((run_args.get("config", {}) or {}).get("metadata", {}) or {}).pop("message_ids", [])
+    _input = run_args.get("input", "")
+
+    span_id = None
+    trace_id = None
+
+    # Get conversation ID off of the transaction
+    custom_attrs_dict = transaction._custom_params
+    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    app_name = settings.app_name
+    completion_id = str(uuid.uuid4())
+
+    function_name = wrapped.__name__
+
+    with FunctionTrace(name=function_name, group="Llm/chain/Langchain") as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
+        try:
+            return_val = wrapped(**run_args)
+        except Exception as exc:
+            ft.notice_error(
+                attributes={
+                    "completion_id": completion_id,
+                }
+            )
+            run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+            run_id = run_manager_info.get("run_id", "")
+            metadata = run_manager_info.get("metadata", "")
+            tags = run_manager_info.get("tags", "")
+
+            messages = [_input]
+
+            full_chat_completion_summary_dict = {
+                "id": completion_id,
+                "appName": app_name,
+                "conversation_id": conversation_id,
+                "span_id": span_id,
+                "trace_id": trace_id,
+                "transaction_id": transaction.guid,
+                "vendor": "langchain",
+                "ingest_source": "Python",
+                "virtual_llm": True,
+                "request_id": run_id,
+                "duration": ft.duration,
+                "response.number_of_messages": len(messages),
+            }
+
+            transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
+
+            input_message_list = list(messages)
+            output_message_list = []
+
+            create_chat_completion_message_event(
+                transaction,
+                settings.app_name,
+                input_message_list,
+                completion_id,
+                span_id,
+                trace_id,
+                run_id,
+                conversation_id,
+                output_message_list,
+                message_ids,
+            )
+
+            raise
+
+    if not return_val:
+        return return_val
+
+    response = return_val
+    run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+    run_id = run_manager_info.get("run_id", "")
+    metadata = run_manager_info.get("metadata", "")
+    tags = run_manager_info.get("tags", "")
+
+    messages = [_input]
+
+    full_chat_completion_summary_dict = {
+        "id": completion_id,
+        "appName": app_name,
+        "conversation_id": conversation_id,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "vendor": "langchain",
+        "ingest_source": "Python",
+        "virtual_llm": True,
+        "request_id": run_id,
+        "duration": ft.duration,
+        "response.number_of_messages": len(messages) + len(response),
+    }
+
+    transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
+
+    input_message_list = list(messages)
+    output_message_list = [response[0]] if response else []
+
+    create_chat_completion_message_event(
+        transaction,
+        settings.app_name,
+        input_message_list,
+        completion_id,
+        span_id,
+        trace_id,
+        run_id,
+        conversation_id,
+        output_message_list,
+        message_ids,
+    )
+
+    return return_val
 
 
 def wrap_chain_async_run(wrapped, instance, args, kwargs):
@@ -402,11 +525,100 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
 
-def instrument_langchain_chains_base(module):
-    if hasattr(getattr(module, "Chain"), "run"):
-        wrap_function_wrapper(module, "Chain.run", wrap_chain_sync_run)
-    if hasattr(getattr(module, "Chain"), "arun"):
-        wrap_function_wrapper(module, "Chain.arun", wrap_chain_async_run)
+def create_chat_completion_message_event(
+    transaction,
+    app_name,
+    input_message_list,
+    chat_completion_id,
+    span_id,
+    trace_id,
+    run_id,
+    conversation_id,
+    output_message_list,
+    message_ids,
+):
+    expected_message_ids_len = len(input_message_list) + len(output_message_list)
+    actual_message_ids_len = len(message_ids)
+    if actual_message_ids_len < expected_message_ids_len:
+        message_ids.extend([str(uuid.uuid4()) for i in range(expected_message_ids_len - actual_message_ids_len)])
+        _logger.warning(
+            "The provided metadata['message_ids'] list was found to be %s when it needs to be at least %s. Internally generated UUIDs will be used in place of missing message ids."
+            % (actual_message_ids_len, expected_message_ids_len)
+        )
+
+    # Loop through all input messages received from the create request and emit a custom event for each one
+    for index, message in enumerate(input_message_list):
+        message_content = message.get("text", "")
+
+        chat_completion_input_message_dict = {
+            "id": message_ids[index],
+            "appName": app_name,
+            "conversation_id": conversation_id,
+            "request_id": run_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "content": message_content,
+            "completion_id": chat_completion_id,
+            "sequence": index,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+        }
+
+        transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_input_message_dict)
+
+    if output_message_list:
+        # Loop through all output messages received from the LLM response and emit a custom event for each one
+        for index, message in enumerate(output_message_list):
+            # Add offset of input_message_length so we don't receive any duplicate index values that match the input message IDs
+            index += len(input_message_list)
+
+            chat_completion_output_message_dict = {
+                "id": message_ids[index],
+                "appName": app_name,
+                "conversation_id": conversation_id,
+                "request_id": run_id,
+                "span_id": span_id,
+                "trace_id": trace_id,
+                "transaction_id": transaction.guid,
+                "content": message,
+                "completion_id": chat_completion_id,
+                "sequence": index,
+                "vendor": "langchain",
+                "ingest_source": "Python",
+                "is_response": True,
+                "virtual_llm": True,
+            }
+
+            transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
+
+
+def wrap_on_chain_start(wrapped, instance, args, kwargs):
+    run_manager = wrapped(*args, **kwargs)
+    transaction = current_transaction()
+    if not transaction:
+        return run_manager
+    # Only capture the first run_id.
+    if not hasattr(transaction, "_nr_run_manager_info"):
+        transaction._nr_run_manager_info = {
+            "run_id": run_manager.run_id,
+            "tags": run_manager.tags,
+            "metadata": run_manager.metadata,
+        }
+    return run_manager
+
+
+def instrument_langchain_callbacks_manager(module):
+    if hasattr(getattr(module, "CallbackManager"), "on_chain_start"):
+        wrap_function_wrapper(module, "CallbackManager.on_chain_start", wrap_on_chain_start)
+
+
+def instrument_langchain_runables_chains_base(module):
+    if hasattr(getattr(module, "RunnableSequence"), "invoke"):
+        wrap_function_wrapper(module, "RunnableSequence.invoke", wrap_chain_sync_run)
+    # if hasattr(getattr(module, "Chain"), "arun"):
+    #    wrap_function_wrapper(module, "Chain.arun", wrap_chain_async_run)
 
 
 def instrument_langchain_core_tools(module):

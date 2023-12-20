@@ -31,6 +31,54 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
 RESPONSES_V1 = {
+    "You are a helpful assistant who generates comma separated lists.\n    A user will pass in a category, and you should generate 4 objects in that category in a comma separated list.\n    ONLY return a comma separated list, and nothing more.": [
+        {"content-type": "application/json; charset=utf-8", "x-request-id": "e58911d54d574647d36237e4e53c0f1a"},
+        401,
+        {
+            "error": {
+                "message": "Incorrect API key provided: No-exist. You can find your API key at https://platform.openai.com/account/api-keys.",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "invalid_api_key",
+            }
+        },
+    ],
+    "You are a helpful assistant who generates comma separated lists.\n    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.\n    ONLY return a comma separated list, and nothing more.": [
+        {
+            "Content-Type": "application/json",
+            "openai-model": "gpt-3.5-turbo-0613",
+            "openai-organization": "foobar-jtbczk",
+            "openai-processing-ms": "488",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "200",
+            "x-ratelimit-limit-tokens": "40000",
+            "x-ratelimit-limit-tokens_usage_based": "40000",
+            "x-ratelimit-remaining-requests": "199",
+            "x-ratelimit-remaining-tokens": "39921",
+            "x-ratelimit-remaining-tokens_usage_based": "39921",
+            "x-ratelimit-reset-requests": "7m12s",
+            "x-ratelimit-reset-tokens": "118ms",
+            "x-ratelimit-reset-tokens_usage_based": "118ms",
+            "x-request-id": "f3de99e17ccc360430cffa243b74dcbd",
+        },
+        200,
+        {
+            "id": "chatcmpl-8XEjOPNHth7yS2jt1You3fEwB6w9i",
+            "object": "chat.completion",
+            "created": 1702932142,
+            "model": "gpt-3.5-turbo-0613",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": "red, blue, green, yellow, orange"},
+                    "logprobs": None,
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 60, "completion_tokens": 9, "total_tokens": 69},
+            "system_fingerprint": None,
+        },
+    ],
     "9906": [
         {
             "content-type": "application/json",

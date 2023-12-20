@@ -1547,20 +1547,23 @@ class Transaction(object):
             _logger.debug("record_log_event called where message was not a string type or dictionary. No log event will be sent.")
             return
 
-        if not message or is_string and message.isspace():
-            _logger.debug("record_log_event called where message was missing. No log event will be sent.")
+        if not attributes and not message or is_string and message.isspace():
+            _logger.debug("record_log_event called where message was missing, and no attributes found. No log event will be sent.")
             return
 
         if is_string:
             message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
-        else:
-            message = message
 
         collected_attributes = get_linking_metadata()
         if attributes and (settings and settings.application_logging.forwarding.context_data.enabled):
             context_attributes = resolve_logging_context_attributes(attributes, settings.attribute_filter, "context.")
             if context_attributes:
                 collected_attributes.update(context_attributes)
+
+            if is_hashmap:
+                message_attributes = resolve_logging_context_attributes(message, settings.attribute_filter, "message.")
+                if message_attributes:
+                    collected_attributes.update(message_attributes)
 
         event = LogEventNode(
             timestamp=timestamp,

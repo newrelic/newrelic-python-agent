@@ -82,11 +82,13 @@ def validate_log_events_outside_transaction(events=None, required_attrs=None, fo
                 return False
 
         for key in forgone_attrs:
-            if hasattr(captured, key):
-                mismatches.append("forgone_key: %s, value:<%s>" % (key, getattr(captured, key, None)))
-                return False
-            elif key in captured.attributes:
-                mismatches.append("forgone_key: %s, value:<%s>" % (key, captured.attributes[key]))
+            if hasattr(captured, key) or key in captured.attributes:
+                if hasattr(captured, key):
+                    captured_value = getattr(captured, key, None)
+                elif key in captured.attributes:
+                    captured_value = captured.attributes[key]
+
+                mismatches.append("forgone_key: %s, value:<%s>" % (key, captured_value))
                 return False
 
         return True

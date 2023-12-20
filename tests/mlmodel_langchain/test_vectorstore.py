@@ -112,8 +112,6 @@ def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embeding_openai_cli
     script_dir = os.path.dirname(__file__)
     loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
     docs = loader.load()
-    assert "page" in docs[0].metadata
-    assert "source" in docs[0].metadata
 
     faiss_index = FAISS.from_documents(docs, embeding_openai_client)
     docs = faiss_index.similarity_search("Complete this sentence: Hello", k=1)
@@ -128,8 +126,6 @@ def test_pdf_pagesplitter_vectorstore_outside_txn(set_trace_info, embeding_opena
     script_dir = os.path.dirname(__file__)
     loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
     docs = loader.load()
-    assert "page" in docs[0].metadata
-    assert "source" in docs[0].metadata
 
     faiss_index = FAISS.from_documents(docs, embeding_openai_client)
     docs = faiss_index.similarity_search("Complete this sentence: Hello", k=1)

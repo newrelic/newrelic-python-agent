@@ -14,10 +14,13 @@
 
 import json
 
+import pytest
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
+from newrelic.common.package_version_utils import get_package_version_tuple
+
 # This defines an external server test apps can make requests to instead of
-# the real LangChain backend. This provides 3 features:
+# the real OpenAI backend. This provides 3 features:
 #
 # 1) This removes dependencies on external websites.
 # 2) Provides a better mechanism for making an external call in a test app than
@@ -27,13 +30,12 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 #    created by an external call.
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
-
-RESPONSES = {
+RESPONSES_V1 = {
     "9906": [
         {
-            "Content-Type": "application/json",
+            "content-type": "application/json",
             "openai-organization": "new-relic-nkmd8b",
-            "openai-processing-ms": "24",
+            "openai-processing-ms": "23",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "3000",
             "x-ratelimit-limit-tokens": "1000000",
@@ -43,6 +45,7 @@ RESPONSES = {
             "x-ratelimit-reset-tokens": "0s",
             "x-request-id": "058b2dd82590aa4145e97c2e59681f62",
         },
+        200,
         {
             "object": "list",
             "data": [
@@ -58,9 +61,9 @@ RESPONSES = {
     ],
     "12833": [
         {
-            "Content-Type": "application/json",
+            "content-type": "application/json",
             "openai-organization": "new-relic-nkmd8b",
-            "openai-processing-ms": "16",
+            "openai-processing-ms": "26",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "3000",
             "x-ratelimit-limit-tokens": "1000000",
@@ -70,6 +73,7 @@ RESPONSES = {
             "x-ratelimit-reset-tokens": "0s",
             "x-request-id": "d5d71019880e25a94de58b927045a202",
         },
+        200,
         {
             "object": "list",
             "data": [
@@ -86,61 +90,87 @@ RESPONSES = {
 }
 
 
-def simple_get(self):
-    content_len = int(self.headers.get("content-length"))
-    content = json.loads(self.rfile.read(content_len).decode("utf-8"))
+@pytest.fixture(scope="session")
+def simple_get(openai_version, extract_shortened_prompt):
+    def _simple_get(self):
+        content_len = int(self.headers.get("content-length"))
+        content = json.loads(self.rfile.read(content_len).decode("utf-8"))
 
-    prompt = extract_shortened_prompt(content)
-    if not prompt:
-        self.send_response(500)
+        prompt = extract_shortened_prompt(content)
+        if not prompt:
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write("Could not parse prompt.".encode("utf-8"))
+            return
+
+        headers, response = ({}, "")
+
+        mocked_responses = RESPONSES_V1
+
+        for k, v in mocked_responses.items():
+            if prompt.startswith(k):
+                headers, status_code, response = v
+                break
+        else:  # If no matches found
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write(("Unknown Prompt:\n%s" % prompt).encode("utf-8"))
+            return
+
+        # Send response code
+        self.send_response(status_code)
+
+        # Send headers
+        for k, v in headers.items():
+            self.send_header(k, v)
         self.end_headers()
-        self.wfile.write("Could not parse prompt.".encode("utf-8"))
+
+        # Send response body
+        self.wfile.write(json.dumps(response).encode("utf-8"))
         return
 
-    headers, response = ({}, "")
-    for k, v in RESPONSES.items():
-        if prompt.startswith(k):
-            headers, response = v
-            break
-    else:  # If no matches found
-        self.send_response(500)
-        self.end_headers()
-        self.wfile.write(("Unknown Prompt:\n%s" % prompt).encode("utf-8"))
-        return
-
-    # Send response code
-    self.send_response(200)
-
-    # Send headers
-    for k, v in headers.items():
-        self.send_header(k, v)
-    self.end_headers()
-
-    # Send response body
-    self.wfile.write(json.dumps(response).encode("utf-8"))
-    return
+    return _simple_get
 
 
-def extract_shortened_prompt(content):
-    prompt = (
-        content.get("prompt", None)
-        or "\n".join(str(m) for m in content.get("input")[0])
-        or "\n".join(m["content"] for m in content.get("messages"))
-    )
-    return prompt.lstrip().split("\n")[0]
+@pytest.fixture(scope="session")
+def MockExternalOpenAIServer(simple_get):
+    class _MockExternalOpenAIServer(MockExternalHTTPServer):
+        # To use this class in a test one needs to start and stop this server
+        # before and after making requests to the test app that makes the external
+        # calls.
+
+        def __init__(self, handler=simple_get, port=None, *args, **kwargs):
+            super(_MockExternalOpenAIServer, self).__init__(handler=handler, port=port, *args, **kwargs)
+
+    return _MockExternalOpenAIServer
 
 
-class MockExternalLangChainServer(MockExternalHTTPServer):
-    # To use this class in a test one needs to start and stop this server
-    # before and after making requests to the test app that makes the external
-    # calls.
+@pytest.fixture(scope="session")
+def extract_shortened_prompt(openai_version):
+    def _extract_shortened_prompt(content):
+        _input = content.get("input", None)
+        prompt = (_input and str(_input[0][0])) or content.get("messages")[0]["content"]
+        return prompt
 
-    def __init__(self, handler=simple_get, port=None, *args, **kwargs):
-        super(MockExternalLangChainServer, self).__init__(handler=handler, port=port, *args, **kwargs)
+    return _extract_shortened_prompt
+
+
+def get_openai_version():
+    # Import OpenAI so that get package version can catpure the version from the
+    # system module. OpenAI does not have a package version in v0.
+    import openai  # noqa: F401; pylint: disable=W0611
+
+    return get_package_version_tuple("openai")
+
+
+@pytest.fixture(scope="session")
+def openai_version():
+    return get_openai_version()
 
 
 if __name__ == "__main__":
-    with MockExternalLangChainServer() as server:
-        print("MockExternalLangChainServer serving on port %s" % str(server.port))
+    _MockExternalOpenAIServer = MockExternalOpenAIServer()
+    with MockExternalOpenAIServer() as server:
+        print("MockExternalOpenAIServer serving on port %s" % str(server.port))
         while True:
             pass  # Serve forever

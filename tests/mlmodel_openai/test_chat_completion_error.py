@@ -131,7 +131,7 @@ expected_events_on_no_model_error = [
 def test_chat_completion_invalid_request_error_no_model(set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
-        add_custom_attribute("conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
         openai.ChatCompletion.create(
             # no model provided,
             messages=_test_openai_chat_completion_messages,
@@ -215,7 +215,7 @@ expected_events_on_invalid_model_error = [
 def test_chat_completion_invalid_request_error_invalid_model(set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
-        add_custom_attribute("conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
         openai.ChatCompletion.create(
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
@@ -315,7 +315,7 @@ expected_events_on_auth_error = [
 def test_chat_completion_authentication_error(monkeypatch, set_trace_info):
     with pytest.raises(openai.error.AuthenticationError):
         set_trace_info()
-        add_custom_attribute("conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -439,7 +439,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
 def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
-        add_custom_attribute("conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
         loop.run_until_complete(
             openai.ChatCompletion.acreate(
                 # no model provided,
@@ -481,7 +481,7 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
 def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
-        add_custom_attribute("conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
         loop.run_until_complete(
             openai.ChatCompletion.acreate(
                 model="does-not-exist",
@@ -520,7 +520,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
 def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace_info):
     with pytest.raises(openai.error.AuthenticationError):
         set_trace_info()
-        add_custom_attribute("conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
         monkeypatch.setattr(openai, "api_key", None)  # openai.api_key = None
         loop.run_until_complete(
             openai.ChatCompletion.acreate(

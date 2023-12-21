@@ -14,14 +14,14 @@
 
 import copy
 
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
 from testing_support.fixtures import catch_background_exceptions
+
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
+
 
 def validate_log_event_count(count=1):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_called = []
         recorded_logs = []
 
@@ -43,7 +43,7 @@ def validate_log_event_count(count=1):
         if count:
             assert record_called
         logs = copy.copy(recorded_logs)
-        
+
         record_called[:] = []
         recorded_logs[:] = []
 

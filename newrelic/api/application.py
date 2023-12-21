@@ -22,7 +22,6 @@ import newrelic.packages.six as six
 
 
 class Application(object):
-
     _lock = threading.Lock()
     _instances = {}
 
@@ -164,7 +163,9 @@ class Application(object):
 
     def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         if self.active:
-            self._agent.record_log_event(self._name, message, level, timestamp, attributes=attributes, priority=priority)
+            self._agent.record_log_event(
+                self._name, message, level, timestamp, attributes=attributes, priority=priority
+            )
 
     def normalize_name(self, name, rule_type="url"):
         if self.active:

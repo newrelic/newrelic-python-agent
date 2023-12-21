@@ -91,7 +91,9 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
             try:
                 message = record.getMessage()
                 attrs = filter_record_attributes(record)
-                record_log_event(message=message, level=level_name, timestamp=int(record.created * 1000), attributes=attrs)
+                record_log_event(
+                    message=message, level=level_name, timestamp=int(record.created * 1000), attributes=attrs
+                )
             except Exception:
                 pass
 

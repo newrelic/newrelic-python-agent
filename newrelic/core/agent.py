@@ -339,7 +339,6 @@ class Agent(object):
         with self._lock:
             application = self._applications.get(app_name, None)
             if not application:
-
                 process_id = os.getpid()
 
                 if process_id != self._process_id:
@@ -449,7 +448,6 @@ class Agent(object):
                     instance.register_data_source(source, name, settings, **properties)
 
     def remove_thread_utilization(self):
-
         _logger.debug("Removing thread utilization data source from all applications")
 
         source_name = thread_utilization_data_source.__name__
@@ -565,7 +563,7 @@ class Agent(object):
 
         application.record_ml_event(event_type, params)
 
-    def record_log_event(self, app_name, message, level=None, timestamp=None,  attributes=None, priority=None):
+    def record_log_event(self, app_name, message, level=None, timestamp=None, attributes=None, priority=None):
         application = self._applications.get(app_name, None)
         if application is None or not application.active:
             return

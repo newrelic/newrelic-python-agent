@@ -3,6 +3,7 @@ chat_completion_payload_templates = {
     "ai21.j2-mid-v1": '{"prompt": "%s", "temperature": %f, "maxTokens": %d}',
     "anthropic.claude-instant-v1": '{"prompt": "Human: %s Assistant:", "temperature": %f, "max_tokens_to_sample": %d}',
     "cohere.command-text-v14": '{"prompt": "%s", "temperature": %f, "max_tokens": %d}',
+    "meta.llama2-13b-chat-v1": '{"prompt": "%s", "temperature": %f, "max_gen_len": %d}',
 }
 
 chat_completion_expected_events = {
@@ -263,6 +264,72 @@ chat_completion_expected_events = {
             },
         ),
     ],
+    "meta.llama2-13b-chat-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (external_botocore)",
+                "conversation_id": "my-awesome-id",
+                "transaction_id": "transaction-id",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
+                "api_key_last_four_digits": "CRET",
+                "duration": None,  # Response time varies each test run
+                "request.model": "meta.llama2-13b-chat-v1",
+                "response.model": "meta.llama2-13b-chat-v1",
+                "response.usage.prompt_tokens": 17,
+                "response.usage.completion_tokens": 46,
+                "response.usage.total_tokens": 63,
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "stop",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (external_botocore)",
+                "conversation_id": "my-awesome-id",
+                "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "content": "What is 212 degrees Fahrenheit converted to Celsius?",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "meta.llama2-13b-chat-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (external_botocore)",
+                "conversation_id": "my-awesome-id",
+                "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "content": " Here's the answer:\n\n212°F = 100°C\n\nSo, 212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "meta.llama2-13b-chat-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
 }
 
 chat_completion_invalid_model_error_events = [
@@ -480,6 +547,49 @@ chat_completion_invalid_access_key_error_events = {
             },
         ),
     ],
+    "meta.llama2-13b-chat-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (external_botocore)",
+                "conversation_id": "my-awesome-id",
+                "transaction_id": "transaction-id",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "",
+                "api_key_last_four_digits": "-KEY",
+                "duration": None,  # Response time varies each test run
+                "request.model": "meta.llama2-13b-chat-v1",
+                "response.model": "meta.llama2-13b-chat-v1",
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 1,
+                "error": True,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "appName": "Python Agent Test (external_botocore)",
+                "conversation_id": "my-awesome-id",
+                "request_id": "",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "content": "Invalid Token",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "meta.llama2-13b-chat-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+    ],
 }
 
 chat_completion_expected_client_errors = {
@@ -499,6 +609,11 @@ chat_completion_expected_client_errors = {
         "error.code": "UnrecognizedClientException",
     },
     "cohere.command-text-v14": {
+        "http.statusCode": 403,
+        "error.message": "The security token included in the request is invalid.",
+        "error.code": "UnrecognizedClientException",
+    },
+    "meta.llama2-13b-chat-v1": {
         "http.statusCode": 403,
         "error.message": "The security token included in the request is invalid.",
         "error.code": "UnrecognizedClientException",

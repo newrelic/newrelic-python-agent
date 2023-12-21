@@ -56,6 +56,7 @@ def is_file_payload(request):
         "ai21.j2-mid-v1",
         "anthropic.claude-instant-v1",
         "cohere.command-text-v14",
+        "meta.llama2-13b-chat-v1",
     ],
 )
 def model_id(request):

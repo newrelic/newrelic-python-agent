@@ -144,7 +144,7 @@ def create_chat_completion_message_event(
             "response.model": request_model,
             "vendor": "bedrock",
             "ingest_source": "Python",
-            "is_response": True
+            "is_response": True,
         }
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
@@ -246,7 +246,7 @@ def extract_bedrock_claude_model(request_body, response_body=None):
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens_to_sample", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.number_of_messages": len(input_message_list)
+        "response.number_of_messages": len(input_message_list),
     }
 
     if response_body:
@@ -254,6 +254,40 @@ def extract_bedrock_claude_model(request_body, response_body=None):
 
         chat_completion_summary_dict.update(
             {
+                "response.choices.finish_reason": response_body.get("stop_reason", ""),
+                "response.number_of_messages": len(input_message_list) + len(output_message_list),
+            }
+        )
+    else:
+        output_message_list = []
+
+    return input_message_list, output_message_list, chat_completion_summary_dict
+
+
+def extract_bedrock_llama_model(request_body, response_body=None):
+    request_body = json.loads(request_body)
+    if response_body:
+        response_body = json.loads(response_body)
+
+    input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+
+    chat_completion_summary_dict = {
+        "request.max_tokens": request_body.get("max_gen_len", ""),
+        "request.temperature": request_body.get("temperature", ""),
+        "response.number_of_messages": len(input_message_list),
+    }
+
+    if response_body:
+        output_message_list = [{"role": "assistant", "content": response_body.get("generation", "")}]
+        prompt_tokens = response_body.get("prompt_token_count", None)
+        completion_tokens = response_body.get("generation_token_count", None)
+        total_tokens = prompt_tokens + completion_tokens if prompt_tokens and completion_tokens else None
+
+        chat_completion_summary_dict.update(
+            {
+                "response.usage.completion_tokens": completion_tokens,
+                "response.usage.prompt_tokens": prompt_tokens,
+                "response.usage.total_tokens": total_tokens,
                 "response.choices.finish_reason": response_body.get("stop_reason", ""),
                 "response.number_of_messages": len(input_message_list) + len(output_message_list),
             }
@@ -274,7 +308,7 @@ def extract_bedrock_cohere_model(request_body, response_body=None):
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.number_of_messages": len(input_message_list)
+        "response.number_of_messages": len(input_message_list),
     }
 
     if response_body:
@@ -300,6 +334,7 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
     ("ai21.j2", extract_bedrock_ai21_j2_model),
     ("cohere", extract_bedrock_cohere_model),
     ("anthropic.claude", extract_bedrock_claude_model),
+    ("meta.llama2", extract_bedrock_llama_model),
 ]
 
 
@@ -368,7 +403,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                 notice_error_attributes = {
                     "http.statusCode": error_attributes["http.statusCode"],
                     "error.message": error_attributes["error.message"],
-                    "error.code": error_attributes["error.code"]
+                    "error.code": error_attributes["error.code"],
                 }
 
                 if is_embedding:
@@ -392,7 +427,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                         ft.duration,
                         True,
                         trace_id,
-                        span_id
+                        span_id,
                     )
                 else:
                     handle_chat_completion_event(
@@ -406,7 +441,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                         ft.duration,
                         True,
                         trace_id,
-                        span_id
+                        span_id,
                     )
 
             finally:
@@ -463,7 +498,7 @@ def handle_embedding_event(
     duration,
     is_error,
     trace_id,
-    span_id
+    span_id,
 ):
     embedding_id = str(uuid.uuid4())
 
@@ -508,7 +543,7 @@ def handle_chat_completion_event(
     duration,
     is_error,
     trace_id,
-    span_id
+    span_id,
 ):
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("llm.conversation_id", "")

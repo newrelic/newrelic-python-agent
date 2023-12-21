@@ -146,7 +146,7 @@ chat_completion_recorded_events = [
 @background_task()
 def test_openai_chat_completion_sync_in_txn_with_convo_id(set_trace_info, sync_openai_client):
     set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
     sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
     )
@@ -272,7 +272,7 @@ def test_openai_chat_completion_sync_in_txn_no_convo_id(set_trace_info, sync_ope
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_chat_completion_sync_outside_txn(sync_openai_client):
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
     sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
     )
@@ -335,7 +335,7 @@ def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info
 @background_task()
 def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info, async_openai_client):
     set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
 
     loop.run_until_complete(
         async_openai_client.chat.completions.create(

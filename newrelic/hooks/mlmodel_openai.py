@@ -193,7 +193,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     # Get conversation ID off of the transaction
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("conversation_id", "")
+    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     app_name = settings.app_name
@@ -654,7 +654,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     # Get conversation ID off of the transaction
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("conversation_id", "")
+    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     app_name = settings.app_name

@@ -511,7 +511,7 @@ def handle_chat_completion_event(
     span_id,
 ):
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("conversation_id", "")
+    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
 
     chat_completion_id = str(uuid.uuid4())
 

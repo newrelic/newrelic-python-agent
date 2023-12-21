@@ -116,7 +116,7 @@ def test_get_llm_message_ids_outside_transaction():
 @background_task()
 def test_get_llm_message_ids_mulitple_async(loop, set_trace_info, async_openai_client):
     set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
 
     async def _run():
         res1 = await async_openai_client.chat.completions.create(
@@ -174,7 +174,7 @@ def test_get_llm_message_ids_mulitple_async_no_conversation_id(loop, set_trace_i
 @background_task()
 def test_get_llm_message_ids_mulitple_sync(set_trace_info, sync_openai_client):
     set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
 
     results = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages_1, temperature=0.7, max_tokens=100

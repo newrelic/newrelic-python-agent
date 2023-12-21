@@ -72,16 +72,19 @@ def exercise_record_log_event():
     record_log_event("keyword_arguments", timestamp=1234, level="ERROR", attributes={"key": "value"})
     record_log_event("positional_arguments", "WARNING", 2345, {"key": "value"})
     record_log_event("serialized_attributes", attributes=_serialized_attributes)
+    record_log_event(None, attributes={"attributes_only": "value"})
+    record_log_event({"message": "dict_message"})
 
     # Unsent due to message content missing
     record_log_event("")
     record_log_event("         ")
+    record_log_event({"message": ""})
+    record_log_event({"filtered_attribute": "should_be_removed"})
     record_log_event(None)
-    record_log_event(None, attributes={"attributes_only": "value"})
 
 
 enable_log_forwarding = override_application_settings(
-    {"application_logging.forwarding.enabled": True, "application_logging.forwarding.context_data.enabled": True}
+    {"application_logging.forwarding.enabled": True, "application_logging.forwarding.context_data.enabled": True, "application_logging.forwarding.context_data.exclude": "filtered_attribute"}
 )
 disable_log_forwarding = override_application_settings({"application_logging.forwarding.enabled": False})
 
@@ -123,6 +126,8 @@ _exercise_record_log_event_events = [
         "context.non_serializable_attr": "<NonSerializableObject object>",
         "context.attr_value_too_long": "*" * 255,
     },
+    {"context.attributes_only": "value"},
+    {"message": "dict_message"},
 ]
 _exercise_record_log_event_inside_transaction_events = [
     combine_dicts(_common_attributes_trace_linking, log) for log in _exercise_record_log_event_events
@@ -252,41 +257,37 @@ def test_attributes_disabled_outside_transaction():
     test()
 
 
-_test_record_log_event_attribute_filtering_params = [
-    ("", "", "context.A", True),
-    ("", "A", "context.A", False),
-    ("", "A", "context.B", True),
-    ("A B", "*", "context.A", True),
-    ("A B", "*", "context.B", True),
-    ("A B", "*", "context.C", False),
-    ("A B", "C", "context.A", True),
-    ("A B", "C", "context.C", False),
-    ("A B", "B", "context.A", True),
-    ("A B", "B", "context.B", False),
-    ("A", "A *", "context.A", False),
-    ("A", "A *", "context.B", False),
-    ("A*", "", "context.A", True),
-    ("A*", "", "context.AB", True),
-    ("", "A*", "context.A", False),
-    ("", "A*", "context.B", True),
-    ("A*", "AB", "context.AC", True),
-    ("A*", "AB", "context.AB", False),
-    ("AB", "A*", "context.AB", True),
-    ("A*", "AB*", "context.ACB", True),
-    ("A*", "AB*", "context.ABC", False),
-    # Linking attributes not affected by filtering
-    ("", "", "entity.name", True),
-    ("A", "*", "entity.name", True),
-    ("", "*", "entity.name", True),
+_test_record_log_event_context_attribute_filtering_params = [
+    ("", "", "A", True),
+    ("", "A", "A", False),
+    ("", "A", "B", True),
+    ("A B", "*", "A", True),
+    ("A B", "*", "B", True),
+    ("A B", "*", "C", False),
+    ("A B", "C", "A", True),
+    ("A B", "C", "C", False),
+    ("A B", "B", "A", True),
+    ("A B", "B", "B", False),
+    ("A", "A *", "A", False),
+    ("A", "A *", "B", False),
+    ("A*", "", "A", True),
+    ("A*", "", "AB", True),
+    ("", "A*", "A", False),
+    ("", "A*", "B", True),
+    ("A*", "AB", "AC", True),
+    ("A*", "AB", "AB", False),
+    ("AB", "A*", "AB", True),
+    ("A*", "AB*", "ACB", True),
+    ("A*", "AB*", "ABC", False),
 ]
 
-
-@pytest.mark.parametrize("include,exclude,attr,expected", _test_record_log_event_attribute_filtering_params)
-def test_record_log_event_attribute_filtering_inside_transaction(include, exclude, attr, expected):
+@pytest.mark.parametrize("prefix", ("context", "message"))
+@pytest.mark.parametrize("include,exclude,attr,expected", _test_record_log_event_context_attribute_filtering_params)
+def test_record_log_event_context_attribute_filtering_inside_transaction(include, exclude, attr, expected, prefix):
     if expected:
-        expected_event = {"required_attrs": [attr]}
+        expected_event = {"required_attrs": [".".join((prefix, attr))]}
     else:
-        expected_event = {"forgone_attrs": [attr]}
+        expected_event = {"forgone_attrs": [".".join((prefix, attr))]}
 
     @override_application_settings(
         {
@@ -300,21 +301,22 @@ def test_record_log_event_attribute_filtering_inside_transaction(include, exclud
     @validate_log_event_count(1)
     @background_task()
     def test():
-        if attr.startswith("context."):
-            record_log_event("A", attributes={attr.lstrip("context."): 1})
+        if prefix == "context":
+            record_log_event("A", attributes={attr: 1})
         else:
-            record_log_event("A")
+            record_log_event({"message": "A", attr: 1})
 
     test()
 
 
-@pytest.mark.parametrize("include,exclude,attr,expected", _test_record_log_event_attribute_filtering_params)
+@pytest.mark.parametrize("prefix", ("context", "message"))
+@pytest.mark.parametrize("include,exclude,attr,expected", _test_record_log_event_context_attribute_filtering_params)
 @reset_core_stats_engine()
-def test_record_log_event_attribute_filtering_outside_transaction(include, exclude, attr, expected):
+def test_record_log_event_context_attribute_filtering_outside_transaction(include, exclude, attr, expected, prefix):
     if expected:
-        expected_event = {"required_attrs": [attr]}
+        expected_event = {"required_attrs": [".".join((prefix, attr))]}
     else:
-        expected_event = {"forgone_attrs": [attr]}
+        expected_event = {"forgone_attrs": [".".join((prefix, attr))]}
 
     @override_application_settings(
         {
@@ -327,9 +329,57 @@ def test_record_log_event_attribute_filtering_outside_transaction(include, exclu
     @validate_log_events_outside_transaction(**expected_event)
     @validate_log_event_count_outside_transaction(1)
     def test():
-        if attr.startswith("context."):
-            record_log_event("A", attributes={attr.lstrip("context."): 1})
+        if prefix == "context":
+            record_log_event("A", attributes={attr: 1})
         else:
-            record_log_event("A")
+            record_log_event({"message": "A", attr: 1})
+
+    test()
+
+
+_test_record_log_event_linking_attribute_no_filtering_params = [
+    ("", ""),
+    ("", "entity.name"),
+    ("", "*"),
+]
+
+@pytest.mark.parametrize("include,exclude", _test_record_log_event_linking_attribute_no_filtering_params)
+def test_record_log_event_linking_attribute_no_filtering_inside_transaction(include, exclude):
+    attr = "entity.name"
+    
+    @override_application_settings(
+        {
+            "application_logging.forwarding.enabled": True,
+            "application_logging.forwarding.context_data.enabled": True,
+            "application_logging.forwarding.context_data.include": _parse_attributes(include),
+            "application_logging.forwarding.context_data.exclude": _parse_attributes(exclude),
+        }
+    )
+    @validate_log_events(required_attrs=[attr])
+    @validate_log_event_count(1)
+    @background_task()
+    def test():
+        record_log_event("A")
+
+    test()
+
+
+@pytest.mark.parametrize("include,exclude", _test_record_log_event_linking_attribute_no_filtering_params)
+@reset_core_stats_engine()
+def test_record_log_event_linking_attribute_filtering_outside_transaction(include, exclude):
+    attr = "entity.name"
+    
+    @override_application_settings(
+        {
+            "application_logging.forwarding.enabled": True,
+            "application_logging.forwarding.context_data.enabled": True,
+            "application_logging.forwarding.context_data.include": _parse_attributes(include),
+            "application_logging.forwarding.context_data.exclude": _parse_attributes(exclude),
+        }
+    )
+    @validate_log_events_outside_transaction(required_attrs=[attr])
+    @validate_log_event_count_outside_transaction(1)
+    def test():
+        record_log_event("A")
 
     test()

@@ -1233,30 +1233,49 @@ class StatsEngine(object):
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
 
-        is_string = isinstance(message, six.string_types)
-        is_hashmap = isinstance(message, dict)
+        # Unpack message and attributes from dict inputs
+        if isinstance(message, dict):
+            message_attributes = {k: v for k, v in message.items() if k != "message"}
+            message = str(message.get("message", ""))
+        else:
+            message_attributes = None
 
-        if not is_string and not is_hashmap:
-            _logger.debug("record_log_event called where message was not a string type or dictionary. No log event will be sent.")
+        # Exit early for invalid message type after unpacking
+        is_string = isinstance(message, six.string_types)
+        if message is not None and not is_string:
+            _logger.debug("record_log_event called where message was not found. No log event will be sent.")
             return
 
-        if not attributes and not message or is_string and message.isspace():
+        # Exit early if no message or attributes found
+        no_message = not message or message.isspace()
+        if not attributes and no_message:
             _logger.debug("record_log_event called where message was missing, and no attributes found. No log event will be sent.")
             return
 
-        if is_string:
+        # Truncate the now unpacked and string converted message
+        if is_string: 
             message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
 
-        collected_attributes = get_linking_metadata()
-        if attributes and (settings and settings.application_logging.forwarding.context_data.enabled):
-            context_attributes = resolve_logging_context_attributes(attributes, settings.attribute_filter, "context.")
-            if context_attributes:
-                collected_attributes.update(context_attributes)
+        # Collect attributes from linking metadata, context data, and message attributes
+        collected_attributes = {}
+        if settings and settings.application_logging.forwarding.context_data.enabled:
+            if attributes:
+                context_attributes = resolve_logging_context_attributes(attributes, settings.attribute_filter, "context.")
+                if context_attributes:
+                    collected_attributes.update(context_attributes)
 
-            if is_hashmap:
-                message_attributes = resolve_logging_context_attributes(message, settings.attribute_filter, "message.")
+            if message_attributes:
+                message_attributes = resolve_logging_context_attributes(message_attributes, settings.attribute_filter, "message.")
                 if message_attributes:
                     collected_attributes.update(message_attributes)
+
+            # Exit early if no message or attributes found after filtering
+            if not collected_attributes and no_message:
+                _logger.debug("record_log_event called where message was missing, and no attributes found. No log event will be sent.")
+                return
+
+        # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute
+        collected_attributes.update(get_linking_metadata())
 
         event = LogEventNode(
             timestamp=timestamp,

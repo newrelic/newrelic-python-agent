@@ -93,9 +93,9 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
                 if isinstance(message, dict):
                     # Allow python to convert the message to a string and template it with args.
                     message = record.getMessage()
-                attrs = filter_record_attributes(record)
+                context_attrs = filter_record_attributes(record)
                 record_log_event(
-                    message=message, level=level_name, timestamp=int(record.created * 1000), attributes=attrs
+                    message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs
                 )
             except Exception:
                 pass

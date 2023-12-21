@@ -40,6 +40,9 @@ def exercise_logging(logger):
     logger.warning("C")
     logger.error("D")
     logger.critical("E")
+
+    logger.error({"message": "F", "attr": 1})
+    logger.warning({"attr": "G"})
     
     assert len(logger.caplog.records) == 3
 
@@ -56,13 +59,15 @@ _test_logging_inside_transaction_events = [
     {"message": "C", "level": "WARNING"},
     {"message": "D", "level": "ERROR"},
     {"message": "E", "level": "CRITICAL"},
+    {"message": "F", "level": "ERROR", "message.attr": 1},
+    {"message.attr": "G", "level": "WARNING"},
 ]
 update_all(_test_logging_inside_transaction_events, _common_attributes_trace_linking)
 
 
 def test_logging_inside_transaction(logger):
     @validate_log_events(_test_logging_inside_transaction_events)
-    @validate_log_event_count(3)
+    @validate_log_event_count(5)
     @background_task()
     def test():
         exercise_logging(logger)
@@ -74,6 +79,8 @@ _test_logging_outside_transaction_events = [
     {"message": "C", "level": "WARNING"},
     {"message": "D", "level": "ERROR"},
     {"message": "E", "level": "CRITICAL"},
+    {"message": "F", "level": "ERROR", "message.attr": 1},
+    {"message.attr": "G", "level": "WARNING"},
 ]
 update_all(_test_logging_outside_transaction_events, _common_attributes_service_linking)
 
@@ -81,7 +88,7 @@ update_all(_test_logging_outside_transaction_events, _common_attributes_service_
 @reset_core_stats_engine()
 def test_logging_outside_transaction(logger):
     @validate_log_events_outside_transaction(_test_logging_outside_transaction_events)
-    @validate_log_event_count_outside_transaction(3)
+    @validate_log_event_count_outside_transaction(5)
     def test():
         exercise_logging(logger)
 

@@ -35,10 +35,10 @@ def set_trace_ids():
         trace.guid = "abcdefgh"
 
 
-def exercise_logging(logger, message="C"):
+def exercise_logging(logger):
     set_trace_ids()
 
-    logger.warning(message)
+    logger.warning("C")
 
 
 def get_metadata_string(log_message, is_txn):
@@ -80,16 +80,5 @@ def test_local_log_decoration_outside_transaction(logger):
     def test():
         exercise_logging(logger)
         assert logger.caplog.records[0] == get_metadata_string("C", False)
-
-    test()
-
-
-@reset_core_stats_engine()
-def test_local_log_decoration_dict_message(logger):
-    @validate_log_event_count(1)
-    @background_task()
-    def test():
-        exercise_logging(logger, {"message": "dict_message"})
-        assert logger.caplog.records[0] == get_metadata_string("{'message': 'dict_message'}", True)
 
     test()

@@ -17,7 +17,11 @@ import logging
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
+
+from newrelic.packages import six
+
 from testing_support.fixtures import reset_core_stats_engine
+from testing_support.util import conditional_decorator
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import (
     validate_log_event_count_outside_transaction,
@@ -124,19 +128,22 @@ def test_logging_outside_transaction(logger):
     forgone_attrs=["context.exc_info"],
 )
 @validate_log_events([{"message": "extras", "context.extra_attr": 1}])  # Extras on logger calls
-@validate_log_events([{"message": "stack_info"}], required_attrs=["context.stack_info"])  # Stack info generation
 @validate_log_events([{"message": "exc_info"}], required_attrs=["context.exc_info"])  # Exception info generation
-@validate_log_event_count(4)
+# Stack info generation only on Py3
+@conditional_decorator(six.PY3, validate_log_events([{"message": "stack_info"}], required_attrs=["context.stack_info"]))
+@validate_log_event_count(4 if six.PY3 else 3)
 @background_task()
 def test_logging_context_attributes(logger):
     logger.error("context_attrs: %s", "arg1")
     logger.error("extras", extra={"extra_attr": 1})
-    logger.error("stack_info", stack_info=True)
+    
     try:
         raise RuntimeError("Oops")
     except Exception:
         logger.error("exc_info", exc_info=True)
 
+    if six.PY3:
+        logger.error("stack_info", stack_info=True)
 
 @reset_core_stats_engine()
 def test_logging_newrelic_logs_not_forwarded(logger):

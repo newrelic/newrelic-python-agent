@@ -73,6 +73,7 @@ def exercise_record_log_event():
     record_log_event("positional_arguments", "WARNING", 2345, {"key": "value"})
     record_log_event("serialized_attributes", attributes=_serialized_attributes)
     record_log_event(None, attributes={"attributes_only": "value"})
+    record_log_event({"attributes_only": "value"})
     record_log_event({"message": "dict_message"})
 
     # Unsent due to message content missing
@@ -84,7 +85,7 @@ def exercise_record_log_event():
 
 
 enable_log_forwarding = override_application_settings(
-    {"application_logging.forwarding.enabled": True, "application_logging.forwarding.context_data.enabled": True, "application_logging.forwarding.context_data.exclude": "filtered_attribute"}
+    {"application_logging.forwarding.enabled": True, "application_logging.forwarding.context_data.enabled": True, "application_logging.forwarding.context_data.exclude": ["filtered_attribute"]}
 )
 disable_log_forwarding = override_application_settings({"application_logging.forwarding.enabled": False})
 
@@ -127,6 +128,7 @@ _exercise_record_log_event_events = [
         "context.attr_value_too_long": "*" * 255,
     },
     {"context.attributes_only": "value"},
+    {"message.attributes_only": "value"},
     {"message": "dict_message"},
 ]
 _exercise_record_log_event_inside_transaction_events = [

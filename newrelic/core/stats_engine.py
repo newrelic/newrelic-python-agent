@@ -1248,7 +1248,7 @@ class StatsEngine(object):
 
         # Exit early if no message or attributes found
         no_message = not message or message.isspace()
-        if not attributes and no_message:
+        if not attributes and not message_attributes and no_message:
             _logger.debug("record_log_event called where message was missing, and no attributes found. No log event will be sent.")
             return
 

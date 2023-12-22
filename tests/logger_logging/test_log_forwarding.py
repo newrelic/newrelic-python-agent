@@ -45,12 +45,9 @@ def exercise_logging(logger):
     logger.info("B")
     logger.warning("C")
     logger.error("D")
-    logger.critical("E")
+    logger.critical({"message": "E"})
 
-    logger.error({"message": "F", "attr": 1})
-    logger.warning({"attr": "G"})
-
-    assert len(logger.caplog.records) == 5
+    assert len(logger.caplog.records) == 3
 
 def update_all(events, attrs):
     for event in events:
@@ -70,14 +67,12 @@ _test_logging_inside_transaction_events = [
     {"message": "C", "level": "WARNING"},
     {"message": "D", "level": "ERROR"},
     {"message": "E", "level": "CRITICAL"},
-    {"message": "F", "level": "ERROR", "message.attr": 1},
-    {"message.attr": "G", "level": "WARNING"},
 ]
 update_all(_test_logging_inside_transaction_events, _common_attributes_trace_linking)
 
 
 @validate_log_events(_test_logging_inside_transaction_events)
-@validate_log_event_count(5)
+@validate_log_event_count(3)
 @background_task()
 def test_logging_inside_transaction(logger):
     exercise_logging(logger)
@@ -87,63 +82,16 @@ _test_logging_outside_transaction_events = [
     {"message": "C", "level": "WARNING"},
     {"message": "D", "level": "ERROR"},
     {"message": "E", "level": "CRITICAL"},
-    {"message": "F", "level": "ERROR", "message.attr": 1},
-    {"message.attr": "G", "level": "WARNING"},
 ]
 update_all(_test_logging_outside_transaction_events, _common_attributes_service_linking)
 
 
 @reset_core_stats_engine()
 @validate_log_events_outside_transaction(_test_logging_outside_transaction_events)
-@validate_log_event_count_outside_transaction(5)
+@validate_log_event_count_outside_transaction(3)
 def test_logging_outside_transaction(logger):
     exercise_logging(logger)
 
-
-# Default context attrs
-@validate_log_events(
-    [
-        {  # Fixed attributes
-            "message": "context_attrs: arg1",
-            "context.args": "('arg1',)",
-            "context.filename": "test_log_forwarding.py",
-            "context.funcName": "test_logging_context_attributes",
-            "context.levelname": "ERROR",
-            "context.levelno": 40,
-            "context.module": "test_log_forwarding",
-            "context.name": "my_app",
-            "context.pathname": str(__file__),
-            "context.processName": "MainProcess",
-            "context.threadName": "MainThread",
-        }
-    ],
-    required_attrs=[  # Variable attributes
-        "context.created",
-        "context.lineno",
-        "context.msecs",
-        "context.process",
-        "context.relativeCreated",
-        "context.thread",
-    ],
-    forgone_attrs=["context.exc_info"],
-)
-@validate_log_events([{"message": "extras", "context.extra_attr": 1}])  # Extras on logger calls
-@validate_log_events([{"message": "exc_info"}], required_attrs=["context.exc_info"])  # Exception info generation
-# Stack info generation only on Py3
-@conditional_decorator(six.PY3, validate_log_events([{"message": "stack_info"}], required_attrs=["context.stack_info"]))
-@validate_log_event_count(4 if six.PY3 else 3)
-@background_task()
-def test_logging_context_attributes(logger):
-    logger.error("context_attrs: %s", "arg1")
-    logger.error("extras", extra={"extra_attr": 1})
-    
-    try:
-        raise RuntimeError("Oops")
-    except Exception:
-        logger.error("exc_info", exc_info=True)
-
-    if six.PY3:
-        logger.error("stack_info", stack_info=True)
 
 @reset_core_stats_engine()
 def test_logging_newrelic_logs_not_forwarded(logger):

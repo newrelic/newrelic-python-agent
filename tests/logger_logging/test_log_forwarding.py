@@ -19,7 +19,9 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
-from testing_support.validators.validate_log_event_count_outside_transaction import validate_log_event_count_outside_transaction
+from testing_support.validators.validate_log_event_count_outside_transaction import (
+    validate_log_event_count_outside_transaction,
+)
 from testing_support.validators.validate_log_events import validate_log_events
 from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
 
@@ -43,15 +45,20 @@ def exercise_logging(logger):
 
     logger.error({"message": "F", "attr": 1})
     logger.warning({"attr": "G"})
-    
-    assert len(logger.caplog.records) == 3
+
+    assert len(logger.caplog.records) == 5
 
 def update_all(events, attrs):
     for event in events:
         event.update(attrs)
 
 
-_common_attributes_service_linking = {"timestamp": None, "hostname": None, "entity.name": "Python Agent Test (logger_logging)", "entity.guid": None}
+_common_attributes_service_linking = {
+    "timestamp": None,
+    "hostname": None,
+    "entity.name": "Python Agent Test (logger_logging)",
+    "entity.guid": None,
+}
 _common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh12345678"}
 _common_attributes_trace_linking.update(_common_attributes_service_linking)
 
@@ -65,14 +72,11 @@ _test_logging_inside_transaction_events = [
 update_all(_test_logging_inside_transaction_events, _common_attributes_trace_linking)
 
 
+@validate_log_events(_test_logging_inside_transaction_events)
+@validate_log_event_count(5)
+@background_task()
 def test_logging_inside_transaction(logger):
-    @validate_log_events(_test_logging_inside_transaction_events)
-    @validate_log_event_count(5)
-    @background_task()
-    def test():
-        exercise_logging(logger)
-
-    test()
+    exercise_logging(logger)
 
 
 _test_logging_outside_transaction_events = [
@@ -86,13 +90,52 @@ update_all(_test_logging_outside_transaction_events, _common_attributes_service_
 
 
 @reset_core_stats_engine()
+@validate_log_events_outside_transaction(_test_logging_outside_transaction_events)
+@validate_log_event_count_outside_transaction(5)
 def test_logging_outside_transaction(logger):
-    @validate_log_events_outside_transaction(_test_logging_outside_transaction_events)
-    @validate_log_event_count_outside_transaction(5)
-    def test():
-        exercise_logging(logger)
+    exercise_logging(logger)
 
-    test()
+
+# Default context attrs
+@validate_log_events(
+    [
+        {  # Fixed attributes
+            "message": "context_attrs: arg1",
+            "context.args": "('arg1',)",
+            "context.filename": "test_log_forwarding.py",
+            "context.funcName": "test_logging_context_attributes",
+            "context.levelname": "ERROR",
+            "context.levelno": 40,
+            "context.module": "test_log_forwarding",
+            "context.name": "my_app",
+            "context.pathname": str(__file__),
+            "context.processName": "MainProcess",
+            "context.threadName": "MainThread",
+        }
+    ],
+    required_attrs=[  # Variable attributes
+        "context.created",
+        "context.lineno",
+        "context.msecs",
+        "context.process",
+        "context.relativeCreated",
+        "context.thread",
+    ],
+    forgone_attrs=["context.exc_info"],
+)
+@validate_log_events([{"message": "extras", "context.extra_attr": 1}])  # Extras on logger calls
+@validate_log_events([{"message": "stack_info"}], required_attrs=["context.stack_info"])  # Stack info generation
+@validate_log_events([{"message": "exc_info"}], required_attrs=["context.exc_info"])  # Exception info generation
+@validate_log_event_count(4)
+@background_task()
+def test_logging_context_attributes(logger):
+    logger.error("context_attrs: %s", "arg1")
+    logger.error("extras", extra={"extra_attr": 1})
+    logger.error("stack_info", stack_info=True)
+    try:
+        raise RuntimeError("Oops")
+    except Exception:
+        logger.error("exc_info", exc_info=True)
 
 
 @reset_core_stats_engine()

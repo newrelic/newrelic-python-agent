@@ -27,7 +27,7 @@ except ImportError:
     from urllib.parse import quote
 
 
-DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(LogRecord("", 0, "", 0, "", (), None))) | {"message"})
+IGNORED_LOG_RECORD_KEYS = set(["message", "msg"])
 
 
 def add_nr_linking_metadata(message):
@@ -50,15 +50,6 @@ def wrap_getMessage(wrapped, instance, args, kwargs):
 
 def bind_callHandlers(record):
     return record
-
-
-def filter_record_attributes(record):
-    record_attrs = vars(record)
-    custom_attr_keys = set(record_attrs.keys()) - DEFAULT_LOG_RECORD_KEYS
-    if custom_attr_keys:
-        return {k: record_attrs[k] for k in custom_attr_keys if k not in DEFAULT_LOG_RECORD_KEYS}
-    else:
-        return None
 
 
 def wrap_callHandlers(wrapped, instance, args, kwargs):
@@ -93,7 +84,11 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
                 if isinstance(message, dict):
                     # Allow python to convert the message to a string and template it with args.
                     message = record.getMessage()
-                context_attrs = filter_record_attributes(record)
+
+                # Grab and filter context attributes from log record
+                record_attrs = vars(record)
+                context_attrs = {k: record_attrs[k] for k in vars(record) if k not in IGNORED_LOG_RECORD_KEYS}
+                
                 record_log_event(
                     message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs
                 )

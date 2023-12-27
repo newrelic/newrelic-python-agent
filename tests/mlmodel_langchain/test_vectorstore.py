@@ -60,7 +60,7 @@ vectorstore_recorded_events = [
             "vendor": "langchain",
             "ingest_source": "Python",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "metadata.source": "/__w/newrelic-python-agent/newrelic-python-agent/tests/mlmodel_langchain/hello.pdf",
+            "metadata.source": os.path.join(os.path.dirname(__file__), "hello.pdf"),
             "metadata.page": 0,
         },
     ),

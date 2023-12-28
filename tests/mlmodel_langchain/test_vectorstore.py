@@ -77,7 +77,7 @@ _test_vectorstore_modules_instrumented_ignored_classes = set(
 
 # Test to check if all classes containing "similarity_search"
 # method are instrumented.  Prints out anything that is not
-# for the case of added vectorstores
+# instrumented to identify when new vectorstores are added.
 def test_vectorstore_modules_instrumented():
     from langchain_community import vectorstores
 
@@ -105,10 +105,6 @@ def test_vectorstore_modules_instrumented():
     )
 
 
-# Sync tests
-
-
-# Checks metrics for FAISS "similarity_search" instrumentation
 @reset_core_stats_engine()
 @validate_custom_events(vectorstore_recorded_events)
 # Two OpenAI LlmEmbedded, two LangChain LlmVectorSearch
@@ -145,9 +141,6 @@ def test_pdf_pagesplitter_vectorstore_outside_txn(set_trace_info, embedding_open
     faiss_index = FAISS.from_documents(docs, embedding_openai_client)
     docs = faiss_index.similarity_search("Complete this sentence: Hello", k=1)
     assert "Hello world" in docs[0].page_content
-
-
-# Async tests
 
 
 @reset_core_stats_engine()

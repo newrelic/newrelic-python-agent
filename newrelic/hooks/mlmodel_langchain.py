@@ -105,6 +105,8 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
+    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+
     request_query, request_k = bind_asimilarity_search(*args, **kwargs)
     function_name = callable_name(wrapped)
     with FunctionTrace(name=function_name, group="Llm/vectorstore/Langchain") as ft:
@@ -168,8 +170,6 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         LLMVectorSearchResult_dict.update(metadata_dict)
 
         transaction.record_custom_event("LlmVectorSearchResult", LLMVectorSearchResult_dict)
-
-    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
 
     return response
 

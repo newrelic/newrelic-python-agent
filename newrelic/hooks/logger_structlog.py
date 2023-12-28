@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.api.transaction import current_transaction, record_log_event
-from newrelic.core.config import global_settings
+import functools
+
 from newrelic.api.application import application_instance
-from newrelic.hooks.logger_logging import add_nr_linking_metadata
+from newrelic.api.transaction import current_transaction, record_log_event
+from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper, ObjectProxy
 from newrelic.common.signature import bind_args
+from newrelic.core.config import global_settings
+from newrelic.hooks.logger_logging import add_nr_linking_metadata
 
 
+@functools.cache
 def normalize_level_name(method_name):
     # Look up level number for method name, using result to look up level name for that level number.
     # Convert result to upper case, and default to UNKNOWN in case of errors or missing values.
@@ -56,7 +59,7 @@ def wrap__process_event(wrapped, instance, args, kwargs):
 
         # Send log to processors for filtering, allowing any DropEvent exceptions that occur to prevent instrumentation from recording the log event.
         result = wrapped(method_name, event, event_kw)
-        
+
         level_name = normalize_level_name(method_name)
 
         if settings.application_logging.metrics and settings.application_logging.metrics.enabled:

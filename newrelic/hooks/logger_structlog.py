@@ -37,6 +37,21 @@ def bind_process_event(method_name, event, event_kw):
     return method_name, event, event_kw
 
 
+# class ProcessorsListWrapper(ObjectProxy):
+#     def __iter__(self):
+#         for processor in self.__wrapped__:
+#             yield wrap_processor(processor, self)
+
+
+# def wrap_processor(processor, processors_proxy):
+#     @function_wrapper
+#     def _wrap_processor(wrapped, instance, args, kwargs):
+#         result = wrapped(*args, **kwargs)
+#         if isinstance(result, dict):
+#             processors_proxy._nr_event_dict = result
+#         return result
+
+#     return _wrap_processor(processor)
 def wrap__process_event(wrapped, instance, args, kwargs):
     try:
         method_name, event, event_kw = bind_process_event(*args, **kwargs)
@@ -56,6 +71,10 @@ def wrap__process_event(wrapped, instance, args, kwargs):
     if settings and settings.application_logging and settings.application_logging.enabled:
         if settings.application_logging.local_decorating and settings.application_logging.local_decorating.enabled:
             event = add_nr_linking_metadata(event)
+
+        # # Set up processor instrumentation on the logger if not configured
+        # if instance._processors and not hasattr(instance._processors, "_nr_instance"):
+        #     instance._processors = ProcessorsListWrapper(instance._processors)
 
         # Send log to processors for filtering, allowing any DropEvent exceptions that occur to prevent instrumentation from recording the log event.
         result = wrapped(method_name, event, event_kw)

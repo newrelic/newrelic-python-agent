@@ -96,6 +96,84 @@ VECTORSTORE_CLASSES = {
 }
 
 
+def bind_asimilarity_search(query, k, *args, **kwargs):
+    return query, k
+
+
+async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+
+    request_query, request_k = bind_asimilarity_search(*args, **kwargs)
+    function_name = callable_name(wrapped)
+    with FunctionTrace(name=function_name, group="Llm/vectorstore/Langchain") as ft:
+        try:
+            response = await wrapped(*args, **kwargs)
+            available_metadata = get_trace_linking_metadata()
+        except Exception as err:
+            # Error logic goes here
+            pass
+
+    if not response:
+        return response  # Should always be None
+
+    # LLMVectorSearch
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+    transaction_id = transaction.guid
+    id = str(uuid.uuid4())
+    request_query, request_k = bind_similarity_search(*args, **kwargs)
+    duration = ft.duration
+    response_number_of_documents = len(response)
+
+    # Only in LlmVectorSearch dict
+    LLMVectorSearch_dict = {
+        "request.query": request_query,
+        "request.k": request_k,
+        "duration": duration,
+        "response.number_of_documents": response_number_of_documents,
+    }
+
+    # In both LlmVectorSearch and LlmVectorSearchResult dicts
+    LLMVectorSearch_union_dict = {
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction_id,
+        "id": id,
+        "vendor": "langchain",
+        "ingest_source": "Python",
+        "appName": transaction._application._name,
+    }
+
+    LLMVectorSearch_dict.update(LLMVectorSearch_union_dict)
+    transaction.record_custom_event("LlmVectorSearch", LLMVectorSearch_dict)
+
+    # LLMVectorSearchResult
+    for index, doc in enumerate(response):
+        search_id = str(uuid.uuid4())
+        sequence = index
+        page_content = getattr(doc, "page_content", "")
+        metadata = getattr(doc, "metadata", "")
+
+        metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+
+        LLMVectorSearchResult_dict = {
+            "search_id": search_id,
+            "sequence": sequence,
+            "page_content": page_content,
+        }
+
+        LLMVectorSearchResult_dict.update(LLMVectorSearch_union_dict)
+        LLMVectorSearchResult_dict.update(metadata_dict)
+
+        transaction.record_custom_event("LlmVectorSearchResult", LLMVectorSearchResult_dict)
+
+    return response
+
+
 def bind_similarity_search(query, k, *args, **kwargs):
     return query, k
 
@@ -105,9 +183,10 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
+    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
     request_query, request_k = bind_similarity_search(*args, **kwargs)
     function_name = callable_name(wrapped)
-    with FunctionTrace(name=function_name) as ft:
+    with FunctionTrace(name=function_name, group="Llm/vectorstore/Langchain") as ft:
         try:
             response = wrapped(*args, **kwargs)
             available_metadata = get_trace_linking_metadata()
@@ -172,12 +251,14 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         # LLMVectorSearchResult_dict |= metadata_dict
 
         transaction.record_custom_event("LlmVectorSearchResult", LLMVectorSearchResult_dict)
-        transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
 
     return response
 
 
 def instrument_langchain_vectorstore_similarity_search(module):
     vector_class = VECTORSTORE_CLASSES.get(module.__name__)
+
     if vector_class and hasattr(getattr(module, vector_class, ""), "similarity_search"):
         wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
+    if vector_class and hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
+        wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)

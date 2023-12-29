@@ -58,7 +58,7 @@ RECORDED_HEADERS = set(["x-request-id", "content-type"])
 
 
 @pytest.fixture(scope="session")
-def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
+def openai_clients(MockExternalOpenAIServer):  # noqa: F811
     """
     This configures the openai client and returns it for openai v1 and only configures
     openai for v0 since there is no client.
@@ -79,7 +79,7 @@ def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
 
 
 @pytest.fixture(scope="session")
-def embeding_openai_client(openai_clients):
+def embedding_openai_client(openai_clients):
     embedding_client = openai_clients
     return embedding_client
 

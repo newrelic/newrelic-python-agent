@@ -383,13 +383,133 @@ def wrap_on_tool_start(wrapped, instance, args, kwargs):
     return run_manager
 
 
-def instrument_langchain_vectorstore_similarity_search(module):
-    vector_class = VECTORSTORE_CLASSES.get(module.__name__)
+def wrap_chain_async_run(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
 
-    if vector_class and hasattr(getattr(module, vector_class, ""), "similarity_search"):
-        wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
-    if vector_class and hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
-        wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+
+    run_args = bind_args(wrapped, args, kwargs)
+    message_ids = ((run_args.get("config", {}) or {}).get("metadata", {}) or {}).pop("message_ids", [])
+    _input = run_args.get("input", "")
+
+    span_id = None
+    trace_id = None
+
+    # Get conversation ID off of the transaction
+    custom_attrs_dict = transaction._custom_params
+    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    app_name = settings.app_name
+    completion_id = str(uuid.uuid4())
+
+    function_name = wrapped.__name__
+
+    with FunctionTrace(name=function_name, group="Llm/chain/Langchain") as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
+        try:
+            return_val = await wrapped(**run_args)
+        except Exception as exc:
+            ft.notice_error(
+                attributes={
+                    "completion_id": completion_id,
+                }
+            )
+            run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+            run_id = run_manager_info.get("run_id", "")
+            metadata = run_manager_info.get("metadata", "")
+            tags = run_manager_info.get("tags", "")
+
+            messages = [_input]
+
+            full_chat_completion_summary_dict = {
+                "id": completion_id,
+                "appName": app_name,
+                "conversation_id": conversation_id,
+                "span_id": span_id,
+                "trace_id": trace_id,
+                "transaction_id": transaction.guid,
+                "vendor": "langchain",
+                "ingest_source": "Python",
+                "virtual_llm": True,
+                "request_id": run_id,
+                "duration": ft.duration,
+                "response.number_of_messages": len(messages),
+            }
+
+            transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
+
+            input_message_list = list(messages)
+            output_message_list = []
+
+            create_chat_completion_message_event(
+                transaction,
+                settings.app_name,
+                input_message_list,
+                completion_id,
+                span_id,
+                trace_id,
+                run_id,
+                conversation_id,
+                output_message_list,
+                message_ids,
+            )
+
+            raise
+
+    if not return_val:
+        return return_val
+
+    response = return_val
+    run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+    run_id = run_manager_info.get("run_id", "")
+    metadata = run_manager_info.get("metadata", "")
+    tags = run_manager_info.get("tags", "")
+
+    messages = [_input]
+
+    full_chat_completion_summary_dict = {
+        "id": completion_id,
+        "appName": app_name,
+        "conversation_id": conversation_id,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "vendor": "langchain",
+        "ingest_source": "Python",
+        "virtual_llm": True,
+        "request_id": run_id,
+        "duration": ft.duration,
+        "response.number_of_messages": len(messages) + len(response),
+    }
+
+    transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
+
+    input_message_list = list(messages)
+    output_message_list = [response[0]] if response else []
+
+    create_chat_completion_message_event(
+        transaction,
+        settings.app_name,
+        input_message_list,
+        completion_id,
+        span_id,
+        trace_id,
+        run_id,
+        conversation_id,
+        output_message_list,
+        message_ids,
+    )
+
+    return return_val
+
 
 def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -519,12 +639,6 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     return return_val
 
 
-def wrap_chain_async_run(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if not transaction:
-        return wrapped(*args, **kwargs)
-
-
 def create_chat_completion_message_event(
     transaction,
     app_name,
@@ -609,16 +723,11 @@ def wrap_on_chain_start(wrapped, instance, args, kwargs):
     return run_manager
 
 
-def instrument_langchain_callbacks_manager(module):
-    if hasattr(getattr(module, "CallbackManager"), "on_chain_start"):
-        wrap_function_wrapper(module, "CallbackManager.on_chain_start", wrap_on_chain_start)
-
-
 def instrument_langchain_runables_chains_base(module):
     if hasattr(getattr(module, "RunnableSequence"), "invoke"):
         wrap_function_wrapper(module, "RunnableSequence.invoke", wrap_chain_sync_run)
-    # if hasattr(getattr(module, "Chain"), "arun"):
-    #    wrap_function_wrapper(module, "Chain.arun", wrap_chain_async_run)
+    if hasattr(getattr(module, "RunnableSequence"), "ainvoke"):
+        wrap_function_wrapper(module, "RunnableSequence.ainvoke", wrap_chain_async_run)
 
 
 def instrument_langchain_core_tools(module):
@@ -629,3 +738,5 @@ def instrument_langchain_core_tools(module):
 def instrument_langchain_callbacks_manager(module):
     if hasattr(getattr(module, "CallbackManager"), "on_tool_start"):
         wrap_function_wrapper(module, "CallbackManager.on_tool_start", wrap_on_tool_start)
+    if hasattr(getattr(module, "CallbackManager"), "on_chain_start"):
+        wrap_function_wrapper(module, "CallbackManager.on_chain_start", wrap_on_chain_start)

@@ -424,7 +424,7 @@ def test_langchain_chain_error_in_openai(set_trace_info, comma_separated_list_ou
 @validate_custom_events(chat_completion_recorded_events_error_in_langchain)
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
-    name="test_chain:test_langchain_chain_error",
+    name="test_chain:test_langchain_chain_error_in_lanchain",
     custom_metrics=[
         ("Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
@@ -454,14 +454,6 @@ def test_langchain_chain_error_in_lanchain(set_trace_info, comma_separated_list_
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_chat_completion:test_langchain_chain_outside_transaction",
-    custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
 def test_langchain_chain_outside_transaction(set_trace_info, comma_separated_list_output_parser, chat_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
@@ -480,6 +472,213 @@ def test_langchain_chain_outside_transaction(set_trace_info, comma_separated_lis
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
 
     chain.invoke({"text": "colors"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+
+
+@reset_core_stats_engine()
+@validate_custom_events(chat_completion_recorded_events)
+@validate_custom_event_count(count=7)
+@validate_transaction_metrics(
+    name="test_chain:test_async_langchain_chain",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_async_langchain_chain(set_trace_info, comma_separated_list_output_parser, chat_openai_client, loop):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+
+    loop.run_until_complete(
+        chain.ainvoke({"text": "colors"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+    )
+
+
+@reset_core_stats_engine()
+@validate_custom_events(chat_completion_recorded_events_missing_conversation_id)
+@validate_custom_event_count(count=7)
+@validate_transaction_metrics(
+    name="test_chain:test_async_langchain_chain_without_conversation_id",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_async_langchain_chain_without_conversation_id(
+    set_trace_info, comma_separated_list_output_parser, chat_openai_client, loop
+):
+    set_trace_info()
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+
+    loop.run_until_complete(
+        chain.ainvoke({"text": "colors"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+    )
+
+
+@reset_core_stats_engine()
+@validate_custom_events(chat_completion_recorded_events_uuid_message_ids)
+@validate_custom_event_count(count=7)
+@validate_transaction_metrics(
+    name="test_chain:test_async_langchain_chain_without_message_ids",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_async_langchain_chain_without_message_ids(
+    set_trace_info, comma_separated_list_output_parser, chat_openai_client, loop
+):
+    set_trace_info()
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+
+    loop.run_until_complete(chain.ainvoke({"text": "colors"}))
+
+
+@reset_core_stats_engine()
+@validate_transaction_error_event_count(1)
+@validate_custom_events(chat_completion_recorded_events_error_in_openai)
+@validate_custom_event_count(count=5)
+@validate_transaction_metrics(
+    name="test_chain:test_async_langchain_chain_error_in_openai",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_async_langchain_chain_error_in_openai(
+    set_trace_info, comma_separated_list_output_parser, chat_openai_client, loop
+):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 4 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+
+    with pytest.raises(openai.AuthenticationError):
+        loop.run_until_complete(
+            chain.ainvoke(
+                {"text": "openai failure"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}}
+            )
+        )
+
+
+@reset_core_stats_engine()
+@validate_transaction_error_event_count(1)
+@validate_error_trace_attributes(
+    callable_name(AttributeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_custom_events(chat_completion_recorded_events_error_in_langchain)
+@validate_custom_event_count(count=2)
+@validate_transaction_metrics(
+    name="test_chain:test_async_langchain_chain_error_in_lanchain",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_async_langchain_chain_error_in_lanchain(
+    set_trace_info, comma_separated_list_output_parser, chat_openai_client, loop
+):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+
+    with pytest.raises(AttributeError):
+        loop.run_until_complete(chain.ainvoke({"text": "colors"}, config=[]))
+
+
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+def test_async_langchain_chain_outside_transaction(
+    set_trace_info, comma_separated_list_output_parser, chat_openai_client, loop
+):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+
+    loop.run_until_complete(
+        chain.ainvoke({"text": "colors"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+    )
 
 
 @pytest.fixture

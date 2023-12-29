@@ -30,6 +30,7 @@ _default_settings = {
     "application_logging.forwarding.enabled": True,
     "application_logging.metrics.enabled": True,
     "application_logging.local_decorating.enabled": True,
+    "application_logging.forwarding.context_data.enabled": True,
     "event_harvest_config.harvest_limits.log_event_data": 100000,
 }
 
@@ -58,7 +59,8 @@ def logger():
     import loguru
 
     _logger = loguru.logger
-    _logger.configure(extra={"global_extra": "global_value"})
+    _logger.configure(extra={"global_extra": 3})
+    _logger = _logger.opt(exception=True, record=True)
 
     caplog = CaplogHandler()
     handler_id = _logger.add(caplog, level="WARNING", format="{message}")

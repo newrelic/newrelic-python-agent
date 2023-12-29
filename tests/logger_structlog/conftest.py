@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import pytest
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
@@ -31,6 +30,7 @@ _default_settings = {
     "application_logging.forwarding.enabled": True,
     "application_logging.metrics.enabled": True,
     "application_logging.local_decorating.enabled": True,
+    "application_logging.forwarding.context_data.enabled": True,
     "event_harvest_config.harvest_limits.log_event_data": 100000,
 }
 

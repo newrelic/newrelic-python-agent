@@ -60,7 +60,7 @@ def test_loguru_exc_info_context_attributes(logger):
     try:
         raise RuntimeError("Oops")
     except Exception:
-        logger.error("exc_info")
+        logger.opt(exception=True).error("exc_info")
 
 
 @validate_log_events([{"context.extra.attr": 1}])

@@ -60,7 +60,7 @@ def logger():
 
     _logger = loguru.logger
     _logger.configure(extra={"global_extra": 3})
-    _logger = _logger.opt(exception=True, record=True)
+    _logger = _logger.opt(record=True)
 
     caplog = CaplogHandler()
     handler_id = _logger.add(caplog, level="WARNING", format="{message}")

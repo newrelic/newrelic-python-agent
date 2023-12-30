@@ -320,7 +320,6 @@ def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
                 send=send,
                 source=wrapped,
             ) as transaction:
-
                 # Record details of framework against the transaction for later
                 # reporting as supportability metrics.
                 if framework:

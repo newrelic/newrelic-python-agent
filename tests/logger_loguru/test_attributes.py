@@ -56,7 +56,7 @@ def test_loguru_default_context_attributes(logger):
 @validate_log_events([{"message": "exc_info"}], required_attrs=["context.exception"])
 @validate_log_event_count(1)
 @background_task()
-def test_loguru_exc_info_context_attributes(logger):
+def test_loguru_exception_context_attributes(logger):
     try:
         raise RuntimeError("Oops")
     except Exception:

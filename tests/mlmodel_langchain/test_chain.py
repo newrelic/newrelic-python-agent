@@ -56,6 +56,7 @@ chat_completion_recorded_events_uuid_message_ids = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 6,
+            "tags": "",
         },
     ),
     (
@@ -113,6 +114,7 @@ chat_completion_recorded_events_missing_conversation_id = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 6,
+            "tags": "",
         },
     ),
     (
@@ -170,6 +172,8 @@ chat_completion_recorded_events = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 6,
+            "user": 1,
+            "tags": "['foo']",
         },
     ),
     (
@@ -227,6 +231,8 @@ chat_completion_recorded_events_error_in_openai = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 1,
+            "user": 1,
+            "tags": "['foo']",
         },
     ),
     (
@@ -265,6 +271,7 @@ chat_completion_recorded_events_error_in_langchain = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 1,
+            "tags": "",
         },
     ),
     (
@@ -315,7 +322,10 @@ def test_langchain_chain(set_trace_info, comma_separated_list_output_parser, cha
         ]
     )
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
-    chain.invoke({"text": "colors"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+    chain.invoke(
+        {"text": "colors"},
+        config={"tags": ["foo"], "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]}},
+    )
 
 
 @reset_core_stats_engine()
@@ -408,7 +418,13 @@ def test_langchain_chain_error_in_openai(set_trace_info, comma_separated_list_ou
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
 
     with pytest.raises(openai.AuthenticationError):
-        chain.invoke({"text": "openai failure"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+        chain.invoke(
+            {"text": "openai failure"},
+            config={
+                "tags": ["foo"],
+                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+            },
+        )
 
 
 @reset_core_stats_engine()
@@ -503,7 +519,13 @@ def test_async_langchain_chain(set_trace_info, comma_separated_list_output_parse
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
 
     loop.run_until_complete(
-        chain.ainvoke({"text": "colors"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}})
+        chain.ainvoke(
+            {"text": "colors"},
+            config={
+                "tags": ["foo"],
+                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+            },
+        )
     )
 
 
@@ -607,7 +629,11 @@ def test_async_langchain_chain_error_in_openai(
     with pytest.raises(openai.AuthenticationError):
         loop.run_until_complete(
             chain.ainvoke(
-                {"text": "openai failure"}, config={"metadata": {"message_ids": ["message-id-0", "message-id-1"]}}
+                {"text": "openai failure"},
+                config={
+                    "tags": ["foo"],
+                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
             )
         )
 

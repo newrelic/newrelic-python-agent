@@ -161,7 +161,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         search_id = str(uuid.uuid4())
         sequence = index
         page_content = getattr(doc, "page_content", "")
-        metadata = getattr(doc, "metadata", "")
+        metadata = getattr(doc, "metadata", {})
 
         metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
 
@@ -238,7 +238,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         search_id = str(uuid.uuid4())
         sequence = index
         page_content = getattr(doc, "page_content", "")
-        metadata = getattr(doc, "metadata", "")
+        metadata = getattr(doc, "metadata", {})
 
         metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
 
@@ -423,26 +423,33 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
                 }
             )
             run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+            if hasattr(transaction, "_nr_run_manager_info"):
+                del transaction._nr_run_manager_info
             run_id = run_manager_info.get("run_id", "")
-            metadata = run_manager_info.get("metadata", "")
+            metadata = run_manager_info.get("metadata", {})
             tags = run_manager_info.get("tags", "")
 
             messages = [_input]
 
-            full_chat_completion_summary_dict = {
-                "id": completion_id,
-                "appName": app_name,
-                "conversation_id": conversation_id,
-                "span_id": span_id,
-                "trace_id": trace_id,
-                "transaction_id": transaction.guid,
-                "vendor": "langchain",
-                "ingest_source": "Python",
-                "virtual_llm": True,
-                "request_id": run_id,
-                "duration": ft.duration,
-                "response.number_of_messages": len(messages),
-            }
+            # Make sure the builtin attributes take precedence over metadata attributes.
+            full_chat_completion_summary_dict = metadata
+            full_chat_completion_summary_dict.update(
+                {
+                    "id": completion_id,
+                    "appName": app_name,
+                    "conversation_id": conversation_id,
+                    "span_id": span_id,
+                    "trace_id": trace_id,
+                    "transaction_id": transaction.guid,
+                    "vendor": "langchain",
+                    "ingest_source": "Python",
+                    "virtual_llm": True,
+                    "request_id": run_id,
+                    "duration": ft.duration,
+                    "response.number_of_messages": len(messages),
+                    "tags": tags or "",
+                }
+            )
 
             transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
@@ -469,26 +476,33 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
 
     response = return_val
     run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+    if hasattr(transaction, "_nr_run_manager_info"):
+        del transaction._nr_run_manager_info
     run_id = run_manager_info.get("run_id", "")
-    metadata = run_manager_info.get("metadata", "")
+    metadata = run_manager_info.get("metadata", {})
     tags = run_manager_info.get("tags", "")
 
     messages = [_input]
 
-    full_chat_completion_summary_dict = {
-        "id": completion_id,
-        "appName": app_name,
-        "conversation_id": conversation_id,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "transaction_id": transaction.guid,
-        "vendor": "langchain",
-        "ingest_source": "Python",
-        "virtual_llm": True,
-        "request_id": run_id,
-        "duration": ft.duration,
-        "response.number_of_messages": len(messages) + len(response),
-    }
+    # Make sure the builtin attributes take precedence over metadata attributes.
+    full_chat_completion_summary_dict = metadata
+    full_chat_completion_summary_dict.update(
+        {
+            "id": completion_id,
+            "appName": app_name,
+            "conversation_id": conversation_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": run_id,
+            "duration": ft.duration,
+            "response.number_of_messages": len(messages) + len(response),
+            "tags": tags or "",
+        }
+    )
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
@@ -551,26 +565,33 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
                 }
             )
             run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+            if hasattr(transaction, "_nr_run_manager_info"):
+                del transaction._nr_run_manager_info
             run_id = run_manager_info.get("run_id", "")
-            metadata = run_manager_info.get("metadata", "")
+            metadata = run_manager_info.get("metadata", {})
             tags = run_manager_info.get("tags", "")
 
             messages = [_input]
 
-            full_chat_completion_summary_dict = {
-                "id": completion_id,
-                "appName": app_name,
-                "conversation_id": conversation_id,
-                "span_id": span_id,
-                "trace_id": trace_id,
-                "transaction_id": transaction.guid,
-                "vendor": "langchain",
-                "ingest_source": "Python",
-                "virtual_llm": True,
-                "request_id": run_id,
-                "duration": ft.duration,
-                "response.number_of_messages": len(messages),
-            }
+            # Make sure the builtin attributes take precedence over metadata attributes.
+            full_chat_completion_summary_dict = metadata
+            full_chat_completion_summary_dict.update(
+                {
+                    "id": completion_id,
+                    "appName": app_name,
+                    "conversation_id": conversation_id,
+                    "span_id": span_id,
+                    "trace_id": trace_id,
+                    "transaction_id": transaction.guid,
+                    "vendor": "langchain",
+                    "ingest_source": "Python",
+                    "virtual_llm": True,
+                    "request_id": run_id,
+                    "duration": ft.duration,
+                    "response.number_of_messages": len(messages),
+                    "tags": tags or "",
+                }
+            )
 
             transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
@@ -597,26 +618,33 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
 
     response = return_val
     run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+    if hasattr(transaction, "_nr_run_manager_info"):
+        del transaction._nr_run_manager_info
     run_id = run_manager_info.get("run_id", "")
-    metadata = run_manager_info.get("metadata", "")
+    metadata = run_manager_info.get("metadata", {})
     tags = run_manager_info.get("tags", "")
 
     messages = [_input]
 
-    full_chat_completion_summary_dict = {
-        "id": completion_id,
-        "appName": app_name,
-        "conversation_id": conversation_id,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "transaction_id": transaction.guid,
-        "vendor": "langchain",
-        "ingest_source": "Python",
-        "virtual_llm": True,
-        "request_id": run_id,
-        "duration": ft.duration,
-        "response.number_of_messages": len(messages) + len(response),
-    }
+    # Make sure the builtin attributes take precedence over metadata attributes.
+    full_chat_completion_summary_dict = metadata
+    full_chat_completion_summary_dict.update(
+        {
+            "id": completion_id,
+            "appName": app_name,
+            "conversation_id": conversation_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": run_id,
+            "duration": ft.duration,
+            "response.number_of_messages": len(messages) + len(response),
+            "tags": tags or "",
+        }
+    )
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
@@ -723,6 +751,21 @@ def wrap_on_chain_start(wrapped, instance, args, kwargs):
     return run_manager
 
 
+async def wrap_async_on_chain_start(wrapped, instance, args, kwargs):
+    run_manager = await wrapped(*args, **kwargs)
+    transaction = current_transaction()
+    if not transaction:
+        return run_manager
+    # Only capture the first run_id.
+    if not hasattr(transaction, "_nr_run_manager_info"):
+        transaction._nr_run_manager_info = {
+            "run_id": run_manager.run_id,
+            "tags": run_manager.tags,
+            "metadata": run_manager.metadata,
+        }
+    return run_manager
+
+
 def instrument_langchain_runables_chains_base(module):
     if hasattr(getattr(module, "RunnableSequence"), "invoke"):
         wrap_function_wrapper(module, "RunnableSequence.invoke", wrap_chain_sync_run)
@@ -740,3 +783,5 @@ def instrument_langchain_callbacks_manager(module):
         wrap_function_wrapper(module, "CallbackManager.on_tool_start", wrap_on_tool_start)
     if hasattr(getattr(module, "CallbackManager"), "on_chain_start"):
         wrap_function_wrapper(module, "CallbackManager.on_chain_start", wrap_on_chain_start)
+    if hasattr(getattr(module, "AsyncCallbackManager"), "on_chain_start"):
+        wrap_function_wrapper(module, "AsyncCallbackManager.on_chain_start", wrap_async_on_chain_start)

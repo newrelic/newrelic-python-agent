@@ -174,8 +174,7 @@ class TransactionNode(_TransactionNode):
 
             if self.queue_start != 0:
                 queue_wait = self.start_time - self.queue_start
-                if queue_wait < 0:
-                    queue_wait = 0
+                queue_wait = max(queue_wait, 0)
 
                 yield TimeMetric(name="WebFrontend/QueueTime", scope="", duration=queue_wait, exclusive=None)
 

@@ -504,7 +504,7 @@ def test_sanitize_object():
 
 
 class TypeErrorString(object):
-    def __str__(self):
+    def __str__(self):  # pylint: disable=invalid-str-returned
         return 42
 
 

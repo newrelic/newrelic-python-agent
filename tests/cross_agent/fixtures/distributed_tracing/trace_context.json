@@ -22,7 +22,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -102,7 +102,7 @@
           "priority": 0.123456,
           "sampled": false
         },
-        "expected": ["parent.transportDuration", "guid"],
+        "expected": ["parent.transportDuration"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -148,7 +148,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -231,7 +231,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["parent.transportDuration", "guid"],
+        "expected": ["parent.transportDuration"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -284,7 +284,7 @@
     "intrinsics": {
       "target_events": ["Transaction"],
       "common":{
-        "expected": ["guid", "traceId", "priority", "sampled"],
+        "expected": ["traceId", "priority", "sampled"],
         "unexpected": ["grandparentId",
           "cross_process_id",
           "nr.tripId",
@@ -328,7 +328,7 @@
           "priority": 1.001,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -385,7 +385,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -438,7 +438,7 @@
           "traceId": "f6e9c09812b22fba2f1999b318ddfc8b",
           "sampled": true
         },
-        "expected": ["guid", "priority"],
+        "expected": ["priority"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -493,7 +493,7 @@
           "priority": 1.123456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -568,7 +568,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -665,7 +665,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -742,7 +742,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -791,7 +791,7 @@
     "intrinsics": {
       "target_events": ["Transaction", "Span"],
       "common":{
-        "expected": ["guid", "traceId", "priority", "sampled"],
+        "expected": ["traceId", "priority", "sampled"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes", "parent.transportDuration", "parent.type", "parent.app", "parent.account"]
       },
       "Transaction": {
@@ -830,7 +830,7 @@
     "intrinsics": {
       "target_events": ["Transaction", "Span"],
       "common":{
-        "expected": ["guid", "traceId", "priority", "sampled"],
+        "expected": ["traceId", "priority", "sampled"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes", "parent.transportDuration", "parent.type", "parent.app", "parent.account"]
       },
       "Transaction": {
@@ -904,7 +904,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -953,7 +953,7 @@
     "intrinsics": {
       "target_events": ["Transaction", "Span"],
       "common":{
-        "expected": ["guid", "traceId", "priority", "sampled"],
+        "expected": ["traceId", "priority", "sampled"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes", "parent.transportDuration", "parent.type", "parent.app", "parent.account"]
       },
       "Transaction": {
@@ -995,7 +995,7 @@
         "exact": {
           "parentSpanId": "b4a146e3237b4df1"
         },
-        "expected": ["guid", "traceId", "priority", "sampled", "parent.transportType"],
+        "expected": ["traceId", "priority", "sampled", "parent.transportType"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes", "parent.transportDuration", "parent.type", "parent.app", "parent.account", "parentId"]
       }
     },
@@ -1024,7 +1024,7 @@
         "exact": {
           "parentSpanId": "7d3efb1b173fecfa"
         },
-        "expected": ["guid", "traceId", "priority", "sampled", "parent.transportType"],
+        "expected": ["traceId", "priority", "sampled", "parent.transportType"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes", "parent.transportDuration", "parent.type", "parent.app", "parent.account", "parentId"]
       }
     },
@@ -1053,7 +1053,7 @@
         "exact": {
           "parentSpanId": "b4a146e3237b4df1"
         },
-        "expected": ["guid", "traceId", "priority", "sampled", "parent.transportType"],
+        "expected": ["traceId", "priority", "sampled", "parent.transportType"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes", "parent.transportDuration", "parent.type", "parent.app", "parent.account", "parentId"]
       }
     },
@@ -1084,7 +1084,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -1133,7 +1133,7 @@
     "intrinsics": {
       "target_events": ["Transaction"],
       "common":{
-        "expected": ["guid", "traceId", "priority", "sampled"],
+        "expected": ["traceId", "priority", "sampled"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes", "parent.transportDuration", "parent.type", "parent.app", "parent.account", "parentId"]
       }
     },
@@ -1162,7 +1162,7 @@
         "exact": {
           "parentSpanId": "b4a146e3237b4df1"
         },
-        "expected": ["guid", "traceId", "priority", "sampled", "parent.transportType"],
+        "expected": ["traceId", "priority", "sampled", "parent.transportType"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes", "parent.transportDuration", "parent.type", "parent.app", "parent.account", "parentId"]
       }
     },
@@ -1217,7 +1217,7 @@
           "sampled": true,
           "traceId": "5f2796876f44a3c898994ce2668e2222"
         },
-        "expected": ["guid", "priority"],
+        "expected": ["priority"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -1296,7 +1296,7 @@
           "traceId": "5f2796876f44a3c898994ce2668e2222",
           "sampled": true
         },
-        "expected": ["guid", "priority"],
+        "expected": ["priority"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -1463,7 +1463,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -1517,7 +1517,7 @@
           "priority": 1.23456,
           "sampled": true
         },
-        "expected": ["guid"],
+        "expected": [],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {
@@ -1567,7 +1567,7 @@
     "intrinsics": {
       "target_events": ["Transaction", "Span"],
       "common":{
-        "expected": ["guid", "traceId", "priority", "sampled"],
+        "expected": ["traceId", "priority", "sampled"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes", "parent.type", "parent.app", "parent.account", "parentId", "parentSpanId", "parent.transportDuration", "tracingVendors"]
       },
       "Span": {
@@ -1603,7 +1603,7 @@
           "traceId": "da8bc8cc6d062849b0efcf3c169afb5a",
           "sampled": true
         },
-        "expected": ["guid", "priority"],
+        "expected": ["priority"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes", "parent.type", "parent.app", "parent.account", "parent.transportDuration", "trustedParentId"]
       },
       "Transaction": {
@@ -1670,7 +1670,7 @@
           "traceId": "6e2fea0b173fdad0",
           "sampled": true
         },
-        "expected": ["guid", "priority"],
+        "expected": ["priority"],
         "unexpected": ["grandparentId", "cross_process_id", "nr.tripId", "nr.pathHash", "nr.referringPathHash", "nr.guid", "nr.referringTransactionGuid", "nr.alternatePathHashes"]
       },
       "Transaction": {

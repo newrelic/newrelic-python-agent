@@ -432,7 +432,7 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
             messages = [_input]
 
             # Make sure the builtin attributes take precedence over metadata attributes.
-            full_chat_completion_summary_dict = metadata
+            full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
             full_chat_completion_summary_dict.update(
                 {
                     "id": completion_id,
@@ -485,7 +485,7 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
     messages = [_input]
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    full_chat_completion_summary_dict = metadata
+    full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
     full_chat_completion_summary_dict.update(
         {
             "id": completion_id,
@@ -574,7 +574,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
             messages = [_input]
 
             # Make sure the builtin attributes take precedence over metadata attributes.
-            full_chat_completion_summary_dict = metadata
+            full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
             full_chat_completion_summary_dict.update(
                 {
                     "id": completion_id,
@@ -627,7 +627,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     messages = [_input]
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    full_chat_completion_summary_dict = metadata
+    full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
     full_chat_completion_summary_dict.update(
         {
             "id": completion_id,

@@ -4072,6 +4072,7 @@ def _setup_security_module():
     """
     try:
         if not _settings.security.agent.enabled or _settings.high_security:
+            _logger.warning("New Relic Security is disabled by one of the user provided config `security.agent.enabled` or `high_security`.")
             return
         from newrelic_security.api.agent import Agent as SecurityAgent
 

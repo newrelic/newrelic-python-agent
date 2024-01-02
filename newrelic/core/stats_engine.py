@@ -892,8 +892,19 @@ class StatsEngine(object):
             if attr.destinations & DST_ERROR_COLLECTOR:
                 attributes["agentAttributes"][attr.name] = attr.value
 
+        # guid here is None because no transaction is attached
+        # TODO: Add transaction trace to errors outside transaction
+        # in order to connect the UI to the error trace information
+        # (the UI pulls info from the transaction trace which has
+        # the linked error traces)
+        no_transaction_guid = "Error_outside_transaction"
         error_details = TracedError(
-            start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
+            start_time=time.time(),
+            path="Exception",
+            message=message,
+            type=fullname,
+            parameters=attributes,
+            guid=no_transaction_guid,
         )
 
         # Save this error as a trace and an event.

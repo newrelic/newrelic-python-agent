@@ -374,7 +374,12 @@ class TransactionNode(_TransactionNode):
                     params["userAttributes"][attr.name] = attr.value
 
             yield newrelic.core.error_collector.TracedError(
-                start_time=error.timestamp, path=self.path, message=error.message, type=error.type, parameters=params
+                start_time=error.timestamp,
+                path=self.path,
+                message=error.message,
+                type=error.type,
+                parameters=params,
+                guid=self.guid,
             )
 
     def transaction_trace(self, stats, limit, connections):

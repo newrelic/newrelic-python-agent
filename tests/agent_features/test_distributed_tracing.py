@@ -43,7 +43,7 @@ from newrelic.api.transaction import (
 from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.wsgi_application import wsgi_application
 
-distributed_trace_intrinsics = ["guid", "traceId", "priority", "sampled"]
+distributed_trace_intrinsics = ["traceId", "priority", "sampled"]
 inbound_payload_intrinsics = [
     "parent.type",
     "parent.app",

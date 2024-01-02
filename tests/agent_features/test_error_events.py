@@ -16,7 +16,6 @@ import sys
 import time
 
 import webtest
-
 from testing_support.fixtures import (
     cat_enabled,
     make_cross_agent_headers,
@@ -27,9 +26,6 @@ from testing_support.fixtures import (
     validate_transaction_error_event_count,
 )
 from testing_support.sample_applications import fully_featured_app
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
 from testing_support.validators.validate_non_transaction_error_event import (
     validate_non_transaction_error_event,
 )

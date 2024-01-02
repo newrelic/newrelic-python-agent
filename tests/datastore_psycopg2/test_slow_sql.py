@@ -14,71 +14,74 @@
 
 import psycopg2
 import pytest
-
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_slow_sql_collector_json import validate_slow_sql_collector_json
-
+from testing_support.validators.validate_slow_sql_collector_json import (
+    validate_slow_sql_collector_json,
+)
 from utils import DB_SETTINGS
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 
-
 # Settings
 
 _enable_instance_settings = {
-    'datastore_tracer.instance_reporting.enabled': True,
-    'datastore_tracer.database_name_reporting.enabled': True,
+    "datastore_tracer.instance_reporting.enabled": True,
+    "datastore_tracer.database_name_reporting.enabled": True,
 }
 _disable_instance_settings = {
-    'datastore_tracer.instance_reporting.enabled': False,
-    'datastore_tracer.database_name_reporting.enabled': False,
+    "datastore_tracer.instance_reporting.enabled": False,
+    "datastore_tracer.database_name_reporting.enabled": False,
 }
 
 # Expected parameters
 
-_enabled_required = set(['host', 'port_path_or_id', 'database_name'])
+_enabled_required = set(["host", "port_path_or_id", "database_name"])
 _enabled_forgone = set()
 
 _disabled_required = set()
-_disabled_forgone = set(['host', 'port_path_or_id', 'database_name'])
+_disabled_forgone = set(["host", "port_path_or_id", "database_name"])
 
-_distributed_tracing_always_params = set(['guid', 'traceId', 'priority',
-    'sampled'])
-_distributed_tracing_payload_received_params = set(['parent.type',
-    'parent.app', 'parent.account', 'parent.transportType',
-    'parent.transportDuration'])
+_distributed_tracing_always_params = set(["traceId", "priority", "sampled"])
+_distributed_tracing_payload_received_params = set(
+    ["parent.type", "parent.app", "parent.account", "parent.transportType", "parent.transportDuration"]
+)
 
-_transaction_guid = '1234567890'
-_distributed_tracing_exact_params = {'guid': _transaction_guid}
+_transaction_guid = "1234567890"
 
 
 # Query
 
+
 def _exercise_db():
     connection = psycopg2.connect(
-            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'])
+        database=DB_SETTINGS["name"],
+        user=DB_SETTINGS["user"],
+        password=DB_SETTINGS["password"],
+        host=DB_SETTINGS["host"],
+        port=DB_SETTINGS["port"],
+    )
 
     try:
         cursor = connection.cursor()
-        cursor.execute("""SELECT setting from pg_settings where name=%s""",
-                ('server_version',))
+        cursor.execute("""SELECT setting from pg_settings where name=%s""", ("server_version",))
     finally:
         connection.close()
 
 
 # Tests
 
-@pytest.mark.parametrize('instance_enabled', (True, False))
-@pytest.mark.parametrize('distributed_tracing_enabled,payload_received', [
+
+@pytest.mark.parametrize("instance_enabled", (True, False))
+@pytest.mark.parametrize(
+    "distributed_tracing_enabled,payload_received",
+    [
         (True, True),
         (True, False),
         (False, False),
-])
-def test_slow_sql_json(instance_enabled, distributed_tracing_enabled,
-        payload_received):
+    ],
+)
+def test_slow_sql_json(instance_enabled, distributed_tracing_enabled, payload_received):
 
     exact_params = None
 
@@ -93,24 +96,21 @@ def test_slow_sql_json(instance_enabled, distributed_tracing_enabled,
 
     if distributed_tracing_enabled:
         required_params.update(_distributed_tracing_always_params)
-        exact_params = _distributed_tracing_exact_params
-        settings['distributed_tracing.enabled'] = True
+        exact_params = {}
+        settings["distributed_tracing.enabled"] = True
         if payload_received:
-            required_params.update(
-                    _distributed_tracing_payload_received_params)
+            required_params.update(_distributed_tracing_payload_received_params)
         else:
-            forgone_params.update(
-                    _distributed_tracing_payload_received_params)
+            forgone_params.update(_distributed_tracing_payload_received_params)
     else:
         forgone_params.update(_distributed_tracing_always_params)
         forgone_params.update(_distributed_tracing_payload_received_params)
-        settings['distributed_tracing.enabled'] = False
+        settings["distributed_tracing.enabled"] = False
 
     @override_application_settings(settings)
     @validate_slow_sql_collector_json(
-            required_params=required_params,
-            forgone_params=forgone_params,
-            exact_params=exact_params)
+        required_params=required_params, forgone_params=forgone_params, exact_params=exact_params
+    )
     @background_task()
     def _test():
         transaction = current_transaction()
@@ -121,18 +121,18 @@ def test_slow_sql_json(instance_enabled, distributed_tracing_enabled,
         if payload_received:
 
             payload = {
-                'v': [0, 1],
-                'd': {
-                    'ty': 'Mobile',
-                    'ac': transaction.settings.account_id,
-                    'tk': transaction.settings.trusted_account_key,
-                    'ap': '2827902',
-                    'pa': '5e5733a911cfbc73',
-                    'id': '7d3efb1b173fecfa',
-                    'tr': 'd6b4ba0c3a712ca',
-                    'ti': 1518469636035,
-                    'tx': '8703ff3d88eefe9d',
-                }
+                "v": [0, 1],
+                "d": {
+                    "ty": "Mobile",
+                    "ac": transaction.settings.account_id,
+                    "tk": transaction.settings.trusted_account_key,
+                    "ap": "2827902",
+                    "pa": "5e5733a911cfbc73",
+                    "id": "7d3efb1b173fecfa",
+                    "tr": "d6b4ba0c3a712ca",
+                    "ti": 1518469636035,
+                    "tx": "8703ff3d88eefe9d",
+                },
             }
 
             transaction.accept_distributed_trace_payload(payload)

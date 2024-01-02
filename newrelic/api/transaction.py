@@ -892,7 +892,6 @@ class Transaction(object):
         if not self._settings.distributed_tracing.enabled:
             return i_attrs
 
-        i_attrs["guid"] = self.guid
         i_attrs["sampled"] = self.sampled
         i_attrs["priority"] = self.priority
         i_attrs["traceId"] = self.trace_id

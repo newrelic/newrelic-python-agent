@@ -14,4 +14,4 @@
 
 from collections import namedtuple
 
-TracedError = namedtuple("TracedError", ["start_time", "path", "message", "type", "parameters", "guid"])
+TracedError = namedtuple("TracedError", ["start_time", "path", "message", "type", "parameters"])

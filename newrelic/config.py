@@ -2084,6 +2084,11 @@ def _process_module_builtin_defaults():
         "instrument_langchain_runables_chains_base",
     )
     _process_module_definition(
+        "langchain.chains.base",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_chains_base",
+    )
+    _process_module_definition(
         "langchain_core.callbacks.manager",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_callbacks_manager",

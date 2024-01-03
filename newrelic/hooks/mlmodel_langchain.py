@@ -392,8 +392,15 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
 
     run_args = bind_args(wrapped, args, kwargs)
-    message_ids = ((run_args.get("config", {}) or {}).get("metadata", {}) or {}).pop("message_ids", [])
-    _input = run_args.get("input", "")
+    # invoke has an argument named "config" that contains metadata and tags whereas
+    # run has arguments named "metadata" and "tags".
+    if "config" in run_args:
+        message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
+    else:
+        message_ids = (run_args.get("metadata") or {}).pop("message_ids", [])
+    # invoke has an argument named "input" whereas the input when calling run can
+    # end up in args or kwargs.
+    _input = run_args.get("input", "") or run_args["kwargs"].get("input") or run_args["args"][0]
 
     span_id = None
     trace_id = None
@@ -415,7 +422,19 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
         trace_id = available_metadata.get("trace.id", "")
 
         try:
-            return_val = await wrapped(**run_args)
+            if function_name == "ainvoke":
+                return_val = await wrapped(**run_args)
+            else:
+                # The run function accepts args and kwargs as part of it's interface
+                # and this is not compatible with the bind_arg output so pass all the
+                # bind arguments in individually and explicitly.
+                return_val = await wrapped(
+                    *run_args["args"],
+                    callbacks=run_args["callbacks"],
+                    tags=run_args["tags"],
+                    metadata=run_args["metadata"],
+                    **run_args["kwargs"]
+                )
         except Exception as exc:
             ft.notice_error(
                 attributes={
@@ -426,10 +445,21 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
             if hasattr(transaction, "_nr_run_manager_info"):
                 del transaction._nr_run_manager_info
             run_id = run_manager_info.get("run_id", "")
-            metadata = run_manager_info.get("metadata", {})
-            tags = run_manager_info.get("tags", "")
+            # First try to get the metadata and tags from the run manager info as that
+            # will be most accurate. In some error cases, the error may occurr before
+            # the run manager is created. If this happens, fallback to getting the
+            # metadata and tags from the wrapped's input params.
+            metadata = (
+                run_manager_info.get("metadata")
+                or (run_args.get("config") or {}).get("metadata")
+                or run_args.get("metadata")
+                or {}
+            )
+            tags = (
+                run_manager_info.get("tags") or (run_args.get("config") or {}).get("tags") or run_args.get("tags") or ""
+            )
 
-            messages = [_input]
+            input_message_list = [_input]
 
             # Make sure the builtin attributes take precedence over metadata attributes.
             full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
@@ -446,15 +476,13 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
                     "virtual_llm": True,
                     "request_id": run_id,
                     "duration": ft.duration,
-                    "response.number_of_messages": len(messages),
-                    "tags": tags or "",
+                    "response.number_of_messages": len(input_message_list),
+                    "tags": tags,
+                    "error": True,
                 }
             )
 
             transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
-
-            input_message_list = list(messages)
-            output_message_list = []
 
             create_chat_completion_message_event(
                 transaction,
@@ -465,7 +493,7 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
                 trace_id,
                 run_id,
                 conversation_id,
-                output_message_list,
+                [],
                 message_ids,
             )
 
@@ -482,7 +510,16 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
     metadata = run_manager_info.get("metadata", {})
     tags = run_manager_info.get("tags", "")
 
-    messages = [_input]
+    input_message_list = [_input]
+    output_message_list = []
+    response_len = 1
+    try:
+        output_message_list = [response[0]] if response else []
+    except:
+        try:
+            output_message_list = [str(response)]
+        except:
+            _logger.warning("Unable to capture response. No response message event will be captured.")
 
     # Make sure the builtin attributes take precedence over metadata attributes.
     full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
@@ -499,15 +536,12 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
             "virtual_llm": True,
             "request_id": run_id,
             "duration": ft.duration,
-            "response.number_of_messages": len(messages) + len(response),
+            "response.number_of_messages": len(input_message_list) + len(output_message_list),
             "tags": tags or "",
         }
     )
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
-
-    input_message_list = list(messages)
-    output_message_list = [response[0]] if response else []
 
     create_chat_completion_message_event(
         transaction,
@@ -534,8 +568,15 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
 
     run_args = bind_args(wrapped, args, kwargs)
-    message_ids = ((run_args.get("config", {}) or {}).get("metadata", {}) or {}).pop("message_ids", [])
-    _input = run_args.get("input", "")
+    # invoke has an argument named "config" that contains metadata and tags whereas
+    # run has arguments named "metadata" and "tags".
+    if "config" in run_args:
+        message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
+    else:
+        message_ids = (run_args.get("metadata") or {}).pop("message_ids", [])
+    # invoke has an argument named "input" whereas the input when calling run can
+    # end up in args or kwargs.
+    _input = run_args.get("input", "") or run_args["kwargs"].get("input") or run_args["args"][0]
 
     span_id = None
     trace_id = None
@@ -557,7 +598,19 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
         trace_id = available_metadata.get("trace.id", "")
 
         try:
-            return_val = wrapped(**run_args)
+            if function_name == "invoke":
+                return_val = wrapped(**run_args)
+            else:
+                # The run function accepts args and kwargs as part of it's interface
+                # and this is not compatible with the bind_arg output so pass all the
+                # bind arguments in individually and explicitly.
+                return_val = wrapped(
+                    *run_args["args"],
+                    callbacks=run_args["callbacks"],
+                    tags=run_args["tags"],
+                    metadata=run_args["metadata"],
+                    **run_args["kwargs"]
+                )
         except Exception as exc:
             ft.notice_error(
                 attributes={
@@ -568,10 +621,21 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
             if hasattr(transaction, "_nr_run_manager_info"):
                 del transaction._nr_run_manager_info
             run_id = run_manager_info.get("run_id", "")
-            metadata = run_manager_info.get("metadata", {})
-            tags = run_manager_info.get("tags", "")
+            # First try to get the metadata and tags from the run manager info as that
+            # will be most accurate. In some error cases, the error may occurr before
+            # the run manager is created. If this happens, fallback to getting the
+            # metadata and tags from the wrapped's input params.
+            metadata = (
+                run_manager_info.get("metadata")
+                or (run_args.get("config") or {}).get("metadata")
+                or run_args.get("metadata")
+                or {}
+            )
+            tags = (
+                run_manager_info.get("tags") or (run_args.get("config") or {}).get("tags") or run_args.get("tags") or ""
+            )
 
-            messages = [_input]
+            input_message_list = [_input]
 
             # Make sure the builtin attributes take precedence over metadata attributes.
             full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
@@ -588,15 +652,13 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
                     "virtual_llm": True,
                     "request_id": run_id,
                     "duration": ft.duration,
-                    "response.number_of_messages": len(messages),
-                    "tags": tags or "",
+                    "response.number_of_messages": len(input_message_list),
+                    "tags": tags,
+                    "error": True,
                 }
             )
 
             transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
-
-            input_message_list = list(messages)
-            output_message_list = []
 
             create_chat_completion_message_event(
                 transaction,
@@ -607,7 +669,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
                 trace_id,
                 run_id,
                 conversation_id,
-                output_message_list,
+                [],
                 message_ids,
             )
 
@@ -624,7 +686,16 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     metadata = run_manager_info.get("metadata", {})
     tags = run_manager_info.get("tags", "")
 
-    messages = [_input]
+    input_message_list = [_input]
+    output_message_list = []
+    response_len = 1
+    try:
+        output_message_list = [response[0]] if response else []
+    except:
+        try:
+            output_message_list = [str(response)]
+        except:
+            _logger.warning("Unable to capture response. No response message event will be captured.")
 
     # Make sure the builtin attributes take precedence over metadata attributes.
     full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
@@ -641,15 +712,12 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
             "virtual_llm": True,
             "request_id": run_id,
             "duration": ft.duration,
-            "response.number_of_messages": len(messages) + len(response),
+            "response.number_of_messages": len(input_message_list) + len(output_message_list),
             "tags": tags or "",
         }
     )
 
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
-
-    input_message_list = list(messages)
-    output_message_list = [response[0]] if response else []
 
     create_chat_completion_message_event(
         transaction,
@@ -690,8 +758,6 @@ def create_chat_completion_message_event(
 
     # Loop through all input messages received from the create request and emit a custom event for each one
     for index, message in enumerate(input_message_list):
-        message_content = message.get("text", "")
-
         chat_completion_input_message_dict = {
             "id": message_ids[index],
             "appName": app_name,
@@ -700,7 +766,7 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "content": message_content,
+            "content": message,
             "completion_id": chat_completion_id,
             "sequence": index,
             "vendor": "langchain",
@@ -773,9 +839,25 @@ def instrument_langchain_runables_chains_base(module):
         wrap_function_wrapper(module, "RunnableSequence.ainvoke", wrap_chain_async_run)
 
 
+def instrument_langchain_chains_base(module):
+    if hasattr(getattr(module, "Chain"), "run"):
+        wrap_function_wrapper(module, "Chain.run", wrap_chain_sync_run)
+    if hasattr(getattr(module, "Chain"), "arun"):
+        wrap_function_wrapper(module, "Chain.arun", wrap_chain_async_run)
+
+
 def instrument_langchain_core_tools(module):
     if hasattr(getattr(module, "BaseTool"), "run"):
         wrap_function_wrapper(module, "BaseTool.run", wrap_tool_sync_run)
+
+
+def instrument_langchain_vectorstore_similarity_search(module):
+    vector_class = VECTORSTORE_CLASSES.get(module.__name__)
+
+    if vector_class and hasattr(getattr(module, vector_class, ""), "similarity_search"):
+        wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
+    if vector_class and hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
+        wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)
 
 
 def instrument_langchain_callbacks_manager(module):

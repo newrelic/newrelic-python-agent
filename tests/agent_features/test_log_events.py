@@ -75,11 +75,14 @@ def exercise_record_log_event():
     record_log_event(None, attributes={"attributes_only": "value"})
     record_log_event({"attributes_only": "value"})
     record_log_event({"message": "dict_message"})
+    record_log_event({"message": 123})
 
     # Unsent due to message content missing
     record_log_event("")
     record_log_event("         ")
+    record_log_event(NonPrintableObject())
     record_log_event({"message": ""})
+    record_log_event({"message": NonPrintableObject()})
     record_log_event({"filtered_attribute": "should_be_removed"})
     record_log_event(None)
 
@@ -130,6 +133,7 @@ _exercise_record_log_event_events = [
     {"context.attributes_only": "value"},
     {"message.attributes_only": "value"},
     {"message": "dict_message"},
+    {"message": "123"},
 ]
 _exercise_record_log_event_inside_transaction_events = [
     combine_dicts(_common_attributes_trace_linking, log) for log in _exercise_record_log_event_events

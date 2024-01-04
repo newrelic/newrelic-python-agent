@@ -1232,35 +1232,32 @@ class StatsEngine(object):
 
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
+        context_attributes = attributes  # Name reassigned for clarity
 
         # Unpack message and attributes from dict inputs
         if isinstance(message, dict):
             message_attributes = {k: v for k, v in message.items() if k != "message"}
-            message = str(message.get("message", ""))
+            message = message.get("message", "")
         else:
             message_attributes = None
 
-        # Exit early for invalid message type after unpacking
-        is_string = isinstance(message, six.string_types)
-        if message is not None and not is_string:
-            _logger.debug("record_log_event called where message was not found. No log event will be sent.")
-            return
-
-        # Exit early if no message or attributes found
-        no_message = not message or message.isspace()
-        if not attributes and not message_attributes and no_message:
-            _logger.debug("record_log_event called where message was missing, and no attributes found. No log event will be sent.")
-            return
-
-        # Truncate the now unpacked and string converted message
-        if is_string: 
+        # Coerce message into a string type
+        if message is not None and not isinstance(message, six.string_types):
+            try:
+                message = str(message)
+            except Exception:
+                # Exit early for invalid message type after unpacking
+                _logger.debug("record_log_event called where message could not be converted to a string type. No log event will be sent.")
+                return
+            
+            # Truncate the now unpacked and string converted message
             message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
 
         # Collect attributes from linking metadata, context data, and message attributes
         collected_attributes = {}
         if settings and settings.application_logging.forwarding.context_data.enabled:
-            if attributes:
-                context_attributes = resolve_logging_context_attributes(attributes, settings.attribute_filter, "context.")
+            if context_attributes:
+                context_attributes = resolve_logging_context_attributes(context_attributes, settings.attribute_filter, "context.")
                 if context_attributes:
                     collected_attributes.update(context_attributes)
 
@@ -1270,8 +1267,8 @@ class StatsEngine(object):
                     collected_attributes.update(message_attributes)
 
             # Exit early if no message or attributes found after filtering
-            if not collected_attributes and no_message:
-                _logger.debug("record_log_event called where message was missing, and no attributes found. No log event will be sent.")
+            if (not message or message.isspace()) and not context_attributes and not message_attributes:
+                _logger.debug("record_log_event called where message was not found, and no attributes were found. No log event will be sent.")
                 return
 
         # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute

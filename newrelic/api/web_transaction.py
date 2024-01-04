@@ -16,6 +16,7 @@ import functools
 import time
 import logging
 import warnings
+import re
 
 try:
     import urlparse
@@ -166,6 +167,23 @@ class WebTransaction(Transaction):
     unicode_error_reported = False
     QUEUE_TIME_HEADERS = ('x-request-start', 'x-queue-start')
 
+    @property
+    def _request_uri(self):
+        return self.request_uri
+
+
+    @_request_uri.setter
+    def _request_uri(self, raw_uri):
+        if self._settings and raw_uri:
+            if self._settings.url_regex and self._settings.url_regex_rep:
+                obfuscated_uri = re.sub(str(self._settings.url_regex),str(self._settings.url_regex_rep), str(raw_uri))
+                self.request_uri = obfuscated_uri
+            elif self._settings.url_regex:
+                obfuscated_uri = re.sub(str(self._settings.url_regex),"*****", str(raw_uri))
+                self.request_uri = obfuscated_uri
+            else:
+                self.request_uri = raw_uri
+                
     def __init__(self, application, name, group=None,
             scheme=None, host=None, port=None, request_method=None,
             request_path=None, query_string=None, headers=None,

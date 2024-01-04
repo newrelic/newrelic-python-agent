@@ -323,6 +323,8 @@ def _process_setting(section, option, getter, mapper):
 def _process_configuration(section):
     _process_setting(section, "feature_flag", "get", _map_feature_flag)
     _process_setting(section, "app_name", "get", None)
+    _process_setting(section, "url_regex", "get", None)
+    _process_setting(section, "url_regex_rep", "get", None)
     _process_setting(section, "labels", "get", _map_labels)
     _process_setting(section, "license_key", "get", _map_default_host_value)
     _process_setting(section, "api_key", "get", None)

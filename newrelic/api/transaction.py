@@ -1944,17 +1944,17 @@ def add_framework_info(name, version=None):
         transaction.add_framework_info(name, version)
 
 
-def get_browser_timing_header():
+def get_browser_timing_header(nonce=None):
     transaction = current_transaction()
     if transaction and hasattr(transaction, "browser_timing_header"):
-        return transaction.browser_timing_header()
+        return transaction.browser_timing_header(nonce)
     return ""
 
 
-def get_browser_timing_footer():
+def get_browser_timing_footer(nonce=None):
     transaction = current_transaction()
     if transaction and hasattr(transaction, "browser_timing_footer"):
-        return transaction.browser_timing_footer()
+        return transaction.browser_timing_footer(nonce)
     return ""
 
 

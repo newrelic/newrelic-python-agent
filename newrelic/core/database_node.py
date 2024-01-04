@@ -203,7 +203,7 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         if root.type == "WebTransaction":
             request_uri = root.request_uri
 
-        params = None
+        params = {}
         if root.distributed_trace_intrinsics:
             params = root.distributed_trace_intrinsics.copy()
         params["guid"] = root.guid or None

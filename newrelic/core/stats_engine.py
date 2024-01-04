@@ -829,8 +829,6 @@ class StatsEngine(object):
         agent_attributes = {}
 
         if settings:
-            no_transaction_guid = settings.entity_guid or "error_outside_transaction"
-
             if settings.code_level_metrics and settings.code_level_metrics.enabled:
                 extract_code_from_traceback(tb).add_attrs(agent_attributes.__setitem__)
 
@@ -883,6 +881,11 @@ class StatsEngine(object):
             if attr.destinations & DST_ERROR_COLLECTOR:
                 attributes["userAttributes"][attr.name] = attr.value
 
+        # Instead of creating a brand new transaction, we
+        # simply attach the entity_guid to the intrinsics
+        # as well as the TracedError
+        no_transaction_guid = getattr(settings, "entity_guid", "no_transaction_guid")
+
         # pass expected attribute in to ensure we capture overrides
         attributes["intrinsics"] = {
             "error.expected": is_expected,
@@ -901,6 +904,7 @@ class StatsEngine(object):
             message=message,
             type=fullname,
             parameters=attributes,
+            guid=no_transaction_guid,
         )
 
         # Save this error as a trace and an event.

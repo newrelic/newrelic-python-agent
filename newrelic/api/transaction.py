@@ -867,10 +867,6 @@ class Transaction(object):
         if self._loop_time:
             i_attrs["eventLoopTime"] = self._loop_time
 
-        # Add here instead of only when DT is enabled
-        if self.guid:
-            i_attrs["guid"] = self.guid
-
         # Add in special CPU time value for UI to display CPU burn.
 
         # TODO: Disable cpu time value for CPU burn as was
@@ -888,6 +884,10 @@ class Transaction(object):
     @property
     def distributed_trace_intrinsics(self):
         i_attrs = {}
+        # `guid` is added here because there
+        # are other calls to this function that do
+        # not call `transaction.trace_intrinsics`.
+        i_attrs["guid"] = self.guid
 
         if not self._settings.distributed_tracing.enabled:
             return i_attrs

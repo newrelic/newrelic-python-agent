@@ -99,12 +99,12 @@ class ASGIBrowserMiddleware(object):
         for header_name, header_value in headers:
             # ASGI spec (https://asgi.readthedocs.io/en/latest/specs/www.html#http) states
             # header names should be lower cased, but not required
-            header_name = header_name.decode("utf-8").lower()
-            if header_name == "content-type":
+            header_name = header_name.lower()
+            if header_name == b"content-type":
                 content_type = header_value
-            elif header_name == "content-encoding":
+            elif header_name == b"content-encoding":
                 content_encoding = header_value
-            elif header_name == "content-disposition":
+            elif header_name == b"content-disposition":
                 content_disposition = header_value
 
         if content_encoding is not None:

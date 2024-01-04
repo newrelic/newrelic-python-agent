@@ -1241,14 +1241,15 @@ class StatsEngine(object):
         else:
             message_attributes = None
 
-        # Coerce message into a string type
-        if message is not None and not isinstance(message, six.string_types):
-            try:
-                message = str(message)
-            except Exception:
-                # Exit early for invalid message type after unpacking
-                _logger.debug("record_log_event called where message could not be converted to a string type. No log event will be sent.")
-                return
+        if message is not None:
+            # Coerce message into a string type
+            if not isinstance(message, six.string_types):
+                try:
+                    message = str(message)
+                except Exception:
+                    # Exit early for invalid message type after unpacking
+                    _logger.debug("record_log_event called where message could not be converted to a string type. No log event will be sent.")
+                    return
             
             # Truncate the now unpacked and string converted message
             message = truncate(message, MAX_LOG_MESSAGE_LENGTH)

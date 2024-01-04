@@ -884,7 +884,7 @@ class StatsEngine(object):
         # Instead of creating a brand new transaction, we
         # simply attach the entity_guid to the intrinsics
         # as well as the TracedError
-        no_transaction_guid = getattr(settings, "entity_guid", "no_transaction_guid")
+        no_transaction_guid = getattr(settings, "entity_guid", None)
 
         # pass expected attribute in to ensure we capture overrides
         attributes["intrinsics"] = {

@@ -582,6 +582,7 @@ class TransactionNode(_TransactionNode):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
+        intrinsics["guid"] = self.guid
         intrinsics["timestamp"] = int(1000.0 * self.start_time)
         intrinsics["duration"] = self.response_time
 

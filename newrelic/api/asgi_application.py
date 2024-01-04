@@ -97,7 +97,9 @@ class ASGIBrowserMiddleware(object):
         content_type = None
 
         for header_name, header_value in headers:
-            # assume header names are lower cased in accordance with ASGI spec
+            # ASGI spec (https://asgi.readthedocs.io/en/latest/specs/www.html#http) states
+            # header names should be lower cased, but not required
+            header_name = header_name.lower()
             if header_name == b"content-type":
                 content_type = header_value
             elif header_name == b"content-encoding":
@@ -318,7 +320,6 @@ def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
                 send=send,
                 source=wrapped,
             ) as transaction:
-
                 # Record details of framework against the transaction for later
                 # reporting as supportability metrics.
                 if framework:

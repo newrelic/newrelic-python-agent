@@ -196,7 +196,7 @@ def newrelic_browser_timing_header():
 
 def newrelic_browser_timing_footer():
     warnings.warn(
-        "The newrelic_browser_timing_footer function is deprecated. Please migrate to only using the newrelic_browser_timing_header api instead.",
+        "The newrelic_browser_timing_footer function is deprecated. Please migrate to only using the newrelic_browser_timing_header API instead.",
         DeprecationWarning,
     )
     return ""  # nosec

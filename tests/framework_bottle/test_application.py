@@ -31,14 +31,16 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.packages import six
 
-version = [int(x) for x in version.split("-")[0].split(".")]
+version = list(get_package_version_tuple("bottle"))
 
 if len(version) == 2:
     version.append(0)
 
 version = tuple(version)
+assert version > (0, 1), "version information not found"
 
 requires_auth_basic = pytest.mark.skipif(version < (0, 9, 0), reason="Bottle only added auth_basic in 0.9.0.")
 requires_plugins = pytest.mark.skipif(version < (0, 9, 0), reason="Bottle only added auth_basic in 0.9.0.")

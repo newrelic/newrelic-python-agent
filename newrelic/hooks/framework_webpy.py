@@ -21,7 +21,7 @@ import newrelic.api.function_trace
 import newrelic.api.in_function
 import newrelic.api.out_function
 import newrelic.api.pre_function
-from newrelic.common.object_wrapper import callable_name
+from newrelic.common.object_names import callable_name
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
 from newrelic.api.time_trace import notice_error
 

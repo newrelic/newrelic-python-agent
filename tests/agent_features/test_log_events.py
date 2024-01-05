@@ -88,7 +88,11 @@ def exercise_record_log_event():
 
 
 enable_log_forwarding = override_application_settings(
-    {"application_logging.forwarding.enabled": True, "application_logging.forwarding.context_data.enabled": True, "application_logging.forwarding.context_data.exclude": ["filtered_attribute"]}
+    {
+        "application_logging.forwarding.enabled": True,
+        "application_logging.forwarding.context_data.enabled": True,
+        "application_logging.forwarding.context_data.exclude": ["filtered_attribute"],
+    }
 )
 disable_log_forwarding = override_application_settings({"application_logging.forwarding.enabled": False})
 
@@ -287,6 +291,7 @@ _test_record_log_event_context_attribute_filtering_params = [
     ("A*", "AB*", "ABC", False),
 ]
 
+
 @pytest.mark.parametrize("prefix", ("context", "message"))
 @pytest.mark.parametrize("include,exclude,attr,expected", _test_record_log_event_context_attribute_filtering_params)
 def test_record_log_event_context_attribute_filtering_inside_transaction(include, exclude, attr, expected, prefix):
@@ -349,10 +354,11 @@ _test_record_log_event_linking_attribute_no_filtering_params = [
     ("", "*"),
 ]
 
+
 @pytest.mark.parametrize("include,exclude", _test_record_log_event_linking_attribute_no_filtering_params)
 def test_record_log_event_linking_attribute_no_filtering_inside_transaction(include, exclude):
     attr = "entity.name"
-    
+
     @override_application_settings(
         {
             "application_logging.forwarding.enabled": True,
@@ -374,7 +380,7 @@ def test_record_log_event_linking_attribute_no_filtering_inside_transaction(incl
 @reset_core_stats_engine()
 def test_record_log_event_linking_attribute_filtering_outside_transaction(include, exclude):
     attr = "entity.name"
-    
+
     @override_application_settings(
         {
             "application_logging.forwarding.enabled": True,

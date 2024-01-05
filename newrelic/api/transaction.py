@@ -1554,9 +1554,11 @@ class Transaction(object):
                     message = str(message)
                 except Exception:
                     # Exit early for invalid message type after unpacking
-                    _logger.debug("record_log_event called where message could not be converted to a string type. No log event will be sent.")
+                    _logger.debug(
+                        "record_log_event called where message could not be converted to a string type. No log event will be sent."
+                    )
                     return
-            
+
             # Truncate the now unpacked and string converted message
             message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
 
@@ -1564,18 +1566,24 @@ class Transaction(object):
         collected_attributes = {}
         if settings and settings.application_logging.forwarding.context_data.enabled:
             if context_attributes:
-                context_attributes = resolve_logging_context_attributes(context_attributes, settings.attribute_filter, "context.")
+                context_attributes = resolve_logging_context_attributes(
+                    context_attributes, settings.attribute_filter, "context."
+                )
                 if context_attributes:
                     collected_attributes.update(context_attributes)
 
             if message_attributes:
-                message_attributes = resolve_logging_context_attributes(message_attributes, settings.attribute_filter, "message.")
+                message_attributes = resolve_logging_context_attributes(
+                    message_attributes, settings.attribute_filter, "message."
+                )
                 if message_attributes:
                     collected_attributes.update(message_attributes)
 
             # Exit early if no message or attributes found after filtering
             if (not message or message.isspace()) and not context_attributes and not message_attributes:
-                _logger.debug("record_log_event called where message was not found, and no attributes were found. No log event will be sent.")
+                _logger.debug(
+                    "record_log_event called where message was not found, and no attributes were found. No log event will be sent."
+                )
                 return
 
         # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute

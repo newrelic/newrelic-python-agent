@@ -309,7 +309,7 @@ class Transaction(object):
         self.synthetics_job_id = None
         self.synthetics_monitor_id = None
         self.synthetics_header = None
-        
+
         # Synthetics Info Header
         self.synthetics_type = None
         self.synthetics_initiator = None
@@ -1912,9 +1912,10 @@ def get_browser_timing_header(nonce=None):
 
 
 def get_browser_timing_footer(nonce=None):
-    transaction = current_transaction()
-    if transaction and hasattr(transaction, "browser_timing_footer"):
-        return transaction.browser_timing_footer(nonce)
+    warnings.warn(
+        "The get_browser_timing_footer function is deprecated. Please migrate to only using the get_browser_timing_header API instead.",
+        DeprecationWarning,
+    )
     return ""
 
 

@@ -34,7 +34,7 @@ from heapq import heapify, heapreplace
 import newrelic.packages.six as six
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import get_linking_metadata
-from newrelic.common.encoding_utils import json_encode, safe_json_encode
+from newrelic.common.encoding_utils import json_encode
 from newrelic.common.metric_utils import create_metric_identity
 from newrelic.common.object_names import parse_exc_info
 from newrelic.common.streaming_utils import StreamBuffer

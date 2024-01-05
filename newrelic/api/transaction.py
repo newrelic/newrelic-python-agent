@@ -44,7 +44,6 @@ from newrelic.common.encoding_utils import (
     json_decode,
     json_encode,
     obfuscate,
-    safe_json_encode,
     snake_case,
 )
 from newrelic.core.attribute import (

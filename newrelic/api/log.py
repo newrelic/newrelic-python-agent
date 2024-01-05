@@ -21,6 +21,7 @@ from logging import Formatter, LogRecord
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common import agent_http
+from newrelic.common.encoding_utils import json_encode
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error

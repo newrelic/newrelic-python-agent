@@ -1276,7 +1276,7 @@ class StatsEngine(object):
             # Exit early if no message or attributes found after filtering
             if (not message or message.isspace()) and not context_attributes and not message_attributes:
                 _logger.debug(
-                    "record_log_event called where message was not found, and no attributes were found. No log event will be sent."
+                    "record_log_event called where no message and no attributes were found. No log event will be sent."
                 )
                 return
 

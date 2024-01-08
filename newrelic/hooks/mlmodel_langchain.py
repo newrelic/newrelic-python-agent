@@ -20,6 +20,8 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.signature import bind_args
+from newrelic.core.config import global_settings
 
 LANGCHAIN_VERSION = get_package_version("langchain")
 
@@ -255,6 +257,118 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     return response
 
 
+def wrap_tool_sync_run(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+
+    run_args = bind_args(wrapped, args, kwargs)
+    tool_input = run_args.get("tool_input", "")
+    tags = run_args.get("tags", "")
+    metadata = run_args.get("metadata", "")
+    tool_name = instance.name or ""
+    tool_description = instance.description or ""
+
+    span_id = None
+    trace_id = None
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    app_name = settings.app_name
+    tool_id = str(uuid.uuid4())
+
+    run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+    if hasattr(transaction, "_nr_run_manager_info"):
+        del transaction._nr_run_manager_info
+    run_id = run_manager_info.get("run_id", "")
+
+    function_name = wrapped.__name__
+
+    with FunctionTrace(name=function_name, group="Llm/tool/Langchain") as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
+        try:
+            return_val = wrapped(**run_args)
+        except Exception as exc:
+            ft.notice_error(
+                attributes={
+                    "tool_id": tool_id,
+                }
+            )
+
+            # Make sure the builtin attributes take precedence over metadata attributes.
+            error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+            error_tool_event_dict.update(
+                {
+                    "id": tool_id,
+                    "run_id": run_id,
+                    "appName": app_name,
+                    "name": tool_name,
+                    "description": tool_description,
+                    "span_id": span_id,
+                    "trace_id": trace_id,
+                    "transaction_id": transaction.guid,
+                    "input": tool_input,
+                    "vendor": "langchain",
+                    "ingest_source": "Python",
+                    "duration": ft.duration,
+                    "tags": tags or "",
+                    "error": True,
+                }
+            )
+
+            transaction.record_custom_event("LlmTool", error_tool_event_dict)
+
+            raise
+
+    if not return_val:
+        return return_val
+
+    response = return_val
+
+    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_tool_event_dict.update(
+        {
+            "id": tool_id,
+            "run_id": run_id,
+            "appName": app_name,
+            "output": str(response),
+            "name": tool_name,
+            "description": tool_description,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "input": tool_input,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "duration": ft.duration,
+            "tags": tags or "",
+        }
+    )
+
+    transaction.record_custom_event("LlmTool", full_tool_event_dict)
+
+    return return_val
+
+
+def wrap_on_tool_start(wrapped, instance, args, kwargs):
+    run_manager = wrapped(*args, **kwargs)
+    transaction = current_transaction()
+    if not transaction:
+        return run_manager
+    # Only capture the first run_id.
+    if not hasattr(transaction, "_nr_run_manager_info"):
+        transaction._nr_run_manager_info = {
+            "run_id": run_manager.run_id,
+        }
+    return run_manager
+
+
 def instrument_langchain_vectorstore_similarity_search(module):
     vector_class = VECTORSTORE_CLASSES.get(module.__name__)
 
@@ -262,3 +376,13 @@ def instrument_langchain_vectorstore_similarity_search(module):
         wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
     if vector_class and hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
         wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)
+
+
+def instrument_langchain_core_tools(module):
+    if hasattr(getattr(module, "BaseTool"), "run"):
+        wrap_function_wrapper(module, "BaseTool.run", wrap_tool_sync_run)
+
+
+def instrument_langchain_callbacks_manager(module):
+    if hasattr(getattr(module, "CallbackManager"), "on_tool_start"):
+        wrap_function_wrapper(module, "CallbackManager.on_tool_start", wrap_on_tool_start)

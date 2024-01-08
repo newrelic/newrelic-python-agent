@@ -23,7 +23,6 @@ from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
 
-
 _logger = logging.getLogger(__name__)
 
 IS_PYPY = hasattr(sys, "pypy_version_info")

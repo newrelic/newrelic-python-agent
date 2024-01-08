@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.background_task import background_task
-
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_events import validate_log_events
+
+from newrelic.api.background_task import background_task
 
 
 @validate_log_events(

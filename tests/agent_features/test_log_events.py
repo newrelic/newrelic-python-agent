@@ -75,17 +75,24 @@ def exercise_record_log_event():
     record_log_event(None, attributes={"attributes_only": "value"})
     record_log_event({"attributes_only": "value"})
     record_log_event({"message": "dict_message"})
+    record_log_event({"message": 123})
 
     # Unsent due to message content missing
     record_log_event("")
     record_log_event("         ")
+    record_log_event(NonPrintableObject())
     record_log_event({"message": ""})
+    record_log_event({"message": NonPrintableObject()})
     record_log_event({"filtered_attribute": "should_be_removed"})
     record_log_event(None)
 
 
 enable_log_forwarding = override_application_settings(
-    {"application_logging.forwarding.enabled": True, "application_logging.forwarding.context_data.enabled": True, "application_logging.forwarding.context_data.exclude": ["filtered_attribute"]}
+    {
+        "application_logging.forwarding.enabled": True,
+        "application_logging.forwarding.context_data.enabled": True,
+        "application_logging.forwarding.context_data.exclude": ["filtered_attribute"],
+    }
 )
 disable_log_forwarding = override_application_settings({"application_logging.forwarding.enabled": False})
 
@@ -130,6 +137,7 @@ _exercise_record_log_event_events = [
     {"context.attributes_only": "value"},
     {"message.attributes_only": "value"},
     {"message": "dict_message"},
+    {"message": "123"},
 ]
 _exercise_record_log_event_inside_transaction_events = [
     combine_dicts(_common_attributes_trace_linking, log) for log in _exercise_record_log_event_events
@@ -345,10 +353,11 @@ _test_record_log_event_linking_attribute_no_filtering_params = [
     ("", "*"),
 ]
 
+
 @pytest.mark.parametrize("include,exclude", _test_record_log_event_linking_attribute_no_filtering_params)
 def test_record_log_event_linking_attribute_no_filtering_inside_transaction(include, exclude):
     attr = "entity.name"
-    
+
     @override_application_settings(
         {
             "application_logging.forwarding.enabled": True,
@@ -370,7 +379,6 @@ def test_record_log_event_linking_attribute_no_filtering_inside_transaction(incl
 @reset_core_stats_engine()
 def test_record_log_event_linking_attribute_filtering_outside_transaction(include, exclude):
     attr = "entity.name"
-    
     @override_application_settings(
         {
             "application_logging.forwarding.enabled": True,

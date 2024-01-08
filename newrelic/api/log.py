@@ -21,7 +21,7 @@ from logging import Formatter, LogRecord
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common import agent_http
-from newrelic.common.encoding_utils import safe_json_encode
+from newrelic.common.encoding_utils import json_encode
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error
@@ -42,6 +42,28 @@ def format_exc_info(exc_info):
         formatted["error.expected"] = expected
 
     return formatted
+
+
+def safe_json_encode(obj, ignore_string_types=False, **kwargs):
+    # Performs the same operation as json_encode but replaces unserializable objects with a string containing their class name.
+    # If ignore_string_types is True, do not encode string types further.
+    # Currently used for safely encoding logging attributes.
+
+    if ignore_string_types and isinstance(obj, (six.string_types, six.binary_type)):
+        return obj
+
+    # Attempt to run through JSON serialization
+    try:
+        return json_encode(obj, **kwargs)
+    except Exception:
+        pass
+
+    # If JSON serialization fails then return a repr
+    try:
+        return repr(obj)
+    except Exception:
+        # If repr fails then default to an unprinatable object name
+        return "<unprintable %s object>" % type(obj).__name__
 
 
 class NewRelicContextFormatter(Formatter):

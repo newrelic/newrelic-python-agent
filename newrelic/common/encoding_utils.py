@@ -113,28 +113,6 @@ def json_decode(s, **kwargs):
     return json.loads(s, **kwargs)
 
 
-def safe_json_encode(obj, ignore_string_types=False, **kwargs):
-    # Performs the same operation as json_encode but replaces unserializable objects with a string containing their class name.
-    # If ignore_string_types is True, do not encode string types further.
-    # Currently used for safely encoding logging attributes.
-
-    if ignore_string_types and isinstance(obj, (six.string_types, six.binary_type)):
-        return obj
-
-    # Attempt to run through JSON serialization
-    try:
-        return json_encode(obj, **kwargs)
-    except Exception:
-        pass
-
-    # If JSON serialization fails then return a repr
-    try:
-        return repr(obj)
-    except Exception:
-        # If repr fails then default to an unprinatable object name
-        return "<unprintable %s object>" % type(obj).__name__
-
-
 # Functions for obfuscating/deobfuscating text string based on an XOR
 # cipher.
 

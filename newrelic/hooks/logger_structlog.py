@@ -22,7 +22,7 @@ from newrelic.core.config import global_settings
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
 
 
-@functools.cache
+@functools.lru_cache(maxsize=None)
 def normalize_level_name(method_name):
     # Look up level number for method name, using result to look up level name for that level number.
     # Convert result to upper case, and default to UNKNOWN in case of errors or missing values.
@@ -31,7 +31,6 @@ def normalize_level_name(method_name):
         return _LEVEL_TO_NAME[_NAME_TO_LEVEL[method_name]].upper()
     except Exception:
         return "UNKNOWN"
-
 
 def bind_process_event(method_name, event, event_kw):
     return method_name, event, event_kw

@@ -12,17 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
-
-from newrelic.api.application import application_instance
-from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.signature import bind_args
+from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.core.config import global_settings
+from newrelic.api.application import application_instance
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
+from newrelic.common.signature import bind_args
 
 
-@functools.cache
 def normalize_level_name(method_name):
     # Look up level number for method name, using result to look up level name for that level number.
     # Convert result to upper case, and default to UNKNOWN in case of errors or missing values.
@@ -37,57 +34,14 @@ def bind_process_event(method_name, event, event_kw):
     return method_name, event, event_kw
 
 
-def new_relic_event_consumer(logger, level, event):
-    transaction = current_transaction()
-
-    if transaction:
-        settings = transaction.settings
-    else:
-        settings = global_settings()
-
-    # Return early if application logging not enabled
-    if settings and settings.application_logging.enabled:
-        if isinstance(event, (str, bytes, bytearray)):
-            message = original_message = event
-            event_attrs = {}
-        elif isinstance(event, dict):
-            message = original_message = event.get("event", "")
-            event_attrs = {k: v for k, v in event.items() if k != "event"}
-        else:
-            # Unclear how to proceed, ignore log. Avoid logging an error message or we may incur an infinite loop.
-            return event
-
-        if settings.application_logging.local_decorating.enabled:
-            message = add_nr_linking_metadata(message)
-            if isinstance(event, (str, bytes, bytearray)):
-                event = message
-            elif isinstance(event, dict) and "event" in event:
-                # TODO CHECK ON THIS
-                event["event"] = message
-
-        level_name = normalize_level_name(level)
-
-        if settings.application_logging.metrics.enabled:
-            if transaction:
-                transaction.record_custom_metric("Logging/lines", {"count": 1})
-                transaction.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
-            else:
-                application = application_instance(activate=False)
-                if application and application.enabled:
-                    application.record_custom_metric("Logging/lines", {"count": 1})
-                    application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
-
-        if settings.application_logging.forwarding.enabled:
-            try:
-                record_log_event(original_message, level_name, attributes=event_attrs)
-
-            except Exception:
-                pass
-
-    return event
-
-
 def wrap__process_event(wrapped, instance, args, kwargs):
+    try:
+        method_name, event, event_kw = bind_process_event(*args, **kwargs)
+    except TypeError:
+        return wrapped(*args, **kwargs)
+
+    original_message = event  # Save original undecorated message
+
     transaction = current_transaction()
 
     if transaction:
@@ -97,14 +51,33 @@ def wrap__process_event(wrapped, instance, args, kwargs):
 
     # Return early if application logging not enabled
     if settings and settings.application_logging and settings.application_logging.enabled:
-        processors = instance._processors
-        if not processors:
-            instance._processors = [new_relic_event_consumer]
-        elif processors[-1] != new_relic_event_consumer:
-            # Remove our processor if it exists and add it to the end
-            if new_relic_event_consumer in processors:
-                processors.remove(new_relic_event_consumer)
-            processors.append(new_relic_event_consumer)
+        if settings.application_logging.local_decorating and settings.application_logging.local_decorating.enabled:
+            event = add_nr_linking_metadata(event)
+
+        # Send log to processors for filtering, allowing any DropEvent exceptions that occur to prevent instrumentation from recording the log event.
+        result = wrapped(method_name, event, event_kw)
+        
+        level_name = normalize_level_name(method_name)
+
+        if settings.application_logging.metrics and settings.application_logging.metrics.enabled:
+            if transaction:
+                transaction.record_custom_metric("Logging/lines", {"count": 1})
+                transaction.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+            else:
+                application = application_instance(activate=False)
+                if application and application.enabled:
+                    application.record_custom_metric("Logging/lines", {"count": 1})
+                    application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+
+        if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
+            try:
+                record_log_event(original_message, level_name)
+
+            except Exception:
+                pass
+
+        # Return the result from wrapped after we've recorded the resulting log event.
+        return result
 
     return wrapped(*args, **kwargs)
 

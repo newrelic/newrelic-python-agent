@@ -943,13 +943,12 @@ class Application(object):
         if not self._active_session:
             return
 
-        if message:
-            with self._stats_custom_lock:
-                event = self._stats_engine.record_log_event(
-                    message, level, timestamp, attributes=attributes, priority=priority
-                )
-                if event:
-                    self._global_events_account += 1
+        with self._stats_custom_lock:
+            event = self._stats_engine.record_log_event(
+                message, level, timestamp, attributes=attributes, priority=priority
+            )
+            if event:
+                self._global_events_account += 1
 
     def record_transaction(self, data):
         """Record a single transaction against this application."""

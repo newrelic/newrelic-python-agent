@@ -34,7 +34,7 @@ from heapq import heapify, heapreplace
 import newrelic.packages.six as six
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import get_linking_metadata
-from newrelic.common.encoding_utils import json_encode, safe_json_encode
+from newrelic.common.encoding_utils import json_encode
 from newrelic.common.metric_utils import create_metric_identity
 from newrelic.common.object_names import parse_exc_info
 from newrelic.common.streaming_utils import StreamBuffer
@@ -1232,18 +1232,56 @@ class StatsEngine(object):
 
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
+        context_attributes = attributes  # Name reassigned for clarity
 
-        if not message or message.isspace():
-            _logger.debug("record_log_event called where message was missing. No log event will be sent.")
-            return
+        # Unpack message and attributes from dict inputs
+        if isinstance(message, dict):
+            message_attributes = {k: v for k, v in message.items() if k != "message"}
+            message = message.get("message", "")
+        else:
+            message_attributes = None
 
-        message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+        if message is not None:
+            # Coerce message into a string type
+            if not isinstance(message, six.string_types):
+                try:
+                    message = str(message)
+                except Exception:
+                    # Exit early for invalid message type after unpacking
+                    _logger.debug(
+                        "record_log_event called where message could not be converted to a string type. No log event will be sent."
+                    )
+                    return
 
-        collected_attributes = get_linking_metadata()
-        if attributes and (settings and settings.application_logging.forwarding.context_data.enabled):
-            context_attributes = resolve_logging_context_attributes(attributes, settings.attribute_filter, "context.")
+            # Truncate the now unpacked and string converted message
+            message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+
+        # Collect attributes from linking metadata, context data, and message attributes
+        collected_attributes = {}
+        if settings and settings.application_logging.forwarding.context_data.enabled:
             if context_attributes:
-                collected_attributes.update(context_attributes)
+                context_attributes = resolve_logging_context_attributes(
+                    context_attributes, settings.attribute_filter, "context."
+                )
+                if context_attributes:
+                    collected_attributes.update(context_attributes)
+
+            if message_attributes:
+                message_attributes = resolve_logging_context_attributes(
+                    message_attributes, settings.attribute_filter, "message."
+                )
+                if message_attributes:
+                    collected_attributes.update(message_attributes)
+
+            # Exit early if no message or attributes found after filtering
+            if (not message or message.isspace()) and not context_attributes and not message_attributes:
+                _logger.debug(
+                    "record_log_event called where no message and no attributes were found. No log event will be sent."
+                )
+                return
+
+        # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute
+        collected_attributes.update(get_linking_metadata())
 
         event = LogEventNode(
             timestamp=timestamp,

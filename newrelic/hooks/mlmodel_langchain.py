@@ -302,7 +302,8 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
             )
 
             # Make sure the builtin attributes take precedence over metadata attributes.
-            error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+
+            error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()} if metadata else {}
             error_tool_event_dict.update(
                 {
                     "id": tool_id,
@@ -331,7 +332,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
 
     response = return_val
 
-    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()} if metadata else {}
     full_tool_event_dict.update(
         {
             "id": tool_id,

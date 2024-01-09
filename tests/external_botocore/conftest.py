@@ -26,10 +26,14 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_available_fixture,
 )
 
-from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.package_version_utils import get_package_version_tuple
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
+
+BOTOCORE_VERSION = get_package_version("botocore")
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -37,7 +41,7 @@ _default_settings = {
     "transaction_tracer.stack_trace_threshold": 0.0,
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
-    "ml_insights_events.enabled": True,
+    "custom_insights_events.max_attribute_value": 4096,
 }
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (external_botocore)",
@@ -150,9 +154,7 @@ def set_trace_info():
     def _set_trace_info():
         txn = current_transaction()
         if txn:
+            txn.guid = "transaction-id"
             txn._trace_id = "trace-id"
-        trace = current_trace()
-        if trace:
-            trace.guid = "span-id"
 
     return _set_trace_info

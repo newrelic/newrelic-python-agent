@@ -13,8 +13,10 @@
 # limitations under the License.
 
 import sys
+import warnings
 
 import pytest
+import six
 from testing_support.validators.validate_function_called import validate_function_called
 
 from newrelic.common.package_version_utils import (
@@ -66,29 +68,25 @@ def cleared_package_version_cache():
         ("version_tuple", [3, 1, "0b2"], "3.1.0b2"),
     ),
 )
-def test_get_package_version(attr, value, expected_value):
+def test_get_package_version(monkeypatch, attr, value, expected_value):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
-    setattr(pytest, attr, value)
+    monkeypatch.setattr(pytest, attr, value, raising=False)
     version = get_package_version("pytest")
     assert version == expected_value
-    delattr(pytest, attr)
 
 
 # This test only works on Python 3.7
 @SKIP_IF_IMPORTLIB_METADATA
-def test_skips_version_callables():
+def test_skips_version_callables(monkeypatch):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
-    setattr(pytest, "version", lambda x: "1.2.3.4")
-    setattr(pytest, "version_tuple", [3, 1, "0b2"])
+    monkeypatch.setattr(pytest, "version", lambda x: "1.2.3.4", raising=False)
+    monkeypatch.setattr(pytest, "version_tuple", [3, 1, "0b2"], raising=False)
 
     version = get_package_version("pytest")
 
     assert version == "3.1.0b2"
-
-    delattr(pytest, "version")
-    delattr(pytest, "version_tuple")
 
 
 # This test only works on Python 3.7
@@ -102,13 +100,12 @@ def test_skips_version_callables():
         ("version_tuple", [3, 1, "0b2"], (3, 1, "0b2")),
     ),
 )
-def test_get_package_version_tuple(attr, value, expected_value):
+def test_get_package_version_tuple(monkeypatch, attr, value, expected_value):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
-    setattr(pytest, attr, value)
+    monkeypatch.setattr(pytest, attr, value, raising=False)
     version = get_package_version_tuple("pytest")
     assert version == expected_value
-    delattr(pytest, attr)
 
 
 @SKIP_IF_NOT_IMPORTLIB_METADATA
@@ -132,10 +129,28 @@ def test_pkg_resources_metadata():
     assert version not in NULL_VERSIONS, version
 
 
+def _getattr_deprecation_warning(attr):
+    if attr == "__version__":
+        warnings.warn("Testing deprecation warnings.", DeprecationWarning)
+        return "3.2.1"
+    else:
+        raise NotImplementedError()
+
+
+@pytest.mark.skipif(six.PY2, reason="Can't add Deprecation in __version__ in Python 2.")
+def test_deprecation_warning_suppression(monkeypatch, recwarn):
+    # Add fake module to be deleted later
+    monkeypatch.setattr(pytest, "__getattr__", _getattr_deprecation_warning, raising=False)
+
+    assert get_package_version("pytest") == "3.2.1"
+
+    assert not recwarn.list, "Warnings not suppressed."
+
+
 def test_version_caching(monkeypatch):
     # Add fake module to be deleted later
     sys.modules["mymodule"] = sys.modules["pytest"]
-    setattr(pytest, "__version__", "1.0.0")
+    monkeypatch.setattr(pytest, "__version__", "1.0.0", raising=False)
     version = get_package_version("mymodule")
     assert version not in NULL_VERSIONS, version
 

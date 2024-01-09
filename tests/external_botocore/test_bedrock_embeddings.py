@@ -12,35 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import botocore.exceptions
-
 import json
 from io import BytesIO
 
+import botocore.exceptions
 import pytest
-from testing_support.fixtures import (
+from _test_bedrock_embeddings import (
+    embedding_expected_client_errors,
+    embedding_expected_error_events,
+    embedding_expected_events,
+    embedding_payload_templates,
+)
+from conftest import BOTOCORE_VERSION
+from testing_support.fixtures import (  # override_application_settings,
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
+    validate_custom_event_count,
 )
-from testing_support.validators.validate_ml_event_count import validate_ml_event_count
-from testing_support.validators.validate_ml_events import validate_ml_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
-
-from _test_bedrock_embeddings import embedding_expected_events, embedding_payload_templates, embedding_expected_client_errors
-
 from newrelic.common.object_names import callable_name
 
-
-disabled_ml_insights_settings = {"ml_insights_events.enabled": False}
+disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])
@@ -86,21 +87,28 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
+def expected_error_events(model_id):
+    return embedding_expected_error_events[model_id]
+
+
+@pytest.fixture(scope="module")
 def expected_client_error(model_id):
     return embedding_expected_client_errors[model_id]
 
 
 @reset_core_stats_engine()
 def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
-    @validate_ml_events(expected_events)
-    @validate_ml_event_count(count=1)
-    # @validate_transaction_metrics(
-    #     name="test_bedrock_embedding",
-    #     custom_metrics=[
-    #         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
-    #     ],
-    #     background_task=True,
-    # )
+    @validate_custom_events(expected_events)
+    @validate_custom_event_count(count=1)
+    @validate_transaction_metrics(
+        name="test_bedrock_embedding",
+        scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        custom_metrics=[
+            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
     @background_task(name="test_bedrock_embedding")
     def _test():
         set_trace_info()
@@ -110,7 +118,7 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
 
 
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
+@validate_custom_event_count(count=0)
 def test_bedrock_embedding_outside_txn(exercise_model):
     exercise_model(prompt="This is an embedding test.")
 
@@ -119,16 +127,16 @@ _client_error = botocore.exceptions.ClientError
 _client_error_name = callable_name(_client_error)
 
 
-@override_application_settings(disabled_ml_insights_settings)
+@override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
-@validate_ml_event_count(count=0)
-# @validate_transaction_metrics(
-#     name="test_embeddings:test_bedrock_embedding_disabled_settings",
-#     custom_metrics=[
-#         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
-#     ],
-#     background_task=True,
-# )
+@validate_custom_event_count(count=0)
+@validate_transaction_metrics(
+    name="test_bedrock_embeddings:test_bedrock_embedding_disabled_settings",
+    custom_metrics=[
+        ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+    ],
+    background_task=True,
+)
 @background_task()
 def test_bedrock_embedding_disabled_settings(set_trace_info, exercise_model):
     set_trace_info()
@@ -137,7 +145,10 @@ def test_bedrock_embedding_disabled_settings(set_trace_info, exercise_model):
 
 @dt_enabled
 @reset_core_stats_engine()
-def test_bedrock_embedding_error_incorrect_access_key(monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_client_error):
+def test_bedrock_embedding_error_incorrect_access_key(
+    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_error_events, expected_client_error
+):
+    @validate_custom_events(expected_error_events)
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={
@@ -146,7 +157,13 @@ def test_bedrock_embedding_error_incorrect_access_key(monkeypatch, bedrock_serve
             "user": expected_client_error,
         },
     )
-    @background_task()
+    @validate_transaction_metrics(
+        name="test_bedrock_embedding",
+        scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_embedding")
     def _test():
         monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
 
@@ -155,3 +172,7 @@ def test_bedrock_embedding_error_incorrect_access_key(monkeypatch, bedrock_serve
             exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
 
     _test()
+
+
+def test_bedrock_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility(bedrock_server):
+    assert bedrock_server._nr_wrapped

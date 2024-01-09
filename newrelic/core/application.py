@@ -916,7 +916,7 @@ class Application(object):
         if settings is None or not settings.custom_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings)
 
         if event:
             with self._stats_custom_lock:
@@ -932,7 +932,7 @@ class Application(object):
         if settings is None or not settings.ml_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings, is_ml_event=True)
 
         if event:
             with self._stats_custom_lock:
@@ -1506,7 +1506,9 @@ class Application(object):
                         # Send metrics
                         self._active_session.send_metric_data(self._period_start, period_end, metric_data)
                         if dimensional_metric_data:
-                            self._active_session.send_dimensional_metric_data(self._period_start, period_end, dimensional_metric_data)
+                            self._active_session.send_dimensional_metric_data(
+                                self._period_start, period_end, dimensional_metric_data
+                            )
 
                         _logger.debug("Done sending data for harvest of %r.", self._app_name)
 

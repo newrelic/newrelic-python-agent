@@ -23,12 +23,13 @@ from testing_support.fixtures import (  # override_application_settings,
     validate_transaction_error_event_count,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
 )
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 

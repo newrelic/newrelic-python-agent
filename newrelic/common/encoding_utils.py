@@ -619,15 +619,14 @@ _obfuscate_license_key_ending = "*" * 32
 
 
 def obfuscate_license_key(license_key):
-    """
-    Obfuscate license key to allow it to be printed out.
+    """Obfuscate license key to allow it to be printed out."""
 
-    Follows these rules:
-        * For valid license keys of length 40, show the first 8 characters and then replace the remainder with ****
-        * For invalid lengths of license key, it's unclear how much is acceptable to show, so fully redact with ****
-    """
-
-    if len(license_key) == 40:
+    if not isinstance(license_key, six.string_types):
+        # For non-string values passed in such as None, return the original.
+        return license_key
+    elif len(license_key) == 40:
+        #  For valid license keys of length 40, show the first 8 characters and then replace the remainder with ****
         return license_key[:8] + _obfuscate_license_key_ending
     else:
+        # For invalid lengths of license key, it's unclear how much is acceptable to show, so fully redact with ****
         return "*" * len(license_key)

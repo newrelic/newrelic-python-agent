@@ -279,11 +279,6 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     app_name = settings.app_name
     tool_id = str(uuid.uuid4())
 
-    run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
-    if hasattr(transaction, "_nr_run_manager_info"):
-        del transaction._nr_run_manager_info
-    run_id = run_manager_info.get("run_id", "")
-
     function_name = wrapped.__name__
 
     with FunctionTrace(name=function_name, group="Llm/tool/Langchain") as ft:
@@ -301,8 +296,12 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                 }
             )
 
-            # Make sure the builtin attributes take precedence over metadata attributes.
+            run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+            if hasattr(transaction, "_nr_run_manager_info"):
+                del transaction._nr_run_manager_info
+            run_id = run_manager_info.get("run_id", "")
 
+            # Make sure the builtin attributes take precedence over metadata attributes.
             error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()} if metadata else {}
             error_tool_event_dict.update(
                 {
@@ -331,6 +330,11 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
         return return_val
 
     response = return_val
+
+    run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
+    if hasattr(transaction, "_nr_run_manager_info"):
+        del transaction._nr_run_manager_info
+    run_id = run_manager_info.get("run_id", "")
 
     full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()} if metadata else {}
     full_tool_event_dict.update(
@@ -367,6 +371,7 @@ def wrap_on_tool_start(wrapped, instance, args, kwargs):
         transaction._nr_run_manager_info = {
             "run_id": run_manager.run_id,
         }
+
     return run_manager
 
 

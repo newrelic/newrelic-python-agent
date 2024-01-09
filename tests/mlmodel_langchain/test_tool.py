@@ -141,7 +141,7 @@ multi_arg_error_recorded_events = [
         {
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "run_id": "",
+            "run_id": "", # No run ID created on error
             "name": "multi_arg_tool",
             "description": "multi_arg_tool(first_num: int, second_num: int) - A test tool that adds two integers together",
             "transaction_id": "transaction-id",

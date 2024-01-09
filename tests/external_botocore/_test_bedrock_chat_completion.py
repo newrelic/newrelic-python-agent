@@ -77,7 +77,20 @@ chat_completion_get_llm_message_ids = {
             },
         ]
     },
-    "meta.llama2-13b-chat-v1": {"bedrock_key": [{}, {}]},
+    "meta.llama2-13b-chat-v1": {
+        "bedrock_key": [
+            {
+                "conversation_id": "my-awesome-id",
+                "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
+                "message_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a-0",
+            },
+            {
+                "conversation_id": "my-awesome-id",
+                "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
+                "message_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a-1",
+            },
+        ]
+    },
 }
 
 chat_completion_expected_events = {

@@ -97,6 +97,7 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
+    message_ids = []
     for index, message in enumerate(input_message_list):
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
@@ -124,7 +125,6 @@ def create_chat_completion_message_event(
     for index, message in enumerate(output_message_list):
         index += len(input_message_list)
 
-        message_ids = []
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
         else:

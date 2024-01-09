@@ -149,9 +149,9 @@ def validate_config(args):
         sys.exit(1)
 
     from newrelic.api.application import register_application
+    from newrelic.common.encoding_utils import obfuscate_license_key
     from newrelic.config import initialize
     from newrelic.core.config import global_settings
-    from newrelic.common.encoding_utils import obfuscate_license_key
 
     if len(args) >= 2:
         log_file = args[1]

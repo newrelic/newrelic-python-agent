@@ -80,7 +80,7 @@ def json_encode(obj, **kwargs):
     # The third is eliminate white space after separators to trim the
     # size of the data being sent.
 
-    if type(b"") is type(""):  # NOQA
+    if type(b"") is type(""):  # noqa, pylint: disable=C0123
         _kwargs["encoding"] = "latin-1"
 
     def _encode(o):

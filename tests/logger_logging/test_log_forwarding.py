@@ -35,6 +35,7 @@ def set_trace_ids():
     if trace:
         trace.guid = "abcdefgh"
 
+
 def exercise_logging(logger):
     set_trace_ids()
 
@@ -45,6 +46,7 @@ def exercise_logging(logger):
     logger.critical({"message": "E"})
 
     assert len(logger.caplog.records) == 3
+
 
 def update_all(events, attrs):
     for event in events:

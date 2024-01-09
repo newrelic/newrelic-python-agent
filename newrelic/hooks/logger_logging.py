@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from logging import Formatter, LogRecord
-
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.config import global_settings
-from newrelic.packages import six
 
 try:
     from urllib import quote
@@ -88,7 +85,7 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
                 # Grab and filter context attributes from log record
                 record_attrs = vars(record)
                 context_attrs = {k: record_attrs[k] for k in vars(record) if k not in IGNORED_LOG_RECORD_KEYS}
-                
+
                 record_log_event(
                     message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs
                 )

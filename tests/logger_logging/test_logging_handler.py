@@ -16,7 +16,7 @@ import logging
 
 import pytest
 
-from conftest import logger as conf_logger
+from conftest import logger as conf_logger  # noqa, pylint: disable=W0611
 
 from testing_support.fixtures import (
     override_application_settings,
@@ -42,7 +42,7 @@ from newrelic.api.transaction import current_transaction
 def uninstrument_logging():
     instrumented = logging.Logger.callHandlers
     while hasattr(logging.Logger.callHandlers, "__wrapped__"):
-        logging.Logger.callHandlers = logging.Logger.callHandlers.__wrapped__
+        logging.Logger.callHandlers = logging.Logger.callHandlers.__wrapped__  # noqa, pylint: disable=E1101
     yield
     logging.Logger.callHandlers = instrumented
 

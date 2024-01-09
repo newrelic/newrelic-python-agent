@@ -28,9 +28,11 @@ def normalize_level_name(method_name):
     # Convert result to upper case, and default to UNKNOWN in case of errors or missing values.
     try:
         from structlog._log_levels import _LEVEL_TO_NAME, _NAME_TO_LEVEL
+
         return _LEVEL_TO_NAME[_NAME_TO_LEVEL[method_name]].upper()
     except Exception:
         return "UNKNOWN"
+
 
 def bind_process_event(method_name, event, event_kw):
     return method_name, event, event_kw

@@ -23,7 +23,7 @@ from pprint import pprint
 import newrelic.packages.urllib3 as urllib3
 from newrelic import version
 from newrelic.common import certs
-from newrelic.common.encoding_utils import json_decode, json_encode
+from newrelic.common.encoding_utils import json_decode, json_encode, obfuscate_license_key
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import patch_function_wrapper
 from newrelic.core.internal_metrics import internal_count_metric, internal_metric
@@ -118,6 +118,11 @@ class BaseClient(object):
 
         if not fp:
             return
+        
+        # Obfuscate license key from params
+        if "license_key" in params:
+            params = params.copy()
+            params["license_key"] = obfuscate_license_key(params["license_key"])
 
         # Maintain a global AUDIT_LOG_ID attached to all class instances
         # NOTE: this is not thread safe so this class cannot be used

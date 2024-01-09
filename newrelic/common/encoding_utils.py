@@ -614,3 +614,19 @@ def snake_case(string):
         return string  # Don't touch strings that are already snake cased
 
     return "_".join([s for s in _snake_case_re.split(string) if s]).lower()
+
+
+_obfuscate_license_key_ending = ("*" * 32)
+def obfuscate_license_key(license_key):
+    """
+    Obfuscate license key to allow it to be printed out.
+    
+    Follows these rules:
+        * For valid license keys of length 40, show the first 8 characters and then replace the remainder with ****
+        * For invalid lengths of license key, it's unclear how much is acceptable to show, so fully redact with ****
+    """
+
+    if len(license_key) == 40:
+        return license_key[:8] + _obfuscate_license_key_ending
+    else:
+        return "*" * len(license_key)

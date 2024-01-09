@@ -151,6 +151,7 @@ def validate_config(args):
     from newrelic.api.application import register_application
     from newrelic.config import initialize
     from newrelic.core.config import global_settings
+    from newrelic.common.encoding_utils import obfuscate_license_key
 
     if len(args) >= 2:
         log_file = args[1]
@@ -200,7 +201,7 @@ def validate_config(args):
     _logger.debug("Proxy port is %r.", _settings.proxy_port)
     _logger.debug("Proxy user is %r.", _settings.proxy_user)
 
-    _logger.debug("License key is %r.", _settings.license_key)
+    _logger.debug("License key is %r.", obfuscate_license_key(_settings.license_key))
 
     _timeout = 30.0
 

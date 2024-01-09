@@ -15,10 +15,11 @@
 from __future__ import print_function
 
 from newrelic.admin import command, usage
+from newrelic.common.encoding_utils import obfuscate_license_key
 
 
 @command('license-key', 'config_file [log_file]',
-"""Prints out the account license key after having loaded the settings
+"""Prints out an obfuscated account license key after having loaded the settings
 from <config_file>.""")
 def license_key(args):
     import os
@@ -55,4 +56,4 @@ def license_key(args):
 
     _settings = global_settings()
 
-    print('license_key = %r' % _settings.license_key)
+    print('license_key = %r' % obfuscate_license_key(_settings.license_key))

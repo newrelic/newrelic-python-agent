@@ -15,9 +15,7 @@
 import logging
 
 import pytest
-
 from conftest import logger as conf_logger  # noqa, pylint: disable=W0611
-
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,

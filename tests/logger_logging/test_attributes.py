@@ -79,12 +79,12 @@ def test_logging_stack_info_context_attributes(logger):
 @validate_log_events([{"message": "A", "message.attr": 1}])
 @validate_log_event_count(1)
 @background_task()
-def test_logging_message_attributes(logger):
+def test_logging_dict_message_and_attributes(logger):
     logger.error({"message": "A", "attr": 1})
 
 
 @validate_log_events([{"message.attr": 1}])
 @validate_log_event_count(1)
 @background_task()
-def test_logging_attributes_only(logger):
+def test_logging_dict_attributes_only(logger):
     logger.error({"attr": 1})

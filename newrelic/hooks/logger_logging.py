@@ -84,7 +84,7 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
 
                 # Grab and filter context attributes from log record
                 record_attrs = vars(record)
-                context_attrs = {k: record_attrs[k] for k in vars(record) if k not in IGNORED_LOG_RECORD_KEYS}
+                context_attrs = {k: record_attrs[k] for k in record_attrs if k not in IGNORED_LOG_RECORD_KEYS}
 
                 record_log_event(
                     message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs

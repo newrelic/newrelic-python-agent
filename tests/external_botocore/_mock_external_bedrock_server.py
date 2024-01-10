@@ -3473,6 +3473,7 @@ class MockExternalBedrockServer(MockExternalHTTPServer):
 if __name__ == "__main__":
     # Use this to sort dict for easier future incremental updates
     print("RESPONSES = %s" % dict(sorted(RESPONSES.items(), key=lambda i: (i[1][1], i[0]))))
+
     with MockExternalBedrockServer() as server:
         print("MockExternalBedrockServer serving on port %s" % str(server.port))
         while True:

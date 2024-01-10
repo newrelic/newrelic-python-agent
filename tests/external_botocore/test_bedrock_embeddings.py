@@ -19,8 +19,8 @@ import botocore.exceptions
 import pytest
 from _test_bedrock_embeddings import (
     embedding_expected_client_errors,
-    embedding_expected_events,
     embedding_expected_error_events,
+    embedding_expected_events,
     embedding_payload_templates,
 )
 from conftest import BOTOCORE_VERSION

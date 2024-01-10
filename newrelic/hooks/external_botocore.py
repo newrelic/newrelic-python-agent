@@ -274,7 +274,7 @@ def extract_bedrock_cohere_model(request_body, response_body=None):
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.number_of_messages": len(input_message_list),
+        "response.number_of_messages": len(input_message_list)
     }
 
     if response_body:

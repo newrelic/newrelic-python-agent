@@ -44,6 +44,7 @@ from newrelic.common.encoding_utils import (
     json_decode,
     json_encode,
     obfuscate,
+    snake_case,
 )
 from newrelic.core.attribute import (
     MAX_ATTRIBUTE_LENGTH,
@@ -305,10 +306,17 @@ class Transaction(object):
         self._alternate_path_hashes = {}
         self.is_part_of_cat = False
 
+        # Synthetics Header
         self.synthetics_resource_id = None
         self.synthetics_job_id = None
         self.synthetics_monitor_id = None
         self.synthetics_header = None
+
+        # Synthetics Info Header
+        self.synthetics_type = None
+        self.synthetics_initiator = None
+        self.synthetics_attributes = None
+        self.synthetics_info_header = None
 
         self._custom_metrics = CustomMetrics()
         self._dimensional_metrics = DimensionalMetrics()
@@ -609,6 +617,10 @@ class Transaction(object):
             synthetics_job_id=self.synthetics_job_id,
             synthetics_monitor_id=self.synthetics_monitor_id,
             synthetics_header=self.synthetics_header,
+            synthetics_type=self.synthetics_type,
+            synthetics_initiator=self.synthetics_initiator,
+            synthetics_attributes=self.synthetics_attributes,
+            synthetics_info_header=self.synthetics_info_header,
             is_part_of_cat=self.is_part_of_cat,
             trip_id=self.trip_id,
             path_hash=self.path_hash,
@@ -846,6 +858,16 @@ class Transaction(object):
             i_attrs["synthetics_job_id"] = self.synthetics_job_id
         if self.synthetics_monitor_id:
             i_attrs["synthetics_monitor_id"] = self.synthetics_monitor_id
+        if self.synthetics_type:
+            i_attrs["synthetics_type"] = self.synthetics_type
+        if self.synthetics_initiator:
+            i_attrs["synthetics_initiator"] = self.synthetics_initiator
+        if self.synthetics_attributes:
+            # Add all synthetics attributes
+            for k, v in self.synthetics_attributes.items():
+                if k:
+                    i_attrs["synthetics_%s" % snake_case(k)] = v
+
         if self.total_time:
             i_attrs["totalTime"] = self.total_time
         if self._loop_time:
@@ -1892,17 +1914,18 @@ def add_framework_info(name, version=None):
         transaction.add_framework_info(name, version)
 
 
-def get_browser_timing_header():
+def get_browser_timing_header(nonce=None):
     transaction = current_transaction()
     if transaction and hasattr(transaction, "browser_timing_header"):
-        return transaction.browser_timing_header()
+        return transaction.browser_timing_header(nonce)
     return ""
 
 
-def get_browser_timing_footer():
-    transaction = current_transaction()
-    if transaction and hasattr(transaction, "browser_timing_footer"):
-        return transaction.browser_timing_footer()
+def get_browser_timing_footer(nonce=None):
+    warnings.warn(
+        "The get_browser_timing_footer function is deprecated. Please migrate to only using the get_browser_timing_header API instead.",
+        DeprecationWarning,
+    )
     return ""
 
 

@@ -265,13 +265,18 @@ class PCFUtilization(CommonUtilization):
 class DockerUtilization(CommonUtilization):
     VENDOR_NAME = 'docker'
     EXPECTED_KEYS = ('id',)
-    METADATA_FILE = '/proc/self/cgroup'
-    DOCKER_RE = re.compile(r'([0-9a-f]{64,})')
+
+    METADATA_FILE_CGROUPS_V1 = '/proc/self/cgroup'
+    METADATA_RE_CGROUPS_V1 = re.compile(r'[0-9a-f]{64,}')
+    
+    METADATA_FILE_CGROUPS_V2 = '/proc/self/mountinfo'
+    METADATA_RE_CGROUPS_V2 = re.compile(r'^.*/docker/containers/([0-9a-f]{64,})/.*$')
 
     @classmethod
     def fetch(cls):
+        # Try to read from cgroups
         try:
-            with open(cls.METADATA_FILE, 'rb') as f:
+            with open(cls.METADATA_FILE_CGROUPS_V1, 'rb') as f:
                 for line in f:
                     stripped = line.decode('utf-8').strip()
                     cgroup = stripped.split(':')
@@ -279,7 +284,23 @@ class DockerUtilization(CommonUtilization):
                         continue
                     subsystems = cgroup[1].split(',')
                     if 'cpu' in subsystems:
-                        return cgroup[2]
+                        contents = cgroup[2].split('/')[-1]
+                        match = cls.METADATA_RE_CGROUPS_V1.search(contents)
+                        if match:
+                            return match.group(0)
+        except:
+            # There are all sorts of exceptions that can occur here
+            # (i.e. permissions, non-existent file, etc)
+            pass
+
+        # Fallback to reading from mountinfo
+        try:
+            with open(cls.METADATA_FILE_CGROUPS_V2, 'rb') as f:
+                for line in f:
+                    stripped = line.decode('utf-8').strip()
+                    match = cls.METADATA_RE_CGROUPS_V2.match(stripped)
+                    if match:
+                        return match.group(1)
         except:
             # There are all sorts of exceptions that can occur here
             # (i.e. permissions, non-existent file, etc)
@@ -290,11 +311,7 @@ class DockerUtilization(CommonUtilization):
         if contents is None:
             return
 
-        value = contents.split('/')[-1]
-        match = cls.DOCKER_RE.search(value)
-        if match:
-            value = match.group(0)
-            return {'id': value}
+        return {'id': contents}
 
     @classmethod
     def valid_chars(cls, data):
@@ -315,11 +332,7 @@ class DockerUtilization(CommonUtilization):
             return False
 
         # Must be exactly 64 characters
-        valid = len(data) == 64
-        if valid:
-            return True
-
-        return False
+        return bool(len(data) == 64)
 
 
 class KubernetesUtilization(CommonUtilization):

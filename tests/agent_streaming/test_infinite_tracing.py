@@ -389,12 +389,12 @@ def test_no_data_loss_on_reconnect(mock_grpc_server, app, buffer_empty_event, ba
         # Wait for OK status code to close the channel
         start_time = time.time()
         while not (request_iterator._stream and request_iterator._stream.done()):
-            assert time.time() - start_time < 5, "Timed out waiting for OK status code."
+            assert time.time() - start_time < 15, "Timed out waiting for OK status code."
             time.sleep(0.5)
 
         # Put new span and wait until buffer has been emptied and either sent or lost
         stream_buffer.put(span)
-        assert spans_processed_event.wait(timeout=5), "Data lost in stream buffer iterator."
+        assert spans_processed_event.wait(timeout=15), "Data lost in stream buffer iterator."
 
     _test()
 

@@ -17,6 +17,7 @@ from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.core.config import global_settings
 from newrelic.api.application import application_instance
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
+from newrelic.common.signature import bind_args
 
 
 def normalize_level_name(method_name):
@@ -81,6 +82,25 @@ def wrap__process_event(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def wrap__find_first_app_frame_and_name(wrapped, instance, args, kwargs):
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+        if bound_args["additional_ignores"]:
+            bound_args["additional_ignores"] = list(bound_args["additional_ignores"])
+            bound_args["additional_ignores"].append("newrelic")
+        else:
+            bound_args["additional_ignores"] = ["newrelic"]
+    except Exception:
+        return wrapped(*args, **kwargs)
+
+    return wrapped(**bound_args)
+
+
 def instrument_structlog__base(module):
     if hasattr(module, "BoundLoggerBase") and hasattr(module.BoundLoggerBase, "_process_event"):
         wrap_function_wrapper(module, "BoundLoggerBase._process_event", wrap__process_event)
+
+
+def instrument_structlog__frames(module):
+    if hasattr(module, "_find_first_app_frame_and_name"):
+        wrap_function_wrapper(module, "_find_first_app_frame_and_name", wrap__find_first_app_frame_and_name)

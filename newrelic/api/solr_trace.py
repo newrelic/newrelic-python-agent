@@ -14,6 +14,7 @@
 
 import newrelic.api.object_wrapper
 import newrelic.api.time_trace
+import newrelic.common.object_wrapper
 import newrelic.core.solr_node
 
 
@@ -111,4 +112,4 @@ def solr_trace(library, command):
 
 
 def wrap_solr_trace(module, object_path, library, command):
-    newrelic.api.object_wrapper.wrap_object(module, object_path, SolrTraceWrapper, (library, command))
+    newrelic.common.object_wrapper.wrap_object(module, object_path, SolrTraceWrapper, (library, command))

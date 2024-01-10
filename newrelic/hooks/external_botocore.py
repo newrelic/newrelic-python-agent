@@ -246,7 +246,7 @@ def extract_bedrock_claude_model(request_body, response_body=None):
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens_to_sample", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.number_of_messages": len(input_message_list),
+        "response.number_of_messages": len(input_message_list)
     }
 
     if response_body:

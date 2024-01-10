@@ -45,7 +45,7 @@ except ImportError:
         return _DEFAULT_CERT_PATH
 
 
-HEADER_AUDIT_LOGGING_DENYLIST = frozenset(("X-Api-Key", "Api-Key"))
+HEADER_AUDIT_LOGGING_DENYLIST = frozenset(("X-Api-Key", "Api-Key", "api-key"))
 
 
 # User agent string that must be used in all requests. The data collector

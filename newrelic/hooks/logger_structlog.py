@@ -96,7 +96,7 @@ def wrap__process_event(wrapped, instance, args, kwargs):
         settings = global_settings()
 
     # Return early if application logging not enabled
-    if settings and settings.application_logging and settings.application_logging.enabled:
+    if settings and settings.application_logging.enabled:
         processors = instance._processors
         if not processors:
             instance._processors = [new_relic_event_consumer]

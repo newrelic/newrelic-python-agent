@@ -33,8 +33,7 @@ from newrelic.common.encoding_utils import (
 )
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.core.attribute import create_attributes, process_user_attribute
-from newrelic.core.attribute_filter import DST_BROWSER_MONITORING, DST_NONE
+from newrelic.core.attribute_filter import DST_BROWSER_MONITORING
 from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)

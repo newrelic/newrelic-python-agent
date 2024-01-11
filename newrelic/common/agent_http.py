@@ -45,7 +45,7 @@ except ImportError:
         return _DEFAULT_CERT_PATH
 
 
-HEADER_AUDIT_LOGGING_DENYLIST = frozenset(("X-Api-Key", "Api-Key", "api-key"))
+HEADER_AUDIT_LOGGING_DENYLIST = frozenset(("x-api-key", "api-key"))
 
 
 # User agent string that must be used in all requests. The data collector
@@ -127,10 +127,8 @@ class BaseClient(object):
             return
 
         # Obfuscate license key from headers and URL params
-        if headers and HEADER_AUDIT_LOGGING_DENYLIST.intersection(headers.keys()):
-            headers = headers.copy()
-            for key in HEADER_AUDIT_LOGGING_DENYLIST:
-                headers[key] = obfuscate_license_key(headers[key])
+        if headers:
+            headers = {k: obfuscate_license_key(v) if k.lower() in HEADER_AUDIT_LOGGING_DENYLIST else v for k, v in headers.items()}
 
         if params and "license_key" in params:
             params = params.copy()

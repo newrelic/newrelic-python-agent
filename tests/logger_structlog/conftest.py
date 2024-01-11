@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import pytest
-from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction
-from testing_support.fixtures import (
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
+
+from newrelic.api.time_trace import current_trace
+from newrelic.api.transaction import current_transaction
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -103,9 +103,7 @@ def logger(structlog_caplog):
 def filtering_logger(structlog_caplog):
     import structlog
 
-    structlog.configure(
-        processors=[drop_event_processor], logger_factory=lambda *args, **kwargs: structlog_caplog
-    )
+    structlog.configure(processors=[drop_event_processor], logger_factory=lambda *args, **kwargs: structlog_caplog)
     _filtering_logger = structlog.get_logger()
     return _filtering_logger
 

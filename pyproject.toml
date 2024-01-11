@@ -1,6 +1,5 @@
 [project]
 dependencies = [
-	"isort==5.11.4",
 	"opentelemetry_proto==1.0.0",
 	"urllib3==1.26.15",
 	"wrapt==1.16.0",

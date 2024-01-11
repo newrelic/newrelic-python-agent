@@ -15,7 +15,7 @@
 import logging
 
 import pytest
-from conftest import logger as conf_logger
+from conftest import logger as conf_logger  # noqa, pylint: disable=W0611
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
@@ -35,20 +35,12 @@ from newrelic.api.log import NewRelicLogForwardingHandler
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 
-_common_attributes_service_linking = {
-    "timestamp": None,
-    "hostname": None,
-    "entity.name": "Python Agent Test (logger_logging)",
-    "entity.guid": None,
-}
-_common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh12345678"}
-
 
 @pytest.fixture(scope="function")
 def uninstrument_logging():
     instrumented = logging.Logger.callHandlers
     while hasattr(logging.Logger.callHandlers, "__wrapped__"):
-        logging.Logger.callHandlers = logging.Logger.callHandlers.__wrapped__
+        logging.Logger.callHandlers = logging.Logger.callHandlers.__wrapped__  # noqa, pylint: disable=E1101
     yield
     logging.Logger.callHandlers = instrumented
 

@@ -26,8 +26,7 @@ from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.pre_function import wrap_pre_function
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import FunctionWrapper
+from newrelic.api.object_wrapper import callable_name, ObjectWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.core.agent import shutdown_agent
 
@@ -99,6 +98,10 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
             with BackgroundTask(_application(), _name, 'Celery', source=instance):
                 return wrapped(*args, **kwargs)
 
+    # Start Hotfix v2.2.1.
+    # obj = ObjectWrapper(wrapped, None, wrapper)
+    # End Hotfix v2.2.1.
+
     # Celery tasks that inherit from celery.app.task must implement a run()
     # method.
     # ref: (http://docs.celeryproject.org/en/2.5/reference/
@@ -107,11 +110,11 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
     # task. But celery does a micro-optimization where if the __call__ method
     # was not overridden by an inherited task, then it will directly execute
     # the run() method without going through the __call__ method. Our
-    # instrumentation via FunctionWrapper() relies on __call__ being called which
+    # instrumentation via ObjectWrapper() relies on __call__ being called which
     # in turn executes the wrapper() function defined above. Since the micro
     # optimization bypasses __call__ method it breaks our instrumentation of
     # celery. To circumvent this problem, we added a run() attribute to our
-    # FunctionWrapper which points to our __call__ method. This causes Celery
+    # ObjectWrapper which points to our __call__ method. This causes Celery
     # to execute our __call__ method which in turn applies the wrapper
     # correctly before executing the task.
     #
@@ -119,11 +122,17 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
     # versions included a monkey-patching provision which did not perform this
     # optimization on functions that were monkey-patched.
 
-    class TaskWrapper(FunctionWrapper):
+    # Start Hotfix v2.2.1.
+    # obj.__dict__['run'] = obj.__call__
+
+    class _ObjectWrapper(ObjectWrapper):
         def run(self, *args, **kwargs):
             return self.__call__(*args, **kwargs)
 
-    return TaskWrapper(wrapped, wrapper)
+    obj = _ObjectWrapper(wrapped, None, wrapper)
+    # End Hotfix v2.2.1.
+
+    return obj
 
 
 def instrument_celery_app_task(module):

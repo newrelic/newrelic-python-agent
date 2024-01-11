@@ -78,6 +78,7 @@ class _WSGIApplicationIterable(object):
 
         try:
             with FunctionTrace(name="Finalize", group="Python/WSGI"):
+
                 if isinstance(self.generator, _WSGIApplicationMiddleware):
                     self.generator.close()
 
@@ -152,6 +153,7 @@ class _WSGIInputWrapper(object):
 
 
 class _WSGIApplicationMiddleware(object):
+
     # This is a WSGI middleware for automatically inserting RUM into
     # HTML responses. It only works for where a WSGI application is
     # returning response content via a iterable/generator. It does not
@@ -202,7 +204,16 @@ class _WSGIApplicationMiddleware(object):
         # works then we are done, else we move to next phase of
         # buffering up content until we find the body element.
 
-        html_to_be_inserted = lambda: six.b(self.transaction.browser_timing_header())
+        def html_to_be_inserted():
+            header = self.transaction.browser_timing_header()
+
+            if not header:
+                return b""
+
+            footer = self.transaction.browser_timing_footer()
+
+            return six.b(header) + six.b(footer)
+
         if not self.response_data:
             modified = insert_html_snippet(data, html_to_be_inserted)
 
@@ -329,6 +340,7 @@ class _WSGIApplicationMiddleware(object):
         # Also check whether RUM insertion has already occurred.
 
         if self.transaction.autorum_disabled or self.transaction.rum_header_generated:
+
             self.flush_headers()
             self.pass_through = True
 
@@ -348,7 +360,7 @@ class _WSGIApplicationMiddleware(object):
         content_encoding = None
         content_disposition = None
 
-        for name, value in response_headers:
+        for (name, value) in response_headers:
             _name = name.lower()
 
             if _name == "content-length":
@@ -496,6 +508,7 @@ class _WSGIApplicationMiddleware(object):
 
 
 def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None, dispatcher=None):
+
     # Python 2 does not allow rebinding nonlocal variables, so to fix this
     # framework must be stored in list so it can be edited by closure.
     _framework = [framework]
@@ -636,6 +649,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
             transaction.set_transaction_name(name, group, priority=1)
 
         def _start_response(status, response_headers, *args):
+
             additional_headers = transaction.process_response(status, response_headers, *args)
 
             _write = start_response(status, response_headers + additional_headers, *args)

@@ -15,7 +15,7 @@
 import types
 
 import newrelic.api.transaction
-import newrelic.common.object_wrapper
+import newrelic.api.object_wrapper
 import newrelic.api.function_trace
 
 class stream_wrapper(object):
@@ -69,5 +69,5 @@ def instrument(module):
 
     if module.__name__ == 'genshi.template.base':
 
-        newrelic.common.object_wrapper.wrap_object(
+        newrelic.api.object_wrapper.wrap_object(
                 module, 'Template.generate', wrap_template)

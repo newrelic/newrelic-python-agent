@@ -18,7 +18,7 @@ from newrelic.packages import six
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import ObjectWrapper
 
 
 def httplib_endheaders_wrapper(wrapped, instance, args, kwargs,
@@ -125,7 +125,24 @@ def instrument(module):
     else:
         library = 'http'
 
-    wrap_function_wrapper(module, "HTTPConnection.endheaders", functools.partial(httplib_endheaders_wrapper, scheme='http', library=library))
-    wrap_function_wrapper(module, "HTTPSConnection.endheaders", functools.partial(httplib_endheaders_wrapper, scheme='https', library=library))
-    wrap_function_wrapper(module, "HTTPConnection.getresponse", httplib_getresponse_wrapper)
-    wrap_function_wrapper(module, "HTTPConnection.putheader", httplib_putheader_wrapper)
+    module.HTTPConnection.endheaders = ObjectWrapper(
+            module.HTTPConnection.endheaders,
+            None,
+            functools.partial(httplib_endheaders_wrapper, scheme='http',
+                    library=library))
+
+    module.HTTPSConnection.endheaders = ObjectWrapper(
+            module.HTTPConnection.endheaders,
+            None,
+            functools.partial(httplib_endheaders_wrapper, scheme='https',
+                    library=library))
+
+    module.HTTPConnection.getresponse = ObjectWrapper(
+            module.HTTPConnection.getresponse,
+            None,
+            httplib_getresponse_wrapper)
+
+    module.HTTPConnection.putheader = ObjectWrapper(
+            module.HTTPConnection.putheader,
+            None,
+            httplib_putheader_wrapper)

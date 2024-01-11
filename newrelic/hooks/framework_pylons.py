@@ -16,15 +16,14 @@ import newrelic.api.transaction
 import newrelic.api.transaction_name
 import newrelic.api.function_trace
 import newrelic.api.error_trace
-import newrelic.common.object_wrapper
-from newrelic.common.object_names import callable_name
+import newrelic.api.object_wrapper
 import newrelic.api.import_hook
 
 from newrelic.api.time_trace import notice_error
 
 def name_controller(self, environ, start_response):
     action = environ['pylons.routes_dict']['action']
-    return "%s.%s" % (callable_name(self), action)
+    return "%s.%s" % (newrelic.api.object_wrapper.callable_name(self), action)
 
 class capture_error(object):
     def __init__(self, wrapped):
@@ -70,12 +69,12 @@ def instrument(module):
                 module, 'WSGIController.__call__')
 
         def name_WSGIController_perform_call(self, func, args):
-            return callable_name(func)
+            return newrelic.api.object_wrapper.callable_name(func)
 
         newrelic.api.function_trace.wrap_function_trace(
                 module, 'WSGIController._perform_call',
                 name_WSGIController_perform_call)
-        newrelic.common.object_wrapper.wrap_object(
+        newrelic.api.object_wrapper.wrap_object(
                 module, 'WSGIController._perform_call', capture_error)
 
     elif module.__name__ == 'pylons.templating':

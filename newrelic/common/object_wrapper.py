@@ -20,7 +20,6 @@ make use of when doing monkey patching.
 """
 
 import inspect
-import warnings
 
 from newrelic.packages.wrapt import BoundFunctionWrapper as _BoundFunctionWrapper
 from newrelic.packages.wrapt import CallableObjectProxy as _CallableObjectProxy
@@ -32,6 +31,7 @@ from newrelic.packages.wrapt import (  # noqa: F401; pylint: disable=W0611
     wrap_object,
     wrap_object_attribute,
 )
+from newrelic.packages.wrapt.__wrapt__ import _FunctionWrapperBase
 
 # We previously had our own pure Python implementation of the generic
 # object wrapper but we now defer to using the wrapt module as its C
@@ -122,13 +122,19 @@ class CallableObjectProxy(ObjectProxy, _CallableObjectProxy):
 # own code no longer uses it. It reaches down into what are wrapt internals
 # at present which shouldn't be doing.
 
-class ObjectWrapper(FunctionWrapper):
+
+class ObjectWrapper(ObjectProxy, _FunctionWrapperBase):
+    __bound_function_wrapper__ = _NRBoundFunctionWrapper
+
     def __init__(self, wrapped, instance, wrapper):
-        warnings.warn(
-            ("The ObjectWrapper API is deprecated. Please use one of ObjectProxy, FunctionWrapper, or CallableObjectProxy instead."),
-            DeprecationWarning,
-        )
-        super(ObjectWrapper, self).__init__(wrapped, wrapper)
+        if isinstance(wrapped, classmethod):
+            binding = "classmethod"
+        elif isinstance(wrapped, staticmethod):
+            binding = "staticmethod"
+        else:
+            binding = "function"
+
+        super(ObjectWrapper, self).__init__(wrapped, instance, wrapper, binding=binding)
 
 
 # Function for creating a decorator for applying to functions, as well as

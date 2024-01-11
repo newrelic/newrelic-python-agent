@@ -157,9 +157,16 @@ class ASGIBrowserMiddleware(object):
 
             # if there's a valid body string, attempt to insert the HTML
             if verify_body_exists(self.body):
-                body = insert_html_snippet(
-                    self.body, lambda: six.b(self.transaction.browser_timing_header()), self.search_maximum
-                )
+                header = self.transaction.browser_timing_header()
+                if not header:
+                    # If there's no header, abort browser monitoring injection
+                    await self.send_buffered()
+                    return
+
+                footer = self.transaction.browser_timing_footer()
+                browser_agent_data = six.b(header) + six.b(footer)
+
+                body = insert_html_snippet(self.body, lambda: browser_agent_data, self.search_maximum)
 
                 # If we have inserted the browser agent
                 if len(body) != len(self.body):

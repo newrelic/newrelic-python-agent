@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 from newrelic.api.function_trace import FunctionTraceWrapper
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
+from newrelic.api.object_wrapper import ObjectWrapper, callable_name
 from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import notice_error
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def _nr_wrap_handle_exception(wrapped, instance, args, kwargs):
@@ -54,7 +56,6 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
         name = callable_name(callback)
         group = None
 
-    @function_wrapper
     def inner_fn_wrapper(inner_fn, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -68,14 +69,18 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
 
     result = outer_fn(*args, **kwargs)
 
-    return inner_fn_wrapper(result)
+    return ObjectWrapper(result, None, inner_fn_wrapper)
 
 
 def instrument_tastypie_resources(module):
-    wrap_function_wrapper(module, "Resource.wrap_view", outer_fn_wrapper)
+    _wrap_view = module.Resource.wrap_view
+    module.Resource.wrap_view = ObjectWrapper(
+            _wrap_view, None, outer_fn_wrapper)
 
-    wrap_function_wrapper(module, 'Resource._handle_500', _nr_wrap_handle_exception)
+    wrap_function_wrapper(module, 'Resource._handle_500',
+            _nr_wrap_handle_exception)
 
 
 def instrument_tastypie_api(module):
-    wrap_function_wrapper(module, "Api.wrap_view", outer_fn_wrapper)
+    _wrap_view = module.Api.wrap_view
+    module.Api.wrap_view = ObjectWrapper(_wrap_view, None, outer_fn_wrapper)

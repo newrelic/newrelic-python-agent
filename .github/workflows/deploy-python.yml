@@ -20,125 +20,17 @@ on:
       - published
 
 jobs:
-  build-linux-py3:
+  deploy-linux:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        wheel:
-          - cp37-manylinux
-          - cp37-musllinux
-          - cp38-manylinux
-          - cp38-musllinux
-          - cp39-manylinux
-          - cp39-musllinux
-          - cp310-manylinux
-          - cp310-musllinux
-          - cp311-manylinux
-          - cp311-musllinux
-          - cp312-manylinux
-          - cp312-musllinux
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           persist-credentials: false
           fetch-depth: 0
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Build Wheels
-        uses: pypa/cibuildwheel@v2.16.2
-        env:
-          CIBW_PLATFORM: linux
-          CIBW_BUILD: "${{ matrix.wheel }}*"
-          CIBW_ARCHS_LINUX: x86_64 aarch64
-          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
-          CIBW_TEST_REQUIRES: pytest
-          CIBW_TEST_COMMAND: "PYTHONPATH={project}/tests pytest {project}/tests/agent_unittests -vx"
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4.0.0
-        with:
-          name: ${{ github.job }}-${{ matrix.wheel }}
-          path: ./wheelhouse/*.whl
-          retention-days: 1
-
-  build-linux-py2:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Build Wheels
-        uses: pypa/cibuildwheel@v1.12.0
-        env:
-          CIBW_PLATFORM: linux
-          CIBW_BUILD: cp27-manylinux_x86_64
-          CIBW_ARCHS_LINUX: x86_64
-          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
-          CIBW_TEST_REQUIRES: pytest==4.6.11
-          CIBW_TEST_COMMAND: "PYTHONPATH={project}/tests pytest {project}/tests/agent_unittests -vx"
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4.0.0
-        with:
-          name: ${{ github.job }}
-          path: ./wheelhouse/*.whl
-          retention-days: 1
-
-  build-sdist:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - name: Install Dependencies
-        run: |
-          pip install -U pip
-          pip install -U setuptools
-
-      - name: Build Source Package
-        run: |
-          python setup.py sdist
-
-      - name: Prepare MD5 Hash File
-        run: |
-          tarball="$(python setup.py --fullname).tar.gz"
-          md5_file=${tarball}.md5
-          openssl md5 -binary dist/${tarball} | xxd -p | tr -d '\n' > dist/${md5_file}
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4.0.0
-        with:
-          name: ${{ github.job }}-sdist
-          path: |
-            ./dist/*.tar.gz
-            ./dist/*.tar.gz.md5
-          retention-days: 1
-
-  deploy:
-    runs-on: ubuntu-latest
-
-    needs: 
-      - build-linux-py3
-      - build-linux-py2
-      - build-sdist
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          fetch-depth: 0
+        uses: docker/setup-qemu-action@v1
 
       - uses: actions/setup-python@v2
         with:
@@ -150,22 +42,32 @@ jobs:
           pip install -U pip
           pip install -U wheel setuptools twine
 
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4.1.0
-        with:
-          path: ./artifacts/
+      - name: Build Source Package
+        run: python setup.py sdist
 
-      - name: Unpack Artifacts
-        run: |
-          mkdir -p dist/
-          mv artifacts/**/*{.whl,.tar.gz,.tar.gz.md5} dist/
+      - name: Build Manylinux Wheels (Python 2)
+        uses: pypa/cibuildwheel@v1.12.0
+        env:
+          CIBW_PLATFORM: linux
+          CIBW_BUILD: cp27-manylinux_x86_64
+          CIBW_ARCHS: x86_64
+          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/=vtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
+
+      - name: Build Manylinux Wheels (Python 3)
+        uses: pypa/cibuildwheel@v2.11.1
+        env:
+          CIBW_PLATFORM: linux
+          CIBW_BUILD: cp37-manylinux* cp38-manylinux* cp39-manylinux* cp310-manylinux* cp311-manylinux*
+          CIBW_ARCHS: x86_64 aarch64
+          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
 
       - name: Upload Package to S3
         run: |
           tarball="$(python setup.py --fullname).tar.gz"
-          md5_file=${tarball}.md5
-          aws s3 cp dist/${md5_file} $S3_DST/${md5_file}
-          aws s3 cp dist/${tarball} $S3_DST/${tarball}
+          md5_file=$(mktemp)
+          openssl md5 -binary dist/$tarball | xxd -p | tr -d '\n' > $md5_file
+          aws s3 cp $md5_file $S3_DST/${tarball}.md5
+          aws s3 cp dist/$tarball $S3_DST/$tarball
         env:
           S3_DST: s3://nr-downloads-main/python_agent/release
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -174,7 +76,7 @@ jobs:
 
       - name: Upload Package to PyPI
         run: |
-          twine upload --non-interactive dist/*.tar.gz dist/*.whl
+          twine upload --non-interactive dist/*.tar.gz wheelhouse/*-manylinux*.whl
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}

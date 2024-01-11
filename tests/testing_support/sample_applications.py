@@ -24,6 +24,7 @@ import sqlite3 as db
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import (
     add_custom_attribute,
+    get_browser_timing_footer,
     get_browser_timing_header,
     record_custom_event,
 )
@@ -105,9 +106,9 @@ def fully_featured_app(environ, start_response):
                 else:
                     notice_error()
 
-    text = "<html><head>%s</head><body><p>RESPONSE</p></body></html>"
+    text = "<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>"
 
-    output = (text % get_browser_timing_header()).encode("UTF-8")
+    output = (text % (get_browser_timing_header(), get_browser_timing_footer())).encode("UTF-8")
 
     response_headers = [("Content-type", "text/html; charset=utf-8"), ("Content-Length", str(len(output)))]
     write = start_response(status, response_headers)

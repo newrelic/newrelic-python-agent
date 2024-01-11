@@ -17,7 +17,6 @@ import sys
 import types
 import time
 import threading
-import newrelic.common.object_wrapper
 
 _context = threading.local()
 
@@ -89,7 +88,7 @@ def internal_trace(name=None):
     return decorator
 
 def wrap_internal_trace(module, object_path, name=None):
-    newrelic.common.object_wrapper.wrap_object(module, object_path,
+    newrelic.api.object_wrapper.wrap_object(module, object_path,
             InternalTraceWrapper, (name,))
 
 def internal_metric(name, value):

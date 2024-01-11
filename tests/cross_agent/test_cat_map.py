@@ -43,6 +43,7 @@ from testing_support.validators.validate_tt_parameters import validate_tt_parame
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import (
     current_transaction,
+    get_browser_timing_footer,
     get_browser_timing_header,
     set_background_task,
     set_transaction_name,
@@ -133,9 +134,9 @@ def target_wsgi_application(environ, start_response):
         set_background_task(True)
     set_transaction_name(txn_name[2], group=txn_name[1])
 
-    text = "<html><head>%s</head><body><p>RESPONSE</p></body></html>"
+    text = "<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>"
 
-    output = (text % get_browser_timing_header()).encode("UTF-8")
+    output = (text % (get_browser_timing_header(), get_browser_timing_footer())).encode("UTF-8")
 
     response_headers = [("Content-type", "text/html; charset=utf-8"), ("Content-Length", str(len(output)))]
     start_response(status, response_headers)
@@ -192,6 +193,7 @@ def test_cat_map(
     @override_application_settings(_custom_settings)
     @override_application_name(appName)
     def run_cat_test():
+
         if six.PY2:
             txn_name = transactionName.encode("UTF-8")
             guid = transactionGuid.encode("UTF-8")

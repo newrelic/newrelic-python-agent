@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import json
-import re
 import sys
 
 import six
@@ -30,6 +29,7 @@ from newrelic.api.application import application_settings
 from newrelic.api.transaction import (
     add_custom_attribute,
     disable_browser_autorum,
+    get_browser_timing_footer,
     get_browser_timing_header,
 )
 from newrelic.api.web_transaction import web_transaction
@@ -43,9 +43,9 @@ _runtime_error_name = RuntimeError.__module__ + ":" + RuntimeError.__name__
 def target_wsgi_application_manual_rum(environ, start_response):
     status = "200 OK"
 
-    text = "<html><head>%s</head><body><p>RESPONSE</p></body></html>"
+    text = "<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>"
 
-    output = (text % get_browser_timing_header()).encode("UTF-8")
+    output = (text % (get_browser_timing_header(), get_browser_timing_footer())).encode("UTF-8")
 
     response_headers = [("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(len(output)))]
     start_response(status, response_headers)
@@ -55,15 +55,15 @@ def target_wsgi_application_manual_rum(environ, start_response):
 
 target_application_manual_rum = webtest.TestApp(target_wsgi_application_manual_rum)
 
-_test_header_attributes = {
+_test_footer_attributes = {
     "browser_monitoring.enabled": True,
     "browser_monitoring.auto_instrument": False,
     "js_agent_loader": "<!-- NREUM HEADER -->",
 }
 
 
-@override_application_settings(_test_header_attributes)
-def test_header_attributes():
+@override_application_settings(_test_footer_attributes)
+def test_footer_attributes():
     settings = application_settings()
 
     assert settings.browser_monitoring.enabled
@@ -82,6 +82,7 @@ def test_header_attributes():
 
     header = response.html.html.head.script.string
     content = response.html.html.body.p.string
+    footer = response.html.html.body.script.string
 
     # Validate actual body content.
 
@@ -91,10 +92,10 @@ def test_header_attributes():
 
     assert header.find("NREUM HEADER") != -1
 
-    # Now validate the various fields of the header. The fields are
+    # Now validate the various fields of the footer. The fields are
     # held by a JSON dictionary.
 
-    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
+    data = json.loads(footer.split("NREUM.info=")[1])
 
     assert data["licenseKey"] == settings.browser_key
     assert data["applicationID"] == settings.application_id
@@ -133,8 +134,8 @@ def test_ssl_for_http_is_none():
     assert settings.browser_monitoring.ssl_for_http is None
 
     response = target_application_manual_rum.get("/")
-    header = response.html.html.head.script.string
-    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
+    footer = response.html.html.body.script.string
+    data = json.loads(footer.split("NREUM.info=")[1])
 
     assert "sslForHttp" not in data
 
@@ -154,8 +155,8 @@ def test_ssl_for_http_is_true():
     assert settings.browser_monitoring.ssl_for_http is True
 
     response = target_application_manual_rum.get("/")
-    header = response.html.html.head.script.string
-    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
+    footer = response.html.html.body.script.string
+    data = json.loads(footer.split("NREUM.info=")[1])
 
     assert data["sslForHttp"] is True
 
@@ -175,8 +176,8 @@ def test_ssl_for_http_is_false():
     assert settings.browser_monitoring.ssl_for_http is False
 
     response = target_application_manual_rum.get("/")
-    header = response.html.html.head.script.string
-    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
+    footer = response.html.html.body.script.string
+    data = json.loads(footer.split("NREUM.info=")[1])
 
     assert data["sslForHttp"] is False
 
@@ -211,7 +212,7 @@ def test_html_insertion_yield_single_no_head():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain("NREUM HEADER", "NREUM.info")
 
@@ -247,7 +248,7 @@ def test_html_insertion_yield_multi_no_head():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain("NREUM HEADER", "NREUM.info")
 
@@ -287,7 +288,7 @@ def test_html_insertion_unnamed_attachment_header():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain(no=["NREUM HEADER", "NREUM.info"])
 
@@ -327,7 +328,7 @@ def test_html_insertion_named_attachment_header():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain(no=["NREUM HEADER", "NREUM.info"])
 
@@ -367,7 +368,7 @@ def test_html_insertion_inline_attachment_header():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain("NREUM HEADER", "NREUM.info")
 
@@ -400,7 +401,7 @@ def test_html_insertion_empty_list():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain(no=["NREUM HEADER", "NREUM.info"])
 
@@ -435,7 +436,7 @@ def test_html_insertion_single_empty_string():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain(no=["NREUM HEADER", "NREUM.info"])
 
@@ -470,7 +471,7 @@ def test_html_insertion_multiple_empty_string():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain(no=["NREUM HEADER", "NREUM.info"])
 
@@ -504,7 +505,7 @@ def test_html_insertion_single_large_prelude():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     assert "Content-Type" in response.headers
     assert "Content-Length" in response.headers
@@ -543,7 +544,7 @@ def test_html_insertion_multi_large_prelude():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     assert "Content-Type" in response.headers
     assert "Content-Length" in response.headers
@@ -588,7 +589,7 @@ def test_html_insertion_yield_before_start():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain("NREUM HEADER", "NREUM.info")
 
@@ -626,7 +627,7 @@ def test_html_insertion_start_yield_start():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     assert "Content-Type" in response.headers
     assert "Content-Length" in response.headers
@@ -979,7 +980,7 @@ def test_html_insertion_disable_autorum_via_api():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain(no=["NREUM HEADER", "NREUM.info"])
 
@@ -991,9 +992,13 @@ def target_wsgi_application_manual_rum_insertion(environ, start_response):
     output = b"<html><body><p>RESPONSE</p></body></html>"
 
     header = get_browser_timing_header()
+    footer = get_browser_timing_footer()
+
     header = get_browser_timing_header()
+    footer = get_browser_timing_footer()
 
     assert header == ""
+    assert footer == ""
 
     response_headers = [("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(len(output)))]
     start_response(status, response_headers)
@@ -1019,42 +1024,34 @@ def test_html_insertion_manual_rum_insertion():
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
-    # header added by the agent.
+    # footer added by the agent.
 
     response.mustcontain(no=["NREUM HEADER", "NREUM.info"])
 
 
-_test_get_browser_timing_snippet_with_nonces = {
+_test_get_browser_timing_nonces_settings = {
     "browser_monitoring.enabled": True,
     "browser_monitoring.auto_instrument": False,
     "js_agent_loader": "<!-- NREUM HEADER -->",
 }
-_test_get_browser_timing_snippet_with_nonces_rum_info_re = re.compile(r"NREUM\.info={[^}]*}")
 
-
-@override_application_settings(_test_get_browser_timing_snippet_with_nonces)
-@web_transaction(
-    scheme="http", host="127.0.0.1", port=80, request_method="GET", request_path="/", query_string=None, headers={}
-)
-def test_get_browser_timing_snippet_with_nonces():
+@override_application_settings(_test_get_browser_timing_nonces_settings)
+@web_transaction(scheme="http", host="127.0.0.1", port=80, request_method="GET",
+        request_path="/", query_string=None, headers={})
+def test_get_browser_timing_nonces():
     header = get_browser_timing_header("NONCE")
+    footer = get_browser_timing_footer("NONCE")
 
-    header = _test_get_browser_timing_snippet_with_nonces_rum_info_re.sub("NREUM.info={}", header)
-    assert (
-        header
-        == '<script type="text/javascript" nonce="NONCE">window.NREUM||(NREUM={});NREUM.info={};\n<!-- NREUM HEADER --></script>'
-    )
+    assert header == '<script type="text/javascript" nonce="NONCE"><!-- NREUM HEADER --></script>'
+    assert '<script type="text/javascript" nonce="NONCE">' in footer
 
 
-@override_application_settings(_test_get_browser_timing_snippet_with_nonces)
-@web_transaction(
-    scheme="http", host="127.0.0.1", port=80, request_method="GET", request_path="/", query_string=None, headers={}
-)
-def test_get_browser_timing_snippet_without_nonces():
+@override_application_settings(_test_get_browser_timing_nonces_settings)
+@web_transaction(scheme="http", host="127.0.0.1", port=80, request_method="GET",
+        request_path="/", query_string=None, headers={})
+def test_get_browser_timing_no_nonces():
     header = get_browser_timing_header()
+    footer = get_browser_timing_footer()
 
-    header = _test_get_browser_timing_snippet_with_nonces_rum_info_re.sub("NREUM.info={}", header)
-    assert (
-        header
-        == '<script type="text/javascript">window.NREUM||(NREUM={});NREUM.info={};\n<!-- NREUM HEADER --></script>'
-    )
+    assert header == '<script type="text/javascript"><!-- NREUM HEADER --></script>'
+    assert '<script type="text/javascript">' in footer

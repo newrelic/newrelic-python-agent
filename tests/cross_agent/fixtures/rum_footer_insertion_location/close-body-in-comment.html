@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <!--
  Copyright 2010 New Relic, Inc.
 
@@ -14,18 +15,12 @@
  limitations under the License.
 -->
 
-{% load custom_tags %}
-{% load newrelic_tags %}
-<!DOCTYPE html>
-<html>
-<head>
-    {% newrelic_browser_timing_header %}
-    Some header
-</head>
-<body>
-    <h1>My First Heading</h1>
-    <p>My first paragraph.</p>
-    {% show_results %}
-    {% newrelic_browser_timing_footer %}
-</body>
+<html lang="en">
+  <head>
+    <title>Comment contains a close body tag</title>
+  </head>
+  <body>
+    <p>The quick brown fox jumps over the lazy dog.</p>
+    <!-- </body> -->
+    EXPECTED_RUM_FOOTER_LOCATION</body>
 </html>

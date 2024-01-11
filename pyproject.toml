@@ -1,3 +1,13 @@
+[project]
+dependencies = [
+	"isort==5.11.4",
+	"opentelemetry_proto==1.0.0",
+	"urllib3==1.26.15",
+	"wrapt==1.16.0",
+	"asgiref_compatibility==3.7.2",
+	"six==1.16.0",
+]
+
 [tool.black]
 line-length = 120
 include = '\.pyi?$'
@@ -16,3 +26,4 @@ good-names = "exc,val,tb"
 
 [tool.bandit]
 skips = ["B110", "B101", "B404"]
+

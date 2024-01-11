@@ -1,21 +1,21 @@
 version: 2
-  updates:
-    - package-ecosystem: "pip"
-      directory: "/"
-      schedule:
-        interval: "daily"
-      # Disable all pull requests for dependencies
-      open-pull-requests-limit: 0
-    - package-ecosystem: "docker"
-      directory: "/"
-      schedule:
-        interval: "daily"
-      # Disable all pull requests for dependencies
-      open-pull-requests-limit: 0
-    - package-ecosystem: "github-actions"
-      directory: "/"
-      schedule:
-        interval: "daily"
-      # Disable all pull requests for dependencies
-      open-pull-requests-limit: 0
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # Disable all pull requests for dependencies
+    open-pull-requests-limit: 0
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # Disable all pull requests for dependencies
+    open-pull-requests-limit: 0
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # Disable all pull requests for dependencies
+    open-pull-requests-limit: 0
 

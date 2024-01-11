@@ -363,9 +363,22 @@ def make_cross_agent_headers(payload, encoding_key, cat_id):
     return {"X-NewRelic-Transaction": value, "X-NewRelic-ID": id_value}
 
 
-def make_synthetics_headers(encoding_key, account_id, resource_id, job_id, monitor_id, type_, initiator, attributes, synthetics_version=1, synthetics_info_version=1):
+def make_synthetics_headers(
+    encoding_key,
+    account_id,
+    resource_id,
+    job_id,
+    monitor_id,
+    type_,
+    initiator,
+    attributes,
+    synthetics_version=1,
+    synthetics_info_version=1,
+):
     headers = {}
-    headers.update(make_synthetics_header(account_id, resource_id, job_id, monitor_id, encoding_key, synthetics_version))
+    headers.update(
+        make_synthetics_header(account_id, resource_id, job_id, monitor_id, encoding_key, synthetics_version)
+    )
     if type_:
         headers.update(make_synthetics_info_header(type_, initiator, attributes, encoding_key, synthetics_info_version))
     return headers
@@ -758,7 +771,15 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
     return _validate_error_event_sample_data
 
 
-SYNTHETICS_INTRINSIC_ATTR_NAMES = set(["nr.syntheticsResourceId", "nr.syntheticsJobId", "nr.syntheticsMonitorId", "nr.syntheticsType", "nr.syntheticsInitiator"])
+SYNTHETICS_INTRINSIC_ATTR_NAMES = set(
+    [
+        "nr.syntheticsResourceId",
+        "nr.syntheticsJobId",
+        "nr.syntheticsMonitorId",
+        "nr.syntheticsType",
+        "nr.syntheticsInitiator",
+    ]
+)
 
 
 def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics, required_user):
@@ -810,7 +831,7 @@ def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics,
         assert intrinsics["nr.syntheticsResourceId"] == res_id
         assert intrinsics["nr.syntheticsJobId"] == job_id
         assert intrinsics["nr.syntheticsMonitorId"] == monitor_id
-    
+
     if "nr.syntheticsType" in required_intrinsics:
         type_ = required_intrinsics["nr.syntheticsType"]
         initiator = required_intrinsics["nr.syntheticsInitiator"]

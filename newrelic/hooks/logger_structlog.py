@@ -63,7 +63,6 @@ def new_relic_event_consumer(logger, level, event):
             if isinstance(event, (str, bytes, bytearray)):
                 event = message
             elif isinstance(event, dict) and "event" in event:
-                # TODO CHECK ON THIS
                 event["event"] = message
 
         level_name = normalize_level_name(level)

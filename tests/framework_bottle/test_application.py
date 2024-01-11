@@ -15,8 +15,6 @@
 import base64
 
 import pytest
-import webtest
-from bottle import __version__ as version
 from testing_support.fixtures import (
     override_application_settings,
     override_ignore_status_codes,
@@ -226,8 +224,6 @@ def test_application_plugin_error_ignore(target_application):
     custom_metrics=_test_application_plugin_error_custom_metrics,
 )
 def test_application_plugin_error_capture(target_application):
-    import newrelic.agent
-
     response = target_application.get("/plugin_error", status=403, expect_errors=True)
 
 

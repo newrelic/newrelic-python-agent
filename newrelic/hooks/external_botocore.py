@@ -368,7 +368,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                 notice_error_attributes = {
                     "http.statusCode": error_attributes["http.statusCode"],
                     "error.message": error_attributes["error.message"],
-                    "error.code": error_attributes["error.code"],
+                    "error.code": error_attributes["error.code"]
                 }
 
                 if is_embedding:

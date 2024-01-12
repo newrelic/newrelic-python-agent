@@ -18,6 +18,7 @@ from collections import namedtuple
 from newrelic.core.attribute_filter import (
     DST_ALL,
     DST_ERROR_COLLECTOR,
+    DST_LOG_EVENT_CONTEXT_DATA,
     DST_SPAN_EVENTS,
     DST_TRANSACTION_EVENTS,
     DST_TRANSACTION_SEGMENTS,
@@ -172,6 +173,32 @@ def resolve_agent_attributes(attr_dict, attribute_filter, target_destination, at
             a_attrs[attr_name] = attr_value
 
     return a_attrs
+
+
+def resolve_logging_context_attributes(attr_dict, attribute_filter, attr_prefix, attr_class=dict):
+    """
+    Helper function for processing logging context attributes that require a prefix. Correctly filters attribute names
+    before applying the required prefix, and then applies the process_user_attribute after the prefix is applied to
+    correctly check length requirements.
+    """
+    c_attrs = attr_class()
+
+    for attr_name, attr_value in attr_dict.items():
+        dest = attribute_filter.apply(attr_name, DST_LOG_EVENT_CONTEXT_DATA)
+
+        if dest & DST_LOG_EVENT_CONTEXT_DATA:
+            try:
+                attr_name, attr_value = process_user_attribute(attr_prefix + attr_name, attr_value)
+                if attr_name:
+                    c_attrs[attr_name] = attr_value
+            except Exception:
+                _logger.debug(
+                    "Log event context attribute failed to validate for unknown reason. Dropping context attribute: %s. Check traceback for clues.",
+                    attr_name,
+                    exc_info=True,
+                )
+
+    return c_attrs
 
 
 def create_user_attributes(attr_dict, attribute_filter):

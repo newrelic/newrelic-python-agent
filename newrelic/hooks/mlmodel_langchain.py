@@ -512,7 +512,6 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
 
     input_message_list = [_input]
     output_message_list = []
-    response_len = 1
     try:
         output_message_list = [response[0]] if response else []
     except:
@@ -688,7 +687,6 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
 
     input_message_list = [_input]
     output_message_list = []
-    response_len = 1
     try:
         output_message_list = [response[0]] if response else []
     except:

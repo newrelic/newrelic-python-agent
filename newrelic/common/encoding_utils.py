@@ -80,7 +80,7 @@ def json_encode(obj, **kwargs):
     # The third is eliminate white space after separators to trim the
     # size of the data being sent.
 
-    if type(b"") is type(""):  # NOQA
+    if type(b"") is type(""):  # noqa, pylint: disable=C0123
         _kwargs["encoding"] = "latin-1"
 
     def _encode(o):
@@ -267,7 +267,7 @@ def generate_path_hash(name, seed):
     if not isinstance(name, bytes):
         name = name.encode("UTF-8")
 
-    path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)
+    path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)  # nosec
     return "%08x" % path_hash
 
 

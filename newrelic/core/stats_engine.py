@@ -43,6 +43,7 @@ from newrelic.core.attribute import (
     create_agent_attributes,
     create_user_attributes,
     process_user_attribute,
+    resolve_logging_context_attributes,
     truncate,
 )
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
@@ -1218,7 +1219,7 @@ class StatsEngine(object):
         ):
             self._log_events.merge(transaction.log_events, priority=transaction.priority)
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         settings = self.__settings
         if not (
             settings
@@ -1231,18 +1232,62 @@ class StatsEngine(object):
 
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
+        context_attributes = attributes  # Name reassigned for clarity
 
-        if not message or message.isspace():
-            _logger.debug("record_log_event called where message was missing. No log event will be sent.")
-            return
+        # Unpack message and attributes from dict inputs
+        if isinstance(message, dict):
+            message_attributes = {k: v for k, v in message.items() if k != "message"}
+            message = message.get("message", "")
+        else:
+            message_attributes = None
 
-        message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+        if message is not None:
+            # Coerce message into a string type
+            if not isinstance(message, six.string_types):
+                try:
+                    message = str(message)
+                except Exception:
+                    # Exit early for invalid message type after unpacking
+                    _logger.debug(
+                        "record_log_event called where message could not be converted to a string type. No log event will be sent."
+                    )
+                    return
+
+            # Truncate the now unpacked and string converted message
+            message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+
+        # Collect attributes from linking metadata, context data, and message attributes
+        collected_attributes = {}
+        if settings and settings.application_logging.forwarding.context_data.enabled:
+            if context_attributes:
+                context_attributes = resolve_logging_context_attributes(
+                    context_attributes, settings.attribute_filter, "context."
+                )
+                if context_attributes:
+                    collected_attributes.update(context_attributes)
+
+            if message_attributes:
+                message_attributes = resolve_logging_context_attributes(
+                    message_attributes, settings.attribute_filter, "message."
+                )
+                if message_attributes:
+                    collected_attributes.update(message_attributes)
+
+            # Exit early if no message or attributes found after filtering
+            if (not message or message.isspace()) and not context_attributes and not message_attributes:
+                _logger.debug(
+                    "record_log_event called where no message and no attributes were found. No log event will be sent."
+                )
+                return
+
+        # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute
+        collected_attributes.update(get_linking_metadata())
 
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=get_linking_metadata(),
+            attributes=collected_attributes,
         )
 
         if priority is None:

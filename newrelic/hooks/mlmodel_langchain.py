@@ -622,7 +622,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
                 del transaction._nr_run_manager_info
             run_id = run_manager_info.get("run_id", "")
             # First try to get the metadata and tags from the run manager info as that
-            # will be most accurate. In some error cases, the error may occurr before
+            # will be most accurate. In some error cases, the error may occur before
             # the run manager is created. If this happens, fallback to getting the
             # metadata and tags from the wrapped's input params.
             metadata = (

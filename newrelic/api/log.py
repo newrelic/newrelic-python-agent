@@ -104,29 +104,37 @@ class NewRelicContextFormatter(Formatter):
 
 
 class NewRelicLogForwardingHandler(logging.Handler):
-    DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(LogRecord("", 0, "", 0, "", (), None))) | {"message"})
-
+    IGNORED_LOG_RECORD_KEYS = set(["message", "msg"])
+    
     def emit(self, record):
         try:
-            # Avoid getting local log decorated message
-            if hasattr(record, "_nr_original_message"):
-                message = record._nr_original_message()
+            if self.formatter:
+                # Formatter supplied, allow log records to be formatted into a string
+                message = self.format(record)
             else:
-                message = record.getMessage()
+                # No formatter supplied, attempt to handle dict log records
+                message = record.msg
+                if not isinstance(message, dict):
+                    # Allow python to convert the message to a string and template it with args.
+                    message = record.getMessage()
 
-            attrs = self.filter_record_attributes(record)
-            record_log_event(message, record.levelname, int(record.created * 1000), attributes=attrs)
+            # Grab and filter context attributes from log record
+            context_attrs = self.filter_record_attributes(record)
+
+            # Record log message
+            level_name = str(getattr(record, "levelname", "UNKNOWN"))
+            record_log_event(
+                message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs
+            )
+        except RecursionError:  # Emulates behavior of CPython.
+            raise
         except Exception:
             self.handleError(record)
 
     @classmethod
     def filter_record_attributes(cls, record):
         record_attrs = vars(record)
-        DEFAULT_LOG_RECORD_KEYS = cls.DEFAULT_LOG_RECORD_KEYS
-        if len(record_attrs) > len(DEFAULT_LOG_RECORD_KEYS):
-            return {k: v for k, v in six.iteritems(vars(record)) if k not in DEFAULT_LOG_RECORD_KEYS}
-        else:
-            return None
+        return {k: record_attrs[k] for k in record_attrs if k not in cls.IGNORED_LOG_RECORD_KEYS}
 
 
 class NewRelicLogHandler(logging.Handler):

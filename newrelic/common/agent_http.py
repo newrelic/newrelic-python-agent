@@ -23,7 +23,11 @@ from pprint import pprint
 import newrelic.packages.urllib3 as urllib3
 from newrelic import version
 from newrelic.common import certs
-from newrelic.common.encoding_utils import json_decode, json_encode
+from newrelic.common.encoding_utils import (
+    json_decode,
+    json_encode,
+    obfuscate_license_key,
+)
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import patch_function_wrapper
 from newrelic.core.internal_metrics import internal_count_metric, internal_metric
@@ -39,6 +43,9 @@ except ImportError:
 
     def get_default_verify_paths():
         return _DEFAULT_CERT_PATH
+
+
+HEADER_AUDIT_LOGGING_DENYLIST = frozenset(("x-api-key", "api-key"))
 
 
 # User agent string that must be used in all requests. The data collector
@@ -118,6 +125,14 @@ class BaseClient(object):
 
         if not fp:
             return
+
+        # Obfuscate license key from headers and URL params
+        if headers:
+            headers = {k: obfuscate_license_key(v) if k.lower() in HEADER_AUDIT_LOGGING_DENYLIST else v for k, v in headers.items()}
+
+        if params and "license_key" in params:
+            params = params.copy()
+            params["license_key"] = obfuscate_license_key(params["license_key"])
 
         # Maintain a global AUDIT_LOG_ID attached to all class instances
         # NOTE: this is not thread safe so this class cannot be used

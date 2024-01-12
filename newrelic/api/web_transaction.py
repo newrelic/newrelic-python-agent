@@ -162,6 +162,13 @@ def _encode_nonce(nonce):
         return ' nonce="%s"' % ensure_str(nonce)  # Extra space intentional
 
 
+def _encode_nonce(nonce):
+    if not nonce:
+        return ""
+    else:
+        return ' nonce="%s"' % ensure_str(nonce)  # Extra space intentional
+
+
 class WebTransaction(Transaction):
     unicode_error_reported = False
     QUEUE_TIME_HEADERS = ('x-request-start', 'x-queue-start')

@@ -1452,7 +1452,7 @@ def test_langchain_chain_error_in_openai(
         ),
     ),
 )
-def test_langchain_chain_error_in_lanchain(
+def test_langchain_chain_error_in_langchain(
     set_trace_info,
     chat_openai_client,
     json_schema,

@@ -684,7 +684,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
         del transaction._nr_run_manager_info
     run_id = run_manager_info.get("run_id", "")
     metadata = run_manager_info.get("metadata", {})
-    tags = run_manager_info.get("tags", "")
+    tags = run_manager_info.get("tags", "") or ""
 
     input_message_list = [_input]
     output_message_list = []
@@ -713,7 +713,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
             "request_id": run_id,
             "duration": ft.duration,
             "response.number_of_messages": len(input_message_list) + len(output_message_list),
-            "tags": tags or "",
+            "tags": tags,
         }
     )
 

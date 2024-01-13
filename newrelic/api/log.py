@@ -18,6 +18,7 @@ import re
 import warnings
 from logging import Formatter, LogRecord
 
+from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common import agent_http
@@ -108,24 +109,50 @@ class NewRelicLogForwardingHandler(logging.Handler):
     
     def emit(self, record):
         try:
-            if self.formatter:
-                # Formatter supplied, allow log records to be formatted into a string
-                message = self.format(record)
+            transaction = current_transaction()
+
+            # Retrieve settings
+            if transaction:
+                settings = transaction.settings
             else:
-                # No formatter supplied, attempt to handle dict log records
-                message = record.msg
-                if not isinstance(message, dict):
-                    # Allow python to convert the message to a string and template it with args.
-                    message = record.getMessage()
+                application = application_instance(activate=False)
 
-            # Grab and filter context attributes from log record
-            context_attrs = self.filter_record_attributes(record)
+                if application and application.enabled:
+                    settings = application.settings
+                else:
+                    # If no settings have been found, fallback to global settings
+                    settings = global_settings()
 
-            # Record log message
-            level_name = str(getattr(record, "levelname", "UNKNOWN"))
-            record_log_event(
-                message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs
-            )
+            # Return early if application logging not enabled
+            if settings and settings.application_logging and settings.application_logging.enabled:
+                level_name = str(getattr(record, "levelname", "UNKNOWN"))
+                if settings.application_logging.metrics and settings.application_logging.metrics.enabled:
+                    if transaction:
+                        transaction.record_custom_metric("Logging/lines", {"count": 1})
+                        transaction.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                    else:
+                        application = application_instance(activate=False)
+                        if application and application.enabled:
+                            application.record_custom_metric("Logging/lines", {"count": 1})
+                            application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+
+                if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
+                    if self.formatter:
+                        # Formatter supplied, allow log records to be formatted into a string
+                        message = self.format(record)
+                    else:
+                        # No formatter supplied, attempt to handle dict log records
+                        message = record.msg
+                        if not isinstance(message, dict):
+                            # Allow python to convert the message to a string and template it with args.
+                            message = record.getMessage()
+
+                    # Grab and filter context attributes from log record
+                    context_attrs = self.filter_record_attributes(record)
+
+                    record_log_event(
+                        message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs
+                    )
         except RecursionError:  # Emulates behavior of CPython.
             raise
         except Exception:

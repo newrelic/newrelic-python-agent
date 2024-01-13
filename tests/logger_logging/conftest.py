@@ -84,3 +84,17 @@ def logger(request):
     
     # Reinstrument logging in case it was uninstrumented
     logging.Logger.callHandlers = instrumented
+
+
+@pytest.fixture(scope="function")
+def instrumented_logger():
+    _logger = logging.getLogger("my_app")
+    caplog = CaplogHandler()
+    _logger.addHandler(caplog)
+    _logger.caplog = caplog
+    _logger.setLevel(logging.WARNING)
+
+    yield _logger
+    del caplog.records[:]
+    
+    _logger.removeHandler(caplog)

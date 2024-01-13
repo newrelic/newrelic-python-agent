@@ -16,7 +16,6 @@ import json
 import logging
 import re
 import warnings
-from logging import Formatter, LogRecord
 
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
@@ -67,8 +66,8 @@ def safe_json_encode(obj, ignore_string_types=False, **kwargs):
         return "<unprintable %s object>" % type(obj).__name__
 
 
-class NewRelicContextFormatter(Formatter):
-    DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(LogRecord("", 0, "", 0, "", (), None))) | {"message"})
+class NewRelicContextFormatter(logging.Formatter):
+    DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(logging.LogRecord("", 0, "", 0, "", (), None))) | {"message"})
 
     def __init__(self, *args, **kwargs):
         super(NewRelicContextFormatter, self).__init__()

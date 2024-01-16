@@ -557,9 +557,11 @@ def _get_run_manager_info(transaction, run_args, instance):
     run_id = getattr(transaction, "_nr_chain_run_id", "")
     if hasattr(transaction, "_nr_chain_run_id"):
         del transaction._nr_chain_run_id
-    # In the function invoke, metadata and tags are in the config parameter.
+    # In the function invoke, metadata and tags are keys in the config parameter.
     # In the function run, metadata and tags are passed in as individual parameters.
     # and combined with the metadata and tags on the class.
+    metadata = (run_args.get("config") or {}).get("metadata") or {}
+    tags = (run_args.get("config") or {}).get("tags") or {}
     metadata = (run_args.get("config") or {}).get("metadata") or run_args.get("metadata") or {}
     metadata.update(getattr(instance, "metadata", None) or {})
     tags = (run_args.get("config") or {}).get("tags") or run_args.get("tags") or []

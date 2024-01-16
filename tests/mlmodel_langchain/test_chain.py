@@ -244,7 +244,7 @@ chat_completion_recorded_events_invoke = [
             "response.number_of_messages": 2,
             "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "['bar', 'foo']",
         },
     ),
     (
@@ -303,7 +303,7 @@ chat_completion_recorded_events_invoke_missing_message_ids = [
             "response.number_of_messages": 2,
             "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "['bar', 'foo']",
         },
     ),
     (
@@ -362,7 +362,7 @@ chat_completion_recorded_events_invoke_missing_some_message_ids = [
             "response.number_of_messages": 2,
             "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "['bar', 'foo']",
         },
     ),
     (
@@ -460,7 +460,6 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         },
     ),
 ]
-chat_completion_recorded_events = chat_completion_recorded_events_invoke
 chat_completion_recorded_events_run_missing_message_ids = [
     (
         {"type": "LlmChatCompletionSummary"},
@@ -479,7 +478,7 @@ chat_completion_recorded_events_run_missing_message_ids = [
             "response.number_of_messages": 2,
             "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "['bar', 'foo']",
         },
     ),
     (
@@ -538,7 +537,7 @@ chat_completion_recorded_events_run_missing_some_message_ids = [
             "response.number_of_messages": 2,
             "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "['bar', 'foo']",
         },
     ),
     (
@@ -595,7 +594,8 @@ chat_completion_recorded_events_run_no_metadata_or_tags = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 2,
-            "tags": "",
+            "metadata.user": 1,
+            "tags": "['foo']",
         },
     ),
     (
@@ -654,7 +654,7 @@ chat_completion_recorded_events_run = [
             "response.number_of_messages": 2,
             "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "['bar', 'foo']",
         },
     ),
     (
@@ -1120,7 +1120,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             ({"input": "Sally is 13"},),
             {
                 "config": {
-                    "tags": ["foo"],
+                    "tags": ["bar", "foo"],
                     "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 }
             },
@@ -1134,7 +1134,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["foo"],
+                    "tags": ["bar", "foo"],
                     "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 },
             },
@@ -1148,7 +1148,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["foo"],
+                    "tags": ["bar", "foo"],
                     "metadata": {"user": 1, "id": "123"},
                 },
             },
@@ -1162,7 +1162,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["foo"],
+                    "tags": ["bar", "foo"],
                     "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0"]},
                 },
             },
@@ -1182,8 +1182,8 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             "run",
             ("Sally is 13",),
             {
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "tags": ["bar"],
+                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
             },
             chat_completion_recorded_events_run,
             id="chain.run-with-args-and-kwargs",
@@ -1194,8 +1194,8 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             (),
             {
                 "input": "Sally is 13",
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "tags": ["bar"],
+                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
             },
             chat_completion_recorded_events_run,
             id="chain.run-with-only-kwargs",
@@ -1206,8 +1206,8 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             (),
             {
                 "input": "Sally is 13",
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123"},
+                "tags": ["bar"],
+                "metadata": {"id": "123"},
             },
             chat_completion_recorded_events_run_missing_message_ids,
             id="chain.run-missing-message-ids",
@@ -1218,8 +1218,8 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             (),
             {
                 "input": "Sally is 13",
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0"]},
+                "tags": ["bar"],
+                "metadata": {"id": "123", "message_ids": ["message-id-0"]},
             },
             chat_completion_recorded_events_run_missing_some_message_ids,
             id="chain.run-missing-some-message-ids",
@@ -1261,6 +1261,9 @@ def test_langchain_chain(
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         runnable = create_function(json_schema, chat_openai_client, prompt)
+        if call_function == "run":
+            runnable.metadata = {"user": 1}
+            runnable.tags = ["foo"]
 
         output = getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
 
@@ -1562,7 +1565,7 @@ def test_async_langchain_chain_list_response(
             ({"input": "Sally is 13"},),
             {
                 "config": {
-                    "tags": ["foo"],
+                    "tags": ["bar", "foo"],
                     "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 }
             },
@@ -1576,7 +1579,7 @@ def test_async_langchain_chain_list_response(
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["foo"],
+                    "tags": ["bar", "foo"],
                     "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 },
             },
@@ -1590,7 +1593,7 @@ def test_async_langchain_chain_list_response(
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["foo"],
+                    "tags": ["bar", "foo"],
                     "metadata": {"user": 1, "id": "123"},
                 },
             },
@@ -1604,7 +1607,7 @@ def test_async_langchain_chain_list_response(
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["foo"],
+                    "tags": ["bar", "foo"],
                     "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0"]},
                 },
             },
@@ -1624,8 +1627,8 @@ def test_async_langchain_chain_list_response(
             "arun",
             ("Sally is 13",),
             {
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "tags": ["bar"],
+                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
             },
             chat_completion_recorded_events_run,
             id="chain.arun-with-args-and-kwargs",
@@ -1636,8 +1639,8 @@ def test_async_langchain_chain_list_response(
             (),
             {
                 "input": "Sally is 13",
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "tags": ["bar"],
+                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
             },
             chat_completion_recorded_events_run,
             id="chain.arun-with-only-kwargs",
@@ -1648,8 +1651,8 @@ def test_async_langchain_chain_list_response(
             (),
             {
                 "input": "Sally is 13",
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123"},
+                "tags": ["bar"],
+                "metadata": {"id": "123"},
             },
             chat_completion_recorded_events_run_missing_message_ids,
             id="chain.arun-missing-message-ids",
@@ -1660,8 +1663,8 @@ def test_async_langchain_chain_list_response(
             (),
             {
                 "input": "Sally is 13",
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0"]},
+                "tags": ["bar"],
+                "metadata": {"id": "123", "message_ids": ["message-id-0"]},
             },
             chat_completion_recorded_events_run_missing_some_message_ids,
             id="chain.arun-missing-some-message-ids",
@@ -1704,6 +1707,9 @@ def test_async_langchain_chain(
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         runnable = create_function(json_schema, chat_openai_client, prompt)
+        if call_function == "arun":
+            runnable.metadata = {"user": 1}
+            runnable.tags = ["foo"]
 
         loop.run_until_complete(getattr(runnable, call_function)(*call_function_args, **call_function_kwargs))
 

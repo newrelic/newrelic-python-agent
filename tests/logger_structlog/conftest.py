@@ -31,6 +31,7 @@ _default_settings = {
     "application_logging.forwarding.enabled": True,
     "application_logging.metrics.enabled": True,
     "application_logging.local_decorating.enabled": True,
+    "application_logging.forwarding.context_data.enabled": True,
     "event_harvest_config.harvest_limits.log_event_data": 100000,
 }
 

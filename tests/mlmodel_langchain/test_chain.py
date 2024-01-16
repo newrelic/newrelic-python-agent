@@ -1472,7 +1472,7 @@ def test_langchain_chain_error_in_langchain(
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
-        name="test_chain:test_langchain_chain_error_in_lanchain.<locals>._test",
+        name="test_chain:test_langchain_chain_error_in_langchain.<locals>._test",
         custom_metrics=[
             ("Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],

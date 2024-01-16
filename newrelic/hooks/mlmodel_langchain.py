@@ -745,6 +745,7 @@ def instrument_langchain_core_tools(module):
 
 
 def instrument_langchain_vectorstore_similarity_search(module):
+    print(module.__name__)
     vector_class = VECTORSTORE_CLASSES.get(module.__name__)
 
     if vector_class and hasattr(getattr(module, vector_class, ""), "similarity_search"):

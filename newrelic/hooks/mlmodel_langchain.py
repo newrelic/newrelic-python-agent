@@ -267,8 +267,8 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
 
     run_args = bind_args(wrapped, args, kwargs)
     tool_input = run_args.get("tool_input", "")
-    tags = run_args.get("tags", "")
-    metadata = run_args.get("metadata", "")
+    tags = run_args.get("tags")
+    metadata = run_args.get("metadata") or {}
     tool_name = instance.name or ""
     tool_description = instance.description or ""
 
@@ -296,13 +296,21 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                 }
             )
 
-            run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
-            if hasattr(transaction, "_nr_run_manager_info"):
-                del transaction._nr_run_manager_info
+            run_manager_info = getattr(transaction, "_nr_run_manager_tools_info", {})
+            if hasattr(transaction, "_nr_run_manager_tools_info"):
+                del transaction._nr_run_manager_tools_info
             run_id = run_manager_info.get("run_id", "")
+            metadata = (
+                    run_manager_info.get("metadata")
+                    or run_args.get("metadata")
+                    or {}
+            )
+            tags = (
+                    run_manager_info.get("tags") or run_args.get("tags") or ""
+            )
 
             # Make sure the builtin attributes take precedence over metadata attributes.
-            error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()} if metadata else {}
+            error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
             error_tool_event_dict.update(
                 {
                     "id": tool_id,
@@ -317,7 +325,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                     "vendor": "langchain",
                     "ingest_source": "Python",
                     "duration": ft.duration,
-                    "tags": tags or "",
+                    "tags": tags,
                     "error": True,
                 }
             )
@@ -331,12 +339,14 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
 
     response = return_val
 
-    run_manager_info = getattr(transaction, "_nr_run_manager_info", {})
-    if hasattr(transaction, "_nr_run_manager_info"):
-        del transaction._nr_run_manager_info
+    run_manager_info = getattr(transaction, "_nr_run_manager_tools_info", {})
+    if hasattr(transaction, "_nr_run_manager_tools_info"):
+        del transaction._nr_run_manager_tools_info
     run_id = run_manager_info.get("run_id", "")
+    metadata = run_manager_info.get("metadata", {})
+    tags = run_manager_info.get("tags", "")
 
-    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()} if metadata else {}
+    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
     full_tool_event_dict.update(
         {
             "id": tool_id,
@@ -352,7 +362,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
             "vendor": "langchain",
             "ingest_source": "Python",
             "duration": ft.duration,
-            "tags": tags or "",
+            "tags": tags,
         }
     )
 
@@ -367,8 +377,8 @@ def wrap_on_tool_start(wrapped, instance, args, kwargs):
     if not transaction:
         return run_manager
     # Only capture the first run_id.
-    if not hasattr(transaction, "_nr_run_manager_info"):
-        transaction._nr_run_manager_info = {
+    if not hasattr(transaction, "_nr_run_manager_tools_info"):
+        transaction._nr_run_manager_tools_info = {
             "run_id": run_manager.run_id,
         }
 

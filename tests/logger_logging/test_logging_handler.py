@@ -63,6 +63,14 @@ def set_trace_ids():
         trace.guid = "abcdefgh"
 
 
+class DictMessageFormatter(logging.Formatter):
+    def format(self, record):
+        message = record.msg
+        if isinstance(message, dict):
+            message["formatter_attr"] = 1
+        return message
+
+
 def test_handler_with_formatter(formatting_logger):
     @validate_log_events(
         [
@@ -145,3 +153,31 @@ def test_handler_dict_message_with_formatter(formatting_logger):
 
     test()
 
+
+def test_handler_formatter_returns_dict_message(formatting_logger):
+    @validate_log_events(
+        [
+            {
+                "message": "C",
+                "level": "WARNING",
+                "timestamp": None,
+                "hostname": None,
+                "entity.name": "Python Agent Test (logger_logging)",
+                "entity.guid": None,
+                "span.id": "abcdefgh",
+                "trace.id": "abcdefgh12345678",
+                "message.attr": 3,  # Message attr
+                "message.formatter_attr": 1,  # Formatter message attr
+            }
+        ],
+    )
+    @validate_log_event_count(1)
+    @validate_function_called("newrelic.api.log", "NewRelicLogForwardingHandler.emit")
+    @background_task()
+    def test():
+        set_trace_ids()
+        formatting_logger.handlers[1].setFormatter(DictMessageFormatter())  # Set formatter to return a dict
+        formatting_logger.warning({"message": "C", "attr": 3})
+        assert len(formatting_logger.caplog.records) == 1
+
+    test()

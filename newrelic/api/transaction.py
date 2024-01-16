@@ -891,6 +891,15 @@ class Transaction(object):
     def distributed_trace_intrinsics(self):
         i_attrs = {}
 
+        # Include this here since guid is now an intrinsic attribute,
+        # whether or not DT is enabled.  In most cases, trace_intrinsics
+        # is called and, within that, this function is called.  However,
+        # there are cases, such as slow SQL calls in database_node that
+        # call this function directly, so we want to make sure this is
+        # included here as well.  (as of now, the guid is thought to be
+        # a distributed tracing intrinsic that should be included elsewhere)
+        i_attrs["guid"] = self.guid
+
         if not self._settings.distributed_tracing.enabled:
             return i_attrs
 

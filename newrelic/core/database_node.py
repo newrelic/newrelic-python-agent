@@ -203,10 +203,9 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
         if root.type == "WebTransaction":
             request_uri = root.request_uri
 
-        params = {}
+        params = None
         if root.distributed_trace_intrinsics:
             params = root.distributed_trace_intrinsics.copy()
-        params["guid"] = getattr(root, "guid", None)
 
         # Note that we do not limit the length of the SQL at this
         # point as we will need the whole SQL query when doing an

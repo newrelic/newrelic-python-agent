@@ -27,7 +27,7 @@ from newrelic.api.asgi_application import ASGIWebTransaction, asgi_application
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.transaction import current_transaction
 
-distributed_trace_intrinsics = ["traceId", "priority", "sampled"]
+distributed_trace_intrinsics = ["guid", "traceId", "priority", "sampled"]
 inbound_payload_intrinsics = [
     "parent.type",
     "parent.app",
@@ -62,7 +62,7 @@ parent_info = {
 @asgi_application()
 async def target_asgi_application(scope, receive, send):
     status = "200 OK"
-    _type = "http.response.start"
+    type = "http.response.start"
     output = b"hello world"
     response_headers = [
         (b"content-type", b"text/html; charset=utf-8"),
@@ -85,7 +85,7 @@ async def target_asgi_application(scope, receive, send):
 
     await send(
         {
-            "type": _type,
+            "type": type,
             "status": status,
             "headers": response_headers,
         }
@@ -172,7 +172,7 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
     if has_parent:
         tag = _make_dt_tag(parent_info)
     else:
-        tag = _make_dt_tag(dict((x, "Unknown") for x in parent_info))
+        tag = _make_dt_tag(dict((x, "Unknown") for x in parent_info.keys()))
         del dt_payload["d"]["tr"]
 
     # now run the test

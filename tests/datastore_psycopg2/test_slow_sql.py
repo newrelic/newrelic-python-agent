@@ -42,12 +42,13 @@ _enabled_forgone = set()
 _disabled_required = set()
 _disabled_forgone = set(["host", "port_path_or_id", "database_name"])
 
-_distributed_tracing_always_params = set(["traceId", "priority", "sampled"])
+_distributed_tracing_always_params = set(["guid", "traceId", "priority", "sampled"])
 _distributed_tracing_payload_received_params = set(
     ["parent.type", "parent.app", "parent.account", "parent.transportType", "parent.transportDuration"]
 )
 
 _transaction_guid = "1234567890"
+_distributed_tracing_exact_params = {"guid": _transaction_guid}
 
 
 # Query
@@ -96,7 +97,7 @@ def test_slow_sql_json(instance_enabled, distributed_tracing_enabled, payload_re
 
     if distributed_tracing_enabled:
         required_params.update(_distributed_tracing_always_params)
-        exact_params = {}
+        exact_params = _distributed_tracing_exact_params
         settings["distributed_tracing.enabled"] = True
         if payload_received:
             required_params.update(_distributed_tracing_payload_received_params)

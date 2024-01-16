@@ -65,7 +65,7 @@ def target_wsgi_application(environ, start_response):
     return [output]
 
 
-_required_intrinsics = ["trip_id", "totalTime", "guid"]
+_required_intrinsics = ["trip_id", "totalTime"]
 _forgone_intrinsics = []
 
 
@@ -504,7 +504,7 @@ def test_sanitize_object():
 
 
 class TypeErrorString(object):
-    def __str__(self):  # pylint: disable=invalid-str-returned
+    def __str__(self):
         return 42
 
 

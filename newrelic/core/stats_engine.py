@@ -882,15 +882,9 @@ class StatsEngine(object):
             if attr.destinations & DST_ERROR_COLLECTOR:
                 attributes["userAttributes"][attr.name] = attr.value
 
-        # Instead of creating a brand new transaction, we
-        # simply attach the entity_guid to the intrinsics
-        # as well as the TracedError
-        no_transaction_guid = getattr(settings, "entity_guid", None)
-
         # pass expected attribute in to ensure we capture overrides
         attributes["intrinsics"] = {
             "error.expected": is_expected,
-            "guid": no_transaction_guid,
         }
 
         # set source code attributes
@@ -905,7 +899,7 @@ class StatsEngine(object):
             message=message,
             type=fullname,
             parameters=attributes,
-            guid=no_transaction_guid,
+            guid=None,
         )
 
         # Save this error as a trace and an event.

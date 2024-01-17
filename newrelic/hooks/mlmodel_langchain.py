@@ -380,6 +380,8 @@ def wrap_on_tool_start(wrapped, instance, args, kwargs):
     if not hasattr(transaction, "_nr_run_manager_tools_info"):
         transaction._nr_run_manager_tools_info = {
             "run_id": run_manager.run_id,
+            "metadata": run_manager.metadata,
+            "tags": run_manager.tags,
         }
 
     return run_manager

@@ -363,10 +363,37 @@ def make_cross_agent_headers(payload, encoding_key, cat_id):
     return {"X-NewRelic-Transaction": value, "X-NewRelic-ID": id_value}
 
 
+def make_synthetics_headers(
+    encoding_key,
+    account_id,
+    resource_id,
+    job_id,
+    monitor_id,
+    type_,
+    initiator,
+    attributes,
+    synthetics_version=1,
+    synthetics_info_version=1,
+):
+    headers = {}
+    headers.update(
+        make_synthetics_header(account_id, resource_id, job_id, monitor_id, encoding_key, synthetics_version)
+    )
+    if type_:
+        headers.update(make_synthetics_info_header(type_, initiator, attributes, encoding_key, synthetics_info_version))
+    return headers
+
+
 def make_synthetics_header(account_id, resource_id, job_id, monitor_id, encoding_key, version=1):
     value = [version, account_id, resource_id, job_id, monitor_id]
     value = obfuscate(json_encode(value), encoding_key)
     return {"X-NewRelic-Synthetics": value}
+
+
+def make_synthetics_info_header(type_, initiator, attributes, encoding_key, version=1):
+    value = {"version": version, "type": type_, "initiator": initiator, "attributes": attributes}
+    value = obfuscate(json_encode(value), encoding_key)
+    return {"X-NewRelic-Synthetics-Info": value}
 
 
 def capture_transaction_metrics(metrics_list, full_metrics=None):
@@ -744,6 +771,17 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
     return _validate_error_event_sample_data
 
 
+SYNTHETICS_INTRINSIC_ATTR_NAMES = set(
+    [
+        "nr.syntheticsResourceId",
+        "nr.syntheticsJobId",
+        "nr.syntheticsMonitorId",
+        "nr.syntheticsType",
+        "nr.syntheticsInitiator",
+    ]
+)
+
+
 def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics, required_user):
     now = time.time()
     assert isinstance(intrinsics["timestamp"], int)
@@ -793,6 +831,16 @@ def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics,
         assert intrinsics["nr.syntheticsResourceId"] == res_id
         assert intrinsics["nr.syntheticsJobId"] == job_id
         assert intrinsics["nr.syntheticsMonitorId"] == monitor_id
+
+    if "nr.syntheticsType" in required_intrinsics:
+        type_ = required_intrinsics["nr.syntheticsType"]
+        initiator = required_intrinsics["nr.syntheticsInitiator"]
+        assert intrinsics["nr.syntheticsType"] == type_
+        assert intrinsics["nr.syntheticsInitiator"] == initiator
+
+        for k, v in required_intrinsics.items():
+            if k.startswith("nr.synthetics") and k not in SYNTHETICS_INTRINSIC_ATTR_NAMES:
+                assert v == intrinsics[k]
 
     if "port" in required_intrinsics:
         assert intrinsics["port"] == required_intrinsics["port"]

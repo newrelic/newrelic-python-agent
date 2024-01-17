@@ -63,7 +63,6 @@ try:
         sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
         return str(sig)
 
-
 except ImportError:
     from inspect import formatargspec
 
@@ -72,11 +71,10 @@ except ImportError:
         return formatargspec(args[1:], varargs, keywords, defaults)
 
 
-from newrelic.api.object_wrapper import ObjectWrapper
-from newrelic.api.transaction import Transaction
-from newrelic.core.agent import agent_instance
-from newrelic.core.config import flatten_settings, global_settings
-from newrelic.core.trace_cache import trace_cache
+from newrelic.common.object_wrapper import ObjectProxy  # noqa: E402
+from newrelic.core.agent import agent_instance  # noqa: E402
+from newrelic.core.config import flatten_settings, global_settings  # noqa: E402
+from newrelic.core.trace_cache import trace_cache  # noqa: E402
 
 _trace_cache = trace_cache()
 
@@ -161,7 +159,7 @@ def setquit():
     __builtin__.exit = Quitter("exit")
 
 
-class OutputWrapper(ObjectWrapper):
+class OutputWrapper(ObjectProxy):
     def flush(self):
         try:
             shell = _consoles.active
@@ -187,8 +185,8 @@ class OutputWrapper(ObjectWrapper):
 def intercept_console():
     setquit()
 
-    sys.stdout = OutputWrapper(sys.stdout, None, None)
-    sys.stderr = OutputWrapper(sys.stderr, None, None)
+    sys.stdout = OutputWrapper(sys.stdout)
+    sys.stderr = OutputWrapper(sys.stderr)
 
 
 class EmbeddedConsole(code.InteractiveConsole):
@@ -205,7 +203,6 @@ class EmbeddedConsole(code.InteractiveConsole):
 
 
 class ConsoleShell(cmd.Cmd):
-
     use_rawinput = 0
 
     def __init__(self):
@@ -534,7 +531,6 @@ class ConnectionManager(object):
 
 
 class ClientShell(cmd.Cmd):
-
     prompt = "(newrelic) "
 
     def __init__(self, config_file, stdin=None, stdout=None, log=None):

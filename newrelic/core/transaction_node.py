@@ -22,6 +22,7 @@ from collections import namedtuple
 
 import newrelic.core.error_collector
 import newrelic.core.trace_node
+from newrelic.common.encoding_utils import camel_case
 from newrelic.common.streaming_utils import SpanProtoAttrs
 from newrelic.core.attribute import create_agent_attributes, create_user_attributes
 from newrelic.core.attribute_filter import (
@@ -76,6 +77,10 @@ _TransactionNode = namedtuple(
         "synthetics_job_id",
         "synthetics_monitor_id",
         "synthetics_header",
+        "synthetics_type",
+        "synthetics_initiator",
+        "synthetics_attributes",
+        "synthetics_info_header",
         "is_part_of_cat",
         "trip_id",
         "path_hash",
@@ -585,6 +590,15 @@ class TransactionNode(_TransactionNode):
             intrinsics["nr.syntheticsResourceId"] = self.synthetics_resource_id
             intrinsics["nr.syntheticsJobId"] = self.synthetics_job_id
             intrinsics["nr.syntheticsMonitorId"] = self.synthetics_monitor_id
+
+        if self.synthetics_type:
+            intrinsics["nr.syntheticsType"] = self.synthetics_type
+            intrinsics["nr.syntheticsInitiator"] = self.synthetics_initiator
+            if self.synthetics_attributes:
+                # Add all synthetics attributes
+                for k, v in self.synthetics_attributes.items():
+                    if k:
+                        intrinsics["nr.synthetics%s" % camel_case(k, upper=True)] = v
 
         def _add_call_time(source, target):
             # include time for keys previously added to stats table via

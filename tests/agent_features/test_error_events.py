@@ -16,20 +16,16 @@ import sys
 import time
 
 import webtest
-
 from testing_support.fixtures import (
     cat_enabled,
     make_cross_agent_headers,
-    make_synthetics_header,
+    make_synthetics_headers,
     override_application_settings,
     reset_core_stats_engine,
     validate_error_event_sample_data,
     validate_transaction_error_event_count,
 )
 from testing_support.sample_applications import fully_featured_app
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
 from testing_support.validators.validate_non_transaction_error_event import (
     validate_non_transaction_error_event,
 )
@@ -43,6 +39,9 @@ from newrelic.common.object_names import callable_name
 SYNTHETICS_RESOURCE_ID = "09845779-16ef-4fa7-b7f2-44da8e62931c"
 SYNTHETICS_JOB_ID = "8c7dd3ba-4933-4cbb-b1ed-b62f511782f4"
 SYNTHETICS_MONITOR_ID = "dc452ae9-1a93-4ab5-8a33-600521e9cd00"
+SYNTHETICS_TYPE = "scheduled"
+SYNTHETICS_INITIATOR = "graphql"
+SYNTHETICS_ATTRIBUTES = {"exampleAttribute": "1"}
 
 ERR_MESSAGE = "Transaction had bad value"
 ERROR = ValueError(ERR_MESSAGE)
@@ -135,6 +134,9 @@ _intrinsic_attributes = {
     "nr.syntheticsResourceId": SYNTHETICS_RESOURCE_ID,
     "nr.syntheticsJobId": SYNTHETICS_JOB_ID,
     "nr.syntheticsMonitorId": SYNTHETICS_MONITOR_ID,
+    "nr.syntheticsType": SYNTHETICS_TYPE,
+    "nr.syntheticsInitiator": SYNTHETICS_INITIATOR,
+    "nr.syntheticsExampleAttribute": "1",
 }
 
 
@@ -144,12 +146,15 @@ def test_transaction_error_with_synthetics():
         "err_message": ERR_MESSAGE,
     }
     settings = application_settings()
-    headers = make_synthetics_header(
+    headers = make_synthetics_headers(
+        settings.encoding_key,
         settings.trusted_account_ids[0],
         SYNTHETICS_RESOURCE_ID,
         SYNTHETICS_JOB_ID,
         SYNTHETICS_MONITOR_ID,
-        settings.encoding_key,
+        SYNTHETICS_TYPE,
+        SYNTHETICS_INITIATOR,
+        SYNTHETICS_ATTRIBUTES,
     )
     response = fully_featured_application.get("/", headers=headers, extra_environ=test_environ)
 

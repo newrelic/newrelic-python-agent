@@ -24,6 +24,8 @@ except ImportError:
 
 import logging
 
+from testing_support.fixtures import override_generic_settings
+
 from newrelic.api.exceptions import ConfigurationError
 from newrelic.common.object_names import callable_name
 from newrelic.config import (
@@ -595,6 +597,7 @@ def test_translate_deprecated_ignored_params_with_new_setting():
         ("otlp_port", 0),
     ),
 )
+@override_generic_settings(global_settings(), {"host": "collector.newrelic.com"})
 def test_default_values(name, expected_value):
     settings = global_settings()
     value = fetch_config_setting(settings, name)

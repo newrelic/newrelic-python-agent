@@ -22,6 +22,7 @@ from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
 
 SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
+SCIPY_VERSION = tuple(map(int, get_package_version("scipy").split(".")))
 
 
 @pytest.mark.parametrize(
@@ -323,6 +324,10 @@ def run_linear_model():
             y_test = x_test
 
         clf = getattr(sklearn.linear_model, linear_model_name)()
+
+        if linear_model_name == "QuantileRegressor" and SCIPY_VERSION > (1, 11, 0):
+            # Silence warnings and errors related to solver change
+            clf.solver = "highs"
 
         model = clf.fit(x_train, y_train)
         model.predict(x_test)

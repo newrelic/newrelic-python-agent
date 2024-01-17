@@ -53,17 +53,11 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
     wrap_out_function,
 )
+from newrelic.common.package_version_utils import get_package_version
 
 
 def instrument_pyramid_router(module):
-    pyramid_version = None
-
-    try:
-        import pkg_resources
-
-        pyramid_version = pkg_resources.get_distribution("pyramid").version
-    except Exception:
-        pass
+    pyramid_version = get_package_version("pyramid")
 
     wrap_wsgi_application(module, "Router.__call__", framework=("Pyramid", pyramid_version))
 

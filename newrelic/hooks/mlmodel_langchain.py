@@ -52,6 +52,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.hippo": "Hippo",
     "langchain_community.vectorstores.hologres": "Hologres",
     "langchain_community.vectorstores.lancedb": "LanceDB",
+    "langchain_community.vectorstores.lantern": "Lantern",
     "langchain_community.vectorstores.llm_rails": "LLMRails",
     "langchain_community.vectorstores.marqo": "Marqo",
     "langchain_community.vectorstores.matching_engine": "MatchingEngine",
@@ -388,6 +389,7 @@ def wrap_on_tool_start(wrapped, instance, args, kwargs):
 
 
 def instrument_langchain_vectorstore_similarity_search(module):
+    print(module.__name__)
     vector_class = VECTORSTORE_CLASSES.get(module.__name__)
 
     if vector_class and hasattr(getattr(module, vector_class, ""), "similarity_search"):

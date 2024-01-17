@@ -16,7 +16,6 @@ import sys
 import warnings
 
 import pytest
-import six
 from testing_support.validators.validate_function_called import validate_function_called
 
 from newrelic.common.package_version_utils import (
@@ -26,6 +25,7 @@ from newrelic.common.package_version_utils import (
     get_package_version,
     get_package_version_tuple,
 )
+from newrelic.packages import six
 
 # Notes:
 # importlib.metadata was a provisional addition to the std library in PY38 and PY39

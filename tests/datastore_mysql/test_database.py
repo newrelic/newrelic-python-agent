@@ -23,13 +23,15 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = mysql_settings()
 DB_SETTINGS = DB_SETTINGS[0]
 DB_NAMESPACE = DB_SETTINGS["namespace"]
 DB_PROCEDURE = "hello_" + DB_NAMESPACE
 
-mysql_version = tuple(int(x) for x in mysql.connector.__version__.split(".")[:3])
+mysql_version = get_package_version_tuple("mysql.connector")
+
 if mysql_version >= (8, 0, 30):
     _connector_metric_name = "Function/mysql.connector.pooling:connect"
 else:
@@ -77,10 +79,16 @@ _test_execute_via_cursor_rollup_metrics = [
     rollup_metrics=_test_execute_via_cursor_rollup_metrics,
     background_task=True,
 )
+@validate_transaction_metrics(
+    "test_database:test_execute_via_cursor",
+    scoped_metrics=_test_execute_via_cursor_scoped_metrics,
+    rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+    background_task=True,
+)
 @validate_database_trace_inputs(sql_parameters_type=dict)
 @background_task()
 def test_execute_via_cursor(table_name):
-
+    assert mysql_version is not None
     connection = mysql.connector.connect(
         db=DB_SETTINGS["name"],
         user=DB_SETTINGS["user"],
@@ -97,7 +105,7 @@ def test_execute_via_cursor(table_name):
 
     cursor.executemany(
         """insert into `%s` """ % table_name + """values (%(a)s, %(b)s, %(c)s)""",
-        [dict(a=1, b=1.0, c="1.0"), dict(a=2, b=2.2, c="2.2"), dict(a=3, b=3.3, c="3.3")],
+        [{"a": 1, "b": 1.0, "c": "1.0"}, {"a": 2, "b": 2.2, "c": "2.2"}, {"a": 3, "b": 3.3, "c": "3.3"}],
     )
 
     cursor.execute("""select * from %s""" % table_name)
@@ -107,7 +115,7 @@ def test_execute_via_cursor(table_name):
 
     cursor.execute(
         """update `%s` """ % table_name + """set a=%(a)s, b=%(b)s, c=%(c)s where a=%(old_a)s""",
-        dict(a=4, b=4.0, c="4.0", old_a=1),
+        {"a": 4, "b": 4.0, "c": "4.0", "old_a": 1},
     )
 
     cursor.execute("""delete from `%s` where a=2""" % table_name)
@@ -173,7 +181,7 @@ _test_connect_using_alias_rollup_metrics = [
 @validate_database_trace_inputs(sql_parameters_type=dict)
 @background_task()
 def test_connect_using_alias(table_name):
-
+    assert mysql_version is not None
     connection = mysql.connector.connect(
         db=DB_SETTINGS["name"],
         user=DB_SETTINGS["user"],
@@ -190,7 +198,7 @@ def test_connect_using_alias(table_name):
 
     cursor.executemany(
         """insert into `%s` """ % table_name + """values (%(a)s, %(b)s, %(c)s)""",
-        [dict(a=1, b=1.0, c="1.0"), dict(a=2, b=2.2, c="2.2"), dict(a=3, b=3.3, c="3.3")],
+        [{"a": 1, "b": 1.0, "c": "1.0"}, {"a": 2, "b": 2.2, "c": "2.2"}, {"a": 3, "b": 3.3, "c": "3.3"}],
     )
 
     cursor.execute("""select * from %s""" % table_name)
@@ -200,7 +208,7 @@ def test_connect_using_alias(table_name):
 
     cursor.execute(
         """update `%s` """ % table_name + """set a=%(a)s, b=%(b)s, c=%(c)s where a=%(old_a)s""",
-        dict(a=4, b=4.0, c="4.0", old_a=1),
+        {"a": 4, "b": 4.0, "c": "4.0", "old_a": 1},
     )
 
     cursor.execute("""delete from `%s` where a=2""" % table_name)

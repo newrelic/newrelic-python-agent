@@ -939,15 +939,16 @@ class Application(object):
                 self._global_events_account += 1
                 self._stats_engine.record_ml_event(event)
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         if not self._active_session:
             return
 
-        if message:
-            with self._stats_custom_lock:
-                event = self._stats_engine.record_log_event(message, level, timestamp, priority=priority)
-                if event:
-                    self._global_events_account += 1
+        with self._stats_custom_lock:
+            event = self._stats_engine.record_log_event(
+                message, level, timestamp, attributes=attributes, priority=priority
+            )
+            if event:
+                self._global_events_account += 1
 
     def record_transaction(self, data):
         """Record a single transaction against this application."""

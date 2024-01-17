@@ -15,7 +15,7 @@
 from newrelic.api.application import application_instance as __application
 from newrelic.api.application import application_settings as __application_settings
 from newrelic.api.application import register_application as __register_application
-from newrelic.api.log import NewRelicContextFormatter  # noqa
+from newrelic.api.log import NewRelicContextFormatter as __NewRelicContextFormatter
 from newrelic.api.time_trace import (
     add_custom_span_attribute as __add_custom_span_attribute,
 )
@@ -178,6 +178,7 @@ from newrelic.api.web_transaction import (
 from newrelic.api.web_transaction import web_transaction as __web_transaction
 from newrelic.api.web_transaction import wrap_web_transaction as __wrap_web_transaction
 from newrelic.common.object_names import callable_name as __callable_name
+from newrelic.common.object_wrapper import CallableObjectProxy as __CallableObjectProxy
 from newrelic.common.object_wrapper import FunctionWrapper as __FunctionWrapper
 from newrelic.common.object_wrapper import InFunctionWrapper as __InFunctionWrapper
 from newrelic.common.object_wrapper import ObjectProxy as __ObjectProxy
@@ -280,6 +281,7 @@ BackgroundTaskWrapper = __wrap_api_call(__BackgroundTaskWrapper, "BackgroundTask
 wrap_background_task = __wrap_api_call(__wrap_background_task, "wrap_background_task")
 LambdaHandlerWrapper = __wrap_api_call(__LambdaHandlerWrapper, "LambdaHandlerWrapper")
 lambda_handler = __wrap_api_call(__lambda_handler, "lambda_handler")
+NewRelicContextFormatter = __wrap_api_call(__NewRelicContextFormatter, "NewRelicContextFormatter")
 transaction_name = __wrap_api_call(__transaction_name, "transaction_name")
 TransactionNameWrapper = __wrap_api_call(__TransactionNameWrapper, "TransactionNameWrapper")
 wrap_transaction_name = __wrap_api_call(__wrap_transaction_name, "wrap_transaction_name")
@@ -320,6 +322,7 @@ MessageTransactionWrapper = __wrap_api_call(__MessageTransactionWrapper, "Messag
 wrap_message_transaction = __wrap_api_call(__wrap_message_transaction, "wrap_message_transaction")
 callable_name = __wrap_api_call(__callable_name, "callable_name")
 ObjectProxy = __wrap_api_call(__ObjectProxy, "ObjectProxy")
+CallableObjectProxy = __wrap_api_call(__CallableObjectProxy, "CallableObjectProxy")
 wrap_object = __wrap_api_call(__wrap_object, "wrap_object")
 wrap_object_attribute = __wrap_api_call(__wrap_object_attribute, "wrap_object_attribute")
 resolve_path = __wrap_api_call(__resolve_path, "resolve_path")

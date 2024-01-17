@@ -151,6 +151,8 @@ def test_inbound_dt_payload_acceptance(serverless_application, trusted_account_k
     _test_inbound_dt_payload_acceptance()
 
 
+# The lambda_hander has been deprecated for 3+ years
+@pytest.mark.skip(reason="The lambda_handler has been deprecated")
 @pytest.mark.parametrize("arn_set", (True, False))
 def test_payload_metadata_arn(serverless_application, arn_set):
     # If the session object gathers the arn from the settings object before the

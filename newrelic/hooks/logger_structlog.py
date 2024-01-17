@@ -100,11 +100,13 @@ def wrap__process_event(wrapped, instance, args, kwargs):
         processors = instance._processors
         if not processors:
             instance._processors = [new_relic_event_consumer]
-        elif processors[-1] != new_relic_event_consumer:
-            # Remove our processor if it exists and add it to the end
-            if new_relic_event_consumer in processors:
-                processors.remove(new_relic_event_consumer)
-            processors.append(new_relic_event_consumer)
+        else:
+            instance._processors = processors = list(processors)
+            if processors[-1] != new_relic_event_consumer:
+                # Remove our processor if it exists and add it to the end
+                if new_relic_event_consumer in processors:
+                    processors.remove(new_relic_event_consumer)
+                processors.append(new_relic_event_consumer)
 
     return wrapped(*args, **kwargs)
 

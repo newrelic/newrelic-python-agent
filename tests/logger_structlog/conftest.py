@@ -109,28 +109,6 @@ def filtering_logger(structlog_caplog):
     return _filtering_logger
 
 
-@pytest.fixture(scope="function")
-def callsite_parameter_logger(structlog_caplog):
-    import structlog
-
-    structlog.configure(
-        processors=[
-            structlog.processors.CallsiteParameterAdder(
-                [
-                    structlog.processors.CallsiteParameter.FILENAME,
-                    structlog.processors.CallsiteParameter.FUNC_NAME,
-                    structlog.processors.CallsiteParameter.LINENO,
-                ],
-            ),
-            structlog.processors.KeyValueRenderer(),
-        ],
-        logger_factory=lambda *args, **kwargs: structlog_caplog,
-    )
-
-    _callsite_logger = structlog.get_logger()
-    return _callsite_logger
-
-
 @pytest.fixture
 def exercise_logging_multiple_lines(set_trace_ids, logger, structlog_caplog):
     def _exercise():

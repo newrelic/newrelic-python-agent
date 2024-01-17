@@ -140,7 +140,7 @@ def test_langchain_multi_arg_tool(set_trace_info):
 @validate_custom_events(multi_arg_tool_recorded_events)
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_multi_arg_tool",
+    name="test_tool:test_langchain_tags_and_metadata_on_instance",
     scoped_metrics=[("Llm/tool/Langchain/run", 1)],
     rollup_metrics=[("Llm/tool/Langchain/run", 1)],
     custom_metrics=[

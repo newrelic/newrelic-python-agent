@@ -42,7 +42,10 @@ _enabled_forgone = set()
 _disabled_required = set()
 _disabled_forgone = set(["host", "port_path_or_id", "database_name"])
 
-_distributed_tracing_always_params = set(["guid", "traceId", "priority", "sampled"])
+# Guid is always required, regardless of DT status.
+# It should be excluded from the forgone params set.
+_distributed_tracing_required_params = set(["guid", "traceId", "priority", "sampled"])
+_distributed_tracing_forgone_params = set(["traceId", "priority", "sampled"])
 _distributed_tracing_payload_received_params = set(
     ["parent.type", "parent.app", "parent.account", "parent.transportType", "parent.transportDuration"]
 )
@@ -96,7 +99,7 @@ def test_slow_sql_json(instance_enabled, distributed_tracing_enabled, payload_re
         forgone_params = set(_disabled_forgone)
 
     if distributed_tracing_enabled:
-        required_params.update(_distributed_tracing_always_params)
+        required_params.update(_distributed_tracing_required_params)
         exact_params = _distributed_tracing_exact_params
         settings["distributed_tracing.enabled"] = True
         if payload_received:
@@ -104,7 +107,7 @@ def test_slow_sql_json(instance_enabled, distributed_tracing_enabled, payload_re
         else:
             forgone_params.update(_distributed_tracing_payload_received_params)
     else:
-        forgone_params.update(_distributed_tracing_always_params)
+        forgone_params.update(_distributed_tracing_forgone_params)
         forgone_params.update(_distributed_tracing_payload_received_params)
         settings["distributed_tracing.enabled"] = False
 

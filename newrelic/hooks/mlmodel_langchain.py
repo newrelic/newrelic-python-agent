@@ -344,7 +344,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
         del transaction._nr_run_manager_tools_info
     run_id = run_manager_info.get("run_id", "")
     metadata = run_manager_info.get("metadata", {})
-    tags = run_manager_info.get("tags", "")
+    tags = run_manager_info.get("tags", "") or ""
 
     full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
     full_tool_event_dict.update(

@@ -105,37 +105,32 @@ class NewRelicContextFormatter(logging.Formatter):
 
 class NewRelicLogForwardingHandler(logging.Handler):
     IGNORED_LOG_RECORD_KEYS = set(["message", "msg"])
-    
+
     def emit(self, record):
         try:
+            nr = None
             transaction = current_transaction()
-
             # Retrieve settings
             if transaction:
                 settings = transaction.settings
+                nr = transaction
             else:
                 application = application_instance(activate=False)
-
                 if application and application.enabled:
+                    nr = application
                     settings = application.settings
                 else:
                     # If no settings have been found, fallback to global settings
                     settings = global_settings()
 
-            # Return early if application logging not enabled
-            if settings and settings.application_logging and settings.application_logging.enabled:
+            # If logging is enabled and the application or transaction is not None.
+            if settings and settings.application_logging.enabled and nr:
                 level_name = str(getattr(record, "levelname", "UNKNOWN"))
-                if settings.application_logging.metrics and settings.application_logging.metrics.enabled:
-                    if transaction:
-                        transaction.record_custom_metric("Logging/lines", {"count": 1})
-                        transaction.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
-                    else:
-                        application = application_instance(activate=False)
-                        if application and application.enabled:
-                            application.record_custom_metric("Logging/lines", {"count": 1})
-                            application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                if settings.application_logging.metrics.enabled:
+                    nr.record_custom_metric("Logging/lines", {"count": 1})
+                    nr.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
 
-                if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
+                if settings.application_logging.forwarding.enabled:
                     if self.formatter:
                         # Formatter supplied, allow log records to be formatted into a string
                         message = self.format(record)
@@ -150,7 +145,10 @@ class NewRelicLogForwardingHandler(logging.Handler):
                     context_attrs = self.filter_record_attributes(record)
 
                     record_log_event(
-                        message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs
+                        message=message,
+                        level=level_name,
+                        timestamp=int(record.created * 1000),
+                        attributes=context_attrs,
                     )
         except RecursionError:  # Emulates behavior of CPython.
             raise

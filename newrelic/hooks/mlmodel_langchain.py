@@ -563,7 +563,7 @@ def _get_run_manager_info(transaction, run_args, instance):
     metadata = {}
     metadata.update((run_args.get("config") or {}).get("metadata") or run_args.get("metadata") or {})
     metadata.update(getattr(instance, "metadata", None) or {})
-    tags = {}
+    tags = []
     tags.extend((run_args.get("config") or {}).get("tags") or run_args.get("tags") or [])
     tags.extend(getattr(instance, "tags", None) or [])
     return run_id, metadata, tags or ""

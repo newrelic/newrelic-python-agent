@@ -655,7 +655,7 @@ def create_chat_completion_message_event(
     if actual_message_ids_len < expected_message_ids_len:
         message_ids.extend([str(uuid.uuid4()) for i in range(expected_message_ids_len - actual_message_ids_len)])
         _logger.warning(
-            "The provided metadata['message_ids'] list was found to be %s when it needs to be at least %s. Internally generated UUIDs will be used in place of missing message ids."
+            "The provided metadata['message_ids'] list was found to be %s when it needs to be at least %s. Internally generated UUIDs will be used in place of missing message IDs."
             % (actual_message_ids_len, expected_message_ids_len)
         )
 

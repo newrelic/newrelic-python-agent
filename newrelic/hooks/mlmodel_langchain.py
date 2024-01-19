@@ -267,9 +267,16 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
 
     run_args = bind_args(wrapped, args, kwargs)
+
+    metadata = {}
+    metadata.update(run_args.get("metadata") or {})
+    metadata.update(getattr(instance, "metadata", None) or {})
+
+    tags = []
+    tags.extend(run_args.get("tags") or [])
+    tags.extend(getattr(instance, "tags", None) or [])
+
     tool_input = run_args.get("tool_input", "")
-    tags = run_args.get("tags")
-    metadata = run_args.get("metadata") or {}
     tool_name = instance.name or ""
     tool_description = instance.description or ""
 
@@ -301,14 +308,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
             if hasattr(transaction, "_nr_run_manager_tools_info"):
                 del transaction._nr_run_manager_tools_info
             run_id = run_manager_info.get("run_id", "")
-            metadata = (
-                    run_manager_info.get("metadata")
-                    or run_args.get("metadata")
-                    or {}
-            )
-            tags = (
-                    run_manager_info.get("tags") or run_args.get("tags") or ""
-            )
+
 
             # Make sure the builtin attributes take precedence over metadata attributes.
             error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
@@ -326,7 +326,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                     "vendor": "langchain",
                     "ingest_source": "Python",
                     "duration": ft.duration,
-                    "tags": tags,
+                    "tags": tags or "",
                     "error": True,
                 }
             )
@@ -344,8 +344,6 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     if hasattr(transaction, "_nr_run_manager_tools_info"):
         del transaction._nr_run_manager_tools_info
     run_id = run_manager_info.get("run_id", "")
-    metadata = run_manager_info.get("metadata", {})
-    tags = run_manager_info.get("tags", "") or ""
 
     full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
     full_tool_event_dict.update(
@@ -363,7 +361,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
             "vendor": "langchain",
             "ingest_source": "Python",
             "duration": ft.duration,
-            "tags": tags,
+            "tags": tags or "",
         }
     )
 
@@ -381,8 +379,6 @@ def wrap_on_tool_start(wrapped, instance, args, kwargs):
     if not hasattr(transaction, "_nr_run_manager_tools_info"):
         transaction._nr_run_manager_tools_info = {
             "run_id": run_manager.run_id,
-            "metadata": run_manager.metadata,
-            "tags": run_manager.tags,
         }
 
     return run_manager

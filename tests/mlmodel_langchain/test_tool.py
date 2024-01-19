@@ -136,28 +136,6 @@ def test_langchain_multi_arg_tool(set_trace_info):
     )
 
 
-@reset_core_stats_engine()
-@validate_custom_events(multi_arg_tool_recorded_events)
-@validate_custom_event_count(count=1)
-@validate_transaction_metrics(
-    name="test_tool:test_langchain_tags_and_metadata_on_instance",
-    scoped_metrics=[("Llm/tool/Langchain/run", 1)],
-    rollup_metrics=[("Llm/tool/Langchain/run", 1)],
-    custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_langchain_tags_and_metadata_on_instance(set_trace_info):
-    set_trace_info()
-    multi_arg_tool.metadata = {"test_run": True, "test": "langchain"}
-    multi_arg_tool.tags = ["test_tags", "python"]
-    multi_arg_tool.run(
-        {"first_num": 53, "second_num": 28},
-    )
-
-
 multi_arg_error_recorded_events = [
     (
         {"type": "LlmTool"},
@@ -212,6 +190,28 @@ def test_langchain_error_in_run(set_trace_info):
         multi_arg_tool.run(
             {"first_num": 53}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
         )
+
+
+@reset_core_stats_engine()
+@validate_custom_events(multi_arg_tool_recorded_events)
+@validate_custom_event_count(count=1)
+@validate_transaction_metrics(
+    name="test_tool:test_langchain_tags_and_metadata_on_instance",
+    scoped_metrics=[("Llm/tool/Langchain/run", 1)],
+    rollup_metrics=[("Llm/tool/Langchain/run", 1)],
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_langchain_tags_and_metadata_on_instance(set_trace_info):
+    set_trace_info()
+    multi_arg_tool.metadata = {"test_run": True, "test": "langchain"}
+    multi_arg_tool.tags = ["test_tags", "python"]
+    multi_arg_tool.run(
+        {"first_num": 53, "second_num": 28},
+    )
 
 
 @reset_core_stats_engine()

@@ -129,7 +129,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
     transaction_id = transaction.guid
-    id = str(uuid.uuid4())
+    _id = str(uuid.uuid4())
     request_query, request_k = bind_similarity_search(*args, **kwargs)
     duration = ft.duration
     response_number_of_documents = len(response)
@@ -147,7 +147,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction_id,
-        "id": id,
+        "id": _id,
         "vendor": "langchain",
         "ingest_source": "Python",
         "appName": transaction._application._name,
@@ -206,7 +206,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
     transaction_id = transaction.guid
-    id = str(uuid.uuid4())
+    _id = str(uuid.uuid4())
     request_query, request_k = bind_similarity_search(*args, **kwargs)
     duration = ft.duration
     response_number_of_documents = len(response)
@@ -224,7 +224,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction_id,
-        "id": id,
+        "id": _id,
         "vendor": "langchain",
         "ingest_source": "Python",
         "appName": transaction._application._name,
@@ -655,8 +655,11 @@ def create_chat_completion_message_event(
     if actual_message_ids_len < expected_message_ids_len:
         message_ids.extend([str(uuid.uuid4()) for i in range(expected_message_ids_len - actual_message_ids_len)])
         _logger.warning(
-            "The provided metadata['message_ids'] list was found to be %s when it needs to be at least %s. Internally generated UUIDs will be used in place of missing message IDs."
-            % (actual_message_ids_len, expected_message_ids_len)
+            "The provided metadata['message_ids'] list was found to be %s when it "
+            "needs to be at least %s. Internally generated UUIDs will be used in place "
+            "of missing message IDs.",
+            actual_message_ids_len,
+            expected_message_ids_len,
         )
 
     # Loop through all input messages received from the create request and emit a custom event for each one

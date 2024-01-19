@@ -439,7 +439,7 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
     if not response:
         return response
 
-    _create_successfull_chain_run_events(
+    _create_successful_chain_run_events(
         transaction, instance, run_args, response, span_id, trace_id, ft.duration, message_ids
     )
     return response
@@ -502,7 +502,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     if not response:
         return response
 
-    _create_successfull_chain_run_events(
+    _create_successful_chain_run_events(
         transaction, instance, run_args, response, span_id, trace_id, ft.duration, message_ids
     )
     return response
@@ -585,7 +585,7 @@ def _get_conversation_id(transaction):
     return custom_attrs_dict.get("llm.conversation_id", "")
 
 
-def _create_successfull_chain_run_events(
+def _create_successful_chain_run_events(
     transaction, instance, run_args, response, span_id, trace_id, duration, message_ids
 ):
     _input = _get_chain_run_input(run_args)

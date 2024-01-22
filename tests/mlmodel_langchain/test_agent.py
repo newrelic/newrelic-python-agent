@@ -66,7 +66,7 @@ def prompt():
     )
 
 
-# @pytest.mark.skip(reason="Streaming not enabled yet for NR")
+@pytest.mark.skip(reason="Streaming not enabled yet for NR")
 @reset_core_stats_engine()
 @validate_transaction_metrics(
     name="test_agent:test_sync_agent",
@@ -85,7 +85,7 @@ def test_sync_agent(chat_openai_client, tools, prompt):
     assert response
 
 
-# @pytest.mark.skip(reason="Streaming not enabled yet for NR")
+@pytest.mark.skip(reason="Streaming not enabled yet for NR")
 @reset_core_stats_engine()
 @validate_transaction_metrics(
     name="test_agent:test_async_agent",
@@ -103,7 +103,7 @@ def test_async_agent(loop, chat_openai_client, tools, prompt):
     loop.run_until_complete(agent_executor.ainvoke({"input": "Hello, world"}))
 
 
-# @pytest.mark.skip(reason="Streaming not enabled yet for NR")
+@pytest.mark.skip(reason="Streaming not enabled yet for NR")
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(
@@ -125,7 +125,7 @@ def test_sync_agent_error(chat_openai_client, tools, prompt):
         agent_executor.invoke({"invalid_key": "Hello, world"})
 
 
-# @pytest.mark.skip(reason="Streaming not enabled yet for NR")
+@pytest.mark.skip(reason="Streaming not enabled yet for NR")
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(

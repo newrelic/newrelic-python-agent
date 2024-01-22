@@ -14,7 +14,7 @@
 
 import os
 
-from langchain_community.document_loaders import PyPDFLoader
+from langchain.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
     reset_core_stats_engine,

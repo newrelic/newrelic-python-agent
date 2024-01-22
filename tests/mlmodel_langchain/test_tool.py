@@ -36,16 +36,22 @@ from newrelic.common.object_names import callable_name
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 
-@tool
-def single_arg_tool(query: str):
-    """A test tool that returns query string"""
-    return query
+@pytest.fixture
+def single_arg_tool():
+    @tool
+    def _single_arg_tool(query: str):
+        """A test tool that returns query string"""
+        return query
+    return _single_arg_tool
 
 
-@tool
-def multi_arg_tool(first_num: int, second_num: int):
-    """A test tool that adds two integers together"""
-    return first_num + second_num
+@pytest.fixture
+def multi_arg_tool():
+    @tool
+    def _multi_arg_tool(first_num: int, second_num: int):
+        """A test tool that adds two integers together"""
+        return first_num + second_num
+    return _multi_arg_tool
 
 
 single_arg_tool_recorded_events = [
@@ -56,8 +62,8 @@ single_arg_tool_recorded_events = [
             "appName": "Python Agent Test (mlmodel_langchain)",
             "run_id": None,
             "output": "Python Agent",
-            "name": "single_arg_tool",
-            "description": "single_arg_tool(query: str) - A test tool that returns query string",
+            "name": "_single_arg_tool",
+            "description": "_single_arg_tool(query: str) - A test tool that returns query string",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -84,7 +90,7 @@ single_arg_tool_recorded_events = [
     background_task=True,
 )
 @background_task()
-def test_langchain_single_arg_tool(set_trace_info):
+def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
     set_trace_info()
     single_arg_tool.run({"query": "Python Agent"})
 
@@ -97,8 +103,8 @@ multi_arg_tool_recorded_events = [
             "appName": "Python Agent Test (mlmodel_langchain)",
             "run_id": None,
             "output": "81",
-            "name": "multi_arg_tool",
-            "description": "multi_arg_tool(first_num: int, second_num: int) - A test tool that adds two integers together",
+            "name": "_multi_arg_tool",
+            "description": "_multi_arg_tool(first_num: int, second_num: int) - A test tool that adds two integers together",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -106,7 +112,7 @@ multi_arg_tool_recorded_events = [
             "vendor": "langchain",
             "ingest_source": "Python",
             "duration": None,
-            "tags": "['test_tags', 'python']",
+            "tags": "['python', 'test_tags']",
             "metadata.test": "langchain",
             "metadata.test_run": True,
         },
@@ -127,12 +133,14 @@ multi_arg_tool_recorded_events = [
     background_task=True,
 )
 @background_task()
-def test_langchain_multi_arg_tool(set_trace_info):
+def test_langchain_multi_arg_tool(set_trace_info, multi_arg_tool):
     set_trace_info()
+    multi_arg_tool.metadata = {"test_run": True}
+    multi_arg_tool.tags = ["test_tags"]
     multi_arg_tool.run(
         {"first_num": 53, "second_num": 28},
-        tags=["test_tags", "python"],
-        metadata={"test_run": True, "test": "langchain"},
+        tags=["python"],
+        metadata={"test": "langchain"},
     )
 
 
@@ -143,8 +151,8 @@ multi_arg_error_recorded_events = [
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_langchain)",
             "run_id": "", # No run ID created on error
-            "name": "multi_arg_tool",
-            "description": "multi_arg_tool(first_num: int, second_num: int) - A test tool that adds two integers together",
+            "name": "_multi_arg_tool",
+            "description": "_multi_arg_tool(first_num: int, second_num: int) - A test tool that adds two integers together",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -183,7 +191,7 @@ multi_arg_error_recorded_events = [
     background_task=True,
 )
 @background_task()
-def test_langchain_error_in_run(set_trace_info):
+def test_langchain_error_in_run(set_trace_info, multi_arg_tool):
     with pytest.raises(pydantic.v1.error_wrappers.ValidationError):
         set_trace_info()
         # Only one argument is provided while the tool expects two to create an error
@@ -193,30 +201,8 @@ def test_langchain_error_in_run(set_trace_info):
 
 
 @reset_core_stats_engine()
-@validate_custom_events(multi_arg_tool_recorded_events)
-@validate_custom_event_count(count=1)
-@validate_transaction_metrics(
-    name="test_tool:test_langchain_tags_and_metadata_on_instance",
-    scoped_metrics=[("Llm/tool/Langchain/run", 1)],
-    rollup_metrics=[("Llm/tool/Langchain/run", 1)],
-    custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_langchain_tags_and_metadata_on_instance(set_trace_info):
-    set_trace_info()
-    multi_arg_tool.metadata = {"test_run": True, "test": "langchain"}
-    multi_arg_tool.tags = ["test_tags", "python"]
-    multi_arg_tool.run(
-        {"first_num": 53, "second_num": 28},
-    )
-
-
-@reset_core_stats_engine()
 @validate_custom_event_count(count=0)
-def test_langchain_tool_outside_txn():
+def test_langchain_tool_outside_txn(single_arg_tool):
     single_arg_tool.run(
         {"query": "Python Agent"}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
     )
@@ -235,7 +221,7 @@ def test_langchain_tool_outside_txn():
     background_task=True,
 )
 @background_task()
-def test_langchain_tool_disabled_custom_insights_events(set_trace_info):
+def test_langchain_tool_disabled_custom_insights_events(set_trace_info, single_arg_tool):
     set_trace_info()
     single_arg_tool.run(
         {"query": "Python Agent"}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}

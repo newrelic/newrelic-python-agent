@@ -304,11 +304,9 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                 }
             )
 
-            run_manager_info = getattr(transaction, "_nr_run_manager_tools_info", {})
+            run_id = getattr(transaction, "_nr_run_manager_tools_info", {}).get("run_id", "")
             if hasattr(transaction, "_nr_run_manager_tools_info"):
                 del transaction._nr_run_manager_tools_info
-            run_id = run_manager_info.get("run_id", "")
-
 
             # Make sure the builtin attributes take precedence over metadata attributes.
             error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
@@ -340,10 +338,9 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
 
     response = return_val
 
-    run_manager_info = getattr(transaction, "_nr_run_manager_tools_info", {})
+    run_id = getattr(transaction, "_nr_run_manager_tools_info", {}).get("run_id", "")
     if hasattr(transaction, "_nr_run_manager_tools_info"):
         del transaction._nr_run_manager_tools_info
-    run_id = run_manager_info.get("run_id", "")
 
     full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
     full_tool_event_dict.update(

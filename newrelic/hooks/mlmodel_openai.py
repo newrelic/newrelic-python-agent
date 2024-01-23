@@ -242,7 +242,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
-            # Gather attributes to add to embedding summary event in error context
+            # Gather attributes to add to chat completion summary event in error context
             error_chat_completion_dict = {
                 "id": completion_id,
                 "appName": app_name,
@@ -699,7 +699,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
             ft.notice_error(
                 attributes=notice_error_attributes,
             )
-            # Gather attributes to add to embedding summary event in error context
+            # Gather attributes to add to chat completion summary event in error context
             error_chat_completion_dict = {
                 "id": completion_id,
                 "appName": app_name,

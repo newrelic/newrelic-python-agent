@@ -699,11 +699,6 @@ def instrument_langchain_chains_base(module):
         wrap_function_wrapper(module, "Chain.ainvoke", wrap_chain_async_run)
 
 
-def instrument_langchain_core_tools(module):
-    if hasattr(getattr(module, "BaseTool"), "run"):
-        wrap_function_wrapper(module, "BaseTool.run", wrap_tool_sync_run)
-
-
 def instrument_langchain_vectorstore_similarity_search(module):
     print(module.__name__)
     vector_class = VECTORSTORE_CLASSES.get(module.__name__)
@@ -712,6 +707,11 @@ def instrument_langchain_vectorstore_similarity_search(module):
         wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
     if vector_class and hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
         wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)
+
+
+def instrument_langchain_core_tools(module):
+    if hasattr(getattr(module, "BaseTool"), "run"):
+        wrap_function_wrapper(module, "BaseTool.run", wrap_tool_sync_run)
 
 
 def instrument_langchain_callbacks_manager(module):

@@ -383,7 +383,7 @@ def wrap_on_tool_start(wrapped, instance, args, kwargs):
     return run_manager
 
 
-def wrap_chain_async_run(wrapped, instance, args, kwargs):
+async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return await wrapped(*args, **kwargs)

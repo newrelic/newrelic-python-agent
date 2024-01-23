@@ -394,36 +394,17 @@ def wrap_chain_async_run(wrapped, instance, args, kwargs):
     span_id = None
     trace_id = None
 
-    # invoke has an argument named "config" that contains metadata and tags whereas
-    # run has arguments named "metadata" and "tags".
-    if "config" in run_args:
-        message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
-    else:
-        message_ids = (run_args.get("metadata") or {}).pop("message_ids", [])
+    # Pop the message_ids off the metadata before wrapped is called.
+    message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
 
-    function_name = wrapped.__name__
-    is_invoke = function_name == "ainvoke"
-
-    with FunctionTrace(name=function_name, group="Llm/chain/Langchain") as ft:
+    with FunctionTrace(name=wrapped.__name__, group="Llm/chain/Langchain") as ft:
         # Get trace information
         available_metadata = get_trace_linking_metadata()
         span_id = available_metadata.get("span.id", "")
         trace_id = available_metadata.get("trace.id", "")
 
         try:
-            if is_invoke:
-                response = await wrapped(**run_args)
-            else:
-                # The run function accepts args and kwargs as part of it's interface
-                # and this is not compatible with the bind_arg output so pass all the
-                # bind arguments in individually and explicitly.
-                response = await wrapped(
-                    *run_args["args"],
-                    callbacks=run_args["callbacks"],
-                    tags=run_args["tags"],
-                    metadata=run_args["metadata"],
-                    **run_args["kwargs"]
-                )
+            response = await wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
         except Exception as exc:
             completion_id = str(uuid.uuid4())
             ft.notice_error(
@@ -457,36 +438,16 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     trace_id = None
 
     # Pop the message_ids off the metadata before wrapped is called.
-    # invoke has an argument named "config" that contains metadata and tags whereas
-    # run has arguments named "metadata" and "tags".
-    if "config" in run_args:
-        message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
-    else:
-        message_ids = (run_args.get("metadata") or {}).pop("message_ids", [])
+    message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
 
-    function_name = wrapped.__name__
-    is_invoke = function_name == "invoke"
-
-    with FunctionTrace(name=function_name, group="Llm/chain/Langchain") as ft:
+    with FunctionTrace(name=wrapped.__name__, group="Llm/chain/Langchain") as ft:
         # Get trace information
         available_metadata = get_trace_linking_metadata()
         span_id = available_metadata.get("span.id", "")
         trace_id = available_metadata.get("trace.id", "")
 
         try:
-            if is_invoke:
-                response = wrapped(**run_args)
-            else:
-                # The run function accepts args and kwargs as part of it's interface
-                # and this is not compatible with the bind_arg output so pass all the
-                # bind arguments in individually and explicitly.
-                response = wrapped(
-                    *run_args["args"],
-                    callbacks=run_args["callbacks"],
-                    tags=run_args["tags"],
-                    metadata=run_args["metadata"],
-                    **run_args["kwargs"]
-                )
+            response = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
         except Exception as exc:
             completion_id = str(uuid.uuid4())
             ft.notice_error(
@@ -557,22 +518,16 @@ def _get_run_manager_info(transaction, run_args, instance):
     run_id = getattr(transaction, "_nr_chain_run_id", "")
     if hasattr(transaction, "_nr_chain_run_id"):
         del transaction._nr_chain_run_id
-    # In the function invoke, metadata and tags are keys in the config parameter.
-    # In the function run, metadata and tags are passed in as individual parameters.
-    # and combined with the metadata and tags on the class.
+    # metadata and tags are keys in the config parameter.
     metadata = {}
-    metadata.update((run_args.get("config") or {}).get("metadata") or run_args.get("metadata") or {})
-    metadata.update(getattr(instance, "metadata", None) or {})
+    metadata.update((run_args.get("config") or {}).get("metadata") or {})
     tags = []
-    tags.extend((run_args.get("config") or {}).get("tags") or run_args.get("tags") or [])
-    tags.extend(getattr(instance, "tags", None) or [])
+    tags.extend((run_args.get("config") or {}).get("tags") or [])
     return run_id, metadata, tags or ""
 
 
 def _get_chain_run_input(run_args):
-    # invoke has an argument named "input" whereas the input when calling run can
-    # end up in args or kwargs.
-    return run_args.get("input", "") or run_args["kwargs"].get("input") or run_args["args"][0]
+    return run_args.get("input", "")
 
 
 def _get_app_name(transaction):
@@ -738,10 +693,10 @@ def instrument_langchain_runables_chains_base(module):
 
 
 def instrument_langchain_chains_base(module):
-    if hasattr(getattr(module, "Chain"), "run"):
-        wrap_function_wrapper(module, "Chain.run", wrap_chain_sync_run)
-    if hasattr(getattr(module, "Chain"), "arun"):
-        wrap_function_wrapper(module, "Chain.arun", wrap_chain_async_run)
+    if hasattr(getattr(module, "Chain"), "invoke"):
+        wrap_function_wrapper(module, "Chain.invoke", wrap_chain_sync_run)
+    if hasattr(getattr(module, "Chain"), "ainvoke"):
+        wrap_function_wrapper(module, "Chain.ainvoke", wrap_chain_async_run)
 
 
 def instrument_langchain_core_tools(module):

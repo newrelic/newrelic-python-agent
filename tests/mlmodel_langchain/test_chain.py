@@ -119,9 +119,8 @@ chat_completion_recorded_events_invoke_langchain_error = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 1,
-            "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "",
             "error": True,
         },
     ),
@@ -144,7 +143,7 @@ chat_completion_recorded_events_invoke_langchain_error = [
         },
     ),
 ]
-chat_completion_recorded_events_invoke_openai_error = [
+chat_completion_recorded_events_runnable_invoke_openai_error = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
@@ -160,9 +159,8 @@ chat_completion_recorded_events_invoke_openai_error = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 1,
-            "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "",
             "error": True,
         },
     ),
@@ -185,7 +183,7 @@ chat_completion_recorded_events_invoke_openai_error = [
         },
     ),
 ]
-chat_completion_recorded_events_invoke_openai_error_missing_message_ids = [
+chat_completion_recorded_events_runnable_invoke_openai_error_missing_message_ids = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
@@ -201,9 +199,8 @@ chat_completion_recorded_events_invoke_openai_error_missing_message_ids = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 1,
-            "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "",
             "error": True,
         },
     ),
@@ -226,7 +223,7 @@ chat_completion_recorded_events_invoke_openai_error_missing_message_ids = [
         },
     ),
 ]
-chat_completion_recorded_events_invoke = [
+chat_completion_recorded_events_runnable_invoke = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
@@ -242,9 +239,8 @@ chat_completion_recorded_events_invoke = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 2,
-            "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['bar', 'foo']",
+            "tags": "['bar']",
         },
     ),
     (
@@ -285,6 +281,122 @@ chat_completion_recorded_events_invoke = [
         },
     ),
 ]
+chat_completion_recorded_events_invoke = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": None,
+            "duration": None,
+            "response.number_of_messages": 2,
+            "metadata.id": "123",
+            "tags": "['bar']",
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": "message-id-0",
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "{'input': 'Sally is 13'}",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": "message-id-1",
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "{'function': {'name': 'Sally', 'age': 13}}",
+            "completion_id": None,
+            "sequence": 1,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "is_response": True,
+            "virtual_llm": True,
+        },
+    ),
+]
+chat_completion_recorded_events_runnable_invoke_missing_message_ids = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": None,
+            "duration": None,
+            "response.number_of_messages": 2,
+            "metadata.id": "123",
+            "tags": "['bar']",
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "{'input': 'Sally is 13'}",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "{'name': 'Sally', 'age': 13}",
+            "completion_id": None,
+            "sequence": 1,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "is_response": True,
+            "virtual_llm": True,
+        },
+    ),
+]
 chat_completion_recorded_events_invoke_missing_message_ids = [
     (
         {"type": "LlmChatCompletionSummary"},
@@ -301,15 +413,72 @@ chat_completion_recorded_events_invoke_missing_message_ids = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 2,
-            "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['bar', 'foo']",
+            "tags": "['bar']",
         },
     ),
     (
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "{'input': 'Sally is 13'}",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "{'function': {'name': 'Sally', 'age': 13}}",
+            "completion_id": None,
+            "sequence": 1,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "is_response": True,
+            "virtual_llm": True,
+        },
+    ),
+]
+chat_completion_recorded_events_runnable_invoke_missing_some_message_ids = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": None,
+            "duration": None,
+            "response.number_of_messages": 2,
+            "metadata.id": "123",
+            "tags": "['bar']",
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": "message-id-0",
             "appName": "Python Agent Test (mlmodel_langchain)",
             "conversation_id": "my-awesome-id",
             "request_id": None,
@@ -360,15 +529,71 @@ chat_completion_recorded_events_invoke_missing_some_message_ids = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 2,
-            "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['bar', 'foo']",
+            "tags": "['bar']",
         },
     ),
     (
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-0",
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "{'input': 'Sally is 13'}",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "{'function': {'name': 'Sally', 'age': 13}}",
+            "completion_id": None,
+            "sequence": 1,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "is_response": True,
+            "virtual_llm": True,
+        },
+    ),
+]
+chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "conversation_id": "my-awesome-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": None,
+            "duration": None,
+            "response.number_of_messages": 2,
+            "tags": "",
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
             "conversation_id": "my-awesome-id",
             "request_id": None,
@@ -450,370 +675,12 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
-            "content": "{'name': 'Sally', 'age': 13}",
+            "content": "{'function': {'name': 'Sally', 'age': 13}}",
             "completion_id": None,
             "sequence": 1,
             "vendor": "langchain",
             "ingest_source": "Python",
             "is_response": True,
-            "virtual_llm": True,
-        },
-    ),
-]
-chat_completion_recorded_events_run_missing_message_ids = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-            "request_id": None,
-            "duration": None,
-            "response.number_of_messages": 2,
-            "metadata.user": 1,
-            "metadata.id": "123",
-            "tags": "['bar', 'foo']",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "Sally is 13",
-            "completion_id": None,
-            "sequence": 0,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "{'name': 'Sally', 'age': 13}",
-            "completion_id": None,
-            "sequence": 1,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "is_response": True,
-            "virtual_llm": True,
-        },
-    ),
-]
-chat_completion_recorded_events_run_missing_some_message_ids = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-            "request_id": None,
-            "duration": None,
-            "response.number_of_messages": 2,
-            "metadata.user": 1,
-            "metadata.id": "123",
-            "tags": "['bar', 'foo']",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "Sally is 13",
-            "completion_id": None,
-            "sequence": 0,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "{'name': 'Sally', 'age': 13}",
-            "completion_id": None,
-            "sequence": 1,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "is_response": True,
-            "virtual_llm": True,
-        },
-    ),
-]
-chat_completion_recorded_events_run_no_metadata_or_tags = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-            "request_id": None,
-            "duration": None,
-            "response.number_of_messages": 2,
-            "metadata.user": 1,
-            "tags": "['foo']",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "Sally is 13",
-            "completion_id": None,
-            "sequence": 0,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "{'name': 'Sally', 'age': 13}",
-            "completion_id": None,
-            "sequence": 1,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "is_response": True,
-            "virtual_llm": True,
-        },
-    ),
-]
-chat_completion_recorded_events_run = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-            "request_id": None,
-            "duration": None,
-            "response.number_of_messages": 2,
-            "metadata.user": 1,
-            "metadata.id": "123",
-            "tags": "['bar', 'foo']",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "Sally is 13",
-            "completion_id": None,
-            "sequence": 0,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "message-id-1",
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "{'name': 'Sally', 'age': 13}",
-            "completion_id": None,
-            "sequence": 1,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "is_response": True,
-            "virtual_llm": True,
-        },
-    ),
-]
-chat_completion_recorded_events_run_langchain_error = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-            "request_id": None,
-            "duration": None,
-            "response.number_of_messages": 1,
-            "metadata.user": 1,
-            "metadata.id": "123",
-            "tags": "['foo']",
-            "error": True,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "{'no-exist': 'Sally is 13'}",
-            "completion_id": None,
-            "sequence": 0,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-        },
-    ),
-]
-chat_completion_recorded_events_run_openai_error = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-            "request_id": None,
-            "duration": None,
-            "response.number_of_messages": 1,
-            "metadata.user": 1,
-            "metadata.id": "123",
-            "tags": "['foo']",
-            "error": True,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "Sally is 13",
-            "completion_id": None,
-            "sequence": 0,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-        },
-    ),
-]
-chat_completion_recorded_events_run_openai_error_missing_message_ids = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-            "request_id": None,
-            "duration": None,
-            "response.number_of_messages": 1,
-            "metadata.user": 1,
-            "metadata.id": "123",
-            "tags": "['foo']",
-            "error": True,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "Sally is 13",
-            "completion_id": None,
-            "sequence": 0,
-            "vendor": "langchain",
-            "ingest_source": "Python",
             "virtual_llm": True,
         },
     ),
@@ -834,9 +701,8 @@ chat_completion_recorded_events_invoke_missing_conversation_id = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 2,
-            "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "",
         },
     ),
     (
@@ -867,7 +733,7 @@ chat_completion_recorded_events_invoke_missing_conversation_id = [
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
-            "content": "{'name': 'Sally', 'age': 13}",
+            "content": "{'function': {'name': 'Sally', 'age': 13}}",
             "completion_id": None,
             "sequence": 1,
             "vendor": "langchain",
@@ -877,7 +743,7 @@ chat_completion_recorded_events_invoke_missing_conversation_id = [
         },
     ),
 ]
-chat_completion_recorded_events_run_missing_conversation_id = [
+chat_completion_recorded_events_runnable_invoke_missing_conversation_id = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
@@ -893,9 +759,8 @@ chat_completion_recorded_events_run_missing_conversation_id = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 2,
-            "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "",
         },
     ),
     (
@@ -908,7 +773,7 @@ chat_completion_recorded_events_run_missing_conversation_id = [
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
-            "content": "Sally is 13",
+            "content": "{'input': 'Sally is 13'}",
             "completion_id": None,
             "sequence": 0,
             "vendor": "langchain",
@@ -953,9 +818,8 @@ chat_completion_recorded_events_list_response = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 2,
-            "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "",
         },
     ),
     (
@@ -1013,9 +877,8 @@ chat_completion_recorded_events_error_in_openai = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 1,
-            "metadata.user": 1,
             "metadata.id": "123",
-            "tags": "['foo']",
+            "tags": "",
         },
     ),
     (
@@ -1107,7 +970,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
     chain.invoke(
         {"text": "colors"},
-        config={"tags": ["foo"], "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]}},
+        config={"metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]}},
     )
 
 
@@ -1120,12 +983,12 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             ({"input": "Sally is 13"},),
             {
                 "config": {
-                    "tags": ["bar", "foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
-                }
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
             },
-            chat_completion_recorded_events_invoke,
-            id="chain.invoke-with-args-and-kwargs",
+            chat_completion_recorded_events_runnable_invoke,
+            id="runnable_chain.invoke-with-args-and-kwargs",
         ),
         pytest.param(
             create_structured_output_runnable,
@@ -1134,12 +997,12 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["bar", "foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 },
             },
-            chat_completion_recorded_events_invoke,
-            id="chain.invoke-with-only-kwargs",
+            chat_completion_recorded_events_runnable_invoke,
+            id="runnable_chain.invoke-with-only-kwargs",
         ),
         pytest.param(
             create_structured_output_runnable,
@@ -1148,12 +1011,12 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["bar", "foo"],
-                    "metadata": {"user": 1, "id": "123"},
+                    "tags": ["bar"],
+                    "metadata": {"id": "123"},
                 },
             },
-            chat_completion_recorded_events_invoke_missing_message_ids,
-            id="chain.invoke-missing-message-ids",
+            chat_completion_recorded_events_runnable_invoke_missing_message_ids,
+            id="runnable_chain.invoke-missing-message-ids",
         ),
         pytest.param(
             create_structured_output_runnable,
@@ -1162,75 +1025,89 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["bar", "foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0"]},
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0"]},
                 },
             },
-            chat_completion_recorded_events_invoke_missing_some_message_ids,
-            id="chain.invoke-missing-some-message-ids",
+            chat_completion_recorded_events_runnable_invoke_missing_some_message_ids,
+            id="runnable_chain.invoke-missing-some-message-ids",
         ),
         pytest.param(
             create_structured_output_runnable,
             "invoke",
             ({"input": "Sally is 13"},),
             {},
+            chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags,
+            id="runnable_chain.invoke-with-only-args",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "invoke",
+            ({"input": "Sally is 13"},),
+            {
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
+            },
+            chat_completion_recorded_events_invoke,
+            id="chain.invoke-with-args-and-kwargs",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "invoke",
+            (),
+            {
+                "input": {"input": "Sally is 13"},
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
+            },
+            chat_completion_recorded_events_invoke,
+            id="chain.invoke-with-only-kwargs",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "invoke",
+            (),
+            {
+                "input": {"input": "Sally is 13"},
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123"},
+                },
+                "return_only_outputs": True,
+            },
+            chat_completion_recorded_events_invoke_missing_message_ids,
+            id="chain.invoke-missing-message-ids",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "invoke",
+            (),
+            {
+                "input": {"input": "Sally is 13"},
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0"]},
+                },
+                "return_only_outputs": True,
+            },
+            chat_completion_recorded_events_invoke_missing_some_message_ids,
+            id="chain.invoke-missing-some-message-ids",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "invoke",
+            ({"input": "Sally is 13"},),
+            {
+                "return_only_outputs": True,
+            },
             chat_completion_recorded_events_invoke_no_metadata_or_tags,
             id="chain.invoke-with-only-args",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "run",
-            ("Sally is 13",),
-            {
-                "tags": ["bar"],
-                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
-            },
-            chat_completion_recorded_events_run,
-            id="chain.run-with-args-and-kwargs",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "run",
-            (),
-            {
-                "input": "Sally is 13",
-                "tags": ["bar"],
-                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
-            },
-            chat_completion_recorded_events_run,
-            id="chain.run-with-only-kwargs",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "run",
-            (),
-            {
-                "input": "Sally is 13",
-                "tags": ["bar"],
-                "metadata": {"id": "123"},
-            },
-            chat_completion_recorded_events_run_missing_message_ids,
-            id="chain.run-missing-message-ids",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "run",
-            (),
-            {
-                "input": "Sally is 13",
-                "tags": ["bar"],
-                "metadata": {"id": "123", "message_ids": ["message-id-0"]},
-            },
-            chat_completion_recorded_events_run_missing_some_message_ids,
-            id="chain.run-missing-some-message-ids",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "run",
-            ("Sally is 13",),
-            {},
-            chat_completion_recorded_events_run_no_metadata_or_tags,
-            id="chain.run-with-only-args",
         ),
     ),
 )
@@ -1261,13 +1138,10 @@ def test_langchain_chain(
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         runnable = create_function(json_schema, chat_openai_client, prompt)
-        if call_function == "run":
-            runnable.metadata = {"user": 1}
-            runnable.tags = ["foo"]
 
         output = getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
 
-        assert output == {"name": "Sally", "age": 13}
+        assert output
 
     _test()
 
@@ -1281,23 +1155,24 @@ def test_langchain_chain(
             ({"input": "Sally is 13"},),
             {
                 "config": {
-                    "tags": ["foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 }
             },
-            chat_completion_recorded_events_invoke_missing_conversation_id,
-            id="chain.invoke",
+            chat_completion_recorded_events_runnable_invoke_missing_conversation_id,
+            id="runnable_chain.invoke",
         ),
         pytest.param(
             create_structured_output_chain,
-            "run",
-            ("Sally is 13",),
+            "invoke",
+            ({"input": "Sally is 13"},),
             {
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "config": {
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
             },
-            chat_completion_recorded_events_run_missing_conversation_id,
-            id="chain.run",
+            chat_completion_recorded_events_invoke_missing_conversation_id,
+            id="chain.invoke",
         ),
     ),
 )
@@ -1330,7 +1205,7 @@ def test_langchain_chain_without_conversation_id(
 
         output = getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
 
-        assert output == {"name": "Sally", "age": 13}
+        assert output
 
     _test()
 
@@ -1344,12 +1219,12 @@ def test_langchain_chain_without_conversation_id(
             ({"input": "Sally is 13"},),
             {
                 "config": {
-                    "tags": ["foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "tags": [],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 }
             },
-            chat_completion_recorded_events_invoke_openai_error,
-            id="chain.invoke-with-args-and-kwargs",
+            chat_completion_recorded_events_runnable_invoke_openai_error,
+            id="runnable_chain.invoke-with-args-and-kwargs",
         ),
         pytest.param(
             create_structured_output_runnable,
@@ -1358,35 +1233,39 @@ def test_langchain_chain_without_conversation_id(
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["foo"],
-                    "metadata": {"user": 1, "id": "123"},
+                    "metadata": {"id": "123"},
                 },
             },
-            chat_completion_recorded_events_invoke_openai_error_missing_message_ids,
-            id="chain.invoke-missing-message-ids",
+            chat_completion_recorded_events_runnable_invoke_openai_error_missing_message_ids,
+            id="runnable_chain.invoke-missing-message-ids",
         ),
         pytest.param(
             create_structured_output_chain,
-            "run",
-            ("Sally is 13",),
+            "invoke",
+            ({"input": "Sally is 13"},),
             {
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "config": {
+                    "tags": [],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
             },
-            chat_completion_recorded_events_run_openai_error,
+            chat_completion_recorded_events_runnable_invoke_openai_error,
             id="chain.run-with-args-and-kwargs",
         ),
         pytest.param(
             create_structured_output_chain,
-            "run",
+            "invoke",
             (),
             {
-                "input": "Sally is 13",
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123"},
+                "input": {"input": "Sally is 13"},
+                "config": {
+                    "metadata": {"id": "123"},
+                },
+                "return_only_outputs": True,
             },
-            chat_completion_recorded_events_run_openai_error_missing_message_ids,
-            id="chain.run-missing-message-ids",
+            chat_completion_recorded_events_runnable_invoke_openai_error_missing_message_ids,
+            id="chain.invoke-missing-message-ids",
         ),
     ),
 )
@@ -1433,25 +1312,28 @@ def test_langchain_chain_error_in_openai(
             ({"no-exist": "Sally is 13"},),
             {
                 "config": {
-                    "tags": ["foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "tags": [],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 }
             },
             chat_completion_recorded_events_invoke_langchain_error,
             KeyError,
-            id="chain.invoke",
+            id="runnable_chain.invoke",
         ),
         pytest.param(
             create_structured_output_chain,
-            "run",
+            "invoke",
             ({"no-exist": "Sally is 13"},),
             {
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "config": {
+                    "tags": [],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
             },
-            chat_completion_recorded_events_run_langchain_error,
+            chat_completion_recorded_events_invoke_langchain_error,
             ValueError,
-            id="chain.run",
+            id="chain.invoke",
         ),
     ),
 )
@@ -1495,10 +1377,7 @@ def test_langchain_chain_error_in_langchain(
 
 @pytest.mark.parametrize(
     "create_function,call_function,input_",
-    (
-        (create_structured_output_runnable, "invoke", {"input": "Sally is 13"}),
-        (create_structured_output_chain, "run", "Sally is 13"),
-    ),
+    ((create_structured_output_runnable, "invoke", {"input": "Sally is 13"}),),
 )
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -1549,8 +1428,7 @@ def test_async_langchain_chain_list_response(
         chain.ainvoke(
             {"text": "colors"},
             config={
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
             },
         )
     )
@@ -1565,12 +1443,12 @@ def test_async_langchain_chain_list_response(
             ({"input": "Sally is 13"},),
             {
                 "config": {
-                    "tags": ["bar", "foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 }
             },
-            chat_completion_recorded_events_invoke,
-            id="chain.ainvoke-with-args-and-kwargs",
+            chat_completion_recorded_events_runnable_invoke,
+            id="runnable_chain.ainvoke-with-args-and-kwargs",
         ),
         pytest.param(
             create_structured_output_runnable,
@@ -1579,12 +1457,12 @@ def test_async_langchain_chain_list_response(
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["bar", "foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 },
             },
-            chat_completion_recorded_events_invoke,
-            id="chain.ainvoke-with-only-kwargs",
+            chat_completion_recorded_events_runnable_invoke,
+            id="runnable_chain.ainvoke-with-only-kwargs",
         ),
         pytest.param(
             create_structured_output_runnable,
@@ -1593,12 +1471,12 @@ def test_async_langchain_chain_list_response(
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["bar", "foo"],
-                    "metadata": {"user": 1, "id": "123"},
+                    "tags": ["bar"],
+                    "metadata": {"id": "123"},
                 },
             },
-            chat_completion_recorded_events_invoke_missing_message_ids,
-            id="chain.ainvoke-missing-message-ids",
+            chat_completion_recorded_events_runnable_invoke_missing_message_ids,
+            id="runnable_chain.ainvoke-missing-message-ids",
         ),
         pytest.param(
             create_structured_output_runnable,
@@ -1607,75 +1485,89 @@ def test_async_langchain_chain_list_response(
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["bar", "foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0"]},
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0"]},
                 },
             },
-            chat_completion_recorded_events_invoke_missing_some_message_ids,
-            id="chain.ainvoke-missing-some-message-ids",
+            chat_completion_recorded_events_runnable_invoke_missing_some_message_ids,
+            id="runnable_chain.ainvoke-missing-some-message-ids",
         ),
         pytest.param(
             create_structured_output_runnable,
             "ainvoke",
             ({"input": "Sally is 13"},),
             {},
+            chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags,
+            id="runnable_chain.ainvoke-with-only-args",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "ainvoke",
+            ({"input": "Sally is 13"},),
+            {
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
+            },
+            chat_completion_recorded_events_invoke,
+            id="chain.ainvoke-with-args-and-kwargs",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "ainvoke",
+            (),
+            {
+                "input": {"input": "Sally is 13"},
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
+            },
+            chat_completion_recorded_events_invoke,
+            id="chain.ainvoke-with-only-kwargs",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "ainvoke",
+            (),
+            {
+                "input": {"input": "Sally is 13"},
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123"},
+                },
+                "return_only_outputs": True,
+            },
+            chat_completion_recorded_events_invoke_missing_message_ids,
+            id="chain.ainvoke-missing-message-ids",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "ainvoke",
+            (),
+            {
+                "input": {"input": "Sally is 13"},
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0"]},
+                },
+                "return_only_outputs": True,
+            },
+            chat_completion_recorded_events_invoke_missing_some_message_ids,
+            id="chain.ainvoke-missing-some-message-ids",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "ainvoke",
+            ({"input": "Sally is 13"},),
+            {
+                "return_only_outputs": True,
+            },
             chat_completion_recorded_events_invoke_no_metadata_or_tags,
             id="chain.ainvoke-with-only-args",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "arun",
-            ("Sally is 13",),
-            {
-                "tags": ["bar"],
-                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
-            },
-            chat_completion_recorded_events_run,
-            id="chain.arun-with-args-and-kwargs",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "arun",
-            (),
-            {
-                "input": "Sally is 13",
-                "tags": ["bar"],
-                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
-            },
-            chat_completion_recorded_events_run,
-            id="chain.arun-with-only-kwargs",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "arun",
-            (),
-            {
-                "input": "Sally is 13",
-                "tags": ["bar"],
-                "metadata": {"id": "123"},
-            },
-            chat_completion_recorded_events_run_missing_message_ids,
-            id="chain.arun-missing-message-ids",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "arun",
-            (),
-            {
-                "input": "Sally is 13",
-                "tags": ["bar"],
-                "metadata": {"id": "123", "message_ids": ["message-id-0"]},
-            },
-            chat_completion_recorded_events_run_missing_some_message_ids,
-            id="chain.arun-missing-some-message-ids",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "arun",
-            ("Sally is 13",),
-            {},
-            chat_completion_recorded_events_run_no_metadata_or_tags,
-            id="chain.arun-with-only-args",
         ),
     ),
 )
@@ -1707,9 +1599,6 @@ def test_async_langchain_chain(
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         runnable = create_function(json_schema, chat_openai_client, prompt)
-        if call_function == "arun":
-            runnable.metadata = {"user": 1}
-            runnable.tags = ["foo"]
 
         loop.run_until_complete(getattr(runnable, call_function)(*call_function_args, **call_function_kwargs))
 
@@ -1725,23 +1614,12 @@ def test_async_langchain_chain(
             ({"input": "Sally is 13"},),
             {
                 "config": {
-                    "tags": ["foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "tags": [],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 }
             },
-            chat_completion_recorded_events_invoke_missing_conversation_id,
-            id="chain.ainvoke",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "arun",
-            ("Sally is 13",),
-            {
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
-            },
-            chat_completion_recorded_events_run_missing_conversation_id,
-            id="chain.arun",
+            chat_completion_recorded_events_runnable_invoke_missing_conversation_id,
+            id="runnable_chain.ainvoke",
         ),
     ),
 )
@@ -1787,12 +1665,12 @@ def test_async_langchain_chain_without_conversation_id(
             ({"input": "Sally is 13"},),
             {
                 "config": {
-                    "tags": ["foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "tags": [],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 }
             },
-            chat_completion_recorded_events_invoke_openai_error,
-            id="chain.ainvoke-with-args-and-kwargs",
+            chat_completion_recorded_events_runnable_invoke_openai_error,
+            id="runnable_chain.ainvoke-with-args-and-kwargs",
         ),
         pytest.param(
             create_structured_output_runnable,
@@ -1801,34 +1679,38 @@ def test_async_langchain_chain_without_conversation_id(
             {
                 "input": {"input": "Sally is 13"},
                 "config": {
-                    "tags": ["foo"],
-                    "metadata": {"user": 1, "id": "123"},
+                    "metadata": {"id": "123"},
                 },
             },
-            chat_completion_recorded_events_invoke_openai_error_missing_message_ids,
-            id="chain.ainvoke-missing-message-ids",
+            chat_completion_recorded_events_runnable_invoke_openai_error_missing_message_ids,
+            id="runnable_chain.ainvoke-missing-message-ids",
         ),
         pytest.param(
             create_structured_output_chain,
-            "arun",
-            ("Sally is 13",),
+            "ainvoke",
+            ({"input": "Sally is 13"},),
             {
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "config": {
+                    "tags": [],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
             },
-            chat_completion_recorded_events_run_openai_error,
+            chat_completion_recorded_events_runnable_invoke_openai_error,
             id="chain.arun-with-args-and-kwargs",
         ),
         pytest.param(
             create_structured_output_chain,
-            "arun",
+            "ainvoke",
             (),
             {
-                "input": "Sally is 13",
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123"},
+                "input": {"input": "Sally is 13"},
+                "config": {
+                    "metadata": {"id": "123"},
+                },
+                "return_only_outputs": True,
             },
-            chat_completion_recorded_events_run_openai_error_missing_message_ids,
+            chat_completion_recorded_events_runnable_invoke_openai_error_missing_message_ids,
             id="chain.arun-missing-message-ids",
         ),
     ),
@@ -1877,25 +1759,26 @@ def test_async_langchain_chain_error_in_openai(
             ({"no-exist": "Sally is 13"},),
             {
                 "config": {
-                    "tags": ["foo"],
-                    "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 }
             },
             chat_completion_recorded_events_invoke_langchain_error,
             KeyError,
-            id="chain.ainvoke",
+            id="runnable_chain.ainvoke",
         ),
         pytest.param(
             create_structured_output_chain,
-            "arun",
+            "ainvoke",
             ({"no-exist": "Sally is 13"},),
             {
-                "tags": ["foo"],
-                "metadata": {"user": 1, "id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "config": {
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
             },
-            chat_completion_recorded_events_run_langchain_error,
+            chat_completion_recorded_events_invoke_langchain_error,
             ValueError,
-            id="chain.arun",
+            id="chain.ainvoke",
         ),
     ),
 )

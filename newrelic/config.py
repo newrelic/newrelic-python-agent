@@ -2473,6 +2473,18 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_core.tools",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_core_tools",
+    )
+
+    _process_module_definition(
+        "langchain_core.callbacks.manager",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_callbacks_manager",
+    )
+
+    _process_module_definition(
         "asyncio.events",
         "newrelic.hooks.coroutines_asyncio",
         "instrument_asyncio_events",

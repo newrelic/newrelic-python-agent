@@ -397,7 +397,12 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     # Pop the message_ids off the metadata before wrapped is called.
     message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
 
-    with FunctionTrace(name=wrapped.__name__, group="Llm/chain/Langchain") as ft:
+    # Check to see if launched from agent or directly from chain.
+    # The trace group will reflect from where it has started.
+    # The AgentExecutor class has an attribute "agent" that does
+    # not exist within the Chain class
+    group_name = "Llm/agent/Langchain" if hasattr(instance, "agent") else "Llm/chain/Langchain"
+    with FunctionTrace(name=wrapped.__name__, group=group_name) as ft:
         # Get trace information
         available_metadata = get_trace_linking_metadata()
         span_id = available_metadata.get("span.id", "")
@@ -440,7 +445,12 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     # Pop the message_ids off the metadata before wrapped is called.
     message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
 
-    with FunctionTrace(name=wrapped.__name__, group="Llm/chain/Langchain") as ft:
+    # Check to see if launched from agent or directly from chain.
+    # The trace group will reflect from where it has started.
+    # The AgentExecutor class has an attribute "agent" that does
+    # not exist within the Chain class
+    group_name = "Llm/agent/Langchain" if hasattr(instance, "agent") else "Llm/chain/Langchain"
+    with FunctionTrace(name=wrapped.__name__, group=group_name) as ft:
         # Get trace information
         available_metadata = get_trace_linking_metadata()
         span_id = available_metadata.get("span.id", "")
@@ -685,7 +695,7 @@ async def wrap_async_on_chain_start(wrapped, instance, args, kwargs):
     return run_manager
 
 
-def instrument_langchain_runables_chains_base(module):
+def instrument_langchain_runnables_chains_base(module):
     if hasattr(getattr(module, "RunnableSequence"), "invoke"):
         wrap_function_wrapper(module, "RunnableSequence.invoke", wrap_chain_sync_run)
     if hasattr(getattr(module, "RunnableSequence"), "ainvoke"):

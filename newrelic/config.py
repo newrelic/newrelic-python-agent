@@ -2081,7 +2081,7 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "langchain_core.runnables.base",
         "newrelic.hooks.mlmodel_langchain",
-        "instrument_langchain_runables_chains_base",
+        "instrument_langchain_runnables_chains_base",
     )
     _process_module_definition(
         "langchain.chains.base",

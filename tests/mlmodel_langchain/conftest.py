@@ -23,8 +23,7 @@ from _mock_external_openai_server import (  # noqa: F401; pylint: disable=W0611
     openai_version,
     simple_get,
 )
-from langchain.chat_models import ChatOpenAI
-from langchain_community.embeddings.openai import OpenAIEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
     event_loop as loop,
 )
@@ -165,8 +164,11 @@ def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
                 rheaders.items(),
             )
         )
-        body = json.loads(response.content.decode("utf-8"))
-        OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to log
+
+        # Append response data to audit log
+        if not kwargs.get("stream", False):
+            body = json.loads(response.content.decode("utf-8"))
+            OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to log
         return response
 
     return _wrap_httpx_client_send

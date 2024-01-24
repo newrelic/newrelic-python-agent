@@ -177,7 +177,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
-    if not transaction or kwargs.get("stream", False):
+    if not transaction:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -211,7 +211,11 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
         try:
             return_val = wrapped(*args, **kwargs)
+            if kwargs.get("stream", False):
+                return return_val
         except Exception as exc:
+            if kwargs.get("stream", False):
+                raise
             if OPENAI_V1:
                 response = getattr(exc, "response", "")
                 response_headers = getattr(response, "headers", "")

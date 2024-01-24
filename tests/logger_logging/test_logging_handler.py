@@ -15,7 +15,7 @@
 import logging
 
 import pytest
-from conftest import logger as conf_logger  # noqa, pylint: disable=W0611
+from conftest import instrumented_logger as conf_logger  # noqa, pylint: disable=W0611
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
@@ -46,8 +46,9 @@ def uninstrument_logging():
 
 
 @pytest.fixture(scope="function")
-def logger(conf_logger, uninstrument_logging):
+def formatting_logger(conf_logger, uninstrument_logging):
     handler = NewRelicLogForwardingHandler()
+    handler.setFormatter(logging.Formatter(r"%(levelname)s - %(message)s"))
     conf_logger.addHandler(handler)
     yield conf_logger
     conf_logger.removeHandler(handler)
@@ -62,18 +63,43 @@ def set_trace_ids():
         trace.guid = "abcdefgh"
 
 
-def exercise_logging(logger):
-    set_trace_ids()
-    logger.warning("C", extra={"key": "value"})
-    assert len(logger.caplog.records) == 1
+class DictMessageFormatter(logging.Formatter):
+    def format(self, record):
+        message = record.msg
+        if isinstance(message, dict):
+            message["formatter_attr"] = 1
+        return message
 
 
-@override_application_settings(
-    {
-        "application_logging.forwarding.context_data.enabled": True,
-    }
-)
-def test_handler_inside_transaction(logger):
+def test_handler_with_formatter(formatting_logger):
+    @validate_log_events(
+        [
+            {
+                "message": "WARNING - C",
+                "level": "WARNING",
+                "timestamp": None,
+                "hostname": None,
+                "entity.name": "Python Agent Test (logger_logging)",
+                "entity.guid": None,
+                "span.id": "abcdefgh",
+                "trace.id": "abcdefgh12345678",
+                "context.key": "value",  # Extra attr
+                "context.module": "test_logging_handler",  # Default attr
+            }
+        ]
+    )
+    @validate_log_event_count(1)
+    @validate_function_called("newrelic.api.log", "NewRelicLogForwardingHandler.emit")
+    @background_task()
+    def test():
+        set_trace_ids()
+        formatting_logger.warning("C", extra={"key": "value"})
+        assert len(formatting_logger.caplog.records) == 1
+
+    test()
+
+
+def test_handler_dict_message_no_formatter(formatting_logger):
     @validate_log_events(
         [
             {
@@ -85,27 +111,51 @@ def test_handler_inside_transaction(logger):
                 "entity.guid": None,
                 "span.id": "abcdefgh",
                 "trace.id": "abcdefgh12345678",
-                "context.key": "value",
+                "message.attr": 3,  # Message attr
             }
-        ]
+        ],
     )
     @validate_log_event_count(1)
     @validate_function_called("newrelic.api.log", "NewRelicLogForwardingHandler.emit")
     @background_task()
     def test():
-        exercise_logging(logger)
+        set_trace_ids()
+        formatting_logger.handlers[1].setFormatter(None)  # Turn formatter off to enable dict message support
+        formatting_logger.warning({"message": "C", "attr": 3})
+        assert len(formatting_logger.caplog.records) == 1
 
     test()
 
 
-@reset_core_stats_engine()
-@override_application_settings(
-    {
-        "application_logging.forwarding.context_data.enabled": True,
-    }
-)
-def test_handler_outside_transaction(logger):
-    @validate_log_events_outside_transaction(
+def test_handler_dict_message_with_formatter(formatting_logger):
+    @validate_log_events(
+        [
+            {
+                "message": "WARNING - {'message': 'C', 'attr': 3}",
+                "level": "WARNING",
+                "timestamp": None,
+                "hostname": None,
+                "entity.name": "Python Agent Test (logger_logging)",
+                "entity.guid": None,
+                "span.id": "abcdefgh",
+                "trace.id": "abcdefgh12345678",
+            }
+        ],
+        forgone_attrs=["message.attr"]  # Explicit formatters take precedence over dict message support
+    )
+    @validate_log_event_count(1)
+    @validate_function_called("newrelic.api.log", "NewRelicLogForwardingHandler.emit")
+    @background_task()
+    def test():
+        set_trace_ids()
+        formatting_logger.warning({"message": "C", "attr": 3})
+        assert len(formatting_logger.caplog.records) == 1
+
+    test()
+
+
+def test_handler_formatter_returns_dict_message(formatting_logger):
+    @validate_log_events(
         [
             {
                 "message": "C",
@@ -114,13 +164,20 @@ def test_handler_outside_transaction(logger):
                 "hostname": None,
                 "entity.name": "Python Agent Test (logger_logging)",
                 "entity.guid": None,
-                "context.key": "value",
+                "span.id": "abcdefgh",
+                "trace.id": "abcdefgh12345678",
+                "message.attr": 3,  # Message attr
+                "message.formatter_attr": 1,  # Formatter message attr
             }
-        ]
+        ],
     )
-    @validate_log_event_count_outside_transaction(1)
+    @validate_log_event_count(1)
     @validate_function_called("newrelic.api.log", "NewRelicLogForwardingHandler.emit")
+    @background_task()
     def test():
-        exercise_logging(logger)
+        set_trace_ids()
+        formatting_logger.handlers[1].setFormatter(DictMessageFormatter())  # Set formatter to return a dict
+        formatting_logger.warning({"message": "C", "attr": 3})
+        assert len(formatting_logger.caplog.records) == 1
 
     test()

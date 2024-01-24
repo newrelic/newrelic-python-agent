@@ -18,19 +18,12 @@ from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain.prompts import ChatPromptTemplate
 from langchain.tools import tool
 from langchain_core.prompts import MessagesPlaceholder
-from testing_support.fixtures import (
-    reset_core_stats_engine,
-    validate_transaction_error_event_count,
-)
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
+from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version
 
 LANGCHAIN_VERSION = get_package_version("langchain")
@@ -101,47 +94,3 @@ def test_async_agent(loop, chat_openai_client, tools, prompt):
     agent = create_openai_functions_agent(chat_openai_client, tools, prompt)
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
     loop.run_until_complete(agent_executor.ainvoke({"input": "Hello, world"}))
-
-
-@pytest.mark.skip(reason="Streaming not enabled yet for NR")
-@reset_core_stats_engine()
-@validate_transaction_error_event_count(1)
-@validate_error_trace_attributes(
-    callable_name(KeyError),
-)
-@validate_transaction_metrics(
-    name="test_agent:test_sync_agent_error",
-    custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_sync_agent_error(chat_openai_client, tools, prompt):
-    agent = create_openai_functions_agent(chat_openai_client, tools, prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-
-    with pytest.raises(KeyError):
-        agent_executor.invoke({"invalid_key": "Hello, world"})
-
-
-@pytest.mark.skip(reason="Streaming not enabled yet for NR")
-@reset_core_stats_engine()
-@validate_transaction_error_event_count(1)
-@validate_error_trace_attributes(
-    callable_name(KeyError),
-)
-@validate_transaction_metrics(
-    name="test_agent:test_async_agent_error",
-    custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_async_agent_error(loop, chat_openai_client, tools, prompt):
-    agent = create_openai_functions_agent(chat_openai_client, tools, prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-
-    with pytest.raises(KeyError):
-        loop.run_until_complete(agent_executor.ainvoke({"invalid_key": "Hello, world"}))

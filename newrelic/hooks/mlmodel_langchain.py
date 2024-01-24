@@ -367,6 +367,114 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     return return_val
 
 
+async def wrap_tool_async_run(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+
+    run_args = bind_args(wrapped, args, kwargs)
+
+    metadata = {}
+    metadata.update(run_args.get("metadata") or {})
+    metadata.update(getattr(instance, "metadata", None) or {})
+
+    tags = []
+    tags.extend(run_args.get("tags") or [])
+    tags.extend(getattr(instance, "tags", None) or [])
+
+    tool_input = run_args.get("tool_input", "")
+    tool_name = instance.name or ""
+    tool_description = instance.description or ""
+
+    span_id = None
+    trace_id = None
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    app_name = settings.app_name
+    tool_id = str(uuid.uuid4())
+
+    function_name = wrapped.__name__
+
+    with FunctionTrace(name=function_name, group="Llm/tool/Langchain") as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
+        try:
+            return_val = await wrapped(**run_args)
+        except Exception as exc:
+            ft.notice_error(
+                attributes={
+                    "tool_id": tool_id,
+                }
+            )
+
+            run_id = getattr(transaction, "_nr_run_manager_tools_info", {}).get("run_id", "")
+            if hasattr(transaction, "_nr_run_manager_tools_info"):
+                del transaction._nr_run_manager_tools_info
+
+            # Make sure the builtin attributes take precedence over metadata attributes.
+            error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+            error_tool_event_dict.update(
+                {
+                    "id": tool_id,
+                    "run_id": run_id,
+                    "appName": app_name,
+                    "name": tool_name,
+                    "description": tool_description,
+                    "span_id": span_id,
+                    "trace_id": trace_id,
+                    "transaction_id": transaction.guid,
+                    "input": tool_input,
+                    "vendor": "langchain",
+                    "ingest_source": "Python",
+                    "duration": ft.duration,
+                    "tags": tags or "",
+                    "error": True,
+                }
+            )
+
+            transaction.record_custom_event("LlmTool", error_tool_event_dict)
+
+            raise
+
+    if not return_val:
+        return return_val
+
+    response = return_val
+
+    run_id = getattr(transaction, "_nr_run_manager_tools_info", {}).get("run_id", "")
+    if hasattr(transaction, "_nr_run_manager_tools_info"):
+        del transaction._nr_run_manager_tools_info
+
+    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_tool_event_dict.update(
+        {
+            "id": tool_id,
+            "run_id": run_id,
+            "appName": app_name,
+            "output": str(response),
+            "name": tool_name,
+            "description": tool_description,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "input": tool_input,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "duration": ft.duration,
+            "tags": tags or "",
+        }
+    )
+
+    transaction.record_custom_event("LlmTool", full_tool_event_dict)
+
+    return return_val
+
+
 def wrap_on_tool_start(wrapped, instance, args, kwargs):
     run_manager = wrapped(*args, **kwargs)
     transaction = current_transaction()
@@ -394,6 +502,8 @@ def instrument_langchain_vectorstore_similarity_search(module):
 def instrument_langchain_core_tools(module):
     if hasattr(getattr(module, "BaseTool"), "run"):
         wrap_function_wrapper(module, "BaseTool.run", wrap_tool_sync_run)
+    if hasattr(getattr(module, "BaseTool"), "arun"):
+        wrap_function_wrapper(module, "BaseTool.arun", wrap_tool_async_run)
 
 
 def instrument_langchain_callbacks_manager(module):

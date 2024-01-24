@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import asyncio
-import copy
 import uuid
 
 import langchain
@@ -1889,9 +1888,9 @@ def test_multiple_async_langchain_chain(
     expected_events,
     loop,
 ):
-    call1 = copy.deepcopy(expected_events)
+    call1 = expected_events.copy()
     call1[0][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
-    call2 = copy.deepcopy(expected_events)
+    call2 = expected_events.copy()
     call2[0][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
 
     @reset_core_stats_engine()

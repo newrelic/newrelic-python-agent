@@ -16,13 +16,3 @@ good-names = "exc,val,tb"
 
 [tool.bandit]
 skips = ["B110", "B101", "B404"]
-
-[project]
-dependencies = [
-	"opentelemetry_proto==1.0.0",
-	"urllib3==1.26.15",
-	"wrapt==1.16.0",
-	"asgiref==3.6.0", # We only vendor asgiref.compatibility.py
-	"six==1.16.0",
-]
-

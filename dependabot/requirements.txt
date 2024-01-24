@@ -1,0 +1,8 @@
+# Note dependencies are bundled with the rest of the code in newrelic/packages.
+# This file is here for dependabot to be able to keep track of and recommend updates to
+# our dependencies in newrelic/packages.
+opentelemetry_proto==1.0.0
+urllib3==1.26.15
+wrapt==1.16.0
+asgiref==3.6.0  # We only vendor asgiref.compatibility.py
+six==1.16.0

@@ -2072,10 +2072,27 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_base_client",
     )
+
     _process_module_definition(
         "asyncio.base_events",
         "newrelic.hooks.coroutines_asyncio",
         "instrument_asyncio_base_events",
+    )
+
+    _process_module_definition(
+        "langchain_core.runnables.base",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_runables_chains_base",
+    )
+    _process_module_definition(
+        "langchain.chains.base",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_chains_base",
+    )
+    _process_module_definition(
+        "langchain_core.callbacks.manager",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_callbacks_manager",
     )
     _process_module_definition(
         "langchain_community.vectorstores.docarray.hnsw",

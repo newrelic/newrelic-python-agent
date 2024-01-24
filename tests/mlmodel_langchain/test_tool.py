@@ -42,6 +42,7 @@ def single_arg_tool():
     def _single_arg_tool(query: str):
         """A test tool that returns query string"""
         return query
+
     return _single_arg_tool
 
 
@@ -51,6 +52,7 @@ def multi_arg_tool():
     def _multi_arg_tool(first_num: int, second_num: int):
         """A test tool that adds two integers together"""
         return first_num + second_num
+
     return _multi_arg_tool
 
 
@@ -150,7 +152,7 @@ multi_arg_error_recorded_events = [
         {
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "run_id": "", # No run ID created on error
+            "run_id": None,
             "name": "_multi_arg_tool",
             "description": "_multi_arg_tool(first_num: int, second_num: int) - A test tool that adds two integers together",
             "transaction_id": "transaction-id",

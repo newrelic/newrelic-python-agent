@@ -449,7 +449,7 @@ jobs:
           --add-host=host.docker.internal:host-gateway
 
       cluster-setup:
-        image: hmstepanek/redis-cluster:1.0.0    
+        image: hmstepanek/redis-cluster:1.0.0
         options: >-
           --add-host=host.docker.internal:host-gateway
 

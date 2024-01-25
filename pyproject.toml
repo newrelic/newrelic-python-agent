@@ -16,4 +16,3 @@ good-names = "exc,val,tb"
 
 [tool.bandit]
 skips = ["B110", "B101", "B404"]
-

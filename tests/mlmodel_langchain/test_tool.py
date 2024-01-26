@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
+import uuid
+from mock import patch
+
+
 import langchain
 import pydantic
 import pytest
@@ -337,3 +342,52 @@ def test_langchain_tool_disabled_custom_insights_events_async(set_trace_info, si
             {"query": "Python Agent"}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
         )
     )
+
+
+def test_langchain_multiple_async_calls(set_trace_info, single_arg_tool, multi_arg_tool, loop):
+    call1 = single_arg_tool_recorded_events.copy()
+    call1[0][1]["run_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
+    call2 = multi_arg_tool_recorded_events.copy()
+    call2[0][1]["run_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
+    expected_events = call1 + call2
+
+    @reset_core_stats_engine()
+    @validate_custom_events(expected_events)
+    @validate_custom_event_count(count=2)
+    @validate_transaction_metrics(
+        name="test_tool:test_langchain_multiple_async_calls.<locals>._test",
+        custom_metrics=[
+            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ],
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        set_trace_info()
+
+        with patch("langchain_core.callbacks.manager.uuid", autospec=True) as mock_uuid:
+            mock_uuid.uuid4.side_effect = [
+                uuid.UUID("b1883d9d-10d6-4b67-a911-f72849704e92"),  # first call
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b61"),
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b61"),  # second call
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b63"),
+                uuid.UUID("b1883d9d-10d6-4b67-a911-f72849704e93"),
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b64"),
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b65"),
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b66"),
+            ]
+
+            loop.run_until_complete(
+                asyncio.gather(
+                    single_arg_tool.arun(
+                        {"query": "Python Agent"},
+                    ),
+                    multi_arg_tool.arun(
+                        {"first_num": 53, "second_num": 28},
+                        tags=["python", "test_tags"],
+                        metadata={"test": "langchain", "test_run": True},
+                    ),
+                )
+            )
+
+    _test()

@@ -265,6 +265,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    tool_id = str(uuid.uuid4())
 
     run_args = bind_args(wrapped, args, kwargs)
 
@@ -285,7 +286,6 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     app_name = settings.app_name
-    tool_id = str(uuid.uuid4())
 
     function_name = wrapped.__name__
 
@@ -373,12 +373,15 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    tool_id = str(uuid.uuid4())
 
     run_args = bind_args(wrapped, args, kwargs)
 
     metadata = {}
     metadata.update(run_args.get("metadata") or {})
     metadata.update(getattr(instance, "metadata", None) or {})
+    metadata["nr_tool_id"] = tool_id
+    run_args["metadata"] = metadata
 
     tags = []
     tags.extend(run_args.get("tags") or [])
@@ -393,7 +396,6 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     app_name = settings.app_name
-    tool_id = str(uuid.uuid4())
 
     function_name = wrapped.__name__
 
@@ -412,12 +414,10 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
                 }
             )
 
-            run_id = getattr(transaction, "_nr_run_manager_tools_info", {}).get("run_id", "")
-            if hasattr(transaction, "_nr_run_manager_tools_info"):
-                del transaction._nr_run_manager_tools_info
+            run_id = getattr(transaction, "_nr_tool_ids", {}).pop(tool_id, "")
 
             # Make sure the builtin attributes take precedence over metadata attributes.
-            error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+            error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
             error_tool_event_dict.update(
                 {
                     "id": tool_id,
@@ -446,11 +446,10 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
 
     response = return_val
 
-    run_id = getattr(transaction, "_nr_run_manager_tools_info", {}).get("run_id", "")
-    if hasattr(transaction, "_nr_run_manager_tools_info"):
-        del transaction._nr_run_manager_tools_info
+    run_id = getattr(transaction, "_nr_tool_run_ids", {}).pop(tool_id, "")
 
-    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+
+    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
     full_tool_event_dict.update(
         {
             "id": tool_id,
@@ -475,7 +474,7 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     return return_val
 
 
-def wrap_on_tool_start(wrapped, instance, args, kwargs):
+def wrap_on_tool_start_sync(wrapped, instance, args, kwargs):
     run_manager = wrapped(*args, **kwargs)
     transaction = current_transaction()
     if not transaction:
@@ -485,6 +484,21 @@ def wrap_on_tool_start(wrapped, instance, args, kwargs):
         transaction._nr_run_manager_tools_info = {
             "run_id": run_manager.run_id,
         }
+
+    return run_manager
+
+
+async def wrap_on_tool_start_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+    tool_id = getattr(instance, "metadata", {}).pop("nr_tool_id")
+    run_manager = await wrapped(*args, **kwargs)
+    if tool_id:
+        if not hasattr(transaction, "_nr_tool_run_ids"):
+            transaction._nr_tool_run_ids = {}
+        if tool_id not in transaction._nr_tool_run_ids:
+            transaction._nr_tool_run_ids[tool_id] = getattr(run_manager, "run_id", "")
 
     return run_manager
 
@@ -508,4 +522,6 @@ def instrument_langchain_core_tools(module):
 
 def instrument_langchain_callbacks_manager(module):
     if hasattr(getattr(module, "CallbackManager"), "on_tool_start"):
-        wrap_function_wrapper(module, "CallbackManager.on_tool_start", wrap_on_tool_start)
+        wrap_function_wrapper(module, "CallbackManager.on_tool_start", wrap_on_tool_start_sync)
+    if hasattr(getattr(module, "AsyncCallbackManager"), "on_tool_start"):
+        wrap_function_wrapper(module, "AsyncCallbackManager.on_tool_start", wrap_on_tool_start_async)

@@ -417,7 +417,9 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
             run_id = getattr(transaction, "_nr_tool_ids", {}).pop(tool_id, "")
 
             # Make sure the builtin attributes take precedence over metadata attributes.
-            error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
+            error_tool_event_dict = {
+                "metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"
+            }
             error_tool_event_dict.update(
                 {
                     "id": tool_id,
@@ -447,7 +449,6 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     response = return_val
 
     run_id = getattr(transaction, "_nr_tool_run_ids", {}).pop(tool_id, "")
-
 
     full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
     full_tool_event_dict.update(

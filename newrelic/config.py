@@ -2231,6 +2231,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_community.vectorstores.hanavector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
         "langchain_community.vectorstores.hippo",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2238,6 +2244,12 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "langchain_community.vectorstores.hologres",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.kdbai",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )

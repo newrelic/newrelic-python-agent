@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import uuid
 
 from newrelic.api.function_trace import FunctionTrace
@@ -23,6 +24,7 @@ from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 
+_logger = logging.getLogger(__name__)
 LANGCHAIN_VERSION = get_package_version("langchain")
 
 VECTORSTORE_CLASSES = {
@@ -127,7 +129,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
     transaction_id = transaction.guid
-    id = str(uuid.uuid4())
+    _id = str(uuid.uuid4())
     request_query, request_k = bind_similarity_search(*args, **kwargs)
     duration = ft.duration
     response_number_of_documents = len(response)
@@ -145,7 +147,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction_id,
-        "id": id,
+        "id": _id,
         "vendor": "langchain",
         "ingest_source": "Python",
         "appName": transaction._application._name,
@@ -159,7 +161,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         search_id = str(uuid.uuid4())
         sequence = index
         page_content = getattr(doc, "page_content", "")
-        metadata = getattr(doc, "metadata", "")
+        metadata = getattr(doc, "metadata", {})
 
         metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
 
@@ -204,7 +206,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
     transaction_id = transaction.guid
-    id = str(uuid.uuid4())
+    _id = str(uuid.uuid4())
     request_query, request_k = bind_similarity_search(*args, **kwargs)
     duration = ft.duration
     response_number_of_documents = len(response)
@@ -222,7 +224,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction_id,
-        "id": id,
+        "id": _id,
         "vendor": "langchain",
         "ingest_source": "Python",
         "appName": transaction._application._name,
@@ -236,7 +238,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         search_id = str(uuid.uuid4())
         sequence = index
         page_content = getattr(doc, "page_content", "")
-        metadata = getattr(doc, "metadata", "")
+        metadata = getattr(doc, "metadata", {})
 
         metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
 
@@ -504,6 +506,332 @@ async def wrap_on_tool_start_async(wrapped, instance, args, kwargs):
     return run_manager
 
 
+async def wrap_chain_async_run(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    run_args = bind_args(wrapped, args, kwargs)
+    span_id = None
+    trace_id = None
+
+    # Pop the message_ids off the metadata before wrapped is called.
+    message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
+
+    # Check to see if launched from agent or directly from chain.
+    # The trace group will reflect from where it has started.
+    # The AgentExecutor class has an attribute "agent" that does
+    # not exist within the Chain class
+    group_name = "Llm/agent/Langchain" if hasattr(instance, "agent") else "Llm/chain/Langchain"
+    with FunctionTrace(name=wrapped.__name__, group=group_name) as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
+        try:
+            response = await wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
+        except Exception as exc:
+            completion_id = str(uuid.uuid4())
+            ft.notice_error(
+                attributes={
+                    "completion_id": completion_id,
+                }
+            )
+            _create_error_chain_run_events(
+                transaction, instance, run_args, completion_id, span_id, trace_id, ft.duration, message_ids
+            )
+            raise
+
+    if not response:
+        return response
+
+    _create_successful_chain_run_events(
+        transaction, instance, run_args, response, span_id, trace_id, ft.duration, message_ids
+    )
+    return response
+
+
+def wrap_chain_sync_run(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    run_args = bind_args(wrapped, args, kwargs)
+    span_id = None
+    trace_id = None
+
+    # Pop the message_ids off the metadata before wrapped is called.
+    message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
+
+    # Check to see if launched from agent or directly from chain.
+    # The trace group will reflect from where it has started.
+    # The AgentExecutor class has an attribute "agent" that does
+    # not exist within the Chain class
+    group_name = "Llm/agent/Langchain" if hasattr(instance, "agent") else "Llm/chain/Langchain"
+    with FunctionTrace(name=wrapped.__name__, group=group_name) as ft:
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
+        try:
+            response = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
+        except Exception as exc:
+            completion_id = str(uuid.uuid4())
+            ft.notice_error(
+                attributes={
+                    "completion_id": completion_id,
+                }
+            )
+            _create_error_chain_run_events(
+                transaction, instance, run_args, completion_id, span_id, trace_id, ft.duration, message_ids
+            )
+            raise
+
+    if not response:
+        return response
+
+    _create_successful_chain_run_events(
+        transaction, instance, run_args, response, span_id, trace_id, ft.duration, message_ids
+    )
+    return response
+
+
+def _create_error_chain_run_events(
+    transaction, instance, run_args, completion_id, span_id, trace_id, duration, message_ids
+):
+    _input = _get_chain_run_input(run_args)
+    app_name = _get_app_name(transaction)
+    conversation_id = _get_conversation_id(transaction)
+    run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance)
+    input_message_list = [_input]
+
+    # Make sure the builtin attributes take precedence over metadata attributes.
+    full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_chat_completion_summary_dict.update(
+        {
+            "id": completion_id,
+            "appName": app_name,
+            "conversation_id": conversation_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": run_id,
+            "duration": duration,
+            "response.number_of_messages": len(input_message_list),
+            "tags": tags,
+            "error": True,
+        }
+    )
+    transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
+
+    create_chat_completion_message_event(
+        transaction,
+        app_name,
+        input_message_list,
+        completion_id,
+        span_id,
+        trace_id,
+        run_id,
+        conversation_id,
+        [],
+        message_ids,
+    )
+
+
+def _get_run_manager_info(transaction, run_args, instance):
+    run_id = getattr(transaction, "_nr_chain_run_id", "")
+    if hasattr(transaction, "_nr_chain_run_id"):
+        del transaction._nr_chain_run_id
+    # metadata and tags are keys in the config parameter.
+    metadata = {}
+    metadata.update((run_args.get("config") or {}).get("metadata") or {})
+    tags = []
+    tags.extend((run_args.get("config") or {}).get("tags") or [])
+    return run_id, metadata, tags or ""
+
+
+def _get_chain_run_input(run_args):
+    return run_args.get("input", "")
+
+
+def _get_app_name(transaction):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    return settings.app_name
+
+
+def _get_conversation_id(transaction):
+    custom_attrs_dict = transaction._custom_params
+    return custom_attrs_dict.get("llm.conversation_id", "")
+
+
+def _create_successful_chain_run_events(
+    transaction, instance, run_args, response, span_id, trace_id, duration, message_ids
+):
+    _input = _get_chain_run_input(run_args)
+    app_name = _get_app_name(transaction)
+    conversation_id = _get_conversation_id(transaction)
+    completion_id = str(uuid.uuid4())
+    run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance)
+    input_message_list = [_input]
+    output_message_list = []
+    try:
+        output_message_list = [response[0]] if response else []
+    except:
+        try:
+            output_message_list = [str(response)]
+        except:
+            _logger.warning("Unable to capture response. No response message event will be captured.")
+
+    # Make sure the builtin attributes take precedence over metadata attributes.
+    full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_chat_completion_summary_dict.update(
+        {
+            "id": completion_id,
+            "appName": app_name,
+            "conversation_id": conversation_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": run_id,
+            "duration": duration,
+            "response.number_of_messages": len(input_message_list) + len(output_message_list),
+            "tags": tags,
+        }
+    )
+    transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
+
+    create_chat_completion_message_event(
+        transaction,
+        app_name,
+        input_message_list,
+        completion_id,
+        span_id,
+        trace_id,
+        run_id,
+        conversation_id,
+        output_message_list,
+        message_ids,
+    )
+
+
+def create_chat_completion_message_event(
+    transaction,
+    app_name,
+    input_message_list,
+    chat_completion_id,
+    span_id,
+    trace_id,
+    run_id,
+    conversation_id,
+    output_message_list,
+    message_ids,
+):
+    expected_message_ids_len = len(input_message_list) + len(output_message_list)
+    actual_message_ids_len = len(message_ids)
+    if actual_message_ids_len < expected_message_ids_len:
+        message_ids.extend([str(uuid.uuid4()) for i in range(expected_message_ids_len - actual_message_ids_len)])
+        _logger.warning(
+            "The provided metadata['message_ids'] list was found to be %s when it "
+            "needs to be at least %s. Internally generated UUIDs will be used in place "
+            "of missing message IDs.",
+            actual_message_ids_len,
+            expected_message_ids_len,
+        )
+
+    # Loop through all input messages received from the create request and emit a custom event for each one
+    for index, message in enumerate(input_message_list):
+        chat_completion_input_message_dict = {
+            "id": message_ids[index],
+            "appName": app_name,
+            "conversation_id": conversation_id,
+            "request_id": run_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "content": message,
+            "completion_id": chat_completion_id,
+            "sequence": index,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+        }
+
+        transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_input_message_dict)
+
+    if output_message_list:
+        # Loop through all output messages received from the LLM response and emit a custom event for each one
+        for index, message in enumerate(output_message_list):
+            # Add offset of input_message_length so we don't receive any duplicate index values that match the input message IDs
+            index += len(input_message_list)
+
+            chat_completion_output_message_dict = {
+                "id": message_ids[index],
+                "appName": app_name,
+                "conversation_id": conversation_id,
+                "request_id": run_id,
+                "span_id": span_id,
+                "trace_id": trace_id,
+                "transaction_id": transaction.guid,
+                "content": message,
+                "completion_id": chat_completion_id,
+                "sequence": index,
+                "vendor": "langchain",
+                "ingest_source": "Python",
+                "is_response": True,
+                "virtual_llm": True,
+            }
+
+            transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
+
+
+def wrap_on_chain_start(wrapped, instance, args, kwargs):
+    run_manager = wrapped(*args, **kwargs)
+    transaction = current_transaction()
+    if not transaction:
+        return run_manager
+    # Only capture the first run_id.
+    if not hasattr(transaction, "_nr_chain_run_id"):
+        transaction._nr_chain_run_id = getattr(run_manager, "run_id", "")
+    return run_manager
+
+
+async def wrap_async_on_chain_start(wrapped, instance, args, kwargs):
+    run_manager = await wrapped(*args, **kwargs)
+    transaction = current_transaction()
+    if not transaction:
+        return run_manager
+    # Only capture the first run_id.
+    if not hasattr(transaction, "_nr_chain_run_id"):
+        transaction._nr_chain_run_id = getattr(run_manager, "run_id", "")
+    return run_manager
+
+
+def instrument_langchain_runnables_chains_base(module):
+    if hasattr(getattr(module, "RunnableSequence"), "invoke"):
+        wrap_function_wrapper(module, "RunnableSequence.invoke", wrap_chain_sync_run)
+    if hasattr(getattr(module, "RunnableSequence"), "ainvoke"):
+        wrap_function_wrapper(module, "RunnableSequence.ainvoke", wrap_chain_async_run)
+
+
+def instrument_langchain_chains_base(module):
+    if hasattr(getattr(module, "Chain"), "invoke"):
+        wrap_function_wrapper(module, "Chain.invoke", wrap_chain_sync_run)
+    if hasattr(getattr(module, "Chain"), "ainvoke"):
+        wrap_function_wrapper(module, "Chain.ainvoke", wrap_chain_async_run)
+
+
 def instrument_langchain_vectorstore_similarity_search(module):
     print(module.__name__)
     vector_class = VECTORSTORE_CLASSES.get(module.__name__)
@@ -526,3 +854,7 @@ def instrument_langchain_callbacks_manager(module):
         wrap_function_wrapper(module, "CallbackManager.on_tool_start", wrap_on_tool_start_sync)
     if hasattr(getattr(module, "AsyncCallbackManager"), "on_tool_start"):
         wrap_function_wrapper(module, "AsyncCallbackManager.on_tool_start", wrap_on_tool_start_async)
+    if hasattr(getattr(module, "CallbackManager"), "on_chain_start"):
+        wrap_function_wrapper(module, "CallbackManager.on_chain_start", wrap_on_chain_start)
+    if hasattr(getattr(module, "AsyncCallbackManager"), "on_chain_start"):
+        wrap_function_wrapper(module, "AsyncCallbackManager.on_chain_start", wrap_async_on_chain_start)

@@ -351,6 +351,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("Bedrock", BOTOCORE_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     # Read and replace request file stream bodies
     request_body = kwargs["body"]

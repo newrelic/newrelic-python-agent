@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import asyncio
+import uuid
 
 import langchain
 import openai
@@ -21,6 +23,7 @@ from langchain.chains.openai_functions import (
 )
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
+from mock import patch
 from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_custom_event_count,
@@ -1839,6 +1842,94 @@ def test_async_langchain_chain_outside_transaction(
     runnable = create_function(json_schema, chat_openai_client, prompt)
 
     loop.run_until_complete(getattr(runnable, call_function)(input_))
+
+
+@pytest.mark.parametrize(
+    "create_function,call_function,call_function_args,call_function_kwargs,expected_events",
+    (
+        pytest.param(
+            create_structured_output_runnable,
+            "ainvoke",
+            ({"input": "Sally is 13"},),
+            {
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                }
+            },
+            chat_completion_recorded_events_runnable_invoke,
+            id="runnable_chain.ainvoke-with-args-and-kwargs",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "ainvoke",
+            ({"input": "Sally is 13"},),
+            {
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
+            },
+            chat_completion_recorded_events_invoke,
+            id="chain.ainvoke-with-args-and-kwargs",
+        ),
+    ),
+)
+def test_multiple_async_langchain_chain(
+    set_trace_info,
+    json_schema,
+    prompt,
+    chat_openai_client,
+    create_function,
+    call_function,
+    call_function_args,
+    call_function_kwargs,
+    expected_events,
+    loop,
+):
+    call1 = expected_events.copy()
+    call1[0][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
+    call2 = expected_events.copy()
+    call2[0][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
+
+    @reset_core_stats_engine()
+    @validate_custom_events(call1 + call2)
+    # 3 langchain events and 5 openai events.
+    @validate_custom_event_count(count=16)
+    @validate_transaction_metrics(
+        name="test_chain:test_multiple_async_langchain_chain.<locals>._test",
+        custom_metrics=[
+            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ],
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        with patch("langchain_core.callbacks.manager.uuid", autospec=True) as mock_uuid:
+            mock_uuid.uuid4.side_effect = [
+                uuid.UUID("b1883d9d-10d6-4b67-a911-f72849704e92"),  # first call
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b61"),
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b61"),  # second call
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b63"),
+                uuid.UUID("b1883d9d-10d6-4b67-a911-f72849704e93"),
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b64"),
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b65"),
+                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b66"),
+            ]
+            set_trace_info()
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
+            runnable = create_function(json_schema, chat_openai_client, prompt)
+
+            call1 = asyncio.ensure_future(
+                getattr(runnable, call_function)(*call_function_args, **call_function_kwargs), loop=loop
+            )
+            call2 = asyncio.ensure_future(
+                getattr(runnable, call_function)(*call_function_args, **call_function_kwargs), loop=loop
+            )
+            loop.run_until_complete(asyncio.gather(call1, call2))
+
+    _test()
 
 
 @pytest.fixture

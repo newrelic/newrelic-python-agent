@@ -395,10 +395,8 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     run_args = bind_args(wrapped, args, kwargs)
     span_id = None
     trace_id = None
-
-    # Pop the message_ids off the metadata before wrapped is called.
-    message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
-
+    completion_id = str(uuid.uuid4())
+    message_ids = get_message_ids_add_nr_completion_id(run_args, completion_id)
     # Check to see if launched from agent or directly from chain.
     # The trace group will reflect from where it has started.
     # The AgentExecutor class has an attribute "agent" that does
@@ -413,7 +411,6 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
         try:
             response = await wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
         except Exception as exc:
-            completion_id = str(uuid.uuid4())
             ft.notice_error(
                 attributes={
                     "completion_id": completion_id,
@@ -428,7 +425,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
         return response
 
     _create_successful_chain_run_events(
-        transaction, instance, run_args, response, span_id, trace_id, ft.duration, message_ids
+        transaction, instance, run_args, completion_id, response, span_id, trace_id, ft.duration, message_ids
     )
     return response
 
@@ -443,10 +440,8 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     run_args = bind_args(wrapped, args, kwargs)
     span_id = None
     trace_id = None
-
-    # Pop the message_ids off the metadata before wrapped is called.
-    message_ids = ((run_args.get("config") or {}).get("metadata") or {}).pop("message_ids", [])
-
+    completion_id = str(uuid.uuid4())
+    message_ids = get_message_ids_add_nr_completion_id(run_args, completion_id)
     # Check to see if launched from agent or directly from chain.
     # The trace group will reflect from where it has started.
     # The AgentExecutor class has an attribute "agent" that does
@@ -461,7 +456,6 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
         try:
             response = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
         except Exception as exc:
-            completion_id = str(uuid.uuid4())
             ft.notice_error(
                 attributes={
                     "completion_id": completion_id,
@@ -476,9 +470,24 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
         return response
 
     _create_successful_chain_run_events(
-        transaction, instance, run_args, response, span_id, trace_id, ft.duration, message_ids
+        transaction, instance, run_args, completion_id, response, span_id, trace_id, ft.duration, message_ids
     )
     return response
+
+
+def get_message_ids_add_nr_completion_id(run_args, completion_id):
+    # invoke has an argument named "config" that contains metadata and tags.
+    # Pop the message_ids provided by the customer off the metadata.
+    # Add the nr_completion_id into the metadata to be used as the function call
+    # identifier when grabbing the run_id off the transaction.
+    metadata = (run_args.get("config") or {}).get("metadata") or {}
+    message_ids = metadata.pop("message_ids", [])
+    metadata["nr_completion_id"] = completion_id
+    if not run_args["config"]:
+        run_args["config"] = {"metadata": metadata}
+    else:
+        run_args["config"]["metadata"] = metadata
+    return message_ids
 
 
 def _create_error_chain_run_events(
@@ -487,7 +496,7 @@ def _create_error_chain_run_events(
     _input = _get_chain_run_input(run_args)
     app_name = _get_app_name(transaction)
     conversation_id = _get_conversation_id(transaction)
-    run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance)
+    run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
     input_message_list = [_input]
 
     # Make sure the builtin attributes take precedence over metadata attributes.
@@ -526,13 +535,13 @@ def _create_error_chain_run_events(
     )
 
 
-def _get_run_manager_info(transaction, run_args, instance):
-    run_id = getattr(transaction, "_nr_chain_run_id", "")
-    if hasattr(transaction, "_nr_chain_run_id"):
-        del transaction._nr_chain_run_id
+def _get_run_manager_info(transaction, run_args, instance, completion_id):
+    run_id = getattr(transaction, "_nr_chain_run_ids", {}).pop(completion_id, "")
     # metadata and tags are keys in the config parameter.
     metadata = {}
     metadata.update((run_args.get("config") or {}).get("metadata") or {})
+    # Do not report intenral nr_completion_id in metadata.
+    metadata = {key: value for key, value in metadata.items() if key != "nr_completion_id"}
     tags = []
     tags.extend((run_args.get("config") or {}).get("tags") or [])
     return run_id, metadata, tags or ""
@@ -553,13 +562,12 @@ def _get_conversation_id(transaction):
 
 
 def _create_successful_chain_run_events(
-    transaction, instance, run_args, response, span_id, trace_id, duration, message_ids
+    transaction, instance, run_args, completion_id, response, span_id, trace_id, duration, message_ids
 ):
     _input = _get_chain_run_input(run_args)
     app_name = _get_app_name(transaction)
     conversation_id = _get_conversation_id(transaction)
-    completion_id = str(uuid.uuid4())
-    run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance)
+    run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
     input_message_list = [_input]
     output_message_list = []
     try:
@@ -676,24 +684,34 @@ def create_chat_completion_message_event(
 
 
 def wrap_on_chain_start(wrapped, instance, args, kwargs):
-    run_manager = wrapped(*args, **kwargs)
     transaction = current_transaction()
     if not transaction:
-        return run_manager
-    # Only capture the first run_id.
-    if not hasattr(transaction, "_nr_chain_run_id"):
-        transaction._nr_chain_run_id = getattr(run_manager, "run_id", "")
+        return wrapped(*args, **kwargs)
+    run_args = bind_args(wrapped, args, kwargs)
+    completion_id = getattr(instance, "metadata", {}).pop("nr_completion_id")
+    run_manager = wrapped(**run_args)
+    if completion_id:
+        if not hasattr(transaction, "_nr_chain_run_ids"):
+            transaction._nr_chain_run_ids = {}
+        # Only capture the first run_id.
+        if completion_id not in transaction._nr_chain_run_ids:
+            transaction._nr_chain_run_ids[completion_id] = getattr(run_manager, "run_id", "")
     return run_manager
 
 
 async def wrap_async_on_chain_start(wrapped, instance, args, kwargs):
-    run_manager = await wrapped(*args, **kwargs)
     transaction = current_transaction()
     if not transaction:
-        return run_manager
-    # Only capture the first run_id.
-    if not hasattr(transaction, "_nr_chain_run_id"):
-        transaction._nr_chain_run_id = getattr(run_manager, "run_id", "")
+        return await wrapped(*args, **kwargs)
+    run_args = bind_args(wrapped, args, kwargs)
+    completion_id = getattr(instance, "metadata", {}).pop("nr_completion_id")
+    run_manager = await wrapped(**run_args)
+    if completion_id:
+        if not hasattr(transaction, "_nr_chain_run_ids"):
+            transaction._nr_chain_run_ids = {}
+        # Only capture the first run_id.
+        if completion_id not in transaction._nr_chain_run_ids:
+            transaction._nr_chain_run_ids[completion_id] = getattr(run_manager, "run_id", "")
     return run_manager
 
 

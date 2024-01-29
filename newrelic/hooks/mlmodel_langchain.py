@@ -273,13 +273,8 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
 
     run_args = bind_args(wrapped, args, kwargs)
 
-    metadata = {}
-    metadata.update(run_args.get("metadata") or {})
-    metadata.update(getattr(instance, "metadata", None) or {})
-
-    tags = []
-    tags.extend(run_args.get("tags") or [])
-    tags.extend(getattr(instance, "tags", None) or [])
+    metadata = run_args.get("metadata") or {}
+    tags = run_args.get("tags") or []
 
     tool_input = run_args.get("tool_input", "")
     tool_name = instance.name or ""
@@ -311,6 +306,10 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
             run_id = getattr(transaction, "_nr_run_manager_tools_info", {}).get("run_id", "")
             if hasattr(transaction, "_nr_run_manager_tools_info"):
                 del transaction._nr_run_manager_tools_info
+
+            # Update tags and metadata previously obtained from run_args with instance values
+            metadata.update(getattr(instance, "metadata", None) or {})
+            tags.extend(getattr(instance, "tags", None) or [])
 
             # Make sure the builtin attributes take precedence over metadata attributes.
             error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
@@ -346,6 +345,10 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     if hasattr(transaction, "_nr_run_manager_tools_info"):
         del transaction._nr_run_manager_tools_info
 
+    # Update tags and metadata previously obtained from run_args with instance values
+    metadata.update(getattr(instance, "metadata", None) or {})
+    tags.extend(getattr(instance, "tags", None) or [])
+
     full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
     full_tool_event_dict.update(
         {
@@ -377,19 +380,15 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
-    tool_id = str(uuid.uuid4())
 
     run_args = bind_args(wrapped, args, kwargs)
 
-    metadata = {}
-    metadata.update(run_args.get("metadata") or {})
-    metadata.update(getattr(instance, "metadata", None) or {})
+    tool_id = str(uuid.uuid4())
+    metadata = run_args.get("metadata") or {}
     metadata["nr_tool_id"] = tool_id
     run_args["metadata"] = metadata
 
-    tags = []
-    tags.extend(run_args.get("tags") or [])
-    tags.extend(getattr(instance, "tags", None) or [])
+    tags = run_args.get("tags") or []
 
     tool_input = run_args.get("tool_input", "")
     tool_name = instance.name or ""
@@ -419,6 +418,10 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
             )
 
             run_id = getattr(transaction, "_nr_tool_ids", {}).pop(tool_id, "")
+
+            # Update tags and metadata previously obtained from run_args with instance values
+            metadata.update(getattr(instance, "metadata", None) or {})
+            tags.extend(getattr(instance, "tags", None) or [])
 
             # Make sure the builtin attributes take precedence over metadata attributes.
             error_tool_event_dict = {
@@ -453,6 +456,10 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     response = return_val
 
     run_id = getattr(transaction, "_nr_tool_run_ids", {}).pop(tool_id, "")
+
+    # Update tags and metadata previously obtained from run_args with instance values
+    metadata.update(getattr(instance, "metadata", None) or {})
+    tags.extend(getattr(instance, "tags", None) or [])
 
     full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
     full_tool_event_dict.update(

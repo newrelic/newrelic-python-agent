@@ -16,7 +16,7 @@ import sys
 import uuid
 
 import boto3
-import moto
+from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -62,7 +62,7 @@ _iam_rollup_metrics = [
     background_task=True,
 )
 @background_task()
-@moto.mock_iam
+@mock_aws
 def test_iam():
     iam = boto3.client(
         "iam",

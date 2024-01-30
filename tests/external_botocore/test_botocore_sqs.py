@@ -16,8 +16,8 @@ import sys
 import uuid
 
 import botocore.session
-import moto
 import pytest
+from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -79,7 +79,7 @@ _sqs_rollup_metrics_malformed = [
     background_task=True,
 )
 @background_task()
-@moto.mock_sqs
+@mock_aws
 def test_sqs():
     session = botocore.session.get_session()
     client = session.create_client(
@@ -127,7 +127,7 @@ def test_sqs():
     background_task=True,
 )
 @background_task()
-@moto.mock_sqs
+@mock_aws
 def test_sqs_malformed():
     session = botocore.session.get_session()
     client = session.create_client(

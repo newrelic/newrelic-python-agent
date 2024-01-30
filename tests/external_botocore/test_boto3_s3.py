@@ -17,7 +17,7 @@ import uuid
 
 import boto3
 import botocore
-import moto
+from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -81,7 +81,7 @@ _s3_rollup_metrics = [
     "test_boto3_s3:test_s3", scoped_metrics=_s3_scoped_metrics, rollup_metrics=_s3_rollup_metrics, background_task=True
 )
 @background_task()
-@moto.mock_s3
+@mock_aws
 def test_s3():
     client = boto3.client(
         "s3",

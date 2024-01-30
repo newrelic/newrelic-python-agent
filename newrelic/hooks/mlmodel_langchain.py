@@ -103,6 +103,22 @@ VECTORSTORE_CLASSES = {
 }
 
 
+def _create_error_vectorstore_events(transaction, _id, span_id, trace_id):
+    app_name = _get_app_name(transaction)
+    vectorstore_error_dict = {
+        "id": _id,
+        "appName": app_name,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "vendor": "Langchain",
+        "ingest_source": "Python",
+        "error": True,
+    }
+
+    transaction.record_custom_event("LlmVectorSearch", vectorstore_error_dict)
+
+
 def bind_asimilarity_search(query, k, *args, **kwargs):
     return query, k
 
@@ -114,25 +130,27 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
 
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
 
-    request_query, request_k = bind_asimilarity_search(*args, **kwargs)
     function_name = callable_name(wrapped)
+
+    # LLMVectorSearch and Error data
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+    transaction_id = transaction.guid
+    _id = str(uuid.uuid4())
+
     with FunctionTrace(name=function_name, group="Llm/vectorstore/Langchain") as ft:
         try:
             response = await wrapped(*args, **kwargs)
-            available_metadata = get_trace_linking_metadata()
-        except Exception as err:
-            # Error logic goes here
-            pass
+        except Exception as exc:
+            _create_error_vectorstore_events(transaction, _id, span_id, trace_id)
+            raise
 
     if not response:
         return response  # Should always be None
 
     # LLMVectorSearch
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
-    transaction_id = transaction.guid
-    _id = str(uuid.uuid4())
-    request_query, request_k = bind_similarity_search(*args, **kwargs)
+    request_query, request_k = bind_asimilarity_search(*args, **kwargs)
     duration = ft.duration
     response_number_of_documents = len(response)
 
@@ -152,7 +170,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         "id": _id,
         "vendor": "langchain",
         "ingest_source": "Python",
-        "appName": transaction._application._name,
+        "appName": _get_app_name(transaction),
     }
 
     LLMVectorSearch_dict.update(LLMVectorSearch_union_dict)
@@ -191,24 +209,26 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
-    request_query, request_k = bind_similarity_search(*args, **kwargs)
     function_name = callable_name(wrapped)
+
+    # LLMVectorSearch and Error data
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+    transaction_id = transaction.guid
+    _id = str(uuid.uuid4())
+
     with FunctionTrace(name=function_name, group="Llm/vectorstore/Langchain") as ft:
         try:
             response = wrapped(*args, **kwargs)
-            available_metadata = get_trace_linking_metadata()
         except Exception as exc:
-            # Error logic goes here
-            pass
+            _create_error_vectorstore_events(transaction, _id, span_id, trace_id)
+            raise
 
     if not response:
         return response
 
     # LLMVectorSearch
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
-    transaction_id = transaction.guid
-    _id = str(uuid.uuid4())
     request_query, request_k = bind_similarity_search(*args, **kwargs)
     duration = ft.duration
     response_number_of_documents = len(response)
@@ -229,7 +249,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         "id": _id,
         "vendor": "langchain",
         "ingest_source": "Python",
-        "appName": transaction._application._name,
+        "appName": _get_app_name(transaction),
     }
 
     LLMVectorSearch_dict.update(LLMVectorSearch_union_dict)

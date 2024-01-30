@@ -14,6 +14,7 @@
 
 import os
 
+import pytest
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
@@ -187,3 +188,68 @@ def test_async_pdf_pagesplitter_vectorstore_outside_txn(loop, set_trace_info, em
 
     docs = loop.run_until_complete(_test())
     assert "Hello world" in docs[0].page_content
+
+
+vectorstore_error_events = [
+    (
+        {"type": "LlmVectorSearch"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (mlmodel_langchain)",
+            "transaction_id": "transaction-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "vendor": "Langchain",
+            "ingest_source": "Python",
+            "error": True,
+        },
+    ),
+]
+
+
+@reset_core_stats_engine()
+@validate_custom_events(vectorstore_error_events)
+@validate_transaction_metrics(
+    name="test_vectorstore:test_vectorstore_error_no_query",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_vectorstore_error_no_query(set_trace_info, embedding_openai_client):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        script_dir = os.path.dirname(__file__)
+        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        docs = loader.load()
+
+        faiss_index = FAISS.from_documents(docs, embedding_openai_client)
+        faiss_index.similarity_search(k=1)
+
+
+@reset_core_stats_engine()
+@validate_custom_events(vectorstore_error_events)
+@validate_transaction_metrics(
+    name="test_vectorstore:test_async_vectorstore_error_no_query",
+    custom_metrics=[
+        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_async_vectorstore_error_no_query(loop, set_trace_info, embedding_openai_client):
+    async def _test():
+        set_trace_info()
+
+        script_dir = os.path.dirname(__file__)
+        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        docs = loader.load()
+
+        faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
+        docs = await faiss_index.asimilarity_search(k=1)
+        return docs
+
+    with pytest.raises(TypeError):
+        loop.run_until_complete(_test())

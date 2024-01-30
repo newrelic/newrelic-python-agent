@@ -17,7 +17,7 @@ import uuid
 
 import boto3
 import botocore
-import moto
+from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -25,9 +25,9 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-MOTO_VERSION = tuple(int(v) for v in moto.__version__.split(".")[:3])
-
+MOTO_VERSION = get_package_version_tuple("moto")
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION_NAME = "us-west-2"
@@ -80,7 +80,7 @@ _s3_rollup_metrics = [
     "test_boto3_s3:test_s3", scoped_metrics=_s3_scoped_metrics, rollup_metrics=_s3_rollup_metrics, background_task=True
 )
 @background_task()
-@moto.mock_s3
+@mock_aws
 def test_s3():
     client = boto3.client(
         "s3",

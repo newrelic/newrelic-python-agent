@@ -16,7 +16,7 @@ import sys
 import uuid
 
 import boto3
-import moto
+from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -27,8 +27,9 @@ from testing_support.validators.validate_tt_segment_params import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-MOTO_VERSION = tuple(int(v) for v in moto.__version__.split(".")[:3])
+MOTO_VERSION = get_package_version_tuple("moto")
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec (This is fine for testing purposes)
@@ -61,7 +62,7 @@ _iam_rollup_metrics = [
     background_task=True,
 )
 @background_task()
-@moto.mock_iam
+@mock_aws
 def test_iam():
     iam = boto3.client(
         "iam",

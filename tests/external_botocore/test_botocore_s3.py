@@ -29,7 +29,6 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 MOTO_VERSION = MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
-
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION = "us-east-1"

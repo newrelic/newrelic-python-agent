@@ -30,12 +30,6 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
-# patch earlier versions of moto to support py37
-if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
-    import re
-
-    moto.packages.responses.responses.re._pattern_type = re.Pattern
-
 url = "sqs.us-east-1.amazonaws.com"
 
 if BOTOCORE_VERSION < (1, 29, 0):

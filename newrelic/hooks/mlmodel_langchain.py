@@ -143,6 +143,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         try:
             response = await wrapped(*args, **kwargs)
         except Exception as exc:
+            ft.notice_error(attributes={"vector_store_id": _id})
             _create_error_vectorstore_events(transaction, _id, span_id, trace_id)
             raise
 
@@ -222,6 +223,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
+            ft.notice_error(attributes={"vector_store_id": _id})
             _create_error_vectorstore_events(transaction, _id, span_id, trace_id)
             raise
 

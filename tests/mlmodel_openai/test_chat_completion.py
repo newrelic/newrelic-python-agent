@@ -135,7 +135,7 @@ chat_completion_recorded_events = [
 
 @reset_core_stats_engine()
 @validate_custom_events(chat_completion_recorded_events)
-#One summary event, one system message, one user message, and one response message from the assistant
+# One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_sync_in_txn_with_convo_id",

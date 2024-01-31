@@ -29,13 +29,6 @@ from newrelic.api.background_task import background_task
 MOTO_VERSION = tuple(int(v) for v in moto.__version__.split(".")[:3])
 BOTOCORE_VERSION = tuple(int(v) for v in botocore.__version__.split(".")[:3])
 
-
-# patch earlier versions of moto to support py37
-if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
-    import re
-
-    moto.packages.responses.responses.re._pattern_type = re.Pattern
-
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION = "us-east-1"

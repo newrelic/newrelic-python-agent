@@ -30,7 +30,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version
 
@@ -215,7 +214,8 @@ vectorstore_error_events = [
 
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(TypeError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"vector_store_id": "best-id"}}
+    callable_name(TypeError),
+    required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
 )
 @validate_custom_events(vectorstore_error_events)
 @validate_transaction_metrics(
@@ -229,7 +229,6 @@ vectorstore_error_events = [
 def test_vectorstore_error_no_query(set_trace_info, embedding_openai_client):
     with pytest.raises(TypeError):
         set_trace_info()
-        add_custom_attribute("vector_store_id", "best-id")
         script_dir = os.path.dirname(__file__)
         loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
         docs = loader.load()
@@ -239,6 +238,10 @@ def test_vectorstore_error_no_query(set_trace_info, embedding_openai_client):
 
 
 @reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
+)
 @validate_custom_events(vectorstore_error_events)
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_vectorstore_error_no_query",

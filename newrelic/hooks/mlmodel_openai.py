@@ -35,6 +35,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
@@ -181,6 +182,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     request_message_list = kwargs.get("messages", [])
 
@@ -496,6 +498,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
@@ -642,6 +645,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     request_message_list = kwargs.get("messages", [])
 

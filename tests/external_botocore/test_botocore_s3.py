@@ -17,7 +17,7 @@ import uuid
 
 import botocore
 import botocore.session
-import moto
+from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -29,13 +29,6 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 
 MOTO_VERSION = MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("botocore")
-
-
-# patch earlier versions of moto to support py37
-if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
-    import re
-
-    moto.packages.responses.responses.re._pattern_type = re.Pattern
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
@@ -84,7 +77,7 @@ _s3_rollup_metrics = [
     background_task=True,
 )
 @background_task()
-@moto.mock_s3
+@mock_aws
 def test_s3():
     session = botocore.session.get_session()
     client = session.create_client(

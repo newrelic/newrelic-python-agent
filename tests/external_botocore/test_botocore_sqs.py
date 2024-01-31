@@ -16,8 +16,8 @@ import sys
 import uuid
 
 import botocore.session
-import moto
 import pytest
+from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -29,12 +29,6 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 
 MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("botocore")
-
-# patch earlier versions of moto to support py37
-if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
-    import re
-
-    moto.packages.responses.responses.re._pattern_type = re.Pattern
 
 url = "sqs.us-east-1.amazonaws.com"
 
@@ -85,7 +79,7 @@ _sqs_rollup_metrics_malformed = [
     background_task=True,
 )
 @background_task()
-@moto.mock_sqs
+@mock_aws
 def test_sqs():
     session = botocore.session.get_session()
     client = session.create_client(
@@ -133,7 +127,7 @@ def test_sqs():
     background_task=True,
 )
 @background_task()
-@moto.mock_sqs
+@mock_aws
 def test_sqs_malformed():
     session = botocore.session.get_session()
     client = session.create_client(

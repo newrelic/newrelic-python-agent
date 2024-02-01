@@ -63,22 +63,22 @@ def test_priority_used_in_transaction_error_events(first_transaction_saved):
 
     @reset_core_stats_engine()
     def _test():
-        with BackgroundTask(application(), name="T1") as txn:
-            txn._priority = first_priority
-            try:
-                raise ValueError("OOPS")
-            except ValueError:
-                txn.notice_error()
-
-        with BackgroundTask(application(), name="T2") as txn:
-            txn._priority = second_priority
-            try:
-                raise ValueError("OOPS")
-            except ValueError:
-                txn.notice_error()
-
         # Stats engine
         stats_engine = core_application_stats_engine()
+
+        with BackgroundTask(application(), name="T1") as txn1:
+            txn1._priority = first_priority
+            try:
+                raise ValueError("OOPS")
+            except ValueError:
+                txn1.notice_error()
+
+        with BackgroundTask(application(), name="T2") as txn2:
+            txn2._priority = second_priority
+            try:
+                raise ValueError("OOPS")
+            except ValueError:
+                txn2.notice_error()
 
         error_events = list(stats_engine.error_events)
         assert len(error_events) == 1

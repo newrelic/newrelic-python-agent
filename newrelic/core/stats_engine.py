@@ -899,7 +899,6 @@ class StatsEngine(object):
             message=message,
             type=fullname,
             parameters=attributes,
-            guid=None,
         )
 
         # Save this error as a trace and an event.

@@ -378,7 +378,6 @@ class TransactionNode(_TransactionNode):
                 message=error.message,
                 type=error.type,
                 parameters=params,
-                guid=self.guid,
             )
 
     def transaction_trace(self, stats, limit, connections):

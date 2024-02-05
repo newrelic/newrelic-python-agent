@@ -20,6 +20,7 @@ from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_custom_event_count,
+    validate_attributes,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (

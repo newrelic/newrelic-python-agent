@@ -71,6 +71,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "host.displayName",
         "http.statusCode",
         "http.url",
+        "llm",
         "message.queueName",
         "message.routingKey",
         "peer.address",

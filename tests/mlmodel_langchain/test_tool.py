@@ -25,6 +25,7 @@ from testing_support.fixtures import (  # override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
     validate_transaction_error_event_count,
+    validate_attributes,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -95,6 +96,7 @@ single_arg_tool_recorded_events = [
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
     set_trace_info()
@@ -113,6 +115,7 @@ def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_langchain_single_arg_tool_async(set_trace_info, single_arg_tool, loop):
     set_trace_info()

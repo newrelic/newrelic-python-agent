@@ -2429,6 +2429,11 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_community.vectorstores.thirdai_neuraldb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
         "langchain_community.vectorstores.tigris",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",

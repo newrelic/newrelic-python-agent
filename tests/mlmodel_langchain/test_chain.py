@@ -26,9 +26,9 @@ from langchain.schema import BaseOutputParser
 from mock import patch
 from testing_support.fixtures import (
     reset_core_stats_engine,
+    validate_attributes,
     validate_custom_event_count,
     validate_transaction_error_event_count,
-    validate_attributes,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (

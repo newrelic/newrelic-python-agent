@@ -35,8 +35,9 @@ def test_record_llm_feedback_event_all_args_supplied():
                 "request_id": "request_id",
                 "conversation_id": "conversation_id",
                 "ingest_source": "Python",
-                "message": "message",
+                "message": "my-message",
                 "foo": "bar",
+                "message1": "custom-message",
             },
         ),
     ]
@@ -50,15 +51,15 @@ def test_record_llm_feedback_event_all_args_supplied():
             category="informative",
             request_id="request_id",
             conversation_id="conversation_id",
-            message="message",
-            metadata={"foo": "bar", "message": "custom-message"},
+            message="my-message",
+            metadata={"foo": "bar", "message1": "custom-message"},
         )
 
     _test()
 
 
 @reset_core_stats_engine()
-def test_record_llm_feedback_event_required_args_supplied():
+def test_record_llm_feedback_event_transaction_id_supplied():
     llm_feedback_required_args_recorded_events = [
         (
             {"type": "LlmFeedbackMessage"},
@@ -66,11 +67,13 @@ def test_record_llm_feedback_event_required_args_supplied():
                 "id": None,
                 "category": "",
                 "rating": "Good",
-                "message_id": "message_id",
+                "transaction_id": "123456789101112",
                 "request_id": "",
                 "conversation_id": "",
                 "ingest_source": "Python",
                 "message": "",
+                "foo": "bar",
+                "message1": "custom-message",
             },
         ),
     ]
@@ -78,9 +81,51 @@ def test_record_llm_feedback_event_required_args_supplied():
     @validate_custom_events(llm_feedback_required_args_recorded_events)
     @background_task()
     def _test():
-        record_llm_feedback_event(message_id="message_id", rating="Good")
+        record_llm_feedback_event(
+            transaction_id="123456789101112", rating="Good", metadata={"foo": "bar", "message1": "custom-message"}
+        )
 
     _test()
+
+
+@reset_core_stats_engine()
+def test_record_llm_feedback_event_txn_and_message_id_supplied():
+    # When both message and txn ID are supplied, only expect txn ID in the event
+    llm_feedback_required_args_recorded_events = [
+        (
+            {"type": "LlmFeedbackMessage"},
+            {
+                "id": None,
+                "category": "",
+                "rating": "Good",
+                "transaction_id": "123456789101112",
+                "request_id": "",
+                "conversation_id": "",
+                "ingest_source": "Python",
+                "message": "",
+                "foo": "bar",
+                "message1": "custom-message",
+            },
+        ),
+    ]
+
+    @validate_custom_events(llm_feedback_required_args_recorded_events)
+    @background_task()
+    def _test():
+        record_llm_feedback_event(
+            message_id="message_id",
+            transaction_id="123456789101112",
+            rating="Good",
+            metadata={"foo": "bar", "message1": "custom-message"},
+        )
+
+    _test()
+
+
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+def test_record_llm_feedback_event_no_id_supplied():
+    record_llm_feedback_event(rating="Good")
 
 
 @reset_core_stats_engine()

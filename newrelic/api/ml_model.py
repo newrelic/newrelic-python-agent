@@ -59,7 +59,14 @@ def get_llm_message_ids(response_id=None):
 
 
 def record_llm_feedback_event(
-    message_id, rating, conversation_id=None, request_id=None, category=None, message=None, metadata=None
+    rating,
+    transaction_id=None,
+    message_id=None,
+    conversation_id=None,
+    request_id=None,
+    category=None,
+    message=None,
+    metadata=None,
 ):
     transaction = current_transaction()
     if not transaction:
@@ -69,12 +76,26 @@ def record_llm_feedback_event(
         )
         return
 
+    if not (transaction_id or message_id):
+        warnings.warn(
+            "No message ID or transaction ID found. record_llm_feedback_event must be called with either message ID or transaction ID passed as an argument."
+        )
+        return
+
     feedback_message_id = str(uuid.uuid4())
     feedback_message_event = metadata.copy() if metadata else {}
+
+    if transaction_id and not message_id:
+        feedback_message_event.update({"transaction_id": transaction_id})
+    elif message_id and not transaction_id:
+        feedback_message_event.update({"message_id": message_id})
+    # If user mistakenly provides both a message and transaction ID, default to using transaction ID
+    elif message_id and transaction_id:
+        feedback_message_event.update({"transaction_id": transaction_id})
+
     feedback_message_event.update(
         {
             "id": feedback_message_id,
-            "message_id": message_id,
             "rating": rating,
             "conversation_id": conversation_id or "",
             "request_id": request_id or "",

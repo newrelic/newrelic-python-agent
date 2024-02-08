@@ -2519,6 +2519,18 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "pinecone.data.index",
+        "newrelic.hooks.datastore_pinecone",
+        "instrument_pinecone_data_index",
+    )
+
+    _process_module_definition(
+        "pinecone.data.index",
+        "newrelic.hooks.datastore_pinecone",
+        "instrument_pinecone_control_pinecone",
+    )
+
+    _process_module_definition(
         "asyncio.events",
         "newrelic.hooks.coroutines_asyncio",
         "instrument_asyncio_events",

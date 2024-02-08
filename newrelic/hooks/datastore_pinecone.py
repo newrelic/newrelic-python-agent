@@ -110,11 +110,11 @@ def wrap_pinecone_method(module, class_name, method_name, index_name_function):
     wrap_function_wrapper(module, "%s.%s" % (class_name, method_name), wrapper_pinecone_method)
 
 
-def instrument_data_index(module):
+def instrument_pinecone_data_index(module):
     instrument_pinecone_methods(module, "Index", Index_methods)
 
 
-def instrument_control_pinecone(module):
+def instrument_pinecone_control_pinecone(module):
     instrument_pinecone_methods(module, "Pinecone", Pinecone_methods)
 
 

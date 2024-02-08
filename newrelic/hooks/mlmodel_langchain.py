@@ -65,6 +65,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.mongodb_atlas": "MongoDBAtlasVectorSearch",
     "langchain_community.vectorstores.myscale": "MyScale",
     "langchain_community.vectorstores.neo4j_vector": "Neo4jVector",
+    "langchain_community.vectorstores.thirdai_neuraldb": "NeuralDBVectorStore",
     "langchain_community.vectorstores.nucliadb": "NucliaDB",
     "langchain_community.vectorstores.opensearch_vector_search": "OpenSearchVectorSearch",
     "langchain_community.vectorstores.pgembedding": "PGEmbedding",
@@ -128,6 +129,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     function_name = callable_name(wrapped)
 
@@ -209,6 +211,8 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
     function_name = callable_name(wrapped)
 
     # LLMVectorSearch and Error data
@@ -290,6 +294,8 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
     tool_id = str(uuid.uuid4())
 
     run_args = bind_args(wrapped, args, kwargs)
@@ -401,6 +407,7 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     run_args = bind_args(wrapped, args, kwargs)
 
@@ -543,6 +550,8 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
     run_args = bind_args(wrapped, args, kwargs)
     span_id = None
     trace_id = None
@@ -588,6 +597,8 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
     run_args = bind_args(wrapped, args, kwargs)
     span_id = None
     trace_id = None

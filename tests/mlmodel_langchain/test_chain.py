@@ -26,6 +26,7 @@ from langchain.schema import BaseOutputParser
 from mock import patch
 from testing_support.fixtures import (
     reset_core_stats_engine,
+    validate_attributes,
     validate_custom_event_count,
     validate_transaction_error_event_count,
 )
@@ -1136,6 +1137,7 @@ def test_langchain_chain(
         ],
         background_task=True,
     )
+    @validate_attributes("agent", ["llm"])
     @background_task()
     def _test():
         set_trace_info()
@@ -1597,6 +1599,7 @@ def test_async_langchain_chain(
         ],
         background_task=True,
     )
+    @validate_attributes("agent", ["llm"])
     @background_task()
     def _test():
         set_trace_info()

@@ -33,6 +33,7 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
+from newrelic.common.signature import bind_args
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,

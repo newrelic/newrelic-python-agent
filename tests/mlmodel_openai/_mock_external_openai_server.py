@@ -31,6 +31,33 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
 STREAMED_RESPONSES = {
+    "Invalid API key.": [
+        {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
+        401,
+        {
+            "error": {
+                "message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "invalid_api_key",
+            }
+        },
+    ],
+    "Model does not exist.": [
+        {
+            "Content-Type": "application/json; charset=utf-8",
+            "x-request-id": "cfdf51fb795362ae578c12a21796262c",
+        },
+        404,
+        {
+            "error": {
+                "message": "The model `does-not-exist` does not exist",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "model_not_found",
+            }
+        },
+    ],
     "You are a scientist.": [
         {
             "Content-Type": "text/event-stream",
@@ -155,7 +182,7 @@ STREAMED_RESPONSES = {
                 "choices": [{"index": 0, "delta": {}, "logprobs": None, "finish_reason": "stop"}],
             },
         ],
-    ]
+    ],
 }
 
 RESPONSES_V1 = {
@@ -595,7 +622,7 @@ def simple_get(openai_version, extract_shortened_prompt):
         self.end_headers()
 
         # Send response body
-        if stream:
+        if stream and status_code < 400:
             for resp in response:
                 data = json.dumps(resp).encode("utf-8")
                 self.wfile.write(b"data: %s\n" % data)

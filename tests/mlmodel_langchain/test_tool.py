@@ -23,6 +23,7 @@ from mock import patch
 from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,
     reset_core_stats_engine,
+    validate_attributes,
     validate_custom_event_count,
     validate_transaction_error_event_count,
 )
@@ -95,6 +96,7 @@ single_arg_tool_recorded_events = [
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
     set_trace_info()
@@ -113,6 +115,7 @@ def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_langchain_single_arg_tool_async(set_trace_info, single_arg_tool, loop):
     set_trace_info()

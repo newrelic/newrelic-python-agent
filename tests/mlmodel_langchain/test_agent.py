@@ -18,7 +18,7 @@ from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain.prompts import ChatPromptTemplate
 from langchain.tools import tool
 from langchain_core.prompts import MessagesPlaceholder
-from testing_support.fixtures import reset_core_stats_engine
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -70,6 +70,7 @@ def prompt():
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_sync_agent(chat_openai_client, tools, prompt):
     agent = create_openai_functions_agent(chat_openai_client, tools, prompt)
@@ -89,6 +90,7 @@ def test_sync_agent(chat_openai_client, tools, prompt):
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_async_agent(loop, chat_openai_client, tools, prompt):
     agent = create_openai_functions_agent(chat_openai_client, tools, prompt)

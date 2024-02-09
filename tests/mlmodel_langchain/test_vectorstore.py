@@ -19,6 +19,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
     reset_core_stats_engine,
+    validate_attributes,
     validate_custom_event_count,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
@@ -121,6 +122,7 @@ def test_vectorstore_modules_instrumented():
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_client):
     set_trace_info()
@@ -159,6 +161,7 @@ def test_pdf_pagesplitter_vectorstore_outside_txn(set_trace_info, embedding_open
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embedding_openai_client):
     async def _test():

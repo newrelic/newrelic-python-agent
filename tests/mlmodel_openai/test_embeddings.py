@@ -69,7 +69,7 @@ embedding_recorded_events = [
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -94,7 +94,7 @@ def test_openai_embedding_sync_outside_txn():
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -112,7 +112,7 @@ def test_openai_embedding_sync_disabled_settings(set_trace_info):
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -142,7 +142,7 @@ def test_openai_embedding_async_outside_transaction(loop):
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )

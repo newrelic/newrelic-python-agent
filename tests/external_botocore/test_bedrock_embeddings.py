@@ -28,8 +28,8 @@ from testing_support.fixtures import (  # override_application_settings,
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
-    validate_custom_event_count,
     validate_attributes,
+    validate_custom_event_count,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (

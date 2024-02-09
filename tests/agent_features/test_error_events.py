@@ -23,11 +23,13 @@ from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
     validate_error_event_sample_data,
-    validate_transaction_error_event_count,
 )
 from testing_support.sample_applications import fully_featured_app
 from testing_support.validators.validate_non_transaction_error_event import (
     validate_non_transaction_error_event,
+)
+from testing_support.validators.validate_transaction_error_event_count import (
+    validate_transaction_error_event_count,
 )
 
 from newrelic.api.application import application_instance as application

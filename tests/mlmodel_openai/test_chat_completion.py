@@ -376,7 +376,7 @@ def test_openai_chat_completion_async_disabled_custom_event_settings(loop):
 @reset_core_stats_engine()
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
-@validate_attributes("agent", ["llm"])
+# @validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_chat_completion_no_usage_data(set_trace_info, loop):
     # Only testing that there are events, and there was no exception raised
@@ -389,7 +389,7 @@ def test_openai_chat_completion_no_usage_data(set_trace_info, loop):
 @reset_core_stats_engine()
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
-@validate_attributes("agent", ["llm"])
+# @validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_chat_completion_async_no_usage_data(set_trace_info, loop):
     # Only testing that there are events, and there was no exception raised

@@ -31,6 +31,24 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
 STREAMED_RESPONSES = {
+    "Stream parsing error.": [
+        {
+            "Content-Type": "text/event-stream",
+            "openai-model": "gpt-3.5-turbo-0613",
+            "openai-organization": "new-relic-nkmd8b",
+            "openai-processing-ms": "516",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "200",
+            "x-ratelimit-limit-tokens": "40000",
+            "x-ratelimit-remaining-requests": "199",
+            "x-ratelimit-remaining-tokens": "39940",
+            "x-ratelimit-reset-requests": "7m12s",
+            "x-ratelimit-reset-tokens": "90ms",
+            "x-request-id": "49dbbffbd3c3f4612aa48def69059ccd",
+        },
+        200,
+        ["Bad response"],
+    ],
     "Invalid API key.": [
         {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
         401,

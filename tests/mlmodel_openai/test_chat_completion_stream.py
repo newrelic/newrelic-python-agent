@@ -14,7 +14,6 @@
 
 import openai
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -295,17 +294,18 @@ def test_openai_chat_completion_sync_outside_txn():
 def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info):
     set_trace_info()
 
-    loop.run_until_complete(
-        openai.ChatCompletion.acreate(
+    async def consumer():
+        generator = await openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
             max_tokens=100,
             stream=True,
         )
-    )
-    for resp in generator:
-        assert resp
+        async for resp in generator:
+            assert resp
+
+    loop.run_until_complete(consumer())
 
 
 @reset_core_stats_engine()
@@ -330,58 +330,35 @@ def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
 
-    loop.run_until_complete(
-        openai.ChatCompletion.acreate(
+    async def consumer():
+        generator = await openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
             max_tokens=100,
             stream=True,
         )
-    )
-    for resp in generator:
-        assert resp
+        async for resp in generator:
+            assert resp
+
+    loop.run_until_complete(consumer())
 
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_chat_completion_async_outside_transaction(loop):
-    loop.run_until_complete(
-        openai.ChatCompletion.acreate(
+    async def consumer():
+        generator = await openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
             max_tokens=100,
             stream=True,
         )
-    )
-    for resp in generator:
-        assert resp
+        async for resp in generator:
+            assert resp
 
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_chat_completion_stream:test_openai_chat_completion_async_disabled_custom_event_settings",
-    custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_chat_completion_async_disabled_custom_event_settings(loop):
-    loop.run_until_complete(
-        openai.ChatCompletion.acreate(
-            model="gpt-3.5-turbo",
-            messages=_test_openai_chat_completion_messages,
-            temperature=0.7,
-            max_tokens=100,
-            stream=True,
-        )
-    )
-    for resp in generator:
-        assert resp
+    loop.run_until_complete(consumer())
 
 
 def test_openai_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility():

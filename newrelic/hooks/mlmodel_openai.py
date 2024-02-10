@@ -658,7 +658,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
-    if not transaction or kwargs.get("stream", False):
+    if not transaction:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -683,88 +683,107 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     completion_id = str(uuid.uuid4())
 
     function_name = wrapped.__name__
-
-    with FunctionTrace(name=function_name, group="Llm/completion/OpenAI") as ft:
-        # Get trace information
-        available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
-
-        try:
-            return_val = await wrapped(*args, **kwargs)
-        except Exception as exc:
-            if OPENAI_V1:
-                response = getattr(exc, "response", "")
-                response_headers = getattr(response, "headers", "")
-                exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
-                # There appears to be a bug here in openai v1 where despite having code,
-                # param, etc in the error response, they are not populated on the exception
-                # object so grab them from the response body object instead.
-                body = getattr(exc, "body", {}) or {}
-                notice_error_attributes = {
-                    "http.statusCode": getattr(exc, "status_code", "") or "",
-                    "error.message": body.get("message", "") or "",
-                    "error.code": body.get("code", "") or "",
-                    "error.param": body.get("param", "") or "",
-                    "completion_id": completion_id,
-                }
-            else:
-                exc_organization = getattr(exc, "organization", "")
-                notice_error_attributes = {
-                    "http.statusCode": getattr(exc, "http_status", ""),
-                    "error.message": getattr(exc, "_message", ""),
-                    "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                    "error.param": getattr(exc, "param", ""),
-                    "completion_id": completion_id,
-                }
-            # Override the default message if it is not empty.
-            message = notice_error_attributes.pop("error.message")
-            if message:
-                exc._nr_message = message
-
-            ft.notice_error(
-                attributes=notice_error_attributes,
-            )
-            # Gather attributes to add to chat completion summary event in error context
-            error_chat_completion_dict = {
-                "id": completion_id,
-                "appName": app_name,
-                "conversation_id": conversation_id,
-                "api_key_last_four_digits": api_key_last_four_digits,
-                "span_id": span_id,
-                "trace_id": trace_id,
-                "transaction_id": transaction.guid,
-                "response.number_of_messages": len(request_message_list),
-                "request.model": kwargs.get("model") or kwargs.get("engine") or "",
-                "request.temperature": kwargs.get("temperature", ""),
-                "request.max_tokens": kwargs.get("max_tokens", ""),
-                "vendor": "openAI",
-                "ingest_source": "Python",
-                "response.organization": "" if exc_organization is None else exc_organization,
-                "duration": ft.duration,
-                "error": True,
+    ft = FunctionTrace(name=function_name, group="Llm/completion/OpenAI")
+    ft.__enter__()
+    # Get trace information
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+    try:
+        return_val = await wrapped(*args, **kwargs)
+        return_val._nr_ft = ft
+    except Exception as exc:
+        if OPENAI_V1:
+            response = getattr(exc, "response", "")
+            response_headers = getattr(response, "headers", "")
+            exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
+            # There appears to be a bug here in openai v1 where despite having code,
+            # param, etc in the error response, they are not populated on the exception
+            # object so grab them from the response body object instead.
+            body = getattr(exc, "body", {}) or {}
+            notice_error_attributes = {
+                "http.statusCode": getattr(exc, "status_code", "") or "",
+                "error.message": body.get("message", "") or "",
+                "error.code": body.get("code", "") or "",
+                "error.param": body.get("param", "") or "",
+                "completion_id": completion_id,
             }
-            transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
+        else:
+            exc_organization = getattr(exc, "organization", "")
+            notice_error_attributes = {
+                "http.statusCode": getattr(exc, "http_status", ""),
+                "error.message": getattr(exc, "_message", ""),
+                "error.code": getattr(getattr(exc, "error", ""), "code", ""),
+                "error.param": getattr(exc, "param", ""),
+                "completion_id": completion_id,
+            }
+        # Override the default message if it is not empty.
+        message = notice_error_attributes.pop("error.message")
+        if message:
+            exc._nr_message = message
 
-            create_chat_completion_message_event(
-                transaction,
-                app_name,
-                request_message_list,
-                completion_id,
-                span_id,
-                trace_id,
-                "",
-                None,
-                "",
-                conversation_id,
-                None,
-            )
+        ft.notice_error(
+            attributes=notice_error_attributes,
+        )
+        # Gather attributes to add to embedding summary event in error context
+        error_chat_completion_dict = {
+            "id": completion_id,
+            "appName": app_name,
+            "conversation_id": conversation_id,
+            "api_key_last_four_digits": api_key_last_four_digits,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "response.number_of_messages": len(request_message_list),
+            "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+            "request.temperature": kwargs.get("temperature", ""),
+            "request.max_tokens": kwargs.get("max_tokens", ""),
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "response.organization": "" if exc_organization is None else exc_organization,
+            "duration": ft.duration,
+            "error": True,
+        }
+        transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
-            raise
+        create_chat_completion_message_event(
+            transaction,
+            app_name,
+            request_message_list,
+            completion_id,
+            span_id,
+            trace_id,
+            "",
+            None,
+            "",
+            conversation_id,
+            None,
+        )
+
+        ft.__exit__(*sys.exc_info())
+        raise
+
+    stream = kwargs.get("stream", False)
+    # If response is not a stream generator, we exit the function trace now.
+    if not stream:
+        ft.__exit__(None, None, None)
 
     if not return_val:
         return return_val
 
+    if stream:
+        # The function trace will be exited when in the final iteration of the response
+        # generator.
+        setattr(return_val, "_nr_ft", ft)
+        setattr(return_val, "_nr_openai_attrs", getattr(return_val, "_nr_openai_attrs", {}))
+        return_val._nr_openai_attrs["messages"] = kwargs.get("messages", [])
+        return_val._nr_openai_attrs["temperature"] = kwargs.get("temperature", "")
+        return_val._nr_openai_attrs["max_tokens"] = kwargs.get("max_tokens", "")
+        return_val._nr_openai_attrs["request.model"] = kwargs.get("model") or kwargs.get("engine") or ""
+        return_val._nr_openai_attrs["api_key_last_four_digits"] = api_key_last_four_digits
+        return return_val
+
+    # If response is not a stream generator, record the event data.
     # At this point, we have a response so we can grab attributes only available on the response object
     response_headers = getattr(return_val, "_nr_response_headers", None)
     # In v1, response objects are pydantic models so this function call converts the
@@ -1064,7 +1083,159 @@ class GeneratorProxy(ObjectProxy):
         return super(GeneratorProxy, self).close()
 
 
-def wrap_engine_api_resource_create(wrapped, instance, args, kwargs):
+class AsyncGeneratorProxy(ObjectProxy):
+    def __init__(self, wrapped):
+        super(AsyncGeneratorProxy, self).__init__(wrapped)
+
+    def __aiter__(self):
+        self._nr_wrapped_iter = self.__wrapped__.__aiter__()
+        return self
+
+    async def __anext__(self):
+        transaction = current_transaction()
+        if not transaction:
+            return await self._nr_wrapped_iter.__anext__()
+
+        return_val = None
+        try:
+            return_val = await self._nr_wrapped_iter.__anext__()
+            if return_val:
+                choices = return_val.get("choices", [])
+                self._nr_openai_attrs["response.model"] = return_val.get("model", "")
+                self._nr_openai_attrs["id"] = return_val.get("id", "")
+                self._nr_openai_attrs["response.organization"] = return_val.get("organization", "")
+                if choices:
+                    delta = choices[0].get("delta", {})
+                    if delta:
+                        self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + delta.get(
+                            "content", ""
+                        )
+                        self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role", None) or delta.get("role")
+                    self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason", "")
+                self._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
+        except StopIteration as e:
+            if hasattr(self, "_nr_ft"):
+                openai_attrs = getattr(self, "_nr_openai_attrs", {})
+                self._nr_ft.__exit__(None, None, None)
+
+                # If there are no openai attrs exit early as there's no data to record.
+                if not openai_attrs:
+                    raise
+
+                message_ids = self.record_streaming_chat_completion_events(transaction)
+                # Cache message ids on transaction for retrieval after open ai call completion.
+                if not hasattr(transaction, "_nr_message_ids"):
+                    transaction._nr_message_ids = {}
+                response_id = openai_attrs.get("response_id", None)
+                transaction._nr_message_ids[response_id] = message_ids
+            raise
+        except Exception as e:
+            if hasattr(self, "_nr_ft"):
+                openai_attrs = getattr(self, "_nr_openai_attrs", {})
+                self._nr_ft.__exit__(*sys.exc_info())
+
+                # If there are no openai attrs exit early as there's no data to record.
+                if not openai_attrs:
+                    raise
+
+                self.record_streaming_chat_completion_events(transaction)
+            raise
+        return return_val
+
+    def record_streaming_chat_completion_events(self, transaction):
+        openai_attrs = getattr(self, "_nr_openai_attrs", {})
+
+        # If there are no openai attrs exit early as there's no data to record.
+        if not openai_attrs:
+            raise
+
+        content = openai_attrs.get("content", None)
+        role = openai_attrs.get("role")
+
+        custom_attrs_dict = transaction._custom_params
+        conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+
+        chat_completion_id = str(uuid.uuid4())
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
+
+        response_headers = openai_attrs.get("response_headers", {})
+        settings = transaction.settings if transaction.settings is not None else global_settings()
+        response_id = openai_attrs.get("id", None)
+        request_id = response_headers.get("x-request-id", "")
+        organization = response_headers.get("openai-organization", "")
+
+        api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
+
+        messages = openai_attrs.get("messages", [])
+
+        chat_completion_summary_dict = {
+            "id": chat_completion_id,
+            "appName": settings.app_name,
+            "conversation_id": conversation_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction.guid,
+            "request_id": request_id,
+            "api_key_last_four_digits": api_key_last_four_digits,
+            "duration": self._nr_ft.duration,
+            "request.model": openai_attrs.get("request.model", ""),
+            "response.model": openai_attrs.get("response.model", ""),
+            "response.organization": organization,
+            # Usage tokens are not supported in streaming for now.
+            "request.temperature": openai_attrs.get("temperature", ""),
+            "request.max_tokens": openai_attrs.get("max_tokens", ""),
+            "response.choices.finish_reason": openai_attrs.get("finish_reason", ""),
+            "response.headers.llmVersion": response_headers.get("openai-version", ""),
+            "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+                response_headers, "x-ratelimit-limit-requests", True
+            ),
+            "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+                response_headers, "x-ratelimit-limit-tokens", True
+            ),
+            "response.headers.ratelimitResetTokens": check_rate_limit_header(
+                response_headers, "x-ratelimit-reset-tokens", False
+            ),
+            "response.headers.ratelimitResetRequests": check_rate_limit_header(
+                response_headers, "x-ratelimit-reset-requests", False
+            ),
+            "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+                response_headers, "x-ratelimit-remaining-tokens", True
+            ),
+            "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+                response_headers, "x-ratelimit-remaining-requests", True
+            ),
+            "vendor": "openAI",
+            "ingest_source": "Python",
+            "response.number_of_messages": len(messages) + (1 if content else 0),
+        }
+
+        transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
+
+        output_message_list = []
+        if content:
+            output_message_list = [{"content": content, "role": role}]
+
+        return create_chat_completion_message_event(
+            transaction,
+            settings.app_name,
+            list(messages),
+            chat_completion_id,
+            span_id,
+            trace_id,
+            openai_attrs.get("response.model", ""),
+            response_id,
+            request_id,
+            conversation_id,
+            output_message_list,
+        )
+
+    async def aclose(self):
+        return await super(AsyncGeneratorProxy, self).aclose()
+
+
+def wrap_engine_api_resource_create_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if not transaction:
@@ -1077,6 +1248,23 @@ def wrap_engine_api_resource_create(wrapped, instance, args, kwargs):
 
     if stream:
         return GeneratorProxy(return_val)
+    else:
+        return return_val
+
+
+async def wrap_engine_api_resource_create_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    bound_args = bind_args(wrapped, args, kwargs)
+    stream = bound_args["params"].get("stream", False)
+
+    return_val = await wrapped(*args, **kwargs)
+
+    if stream:
+        return AsyncGeneratorProxy(return_val)
     else:
         return return_val
 
@@ -1132,4 +1320,6 @@ def instrument_openai_base_client(module):
 
 def instrument_openai_api_resources_abstract_engine_api_resource(module):
     if hasattr(module.EngineAPIResource, "create"):
-        wrap_function_wrapper(module, "EngineAPIResource.create", wrap_engine_api_resource_create)
+        wrap_function_wrapper(module, "EngineAPIResource.create", wrap_engine_api_resource_create_sync)
+    if hasattr(module.EngineAPIResource, "acreate"):
+        wrap_function_wrapper(module, "EngineAPIResource.acreate", wrap_engine_api_resource_create_async)

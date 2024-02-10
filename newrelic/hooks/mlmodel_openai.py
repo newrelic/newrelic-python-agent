@@ -124,8 +124,8 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    response_model = attribute_response.get("model", "")
-    response_usage = attribute_response.get("usage", {})
+    response_model = attribute_response.get("model", "") or ""
+    response_usage = attribute_response.get("usage", {}) or {}
     api_type = getattr(attribute_response, "api_type", "")
     organization = response_headers.get("openai-organization", "") if OPENAI_V1 else attribute_response.organization
 
@@ -143,8 +143,8 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "response.model": response_model,
         "response.organization": organization,
         "response.api_type": api_type,  # API type was removed in v1
-        "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
+        "response.usage.total_tokens": response_usage.get("total_tokens", "") if response_usage else "",
+        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if response_usage else "",
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
         "response.headers.ratelimitLimitRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-limit-requests", True
@@ -290,14 +290,14 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     if OPENAI_V1:
         response = response.model_dump()
 
-    response_model = response.get("model", "")
+    response_model = response.get("model", "") or ""
     response_id = response.get("id")
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    response_usage = response.get("usage", {})
+    response_usage = response.get("usage", {}) or {}
 
-    messages = kwargs.get("messages", [])
-    choices = response.get("choices", [])
+    messages = kwargs.get("messages", []) or []
+    choices = response.get("choices", []) or []
     organization = (
         response_headers.get("openai-organization", "") if OPENAI_V1 else getattr(response, "organization", "")
     )
@@ -319,9 +319,9 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         "duration": ft.duration,
         "response.model": response_model,
         "response.organization": organization,
-        "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if any(response_usage) else "",
-        "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
+        "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if response_usage else "",
+        "response.usage.total_tokens": response_usage.get("total_tokens", "") if response_usage else "",
+        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if response_usage else "",
         "response.choices.finish_reason": choices[0].get("finish_reason", "") if choices else "",
         "response.api_type": getattr(response, "api_type", ""),
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
@@ -581,8 +581,8 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    response_model = attribute_response.get("model", "")
-    response_usage = attribute_response.get("usage", {})
+    response_model = attribute_response.get("model", "") or ""
+    response_usage = attribute_response.get("usage", {}) or {}
     api_type = getattr(attribute_response, "api_type", "")
     organization = response_headers.get("openai-organization", "") if OPENAI_V1 else attribute_response.organization
 
@@ -600,8 +600,8 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "response.model": response_model,
         "response.organization": organization,
         "response.api_type": api_type,  # API type was removed in v1
-        "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
+        "response.usage.total_tokens": response_usage.get("total_tokens", "") if response_usage else "",
+        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if response_usage else "",
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
         "response.headers.ratelimitLimitRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-limit-requests", True
@@ -747,14 +747,14 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     if OPENAI_V1:
         response = response.model_dump()
 
-    response_model = response.get("model", "")
+    response_model = response.get("model", "") or ""
     response_id = response.get("id")
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    response_usage = response.get("usage", {})
+    response_usage = response.get("usage", {}) or {}
 
-    messages = kwargs.get("messages", [])
-    choices = response.get("choices", [])
+    messages = kwargs.get("messages", []) or []
+    choices = response.get("choices", []) or []
     organization = (
         response_headers.get("openai-organization", "") if OPENAI_V1 else getattr(response, "organization", "")
     )
@@ -776,9 +776,9 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         "duration": ft.duration,
         "response.model": response_model,
         "response.organization": organization,
-        "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if any(response_usage) else "",
-        "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
+        "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if response_usage else "",
+        "response.usage.total_tokens": response_usage.get("total_tokens", "") if response_usage else "",
+        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if response_usage else "",
         "response.choices.finish_reason": choices[0].get("finish_reason", "") if choices else "",
         "response.api_type": getattr(response, "api_type", ""),
         "response.headers.llmVersion": response_headers.get("openai-version", ""),

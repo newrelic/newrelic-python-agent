@@ -55,17 +55,18 @@ if get_openai_version() < (1, 0):
         "test_chat_completion_v1.py",
         "test_chat_completion_error_v1.py",
         "test_embeddings_v1.py",
-        "test_get_llm_message_ids_v1.py",
-        "test_chat_completion_error_v1.py",
         "test_embeddings_error_v1.py",
+        "test_get_llm_message_ids_v1.py",
     ]
 else:
     collect_ignore = [
         "test_embeddings.py",
         "test_embeddings_error.py",
         "test_chat_completion.py",
-        "test_get_llm_message_ids.py",
         "test_chat_completion_error.py",
+        "test_chat_completion_stream.py",
+        "test_chat_completion_stream_error.py",
+        "test_get_llm_message_ids.py",
     ]
 
 

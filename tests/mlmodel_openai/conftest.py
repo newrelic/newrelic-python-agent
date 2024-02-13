@@ -150,6 +150,7 @@ def openai_server(
     wrap_openai_api_requestor_request,
     wrap_openai_api_requestor_interpret_response,
     wrap_httpx_client_send,
+    wrap_engine_api_resource_create,
 ):
     """
     This fixture will either create a mocked backend for testing purposes, or will
@@ -283,60 +284,68 @@ def bind_request_interpret_response_params(result, stream):
     return result.content.decode("utf-8"), result.status_code, result.headers
 
 
-class GeneratorProxy(ObjectProxy):
-    def __init__(self, wrapped):
-        super(GeneratorProxy, self).__init__(wrapped)
+@pytest.fixture(scope="session")
+def generator_proxy():
+    class GeneratorProxy(ObjectProxy):
+        def __init__(self, wrapped):
+            super(GeneratorProxy, self).__init__(wrapped)
 
-    def __iter__(self):
-        return self
+        def __iter__(self):
+            return self
 
-    # Make this Proxy a pass through to our instrumentation's proxy by passing along
-    # get attr and set attr calls to our instrumentation's proxy.
-    def __getattr__(self, attr):
-        return self.__wrapped__.__getattr__(attr)
+        # Make this Proxy a pass through to our instrumentation's proxy by passing along
+        # get attr and set attr calls to our instrumentation's proxy.
+        def __getattr__(self, attr):
+            return self.__wrapped__.__getattr__(attr)
 
-    def __setattr__(self, attr, value):
-        return self.__wrapped__.__setattr__(attr, value)
+        def __setattr__(self, attr, value):
+            return self.__wrapped__.__setattr__(attr, value)
 
-    def __next__(self):
-        transaction = current_transaction()
-        if not transaction:
-            return self.__wrapped__.__next__()
+        def __next__(self):
+            transaction = current_transaction()
+            if not transaction:
+                return self.__wrapped__.__next__()
 
-        try:
-            return_val = self.__wrapped__.__next__()
-            if return_val:
-                prompt = [k for k in OPENAI_AUDIT_LOG_CONTENTS.keys()][-1]
-                headers = dict(
-                    filter(
-                        lambda k: k[0].lower() in RECORDED_HEADERS
-                        or k[0].lower().startswith("openai")
-                        or k[0].lower().startswith("x-ratelimit"),
-                        return_val._nr_response_headers.items(),
+            try:
+                return_val = self.__wrapped__.__next__()
+                if return_val:
+                    prompt = [k for k in OPENAI_AUDIT_LOG_CONTENTS.keys()][-1]
+                    headers = dict(
+                        filter(
+                            lambda k: k[0].lower() in RECORDED_HEADERS
+                            or k[0].lower().startswith("openai")
+                            or k[0].lower().startswith("x-ratelimit"),
+                            return_val._nr_response_headers.items(),
+                        )
                     )
-                )
-                OPENAI_AUDIT_LOG_CONTENTS[prompt][0] = headers
-                OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.to_dict_recursive())
+                    OPENAI_AUDIT_LOG_CONTENTS[prompt][0] = headers
+                    OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.to_dict_recursive())
+                return return_val
+            except Exception as e:
+                raise
+
+        def close(self):
+            return super(GeneratorProxy, self).close()
+
+    return GeneratorProxy
+
+
+@pytest.fixture(scope="session")
+def wrap_engine_api_resource_create(generator_proxy):
+    def _wrap_engine_api_resource_create(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        bound_args = bind_args(wrapped, args, kwargs)
+        stream = bound_args["params"].get("stream", False)
+
+        return_val = wrapped(*args, **kwargs)
+
+        if stream:
+            return generator_proxy(return_val)
+        else:
             return return_val
-        except Exception as e:
-            raise
 
-    def close(self):
-        return super(GeneratorProxy, self).close()
-
-
-def wrap_engine_api_resource_create(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-
-    if not transaction:
-        return wrapped(*args, **kwargs)
-
-    bound_args = bind_args(wrapped, args, kwargs)
-    stream = bound_args["params"].get("stream", False)
-
-    return_val = wrapped(*args, **kwargs)
-
-    if stream:
-        return GeneratorProxy(return_val)
-    else:
-        return return_val
+    return _wrap_engine_api_resource_create

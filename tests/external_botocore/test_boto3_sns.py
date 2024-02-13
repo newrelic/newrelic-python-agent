@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 import boto3
 import pytest
 from moto import mock_aws

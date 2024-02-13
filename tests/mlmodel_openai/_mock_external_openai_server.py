@@ -47,7 +47,26 @@ STREAMED_RESPONSES = {
             "x-request-id": "49dbbffbd3c3f4612aa48def69059ccd",
         },
         200,
-        ["Bad response"],
+        [
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv",
+                "object": "chat.completion.chunk",
+                "created": 1706565311,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [
+                    {"index": 0, "delta": {"role": "assistant", "content": ""}, "logprobs": None, "finish_reason": None}
+                ],
+            },
+            {
+                "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv",
+                "object": "chat.completion.chunk",
+                "created": 1706565311,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "212"}, "logprobs": None, "finish_reason": None}],
+            },
+        ],
     ],
     "Invalid API key.": [
         {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
@@ -643,7 +662,11 @@ def simple_get(openai_version, extract_shortened_prompt):
         if stream and status_code < 400:
             for resp in response:
                 data = json.dumps(resp).encode("utf-8")
-                self.wfile.write(b"data: %s\n" % data)
+                if prompt == "Stream parsing error.":
+                    # Force a parsing error by writing an invalid streamed response.
+                    self.wfile.write(b"data: %s" % data)
+                else:
+                    self.wfile.write(b"data: %s\n" % data)
         else:
             self.wfile.write(json.dumps(response).encode("utf-8"))
         return

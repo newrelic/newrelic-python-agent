@@ -949,225 +949,237 @@ class GeneratorProxy(ObjectProxy):
         return_val = None
         try:
             return_val = self.__wrapped__.__next__()
-            if return_val:
-                choices = return_val.get("choices", [])
-                self._nr_openai_attrs["response.model"] = return_val.get("model", "")
-                self._nr_openai_attrs["id"] = return_val.get("id", "")
-                self._nr_openai_attrs["response.organization"] = return_val.get("organization", "")
-                if choices:
-                    delta = choices[0].get("delta", {})
-                    if delta:
-                        self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + delta.get(
-                            "content", ""
-                        )
-                        self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role", None) or delta.get("role")
-                    self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason", "")
-                self._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
+            record_stream_chunk(self, return_val)
         except StopIteration as e:
-            if hasattr(self, "_nr_ft"):
-                openai_attrs = getattr(self, "_nr_openai_attrs", {})
-                self._nr_ft.__exit__(None, None, None)
-
-                # If there are no openai attrs exit early as there's no data to record.
-                if not openai_attrs:
-                    raise
-
-                message_ids = self.record_streaming_chat_completion_events(transaction, openai_attrs)
-                # Cache message ids on transaction for retrieval after open ai call completion.
-                if not hasattr(transaction, "_nr_message_ids"):
-                    transaction._nr_message_ids = {}
-                response_id = openai_attrs.get("response_id", None)
-                transaction._nr_message_ids[response_id] = message_ids
+            record_events_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:
-            if hasattr(self, "_nr_ft"):
-                openai_attrs = getattr(self, "_nr_openai_attrs", {})
-
-                # If there are no openai attrs exit early as there's no data to record.
-                if not openai_attrs:
-                    self._nr_ft.__exit__(*sys.exc_info())
-                    raise
-
-                self.record_streaming_chat_completion_events_error(transaction, openai_attrs, exc)
+            record_error(self, transaction, exc)
             raise
         return return_val
 
-    def record_streaming_chat_completion_events_error(self, transaction, openai_attrs, exc):
-        chat_completion_id = str(uuid.uuid4())
-        if OPENAI_V1:
-            response = getattr(exc, "response", "")
-            response_headers = getattr(response, "headers", "")
-            organization = response_headers.get("openai-organization", "") if response_headers else ""
-            # There appears to be a bug here in openai v1 where despite having code,
-            # param, etc in the error response, they are not populated on the exception
-            # object so grab them from the response body object instead.
-            body = getattr(exc, "body", {}) or {}
-            notice_error_attributes = {
-                "http.statusCode": getattr(exc, "status_code", "") or "",
-                "error.message": body.get("message", "") or "",
-                "error.code": body.get("code", "") or "",
-                "error.param": body.get("param", "") or "",
-                "completion_id": chat_completion_id,
-            }
-        else:
-            organization = getattr(exc, "organization", "")
-            notice_error_attributes = {
-                "http.statusCode": getattr(exc, "http_status", ""),
-                "error.message": getattr(exc, "_message", ""),
-                "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                "error.param": getattr(exc, "param", ""),
-                "completion_id": chat_completion_id,
-            }
-        message = notice_error_attributes.pop("error.message")
-        if message:
-            exc._nr_message = message
-        self._nr_ft.notice_error(
-            attributes=notice_error_attributes,
-        )
-        self._nr_ft.__exit__(*sys.exc_info())
-        content = openai_attrs.get("content", None)
-        role = openai_attrs.get("role")
-
-        custom_attrs_dict = transaction._custom_params
-        conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
-
-        available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
-
-        response_headers = openai_attrs.get("response_headers", {})
-        settings = transaction.settings if transaction.settings is not None else global_settings()
-        response_id = openai_attrs.get("id", None)
-        request_id = response_headers.get("x-request-id", "")
-
-        api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
-
-        messages = openai_attrs.get("messages", [])
-
-        chat_completion_summary_dict = {
-            "id": chat_completion_id,
-            "appName": settings.app_name,
-            "conversation_id": conversation_id,
-            "span_id": span_id,
-            "trace_id": trace_id,
-            "transaction_id": transaction.guid,
-            "api_key_last_four_digits": api_key_last_four_digits,
-            "duration": self._nr_ft.duration,
-            "request.model": openai_attrs.get("request.model", ""),
-            # Usage tokens are not supported in streaming for now.
-            "request.temperature": openai_attrs.get("temperature", ""),
-            "request.max_tokens": openai_attrs.get("max_tokens", ""),
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": len(messages) + (1 if content else 0),
-            "response.organization": organization,
-            "error": True,
-        }
-        transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
-
-        output_message_list = []
-        if content:
-            output_message_list = [{"content": content, "role": role}]
-
-        return create_chat_completion_message_event(
-            transaction,
-            settings.app_name,
-            list(messages),
-            chat_completion_id,
-            span_id,
-            trace_id,
-            openai_attrs.get("response.model", ""),
-            response_id,
-            request_id,
-            conversation_id,
-            output_message_list,
-        )
-
-    def record_streaming_chat_completion_events(self, transaction, openai_attrs):
-        content = openai_attrs.get("content", None)
-        role = openai_attrs.get("role")
-
-        custom_attrs_dict = transaction._custom_params
-        conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
-
-        chat_completion_id = str(uuid.uuid4())
-        available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
-
-        response_headers = openai_attrs.get("response_headers", {})
-        settings = transaction.settings if transaction.settings is not None else global_settings()
-        response_id = openai_attrs.get("id", None)
-        request_id = response_headers.get("x-request-id", "")
-        organization = response_headers.get("openai-organization", "")
-
-        api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
-
-        messages = openai_attrs.get("messages", [])
-
-        chat_completion_summary_dict = {
-            "id": chat_completion_id,
-            "appName": settings.app_name,
-            "conversation_id": conversation_id,
-            "span_id": span_id,
-            "trace_id": trace_id,
-            "transaction_id": transaction.guid,
-            "request_id": request_id,
-            "api_key_last_four_digits": api_key_last_four_digits,
-            "duration": self._nr_ft.duration,
-            "request.model": openai_attrs.get("request.model", ""),
-            "response.model": openai_attrs.get("response.model", ""),
-            "response.organization": organization,
-            # Usage tokens are not supported in streaming for now.
-            "request.temperature": openai_attrs.get("temperature", ""),
-            "request.max_tokens": openai_attrs.get("max_tokens", ""),
-            "response.choices.finish_reason": openai_attrs.get("finish_reason", ""),
-            "response.headers.llmVersion": response_headers.get("openai-version", ""),
-            "response.headers.ratelimitLimitRequests": check_rate_limit_header(
-                response_headers, "x-ratelimit-limit-requests", True
-            ),
-            "response.headers.ratelimitLimitTokens": check_rate_limit_header(
-                response_headers, "x-ratelimit-limit-tokens", True
-            ),
-            "response.headers.ratelimitResetTokens": check_rate_limit_header(
-                response_headers, "x-ratelimit-reset-tokens", False
-            ),
-            "response.headers.ratelimitResetRequests": check_rate_limit_header(
-                response_headers, "x-ratelimit-reset-requests", False
-            ),
-            "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
-                response_headers, "x-ratelimit-remaining-tokens", True
-            ),
-            "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
-                response_headers, "x-ratelimit-remaining-requests", True
-            ),
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": len(messages) + (1 if content else 0),
-        }
-
-        transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
-
-        output_message_list = []
-        if content:
-            output_message_list = [{"content": content, "role": role}]
-
-        return create_chat_completion_message_event(
-            transaction,
-            settings.app_name,
-            list(messages),
-            chat_completion_id,
-            span_id,
-            trace_id,
-            openai_attrs.get("response.model", ""),
-            response_id,
-            request_id,
-            conversation_id,
-            output_message_list,
-        )
-
     def close(self):
         return super(GeneratorProxy, self).close()
+
+
+def record_stream_chunk(self, return_val):
+    if return_val:
+        choices = return_val.get("choices", [])
+        self._nr_openai_attrs["response.model"] = return_val.get("model", "")
+        self._nr_openai_attrs["id"] = return_val.get("id", "")
+        self._nr_openai_attrs["response.organization"] = return_val.get("organization", "")
+        if choices:
+            delta = choices[0].get("delta", {})
+            if delta:
+                self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + delta.get("content", "")
+                self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role", None) or delta.get("role")
+            self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason", "")
+        self._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
+
+
+def record_events_on_stop_iteration(self, transaction):
+    if hasattr(self, "_nr_ft"):
+        openai_attrs = getattr(self, "_nr_openai_attrs", {})
+        self._nr_ft.__exit__(None, None, None)
+
+        # If there are no openai attrs exit early as there's no data to record.
+        if not openai_attrs:
+            raise
+
+        message_ids = record_streaming_chat_completion_events(self, transaction, openai_attrs)
+        # Cache message ids on transaction for retrieval after open ai call completion.
+        if not hasattr(transaction, "_nr_message_ids"):
+            transaction._nr_message_ids = {}
+        response_id = openai_attrs.get("response_id", None)
+        transaction._nr_message_ids[response_id] = message_ids
+
+
+def record_error(self, transaction, exc):
+    if hasattr(self, "_nr_ft"):
+        openai_attrs = getattr(self, "_nr_openai_attrs", {})
+
+        # If there are no openai attrs exit early as there's no data to record.
+        if not openai_attrs:
+            self._nr_ft.__exit__(*sys.exc_info())
+            raise
+
+        record_streaming_chat_completion_events_error(self, transaction, openai_attrs, exc)
+
+
+def record_streaming_chat_completion_events_error(self, transaction, openai_attrs, exc):
+    chat_completion_id = str(uuid.uuid4())
+    if OPENAI_V1:
+        response = getattr(exc, "response", "")
+        response_headers = getattr(response, "headers", "")
+        organization = response_headers.get("openai-organization", "") if response_headers else ""
+        # There appears to be a bug here in openai v1 where despite having code,
+        # param, etc in the error response, they are not populated on the exception
+        # object so grab them from the response body object instead.
+        body = getattr(exc, "body", {}) or {}
+        notice_error_attributes = {
+            "http.statusCode": getattr(exc, "status_code", "") or "",
+            "error.message": body.get("message", "") or "",
+            "error.code": body.get("code", "") or "",
+            "error.param": body.get("param", "") or "",
+            "completion_id": chat_completion_id,
+        }
+    else:
+        organization = getattr(exc, "organization", "")
+        notice_error_attributes = {
+            "http.statusCode": getattr(exc, "http_status", ""),
+            "error.message": getattr(exc, "_message", ""),
+            "error.code": getattr(getattr(exc, "error", ""), "code", ""),
+            "error.param": getattr(exc, "param", ""),
+            "completion_id": chat_completion_id,
+        }
+    message = notice_error_attributes.pop("error.message")
+    if message:
+        exc._nr_message = message
+    self._nr_ft.notice_error(
+        attributes=notice_error_attributes,
+    )
+    self._nr_ft.__exit__(*sys.exc_info())
+    content = openai_attrs.get("content", None)
+    role = openai_attrs.get("role")
+
+    custom_attrs_dict = transaction._custom_params
+    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+
+    response_headers = openai_attrs.get("response_headers", {})
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    response_id = openai_attrs.get("id", None)
+    request_id = response_headers.get("x-request-id", "")
+
+    api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
+
+    messages = openai_attrs.get("messages", [])
+
+    chat_completion_summary_dict = {
+        "id": chat_completion_id,
+        "appName": settings.app_name,
+        "conversation_id": conversation_id,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "api_key_last_four_digits": api_key_last_four_digits,
+        "duration": self._nr_ft.duration,
+        "request.model": openai_attrs.get("request.model", ""),
+        # Usage tokens are not supported in streaming for now.
+        "request.temperature": openai_attrs.get("temperature", ""),
+        "request.max_tokens": openai_attrs.get("max_tokens", ""),
+        "vendor": "openAI",
+        "ingest_source": "Python",
+        "response.number_of_messages": len(messages) + (1 if content else 0),
+        "response.organization": organization,
+        "error": True,
+    }
+    transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
+
+    output_message_list = []
+    if content:
+        output_message_list = [{"content": content, "role": role}]
+
+    return create_chat_completion_message_event(
+        transaction,
+        settings.app_name,
+        list(messages),
+        chat_completion_id,
+        span_id,
+        trace_id,
+        openai_attrs.get("response.model", ""),
+        response_id,
+        request_id,
+        conversation_id,
+        output_message_list,
+    )
+
+
+def record_streaming_chat_completion_events(self, transaction, openai_attrs):
+    content = openai_attrs.get("content", None)
+    role = openai_attrs.get("role")
+
+    custom_attrs_dict = transaction._custom_params
+    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+
+    chat_completion_id = str(uuid.uuid4())
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+
+    response_headers = openai_attrs.get("response_headers", {})
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    response_id = openai_attrs.get("id", None)
+    request_id = response_headers.get("x-request-id", "")
+    organization = response_headers.get("openai-organization", "")
+
+    api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
+
+    messages = openai_attrs.get("messages", [])
+
+    chat_completion_summary_dict = {
+        "id": chat_completion_id,
+        "appName": settings.app_name,
+        "conversation_id": conversation_id,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "request_id": request_id,
+        "api_key_last_four_digits": api_key_last_four_digits,
+        "duration": self._nr_ft.duration,
+        "request.model": openai_attrs.get("request.model", ""),
+        "response.model": openai_attrs.get("response.model", ""),
+        "response.organization": organization,
+        # Usage tokens are not supported in streaming for now.
+        "request.temperature": openai_attrs.get("temperature", ""),
+        "request.max_tokens": openai_attrs.get("max_tokens", ""),
+        "response.choices.finish_reason": openai_attrs.get("finish_reason", ""),
+        "response.headers.llmVersion": response_headers.get("openai-version", ""),
+        "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-requests", True
+        ),
+        "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-limit-tokens", True
+        ),
+        "response.headers.ratelimitResetTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-tokens", False
+        ),
+        "response.headers.ratelimitResetRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-reset-requests", False
+        ),
+        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-tokens", True
+        ),
+        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+            response_headers, "x-ratelimit-remaining-requests", True
+        ),
+        "vendor": "openAI",
+        "ingest_source": "Python",
+        "response.number_of_messages": len(messages) + (1 if content else 0),
+    }
+
+    transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
+
+    output_message_list = []
+    if content:
+        output_message_list = [{"content": content, "role": role}]
+
+    return create_chat_completion_message_event(
+        transaction,
+        settings.app_name,
+        list(messages),
+        chat_completion_id,
+        span_id,
+        trace_id,
+        openai_attrs.get("response.model", ""),
+        response_id,
+        request_id,
+        conversation_id,
+        output_message_list,
+    )
 
 
 class AsyncGeneratorProxy(ObjectProxy):
@@ -1186,222 +1198,14 @@ class AsyncGeneratorProxy(ObjectProxy):
         return_val = None
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
-            if return_val:
-                choices = return_val.get("choices", [])
-                self._nr_openai_attrs["response.model"] = return_val.get("model", "")
-                self._nr_openai_attrs["id"] = return_val.get("id", "")
-                self._nr_openai_attrs["response.organization"] = return_val.get("organization", "")
-                if choices:
-                    delta = choices[0].get("delta", {})
-                    if delta:
-                        self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + delta.get(
-                            "content", ""
-                        )
-                        self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role", None) or delta.get("role")
-                    self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason", "")
-                self._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
+            record_stream_chunk(self, return_val)
         except StopAsyncIteration as e:
-            if hasattr(self, "_nr_ft"):
-                openai_attrs = getattr(self, "_nr_openai_attrs", {})
-                self._nr_ft.__exit__(None, None, None)
-
-                # If there are no openai attrs exit early as there's no data to record.
-                if not openai_attrs:
-                    raise
-
-                message_ids = self.record_streaming_chat_completion_events(transaction, openai_attrs)
-                # Cache message ids on transaction for retrieval after open ai call completion.
-                if not hasattr(transaction, "_nr_message_ids"):
-                    transaction._nr_message_ids = {}
-                response_id = openai_attrs.get("response_id", None)
-                transaction._nr_message_ids[response_id] = message_ids
+            record_events_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:
-            if hasattr(self, "_nr_ft"):
-                openai_attrs = getattr(self, "_nr_openai_attrs", {})
-
-                # If there are no openai attrs exit early as there's no data to record.
-                if not openai_attrs:
-                    self._nr_ft.__exit__(*sys.exc_info())
-                    raise
-
-                self.record_streaming_chat_completion_events_error(transaction, openai_attrs, exc)
+            record_error(self, transaction, exc)
             raise
         return return_val
-
-    def record_streaming_chat_completion_events_error(self, transaction, openai_attrs, exc):
-        chat_completion_id = str(uuid.uuid4())
-        if OPENAI_V1:
-            response = getattr(exc, "response", "")
-            response_headers = getattr(response, "headers", "")
-            organization = response_headers.get("openai-organization", "") if response_headers else ""
-            # There appears to be a bug here in openai v1 where despite having code,
-            # param, etc in the error response, they are not populated on the exception
-            # object so grab them from the response body object instead.
-            body = getattr(exc, "body", {}) or {}
-            notice_error_attributes = {
-                "http.statusCode": getattr(exc, "status_code", "") or "",
-                "error.message": body.get("message", "") or "",
-                "error.code": body.get("code", "") or "",
-                "error.param": body.get("param", "") or "",
-                "completion_id": chat_completion_id,
-            }
-        else:
-            organization = getattr(exc, "organization", "")
-            notice_error_attributes = {
-                "http.statusCode": getattr(exc, "http_status", ""),
-                "error.message": getattr(exc, "_message", ""),
-                "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                "error.param": getattr(exc, "param", ""),
-                "completion_id": chat_completion_id,
-            }
-        message = notice_error_attributes.pop("error.message")
-        if message:
-            exc._nr_message = message
-        self._nr_ft.notice_error(
-            attributes=notice_error_attributes,
-        )
-        self._nr_ft.__exit__(*sys.exc_info())
-        content = openai_attrs.get("content", None)
-        role = openai_attrs.get("role")
-
-        custom_attrs_dict = transaction._custom_params
-        conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
-
-        available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
-
-        response_headers = openai_attrs.get("response_headers", {})
-        settings = transaction.settings if transaction.settings is not None else global_settings()
-        response_id = openai_attrs.get("id", None)
-        request_id = response_headers.get("x-request-id", "")
-
-        api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
-
-        messages = openai_attrs.get("messages", [])
-
-        chat_completion_summary_dict = {
-            "id": chat_completion_id,
-            "appName": settings.app_name,
-            "conversation_id": conversation_id,
-            "span_id": span_id,
-            "trace_id": trace_id,
-            "transaction_id": transaction.guid,
-            "api_key_last_four_digits": api_key_last_four_digits,
-            "duration": self._nr_ft.duration,
-            "request.model": openai_attrs.get("request.model", ""),
-            # Usage tokens are not supported in streaming for now.
-            "request.temperature": openai_attrs.get("temperature", ""),
-            "request.max_tokens": openai_attrs.get("max_tokens", ""),
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": len(messages) + (1 if content else 0),
-            "response.organization": organization,
-            "error": True,
-        }
-        transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
-
-        output_message_list = []
-        if content:
-            output_message_list = [{"content": content, "role": role}]
-
-        return create_chat_completion_message_event(
-            transaction,
-            settings.app_name,
-            list(messages),
-            chat_completion_id,
-            span_id,
-            trace_id,
-            openai_attrs.get("response.model", ""),
-            response_id,
-            request_id,
-            conversation_id,
-            output_message_list,
-        )
-
-    def record_streaming_chat_completion_events(self, transaction, openai_attrs):
-        content = openai_attrs.get("content", None)
-        role = openai_attrs.get("role")
-
-        custom_attrs_dict = transaction._custom_params
-        conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
-
-        chat_completion_id = str(uuid.uuid4())
-        available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
-
-        response_headers = openai_attrs.get("response_headers", {})
-        settings = transaction.settings if transaction.settings is not None else global_settings()
-        response_id = openai_attrs.get("id", None)
-        request_id = response_headers.get("x-request-id", "")
-        organization = response_headers.get("openai-organization", "")
-
-        api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
-
-        messages = openai_attrs.get("messages", [])
-
-        chat_completion_summary_dict = {
-            "id": chat_completion_id,
-            "appName": settings.app_name,
-            "conversation_id": conversation_id,
-            "span_id": span_id,
-            "trace_id": trace_id,
-            "transaction_id": transaction.guid,
-            "request_id": request_id,
-            "api_key_last_four_digits": api_key_last_four_digits,
-            "duration": self._nr_ft.duration,
-            "request.model": openai_attrs.get("request.model", ""),
-            "response.model": openai_attrs.get("response.model", ""),
-            "response.organization": organization,
-            # Usage tokens are not supported in streaming for now.
-            "request.temperature": openai_attrs.get("temperature", ""),
-            "request.max_tokens": openai_attrs.get("max_tokens", ""),
-            "response.choices.finish_reason": openai_attrs.get("finish_reason", ""),
-            "response.headers.llmVersion": response_headers.get("openai-version", ""),
-            "response.headers.ratelimitLimitRequests": check_rate_limit_header(
-                response_headers, "x-ratelimit-limit-requests", True
-            ),
-            "response.headers.ratelimitLimitTokens": check_rate_limit_header(
-                response_headers, "x-ratelimit-limit-tokens", True
-            ),
-            "response.headers.ratelimitResetTokens": check_rate_limit_header(
-                response_headers, "x-ratelimit-reset-tokens", False
-            ),
-            "response.headers.ratelimitResetRequests": check_rate_limit_header(
-                response_headers, "x-ratelimit-reset-requests", False
-            ),
-            "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
-                response_headers, "x-ratelimit-remaining-tokens", True
-            ),
-            "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
-                response_headers, "x-ratelimit-remaining-requests", True
-            ),
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": len(messages) + (1 if content else 0),
-        }
-
-        transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
-
-        output_message_list = []
-        if content:
-            output_message_list = [{"content": content, "role": role}]
-
-        return create_chat_completion_message_event(
-            transaction,
-            settings.app_name,
-            list(messages),
-            chat_completion_id,
-            span_id,
-            trace_id,
-            openai_attrs.get("response.model", ""),
-            response_id,
-            request_id,
-            conversation_id,
-            output_message_list,
-        )
 
     async def aclose(self):
         return await super(AsyncGeneratorProxy, self).aclose()

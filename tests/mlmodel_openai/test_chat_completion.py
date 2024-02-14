@@ -17,6 +17,7 @@ from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
+    validate_attributes,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -143,6 +144,7 @@ chat_completion_recorded_events = [
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_chat_completion_sync_in_txn_with_convo_id(set_trace_info):
     set_trace_info()
@@ -332,6 +334,7 @@ def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info):
     set_trace_info()

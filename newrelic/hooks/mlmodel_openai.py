@@ -35,6 +35,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
@@ -113,7 +114,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     if not response:
         return response
 
-    response_headers = getattr(response, "_nr_response_headers", None)
+    response_headers = getattr(response, "_nr_response_headers", {})
 
     # In v1, response objects are pydantic models so this function call converts the object back to a dictionary for backwards compatibility
     # Use standard response object returned from create call for v0
@@ -181,6 +182,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     request_message_list = kwargs.get("messages", [])
 
@@ -283,7 +285,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         return return_val
 
     # At this point, we have a response so we can grab attributes only available on the response object
-    response_headers = getattr(return_val, "_nr_response_headers", None)
+    response_headers = getattr(return_val, "_nr_response_headers", {})
     # In v1, response objects are pydantic models so this function call converts the
     # object back to a dictionary for backwards compatibility.
     response = return_val
@@ -492,6 +494,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
@@ -570,7 +573,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     if not response:
         return response
 
-    response_headers = getattr(response, "_nr_response_headers", None)
+    response_headers = getattr(response, "_nr_response_headers", {})
 
     # In v1, response objects are pydantic models so this function call converts the object back to a dictionary for backwards compatibility
     # Use standard response object returned from create call for v0
@@ -638,6 +641,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     request_message_list = kwargs.get("messages", [])
 
@@ -859,12 +863,22 @@ def bind_base_client_process_response(
     return response
 
 
-def wrap_base_client_process_response(wrapped, instance, args, kwargs):
+def wrap_base_client_process_response_sync(wrapped, instance, args, kwargs):
     response = bind_base_client_process_response(*args, **kwargs)
     nr_response_headers = getattr(response, "headers")
 
     return_val = wrapped(*args, **kwargs)
     # Obtain response headers for v1
+    return_val._nr_response_headers = nr_response_headers
+    return return_val
+
+
+async def wrap_base_client_process_response_async(wrapped, instance, args, kwargs):
+    response = bind_base_client_process_response(*args, **kwargs)
+    nr_response_headers = getattr(response, "headers")
+
+    return_val = await wrapped(*args, **kwargs)
+    # Obtain reponse headers for v1
     return_val._nr_response_headers = nr_response_headers
     return return_val
 
@@ -918,4 +932,9 @@ def instrument_openai_resources_embeddings(module):
 
 def instrument_openai_base_client(module):
     if hasattr(module.BaseClient, "_process_response"):
-        wrap_function_wrapper(module, "BaseClient._process_response", wrap_base_client_process_response)
+        wrap_function_wrapper(module, "BaseClient._process_response", wrap_base_client_process_response_sync)
+    else:
+        if hasattr(module.SyncAPIClient, "_process_response"):
+            wrap_function_wrapper(module, "SyncAPIClient._process_response", wrap_base_client_process_response_sync)
+        if hasattr(module.AsyncAPIClient, "_process_response"):
+            wrap_function_wrapper(module, "AsyncAPIClient._process_response", wrap_base_client_process_response_async)

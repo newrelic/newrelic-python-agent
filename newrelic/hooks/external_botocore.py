@@ -97,6 +97,7 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
+    message_ids = []
     for index, message in enumerate(input_message_list):
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
@@ -128,6 +129,7 @@ def create_chat_completion_message_event(
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
         else:
             id_ = str(uuid.uuid4())  # No response IDs, use random UUID
+        message_ids.append(id_)
 
         chat_completion_message_dict = {
             "id": id_,
@@ -147,6 +149,7 @@ def create_chat_completion_message_event(
             "is_response": True,
         }
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
+    return (conversation_id, request_id, message_ids)
 
 
 def extract_bedrock_titan_text_model(request_body, response_body=None):
@@ -348,6 +351,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("Bedrock", BOTOCORE_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     # Read and replace request file stream bodies
     request_body = kwargs["body"]
@@ -577,7 +581,7 @@ def handle_chat_completion_event(
 
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
-    create_chat_completion_message_event(
+    message_ids = create_chat_completion_message_event(
         transaction=transaction,
         app_name=settings.app_name,
         input_message_list=input_message_list,
@@ -590,6 +594,10 @@ def handle_chat_completion_event(
         conversation_id=conversation_id,
         response_id=response_id,
     )
+
+    if not hasattr(transaction, "_nr_message_ids"):
+        transaction._nr_message_ids = {}
+    transaction._nr_message_ids["bedrock_key"] = message_ids
 
 
 CUSTOM_TRACE_POINTS = {

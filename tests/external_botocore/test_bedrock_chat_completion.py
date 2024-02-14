@@ -30,6 +30,7 @@ from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
+    validate_attributes,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -125,6 +126,7 @@ def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_m
         ],
         background_task=True,
     )
+    @validate_attributes("agent", ["llm"])
     @background_task(name="test_bedrock_chat_completion_in_txn_with_convo_id")
     def _test():
         set_trace_info()

@@ -1275,23 +1275,17 @@ async def wrap_engine_api_resource_create_async(wrapped, instance, args, kwargs)
         return return_val
 
 
-async def wrap_stream_iter_events_async(wrapped, instance, args, kwargs):
+def wrap_stream_iter_events_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
-        async_iterator = wrapped(*args, **kwargs)
-        async for return_val in async_iterator:
-            yield return_val
-        return
+        return wrapped(*args, **kwargs)
 
-    async_iterator = wrapped(*args, **kwargs)
-    try:
-        async for return_val in async_iterator:
-            record_stream_chunk(instance, return_val)
-            yield return_val
-    except Exception as exc:
-        record_error(instance, transaction, exc)
-        raise
-    record_events_on_stop_iteration(instance, transaction)
+    proxied_return_val = AsyncGeneratorProxy(wrapped(*args, **kwargs))
+    # Pass the nr attributes to the generator proxy.
+    proxied_return_val._nr_ft = instance._nr_ft
+    proxied_return_val._nr_response_headers = instance._nr_response_headers
+    proxied_return_val._nr_openai_attrs = instance._nr_openai_attrs
+    return proxied_return_val
 
 
 def instrument_openai_api_resources_embedding(module):

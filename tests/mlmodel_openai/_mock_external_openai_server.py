@@ -666,7 +666,7 @@ def simple_get(openai_version, extract_shortened_prompt):
                     # Force a parsing error by writing an invalid streamed response.
                     self.wfile.write(b"data: %s" % data)
                 else:
-                    self.wfile.write(b"data: %s\n" % data)
+                    self.wfile.write(b"data: %s\n\n" % data)
         else:
             self.wfile.write(json.dumps(response).encode("utf-8"))
         return

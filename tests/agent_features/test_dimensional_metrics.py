@@ -62,6 +62,7 @@ def otlp_content_encoding(request):
 _test_tags_examples = [
     (None, None),
     ({}, None),
+    ({"drop-me": None}, None),
     ([], None),
     ({"str": "a"}, frozenset({("str", "a")})),
     ({"int": 1}, frozenset({("int", 1)})),

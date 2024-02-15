@@ -69,7 +69,8 @@ def exercise_record_log_event():
     set_trace_ids()
 
     record_log_event("no_other_arguments")
-    record_log_event("keyword_arguments", timestamp=1234, level="ERROR", attributes={"key": "value"})
+    # Attributes with value None should be dropped.
+    record_log_event("keyword_arguments", timestamp=1234, level="ERROR", attributes={"key": "value", "drop-me": None})
     record_log_event("positional_arguments", "WARNING", 2345, {"key": "value"})
     record_log_event("serialized_attributes", attributes=_serialized_attributes)
     record_log_event(None, attributes={"attributes_only": "value"})

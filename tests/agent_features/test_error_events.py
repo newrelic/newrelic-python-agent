@@ -247,11 +247,14 @@ _err_params = {"key": "value"}
 @reset_core_stats_engine()
 @validate_non_transaction_error_event(_intrinsic_attributes, required_user=_err_params)
 def test_error_event_with_params_outside_transaction():
+    attrs = {"drop-me": None}
+    attrs.update(_err_params)
+
     try:
         raise outside_error
     except ErrorEventOutsideTransactionError:
         app = application()
-        notice_error(sys.exc_info(), attributes=_err_params, application=app)
+        notice_error(sys.exc_info(), attributes=attrs, application=app)
 
 
 @reset_core_stats_engine()

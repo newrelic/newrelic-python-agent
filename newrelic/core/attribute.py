@@ -110,6 +110,10 @@ class CastingFailureException(Exception):
     pass
 
 
+class NullValueException(ValueError):
+    pass
+
+
 class Attribute(_Attribute):
     def __repr__(self):
         return "Attribute(name=%r, value=%r, destinations=%r)" % (self.name, self.value, bin(self.destinations))
@@ -285,6 +289,15 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
         _logger.debug("Attribute value cannot be cast to a string. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
+    except NullValueException:
+        _logger.debug(
+            "Attribute value is None. There is no difference between omitting the key "
+            "and sending None. Dropping attribute: %r=%r",
+            name,
+            value,
+        )
+        return FAILED_RESULT
+
     else:
         # Check length after casting
 
@@ -311,9 +324,29 @@ def sanitize(value):
     Insights. Otherwise, convert value to a string.
 
     Raise CastingFailureException, if str(value) somehow fails.
+    Raise NullValueException, if value is None (null values SHOULD NOT be reported).
     """
 
     valid_value_types = (six.text_type, six.binary_type, bool, float, six.integer_types)
+    # The agent spec says:
+    #   Agents **SHOULD NOT** report `null` attribute values. The behavior of `IS NULL`
+    #   queries in insights makes it so that omitted keys behave the same as `null`
+    #   keys. Since there is no difference between omitting the key and sending a
+    #   `null, we **SHOULD** reduce the payload size by omitting `null` values from the
+    #   payload entirely.
+    #
+    #   Since there should not be a difference in behavior for customers recording
+    #   `null` attributes versus customers omitting an attribute, agents **SHOULD** add
+    #   debug logging when a null value is recorded. This will give agents observability
+    #   on recording of `null` attributes outside of audit logs.
+    #
+    #   "empty" values such as `""` and `0` **MUST** be sent as an attribute in the
+    #   payload.
+    if value is None:
+        raise NullValueException(
+            "Attribute value is of type: None. Omitting value since there is "
+            "no difference between omitting the key and sending None."
+        )
 
     # When working with numpy, note that numpy has its own `int`s, `str`s,
     # et cetera. `numpy.str_` and `numpy.float_` inherit from Python's native

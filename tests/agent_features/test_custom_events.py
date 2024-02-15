@@ -73,6 +73,25 @@ _event = [_intrinsics, _user_params]
 @reset_core_stats_engine()
 @validate_custom_event_in_application_stats_engine(_event)
 @background_task()
+def test_add_custom_event_to_transaction_stats_engine_drops_none_attr():
+    attrs = {"drop-me": None}
+    attrs.update(_user_params)
+    record_custom_event("FooEvent", attrs)
+
+
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine(_event)
+def test_add_custom_event_to_application_stats_engine_drops_none_attr():
+    attrs = {"drop-me": None}
+    attrs.update(_user_params)
+
+    app = application()
+    record_custom_event("FooEvent", attrs, application=app)
+
+
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine(_event)
+@background_task()
 def test_add_custom_event_to_transaction_stats_engine():
     record_custom_event("FooEvent", _user_params)
 

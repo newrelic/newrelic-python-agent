@@ -693,7 +693,7 @@ def test_chat_completion_stream_parsing_error_async(loop, monkeypatch, set_trace
 @validate_custom_events(expected_events_stream_parsing_error)
 @validate_custom_event_count(count=2)
 @background_task()
-def test_chat_completion_stream_parsing_error(loop, monkeypatch, set_trace_info):
+def test_chat_completion_stream_parsing_error(monkeypatch, set_trace_info):
     with pytest.raises(openai.error.APIError):
         set_trace_info()
 

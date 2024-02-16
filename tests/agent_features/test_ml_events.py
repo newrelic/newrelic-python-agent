@@ -15,7 +15,7 @@
 import time
 
 import pytest
-from testing_support.fixtures import (  # function_not_called,; override_application_settings,
+from testing_support.fixtures import (
     function_not_called,
     override_application_settings,
     reset_core_stats_engine,

@@ -36,7 +36,6 @@ jobs:
       - python
       - elasticsearchserver07
       - elasticsearchserver08
-      - gearman
       - grpc
       - kafka
       - memcached
@@ -450,7 +449,7 @@ jobs:
           --add-host=host.docker.internal:host-gateway
 
       cluster-setup:
-        image: hmstepanek/redis-cluster:1.0.0    
+        image: hmstepanek/redis-cluster:1.0.0
         options: >-
           --add-host=host.docker.internal:host-gateway
 
@@ -736,7 +735,7 @@ jobs:
 
     services:
       zookeeper:
-        image: bitnami/zookeeper:3.7
+        image: bitnami/zookeeper:3.9.1
         env:
           ALLOW_ANONYMOUS_LOGIN: yes
 
@@ -744,7 +743,7 @@ jobs:
           - 2181:2181
 
       kafka:
-        image: bitnami/kafka:3.2
+        image: bitnami/kafka:3.6.1
         ports:
           - 8080:8080
           - 8082:8082
@@ -934,63 +933,6 @@ jobs:
         # Set health checks to wait until elasticsearch has started
         options: >-
           --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          retention-days: 1
-
-  gearman:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-20.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-
-    services:
-      gearman:
-        image: artefactual/gearmand
-        ports:
-          - 8080:4730
-        # Set health checks to wait until gearman has started
-        options: >-
-          --health-cmd "(echo status ; sleep 0.1) | nc 127.0.0.1 4730 -w 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

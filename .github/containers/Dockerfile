@@ -89,10 +89,10 @@ ENV HOME /root
 WORKDIR "${HOME}"
 
 # Install pyenv
-ENV PYENV_ROOT="${HOME}/.pyenv"
+ENV PYENV_ROOT="/usr/local/pyenv"
 RUN curl https://pyenv.run/ | /bin/bash
-ENV PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:${PATH}"
-RUN echo 'eval "$(pyenv init -)"' >>$HOME/.bashrc && \
+ENV PATH="${PYENV_ROOT}/bin:${PYENV_ROOT}/shims:${PATH}"
+RUN echo 'eval "$(pyenv init -)"' >>${HOME}/.bashrc && \
     pyenv update
 
 # Install Python

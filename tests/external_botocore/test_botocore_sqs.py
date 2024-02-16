@@ -25,16 +25,14 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import (
-    get_package_version,
-    get_package_version_tuple,
-)
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 MOTO_VERSION = get_package_version_tuple("moto")
+BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 url = "sqs.us-east-1.amazonaws.com"
-botocore_version = tuple([int(n) for n in get_package_version("botocore").split(".")])
-if botocore_version < (1, 29, 0):
+
+if BOTOCORE_VERSION < (1, 29, 0):
     url = "queue.amazonaws.com"
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"

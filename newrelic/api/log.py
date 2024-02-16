@@ -16,14 +16,16 @@ import json
 import logging
 import re
 import warnings
-from logging import Formatter, LogRecord
 
+from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common import agent_http
+from newrelic.common.encoding_utils import json_encode
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error
+from newrelic.packages import six
 
 
 def format_exc_info(exc_info):
@@ -42,8 +44,30 @@ def format_exc_info(exc_info):
     return formatted
 
 
-class NewRelicContextFormatter(Formatter):
-    DEFAULT_LOG_RECORD_KEYS = frozenset(vars(LogRecord("", 0, "", 0, "", (), None)))
+def safe_json_encode(obj, ignore_string_types=False, **kwargs):
+    # Performs the same operation as json_encode but replaces unserializable objects with a string containing their class name.
+    # If ignore_string_types is True, do not encode string types further.
+    # Currently used for safely encoding logging attributes.
+
+    if ignore_string_types and isinstance(obj, (six.string_types, six.binary_type)):
+        return obj
+
+    # Attempt to run through JSON serialization
+    try:
+        return json_encode(obj, **kwargs)
+    except Exception:
+        pass
+
+    # If JSON serialization fails then return a repr
+    try:
+        return repr(obj)
+    except Exception:
+        # If repr fails then default to an unprinatable object name
+        return "<unprintable %s object>" % type(obj).__name__
+
+
+class NewRelicContextFormatter(logging.Formatter):
+    DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(logging.LogRecord("", 0, "", 0, "", (), None))) | {"message"})
 
     def __init__(self, *args, **kwargs):
         super(NewRelicContextFormatter, self).__init__()
@@ -76,28 +100,65 @@ class NewRelicContextFormatter(Formatter):
         return output
 
     def format(self, record):
-        def safe_str(object, *args, **kwargs):
-            """Convert object to str, catching any errors raised."""
-            try:
-                return str(object, *args, **kwargs)
-            except:
-                return "<unprintable %s object>" % type(object).__name__
-
-        return json.dumps(self.log_record_to_dict(record), default=safe_str, separators=(",", ":"))
+        return json.dumps(self.log_record_to_dict(record), default=safe_json_encode, separators=(",", ":"))
 
 
 class NewRelicLogForwardingHandler(logging.Handler):
+    IGNORED_LOG_RECORD_KEYS = set(["message", "msg"])
+
     def emit(self, record):
         try:
-            # Avoid getting local log decorated message
-            if hasattr(record, "_nr_original_message"):
-                message = record._nr_original_message()
+            nr = None
+            transaction = current_transaction()
+            # Retrieve settings
+            if transaction:
+                settings = transaction.settings
+                nr = transaction
             else:
-                message = record.getMessage()
+                application = application_instance(activate=False)
+                if application and application.enabled:
+                    nr = application
+                    settings = application.settings
+                else:
+                    # If no settings have been found, fallback to global settings
+                    settings = global_settings()
 
-            record_log_event(message, record.levelname, int(record.created * 1000))
+            # If logging is enabled and the application or transaction is not None.
+            if settings and settings.application_logging.enabled and nr:
+                level_name = str(getattr(record, "levelname", "UNKNOWN"))
+                if settings.application_logging.metrics.enabled:
+                    nr.record_custom_metric("Logging/lines", {"count": 1})
+                    nr.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+
+                if settings.application_logging.forwarding.enabled:
+                    if self.formatter:
+                        # Formatter supplied, allow log records to be formatted into a string
+                        message = self.format(record)
+                    else:
+                        # No formatter supplied, attempt to handle dict log records
+                        message = record.msg
+                        if not isinstance(message, dict):
+                            # Allow python to convert the message to a string and template it with args.
+                            message = record.getMessage()
+
+                    # Grab and filter context attributes from log record
+                    context_attrs = self.filter_record_attributes(record)
+
+                    record_log_event(
+                        message=message,
+                        level=level_name,
+                        timestamp=int(record.created * 1000),
+                        attributes=context_attrs,
+                    )
+        except RecursionError:  # Emulates behavior of CPython.
+            raise
         except Exception:
             self.handleError(record)
+
+    @classmethod
+    def filter_record_attributes(cls, record):
+        record_attrs = vars(record)
+        return {k: record_attrs[k] for k in record_attrs if k not in cls.IGNORED_LOG_RECORD_KEYS}
 
 
 class NewRelicLogHandler(logging.Handler):
@@ -126,8 +187,8 @@ class NewRelicLogHandler(logging.Handler):
             "The contributed NewRelicLogHandler has been superseded by automatic instrumentation for "
             "logging in the standard lib. If for some reason you need to manually configure a handler, "
             "please use newrelic.api.log.NewRelicLogForwardingHandler to take advantage of all the "
-            "features included in application log forwarding such as proper batching.", 
-            DeprecationWarning
+            "features included in application log forwarding such as proper batching.",
+            DeprecationWarning,
         )
         super(NewRelicLogHandler, self).__init__(level=level)
         self.license_key = license_key or self.settings.license_key

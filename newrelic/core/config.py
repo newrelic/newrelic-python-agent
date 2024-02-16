@@ -144,6 +144,10 @@ class MachineLearningInferenceEventsValueSettings(Settings):
     pass
 
 
+class PackageReportingSettings(Settings):
+    pass
+
+
 class CodeLevelMetricsSettings(Settings):
     pass
 
@@ -298,6 +302,10 @@ class ApplicationLoggingForwardingSettings(Settings):
     pass
 
 
+class ApplicationLoggingForwardingContextDataSettings(Settings):
+    pass
+
+
 class ApplicationLoggingMetricsSettings(Settings):
     pass
 
@@ -395,10 +403,13 @@ _settings = TopLevelSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
+_settings.application_logging.forwarding.context_data = ApplicationLoggingForwardingContextDataSettings()
+_settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.machine_learning = MachineLearningSettings()
 _settings.machine_learning.inference_events_value = MachineLearningInferenceEventsValueSettings()
+_settings.package_reporting = PackageReportingSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
@@ -893,6 +904,15 @@ _settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_
 _settings.application_logging.forwarding.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=True
 )
+_settings.application_logging.forwarding.context_data.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED", default=False
+)
+_settings.application_logging.forwarding.context_data.include = _environ_as_set(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_INCLUDE", default=""
+)
+_settings.application_logging.forwarding.context_data.exclude = _environ_as_set(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_EXCLUDE", default=""
+)
 _settings.application_logging.metrics.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED", default=True
 )
@@ -904,6 +924,7 @@ _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
 )
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
+_settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 
 
 def global_settings():

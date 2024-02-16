@@ -22,28 +22,26 @@ def validate_browser_attributes(required_params=None, forgone_params=None):
     required_params = required_params or {}
     forgone_params = forgone_params or {}
 
-    @transient_function_wrapper("newrelic.api.web_transaction", "WSGIWebTransaction.browser_timing_footer")
+    @transient_function_wrapper("newrelic.api.web_transaction", "WSGIWebTransaction.browser_timing_header")
     def _validate_browser_attributes(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
 
-        # pick out attributes from footer string_types
+        # pick out attributes from header string_types
 
-        footer_data = result.split("NREUM.info=")[1]
-        footer_data = footer_data.split("</script>")[0]
-        footer_data = json.loads(footer_data)
+        header_data = result.split("NREUM.info=")[1].split(";\n")[0]
+        header_data = json.loads(header_data)
 
         if "intrinsic" in required_params:
             for attr in required_params["intrinsic"]:
-                assert attr in footer_data
+                assert attr in header_data
 
-        if "atts" in footer_data:
+        if "atts" in header_data:
             obfuscation_key = instance._settings.license_key[:13]
-            attributes = json_decode(deobfuscate(footer_data["atts"], obfuscation_key))
+            attributes = json_decode(deobfuscate(header_data["atts"], obfuscation_key))
         else:
-
             # if there are no user or agent attributes, there will be no dict
             # for them in the browser data
 

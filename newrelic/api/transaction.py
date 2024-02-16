@@ -44,6 +44,7 @@ from newrelic.common.encoding_utils import (
     json_decode,
     json_encode,
     obfuscate,
+    snake_case,
 )
 from newrelic.core.attribute import (
     MAX_ATTRIBUTE_LENGTH,
@@ -53,6 +54,7 @@ from newrelic.core.attribute import (
     create_attributes,
     create_user_attributes,
     process_user_attribute,
+    resolve_logging_context_attributes,
     truncate,
 )
 from newrelic.core.attribute_filter import (
@@ -305,10 +307,17 @@ class Transaction(object):
         self._alternate_path_hashes = {}
         self.is_part_of_cat = False
 
+        # Synthetics Header
         self.synthetics_resource_id = None
         self.synthetics_job_id = None
         self.synthetics_monitor_id = None
         self.synthetics_header = None
+
+        # Synthetics Info Header
+        self.synthetics_type = None
+        self.synthetics_initiator = None
+        self.synthetics_attributes = None
+        self.synthetics_info_header = None
 
         self._custom_metrics = CustomMetrics()
         self._dimensional_metrics = DimensionalMetrics()
@@ -609,6 +618,10 @@ class Transaction(object):
             synthetics_job_id=self.synthetics_job_id,
             synthetics_monitor_id=self.synthetics_monitor_id,
             synthetics_header=self.synthetics_header,
+            synthetics_type=self.synthetics_type,
+            synthetics_initiator=self.synthetics_initiator,
+            synthetics_attributes=self.synthetics_attributes,
+            synthetics_info_header=self.synthetics_info_header,
             is_part_of_cat=self.is_part_of_cat,
             trip_id=self.trip_id,
             path_hash=self.path_hash,
@@ -846,6 +859,16 @@ class Transaction(object):
             i_attrs["synthetics_job_id"] = self.synthetics_job_id
         if self.synthetics_monitor_id:
             i_attrs["synthetics_monitor_id"] = self.synthetics_monitor_id
+        if self.synthetics_type:
+            i_attrs["synthetics_type"] = self.synthetics_type
+        if self.synthetics_initiator:
+            i_attrs["synthetics_initiator"] = self.synthetics_initiator
+        if self.synthetics_attributes:
+            # Add all synthetics attributes
+            for k, v in self.synthetics_attributes.items():
+                if k:
+                    i_attrs["synthetics_%s" % snake_case(k)] = v
+
         if self.total_time:
             i_attrs["totalTime"] = self.total_time
         if self._loop_time:
@@ -1508,7 +1531,7 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         settings = self.settings
         if not (
             settings
@@ -1521,18 +1544,62 @@ class Transaction(object):
 
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
+        context_attributes = attributes  # Name reassigned for clarity
 
-        if not message or message.isspace():
-            _logger.debug("record_log_event called where message was missing. No log event will be sent.")
-            return
+        # Unpack message and attributes from dict inputs
+        if isinstance(message, dict):
+            message_attributes = {k: v for k, v in message.items() if k != "message"}
+            message = message.get("message", "")
+        else:
+            message_attributes = None
 
-        message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+        if message is not None:
+            # Coerce message into a string type
+            if not isinstance(message, six.string_types):
+                try:
+                    message = str(message)
+                except Exception:
+                    # Exit early for invalid message type after unpacking
+                    _logger.debug(
+                        "record_log_event called where message could not be converted to a string type. No log event will be sent."
+                    )
+                    return
+
+            # Truncate the now unpacked and string converted message
+            message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+
+        # Collect attributes from linking metadata, context data, and message attributes
+        collected_attributes = {}
+        if settings and settings.application_logging.forwarding.context_data.enabled:
+            if context_attributes:
+                context_attributes = resolve_logging_context_attributes(
+                    context_attributes, settings.attribute_filter, "context."
+                )
+                if context_attributes:
+                    collected_attributes.update(context_attributes)
+
+            if message_attributes:
+                message_attributes = resolve_logging_context_attributes(
+                    message_attributes, settings.attribute_filter, "message."
+                )
+                if message_attributes:
+                    collected_attributes.update(message_attributes)
+
+            # Exit early if no message or attributes found after filtering
+            if (not message or message.isspace()) and not context_attributes and not message_attributes:
+                _logger.debug(
+                    "record_log_event called where no message and no attributes were found. No log event will be sent."
+                )
+                return
+
+        # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute
+        collected_attributes.update(get_linking_metadata())
 
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=get_linking_metadata(),
+            attributes=collected_attributes,
         )
 
         self._log_events.add(event, priority=priority)
@@ -1892,17 +1959,18 @@ def add_framework_info(name, version=None):
         transaction.add_framework_info(name, version)
 
 
-def get_browser_timing_header():
+def get_browser_timing_header(nonce=None):
     transaction = current_transaction()
     if transaction and hasattr(transaction, "browser_timing_header"):
-        return transaction.browser_timing_header()
+        return transaction.browser_timing_header(nonce)
     return ""
 
 
-def get_browser_timing_footer():
-    transaction = current_transaction()
-    if transaction and hasattr(transaction, "browser_timing_footer"):
-        return transaction.browser_timing_footer()
+def get_browser_timing_footer(nonce=None):
+    warnings.warn(
+        "The get_browser_timing_footer function is deprecated. Please migrate to only using the get_browser_timing_header API instead.",
+        DeprecationWarning,
+    )
     return ""
 
 
@@ -2049,7 +2117,7 @@ def record_ml_event(event_type, params, application=None):
         application.record_ml_event(event_type, params)
 
 
-def record_log_event(message, level=None, timestamp=None, application=None, priority=None):
+def record_log_event(message, level=None, timestamp=None, attributes=None, application=None, priority=None):
     """Record a log event.
 
     Args:
@@ -2060,12 +2128,12 @@ def record_log_event(message, level=None, timestamp=None, application=None, prio
     if application is None:
         transaction = current_transaction()
         if transaction:
-            transaction.record_log_event(message, level, timestamp)
+            transaction.record_log_event(message, level, timestamp, attributes=attributes)
         else:
             application = application_instance(activate=False)
 
             if application and application.enabled:
-                application.record_log_event(message, level, timestamp, priority=priority)
+                application.record_log_event(message, level, timestamp, attributes=attributes, priority=priority)
             else:
                 _logger.debug(
                     "record_log_event has been called but no transaction or application was running. As a result, "
@@ -2076,7 +2144,7 @@ def record_log_event(message, level=None, timestamp=None, application=None, prio
                     timestamp,
                 )
     elif application.enabled:
-        application.record_log_event(message, level, timestamp, priority=priority)
+        application.record_log_event(message, level, timestamp, attributes=attributes, priority=priority)
 
 
 def accept_distributed_trace_payload(payload, transport_type="HTTP"):

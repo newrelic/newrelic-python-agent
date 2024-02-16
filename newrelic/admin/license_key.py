@@ -15,18 +15,22 @@
 from __future__ import print_function
 
 from newrelic.admin import command, usage
+from newrelic.common.encoding_utils import obfuscate_license_key
 
 
-@command('license-key', 'config_file [log_file]',
-"""Prints out the account license key after having loaded the settings
-from <config_file>.""")
+@command(
+    "license-key",
+    "config_file [log_file]",
+    """Prints out an obfuscated account license key after having loaded the settings
+from <config_file>.""",
+)
 def license_key(args):
+    import logging
     import os
     import sys
-    import logging
 
     if len(args) == 0:
-        usage('license-key')
+        usage("license-key")
         sys.exit(1)
 
     from newrelic.config import initialize
@@ -35,7 +39,7 @@ def license_key(args):
     if len(args) >= 2:
         log_file = args[1]
     else:
-        log_file = '/tmp/python-agent-test.log'
+        log_file = "/tmp/python-agent-test.log"
 
     log_level = logging.DEBUG
 
@@ -45,14 +49,13 @@ def license_key(args):
         pass
 
     config_file = args[0]
-    environment = os.environ.get('NEW_RELIC_ENVIRONMENT')
+    environment = os.environ.get("NEW_RELIC_ENVIRONMENT")
 
-    if config_file == '-':
-        config_file = os.environ.get('NEW_RELIC_CONFIG_FILE')
+    if config_file == "-":
+        config_file = os.environ.get("NEW_RELIC_CONFIG_FILE")
 
-    initialize(config_file, environment, ignore_errors=False,
-            log_file=log_file, log_level=log_level)
+    initialize(config_file, environment, ignore_errors=False, log_file=log_file, log_level=log_level)
 
     _settings = global_settings()
 
-    print('license_key = %r' % _settings.license_key)
+    print("license_key = %r" % obfuscate_license_key(_settings.license_key))

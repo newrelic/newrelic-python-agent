@@ -34,7 +34,7 @@ import newrelic.api.function_trace
 import newrelic.api.generator_trace
 import newrelic.api.import_hook
 import newrelic.api.memcache_trace
-import newrelic.api.object_wrapper
+from newrelic.common.object_names import callable_name
 import newrelic.api.profile_trace
 import newrelic.api.settings
 import newrelic.api.transaction_name
@@ -553,11 +553,15 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
     _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.context_data.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.context_data.include", "get", _map_inc_excl_attributes)
+    _process_setting(section, "application_logging.forwarding.context_data.exclude", "get", _map_inc_excl_attributes)
     _process_setting(section, "application_logging.metrics.enabled", "getboolean", None)
     _process_setting(section, "application_logging.local_decorating.enabled", "getboolean", None)
 
     _process_setting(section, "machine_learning.enabled", "getboolean", None)
     _process_setting(section, "machine_learning.inference_events_value.enabled", "getboolean", None)
+    _process_setting(section, "package_reporting.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -1345,7 +1349,7 @@ def _process_background_task_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register background-task %s", ((module, object_path, application, name, group),))
@@ -1395,7 +1399,7 @@ def _process_database_trace_configuration():
             sql = _config_object.get(section, "sql")
 
             if sql.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 sql = eval(sql, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register database-trace %s", ((module, object_path, sql),))
@@ -1450,11 +1454,11 @@ def _process_external_trace_configuration():
                 method = _config_object.get(section, "method")
 
             if url.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 url = eval(url, callable_vars)  # nosec, pylint: disable=W0123
 
             if method and method.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 method = eval(method, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register external-trace %s", ((module, object_path, library, url, method),))
@@ -1522,7 +1526,7 @@ def _process_function_trace_configuration():
                 rollup = _config_object.get(section, "rollup")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug(
@@ -1580,7 +1584,7 @@ def _process_generator_trace_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register generator-trace %s", ((module, object_path, name, group),))
@@ -1639,7 +1643,7 @@ def _process_profile_trace_configuration():
                 depth = _config_object.get(section, "depth")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register profile-trace %s", ((module, object_path, name, group, depth),))
@@ -1689,7 +1693,7 @@ def _process_memcache_trace_configuration():
             command = _config_object.get(section, "command")
 
             if command.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 command = eval(command, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register memcache-trace %s", (module, object_path, command))
@@ -1749,7 +1753,7 @@ def _process_transaction_name_configuration():
                 priority = _config_object.getint(section, "priority")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register transaction-name %s", ((module, object_path, name, group, priority),))
@@ -2501,7 +2505,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.logger_structlog",
         "instrument_structlog__base",
     )
-
+    _process_module_definition(
+        "structlog._frames",
+        "newrelic.hooks.logger_structlog",
+        "instrument_structlog__frames",
+    )
     _process_module_definition(
         "paste.httpserver",
         "newrelic.hooks.adapter_paste",
@@ -3976,13 +3984,21 @@ def _process_module_builtin_defaults():
 
 def _process_module_entry_points():
     try:
-        import pkg_resources
+        # Preferred after Python 3.10
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import entry_points
+        # Introduced in Python 3.8
+        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+            from importlib_metadata import entry_points
+        # Removed in Python 3.12
+        else:
+            from pkg_resources import iter_entry_points as entry_points
     except ImportError:
         return
 
     group = "newrelic.hooks"
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
+    for entrypoint in entry_points(group=group):
         target = entrypoint.name
 
         if target in _module_import_hook_registry:
@@ -4040,13 +4056,21 @@ def _setup_instrumentation():
 
 def _setup_extensions():
     try:
-        import pkg_resources
+        # Preferred after Python 3.10
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import entry_points
+        # Introduced in Python 3.8
+        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+            from importlib_metadata import entry_points
+        # Removed in Python 3.12
+        else:
+            from pkg_resources import iter_entry_points as entry_points
     except ImportError:
         return
 
     group = "newrelic.extension"
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
+    for entrypoint in entry_points(group=group):
         __import__(entrypoint.module_name)
         module = sys.modules[entrypoint.module_name]
         module.initialize()

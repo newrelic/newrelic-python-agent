@@ -97,7 +97,9 @@ class ASGIBrowserMiddleware(object):
         content_type = None
 
         for header_name, header_value in headers:
-            # assume header names are lower cased in accordance with ASGI spec
+            # ASGI spec (https://asgi.readthedocs.io/en/latest/specs/www.html#http) states
+            # header names should be lower cased, but not required
+            header_name = header_name.lower()
             if header_name == b"content-type":
                 content_type = header_value
             elif header_name == b"content-encoding":
@@ -155,16 +157,9 @@ class ASGIBrowserMiddleware(object):
 
             # if there's a valid body string, attempt to insert the HTML
             if verify_body_exists(self.body):
-                header = self.transaction.browser_timing_header()
-                if not header:
-                    # If there's no header, abort browser monitoring injection
-                    await self.send_buffered()
-                    return
-
-                footer = self.transaction.browser_timing_footer()
-                browser_agent_data = six.b(header) + six.b(footer)
-
-                body = insert_html_snippet(self.body, lambda: browser_agent_data, self.search_maximum)
+                body = insert_html_snippet(
+                    self.body, lambda: six.b(self.transaction.browser_timing_header()), self.search_maximum
+                )
 
                 # If we have inserted the browser agent
                 if len(body) != len(self.body):
@@ -318,7 +313,6 @@ def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
                 send=send,
                 source=wrapped,
             ) as transaction:
-
                 # Record details of framework against the transaction for later
                 # reporting as supportability metrics.
                 if framework:

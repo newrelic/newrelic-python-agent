@@ -72,8 +72,7 @@ except ImportError:
         return formatargspec(args[1:], varargs, keywords, defaults)
 
 
-from newrelic.api.object_wrapper import ObjectWrapper
-from newrelic.api.transaction import Transaction
+from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.agent import agent_instance
 from newrelic.core.config import flatten_settings, global_settings
 from newrelic.core.trace_cache import trace_cache
@@ -161,7 +160,7 @@ def setquit():
     __builtin__.exit = Quitter("exit")
 
 
-class OutputWrapper(ObjectWrapper):
+class OutputWrapper(ObjectProxy):
     def flush(self):
         try:
             shell = _consoles.active
@@ -187,8 +186,8 @@ class OutputWrapper(ObjectWrapper):
 def intercept_console():
     setquit()
 
-    sys.stdout = OutputWrapper(sys.stdout, None, None)
-    sys.stderr = OutputWrapper(sys.stderr, None, None)
+    sys.stdout = OutputWrapper(sys.stdout)
+    sys.stderr = OutputWrapper(sys.stderr)
 
 
 class EmbeddedConsole(code.InteractiveConsole):

@@ -2066,6 +2066,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_api_resources_abstract_engine_api_resource",
     )
+    _process_module_definition(
+        "openai._streaming",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai__streaming",
+    )
 
     _process_module_definition(
         "openai.resources.chat.completions",

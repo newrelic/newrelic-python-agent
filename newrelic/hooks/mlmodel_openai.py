@@ -964,6 +964,13 @@ class GeneratorProxy(ObjectProxy):
 
 def record_stream_chunk(self, return_val):
     if return_val:
+        if OPENAI_V1:
+            if getattr(return_val, "data", "").startswith("[DONE]"):
+                return
+            return_val = return_val.json()
+            self._nr_openai_attrs["response_headers"] = getattr(self, "_nr_response_headers", {})
+        else:
+            self._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
         choices = return_val.get("choices", [])
         self._nr_openai_attrs["response.model"] = return_val.get("model", "")
         self._nr_openai_attrs["id"] = return_val.get("id", "")
@@ -974,7 +981,6 @@ def record_stream_chunk(self, return_val):
                 self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + delta.get("content", "")
                 self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role", None) or delta.get("role")
             self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason", "")
-        self._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
 
 
 def record_events_on_stop_iteration(self, transaction):
@@ -987,10 +993,17 @@ def record_events_on_stop_iteration(self, transaction):
             raise
 
         message_ids = record_streaming_chat_completion_events(self, transaction, openai_attrs)
+        # Clear cached data as this can be very large.
+        # Note this is also important for not reporting the events twice. In openai v1
+        # there are two loops around the iterator, the second is meant to clear the
+        # stream since there is a condition where the iterator may exit before all the
+        # stream contents is read. This results in StopIteration being raised twice
+        # instead of once at the end of the loop.
+        self._nr_openai_attrs = {}
         # Cache message ids on transaction for retrieval after open ai call completion.
         if not hasattr(transaction, "_nr_message_ids"):
             transaction._nr_message_ids = {}
-        response_id = openai_attrs.get("response_id", None)
+        response_id = openai_attrs.get("id", None)
         transaction._nr_message_ids[response_id] = message_ids
 
 
@@ -1228,6 +1241,23 @@ def wrap_engine_api_resource_create_sync(wrapped, instance, args, kwargs):
         return return_val
 
 
+def wrap_stream_iter_events_sync(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    bound_args = bind_args(wrapped, args, kwargs)
+
+    return_val = wrapped(*args, **kwargs)
+    proxied_return_val = GeneratorProxy(return_val)
+    # Pass the nr attributes to the generator proxy.
+    proxied_return_val._nr_ft = instance._nr_ft
+    proxied_return_val._nr_response_headers = instance._nr_response_headers
+    proxied_return_val._nr_openai_attrs = instance._nr_openai_attrs
+    return proxied_return_val
+
+
 async def wrap_engine_api_resource_create_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
@@ -1243,6 +1273,19 @@ async def wrap_engine_api_resource_create_async(wrapped, instance, args, kwargs)
         return AsyncGeneratorProxy(return_val)
     else:
         return return_val
+
+
+def wrap_stream_iter_events_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    proxied_return_val = AsyncGeneratorProxy(wrapped(*args, **kwargs))
+    # Pass the nr attributes to the generator proxy.
+    proxied_return_val._nr_ft = instance._nr_ft
+    proxied_return_val._nr_response_headers = instance._nr_response_headers
+    proxied_return_val._nr_openai_attrs = instance._nr_openai_attrs
+    return proxied_return_val
 
 
 def instrument_openai_api_resources_embedding(module):
@@ -1299,3 +1342,12 @@ def instrument_openai_api_resources_abstract_engine_api_resource(module):
         wrap_function_wrapper(module, "EngineAPIResource.create", wrap_engine_api_resource_create_sync)
     if hasattr(module.EngineAPIResource, "acreate"):
         wrap_function_wrapper(module, "EngineAPIResource.acreate", wrap_engine_api_resource_create_async)
+
+
+def instrument_openai__streaming(module):
+    if hasattr(module, "Stream"):
+        if hasattr(module.Stream, "_iter_events"):
+            wrap_function_wrapper(module, "Stream._iter_events", wrap_stream_iter_events_sync)
+    if hasattr(module, "AsyncStream"):
+        if hasattr(module.AsyncStream, "_iter_events"):
+            wrap_function_wrapper(module, "AsyncStream._iter_events", wrap_stream_iter_events_async)

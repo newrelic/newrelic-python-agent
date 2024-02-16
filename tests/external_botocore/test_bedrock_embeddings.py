@@ -1,4 +1,4 @@
- # Copyright 2010 New Relic, Inc.
+# Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import botocore.exceptions
 import pytest
 from _test_bedrock_embeddings import (
     embedding_expected_client_errors,
-    embedding_expected_events,
     embedding_expected_error_events,
+    embedding_expected_events,
     embedding_payload_templates,
 )
 from conftest import BOTOCORE_VERSION
@@ -29,6 +29,7 @@ from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
+    validate_attributes,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -109,6 +110,7 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
         ],
         background_task=True,
     )
+    @validate_attributes("agent", ["llm"])
     @background_task(name="test_bedrock_embedding")
     def _test():
         set_trace_info()
@@ -172,3 +174,7 @@ def test_bedrock_embedding_error_incorrect_access_key(
             exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
 
     _test()
+
+
+def test_bedrock_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility(bedrock_server):
+    assert bedrock_server._nr_wrapped

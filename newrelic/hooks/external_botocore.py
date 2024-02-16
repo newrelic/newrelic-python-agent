@@ -97,6 +97,7 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
+    message_ids = []
     for index, message in enumerate(input_message_list):
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
@@ -128,6 +129,7 @@ def create_chat_completion_message_event(
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
         else:
             id_ = str(uuid.uuid4())  # No response IDs, use random UUID
+        message_ids.append(id_)
 
         chat_completion_message_dict = {
             "id": id_,
@@ -144,9 +146,10 @@ def create_chat_completion_message_event(
             "response.model": request_model,
             "vendor": "bedrock",
             "ingest_source": "Python",
-            "is_response": True
+            "is_response": True,
         }
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
+    return (conversation_id, request_id, message_ids)
 
 
 def extract_bedrock_titan_text_model(request_body, response_body=None):
@@ -246,7 +249,7 @@ def extract_bedrock_claude_model(request_body, response_body=None):
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens_to_sample", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.number_of_messages": len(input_message_list)
+        "response.number_of_messages": len(input_message_list),
     }
 
     if response_body:
@@ -254,6 +257,40 @@ def extract_bedrock_claude_model(request_body, response_body=None):
 
         chat_completion_summary_dict.update(
             {
+                "response.choices.finish_reason": response_body.get("stop_reason", ""),
+                "response.number_of_messages": len(input_message_list) + len(output_message_list),
+            }
+        )
+    else:
+        output_message_list = []
+
+    return input_message_list, output_message_list, chat_completion_summary_dict
+
+
+def extract_bedrock_llama_model(request_body, response_body=None):
+    request_body = json.loads(request_body)
+    if response_body:
+        response_body = json.loads(response_body)
+
+    input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+
+    chat_completion_summary_dict = {
+        "request.max_tokens": request_body.get("max_gen_len", ""),
+        "request.temperature": request_body.get("temperature", ""),
+        "response.number_of_messages": len(input_message_list),
+    }
+
+    if response_body:
+        output_message_list = [{"role": "assistant", "content": response_body.get("generation", "")}]
+        prompt_tokens = response_body.get("prompt_token_count", None)
+        completion_tokens = response_body.get("generation_token_count", None)
+        total_tokens = prompt_tokens + completion_tokens if prompt_tokens and completion_tokens else None
+
+        chat_completion_summary_dict.update(
+            {
+                "response.usage.completion_tokens": completion_tokens,
+                "response.usage.prompt_tokens": prompt_tokens,
+                "response.usage.total_tokens": total_tokens,
                 "response.choices.finish_reason": response_body.get("stop_reason", ""),
                 "response.number_of_messages": len(input_message_list) + len(output_message_list),
             }
@@ -274,7 +311,7 @@ def extract_bedrock_cohere_model(request_body, response_body=None):
     chat_completion_summary_dict = {
         "request.max_tokens": request_body.get("max_tokens", ""),
         "request.temperature": request_body.get("temperature", ""),
-        "response.number_of_messages": len(input_message_list)
+        "response.number_of_messages": len(input_message_list),
     }
 
     if response_body:
@@ -300,6 +337,7 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
     ("ai21.j2", extract_bedrock_ai21_j2_model),
     ("cohere", extract_bedrock_cohere_model),
     ("anthropic.claude", extract_bedrock_claude_model),
+    ("meta.llama2", extract_bedrock_llama_model),
 ]
 
 
@@ -313,6 +351,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("Bedrock", BOTOCORE_VERSION)
+    transaction._add_agent_attribute("llm", True)
 
     # Read and replace request file stream bodies
     request_body = kwargs["body"]
@@ -368,7 +407,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                 notice_error_attributes = {
                     "http.statusCode": error_attributes["http.statusCode"],
                     "error.message": error_attributes["error.message"],
-                    "error.code": error_attributes["error.code"]
+                    "error.code": error_attributes["error.code"],
                 }
 
                 if is_embedding:
@@ -511,7 +550,7 @@ def handle_chat_completion_event(
     span_id,
 ):
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("conversation_id", "")
+    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
 
     chat_completion_id = str(uuid.uuid4())
 
@@ -542,7 +581,7 @@ def handle_chat_completion_event(
 
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
-    create_chat_completion_message_event(
+    message_ids = create_chat_completion_message_event(
         transaction=transaction,
         app_name=settings.app_name,
         input_message_list=input_message_list,
@@ -555,6 +594,10 @@ def handle_chat_completion_event(
         conversation_id=conversation_id,
         response_id=response_id,
     )
+
+    if not hasattr(transaction, "_nr_message_ids"):
+        transaction._nr_message_ids = {}
+    transaction._nr_message_ids["bedrock_key"] = message_ids
 
 
 CUSTOM_TRACE_POINTS = {
@@ -592,6 +635,12 @@ def _nr_clientcreator__create_api_method_(wrapped, instance, args, kwargs):
     return tracer(wrapped)
 
 
+def _nr_clientcreator__create_methods(wrapped, instance, args, kwargs):
+    class_attributes = wrapped(*args, **kwargs)
+    class_attributes["_nr_wrapped"] = True
+    return class_attributes
+
+
 def _bind_make_request_params(operation_model, request_dict, *args, **kwargs):
     return operation_model, request_dict
 
@@ -622,3 +671,4 @@ def instrument_botocore_endpoint(module):
 
 def instrument_botocore_client(module):
     wrap_function_wrapper(module, "ClientCreator._create_api_method", _nr_clientcreator__create_api_method_)
+    wrap_function_wrapper(module, "ClientCreator._create_methods", _nr_clientcreator__create_methods)

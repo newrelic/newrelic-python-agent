@@ -32,7 +32,8 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
 )
 
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
+from newrelic.common.signature import bind_args
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -54,17 +55,20 @@ if get_openai_version() < (1, 0):
         "test_chat_completion_v1.py",
         "test_chat_completion_error_v1.py",
         "test_embeddings_v1.py",
-        "test_get_llm_message_ids_v1.py",
-        "test_chat_completion_error_v1.py",
         "test_embeddings_error_v1.py",
+        "test_get_llm_message_ids_v1.py",
+        "test_chat_completion_stream_v1.py",
+        "test_chat_completion_stream_error_v1.py",
     ]
 else:
     collect_ignore = [
         "test_embeddings.py",
         "test_embeddings_error.py",
         "test_chat_completion.py",
-        "test_get_llm_message_ids.py",
         "test_chat_completion_error.py",
+        "test_chat_completion_stream.py",
+        "test_chat_completion_stream_error.py",
+        "test_get_llm_message_ids.py",
     ]
 
 
@@ -148,6 +152,8 @@ def openai_server(
     wrap_openai_api_requestor_request,
     wrap_openai_api_requestor_interpret_response,
     wrap_httpx_client_send,
+    wrap_engine_api_resource_create,
+    wrap_stream_iter_events,
 ):
     """
     This fixture will either create a mocked backend for testing purposes, or will
@@ -164,10 +170,20 @@ def openai_server(
             wrap_function_wrapper(
                 "openai.api_requestor", "APIRequestor._interpret_response", wrap_openai_api_requestor_interpret_response
             )
+            wrap_function_wrapper(
+                "openai.api_resources.abstract.engine_api_resource",
+                "EngineAPIResource.create",
+                wrap_engine_api_resource_create,
+            )
             yield  # Run tests
         else:
             # Apply function wrappers to record data
             wrap_function_wrapper("httpx._client", "Client.send", wrap_httpx_client_send)
+            wrap_function_wrapper(
+                "openai._streaming",
+                "Stream._iter_events",
+                wrap_stream_iter_events,
+            )
             yield  # Run tests
         # Write responses to audit log
         with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log_fp:
@@ -177,14 +193,12 @@ def openai_server(
         yield
 
 
-def bind_send_params(request, *, stream=False, **kwargs):
-    return request
-
-
 @pytest.fixture(scope="session")
 def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
     def _wrap_httpx_client_send(wrapped, instance, args, kwargs):
-        request = bind_send_params(*args, **kwargs)
+        bound_args = bind_args(wrapped, args, kwargs)
+        stream = bound_args.get("stream", False)
+        request = bound_args["request"]
         if not request:
             return wrapped(*args, **kwargs)
 
@@ -207,8 +221,13 @@ def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
                 rheaders.items(),
             )
         )
-        body = json.loads(response.content.decode("utf-8"))
-        OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to log
+        if stream:
+            OPENAI_AUDIT_LOG_CONTENTS[prompt] = [headers, response.status_code, []]  # Append response data to log
+            if prompt == "error":
+                OPENAI_AUDIT_LOG_CONTENTS[prompt][2] = json.loads(response.read())
+        else:
+            body = json.loads(response.content.decode("utf-8"))
+            OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to log
         return response
 
     return _wrap_httpx_client_send
@@ -247,20 +266,22 @@ def wrap_openai_api_requestor_request(extract_shortened_prompt):  # noqa: F811
         # Send request
         result = wrapped(*args, **kwargs)
 
-        # Clean up data
-        data = result[0].data
-        headers = result[0]._headers
-        headers = dict(
-            filter(
-                lambda k: k[0].lower() in RECORDED_HEADERS
-                or k[0].lower().startswith("openai")
-                or k[0].lower().startswith("x-ratelimit"),
-                headers.items(),
+        # Append response data to audit log
+        if not kwargs.get("stream", False):
+            # Clean up data
+            data = result[0].data
+            headers = result[0]._headers
+            headers = dict(
+                filter(
+                    lambda k: k[0].lower() in RECORDED_HEADERS
+                    or k[0].lower().startswith("openai")
+                    or k[0].lower().startswith("x-ratelimit"),
+                    headers.items(),
+                )
             )
-        )
-
-        # Log response
-        OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, 200, data  # Append response data to audit log
+            OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, 200, data
+        else:
+            OPENAI_AUDIT_LOG_CONTENTS[prompt] = [None, 200, []]
         return result
 
     return _wrap_openai_api_requestor_request
@@ -272,3 +293,89 @@ def bind_request_params(method, url, params=None, *args, **kwargs):
 
 def bind_request_interpret_response_params(result, stream):
     return result.content.decode("utf-8"), result.status_code, result.headers
+
+
+@pytest.fixture(scope="session")
+def generator_proxy(openai_version):
+    class GeneratorProxy(ObjectProxy):
+        def __init__(self, wrapped):
+            super(GeneratorProxy, self).__init__(wrapped)
+
+        def __iter__(self):
+            return self
+
+        # Make this Proxy a pass through to our instrumentation's proxy by passing along
+        # get attr and set attr calls to our instrumentation's proxy.
+        def __getattr__(self, attr):
+            return self.__wrapped__.__getattr__(attr)
+
+        def __setattr__(self, attr, value):
+            return self.__wrapped__.__setattr__(attr, value)
+
+        def __next__(self):
+            transaction = current_transaction()
+            if not transaction:
+                return self.__wrapped__.__next__()
+
+            try:
+                return_val = self.__wrapped__.__next__()
+                if return_val:
+                    prompt = [k for k in OPENAI_AUDIT_LOG_CONTENTS.keys()][-1]
+                    if openai_version < (1, 0):
+                        headers = dict(
+                            filter(
+                                lambda k: k[0].lower() in RECORDED_HEADERS
+                                or k[0].lower().startswith("openai")
+                                or k[0].lower().startswith("x-ratelimit"),
+                                return_val._nr_response_headers.items(),
+                            )
+                        )
+                        OPENAI_AUDIT_LOG_CONTENTS[prompt][0] = headers
+                        OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.to_dict_recursive())
+                    else:
+                        if not getattr(return_val, "data", "").startswith("[DONE]"):
+                            OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.json())
+                return return_val
+            except Exception as e:
+                raise
+
+        def close(self):
+            return super(GeneratorProxy, self).close()
+
+    return GeneratorProxy
+
+
+@pytest.fixture(scope="session")
+def wrap_engine_api_resource_create(generator_proxy):
+    def _wrap_engine_api_resource_create(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        bound_args = bind_args(wrapped, args, kwargs)
+        stream = bound_args["params"].get("stream", False)
+
+        return_val = wrapped(*args, **kwargs)
+
+        if stream:
+            return generator_proxy(return_val)
+        else:
+            return return_val
+
+    return _wrap_engine_api_resource_create
+
+
+@pytest.fixture(scope="session")
+def wrap_stream_iter_events(generator_proxy):
+    def _wrap_stream_iter_events(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        return_val = wrapped(*args, **kwargs)
+        proxied_return_val = generator_proxy(return_val)
+        return proxied_return_val
+
+    return _wrap_stream_iter_events

@@ -3332,6 +3332,16 @@ RESPONSES = {
             "prompt": "What is 212 degrees Fahrenheit converted to Celsius?",
         },
     ],
+    "meta.llama2-13b-chat-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "9a64cdb0-3e82-41c7-873a-c12a77e0143a"},
+        200,
+        {
+            "generation": " Here's the answer:\n\n212°F = 100°C\n\nSo, 212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+            "prompt_token_count": 17,
+            "generation_token_count": 46,
+            "stop_reason": "stop",
+        },
+    ],
     "does-not-exist::": [
         {
             "Content-Type": "application/json",
@@ -3387,6 +3397,15 @@ RESPONSES = {
         {"message": "The security token included in the request is invalid."},
     ],
     "cohere.command-text-v14::Invalid Token": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
+            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
+        },
+        403,
+        {"message": "The security token included in the request is invalid."},
+    ],
+    "meta.llama2-13b-chat-v1::Invalid Token": [
         {
             "Content-Type": "application/json",
             "x-amzn-RequestId": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
@@ -3454,7 +3473,7 @@ class MockExternalBedrockServer(MockExternalHTTPServer):
 if __name__ == "__main__":
     # Use this to sort dict for easier future incremental updates
     print("RESPONSES = %s" % dict(sorted(RESPONSES.items(), key=lambda i: (i[1][1], i[0]))))
-    
+
     with MockExternalBedrockServer() as server:
         print("MockExternalBedrockServer serving on port %s" % str(server.port))
         while True:

@@ -16,6 +16,7 @@ import openai
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
+    validate_attributes,
     validate_custom_event_count,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
@@ -143,10 +144,11 @@ chat_completion_recorded_events = [
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_chat_completion_sync_in_txn_with_convo_id(set_trace_info):
     set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
     openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
     )
@@ -272,7 +274,7 @@ def test_openai_chat_completion_sync_in_txn_no_convo_id(set_trace_info):
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_chat_completion_sync_outside_txn():
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
     openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
     )
@@ -332,10 +334,11 @@ def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info):
     set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
 
     loop.run_until_complete(
         openai.ChatCompletion.acreate(
@@ -371,3 +374,8 @@ def test_openai_chat_completion_async_disabled_custom_event_settings(loop):
             model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
         )
     )
+
+
+def test_openai_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility():
+    assert openai.ChatCompletion._nr_wrapped
+    assert openai.util.convert_to_openai_object._nr_wrapped

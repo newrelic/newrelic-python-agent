@@ -23,7 +23,6 @@ from _test_bedrock_chat_completion import (
     chat_completion_expected_events,
     chat_completion_invalid_access_key_error_events,
     chat_completion_payload_templates,
-    chat_completion_invalid_access_key_error_events,
 )
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import (
@@ -31,6 +30,7 @@ from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
+    validate_attributes,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -57,6 +57,7 @@ def is_file_payload(request):
         "ai21.j2-mid-v1",
         "anthropic.claude-instant-v1",
         "cohere.command-text-v14",
+        "meta.llama2-13b-chat-v1",
     ],
 )
 def model_id(request):
@@ -125,10 +126,11 @@ def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_m
         ],
         background_task=True,
     )
+    @validate_attributes("agent", ["llm"])
     @background_task(name="test_bedrock_chat_completion_in_txn_with_convo_id")
     def _test():
         set_trace_info()
-        add_custom_attribute("conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
         exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
     _test()
@@ -160,7 +162,7 @@ def test_bedrock_chat_completion_in_txn_no_convo_id(set_trace_info, exercise_mod
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_bedrock_chat_completion_outside_txn(set_trace_info, exercise_model):
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
     exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
 
@@ -237,7 +239,7 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
     @background_task(name="test_bedrock_chat_completion_error_invalid_model")
     def _test():
         set_trace_info()
-        add_custom_attribute("conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
         with pytest.raises(_client_error):
             bedrock_server.invoke_model(
                 body=b"{}",
@@ -283,7 +285,11 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
 
         with pytest.raises(_client_error):  # not sure where this exception actually comes from
             set_trace_info()
-            add_custom_attribute("conversation_id", "my-awesome-id")
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
             exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
 
     _test()
+
+
+def test_bedrock_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility(bedrock_server):
+    assert bedrock_server._nr_wrapped

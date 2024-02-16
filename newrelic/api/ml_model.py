@@ -40,12 +40,15 @@ def wrap_mlmodel(model, name=None, version=None, feature_names=None, label_names
 
 def get_llm_message_ids(response_id=None):
     transaction = current_transaction()
-    if response_id and transaction:
+    if transaction:
         nr_message_ids = getattr(transaction, "_nr_message_ids", {})
-        message_id_info = nr_message_ids.pop(response_id, ())
+        message_id_info = (
+            nr_message_ids.pop("bedrock_key", ()) if not response_id else nr_message_ids.pop(response_id, ())
+        )
 
         if not message_id_info:
-            warnings.warn("No message ids found for %s" % response_id)
+            response_id_warning = "." if not response_id else " for %s." % response_id
+            warnings.warn("No message ids found%s" % response_id_warning)
             return []
 
         conversation_id, request_id, ids = message_id_info

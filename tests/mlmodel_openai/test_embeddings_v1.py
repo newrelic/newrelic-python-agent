@@ -17,6 +17,7 @@ from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
+    validate_attributes,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -72,6 +73,7 @@ embedding_recorded_events = [
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_embedding_sync(set_trace_info, sync_openai_client):
     set_trace_info()
@@ -114,6 +116,7 @@ def test_openai_embedding_sync_disabled_settings(set_trace_info, sync_openai_cli
     ],
     background_task=True,
 )
+@validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_embedding_async(loop, set_trace_info, async_openai_client):
     set_trace_info()

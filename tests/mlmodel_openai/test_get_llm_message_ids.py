@@ -13,10 +13,14 @@
 # limitations under the License.
 
 import openai
+from testing_support.fixtures import (
+    reset_core_stats_engine,
+    validate_custom_event_count,
+)
+
 from newrelic.api.background_task import background_task
 from newrelic.api.ml_model import get_llm_message_ids, record_llm_feedback_event
 from newrelic.api.transaction import add_custom_attribute, current_transaction
-from testing_support.fixtures import reset_core_stats_engine, validate_custom_event_count
 
 _test_openai_chat_completion_messages_1 = (
     {"role": "system", "content": "You are a scientist."},
@@ -114,7 +118,7 @@ def test_get_llm_message_ids_outside_transaction():
 @background_task()
 def test_get_llm_message_ids_mulitple_async(loop, set_trace_info):
     set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
 
     async def _run():
         res1 = await openai.ChatCompletion.acreate(
@@ -172,7 +176,7 @@ def test_get_llm_message_ids_mulitple_async_no_conversation_id(loop, set_trace_i
 @background_task()
 def test_get_llm_message_ids_mulitple_sync(set_trace_info):
     set_trace_info()
-    add_custom_attribute("conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
 
     results = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages_1, temperature=0.7, max_tokens=100

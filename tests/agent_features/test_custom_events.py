@@ -27,8 +27,6 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import record_custom_event
 from newrelic.core.custom_event import process_event_type
 
-# Test process_event_type()
-
 
 def test_process_event_type_name_is_string():
     name = "string"

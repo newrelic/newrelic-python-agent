@@ -130,6 +130,13 @@ def create_attributes(attr_dict, destinations, attribute_filter):
 
 
 def create_agent_attributes(attr_dict, attribute_filter):
+    """
+    Returns a dictionary of Attribute objects with appropriate destinations.
+
+    If the attribute's key is in the known list of event attributes, it is assigned
+    to _DESTINATIONS_WITH_EVENTS, otherwise it is assigned to _DESTINATIONS.
+    Note attributes with a value of None are filtered out.
+    """
     attributes = []
 
     for k, v in attr_dict.items():

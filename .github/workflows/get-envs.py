@@ -23,7 +23,14 @@ TOTAL_GROUPS = int(os.environ["TOTAL_GROUPS"])
 def main(f):
     environments = [e.rstrip() for e in f]
     filtered_envs = environments[GROUP_NUMBER::TOTAL_GROUPS]
-    print(",".join(filtered_envs))
+    joined_envs = ",".join(filtered_envs)
+
+    assert joined_envs, "No environments found.\nenvironments = %s\nGROUP_NUMBER = %d\nTOTAL_GROUPS = %d" % (
+        str(environments),
+        GROUP_NUMBER + 1,
+        TOTAL_GROUPS,
+    )
+    print(joined_envs)
 
 
 if __name__ == "__main__":

@@ -517,6 +517,157 @@ RESPONSES_V1 = {
         },
     ],
 }
+STREAMED_RESPONSES_V1 = {
+    "Invalid API key.": [
+        {"content-type": "application/json; charset=utf-8", "x-request-id": "req_a78a2cb09e3c7f224e78bfbf0841e38a"},
+        401,
+        {
+            "error": {
+                "message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "invalid_api_key",
+            }
+        },
+    ],
+    "Model does not exist.": [
+        {"content-type": "application/json; charset=utf-8", "x-request-id": "req_a03714410fba92532c7de2532d8cf46c"},
+        404,
+        {
+            "error": {
+                "message": "The model `does-not-exist` does not exist",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "model_not_found",
+            }
+        },
+    ],
+    "You are a scientist.": [
+        {
+            "content-type": "text/event-stream",
+            "openai-model": "gpt-3.5-turbo-0613",
+            "openai-organization": "new-relic-nkmd8b",
+            "openai-processing-ms": "6326",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "200",
+            "x-ratelimit-limit-tokens": "40000",
+            "x-ratelimit-remaining-requests": "198",
+            "x-ratelimit-remaining-tokens": "39880",
+            "x-ratelimit-reset-requests": "11m32.334s",
+            "x-ratelimit-reset-tokens": "180ms",
+            "x-request-id": "f8d0f53b6881c5c0a3698e55f8f410ac",
+        },
+        200,
+        [
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [
+                    {"index": 0, "delta": {"role": "assistant", "content": ""}, "logprobs": None, "finish_reason": None}
+                ],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "212"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " degrees"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " Fahrenheit"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " is"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " equal"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " to"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " "}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "100"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " degrees"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " Celsius"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "."}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "object": "chat.completion.chunk",
+                "created": 1707867026,
+                "model": "gpt-3.5-turbo-0613",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {}, "logprobs": None, "finish_reason": "stop"}],
+            },
+        ],
+    ],
+}
 RESPONSES = {
     "Invalid API key.": (
         {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
@@ -715,6 +866,8 @@ def simple_get(openai_version, extract_shortened_prompt):
                 mocked_responses = STREAMED_RESPONSES
         else:
             mocked_responses = RESPONSES_V1
+            if stream:
+                mocked_responses = STREAMED_RESPONSES_V1
 
         for k, v in mocked_responses.items():
             if prompt.startswith(k):

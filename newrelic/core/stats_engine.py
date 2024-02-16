@@ -41,12 +41,12 @@ from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.attribute import (
     MAX_LOG_MESSAGE_LENGTH,
     create_agent_attributes,
-    create_user_attributes,
+    create_attributes,
     process_user_attribute,
     resolve_logging_context_attributes,
     truncate,
 )
-from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
+from newrelic.core.attribute_filter import DST_ALL, DST_ERROR_COLLECTOR
 from newrelic.core.code_level_metrics import extract_code_from_traceback
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.database_utils import explain_plan
@@ -824,7 +824,7 @@ class StatsEngine(object):
                 )
                 custom_attributes = {}
 
-            user_attributes = create_user_attributes(custom_attributes, settings.attribute_filter)
+            user_attributes = create_attributes(custom_attributes, DST_ALL, settings.attribute_filter)
 
         # Extract additional details about the exception as agent attributes
         agent_attributes = {}

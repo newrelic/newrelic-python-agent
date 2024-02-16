@@ -153,9 +153,6 @@ def resolve_user_attributes(attr_dict, attribute_filter, target_destination, att
     u_attrs = attr_class()
 
     for attr_name, attr_value in attr_dict.items():
-        if attr_value is None:
-            continue
-
         dest = attribute_filter.apply(attr_name, DST_ALL)
 
         if dest & target_destination:

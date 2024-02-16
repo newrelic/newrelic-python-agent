@@ -2525,7 +2525,7 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "pinecone.data.index",
+        "pinecone.control.pinecone",
         "newrelic.hooks.datastore_pinecone",
         "instrument_pinecone_control_pinecone",
     )

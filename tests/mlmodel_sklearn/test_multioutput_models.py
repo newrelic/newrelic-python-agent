@@ -20,15 +20,15 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.packages import six
 
-SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
+SKLEARN_VERSION = get_package_version_tuple("sklearn")[:2]
 
 
 # Python 2 will not allow instantiation of abstract class
 # (abstract method is __init__ here)
-@pytest.mark.skipif(SKLEARN_VERSION >= (1, 0, 0) or six.PY2, reason="Requires sklearn < 1.0 and Python3")
+@pytest.mark.skipif(SKLEARN_VERSION >= (1, 0) or six.PY2, reason="Requires sklearn < 1.0 and Python3")
 @pytest.mark.parametrize(
     "multioutput_model_name",
     [

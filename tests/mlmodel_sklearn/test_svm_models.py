@@ -18,10 +18,7 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
 from newrelic.packages import six
-
-SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
 
 
 @pytest.mark.parametrize(

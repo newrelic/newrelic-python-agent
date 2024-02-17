@@ -19,10 +19,10 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.packages import six
 
-SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
+SKLEARN_VERSION = get_package_version_tuple("sklearn")[:2]
 
 
 @pytest.mark.parametrize(
@@ -38,7 +38,7 @@ def test_model_methods_wrapped_in_function_trace(dummy_model_name, run_dummy_mod
             ("Function/MLModel/Sklearn/Named/DummyClassifier.fit", 1),
             ("Function/MLModel/Sklearn/Named/DummyClassifier.predict", 2),
             ("Function/MLModel/Sklearn/Named/DummyClassifier.predict_log_proba", 1),
-            ("Function/MLModel/Sklearn/Named/DummyClassifier.predict_proba", 2 if SKLEARN_VERSION > (1, 0, 0) else 4),
+            ("Function/MLModel/Sklearn/Named/DummyClassifier.predict_proba", 2 if SKLEARN_VERSION > (1, 0) else 4),
             ("Function/MLModel/Sklearn/Named/DummyClassifier.score", 1),
         ],
         "DummyRegressor": [

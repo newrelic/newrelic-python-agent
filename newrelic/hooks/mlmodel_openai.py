@@ -191,6 +191,8 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
+    if not settings.ai_monitoring.streaming.enabled:
+        transaction.record_custom_metric("Supportability/Python/ML/Streaming/Disabled", 1)
 
     request_message_list = kwargs.get("messages", [])
 
@@ -677,6 +679,8 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
+    if not settings.ai_monitoring.streaming.enabled:
+        transaction.record_custom_metric("Supportability/Python/ML/Streaming/Disabled", 1)
 
     request_message_list = kwargs.get("messages", [])
 

@@ -22,7 +22,7 @@ from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.packages import six
 
-SKLEARN_VERSION = get_package_version_tuple("sklearn")[:2]
+SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
 @pytest.mark.parametrize(
@@ -56,7 +56,7 @@ def test_below_v1_1_model_methods_wrapped_in_function_trace(cluster_model_name, 
             ("Function/MLModel/Sklearn/Named/Birch.fit", 2),
             (
                 "Function/MLModel/Sklearn/Named/Birch.predict",
-                1 if SKLEARN_VERSION >= (1, 0) else 3,
+                1 if SKLEARN_VERSION >= (1, 0, 0) else 3,
             ),
             ("Function/MLModel/Sklearn/Named/Birch.fit_predict", 1),
             ("Function/MLModel/Sklearn/Named/Birch.transform", 1),
@@ -115,7 +115,7 @@ def test_below_v1_1_model_methods_wrapped_in_function_trace(cluster_model_name, 
     _test()
 
 
-@pytest.mark.skipif(SKLEARN_VERSION < (1, 1), reason="Requires sklearn > 1.1")
+@pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn > 1.1")
 @pytest.mark.parametrize(
     "cluster_model_name",
     [

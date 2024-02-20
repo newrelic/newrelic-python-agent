@@ -894,7 +894,11 @@ class StatsEngine(object):
                 attributes["agentAttributes"][attr.name] = attr.value
 
         error_details = TracedError(
-            start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
+            start_time=time.time(),
+            path="Exception",
+            message=message,
+            type=fullname,
+            parameters=attributes,
         )
 
         # Save this error as a trace and an event.

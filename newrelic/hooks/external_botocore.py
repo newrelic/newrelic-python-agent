@@ -344,10 +344,13 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
 @function_wrapper
 def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
     # Wrapped function only takes keyword arguments, no need for binding
-
     transaction = current_transaction()
 
     if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("Bedrock", BOTOCORE_VERSION)
@@ -432,6 +435,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                         True,
                         trace_id,
                         span_id,
+                        settings.app_name,
                     )
                 else:
                     handle_chat_completion_event(
@@ -446,6 +450,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                         True,
                         trace_id,
                         span_id,
+                        settings.app_name,
                     )
 
             finally:
@@ -472,6 +477,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
             False,
             trace_id,
             span_id,
+            settings.app_name,
         )
     else:
         handle_chat_completion_event(
@@ -486,6 +492,7 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
             False,
             trace_id,
             span_id,
+            settings.app_name,
         )
 
     return response
@@ -503,11 +510,11 @@ def handle_embedding_event(
     is_error,
     trace_id,
     span_id,
+    app_name,
 ):
     embedding_id = str(uuid.uuid4())
 
     request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
-    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     _, _, embedding_dict = extractor(request_body, response_body)
 
@@ -518,7 +525,7 @@ def handle_embedding_event(
             "vendor": "bedrock",
             "ingest_source": "Python",
             "id": embedding_id,
-            "appName": settings.app_name,
+            "appName": app_name,
             "span_id": span_id,
             "trace_id": trace_id,
             "request_id": request_id,
@@ -548,6 +555,7 @@ def handle_chat_completion_event(
     is_error,
     trace_id,
     span_id,
+    app_name
 ):
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
@@ -555,7 +563,6 @@ def handle_chat_completion_event(
     chat_completion_id = str(uuid.uuid4())
 
     request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
-    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     input_message_list, output_message_list, chat_completion_summary_dict = extractor(request_body, response_body)
     response_id = chat_completion_summary_dict.get("response_id", "")
@@ -565,7 +572,7 @@ def handle_chat_completion_event(
             "ingest_source": "Python",
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "id": chat_completion_id,
-            "appName": settings.app_name,
+            "appName": app_name,
             "conversation_id": conversation_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -583,7 +590,7 @@ def handle_chat_completion_event(
 
     message_ids = create_chat_completion_message_event(
         transaction=transaction,
-        app_name=settings.app_name,
+        app_name=app_name,
         input_message_list=input_message_list,
         output_message_list=output_message_list,
         chat_completion_id=chat_completion_id,

@@ -42,6 +42,7 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "custom_insights_events.max_attribute_value": 4096,
+    "ai_monitoring.enabled": True,
 }
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (external_botocore)",

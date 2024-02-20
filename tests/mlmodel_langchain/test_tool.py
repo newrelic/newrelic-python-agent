@@ -38,9 +38,6 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
-
-
 @pytest.fixture
 def single_arg_tool():
     @tool
@@ -304,11 +301,14 @@ def test_langchain_tool_outside_txn_async(single_arg_tool, loop):
     )
 
 
+disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
+
+
 @override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_tool_disabled_custom_insights_events",
+    name="test_tool:test_langchain_tool_disabled_custom_insights_events_sync",
     scoped_metrics=[("Llm/tool/Langchain/run", 1)],
     rollup_metrics=[("Llm/tool/Langchain/run", 1)],
     custom_metrics=[
@@ -317,7 +317,21 @@ def test_langchain_tool_outside_txn_async(single_arg_tool, loop):
     background_task=True,
 )
 @background_task()
-def test_langchain_tool_disabled_custom_insights_events(set_trace_info, single_arg_tool):
+def test_langchain_tool_disabled_custom_insights_events_sync(set_trace_info, single_arg_tool):
+    set_trace_info()
+    single_arg_tool.run(
+        {"query": "Python Agent"}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
+    )
+
+
+disabled_ai_monitoring_settings = {"ai_monitoring.enabled": False}
+
+
+@override_application_settings(disabled_ai_monitoring_settings)
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_langchain_tool_disabled_ai_monitoring_events_sync(set_trace_info, single_arg_tool):
     set_trace_info()
     single_arg_tool.run(
         {"query": "Python Agent"}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
@@ -338,6 +352,19 @@ def test_langchain_tool_disabled_custom_insights_events(set_trace_info, single_a
 )
 @background_task()
 def test_langchain_tool_disabled_custom_insights_events_async(set_trace_info, single_arg_tool, loop):
+    set_trace_info()
+    loop.run_until_complete(
+        single_arg_tool.arun(
+            {"query": "Python Agent"}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
+        )
+    )
+
+
+@override_application_settings(disabled_ai_monitoring_settings)
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_langchain_tool_disabled_ai_monitoring_events_async(set_trace_info, single_arg_tool, loop):
     set_trace_info()
     loop.run_until_complete(
         single_arg_tool.arun(

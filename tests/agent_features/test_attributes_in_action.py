@@ -83,7 +83,6 @@ DISTRIBUTED_TRACE_ATTRS = [
     "parent.transportType",
     "parent.transportDuration",
     "parentId",
-    "guid",
     "sampled",
     "parentSpanId",
 ]

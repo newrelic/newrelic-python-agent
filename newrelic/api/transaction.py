@@ -868,6 +868,11 @@ class Transaction(object):
         if self._loop_time:
             i_attrs["eventLoopTime"] = self._loop_time
 
+        # `guid` is added here to make it an intrinsic
+        # that is agnostic to distributed tracing.
+        if self.guid:
+            i_attrs["guid"] = self.guid
+
         # Add in special CPU time value for UI to display CPU burn.
 
         # TODO: Disable cpu time value for CPU burn as was
@@ -886,10 +891,18 @@ class Transaction(object):
     def distributed_trace_intrinsics(self):
         i_attrs = {}
 
+        # Include this here since guid is now an intrinsic attribute,
+        # whether or not DT is enabled.  In most cases, trace_intrinsics
+        # is called and, within that, this function is called.  However,
+        # there are cases, such as slow SQL calls in database_node that
+        # call this function directly, so we want to make sure this is
+        # included here as well.  (as of now, the guid is thought to be
+        # a distributed tracing intrinsic that should be included elsewhere)
+        i_attrs["guid"] = self.guid
+
         if not self._settings.distributed_tracing.enabled:
             return i_attrs
 
-        i_attrs["guid"] = self.guid
         i_attrs["sampled"] = self.sampled
         i_attrs["priority"] = self.priority
         i_attrs["traceId"] = self.trace_id

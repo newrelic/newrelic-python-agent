@@ -35,6 +35,10 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     if not transaction or kwargs.get("stream", False):
         return wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
@@ -48,8 +52,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     span_id = None
     trace_id = None
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     function_name = wrapped.__name__
 
@@ -182,6 +184,10 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
@@ -199,7 +205,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
     app_name = settings.app_name
     completion_id = str(uuid.uuid4())
 
@@ -511,8 +516,14 @@ def create_chat_completion_message_event(
 
 async def wrap_embedding_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
+
     if not transaction or kwargs.get("stream", False):
         return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
@@ -527,8 +538,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     span_id = None
     trace_id = None
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     function_name = wrapped.__name__
 
@@ -661,6 +670,10 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
@@ -678,7 +691,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
     app_name = settings.app_name
     completion_id = str(uuid.uuid4())
 

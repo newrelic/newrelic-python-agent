@@ -130,6 +130,10 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
@@ -210,6 +214,10 @@ def bind_similarity_search(query, k, *args, **kwargs):
 def wrap_similarity_search(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
@@ -294,6 +302,10 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
@@ -311,9 +323,6 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
 
     span_id = None
     trace_id = None
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    app_name = settings.app_name
 
     function_name = wrapped.__name__
 
@@ -346,7 +355,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                 {
                     "id": tool_id,
                     "run_id": run_id,
-                    "appName": app_name,
+                    "appName": settings.app_name,
                     "name": tool_name,
                     "description": tool_description,
                     "span_id": span_id,
@@ -383,7 +392,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
         {
             "id": tool_id,
             "run_id": run_id,
-            "appName": app_name,
+            "appName": settings.app_name,
             "output": str(response),
             "name": tool_name,
             "description": tool_description,
@@ -407,6 +416,11 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
@@ -426,9 +440,6 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
 
     span_id = None
     trace_id = None
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    app_name = settings.app_name
 
     function_name = wrapped.__name__
 
@@ -461,7 +472,7 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
                 {
                     "id": tool_id,
                     "run_id": run_id,
-                    "appName": app_name,
+                    "appName": settings.app_name,
                     "name": tool_name,
                     "description": tool_description,
                     "span_id": span_id,
@@ -496,7 +507,7 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
         {
             "id": tool_id,
             "run_id": run_id,
-            "appName": app_name,
+            "appName": settings.app_name,
             "output": str(response),
             "name": tool_name,
             "description": tool_description,
@@ -519,8 +530,14 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
 def wrap_on_tool_start_sync(wrapped, instance, args, kwargs):
     run_manager = wrapped(*args, **kwargs)
     transaction = current_transaction()
+
     if not transaction:
         return run_manager
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return run_manager
+
     # Only capture the first run_id.
     if not hasattr(transaction, "_nr_run_manager_tools_info"):
         transaction._nr_run_manager_tools_info = {
@@ -531,11 +548,17 @@ def wrap_on_tool_start_sync(wrapped, instance, args, kwargs):
 
 
 async def wrap_on_tool_start_async(wrapped, instance, args, kwargs):
+    run_manager = await wrapped(*args, **kwargs)
     transaction = current_transaction()
     if not transaction:
-        return await wrapped(*args, **kwargs)
+        return run_manager
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return run_manager
+
     tool_id = getattr(instance, "metadata", {}).pop("nr_tool_id")
-    run_manager = await wrapped(*args, **kwargs)
+
     if tool_id:
         if not hasattr(transaction, "_nr_tool_run_ids"):
             transaction._nr_tool_run_ids = {}
@@ -548,6 +571,10 @@ async def wrap_on_tool_start_async(wrapped, instance, args, kwargs):
 async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -595,6 +622,10 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
 def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -851,15 +882,22 @@ def wrap_on_chain_start(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
     run_args = bind_args(wrapped, args, kwargs)
     completion_id = getattr(instance, "metadata", {}).pop("nr_completion_id")
     run_manager = wrapped(**run_args)
+
     if completion_id:
         if not hasattr(transaction, "_nr_chain_run_ids"):
             transaction._nr_chain_run_ids = {}
         # Only capture the first run_id.
         if completion_id not in transaction._nr_chain_run_ids:
             transaction._nr_chain_run_ids[completion_id] = getattr(run_manager, "run_id", "")
+
     return run_manager
 
 
@@ -867,15 +905,22 @@ async def wrap_async_on_chain_start(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
     run_args = bind_args(wrapped, args, kwargs)
     completion_id = getattr(instance, "metadata", {}).pop("nr_completion_id")
     run_manager = await wrapped(**run_args)
+
     if completion_id:
         if not hasattr(transaction, "_nr_chain_run_ids"):
             transaction._nr_chain_run_ids = {}
         # Only capture the first run_id.
         if completion_id not in transaction._nr_chain_run_ids:
             transaction._nr_chain_run_ids[completion_id] = getattr(run_manager, "run_id", "")
+
     return run_manager
 
 

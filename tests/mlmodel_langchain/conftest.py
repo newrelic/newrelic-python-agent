@@ -41,7 +41,7 @@ _default_settings = {
     "transaction_tracer.stack_trace_threshold": 0.0,
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
-    "ml_insights_events.enabled": True,
+    "ai_monitoring.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

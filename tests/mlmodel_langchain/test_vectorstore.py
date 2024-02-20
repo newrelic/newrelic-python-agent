@@ -18,6 +18,7 @@ import pytest
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
+    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -150,6 +151,25 @@ def test_pdf_pagesplitter_vectorstore_outside_txn(set_trace_info, embedding_open
     assert "Hello world" in docs[0].page_content
 
 
+disabled_ai_monitoring_settings = {"ai_monitoring.enabled": False}
+
+
+@override_application_settings(disabled_ai_monitoring_settings)
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(set_trace_info, embedding_openai_client):
+    set_trace_info()
+
+    script_dir = os.path.dirname(__file__)
+    loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+    docs = loader.load()
+
+    faiss_index = FAISS.from_documents(docs, embedding_openai_client)
+    docs = faiss_index.similarity_search("Complete this sentence: Hello", k=1)
+    assert "Hello world" in docs[0].page_content
+
+
 @reset_core_stats_engine()
 @validate_custom_events(vectorstore_recorded_events)
 # Two OpenAI LlmEmbedded, two LangChain LlmVectorSearch
@@ -182,6 +202,25 @@ def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embeddi
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_async_pdf_pagesplitter_vectorstore_outside_txn(loop, set_trace_info, embedding_openai_client):
+    async def _test():
+        set_trace_info()
+
+        script_dir = os.path.dirname(__file__)
+        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        docs = loader.load()
+
+        faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
+        docs = await faiss_index.asimilarity_search("Complete this sentence: Hello", k=1)
+        return docs
+
+    docs = loop.run_until_complete(_test())
+    assert "Hello world" in docs[0].page_content
+
+
+@override_application_settings(disabled_ai_monitoring_settings)
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+def test_async_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(loop, set_trace_info, embedding_openai_client):
     async def _test():
         set_trace_info()
 

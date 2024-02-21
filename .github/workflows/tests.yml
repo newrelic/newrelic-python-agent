@@ -131,6 +131,10 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
 
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
+
       - name: Get Environments
         id: get-envs
         run: |
@@ -175,6 +179,10 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
 
       - name: Get Environments
         id: get-envs
@@ -235,6 +243,10 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
 
       - name: Get Environments
         id: get-envs
@@ -299,6 +311,10 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
 
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
+
       - name: Get Environments
         id: get-envs
         run: |
@@ -361,6 +377,10 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
 
       - name: Get Environments
         id: get-envs
@@ -461,6 +481,10 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
 
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
+
       - name: Get Environments
         id: get-envs
         run: |
@@ -518,6 +542,10 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
 
       - name: Get Environments
         id: get-envs
@@ -579,6 +607,10 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
 
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
+
       - name: Get Environments
         id: get-envs
         run: |
@@ -636,6 +668,10 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
 
       - name: Get Environments
         id: get-envs
@@ -695,6 +731,10 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
 
       - name: Get Environments
         id: get-envs
@@ -766,6 +806,10 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
 
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
+
       - name: Get Environments
         id: get-envs
         run: |
@@ -823,6 +867,10 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
 
       - name: Get Environments
         id: get-envs
@@ -884,6 +932,10 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
 
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
+
       - name: Get Environments
         id: get-envs
         run: |
@@ -944,6 +996,10 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
 
       - name: Get Environments
         id: get-envs
@@ -1009,6 +1065,10 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          chown -R $(whoami) $(pip cache dir)
 
       - name: Get Environments
         id: get-envs

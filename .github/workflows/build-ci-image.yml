@@ -15,9 +15,9 @@
 name: Build CI Image
 
 on:
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch: # Allow manual trigger
 
-concurrency: 
+concurrency:
   group: ${{ github.ref || github.run_id }}
   cancel-in-progress: true
 

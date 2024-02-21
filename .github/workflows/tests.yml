@@ -122,7 +122,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     steps:
       - uses: actions/checkout@v4
 
@@ -172,7 +171,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     steps:
       - uses: actions/checkout@v4
 
@@ -222,7 +220,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       postgres:
         image: postgres:9
@@ -287,7 +284,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       mssql:
         image: mcr.microsoft.com/azure-sql-edge:latest
@@ -355,7 +351,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       mysql:
         image: mysql:5.6
@@ -423,7 +418,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       redis1:
         image: hmstepanek/redis-cluster-node:1.0.0
@@ -527,7 +521,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       redis:
         image: redis
@@ -590,7 +583,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       solr:
         image: bitnami/solr:8.8.2
@@ -655,7 +647,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       memcached:
         image: memcached
@@ -718,7 +709,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       rabbitmq:
         image: rabbitmq
@@ -782,7 +772,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       zookeeper:
         image: bitnami/zookeeper:3.9.1
@@ -857,7 +846,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       mongodb:
         image: mongo:3.6.4
@@ -920,7 +908,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       elasticsearch:
         image: elasticsearch:7.17.8
@@ -985,7 +972,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       elasticsearch:
         image: elasticsearch:8.6.0
@@ -1051,7 +1037,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       firestore:
         # Image set here MUST be repeated down below in options. See comment below.

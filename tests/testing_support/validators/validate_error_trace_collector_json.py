@@ -26,32 +26,32 @@ def validate_error_trace_collector_json():
             result = wrapped(*args, **kwargs)
         except:
             raise
-        else:
-            errors = instance.error_data()
 
-            # recreate what happens right before data is sent to the collector
-            # in data_collector.py via ApplicationSession.send_errors
-            agent_run_id = 666
-            payload = (agent_run_id, errors)
-            collector_json = json_encode(payload)
+        errors = instance.error_data()
 
-            decoded_json = json.loads(collector_json)
+        # recreate what happens right before data is sent to the collector
+        # in data_collector.py via ApplicationSession.send_errors
+        agent_run_id = 666
+        payload = (agent_run_id, errors)
+        collector_json = json_encode(payload)
 
-            assert decoded_json[0] == agent_run_id
-            err = decoded_json[1][0]
-            assert len(err) == 5
-            assert isinstance(err[0], (int, float))
-            assert isinstance(err[1], six.string_types)  # path
-            assert isinstance(err[2], six.string_types)  # error message
-            assert isinstance(err[3], six.string_types)  # exception name
-            parameters = err[4]
+        decoded_json = json.loads(collector_json)
 
-            parameter_fields = ["userAttributes", "stack_trace", "agentAttributes", "intrinsics"]
+        assert decoded_json[0] == agent_run_id
+        err = decoded_json[1][0]
+        assert len(err) == 5
+        assert isinstance(err[0], (int, float))
+        assert isinstance(err[1], six.string_types)  # path
+        assert isinstance(err[2], six.string_types)  # error message
+        assert isinstance(err[3], six.string_types)  # exception name
+        parameters = err[4]
 
-            for field in parameter_fields:
-                assert field in parameters
+        parameter_fields = ["userAttributes", "stack_trace", "agentAttributes", "intrinsics"]
 
-            assert "request_uri" not in parameters
+        for field in parameter_fields:
+            assert field in parameters
+
+        assert "request_uri" not in parameters
 
         return result
 

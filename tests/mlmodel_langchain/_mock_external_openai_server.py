@@ -29,7 +29,7 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 #    transactions to separate the ones created in the test app and the ones
 #    created by an external call.
 # 3) This app runs on a separate thread meaning it won't block the test app.
-
+STREAMED_RESPONSES_V1 = {}
 RESPONSES_V1 = {
     "You are a world class algorithm for extracting information in structured formats.": [
         {
@@ -183,7 +183,7 @@ def simple_get(openai_version, extract_shortened_prompt):
     def _simple_get(self):
         content_len = int(self.headers.get("content-length"))
         content = json.loads(self.rfile.read(content_len).decode("utf-8"))
-
+        stream = content.get("stream", False)
         prompt = extract_shortened_prompt(content)
         if not prompt:
             self.send_response(500)
@@ -194,6 +194,8 @@ def simple_get(openai_version, extract_shortened_prompt):
         headers, response = ({}, "")
 
         mocked_responses = RESPONSES_V1
+        if stream:
+            mocked_responses = STREAMED_RESPONSES_V1
 
         for k, v in mocked_responses.items():
             if prompt.startswith(k):
@@ -214,7 +216,16 @@ def simple_get(openai_version, extract_shortened_prompt):
         self.end_headers()
 
         # Send response body
-        self.wfile.write(json.dumps(response).encode("utf-8"))
+        if stream and status_code < 400:
+            for resp in response:
+                data = json.dumps(resp).encode("utf-8")
+                if prompt == "Stream parsing error.":
+                    # Force a parsing error by writing an invalid streamed response.
+                    self.wfile.write(b"data: %s" % data)
+                else:
+                    self.wfile.write(b"data: %s\n\n" % data)
+        else:
+            self.wfile.write(json.dumps(response).encode("utf-8"))
         return
 
     return _simple_get

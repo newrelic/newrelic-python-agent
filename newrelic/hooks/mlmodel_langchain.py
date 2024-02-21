@@ -31,6 +31,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.alibabacloud_opensearch": "AlibabaCloudOpenSearch",
     "langchain_community.vectorstores.analyticdb": "AnalyticDB",
     "langchain_community.vectorstores.annoy": "Annoy",
+    "langchain_community.vectorstores.apache_doris": "ApacheDoris",
     "langchain_community.vectorstores.astradb": "AstraDB",
     "langchain_community.vectorstores.atlas": "AtlasDB",
     "langchain_community.vectorstores.awadb": "AwaDB",

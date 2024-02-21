@@ -27,6 +27,7 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
+disabled_ai_monitoring_settings = {"ai_monitoring.enabled": False}
 
 embedding_recorded_events = [
     (
@@ -104,6 +105,14 @@ def test_openai_embedding_sync_disabled_settings(set_trace_info, sync_openai_cli
     sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
+@override_application_settings(disabled_ai_monitoring_settings)
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_openai_embedding_sync_ai_monitoring_disabled(sync_openai_client):
+    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+
+
 @reset_core_stats_engine()
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
@@ -148,6 +157,16 @@ def test_openai_embedding_async_outside_transaction(loop, async_openai_client):
 )
 @background_task()
 def test_openai_embedding_async_disabled_custom_insights_events(loop, async_openai_client):
+    loop.run_until_complete(
+        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    )
+
+
+@override_application_settings(disabled_ai_monitoring_settings)
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_openai_embedding_async_ai_monitoring_disabled(loop, async_openai_client):
     loop.run_until_complete(
         async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
     )

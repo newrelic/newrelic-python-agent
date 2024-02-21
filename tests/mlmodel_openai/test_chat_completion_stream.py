@@ -27,6 +27,7 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
+disabled_ai_monitoring_settings = {"ai_monitoring.enabled": False}
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -281,6 +282,21 @@ def test_openai_chat_completion_sync_outside_txn():
     )
 
 
+@override_application_settings(disabled_ai_monitoring_settings)
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_openai_chat_completion_sync_ai_monitoring_disabled():
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=_test_openai_chat_completion_messages,
+        temperature=0.7,
+        max_tokens=100,
+        stream=True,
+    )
+
+
 @reset_core_stats_engine()
 @validate_custom_events(chat_completion_recorded_events_no_convo_id)
 @validate_custom_event_count(count=4)
@@ -359,6 +375,26 @@ def test_openai_chat_completion_async_outside_transaction(loop):
             assert resp
 
     loop.run_until_complete(consumer())
+
+
+@override_application_settings(disabled_ai_monitoring_settings)
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_openai_chat_completion_async_ai_monitoring_disabled(loop):
+    async def consumer():
+        generator = await openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_messages,
+            temperature=0.7,
+            max_tokens=100,
+            stream=True,
+        )
+        async for resp in generator:
+            assert resp
+
+    loop.run_until_complete(consumer())
+
 
 
 def test_openai_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility():

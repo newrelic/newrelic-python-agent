@@ -176,7 +176,7 @@ class Transaction(object):
 
         self.thread_id = None
 
-        self._transaction_id = id(self)
+        self._identity = id(self)
         self._transaction_lock = threading.Lock()
 
         self._dead = False
@@ -193,6 +193,7 @@ class Transaction(object):
         self._frameworks = set()
         self._message_brokers = set()
         self._dispatchers = set()
+        self._ml_models = set()
 
         self._frozen_path = None
 
@@ -274,6 +275,7 @@ class Transaction(object):
         trace_id = "%032x" % random.getrandbits(128)
 
         # 16-digit random hex. Padded with zeros in the front.
+        # This is the official transactionId in the UI.
         self.guid = trace_id[:16]
 
         # 32-digit random hex. Padded with zeros in the front.
@@ -421,7 +423,7 @@ class Transaction(object):
         if not self.enabled:
             return
 
-        if self._transaction_id != id(self):
+        if self._identity != id(self):
             return
 
         if not self._settings:
@@ -567,6 +569,10 @@ class Transaction(object):
         if self._dispatchers:
             for dispatcher, version in self._dispatchers:
                 self.record_custom_metric("Python/Dispatcher/%s/%s" % (dispatcher, version), 1)
+
+        if self._ml_models:
+            for ml_model, version in self._ml_models:
+                self.record_custom_metric("Python/ML/%s/%s" % (ml_model, version), 1)
 
         if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the
@@ -1715,7 +1721,7 @@ class Transaction(object):
         if not settings.custom_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings)
         if event:
             self._custom_events.add(event, priority=self.priority)
 
@@ -1728,7 +1734,7 @@ class Transaction(object):
         if not settings.ml_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings, is_ml_event=True)
         if event:
             self._ml_events.add(event, priority=self.priority)
 
@@ -1834,6 +1840,10 @@ class Transaction(object):
     def add_dispatcher_info(self, name, version=None):
         if name:
             self._dispatchers.add((name, version))
+
+    def add_ml_model_info(self, name, version=None):
+        if name:
+            self._ml_models.add((name, version))
 
     def dump(self, file):
         """Dumps details about the transaction to the file object."""

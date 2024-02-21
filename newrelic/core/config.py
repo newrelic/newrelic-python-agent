@@ -31,6 +31,7 @@ import threading
 
 import newrelic.packages.six as six
 from newrelic.common.object_names import parse_exc_info
+from newrelic.core.attribute import MAX_ATTRIBUTE_LENGTH
 from newrelic.core.attribute_filter import AttributeFilter
 
 try:
@@ -728,6 +729,10 @@ _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
+_settings.custom_insights_events.max_attribute_value = _environ_as_int(
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_ATTRIBUTE_VALUE", default=MAX_ATTRIBUTE_LENGTH
+)
+
 _settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
@@ -918,6 +923,7 @@ _settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNIN
 _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
 )
+_settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 
 
@@ -1189,6 +1195,14 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         "event_harvest_config.harvest_limits.ml_event_data",
         # override ml_events / (60s/5s) harvest
         settings_snapshot.event_harvest_config.harvest_limits.ml_event_data / 12,
+    )
+
+    # Since the server does not override this setting we must override it here manually
+    # by caping it at the max value of 4095.
+    apply_config_setting(
+        settings_snapshot,
+        "custom_insights_events.max_attribute_value",
+        min(settings_snapshot.custom_insights_events.max_attribute_value, 4095),
     )
 
     # This will be removed at some future point

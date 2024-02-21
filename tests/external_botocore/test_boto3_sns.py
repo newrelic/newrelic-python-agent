@@ -30,7 +30,6 @@ from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 MOTO_VERSION = get_package_version_tuple("moto")
-
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec (This is fine for testing purposes)
 AWS_REGION_NAME = "us-east-1"

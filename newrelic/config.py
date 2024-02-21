@@ -443,6 +443,7 @@ def _process_configuration(section):
     )
     _process_setting(section, "custom_insights_events.enabled", "getboolean", None)
     _process_setting(section, "custom_insights_events.max_samples_stored", "getint", None)
+    _process_setting(section, "custom_insights_events.max_attribute_value", "getint", None)
     _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
@@ -2041,6 +2042,36 @@ def _process_trace_cache_import_hooks():
 
 
 def _process_module_builtin_defaults():
+    _process_module_definition(
+        "openai.api_resources.embedding",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_api_resources_embedding",
+    )
+    _process_module_definition(
+        "openai.api_resources.chat_completion",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_api_resources_chat_completion",
+    )
+    _process_module_definition(
+        "openai.resources.embeddings",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_resources_embeddings",
+    )
+    _process_module_definition(
+        "openai.util",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_util",
+    )
+    _process_module_definition(
+        "openai.resources.chat.completions",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_resources_chat_completions",
+    )
+    _process_module_definition(
+        "openai._base_client",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_base_client",
+    )
     _process_module_definition(
         "asyncio.base_events",
         "newrelic.hooks.coroutines_asyncio",

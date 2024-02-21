@@ -60,7 +60,7 @@ jobs:
       - tests
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
@@ -124,7 +124,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -151,7 +151,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -174,7 +174,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -201,7 +201,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -239,7 +239,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -266,7 +266,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -307,7 +307,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -334,7 +334,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -375,7 +375,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -402,7 +402,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -479,7 +479,7 @@ jobs:
           --add-host=host.docker.internal:host-gateway
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -506,7 +506,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -542,7 +542,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -569,7 +569,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -607,7 +607,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -634,7 +634,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -670,7 +670,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -697,7 +697,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -734,7 +734,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -761,7 +761,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -809,7 +809,7 @@ jobs:
           KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L3
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -836,7 +836,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -872,7 +872,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -899,7 +899,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -937,7 +937,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -964,7 +964,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -1003,7 +1003,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -1030,7 +1030,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -1073,7 +1073,7 @@ jobs:
         # from every being executed as bash commands.
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Fetch git tags
         run: |
@@ -1100,7 +1100,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*

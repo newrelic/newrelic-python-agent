@@ -1018,7 +1018,9 @@ def record_stream_chunk(self, return_val):
         if choices:
             delta = choices[0].get("delta", {})
             if delta:
-                self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + delta.get("content", "")
+                self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + (
+                    delta.get("content") or ""
+                )
                 self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role", None) or delta.get("role")
             self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason", "")
 

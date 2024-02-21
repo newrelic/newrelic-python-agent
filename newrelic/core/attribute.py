@@ -336,20 +336,9 @@ def sanitize(value):
     """
 
     valid_value_types = (six.text_type, six.binary_type, bool, float, six.integer_types)
-    # The agent spec says:
-    #   Agents **SHOULD NOT** report `null` attribute values. The behavior of `IS NULL`
-    #   queries in insights makes it so that omitted keys behave the same as `null`
-    #   keys. Since there is no difference between omitting the key and sending a
-    #   `null, we **SHOULD** reduce the payload size by omitting `null` values from the
-    #   payload entirely.
-    #
-    #   Since there should not be a difference in behavior for customers recording
-    #   `null` attributes versus customers omitting an attribute, agents **SHOULD** add
-    #   debug logging when a null value is recorded. This will give agents observability
-    #   on recording of `null` attributes outside of audit logs.
-    #
-    #   "empty" values such as `""` and `0` **MUST** be sent as an attribute in the
-    #   payload.
+    # According to the agent spec, agents should not report None attribute values.
+    # There is no difference between omitting the key and sending a None, so we can
+    # reduce the payload size by not sending None values.
     if value is None:
         raise NullValueException(
             "Attribute value is of type: None. Omitting value since there is "

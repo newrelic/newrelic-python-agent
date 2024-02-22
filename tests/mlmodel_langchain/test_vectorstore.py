@@ -31,6 +31,7 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+from conftest import disabled_ai_monitoring_settings
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version
@@ -151,10 +152,7 @@ def test_pdf_pagesplitter_vectorstore_outside_txn(set_trace_info, embedding_open
     assert "Hello world" in docs[0].page_content
 
 
-disabled_ai_monitoring_settings = {"ai_monitoring.enabled": False}
-
-
-@override_application_settings(disabled_ai_monitoring_settings)
+@disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @background_task()
@@ -217,7 +215,7 @@ def test_async_pdf_pagesplitter_vectorstore_outside_txn(loop, set_trace_info, em
     assert "Hello world" in docs[0].page_content
 
 
-@override_application_settings(disabled_ai_monitoring_settings)
+@disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_async_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(loop, set_trace_info, embedding_openai_client):

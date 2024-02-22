@@ -29,6 +29,7 @@ from testing_support.validators.validate_transaction_event_attributes import (
 
 from newrelic.api.application import application_settings
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 from newrelic.common.encoding_utils import deobfuscate
 from newrelic.common.object_wrapper import transient_function_wrapper
 
@@ -491,7 +492,7 @@ _expected_attributes = {
 }
 
 _expected_absent_attributes = {
-    "user": ("foo"),
+    "user": ("foo", "drop-me"),
     "agent": ("response.status", "request.method"),
     "intrinsic": ("port"),
 }
@@ -500,4 +501,6 @@ _expected_absent_attributes = {
 @validate_transaction_event_attributes(_expected_attributes, _expected_absent_attributes)
 @background_task()
 def test_background_task_intrinsics_has_no_port():
+    transaction = current_transaction()
+    transaction.add_custom_attribute("drop-me", None)
     pass

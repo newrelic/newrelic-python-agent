@@ -41,6 +41,7 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+from conftest import disabled_ai_monitoring_settings
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
@@ -1431,10 +1432,7 @@ def test_langchain_chain_custom_insights_disabled(
     assert output == {"name": "Sally", "age": 13}
 
 
-disabled_ai_monitoring_settings = {"ai_monitoring.enabled": False}
-
-
-@override_application_settings(disabled_ai_monitoring_settings)
+@disabled_ai_monitoring_settings
 @pytest.mark.parametrize(
     "create_function,call_function,input_",
     ((create_structured_output_runnable, "invoke", {"input": "Sally is 13"}),),

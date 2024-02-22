@@ -25,9 +25,10 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
+from conftest import disabled_ai_monitoring_settings
+
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
-disabled_ai_monitoring_settings = {"ai_monitoring.enabled": False}
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -282,7 +283,7 @@ def test_openai_chat_completion_sync_outside_txn():
     )
 
 
-@override_application_settings(disabled_ai_monitoring_settings)
+@disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @background_task()
@@ -377,7 +378,7 @@ def test_openai_chat_completion_async_outside_transaction(loop):
     loop.run_until_complete(consumer())
 
 
-@override_application_settings(disabled_ai_monitoring_settings)
+@disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @background_task()

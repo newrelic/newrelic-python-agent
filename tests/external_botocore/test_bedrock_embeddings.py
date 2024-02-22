@@ -39,6 +39,7 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+from conftest import disabled_ai_monitoring_settings
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
@@ -141,10 +142,7 @@ def test_bedrock_embedding_disabled_custom_event_settings(set_trace_info, exerci
     exercise_model(prompt="This is an embedding test.")
 
 
-disabled_ai_monitoring_settings = {"ai_monitoring.enabled": False}
-
-
-@override_application_settings(disabled_ai_monitoring_settings)
+@disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @background_task()

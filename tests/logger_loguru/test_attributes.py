@@ -53,14 +53,14 @@ def test_loguru_default_context_attributes(logger):
         bound_logger.error("context_attrs: {}", "arg1", kwarg_attr=4)
 
 
-@validate_log_events([{"message": "exc_info"}], required_attrs=["context.file"])
+@validate_log_events([{"message": "exc_info"}], required_attrs=["context.exception"])
 @validate_log_event_count(1)
 @background_task()
 def test_loguru_exception_context_attributes(logger):
     try:
         raise RuntimeError("Oops")
     except Exception:
-        logger.error("exc_info")
+        logger.opt(exception=True).error("exc_info")
 
 
 @validate_log_events([{"context.extra.attr": 1}])

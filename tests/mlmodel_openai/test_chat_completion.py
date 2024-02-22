@@ -376,6 +376,35 @@ def test_openai_chat_completion_async_disabled_custom_event_settings(loop):
     )
 
 
+@reset_core_stats_engine()
+# One summary event, one system message, one user message, and one response message from the assistant
+@validate_custom_event_count(count=4)
+# @validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_no_usage_data(set_trace_info, loop):
+    # Only testing that there are events, and there was no exception raised
+    set_trace_info()
+    openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+    )
+
+
+@reset_core_stats_engine()
+# One summary event, one system message, one user message, and one response message from the assistant
+@validate_custom_event_count(count=4)
+# @validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_async_no_usage_data(set_trace_info, loop):
+    # Only testing that there are events, and there was no exception raised
+    set_trace_info()
+    loop.run_until_complete(
+        openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+        )
+    )
+
+
+
 def test_openai_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility():
     assert openai.ChatCompletion._nr_wrapped
     assert openai.util.convert_to_openai_object._nr_wrapped

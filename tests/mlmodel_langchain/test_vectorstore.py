@@ -206,7 +206,6 @@ vectorstore_error_events = [
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "vendor": "Langchain",
             "ingest_source": "Python",
             "error": True,

@@ -990,7 +990,7 @@ def record_events_on_stop_iteration(self, transaction):
 
         # If there are no openai attrs exit early as there's no data to record.
         if not openai_attrs:
-            raise
+            return
 
         message_ids = record_streaming_chat_completion_events(self, transaction, openai_attrs)
         # Clear cached data as this can be very large.
@@ -1014,7 +1014,7 @@ def record_error(self, transaction, exc):
         # If there are no openai attrs exit early as there's no data to record.
         if not openai_attrs:
             self._nr_ft.__exit__(*sys.exc_info())
-            raise
+            return
 
         record_streaming_chat_completion_events_error(self, transaction, openai_attrs, exc)
 

@@ -34,7 +34,6 @@ import newrelic.api.function_trace
 import newrelic.api.generator_trace
 import newrelic.api.import_hook
 import newrelic.api.memcache_trace
-from newrelic.common.object_names import callable_name
 import newrelic.api.profile_trace
 import newrelic.api.settings
 import newrelic.api.transaction_name
@@ -43,7 +42,7 @@ import newrelic.console
 import newrelic.core.agent
 import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
-from newrelic.common.object_names import expand_builtin_exception_name
+from newrelic.common.object_names import callable_name, expand_builtin_exception_name
 from newrelic.core import trace_cache
 from newrelic.core.config import (
     Settings,
@@ -2273,6 +2272,12 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "langchain_community.vectorstores.lancedb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.lantern",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )

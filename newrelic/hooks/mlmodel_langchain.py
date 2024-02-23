@@ -57,6 +57,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.hologres": "Hologres",
     "langchain_community.vectorstores.kdbai": "KDBAI",
     "langchain_community.vectorstores.lancedb": "LanceDB",
+    "langchain_community.vectorstores.lantern": "Lantern",
     "langchain_community.vectorstores.llm_rails": "LLMRails",
     "langchain_community.vectorstores.marqo": "Marqo",
     "langchain_community.vectorstores.matching_engine": "MatchingEngine",

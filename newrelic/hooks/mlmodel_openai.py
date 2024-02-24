@@ -39,6 +39,10 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
 
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
+    custom_attrs_dict = transaction._custom_params
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
 
@@ -109,6 +113,8 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                 "error": True,
             }
 
+            error_embedding_dict.update(llm_metadata_dict)
+
             transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
 
             raise
@@ -171,6 +177,8 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "ingest_source": "Python",
     }
 
+    full_embedding_response_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
     return response
@@ -195,9 +203,9 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     span_id = None
     trace_id = None
 
-    # Get conversation ID off of the transaction
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     app_name = settings.app_name
@@ -251,7 +259,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         error_chat_completion_dict = {
             "id": completion_id,
             "appName": app_name,
-            "conversation_id": conversation_id,
             "api_key_last_four_digits": api_key_last_four_digits,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -266,6 +273,9 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
             "duration": ft.duration,
             "error": True,
         }
+
+        error_chat_completion_dict.update(llm_metadata_dict)
+
         transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
         create_chat_completion_message_event(
@@ -278,7 +288,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
             "",
             None,
             "",
-            conversation_id,
+            llm_metadata_dict,
             None,
         )
 
@@ -329,7 +339,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     full_chat_completion_summary_dict = {
         "id": completion_id,
         "appName": app_name,
-        "conversation_id": conversation_id,
         "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
@@ -379,6 +388,8 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         "response.number_of_messages": len(messages) + len(choices),
     }
 
+    full_chat_completion_summary_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
     input_message_list = list(messages)
@@ -394,7 +405,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         response_model,
         response_id,
         request_id,
-        conversation_id,
+        llm_metadata_dict,
         output_message_list,
     )
 
@@ -432,7 +443,7 @@ def create_chat_completion_message_event(
     response_model,
     response_id,
     request_id,
-    conversation_id,
+    llm_metadata_dict,
     output_message_list,
 ):
     message_ids = []
@@ -453,7 +464,6 @@ def create_chat_completion_message_event(
         chat_completion_input_message_dict = {
             "id": message_id,
             "appName": app_name,
-            "conversation_id": conversation_id,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -466,6 +476,8 @@ def create_chat_completion_message_event(
             "vendor": "openAI",
             "ingest_source": "Python",
         }
+
+        chat_completion_input_message_dict.update(llm_metadata_dict)
 
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_input_message_dict)
 
@@ -489,7 +501,6 @@ def create_chat_completion_message_event(
             chat_completion_output_message_dict = {
                 "id": message_id,
                 "appName": app_name,
-                "conversation_id": conversation_id,
                 "request_id": request_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
@@ -504,9 +515,12 @@ def create_chat_completion_message_event(
                 "is_response": True,
             }
 
+            chat_completion_output_message_dict.update(llm_metadata_dict)
+
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
 
-    return (conversation_id, request_id, message_ids)
+    #TODO: Remove this logic when message-based feedback is removed from the agent
+    return (request_id, message_ids)
 
 
 async def wrap_embedding_async(wrapped, instance, args, kwargs):
@@ -517,6 +531,10 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
+
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
+    custom_attrs_dict = transaction._custom_params
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
@@ -588,6 +606,8 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                 "error": True,
             }
 
+            error_embedding_dict.update(llm_metadata_dict)
+
             transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
 
             raise
@@ -650,6 +670,8 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "ingest_source": "Python",
     }
 
+    full_embedding_response_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
     return response
@@ -674,9 +696,9 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     span_id = None
     trace_id = None
 
-    # Get conversation ID off of the transaction
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     app_name = settings.app_name
@@ -729,7 +751,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         error_chat_completion_dict = {
             "id": completion_id,
             "appName": app_name,
-            "conversation_id": conversation_id,
             "api_key_last_four_digits": api_key_last_four_digits,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -744,6 +765,9 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
             "duration": ft.duration,
             "error": True,
         }
+
+        error_chat_completion_dict.update(llm_metadata_dict)
+
         transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
         create_chat_completion_message_event(
@@ -756,7 +780,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
             "",
             None,
             "",
-            conversation_id,
+            llm_metadata_dict,
             None,
         )
 
@@ -807,7 +831,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     full_chat_completion_summary_dict = {
         "id": completion_id,
         "appName": app_name,
-        "conversation_id": conversation_id,
         "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
@@ -857,6 +880,8 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         "response.number_of_messages": len(messages) + len(choices),
     }
 
+    full_chat_completion_summary_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
     input_message_list = list(messages)
@@ -872,7 +897,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         response_model,
         response_id,
         request_id,
-        conversation_id,
+        llm_metadata_dict,
         output_message_list,
     )
 
@@ -1055,8 +1080,9 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
     content = openai_attrs.get("content", None)
     role = openai_attrs.get("role")
 
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
     available_metadata = get_trace_linking_metadata()
     span_id = available_metadata.get("span.id", "")
@@ -1074,7 +1100,6 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
     chat_completion_summary_dict = {
         "id": chat_completion_id,
         "appName": settings.app_name,
-        "conversation_id": conversation_id,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
@@ -1090,6 +1115,9 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
         "response.organization": organization,
         "error": True,
     }
+
+    chat_completion_summary_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
     output_message_list = []
@@ -1106,7 +1134,7 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
         openai_attrs.get("response.model", ""),
         response_id,
         request_id,
-        conversation_id,
+        llm_metadata_dict,
         output_message_list,
     )
 
@@ -1115,8 +1143,9 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
     content = openai_attrs.get("content", None)
     role = openai_attrs.get("role")
 
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
     chat_completion_id = str(uuid.uuid4())
     available_metadata = get_trace_linking_metadata()
@@ -1136,7 +1165,6 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
     chat_completion_summary_dict = {
         "id": chat_completion_id,
         "appName": settings.app_name,
-        "conversation_id": conversation_id,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
@@ -1174,6 +1202,8 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
         "response.number_of_messages": len(messages) + (1 if content else 0),
     }
 
+    chat_completion_summary_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
     output_message_list = []
@@ -1190,7 +1220,7 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
         openai_attrs.get("response.model", ""),
         response_id,
         request_id,
-        conversation_id,
+        llm_metadata_dict,
         output_message_list,
     )
 

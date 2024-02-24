@@ -23,6 +23,7 @@ from _test_bedrock_chat_completion import (
     chat_completion_expected_events,
     chat_completion_invalid_access_key_error_events,
     chat_completion_payload_templates,
+    chat_completion_invalid_model_error_events,
 )
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import (
@@ -96,10 +97,10 @@ def expected_invalid_access_key_error_events(model_id):
 
 
 @pytest.fixture(scope="module")
-def expected_events_no_convo_id(model_id):
+def expected_events_no_llm_metadata(model_id):
     events = copy.deepcopy(chat_completion_expected_events[model_id])
     for event in events:
-        event[1]["conversation_id"] = ""
+        del event[1]["llm.conversation_id"], event[1]["llm.foo"]
     return events
 
 
@@ -113,12 +114,12 @@ _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted
 
 # not working with claude
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_model, expected_events):
+def test_bedrock_chat_completion_in_txn_with_llm_metadata(set_trace_info, exercise_model, expected_events):
     @validate_custom_events(expected_events)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_in_txn_with_convo_id",
+        name="test_bedrock_chat_completion_in_txn_with_llm_metadata",
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         custom_metrics=[
@@ -127,10 +128,12 @@ def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_m
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
-    @background_task(name="test_bedrock_chat_completion_in_txn_with_convo_id")
+    @background_task(name="test_bedrock_chat_completion_in_txn_with_llm_metadata")
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
         exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
     _test()
@@ -138,12 +141,12 @@ def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_m
 
 # not working with claude
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_no_convo_id(set_trace_info, exercise_model, expected_events_no_convo_id):
-    @validate_custom_events(expected_events_no_convo_id)
+def test_bedrock_chat_completion_in_txn_no_llm_metadata(set_trace_info, exercise_model, expected_events_no_llm_metadata):
+    @validate_custom_events(expected_events_no_llm_metadata)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_in_txn_no_convo_id",
+        name="test_bedrock_chat_completion_in_txn_no_llm_metadata",
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         custom_metrics=[
@@ -151,7 +154,7 @@ def test_bedrock_chat_completion_in_txn_no_convo_id(set_trace_info, exercise_mod
         ],
         background_task=True,
     )
-    @background_task(name="test_bedrock_chat_completion_in_txn_no_convo_id")
+    @background_task(name="test_bedrock_chat_completion_in_txn_no_llm_metadata")
     def _test():
         set_trace_info()
         exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
@@ -189,29 +192,6 @@ _client_error = botocore.exceptions.ClientError
 _client_error_name = callable_name(_client_error)
 
 
-chat_completion_invalid_model_error_events = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (external_botocore)",
-            "transaction_id": "transaction-id",
-            "conversation_id": "my-awesome-id",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "api_key_last_four_digits": "CRET",
-            "duration": None,  # Response time varies each test run
-            "request.model": "does-not-exist",
-            "response.model": "does-not-exist",
-            "request_id": "",
-            "vendor": "bedrock",
-            "ingest_source": "Python",
-            "error": True,
-        },
-    ),
-]
-
-
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_info):
     @validate_custom_events(chat_completion_invalid_model_error_events)
@@ -240,6 +220,9 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
         with pytest.raises(_client_error):
             bedrock_server.invoke_model(
                 body=b"{}",
@@ -286,6 +269,9 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
         with pytest.raises(_client_error):  # not sure where this exception actually comes from
             set_trace_info()
             add_custom_attribute("llm.conversation_id", "my-awesome-id")
+            add_custom_attribute("llm.foo", "bar")
+            add_custom_attribute("non_llm_attr", "python-agent")
+
             exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
 
     _test()

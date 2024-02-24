@@ -91,7 +91,7 @@ def create_chat_completion_message_event(
     trace_id,
     request_model,
     request_id,
-    conversation_id,
+    llm_metadata_dict,
     response_id="",
 ):
     if not transaction:
@@ -107,7 +107,6 @@ def create_chat_completion_message_event(
         chat_completion_message_dict = {
             "id": id_,
             "appName": app_name,
-            "conversation_id": conversation_id,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -120,6 +119,9 @@ def create_chat_completion_message_event(
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
+
+        chat_completion_message_dict.update(llm_metadata_dict)
+
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
     for index, message in enumerate(output_message_list):
@@ -134,7 +136,6 @@ def create_chat_completion_message_event(
         chat_completion_message_dict = {
             "id": id_,
             "appName": app_name,
-            "conversation_id": conversation_id,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -148,7 +149,12 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
             "is_response": True,
         }
+
+        chat_completion_message_dict.update(llm_metadata_dict)
+
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
+
+    conversation_id = None
     return (conversation_id, request_id, message_ids)
 
 
@@ -509,6 +515,10 @@ def handle_embedding_event(
     request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
+    custom_attrs_dict = transaction._custom_params
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+
     _, _, embedding_dict = extractor(request_body, response_body)
 
     request_body = json.loads(request_body)
@@ -533,6 +543,8 @@ def handle_embedding_event(
     if is_error:
         embedding_dict.update({"error": True})
 
+    embedding_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
 
 
@@ -549,8 +561,9 @@ def handle_chat_completion_event(
     trace_id,
     span_id,
 ):
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
     chat_completion_id = str(uuid.uuid4())
 
@@ -566,7 +579,6 @@ def handle_chat_completion_event(
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "id": chat_completion_id,
             "appName": settings.app_name,
-            "conversation_id": conversation_id,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
@@ -578,6 +590,8 @@ def handle_chat_completion_event(
     )
     if is_error:
         chat_completion_summary_dict.update({"error": True})
+
+    chat_completion_summary_dict.update(llm_metadata_dict)
 
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
@@ -591,7 +605,7 @@ def handle_chat_completion_event(
         trace_id=trace_id,
         request_model=model,
         request_id=request_id,
-        conversation_id=conversation_id,
+        llm_metadata_dict=llm_metadata_dict,
         response_id=response_id,
     )
 

@@ -32,6 +32,7 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
+from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.package_version_utils import get_package_version
 
 LANGCHAIN_VERSION = get_package_version("langchain")
@@ -43,6 +44,8 @@ vectorstore_recorded_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "id": None,  # UUID that changes with each run
             "vendor": "langchain",
             "ingest_source": "Python",
@@ -62,6 +65,8 @@ vectorstore_recorded_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "id": None,  # UUID that changes with each run
             "vendor": "langchain",
             "ingest_source": "Python",
@@ -126,6 +131,9 @@ def test_vectorstore_modules_instrumented():
 @background_task()
 def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_client):
     set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
 
     script_dir = os.path.dirname(__file__)
     loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
@@ -166,6 +174,9 @@ def test_pdf_pagesplitter_vectorstore_outside_txn(set_trace_info, embedding_open
 def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embedding_openai_client):
     async def _test():
         set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
 
         script_dir = os.path.dirname(__file__)
         loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))

@@ -114,6 +114,10 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
     @background_task(name="test_bedrock_embedding")
     def _test():
         set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+        
         exercise_model(prompt="This is an embedding test.")
 
     _test()

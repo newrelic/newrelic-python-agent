@@ -2135,6 +2135,11 @@ def _process_module_builtin_defaults():
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
+        "langchain_community.vectorstores.apache_doris",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
         "langchain_community.vectorstores.astradb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",

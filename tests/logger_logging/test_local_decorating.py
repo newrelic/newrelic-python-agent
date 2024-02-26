@@ -95,14 +95,3 @@ def test_local_log_decoration_dict_message(instrumented_logger):
         assert instrumented_logger.caplog.records[0] == get_metadata_string("{'message': 'dict_message'}", True)
 
     test()
-
-
-@reset_core_stats_engine()
-def test_local_log_decoration_dict_message(logger):
-    @validate_log_event_count(1)
-    @background_task()
-    def test():
-        exercise_logging(logger, {"message": "dict_message"})
-        assert logger.caplog.records[0] == get_metadata_string("{'message': 'dict_message'}", True)
-
-    test()

@@ -40,7 +40,6 @@ from testing_support.validators.validate_transaction_error_event_count import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-
 from conftest import disabled_ai_monitoring_settings
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute

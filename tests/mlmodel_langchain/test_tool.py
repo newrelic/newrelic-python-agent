@@ -41,6 +41,7 @@ from conftest import disabled_ai_monitoring_settings
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
+
 @pytest.fixture
 def single_arg_tool():
     @tool

@@ -155,7 +155,7 @@ def test_handler_dict_message_with_formatter(formatting_logger):
         # Grab the event directly off the transaction to compare message manually
         captured_events = list(current_transaction()._log_events)
         assert len(captured_events) == 1
-        
+
         # Accept anything that looks like the correct types.
         assert captured_events[0].message.startswith("WARNING - {")
 

@@ -22,6 +22,7 @@ import newrelic.api.object_wrapper
 import newrelic.common.object_wrapper
 import newrelic.api.external_trace
 
+
 class capture_external_trace(object):
 
     def __init__(self, wrapped):
@@ -69,6 +70,7 @@ class capture_external_trace(object):
 
     def __getattr__(self, name):
        return getattr(self._nr_next_object, name)
+
 
 def instrument(module):
     newrelic.common.object_wrapper.wrap_object(

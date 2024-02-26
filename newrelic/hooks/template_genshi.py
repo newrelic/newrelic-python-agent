@@ -18,6 +18,7 @@ import newrelic.api.transaction
 import newrelic.common.object_wrapper
 import newrelic.api.function_trace
 
+
 class stream_wrapper(object):
     def __init__(self, stream, filepath):
         self.__stream = stream
@@ -38,6 +39,7 @@ class stream_wrapper(object):
         return self.__stream.__unicode__()
     def __html__(self):
         return self.__stream.__html__()
+
 
 class wrap_template(object):
     def __init__(self, wrapped):
@@ -64,6 +66,7 @@ class wrap_template(object):
 
     def __getattr__(self, name):
         return getattr(self.__wrapped, name)
+
 
 def instrument(module):
 

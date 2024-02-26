@@ -402,7 +402,6 @@ def test_openai_chat_completion_async_ai_monitoring_disabled(loop):
     )
 
 
-
 @reset_core_stats_engine()
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)

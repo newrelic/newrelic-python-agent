@@ -26,6 +26,7 @@ from newrelic.core.internal_metrics import internal_count_metric
 _logger = logging.getLogger(__name__)
 VALID_CHARS_RE = re.compile(r'[0-9a-zA-Z_ ./-]')
 
+
 class UtilizationHttpClient(InsecureHttpClient):
     SOCKET_TIMEOUT = 0.05
 
@@ -59,9 +60,9 @@ class CommonUtilization(object):
     def record_error(cls, resource, data):
         # As per spec
         internal_count_metric(
-                'Supportability/utilization/%s/error' % cls.VENDOR_NAME, 1)
+            'Supportability/utilization/%s/error' % cls.VENDOR_NAME, 1)
         _logger.warning('Invalid %r data (%r): %r',
-                cls.VENDOR_NAME, resource, data)
+                        cls.VENDOR_NAME, resource, data)
 
     @classmethod
     def fetch(cls):
@@ -77,7 +78,7 @@ class CommonUtilization(object):
             return resp[1]
         except Exception as e:
             _logger.debug('Unable to fetch %s data from %s%s: %r',
-                    cls.VENDOR_NAME, cls.METADATA_HOST, cls.METADATA_PATH, e)
+                          cls.VENDOR_NAME, cls.METADATA_HOST, cls.METADATA_PATH, e)
             return None
 
     @classmethod
@@ -89,8 +90,8 @@ class CommonUtilization(object):
             return json_decode(response.decode('utf-8'))
         except ValueError:
             _logger.debug('Invalid %s data (%s%s): %r',
-                    cls.VENDOR_NAME, cls.METADATA_HOST,
-                    cls.METADATA_PATH, response)
+                          cls.VENDOR_NAME, cls.METADATA_HOST,
+                          cls.METADATA_PATH, response)
 
     @classmethod
     def valid_chars(cls, data):
@@ -179,7 +180,7 @@ class AWSUtilization(CommonUtilization):
             return resp[1]
         except Exception as e:
             _logger.debug('Unable to fetch %s data from %s%s: %r',
-                    cls.VENDOR_NAME, cls.METADATA_HOST, cls.METADATA_PATH, e)
+                          cls.VENDOR_NAME, cls.METADATA_HOST, cls.METADATA_PATH, e)
             return None
 
     @classmethod
@@ -200,7 +201,7 @@ class AWSUtilization(CommonUtilization):
             return resp[1]
         except Exception as e:
             _logger.debug('Unable to fetch %s data from %s%s: %r',
-                    cls.VENDOR_NAME, cls.METADATA_HOST, cls.METADATA_PATH, e)
+                          cls.VENDOR_NAME, cls.METADATA_HOST, cls.METADATA_PATH, e)
             return None
 
 
@@ -268,7 +269,7 @@ class DockerUtilization(CommonUtilization):
 
     METADATA_FILE_CGROUPS_V1 = '/proc/self/cgroup'
     METADATA_RE_CGROUPS_V1 = re.compile(r'[0-9a-f]{64,}')
-    
+
     METADATA_FILE_CGROUPS_V2 = '/proc/self/mountinfo'
     METADATA_RE_CGROUPS_V2 = re.compile(r'^.*/docker/containers/([0-9a-f]{64,})/.*$')
 
@@ -336,7 +337,7 @@ class DockerUtilization(CommonUtilization):
 
 
 class KubernetesUtilization(CommonUtilization):
-    EXPECTED_KEYS = ('kubernetes_service_host', )
+    EXPECTED_KEYS = ('kubernetes_service_host',)
     VENDOR_NAME = 'kubernetes'
 
     @staticmethod

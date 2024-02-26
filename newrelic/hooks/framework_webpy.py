@@ -25,6 +25,7 @@ from newrelic.common.object_names import callable_name
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
 from newrelic.api.time_trace import notice_error
 
+
 def transaction_name_delegate(*args, **kwargs):
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:
@@ -35,13 +36,16 @@ def transaction_name_delegate(*args, **kwargs):
         transaction.set_transaction_name(f)
     return (args, kwargs)
 
+
 def wrap_handle_exception(self):
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:
         notice_error()
 
+
 def template_name(render_obj, name):
     return name
+
 
 def instrument(module):
 

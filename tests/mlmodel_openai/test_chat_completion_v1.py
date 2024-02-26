@@ -387,7 +387,6 @@ def test_openai_chat_completion_async_disabled_custom_event_settings(loop, async
     )
 
 
-@override_application_settings(disabled_ai_monitoring_settings)
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -424,3 +423,5 @@ def test_openai_chat_completion_async_no_usage_data(set_trace_info, async_openai
     loop.run_until_complete(
         async_openai_client.chat.completions.create(
             model="gpt-3.5-turbo", messages=({"role": "user", "content": "No usage data"},), temperature=0.7, max_tokens=100
+        )
+    )

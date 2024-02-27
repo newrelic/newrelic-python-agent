@@ -31,6 +31,96 @@ PINECONE_VERSION = get_package_version("pinecone")
 # Future instrumentation points: gRPC Pinecone
 
 
+# count for describe_collection will be different based on
+# whether mock server is enabled or not.
+_scoped_metrics = [
+    ("Datastore/operation/Pinecone/list_indexes", 1),
+    ("Datastore/statement/Pinecone/python-test/describe_index", 1),
+    ("Datastore/operation/Pinecone/upsert", 1),
+    ("Datastore/operation/Pinecone/query", 1),
+    ("Datastore/operation/Pinecone/update", 1),
+    ("Datastore/operation/Pinecone/fetch", 1),
+    ("Datastore/operation/Pinecone/describe_index_stats", 1),
+    ("Datastore/statement/Pinecone/python-test/create_collection", 1),
+    # ("Datastore/operation/Pinecone/describe_collection", 2),
+    ("Datastore/operation/Pinecone/list_collections", 1),
+    ("Datastore/operation/Pinecone/delete_collection", 1),
+    ("Datastore/statement/Pinecone/python-test/configure_index", 1),
+]
+_rollup_metrics = [
+    # ("Datastore/all", 13),
+    # ("Datastore/Pinecone/all", 13),
+    # ("Datastore/allOther", 13),
+    # ("Datastore/Pinecone/allOther", 13),
+    ("Datastore/operation/Pinecone/describe_index", 1),
+    ("Datastore/operation/Pinecone/list_indexes", 1),
+    ("Datastore/operation/Pinecone/upsert", 1),
+    ("Datastore/operation/Pinecone/query", 1),
+    ("Datastore/operation/Pinecone/update", 1),
+    ("Datastore/operation/Pinecone/fetch", 1),
+    ("Datastore/operation/Pinecone/describe_index_stats", 1),
+    ("Datastore/operation/Pinecone/create_collection", 1),
+    # ("Datastore/operation/Pinecone/describe_collection", 2), # 60+ in production
+    ("Datastore/operation/Pinecone/list_collections", 1),
+    ("Datastore/operation/Pinecone/delete_collection", 1),
+    ("Datastore/operation/Pinecone/configure_index", 1),
+]
+
+
+@validate_transaction_metrics(
+    "test_pinecone:test_suite_new",
+    # scoped_metrics=_scoped_metrics,
+    # rollup_metrics=_rollup_metrics,
+    custom_metrics=[("Python/ML/Pinecone/%s" % PINECONE_VERSION, 1)],
+    background_task=True,
+)
+@background_task()
+def test_suite_new(pinecone_instance, pinecone_index_instance):
+    for _ in pinecone_instance.list_indexes():
+        pass
+
+    index_status = pinecone_instance.describe_index("python-test")
+    assert index_status["status"]["ready"]
+
+    pinecone_index_instance.upsert(vectors=[("id-1", [0.1, 0.2, 0.3, 0.4])], namespace="python-namespace")
+
+    match = pinecone_index_instance.query(top_k=1, vector=[0.1, 0.2, 0.3, 0.4], namespace="python-namespace")
+    assert match["matches"][0]["id"] == "id-1"
+
+    pinecone_index_instance.update(id="id-1", values=[0.5, 0.6, 0.7, 0.8], namespace="python-namespace")
+
+    result = pinecone_index_instance.fetch(ids=["id-1"], namespace="python-namespace")
+    assert result["vectors"]["id-1"]["values"] == [0.5, 0.6, 0.7, 0.8]
+
+    result = pinecone_index_instance.describe_index_stats(ids=["id-1"], namespace="python-namespace")
+    assert result
+
+    pinecone_instance.create_collection("python-collection", "python-test")
+
+    for _ in pinecone_instance.list_collections():
+        pass
+
+    while pinecone_instance.describe_collection("python-collection")["status"] != "Ready":
+        sleep(1)
+
+    pinecone_instance.delete_collection("python-collection")
+
+    pinecone_instance.configure_index("python-test", pod_type="p1.x2")
+
+    # Pause the test while deleting the collection.
+    # This takes a little while
+    # In mock server, we will only have describe_collection in "Ready"y
+    # state so that this will be skipped (and effectively act as though
+    # the collection was deleted quickly)
+    try:
+        while pinecone_instance.describe_collection("python-collection")["status"] == "Terminating":
+            sleep(1)
+    except Exception:
+        # There is no collection anymore because it has finally been deleted.
+        # We can allow the test to resume/end
+        pass
+
+
 def test_suite(pinecone_instance, pinecone_index_instance):
 
     _scoped_metrics_describe_index = [

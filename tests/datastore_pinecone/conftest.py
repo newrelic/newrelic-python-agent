@@ -28,7 +28,6 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_available_fixture,
 )
 
-from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 PINECONE_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "pinecone_audit.log")
@@ -52,17 +51,17 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 
 @pytest.fixture(scope="function")
-def pinecone_clients(MockExternalPineconeServer):  # noqa: F811
-    # def pinecone_client():  # noqa: F811
+def pinecone_client(MockExternalPineconeServer):  # noqa: F811
     """
     This configures the pinecone client.
     """
     from newrelic.core.config import _environ_as_bool
 
     if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_PINECONE_RESPONSES", False):
-        with MockExternalPineconeServer():
+        with MockExternalPineconeServer() as server:
             pinecone = Pinecone(
                 api_key="NOT-A-REAL-SECRET",
+                host="http://localhost:%d" % server.port,
             )
             yield pinecone
     else:
@@ -76,10 +75,8 @@ def pinecone_clients(MockExternalPineconeServer):  # noqa: F811
         yield pinecone
 
 
-# @pytest.fixture(autouse=True, scope="session")
 @pytest.fixture(autouse=True, scope="function")
 def pinecone_server(
-    pinecone_clients,
     wrap_client_api_client_call_api,
 ):
     """
@@ -102,18 +99,15 @@ def pinecone_server(
         yield
 
 
-def bind_call_api(resource_path, method, path_params, query_params, header_params, body, *args, **kwargs):
-    return header_params, body
+def bind_call_api(resource_path, method, path_params, query_params, header_params, *args, **kwargs):
+    return resource_path, method, header_params
 
 
 @pytest.fixture(scope="function")
 def wrap_client_api_client_call_api():
     def _wrap_client_api_client_call_api(wrapped, instance, args, kwargs):
-        header_params, request = bind_call_api(*args, **kwargs)
-        if not request:
-            return wrapped(*args, **kwargs)
-
-        request_log = str((type(request).__name__, request.to_str()[:50]))
+        resource_path, method, header_params = bind_call_api(*args, **kwargs)
+        request_log = "%s %s" % (method, resource_path)
         response = wrapped(*args, **kwargs)
 
         if hasattr(response, "to_dict"):
@@ -129,13 +123,13 @@ def wrap_client_api_client_call_api():
 
 
 @pytest.fixture(scope="function")
-def pinecone_instance(pinecone_clients):
+def pinecone_instance(pinecone_client):
     # Delete if already exists/did not get properly deleted
     # from previous runs
-    if len(pinecone_clients.list_indexes()) > 1:
-        pinecone_clients.delete_index("python-test")
+    if "python-test" in pinecone_client.list_indexes().names():
+        pinecone_client.delete_index("python-test")
 
-    pinecone_clients.create_index(
+    pinecone_client.create_index(
         name="python-test",
         dimension=4,
         metric="cosine",
@@ -145,25 +139,29 @@ def pinecone_instance(pinecone_clients):
             pods=1,
         ),
     )
+    # Have status be ready in mock server.  This will result in this while
+    # loop being skipped over during the mock server execution of this
+    while not pinecone_client.describe_index("python-test")["status"]["ready"]:
+        sleep(1)
 
-    yield pinecone_clients
-    pinecone_clients.delete_index("python-test")
+    yield pinecone_client
+    pinecone_client.delete_index("python-test")
 
 
 @pytest.fixture(scope="function")
 def pinecone_index_instance(pinecone_instance):
     index = pinecone_instance.Index("python-test")
-    sleep(2)
+    sleep(3)
     yield index
     index.delete("python-test")
 
 
-@pytest.fixture
-def set_trace_info():
-    def set_info():
-        txn = current_transaction()
-        if txn:
-            txn.guid = "transaction-id"
-            txn._trace_id = "trace-id"
+# @pytest.fixture
+# def set_trace_info():
+#     def set_info():
+#         txn = current_transaction()
+#         if txn:
+#             txn.guid = "transaction-id"
+#             txn._trace_id = "trace-id"
 
-    return set_info
+#     return set_info

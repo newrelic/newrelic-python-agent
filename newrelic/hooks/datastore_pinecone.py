@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import uuid
 
 from newrelic.api.datastore_trace import DatastoreTrace
@@ -78,6 +79,9 @@ def wrap_pinecone_method(module, class_name, method_name, index_name_function):
 
         # Obtain attributes to be stored on pinecone spans regardless of whether we hit an error
         pinecone_id = str(uuid.uuid4())
+        # Framework from which Pinecone was called (if any)
+        # index name (whatever is the current index)
+        # collection name (if collection command used)
 
         # Get Pinecone API key without using the response so we can store
         # it before the response is returned in case of errors
@@ -95,15 +99,35 @@ def wrap_pinecone_method(module, class_name, method_name, index_name_function):
 
         api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
+        attributes = {"id": pinecone_id, "api_key_last_four_digits": api_key_last_four_digits}
+
         with DatastoreTrace(product="Pinecone", target=index, operation=method_name, host=host, source=wrapped) as dt:
             try:
                 result = wrapped(*args, **kwargs)
                 dt.add_custom_attribute("id", pinecone_id)
                 dt.add_custom_attribute("api_key_last_four_digits", api_key_last_four_digits)
             except Exception as exc:
-                # Error Logic goes here
-                # error code, error message, error status code
-                # dt.notice_error(attributes=error_attributes)
+                body = None
+                if hasattr(exc, "body"):
+                    try:
+                        body = json.loads(exc.body)
+                    except:
+                        body = None
+
+                code = getattr(exc, "reason", None) if not body else body.get("error", None).get("code", None)
+                message = getattr(exc, "body", None) if not body else body.get("error", None).get("message", None)
+                status = getattr(exc, "status", None)
+
+                error_attributes = {
+                    "http.statusCode": status,
+                    "error.code": code,
+                }.update(attributes)
+
+                # Override the default message if it is not empty.
+                if message:
+                    exc._nr_message = message
+
+                dt.notice_error(attributes=error_attributes)
                 raise
 
             return result

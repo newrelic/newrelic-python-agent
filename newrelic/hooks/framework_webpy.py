@@ -49,14 +49,10 @@ def template_name(render_obj, name):
 
 def instrument(module):
 
-    if module.__name__ == 'web.application':
-        newrelic.api.out_function.wrap_out_function(
-                module, 'application.wsgifunc', WSGIApplicationWrapper)
-        newrelic.api.in_function.wrap_in_function(
-                module, 'application._delegate', transaction_name_delegate)
-        newrelic.api.pre_function.wrap_pre_function(
-                module, 'application.internalerror', wrap_handle_exception)
+    if module.__name__ == "web.application":
+        newrelic.api.out_function.wrap_out_function(module, "application.wsgifunc", WSGIApplicationWrapper)
+        newrelic.api.in_function.wrap_in_function(module, "application._delegate", transaction_name_delegate)
+        newrelic.api.pre_function.wrap_pre_function(module, "application.internalerror", wrap_handle_exception)
 
-    elif module.__name__ == 'web.template':
-        newrelic.api.function_trace.wrap_function_trace(
-                module, 'render.__getattr__', template_name, 'Template/Render')
+    elif module.__name__ == "web.template":
+        newrelic.api.function_trace.wrap_function_trace(module, "render.__getattr__", template_name, "Template/Render")

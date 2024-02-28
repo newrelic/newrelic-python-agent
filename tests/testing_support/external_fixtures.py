@@ -30,35 +30,32 @@ def create_incoming_headers(transaction):
 
     headers = []
 
-    cross_process_id = '1#2'
-    path = 'test'
+    cross_process_id = "1#2"
+    path = "test"
     queue_time = 1.0
     duration = 2.0
     read_length = 1024
-    guid = '0123456789012345'
+    guid = "0123456789012345"
     record_tt = False
 
-    payload = (cross_process_id, path, queue_time, duration, read_length,
-            guid, record_tt)
+    payload = (cross_process_id, path, queue_time, duration, read_length, guid, record_tt)
     app_data = json_encode(payload)
 
     value = obfuscate(app_data, encoding_key)
 
-    assert isinstance(value, type(''))
+    assert isinstance(value, type(""))
 
-    headers.append(('X-NewRelic-App-Data', value))
+    headers.append(("X-NewRelic-App-Data", value))
 
     return headers
 
 
 def validate_synthetics_external_trace_header(
-        synthetics_header,
-        synthetics_info_header,
-    ):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_synthetics_external_trace_header(wrapped, instance,
-            args, kwargs):
+    synthetics_header,
+    synthetics_info_header,
+):
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+    def _validate_synthetics_external_trace_header(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
 
@@ -91,31 +88,29 @@ def validate_synthetics_external_trace_header(
                 def __getattr__(self, name):
                     return getattr(self.__wrapped__, name, lambda *args, **kwargs: None)
 
-            external_headers = ExternalTrace.generate_request_headers(
-                    _Transaction(transaction))
+            external_headers = ExternalTrace.generate_request_headers(_Transaction(transaction))
             external_headers = {header[0]: header[1] for header in external_headers}
 
             if synthetics_header:
-                assert synthetics_header == external_headers["X-NewRelic-Synthetics"], (
-                        'synthetics_header=%r, external_headers=%r' % (
-                        synthetics_header, external_headers))
+                assert (
+                    synthetics_header == external_headers["X-NewRelic-Synthetics"]
+                ), "synthetics_header=%r, external_headers=%r" % (synthetics_header, external_headers)
             else:
                 assert "X-NewRelic-Synthetics" not in external_headers
 
             if synthetics_info_header:
-                assert synthetics_info_header == external_headers["X-NewRelic-Synthetics-Info"], (
-                        'synthetics_info_header=%r, external_headers=%r' % (
-                        synthetics_info_header, external_headers))
+                assert (
+                    synthetics_info_header == external_headers["X-NewRelic-Synthetics-Info"]
+                ), "synthetics_info_header=%r, external_headers=%r" % (synthetics_info_header, external_headers)
             else:
                 assert "X-NewRelic-Synthetics-Info" not in external_headers
-
 
         return result
 
     return _validate_synthetics_external_trace_header
 
 
-@transient_function_wrapper(httplib.__name__, 'HTTPConnection.putheader')
+@transient_function_wrapper(httplib.__name__, "HTTPConnection.putheader")
 def cache_outgoing_headers(wrapped, instance, args, kwargs):
     def _bind_params(header, *values):
         return header, values
@@ -140,7 +135,7 @@ def cache_outgoing_headers(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-@transient_function_wrapper(httplib.__name__, 'HTTPResponse.getheaders')
+@transient_function_wrapper(httplib.__name__, "HTTPResponse.getheaders")
 def insert_incoming_headers(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 

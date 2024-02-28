@@ -39,10 +39,9 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])
@@ -125,24 +124,36 @@ def test_bedrock_embedding_outside_txn(exercise_model):
     exercise_model(prompt="This is an embedding test.")
 
 
-_client_error = botocore.exceptions.ClientError
-_client_error_name = callable_name(_client_error)
+disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 
 @override_application_settings(disabled_custom_insights_settings)
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics(
-    name="test_bedrock_embeddings:test_bedrock_embedding_disabled_settings",
+    name="test_bedrock_embeddings:test_bedrock_embedding_disabled_custom_event_settings",
     custom_metrics=[
         ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
     ],
     background_task=True,
 )
 @background_task()
-def test_bedrock_embedding_disabled_settings(set_trace_info, exercise_model):
+def test_bedrock_embedding_disabled_custom_event_settings(set_trace_info, exercise_model):
     set_trace_info()
     exercise_model(prompt="This is an embedding test.")
+
+
+@disabled_ai_monitoring_settings
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_bedrock_embedding_disabled_ai_monitoring_settings(set_trace_info, exercise_model):
+    set_trace_info()
+    exercise_model(prompt="This is an embedding test.")
+
+
+_client_error = botocore.exceptions.ClientError
+_client_error_name = callable_name(_client_error)
 
 
 @dt_enabled

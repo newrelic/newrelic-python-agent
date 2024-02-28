@@ -561,6 +561,7 @@ def _process_configuration(section):
     _process_setting(section, "machine_learning.enabled", "getboolean", None)
     _process_setting(section, "machine_learning.inference_events_value.enabled", "getboolean", None)
     _process_setting(section, "package_reporting.enabled", "getboolean", None)
+    _process_setting(section, "ai_monitoring.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -908,6 +909,10 @@ def apply_local_high_security_mode_setting(settings):
     if settings.machine_learning.inference_events_value.enabled:
         settings.machine_learning.inference_events_value.enabled = False
         _logger.info(log_template, "machine_learning.inference_events_value.enabled", True, False)
+
+    if settings.ai_monitoring.enabled:
+        settings.ai_monitoring.enabled = False
+        _logger.info(log_template, "ai_monitoring.enabled", True, False)
 
     return settings
 

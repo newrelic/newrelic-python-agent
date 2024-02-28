@@ -29,6 +29,7 @@ from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=
 from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
+    override_application_settings,
 )
 
 from newrelic.api.transaction import current_transaction
@@ -42,6 +43,7 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "ml_insights_events.enabled": True,
+    "ai_monitoring.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -79,6 +81,8 @@ OPENAI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__))
 OPENAI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking
 RECORDED_HEADERS = set(["x-request-id", "content-type"])
+
+disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.enabled": False})
 
 
 @pytest.fixture(scope="session")

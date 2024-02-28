@@ -46,6 +46,7 @@ from newrelic.core.config import (
     global_settings_dump,
 )
 
+from testing_support.fixtures import override_generic_settings
 
 def function_to_trace():
     pass

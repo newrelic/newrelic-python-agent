@@ -178,10 +178,10 @@ from newrelic.api.web_transaction import (
 from newrelic.api.web_transaction import web_transaction as __web_transaction
 from newrelic.api.web_transaction import wrap_web_transaction as __wrap_web_transaction
 from newrelic.common.object_names import callable_name as __callable_name
-from newrelic.common.object_wrapper import CallableObjectProxy as __CallableObjectProxy
 from newrelic.common.object_wrapper import FunctionWrapper as __FunctionWrapper
 from newrelic.common.object_wrapper import InFunctionWrapper as __InFunctionWrapper
 from newrelic.common.object_wrapper import ObjectProxy as __ObjectProxy
+from newrelic.common.object_wrapper import CallableObjectProxy as __CallableObjectProxy
 from newrelic.common.object_wrapper import ObjectWrapper as __ObjectWrapper
 from newrelic.common.object_wrapper import OutFunctionWrapper as __OutFunctionWrapper
 from newrelic.common.object_wrapper import PostFunctionWrapper as __PostFunctionWrapper

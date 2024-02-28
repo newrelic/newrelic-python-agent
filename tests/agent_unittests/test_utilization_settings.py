@@ -118,7 +118,7 @@ def reset_agent_config(ini_contents, env_dict):
     return reset
 
 
-@reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)
+@reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, {"NEW_RELIC_HOST": "collector.newrelic.com"})
 def test_otlp_host_port_default():
     settings = global_settings()
     assert settings.otlp_host == "otlp.nr-data.net"

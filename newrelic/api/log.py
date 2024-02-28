@@ -16,8 +16,8 @@ import json
 import logging
 import re
 import warnings
-from logging import Formatter, LogRecord
 
+from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common import agent_http
@@ -66,8 +66,8 @@ def safe_json_encode(obj, ignore_string_types=False, **kwargs):
         return "<unprintable %s object>" % type(obj).__name__
 
 
-class NewRelicContextFormatter(Formatter):
-    DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(LogRecord("", 0, "", 0, "", (), None))) | {"message"})
+class NewRelicContextFormatter(logging.Formatter):
+    DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(logging.LogRecord("", 0, "", 0, "", (), None))) | {"message"})
 
     def __init__(self, *args, **kwargs):
         super(NewRelicContextFormatter, self).__init__()
@@ -104,29 +104,61 @@ class NewRelicContextFormatter(Formatter):
 
 
 class NewRelicLogForwardingHandler(logging.Handler):
-    DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(LogRecord("", 0, "", 0, "", (), None))) | {"message"})
+    IGNORED_LOG_RECORD_KEYS = set(["message", "msg"])
 
     def emit(self, record):
         try:
-            # Avoid getting local log decorated message
-            if hasattr(record, "_nr_original_message"):
-                message = record._nr_original_message()
+            nr = None
+            transaction = current_transaction()
+            # Retrieve settings
+            if transaction:
+                settings = transaction.settings
+                nr = transaction
             else:
-                message = record.getMessage()
+                application = application_instance(activate=False)
+                if application and application.enabled:
+                    nr = application
+                    settings = application.settings
+                else:
+                    # If no settings have been found, fallback to global settings
+                    settings = global_settings()
 
-            attrs = self.filter_record_attributes(record)
-            record_log_event(message, record.levelname, int(record.created * 1000), attributes=attrs)
+            # If logging is enabled and the application or transaction is not None.
+            if settings and settings.application_logging.enabled and nr:
+                level_name = str(getattr(record, "levelname", "UNKNOWN"))
+                if settings.application_logging.metrics.enabled:
+                    nr.record_custom_metric("Logging/lines", {"count": 1})
+                    nr.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+
+                if settings.application_logging.forwarding.enabled:
+                    if self.formatter:
+                        # Formatter supplied, allow log records to be formatted into a string
+                        message = self.format(record)
+                    else:
+                        # No formatter supplied, attempt to handle dict log records
+                        message = record.msg
+                        if not isinstance(message, dict):
+                            # Allow python to convert the message to a string and template it with args.
+                            message = record.getMessage()
+
+                    # Grab and filter context attributes from log record
+                    context_attrs = self.filter_record_attributes(record)
+
+                    record_log_event(
+                        message=message,
+                        level=level_name,
+                        timestamp=int(record.created * 1000),
+                        attributes=context_attrs,
+                    )
+        except RecursionError:  # Emulates behavior of CPython.
+            raise
         except Exception:
             self.handleError(record)
 
     @classmethod
     def filter_record_attributes(cls, record):
         record_attrs = vars(record)
-        DEFAULT_LOG_RECORD_KEYS = cls.DEFAULT_LOG_RECORD_KEYS
-        if len(record_attrs) > len(DEFAULT_LOG_RECORD_KEYS):
-            return {k: v for k, v in six.iteritems(vars(record)) if k not in DEFAULT_LOG_RECORD_KEYS}
-        else:
-            return None
+        return {k: record_attrs[k] for k in record_attrs if k not in cls.IGNORED_LOG_RECORD_KEYS}
 
 
 class NewRelicLogHandler(logging.Handler):

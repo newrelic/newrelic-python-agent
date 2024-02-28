@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import sys
+import types
 
-import newrelic.api.external_trace
-import newrelic.api.object_wrapper
-import newrelic.api.transaction
-import newrelic.common.object_wrapper
 import newrelic.packages.six as six
+
+import newrelic.api.transaction
+import newrelic.api.object_wrapper
+import newrelic.common.object_wrapper
+import newrelic.api.external_trace
 
 
 class capture_external_trace(object):
@@ -29,6 +31,7 @@ class capture_external_trace(object):
             self._nr_last_object = wrapped
 
     def __call__(self, url, *args, **kwargs):
+
         # The URL be a string or a file like object. Pass call
         # through if not a string.
 

@@ -526,7 +526,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
-
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)

@@ -24,7 +24,7 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-from conftest import disabled_ai_monitoring_settings
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 
@@ -309,6 +309,7 @@ def test_openai_chat_completion_sync_ai_monitoring_disabled(sync_openai_client):
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
     )
 
+
 @reset_core_stats_engine()
 @validate_custom_events(chat_completion_recorded_events_no_convo_id)
 @validate_custom_event_count(count=4)
@@ -422,6 +423,9 @@ def test_openai_chat_completion_async_no_usage_data(set_trace_info, async_openai
     set_trace_info()
     loop.run_until_complete(
         async_openai_client.chat.completions.create(
-            model="gpt-3.5-turbo", messages=({"role": "user", "content": "No usage data"},), temperature=0.7, max_tokens=100
+            model="gpt-3.5-turbo",
+            messages=({"role": "user", "content": "No usage data"},),
+            temperature=0.7,
+            max_tokens=100,
         )
     )

@@ -17,7 +17,6 @@ import os
 import re
 import socket
 import string
-import threading
 
 from newrelic.common.agent_http import InsecureHttpClient
 from newrelic.common.encoding_utils import json_decode

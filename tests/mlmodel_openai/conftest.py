@@ -29,7 +29,7 @@ from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=
 from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
-    override_application_settings
+    override_application_settings,
 )
 
 from newrelic.api.transaction import current_transaction

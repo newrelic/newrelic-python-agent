@@ -25,7 +25,7 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
-from conftest import disabled_ai_monitoring_settings
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
@@ -395,7 +395,6 @@ def test_openai_chat_completion_async_ai_monitoring_disabled(loop):
             assert resp
 
     loop.run_until_complete(consumer())
-
 
 
 def test_openai_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility():

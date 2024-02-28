@@ -562,7 +562,6 @@ def handle_chat_completion_event(
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-
     input_message_list, output_message_list, chat_completion_summary_dict = extractor(request_body, response_body)
     response_id = chat_completion_summary_dict.get("response_id", "")
     chat_completion_summary_dict.update(

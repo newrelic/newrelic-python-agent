@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import threading
+import functools
+import sys
+import types
 import time
-
+import threading
 import newrelic.common.object_wrapper
 
 _context = threading.local()
 
-
 class InternalTrace(object):
+
     def __init__(self, name, metrics=None):
         self.name = name
         self.metrics = metrics
@@ -28,7 +30,7 @@ class InternalTrace(object):
 
     def __enter__(self):
         if self.metrics is None:
-            self.metrics = getattr(_context, "current", None)
+            self.metrics = getattr(_context, 'current', None)
         self.start = time.time()
         return self
 
@@ -37,8 +39,8 @@ class InternalTrace(object):
         if self.metrics is not None:
             self.metrics.record_custom_metric(self.name, duration)
 
-
 class InternalTraceWrapper(object):
+
     def __init__(self, wrapped, name):
         if type(wrapped) == type(()):
             (instance, wrapped) = wrapped
@@ -58,7 +60,7 @@ class InternalTraceWrapper(object):
         return self.__class__((instance, descriptor), self.__name)
 
     def __call__(self, *args, **kwargs):
-        metrics = getattr(_context, "current", None)
+        metrics = getattr(_context, 'current', None)
 
         if metrics is None:
             return self.__wrapped(*args, **kwargs)
@@ -66,14 +68,14 @@ class InternalTraceWrapper(object):
         with InternalTrace(self.__name, metrics):
             return self.__wrapped(*args, **kwargs)
 
-
 class InternalTraceContext(object):
+
     def __init__(self, metrics):
         self.previous = None
         self.metrics = metrics
 
     def __enter__(self):
-        self.previous = getattr(_context, "current", None)
+        self.previous = getattr(_context, 'current', None)
         _context.current = self.metrics
         return self
 
@@ -81,23 +83,19 @@ class InternalTraceContext(object):
         if self.previous is not None:
             _context.current = self.previous
 
-
 def internal_trace(name=None):
     def decorator(wrapped):
         return InternalTraceWrapper(wrapped, name)
-
     return decorator
 
-
 def wrap_internal_trace(module, object_path, name=None):
-    newrelic.common.object_wrapper.wrap_object(module, object_path, InternalTraceWrapper, (name,))
-
+    newrelic.common.object_wrapper.wrap_object(module, object_path,
+            InternalTraceWrapper, (name,))
 
 def internal_metric(name, value):
-    metrics = getattr(_context, "current", None)
+    metrics = getattr(_context, 'current', None)
     if metrics is not None:
         metrics.record_custom_metric(name, value)
-
 
 def internal_count_metric(name, count):
     """Create internal metric where only count has a value.
@@ -105,5 +103,5 @@ def internal_count_metric(name, count):
     All other fields have a value of 0.
     """
 
-    count_metric = {"count": count}
+    count_metric = {'count': count}
     internal_metric(name, count_metric)

@@ -450,6 +450,44 @@ RESPONSES_V1 = {
             }
         },
     ],
+    "No usage data": [
+        {
+            "content-type": "application/json",
+            "openai-model": "gpt-3.5-turbo-0613",
+            "openai-organization": "new-relic-nkmd8b",
+            "openai-processing-ms": "6326",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "200",
+            "x-ratelimit-limit-tokens": "40000",
+            "x-ratelimit-limit-tokens_usage_based": "40000",
+            "x-ratelimit-remaining-requests": "198",
+            "x-ratelimit-remaining-tokens": "39880",
+            "x-ratelimit-remaining-tokens_usage_based": "39880",
+            "x-ratelimit-reset-requests": "11m32.334s",
+            "x-ratelimit-reset-tokens": "180ms",
+            "x-ratelimit-reset-tokens_usage_based": "180ms",
+            "x-request-id": "f8d0f53b6881c5c0a3698e55f8f410ac",
+        },
+        200,
+        {
+            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+            "object": "chat.completion",
+            "created": 1701995833,
+            "model": "gpt-3.5-turbo-0613",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": None,
+            "system_fingerprint": None,
+        },
+    ],
     "This is an embedding test.": [
         {
             "content-type": "application/json",
@@ -670,6 +708,44 @@ RESPONSES = {
             }
         },
     ),
+    "No usage data": [
+        {
+            "content-type": "application/json",
+            "openai-model": "gpt-3.5-turbo-0613",
+            "openai-organization": "new-relic-nkmd8b",
+            "openai-processing-ms": "6326",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "200",
+            "x-ratelimit-limit-tokens": "40000",
+            "x-ratelimit-limit-tokens_usage_based": "40000",
+            "x-ratelimit-remaining-requests": "198",
+            "x-ratelimit-remaining-tokens": "39880",
+            "x-ratelimit-remaining-tokens_usage_based": "39880",
+            "x-ratelimit-reset-requests": "11m32.334s",
+            "x-ratelimit-reset-tokens": "180ms",
+            "x-ratelimit-reset-tokens_usage_based": "180ms",
+            "x-request-id": "f8d0f53b6881c5c0a3698e55f8f410ac",
+        },
+        200,
+        {
+            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+            "object": "chat.completion",
+            "created": 1701995833,
+            "model": "gpt-3.5-turbo-0613",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                    },
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": None,
+            "system_fingerprint": None,
+        },
+    ],
     "This is an embedding test.": (
         {
             "Content-Type": "application/json",

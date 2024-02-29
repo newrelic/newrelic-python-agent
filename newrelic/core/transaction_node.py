@@ -174,8 +174,7 @@ class TransactionNode(_TransactionNode):
 
             if self.queue_start != 0:
                 queue_wait = self.start_time - self.queue_start
-                if queue_wait < 0:
-                    queue_wait = 0
+                queue_wait = max(queue_wait, 0)
 
                 yield TimeMetric(name="WebFrontend/QueueTime", scope="", duration=queue_wait, exclusive=None)
 
@@ -374,7 +373,11 @@ class TransactionNode(_TransactionNode):
                     params["userAttributes"][attr.name] = attr.value
 
             yield newrelic.core.error_collector.TracedError(
-                start_time=error.timestamp, path=self.path, message=error.message, type=error.type, parameters=params
+                start_time=error.timestamp,
+                path=self.path,
+                message=error.message,
+                type=error.type,
+                parameters=params,
             )
 
     def transaction_trace(self, stats, limit, connections):
@@ -578,6 +581,7 @@ class TransactionNode(_TransactionNode):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
+        intrinsics["guid"] = self.guid
         intrinsics["timestamp"] = int(1000.0 * self.start_time)
         intrinsics["duration"] = self.response_time
 

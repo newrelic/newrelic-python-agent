@@ -1,4 +1,5 @@
 # Copyright 2010 New Relic, Inc.
+# Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +25,7 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 
@@ -306,6 +308,23 @@ def test_openai_chat_completion_sync_custom_events_insights_disabled(set_trace_i
         assert resp
 
 
+@disabled_ai_monitoring_settings
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_openai_chat_completion_sync_ai_monitoring_disabled(sync_openai_client):
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    generator = sync_openai_client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=_test_openai_chat_completion_messages,
+        temperature=0.7,
+        max_tokens=100,
+        stream=True,
+    )
+    for resp in generator:
+        assert resp
+
+
 @reset_core_stats_engine()
 @validate_custom_events(chat_completion_recorded_events_no_llm_metadata)
 @validate_custom_event_count(count=4)
@@ -398,6 +417,25 @@ def test_openai_chat_completion_async_outside_transaction(loop, async_openai_cli
 )
 @background_task()
 def test_openai_chat_completion_async_disabled_custom_event_settings(loop, async_openai_client):
+    async def consumer():
+        generator = await async_openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_messages,
+            temperature=0.7,
+            max_tokens=100,
+            stream=True,
+        )
+        async for resp in generator:
+            assert resp
+
+    loop.run_until_complete(consumer())
+
+
+@disabled_ai_monitoring_settings
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_openai_chat_completion_async_disabled_ai_monitoring_settings(loop, async_openai_client):
     async def consumer():
         generator = await async_openai_client.chat.completions.create(
             model="gpt-3.5-turbo",

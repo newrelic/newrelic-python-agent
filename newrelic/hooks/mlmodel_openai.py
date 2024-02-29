@@ -35,6 +35,10 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     if not transaction or kwargs.get("stream", False):
         return wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
@@ -52,8 +56,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     span_id = None
     trace_id = None
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     function_name = wrapped.__name__
 
@@ -133,8 +135,8 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    response_model = attribute_response.get("model", "")
-    response_usage = attribute_response.get("usage", {})
+    response_model = attribute_response.get("model", "") or ""
+    response_usage = attribute_response.get("usage", {}) or {}
     api_type = getattr(attribute_response, "api_type", "")
     organization = response_headers.get("openai-organization", "") if OPENAI_V1 else attribute_response.organization
 
@@ -152,8 +154,8 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "response.model": response_model,
         "response.organization": organization,
         "response.api_type": api_type,  # API type was removed in v1
-        "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
+        "response.usage.total_tokens": response_usage.get("total_tokens", "") if response_usage else "",
+        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if response_usage else "",
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
         "response.headers.ratelimitLimitRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-limit-requests", True
@@ -190,6 +192,10 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
@@ -207,7 +213,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
     app_name = settings.app_name
     completion_id = str(uuid.uuid4())
 
@@ -324,14 +329,14 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     if OPENAI_V1:
         response = response.model_dump()
 
-    response_model = response.get("model", "")
+    response_model = response.get("model", "") or ""
     response_id = response.get("id")
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    response_usage = response.get("usage", {})
+    response_usage = response.get("usage", {}) or {}
 
-    messages = kwargs.get("messages", [])
-    choices = response.get("choices", [])
+    messages = kwargs.get("messages", []) or []
+    choices = response.get("choices", []) or []
     organization = (
         response_headers.get("openai-organization", "") if OPENAI_V1 else getattr(response, "organization", "")
     )
@@ -352,9 +357,9 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         "duration": ft.duration,
         "response.model": response_model,
         "response.organization": organization,
-        "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if any(response_usage) else "",
-        "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
+        "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if response_usage else "",
+        "response.usage.total_tokens": response_usage.get("total_tokens", "") if response_usage else "",
+        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if response_usage else "",
         "response.choices.finish_reason": choices[0].get("finish_reason", "") if choices else "",
         "response.api_type": getattr(response, "api_type", ""),
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
@@ -528,6 +533,11 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     if not transaction or kwargs.get("stream", False):
         return await wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
@@ -545,8 +555,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     span_id = None
     trace_id = None
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     function_name = wrapped.__name__
 
@@ -626,8 +634,8 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    response_model = attribute_response.get("model", "")
-    response_usage = attribute_response.get("usage", {})
+    response_model = attribute_response.get("model", "") or ""
+    response_usage = attribute_response.get("usage", {}) or {}
     api_type = getattr(attribute_response, "api_type", "")
     organization = response_headers.get("openai-organization", "") if OPENAI_V1 else attribute_response.organization
 
@@ -645,8 +653,8 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "response.model": response_model,
         "response.organization": organization,
         "response.api_type": api_type,  # API type was removed in v1
-        "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
+        "response.usage.total_tokens": response_usage.get("total_tokens", "") if response_usage else "",
+        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if response_usage else "",
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
         "response.headers.ratelimitLimitRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-limit-requests", True
@@ -683,6 +691,10 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
@@ -700,7 +712,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
     app_name = settings.app_name
     completion_id = str(uuid.uuid4())
 
@@ -816,14 +827,14 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     if OPENAI_V1:
         response = response.model_dump()
 
-    response_model = response.get("model", "")
+    response_model = response.get("model", "") or ""
     response_id = response.get("id")
     request_id = response_headers.get("x-request-id", "") if response_headers else ""
 
-    response_usage = response.get("usage", {})
+    response_usage = response.get("usage", {}) or {}
 
-    messages = kwargs.get("messages", [])
-    choices = response.get("choices", [])
+    messages = kwargs.get("messages", []) or []
+    choices = response.get("choices", []) or []
     organization = (
         response_headers.get("openai-organization", "") if OPENAI_V1 else getattr(response, "organization", "")
     )
@@ -844,9 +855,9 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         "duration": ft.duration,
         "response.model": response_model,
         "response.organization": organization,
-        "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if any(response_usage) else "",
-        "response.usage.total_tokens": response_usage.get("total_tokens", "") if any(response_usage) else "",
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if any(response_usage) else "",
+        "response.usage.completion_tokens": response_usage.get("completion_tokens", "") if response_usage else "",
+        "response.usage.total_tokens": response_usage.get("total_tokens", "") if response_usage else "",
+        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if response_usage else "",
         "response.choices.finish_reason": choices[0].get("finish_reason", "") if choices else "",
         "response.api_type": getattr(response, "api_type", ""),
         "response.headers.llmVersion": response_headers.get("openai-version", ""),
@@ -910,6 +921,14 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
 
 def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
     resp = args[0]
     returned_response = wrapped(*args, **kwargs)
 
@@ -932,6 +951,14 @@ def bind_base_client_process_response(
 
 
 def wrap_base_client_process_response_sync(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
     response = bind_base_client_process_response(*args, **kwargs)
     nr_response_headers = getattr(response, "headers")
 
@@ -942,6 +969,14 @@ def wrap_base_client_process_response_sync(wrapped, instance, args, kwargs):
 
 
 async def wrap_base_client_process_response_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
     response = bind_base_client_process_response(*args, **kwargs)
     nr_response_headers = getattr(response, "headers")
 
@@ -1015,7 +1050,7 @@ def record_events_on_stop_iteration(self, transaction):
 
         # If there are no openai attrs exit early as there's no data to record.
         if not openai_attrs:
-            raise
+            return
 
         message_ids = record_streaming_chat_completion_events(self, transaction, openai_attrs)
         # Clear cached data as this can be very large.
@@ -1039,7 +1074,7 @@ def record_error(self, transaction, exc):
         # If there are no openai attrs exit early as there's no data to record.
         if not openai_attrs:
             self._nr_ft.__exit__(*sys.exc_info())
-            raise
+            return
 
         record_streaming_chat_completion_events_error(self, transaction, openai_attrs, exc)
 
@@ -1260,6 +1295,10 @@ def wrap_engine_api_resource_create_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
     bound_args = bind_args(wrapped, args, kwargs)
     stream = bound_args["params"].get("stream", False)
 
@@ -1275,6 +1314,10 @@ def wrap_stream_iter_events_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)
@@ -1294,6 +1337,10 @@ async def wrap_engine_api_resource_create_async(wrapped, instance, args, kwargs)
     if not transaction:
         return await wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
     bound_args = bind_args(wrapped, args, kwargs)
     stream = bound_args["params"].get("stream", False)
 
@@ -1308,6 +1355,10 @@ async def wrap_engine_api_resource_create_async(wrapped, instance, args, kwargs)
 def wrap_stream_iter_events_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     proxied_return_val = AsyncGeneratorProxy(wrapped(*args, **kwargs))

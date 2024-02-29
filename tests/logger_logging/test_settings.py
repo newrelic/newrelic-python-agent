@@ -51,16 +51,16 @@ def test_log_forwarding_settings(logger, feature_setting, subfeature_setting, ex
 
 @pytest.mark.parametrize("feature_setting,subfeature_setting,expected", _settings_matrix)
 @reset_core_stats_engine()
-def test_local_decorating_settings(logger, feature_setting, subfeature_setting, expected):
+def test_local_decorating_settings(instrumented_logger, feature_setting, subfeature_setting, expected):
     @override_application_settings({
         "application_logging.enabled": feature_setting,
         "application_logging.local_decorating.enabled": subfeature_setting,
     })
     @background_task()
     def test():
-        basic_logging(logger)
-        assert len(logger.caplog.records) == 1
-        message = logger.caplog.records.pop()
+        basic_logging(instrumented_logger)
+        assert len(instrumented_logger.caplog.records) == 1
+        message = instrumented_logger.caplog.records.pop()
         if expected:
             assert len(message) > 1
         else:

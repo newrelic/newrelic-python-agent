@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import newrelic.api.function_trace
 import newrelic.api.transaction
 import newrelic.common.object_wrapper
+import newrelic.api.function_trace
 
 
 class stream_wrapper(object):
@@ -73,5 +73,7 @@ class wrap_template(object):
 
 
 def instrument(module):
+
     if module.__name__ == "genshi.template.base":
+
         newrelic.common.object_wrapper.wrap_object(module, "Template.generate", wrap_template)

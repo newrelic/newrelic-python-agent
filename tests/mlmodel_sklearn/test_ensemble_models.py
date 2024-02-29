@@ -19,10 +19,10 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.packages import six
 
-SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
+SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
 @pytest.mark.parametrize(
@@ -195,7 +195,6 @@ def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(ensemble_
         run_ensemble_model(ensemble_model_name)
 
     _test()
-
 
 
 @pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn >= 1.1")

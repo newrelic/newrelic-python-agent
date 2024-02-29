@@ -11,7 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
+
+
+from newrelic.common.object_wrapper import (
+    function_wrapper,
+    transient_function_wrapper,
+)
 
 
 def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_exist=True):

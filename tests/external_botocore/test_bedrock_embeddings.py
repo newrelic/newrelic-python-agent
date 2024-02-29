@@ -38,7 +38,7 @@ from testing_support.validators.validate_error_trace_attributes import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-
+from newrelic.api.transaction import add_custom_attribute
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 

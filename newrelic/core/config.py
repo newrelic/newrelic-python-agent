@@ -136,10 +136,6 @@ class GCRuntimeMetricsSettings(Settings):
     enabled = False
 
 
-class StreamingSettings(Settings):
-    pass
-
-
 class MachineLearningSettings(Settings):
     pass
 
@@ -149,6 +145,10 @@ class MachineLearningInferenceEventsValueSettings(Settings):
 
 
 class AIMonitoringSettings(Settings):
+    pass
+
+
+class AIMonitoringStreamingSettings(Settings):
     pass
 
 
@@ -418,7 +418,7 @@ _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.machine_learning = MachineLearningSettings()
 _settings.machine_learning.inference_events_value = MachineLearningInferenceEventsValueSettings()
 _settings.ai_monitoring = AIMonitoringSettings()
-_settings.ai_monitoring.streaming = StreamingSettings()
+_settings.ai_monitoring.streaming = AIMonitoringStreamingSettings()
 _settings.package_reporting = PackageReportingSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()

@@ -563,7 +563,6 @@ def _process_configuration(section):
     _process_setting(section, "ai_monitoring.enabled", "getboolean", None)
     _process_setting(section, "ai_monitoring.streaming.enabled", "getboolean", None)
     _process_setting(section, "package_reporting.enabled", "getboolean", None)
-    _process_setting(section, "ai_monitoring.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified

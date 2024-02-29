@@ -952,7 +952,7 @@ chat_completion_recorded_events_error_in_langchain = [
 @validate_transaction_metrics(
     name="test_chain:test_langchain_chain_list_response",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -1134,7 +1134,7 @@ def test_langchain_chain(
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1200,7 +1200,7 @@ def test_langchain_chain_without_conversation_id(
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_without_conversation_id.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1293,7 +1293,7 @@ def test_langchain_chain_error_in_openai(
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_openai.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1365,7 +1365,7 @@ def test_langchain_chain_error_in_langchain(
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_langchain.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1413,7 +1413,7 @@ disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 @validate_transaction_metrics(
     name="test_chain:test_langchain_chain_custom_insights_disabled",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -1458,7 +1458,7 @@ def test_langchain_chain_ai_monitoring_disabled(
 @validate_transaction_metrics(
     name="test_chain:test_async_langchain_chain_list_response",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -1648,7 +1648,7 @@ def test_async_langchain_chain(
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1701,7 +1701,7 @@ def test_async_langchain_chain_without_conversation_id(
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_without_conversation_id.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1793,7 +1793,7 @@ def test_async_langchain_chain_error_in_openai(
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_openai.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1864,7 +1864,7 @@ def test_async_langchain_chain_error_in_lanchain(
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_lanchain.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1956,7 +1956,7 @@ def test_multiple_async_langchain_chain(
     @validate_transaction_metrics(
         name="test_chain:test_multiple_async_langchain_chain.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )

@@ -572,7 +572,7 @@ class Transaction(object):
 
         if self._ml_models:
             for ml_model, version in self._ml_models:
-                self.record_custom_metric("Python/ML/%s/%s" % (ml_model, version), 1)
+                self.record_custom_metric("Supportability/Python/ML/%s/%s" % (ml_model, version), 1)
 
         if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the

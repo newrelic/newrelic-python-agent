@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import langchain
 import pytest
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain.prompts import ChatPromptTemplate
@@ -25,9 +25,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version
-
-LANGCHAIN_VERSION = get_package_version("langchain")
-
 
 @pytest.fixture
 def tools():
@@ -66,7 +63,7 @@ def prompt():
     scoped_metrics=[("Llm/agent/Langchain/invoke", 1)],
     rollup_metrics=[("Llm/agent/Langchain/invoke", 1)],
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -86,7 +83,7 @@ def test_sync_agent(chat_openai_client, tools, prompt):
     scoped_metrics=[("Llm/agent/Langchain/ainvoke", 1)],
     rollup_metrics=[("Llm/agent/Langchain/ainvoke", 1)],
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )

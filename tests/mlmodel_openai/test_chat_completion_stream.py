@@ -134,7 +134,7 @@ chat_completion_recorded_events = [
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_sync_in_txn_with_convo_id",
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -337,7 +337,7 @@ def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_async_conversation_id_set",
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )

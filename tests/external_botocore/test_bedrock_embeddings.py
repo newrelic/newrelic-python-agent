@@ -105,7 +105,7 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
         background_task=True,
     )
@@ -133,7 +133,7 @@ disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 @validate_transaction_metrics(
     name="test_bedrock_embeddings:test_bedrock_embedding_disabled_custom_event_settings",
     custom_metrics=[
-        ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
     ],
     background_task=True,
 )

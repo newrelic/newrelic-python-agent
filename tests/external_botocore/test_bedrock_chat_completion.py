@@ -97,7 +97,7 @@ def expected_invalid_access_key_error_events(model_id):
 
 
 @pytest.fixture(scope="module")
-def expected_events_no_convo_id(model_id):
+def expected_events_no_(model_id):
     events = copy.deepcopy(chat_completion_expected_events[model_id])
     for event in events:
         event[1]["conversation_id"] = ""
@@ -123,7 +123,7 @@ def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_m
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
         background_task=True,
     )
@@ -148,7 +148,7 @@ def test_bedrock_chat_completion_in_txn_no_convo_id(set_trace_info, exercise_mod
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
         background_task=True,
     )
@@ -176,7 +176,7 @@ disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 @validate_transaction_metrics(
     name="test_bedrock_chat_completion_disabled_custom_events_settings",
     custom_metrics=[
-        ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
     ],
     background_task=True,
 )
@@ -242,7 +242,7 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
         background_task=True,
     )
@@ -285,7 +285,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
         background_task=True,
     )

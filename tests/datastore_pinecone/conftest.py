@@ -32,6 +32,7 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 PINECONE_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "pinecone_audit.log")
 PINECONE_AUDIT_LOG_CONTENTS = {}
+RECORDED_HEADERS = set(["content-type"])
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -100,22 +101,32 @@ def pinecone_server(
 
 
 def bind_call_api(resource_path, method, path_params, query_params, header_params, *args, **kwargs):
-    return resource_path, method, header_params
+    return resource_path, method
 
 
 @pytest.fixture(scope="function")
 def wrap_client_api_client_call_api():
     def _wrap_client_api_client_call_api(wrapped, instance, args, kwargs):
-        resource_path, method, header_params = bind_call_api(*args, **kwargs)
+        resource_path, method = bind_call_api(*args, **kwargs)
         request_log = "%s %s" % (method, resource_path)
         response = wrapped(*args, **kwargs)
+
+        response_headers = dict(instance.last_response.getheaders())
+
+        headers = dict(
+            filter(
+                lambda k: k[0].lower() in RECORDED_HEADERS,
+                response_headers.items(),
+            )
+        )
+        response_status = instance.last_response.status
 
         if hasattr(response, "to_dict"):
             response_log = response.to_dict()
         else:
             response_log = response.__str__()
 
-        PINECONE_AUDIT_LOG_CONTENTS[request_log] = header_params, response_log  # Append response data to log
+        PINECONE_AUDIT_LOG_CONTENTS[request_log] = headers, response_status, response_log  # Append response data to log
 
         return response
 
@@ -129,6 +140,7 @@ def pinecone_instance(pinecone_client):
     if "python-test" in pinecone_client.list_indexes().names():
         pinecone_client.delete_index("python-test")
 
+    # breakpoint()
     pinecone_client.create_index(
         name="python-test",
         dimension=4,

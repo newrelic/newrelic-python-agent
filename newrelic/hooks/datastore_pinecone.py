@@ -26,35 +26,35 @@ PINECONE_VERSION = get_package_version("pinecone")
 # Index extractor functions:
 
 
-def bind_index_as_name(name, *args, **kwargs):
+def bind_name(name, *args, **kwargs):
     return name
 
 
-def bind_index_as_source(name, source, *args, **kwargs):
+def bind_source(name, source, *args, **kwargs):
     return source
 
 
 # List of Index and Pinecone methods:
 
 Index_methods = (
-    ("upsert", None),
-    ("delete", None),
-    ("fetch", None),
-    ("query", None),
-    ("update", None),
-    ("describe_index_stats", None),
+    ("upsert", None, None),
+    ("delete", None, None),
+    ("fetch", None, None),
+    ("query", None, None),
+    ("update", None, None),
+    ("describe_index_stats", None, None),
 )
 
 Pinecone_methods = (
-    ("create_index", bind_index_as_name),
-    ("delete_index", bind_index_as_name),
-    ("describe_index", bind_index_as_name),
-    ("list_indexes", None),
-    ("create_collection", bind_index_as_source),
-    ("describe_collection", None),
-    ("list_collections", None),
-    ("delete_collection", None),
-    ("configure_index", bind_index_as_name),
+    ("create_index", bind_name, None),
+    ("delete_index", bind_name, None),
+    ("describe_index", bind_name, None),
+    ("list_indexes", None, None),
+    ("create_collection", bind_name, bind_source),
+    ("describe_collection", None, bind_name),
+    ("list_collections", None, None),
+    ("delete_collection", None, bind_name),
+    ("configure_index", bind_name, None),
 )
 
 
@@ -62,12 +62,12 @@ Pinecone_methods = (
 
 
 def instrument_pinecone_methods(module, class_name, methods):
-    for method_name, index_name in methods:
+    for method_name, index_name_function, collection_name_function in methods:
         if hasattr(getattr(module, class_name), method_name):
-            wrap_pinecone_method(module, class_name, method_name, index_name)
+            wrap_pinecone_method(module, class_name, method_name, index_name_function, collection_name_function)
 
 
-def wrap_pinecone_method(module, class_name, method_name, index_name_function):
+def wrap_pinecone_method(module, class_name, method_name, index_name_function, collection_name_function):
     def wrapper_pinecone_method(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -75,13 +75,16 @@ def wrap_pinecone_method(module, class_name, method_name, index_name_function):
             return wrapped(*args, **kwargs)
 
         index = index_name_function and index_name_function(*args, **kwargs)
+        collection = collection_name_function and collection_name_function(*args, **kwargs)
+
+        # Add ML Framework from which this is called, if any:
+        model_list = [x[0] for x in transaction._ml_models]
+        ml_model_base = None if not model_list else model_list[0]
+
         transaction.add_ml_model_info("Pinecone", PINECONE_VERSION)
 
         # Obtain attributes to be stored on pinecone spans regardless of whether we hit an error
         pinecone_id = str(uuid.uuid4())
-        # Framework from which Pinecone was called (if any)
-        # index name (whatever is the current index)
-        # collection name (if collection command used)
 
         # Get Pinecone API key without using the response so we can store
         # it before the response is returned in case of errors
@@ -99,13 +102,21 @@ def wrap_pinecone_method(module, class_name, method_name, index_name_function):
 
         api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
 
-        attributes = {"id": pinecone_id, "api_key_last_four_digits": api_key_last_four_digits}
+        attributes = {
+            "id": pinecone_id,
+            "api_key_last_four_digits": api_key_last_four_digits,
+            "index": index,
+            "collection": collection,
+            "ml_model_base_framework": ml_model_base,
+        }
 
         with DatastoreTrace(product="Pinecone", target=index, operation=method_name, host=host, source=wrapped) as dt:
             try:
                 result = wrapped(*args, **kwargs)
-                dt.add_custom_attribute("id", pinecone_id)
-                dt.add_custom_attribute("api_key_last_four_digits", api_key_last_four_digits)
+                for key, value in attributes.items():
+                    dt.add_custom_attribute(key, value)
+                # dt.add_custom_attribute("id", pinecone_id)
+                # dt.add_custom_attribute("api_key_last_four_digits", api_key_last_four_digits)
             except Exception as exc:
                 body = None
                 if hasattr(exc, "body"):
@@ -121,7 +132,8 @@ def wrap_pinecone_method(module, class_name, method_name, index_name_function):
                 error_attributes = {
                     "http.statusCode": status,
                     "error.code": code,
-                }.update(attributes)
+                }
+                error_attributes.update(attributes)
 
                 # Override the default message if it is not empty.
                 if message:

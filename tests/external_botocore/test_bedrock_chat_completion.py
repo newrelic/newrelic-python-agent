@@ -46,8 +46,14 @@ from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 
 
-@pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])
-def is_file_payload(request):
+@pytest.fixture(scope="session", params=[False, True], ids=["RequestStandard", "RequestStreaming"])
+def request_streaming(request):
+    return request.param
+
+
+# @pytest.fixture(scope="session", params=[False, True], ids=["ResponseStandard", "ResponseStreaming"])
+@pytest.fixture(scope="session", params=[True])
+def response_streaming(request):
     return request.param
 
 
@@ -66,22 +72,41 @@ def model_id(request):
 
 
 @pytest.fixture(scope="module")
-def exercise_model(bedrock_server, model_id, is_file_payload):
+def exercise_model(bedrock_server, model_id, request_streaming, response_streaming):
     payload_template = chat_completion_payload_templates[model_id]
 
     def _exercise_model(prompt, temperature=0.7, max_tokens=100):
         body = (payload_template % (prompt, temperature, max_tokens)).encode("utf-8")
-        if is_file_payload:
+        if request_streaming:
             body = BytesIO(body)
 
-        response = bedrock_server.invoke_model(
-            body=body,
-            modelId=model_id,
-            accept="application/json",
-            contentType="application/json",
-        )
-        response_body = json.loads(response.get("body").read())
-        assert response_body
+        if not response_streaming:
+            response = bedrock_server.invoke_model(
+                body=body,
+                modelId=model_id,
+                accept="application/json",
+                contentType="application/json",
+            )
+            response_body = json.loads(response.get("body").read())
+            assert response_body
+        else:
+            response = bedrock_server.invoke_model_with_response_stream(
+                body=body,
+                modelId=model_id,
+                accept="application/json",
+                contentType="application/json",
+            )
+
+            chunks = list()
+            for event in response["body"]:
+                chunks.append(event["chunk"]["bytes"].decode("utf-8"))
+                # TODO assert tracing here
+
+            assert chunks
+            response_body = json.loads("".join(chunks))
+            assert response_body
+
+        return response_body
 
     return _exercise_model
 

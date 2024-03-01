@@ -18,6 +18,7 @@ import uuid
 from io import BytesIO
 
 from botocore.response import StreamingBody
+from botocore.eventstream import EventStream
 
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import ExternalTrace
@@ -493,6 +494,77 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
 
     return response
 
+@function_wrapper
+def wrap_bedrock_runtime_invoke_model_with_response_stream(wrapped, instance, args, kwargs):
+    # Wrapped function only takes keyword arguments, no need for binding
+
+    transaction = current_transaction()
+
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    # Read and replace request file stream bodies
+    request_body = kwargs["body"]
+    if hasattr(request_body, "read"):
+        request_body = request_body.read()
+        kwargs["body"] = request_body
+
+    # Determine model to be used with extractor
+    model = kwargs.get("modelId")
+    if not model:
+        return wrapped(*args, **kwargs)
+
+    # Determine extractor by model type
+    for extractor_name, extractor in MODEL_EXTRACTORS:
+        if model.startswith(extractor_name):
+            break
+    else:
+        # Model was not found in extractor list
+        global UNSUPPORTED_MODEL_WARNING_SENT
+        if not UNSUPPORTED_MODEL_WARNING_SENT:
+            # Only send warning once to avoid spam
+            _logger.warning(
+                "Unsupported Amazon Bedrock model in use (%s). Upgrade to a newer version of the agent, and contact New Relic support if the issue persists.",
+                model,
+            )
+            UNSUPPORTED_MODEL_WARNING_SENT = True
+        
+        extractor = lambda *args: ([], {})  # Empty extractor that returns nothing
+
+    ft_name = callable_name(wrapped)
+    with FunctionTrace(ft_name) as ft:
+        try:
+            response = wrapped(*args, **kwargs)
+        except Exception as exc:
+            try:
+                error_attributes = extractor(request_body)
+                error_attributes = bedrock_error_attributes(exc, kwargs, instance, extractor)
+                ft.notice_error(
+                    attributes=error_attributes,
+                )
+            finally:
+                raise
+
+    if not response:
+        return response
+
+    # Read and replace response streaming bodies
+    # breakpoint()
+    # response_body = list(response["body"])
+    # response["body"] = EventStream(response_body)
+    response_headers = response["ResponseMetadata"]["HTTPHeaders"]
+
+    if model.startswith("amazon.titan-embed"):  # Only available embedding models
+        handle_embedding_event(
+            instance, transaction, extractor, model, None, response_headers, request_body, ft.duration
+        )
+    else:
+        handle_chat_completion_event(
+            instance, transaction, extractor, model, None, response_headers, request_body, ft.duration
+        )
+
+    return response
+
 
 def handle_embedding_event(
     client,
@@ -619,6 +691,7 @@ CUSTOM_TRACE_POINTS = {
     ("sqs", "send_message_batch"): message_trace("SQS", "Produce", "Queue", extract_sqs),
     ("sqs", "receive_message"): message_trace("SQS", "Consume", "Queue", extract_sqs),
     ("bedrock-runtime", "invoke_model"): wrap_bedrock_runtime_invoke_model,
+    ("bedrock-runtime", "invoke_model_with_response_stream"): wrap_bedrock_runtime_invoke_model_with_response_stream,
 }
 
 

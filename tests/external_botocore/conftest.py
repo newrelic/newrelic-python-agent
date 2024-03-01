@@ -14,7 +14,7 @@
 
 import json
 import os
-import re
+import base64
 
 import pytest
 from _mock_external_bedrock_server import (
@@ -112,7 +112,7 @@ def bedrock_server():
 
 
 # Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = set(["x-amzn-requestid", "x-amzn-errortype", "content-type"])
+RECORDED_HEADERS = set(["x-amzn-requestid", "x-amzn-errortype", "content-type", "x-amzn-bedrock-content-type"])
 
 
 def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kwargs):
@@ -121,10 +121,7 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
         return wrapped(*args, **kwargs)
 
     body = json.loads(request.body)
-
-    match = re.search(r"/model/([0-9a-zA-Z.-]+)/", request.url)
-    model = match.group(1)
-    prompt = extract_shortened_prompt(body, model)
+    prompt = extract_shortened_prompt(body, request.url)
 
     # Send request
     result = wrapped(*args, **kwargs)
@@ -133,8 +130,7 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
     success, exception = result
     response = (success or exception)[0]
 
-    # Clean up data
-    data = json.loads(response.content.decode("utf-8"))
+    # Grab headers
     headers = dict(response.headers.items())
     headers = dict(
         filter(
@@ -143,6 +139,13 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
         )
     )
     status_code = response.status_code
+    content_type = headers.get("Content-Type", None) or headers.get("content-type", None)
+
+    # Clean up data
+    if content_type == "application/json":
+        data = json.loads(response.content.decode("utf-8"))
+    else:
+        data = base64.b64encode(response.content).decode("utf-8")
 
     # Log response
     BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, status_code, data  # Append response data to audit log

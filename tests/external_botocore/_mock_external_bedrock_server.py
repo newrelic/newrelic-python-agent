@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
 import json
 import re
 
@@ -29,7 +30,16 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
 RESPONSES = {
-    "ai21.j2-mid-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
+    "amazon.titan-text-express-v1::Streaming::What is 212 degrees Fahrenheit converted to Celsius?": [
+        {
+            "Content-Type": "application/vnd.amazon.eventstream",
+            "x-amzn-RequestId": "a65533c6-aa5f-4b2d-8237-e89fe1cf17fd",
+            "X-Amzn-Bedrock-Content-Type": "application/json"
+        },
+        200,
+        "AAAB8wAAAEtA5L5ZCzpldmVudC10eXBlBwAFY2h1bmsNOmNvbnRlbnQtdHlwZQcAEGFwcGxpY2F0aW9uL2pzb24NOm1lc3NhZ2UtdHlwZQcABWV2ZW50eyJieXRlcyI6ImV5SnZkWFJ3ZFhSVVpYaDBJam9pWEc0eU1USWdaR1ZuY21WbGN5QkdZV2h5Wlc1b1pXbDBJR2x6SUdWeGRXRnNJSFJ2SURFd01DQmtaV2R5WldWeklFTmxiSE5wZFhNdUlpd2lhVzVrWlhnaU9qQXNJblJ2ZEdGc1QzVjBjSFYwVkdWNGRGUnZhMlZ1UTI5MWJuUWlPakUzTENKamIyMXdiR1YwYVc5dVVtVmhjMjl1SWpvaVJrbE9TVk5JSWl3aWFXNXdkWFJVWlhoMFZHOXJaVzVEYjNWdWRDSTZNVElzSW1GdFlYcHZiaTFpWldSeWIyTnJMV2x1ZG05allYUnBiMjVOWlhSeWFXTnpJanA3SW1sdWNIVjBWRzlyWlc1RGIzVnVkQ0k2TVRJc0ltOTFkSEIxZEZSdmEyVnVRMjkxYm5RaU9qRTNMQ0pwYm5adlkyRjBhVzl1VEdGMFpXNWplU0k2T1RjMUxDSm1hWEp6ZEVKNWRHVk1ZWFJsYm1ONUlqbzVOelY5ZlE9PSJ9twnAGA=="
+    ],
+    "ai21.j2-mid-v1::Standard::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "c863d9fc-888b-421c-a175-ac5256baec62"},
         200,
         {
@@ -204,7 +214,7 @@ RESPONSES = {
             ],
         },
     ],
-    "amazon.titan-embed-g1-text-02::This is an embedding test.": [
+    "amazon.titan-embed-g1-text-02::Standard::This is an embedding test.": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "b10ac895-eae3-4f07-b926-10b2866c55ed"},
         200,
         {
@@ -1749,7 +1759,7 @@ RESPONSES = {
             "inputTextTokenCount": 6,
         },
     ],
-    "amazon.titan-embed-text-v1::This is an embedding test.": [
+    "amazon.titan-embed-text-v1::Standard::This is an embedding test.": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "11233989-07e8-4ecb-9ba6-79601ba6d8cc"},
         200,
         {
@@ -3294,7 +3304,7 @@ RESPONSES = {
             "inputTextTokenCount": 6,
         },
     ],
-    "amazon.titan-text-express-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
+    "amazon.titan-text-express-v1::Standard::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "03524118-8d77-430f-9e08-63b5c03a40cf"},
         200,
         {
@@ -3308,7 +3318,7 @@ RESPONSES = {
             ],
         },
     ],
-    "anthropic.claude-instant-v1::Human: What is 212 degrees Fahrenheit converted to Celsius? Assistant:": [
+    "anthropic.claude-instant-v1::Standard::Human: What is 212 degrees Fahrenheit converted to Celsius? Assistant:": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18"},
         200,
         {
@@ -3317,7 +3327,7 @@ RESPONSES = {
             "stop": "\n\nHuman:",
         },
     ],
-    "cohere.command-text-v14::What is 212 degrees Fahrenheit converted to Celsius?": [
+    "cohere.command-text-v14::Standard::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "e77422c8-fbbf-4e17-afeb-c758425c9f97"},
         200,
         {
@@ -3332,7 +3342,7 @@ RESPONSES = {
             "prompt": "What is 212 degrees Fahrenheit converted to Celsius?",
         },
     ],
-    "meta.llama2-13b-chat-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
+    "meta.llama2-13b-chat-v1::Standard::What is 212 degrees Fahrenheit converted to Celsius?": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "9a64cdb0-3e82-41c7-873a-c12a77e0143a"},
         200,
         {
@@ -3342,7 +3352,7 @@ RESPONSES = {
             "stop_reason": "stop",
         },
     ],
-    "does-not-exist::": [
+    "does-not-exist::Standard::": [
         {
             "Content-Type": "application/json",
             "x-amzn-RequestId": "f4908827-3db9-4742-9103-2bbc34578b03",
@@ -3351,7 +3361,7 @@ RESPONSES = {
         400,
         {"message": "The provided model identifier is invalid."},
     ],
-    "ai21.j2-mid-v1::Invalid Token": [
+    "ai21.j2-mid-v1::Standard::Invalid Token": [
         {
             "Content-Type": "application/json",
             "x-amzn-RequestId": "9021791d-3797-493d-9277-e33aa6f6d544",
@@ -3360,7 +3370,7 @@ RESPONSES = {
         403,
         {"message": "The security token included in the request is invalid."},
     ],
-    "amazon.titan-embed-g1-text-02::Invalid Token": [
+    "amazon.titan-embed-g1-text-02::Standard::Invalid Token": [
         {
             "Content-Type": "application/json",
             "x-amzn-RequestId": "73328313-506e-4da8-af0f-51017fa6ca3f",
@@ -3369,7 +3379,7 @@ RESPONSES = {
         403,
         {"message": "The security token included in the request is invalid."},
     ],
-    "amazon.titan-embed-text-v1::Invalid Token": [
+    "amazon.titan-embed-text-v1::Standard::Invalid Token": [
         {
             "Content-Type": "application/json",
             "x-amzn-RequestId": "aece6ad7-e2ff-443b-a953-ba7d385fd0cc",
@@ -3378,7 +3388,7 @@ RESPONSES = {
         403,
         {"message": "The security token included in the request is invalid."},
     ],
-    "amazon.titan-text-express-v1::Invalid Token": [
+    "amazon.titan-text-express-v1::Standard::Invalid Token": [
         {
             "Content-Type": "application/json",
             "x-amzn-RequestId": "15b39c8b-8e85-42c9-9623-06720301bda3",
@@ -3387,7 +3397,7 @@ RESPONSES = {
         403,
         {"message": "The security token included in the request is invalid."},
     ],
-    "anthropic.claude-instant-v1::Human: Invalid Token Assistant:": [
+    "anthropic.claude-instant-v1::Standard::Human: Invalid Token Assistant:": [
         {
             "Content-Type": "application/json",
             "x-amzn-RequestId": "37396f55-b721-4bae-9461-4c369f5a080d",
@@ -3396,7 +3406,7 @@ RESPONSES = {
         403,
         {"message": "The security token included in the request is invalid."},
     ],
-    "cohere.command-text-v14::Invalid Token": [
+    "cohere.command-text-v14::Standard::Invalid Token": [
         {
             "Content-Type": "application/json",
             "x-amzn-RequestId": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
@@ -3405,7 +3415,7 @@ RESPONSES = {
         403,
         {"message": "The security token included in the request is invalid."},
     ],
-    "meta.llama2-13b-chat-v1::Invalid Token": [
+    "meta.llama2-13b-chat-v1::Standard::Invalid Token": [
         {
             "Content-Type": "application/json",
             "x-amzn-RequestId": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
@@ -3416,15 +3426,14 @@ RESPONSES = {
     ],
 }
 
-MODEL_PATH_RE = re.compile(r"/model/([^/]+)/invoke")
+MODEL_PATH_RE = re.compile(r".*/model/([^/]+)/invoke.*")
 
 
 def simple_get(self):
     content_len = int(self.headers.get("content-length"))
     content = json.loads(self.rfile.read(content_len).decode("utf-8"))
 
-    model = MODEL_PATH_RE.match(self.path).group(1)
-    prompt = extract_shortened_prompt(content, model)
+    prompt = extract_shortened_prompt(content, self.path)
     if not prompt:
         self.send_response(500)
         self.end_headers()
@@ -3451,13 +3460,21 @@ def simple_get(self):
     self.end_headers()
 
     # Send response body
-    self.wfile.write(json.dumps(response).encode("utf-8"))
+    response_streaming = self.path.endswith("invoke-with-response-stream")
+    if response_streaming:
+        response_content = base64.b64decode(response)
+    else:
+        response_content = json.dumps(response).encode("utf-8")
+
+    self.wfile.write(response_content)
     return
 
 
-def extract_shortened_prompt(content, model):
+def extract_shortened_prompt(content, request_url):
     prompt = content.get("inputText", "") or content.get("prompt", "")
-    prompt = "::".join((model, prompt))  # Prepend model name to prompt key to keep separate copies
+    model = MODEL_PATH_RE.match(request_url).group(1)
+    response_streaming = "Streaming" if request_url.endswith("invoke-with-response-stream") else "Standard"
+    prompt = "::".join((model, response_streaming, prompt))  # Prepend model name to prompt key to keep separate copies
     return prompt.lstrip().split("\n")[0]
 
 

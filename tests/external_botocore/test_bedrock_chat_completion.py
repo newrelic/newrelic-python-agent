@@ -97,7 +97,7 @@ def expected_invalid_access_key_error_events(model_id):
 
 
 @pytest.fixture(scope="module")
-def expected_events_no_(model_id):
+def expected_events_no_convo_id(model_id):
     events = copy.deepcopy(chat_completion_expected_events[model_id])
     for event in events:
         event[1]["conversation_id"] = ""

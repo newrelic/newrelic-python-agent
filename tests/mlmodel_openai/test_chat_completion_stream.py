@@ -277,7 +277,10 @@ def test_openai_chat_completion_sync_in_txn_no_convo_id(set_trace_info):
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     "test_chat_completion_stream:test_openai_chat_completion_sync_ai_monitoring_streaming_disabled",
-    custom_metrics=[("Python/ML/OpenAI/%s" % openai.__version__, 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/Streaming/Disabled", 1),
+    ],
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,
@@ -390,7 +393,10 @@ def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info):
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_async_ai_monitoring_streaming_disabled",
-    custom_metrics=[("Python/ML/OpenAI/%s" % openai.__version__, 1)],
+    custom_metrics=[
+        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/Streaming/Disabled", 1),
+    ],
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     background_task=True,

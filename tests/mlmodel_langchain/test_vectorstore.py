@@ -15,10 +15,10 @@
 import os
 
 import pytest
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -31,10 +31,9 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
-from newrelic.common.object_names import callable_name
 from newrelic.api.transaction import add_custom_attribute
+from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version
 
 LANGCHAIN_VERSION = get_package_version("langchain")

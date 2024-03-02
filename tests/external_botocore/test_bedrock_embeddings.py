@@ -23,13 +23,14 @@ from _test_bedrock_embeddings import (
     embedding_expected_events,
     embedding_payload_templates,
 )
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import (  # override_application_settings,
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
-    validate_custom_event_count,
     validate_attributes,
+    validate_custom_event_count,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -38,9 +39,9 @@ from testing_support.validators.validate_error_trace_attributes import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
-from newrelic.api.transaction import add_custom_attribute
+
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 
 
@@ -116,7 +117,7 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
-        
+
         exercise_model(prompt="This is an embedding test.")
 
     _test()

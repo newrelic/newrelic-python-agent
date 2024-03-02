@@ -465,7 +465,6 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     span_id = None
     trace_id = None
 
-
     llm_metadata_dict = _get_llm_metadata(transaction)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()

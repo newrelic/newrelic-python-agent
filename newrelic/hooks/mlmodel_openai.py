@@ -524,7 +524,7 @@ def create_chat_completion_message_event(
 
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
 
-    #TODO: Remove this logic when message-based feedback is removed from the agent
+    # TODO: Remove this logic when message-based feedback is removed from the agent
     return (request_id, message_ids)
 
 
@@ -536,7 +536,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
-
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)

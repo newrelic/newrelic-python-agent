@@ -17,6 +17,7 @@ import uuid
 import langchain
 import openai
 import pytest
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from langchain.chains.openai_functions import (
     create_structured_output_chain,
     create_structured_output_runnable,
@@ -40,7 +41,7 @@ from testing_support.validators.validate_transaction_error_event_count import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
+
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
@@ -1175,7 +1176,7 @@ def test_langchain_chain(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
-        
+
         runnable = create_function(json_schema, chat_openai_client, prompt)
 
         output = getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
@@ -1336,7 +1337,7 @@ def test_langchain_chain_error_in_openai(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
-        
+
         runnable = create_function(json_schema, chat_openai_client, prompt_openai_error)
 
         with pytest.raises(openai.AuthenticationError):
@@ -1411,7 +1412,7 @@ def test_langchain_chain_error_in_langchain(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
-        
+
         runnable = create_function(json_schema, chat_openai_client, prompt)
 
         with pytest.raises(expected_error):
@@ -1702,7 +1703,7 @@ def test_async_langchain_chain(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
-        
+
         runnable = create_function(json_schema, chat_openai_client, prompt)
 
         loop.run_until_complete(getattr(runnable, call_function)(*call_function_args, **call_function_kwargs))
@@ -1849,7 +1850,7 @@ def test_async_langchain_chain_error_in_openai(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
-        
+
         runnable = create_function(json_schema, chat_openai_client, prompt_openai_error)
 
         with pytest.raises(openai.AuthenticationError):
@@ -1923,7 +1924,7 @@ def test_async_langchain_chain_error_in_lanchain(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
-        
+
         runnable = create_function(json_schema, chat_openai_client, prompt)
 
         with pytest.raises(expected_error):
@@ -2031,7 +2032,7 @@ def test_multiple_async_langchain_chain(
             add_custom_attribute("llm.conversation_id", "my-awesome-id")
             add_custom_attribute("llm.foo", "bar")
             add_custom_attribute("non_llm_attr", "python-agent")
-            
+
             runnable = create_function(json_schema, chat_openai_client, prompt)
 
             call1 = asyncio.ensure_future(

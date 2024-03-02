@@ -13,18 +13,18 @@
 # limitations under the License.
 
 import openai
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,
     reset_core_stats_engine,
-    validate_custom_event_count,
     validate_attributes,
+    validate_custom_event_count,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 

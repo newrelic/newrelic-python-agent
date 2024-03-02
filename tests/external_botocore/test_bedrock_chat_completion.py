@@ -22,16 +22,17 @@ from _test_bedrock_chat_completion import (
     chat_completion_expected_client_errors,
     chat_completion_expected_events,
     chat_completion_invalid_access_key_error_events,
-    chat_completion_payload_templates,
     chat_completion_invalid_model_error_events,
+    chat_completion_payload_templates,
 )
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import (
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
-    validate_custom_event_count,
     validate_attributes,
+    validate_custom_event_count,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -41,7 +42,6 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
@@ -142,7 +142,9 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(set_trace_info, exerci
 
 # not working with claude
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_no_llm_metadata(set_trace_info, exercise_model, expected_events_no_llm_metadata):
+def test_bedrock_chat_completion_in_txn_no_llm_metadata(
+    set_trace_info, exercise_model, expected_events_no_llm_metadata
+):
     @validate_custom_events(expected_events_no_llm_metadata)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)

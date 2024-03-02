@@ -56,7 +56,6 @@ def prompt():
     )
 
 
-@pytest.mark.skip(reason="Streaming not enabled yet for NR")
 @reset_core_stats_engine()
 @validate_transaction_metrics(
     name="test_agent:test_sync_agent",
@@ -76,7 +75,6 @@ def test_sync_agent(chat_openai_client, tools, prompt):
     assert response
 
 
-@pytest.mark.skip(reason="Streaming not enabled yet for NR")
 @reset_core_stats_engine()
 @validate_transaction_metrics(
     name="test_agent:test_async_agent",

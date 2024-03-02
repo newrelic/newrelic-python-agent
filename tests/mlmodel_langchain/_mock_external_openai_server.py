@@ -29,7 +29,175 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 #    transactions to separate the ones created in the test app and the ones
 #    created by an external call.
 # 3) This app runs on a separate thread meaning it won't block the test app.
-
+STREAMED_RESPONSES_V1 = {
+    "You are a world class algorithm for extracting information in structured formats.": [
+        {
+            "content-type": "text/event-stream",
+            "openai-model": "gpt-3.5-turbo-0125",
+            "openai-organization": "foobar-jtbczk",
+            "openai-processing-ms": "511",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "200",
+            "x-ratelimit-limit-tokens": "40000",
+            "x-ratelimit-remaining-requests": "196",
+            "x-ratelimit-remaining-tokens": "39924",
+            "x-ratelimit-reset-requests": "23m16.298s",
+            "x-ratelimit-reset-tokens": "114ms",
+            "x-request-id": "req_69c9ac5f95907fdb4af31572fd99537f",
+        },
+        200,
+        [
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [
+                    {"index": 0, "delta": {"role": "assistant", "content": ""}, "logprobs": None, "finish_reason": None}
+                ],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": "The"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": " extracted"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [
+                    {"index": 0, "delta": {"content": " information"}, "logprobs": None, "finish_reason": None}
+                ],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": " from"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": " the"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": " input"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": ' "'}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": "Hello"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": ","}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": " world"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": '"'}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": " is"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": ' "'}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": "H"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": "elloworld"}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {"content": '"'}, "logprobs": None, "finish_reason": None}],
+            },
+            {
+                "id": "chatcmpl-8uUiO2kRX1yl9fyniZCjJ6q3GN8wf",
+                "object": "chat.completion.chunk",
+                "created": 1708475128,
+                "model": "gpt-3.5-turbo-0125",
+                "system_fingerprint": "fp_69829325d0",
+                "choices": [{"index": 0, "delta": {}, "logprobs": None, "finish_reason": "stop"}],
+            },
+        ],
+    ],
+}
 RESPONSES_V1 = {
     "You are a world class algorithm for extracting information in structured formats.": [
         {
@@ -183,7 +351,7 @@ def simple_get(openai_version, extract_shortened_prompt):
     def _simple_get(self):
         content_len = int(self.headers.get("content-length"))
         content = json.loads(self.rfile.read(content_len).decode("utf-8"))
-
+        stream = content.get("stream", False)
         prompt = extract_shortened_prompt(content)
         if not prompt:
             self.send_response(500)
@@ -194,6 +362,8 @@ def simple_get(openai_version, extract_shortened_prompt):
         headers, response = ({}, "")
 
         mocked_responses = RESPONSES_V1
+        if stream:
+            mocked_responses = STREAMED_RESPONSES_V1
 
         for k, v in mocked_responses.items():
             if prompt.startswith(k):
@@ -214,7 +384,16 @@ def simple_get(openai_version, extract_shortened_prompt):
         self.end_headers()
 
         # Send response body
-        self.wfile.write(json.dumps(response).encode("utf-8"))
+        if stream and status_code < 400:
+            for resp in response:
+                data = json.dumps(resp).encode("utf-8")
+                if prompt == "Stream parsing error.":
+                    # Force a parsing error by writing an invalid streamed response.
+                    self.wfile.write(b"data: %s" % data)
+                else:
+                    self.wfile.write(b"data: %s\n\n" % data)
+        else:
+            self.wfile.write(json.dumps(response).encode("utf-8"))
         return
 
     return _simple_get

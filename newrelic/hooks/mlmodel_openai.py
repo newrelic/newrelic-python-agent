@@ -199,6 +199,8 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
+    if not settings.ai_monitoring.streaming.enabled:
+        transaction.record_custom_metric("Supportability/Python/ML/Streaming/Disabled", 1)
 
     request_message_list = kwargs.get("messages", [])
 
@@ -226,7 +228,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     trace_id = available_metadata.get("trace.id", "")
     try:
         return_val = wrapped(*args, **kwargs)
-        return_val._nr_ft = ft
     except Exception as exc:
         if OPENAI_V1:
             response = getattr(exc, "response", "")
@@ -301,11 +302,13 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         raise
 
     stream = kwargs.get("stream", False)
-    # If response is not a stream generator, we exit the function trace now.
-    if not stream:
+    # If response is not a stream generator or stream monitoring is disabled, we exit
+    # the function trace now.
+    if not stream or not settings.ai_monitoring.streaming.enabled:
         ft.__exit__(None, None, None)
 
-    if not return_val:
+    # If the return value is empty or stream monitoring is disabled return early.
+    if not return_val or not settings.ai_monitoring.streaming.enabled:
         return return_val
 
     if stream:
@@ -697,6 +700,8 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
+    if not settings.ai_monitoring.streaming.enabled:
+        transaction.record_custom_metric("Supportability/Python/ML/Streaming/Disabled", 1)
 
     request_message_list = kwargs.get("messages", [])
 
@@ -723,7 +728,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     trace_id = available_metadata.get("trace.id", "")
     try:
         return_val = await wrapped(*args, **kwargs)
-        return_val._nr_ft = ft
     except Exception as exc:
         if OPENAI_V1:
             response = getattr(exc, "response", "")
@@ -798,11 +802,13 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         raise
 
     stream = kwargs.get("stream", False)
-    # If response is not a stream generator, we exit the function trace now.
-    if not stream:
+    # If response is not a stream generator or stream monitoring is disabled, we exit
+    # the function trace now.
+    if not stream or not settings.ai_monitoring.streaming.enabled:
         ft.__exit__(None, None, None)
 
-    if not return_val:
+    # If the return value is empty or stream monitoring is diabled exit early.
+    if not return_val or not settings.ai_monitoring.streaming.enabled:
         return return_val
 
     if stream:
@@ -1037,7 +1043,9 @@ def record_stream_chunk(self, return_val):
         if choices:
             delta = choices[0].get("delta", {})
             if delta:
-                self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + delta.get("content", "")
+                self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + (
+                    delta.get("content") or ""
+                )
                 self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role", None) or delta.get("role")
             self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason", "")
 
@@ -1303,7 +1311,7 @@ def wrap_engine_api_resource_create_sync(wrapped, instance, args, kwargs):
 
     return_val = wrapped(*args, **kwargs)
 
-    if stream:
+    if stream and settings.ai_monitoring.streaming.enabled:
         return GeneratorProxy(return_val)
     else:
         return return_val
@@ -1316,7 +1324,7 @@ def wrap_stream_iter_events_sync(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    if not settings.ai_monitoring.enabled or not settings.ai_monitoring.streaming.enabled:
         return wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)
@@ -1345,7 +1353,7 @@ async def wrap_engine_api_resource_create_async(wrapped, instance, args, kwargs)
 
     return_val = await wrapped(*args, **kwargs)
 
-    if stream:
+    if stream and settings.ai_monitoring.streaming.enabled:
         return AsyncGeneratorProxy(return_val)
     else:
         return return_val
@@ -1357,7 +1365,7 @@ def wrap_stream_iter_events_async(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    if not settings.ai_monitoring.enabled or not settings.ai_monitoring.streaming.enabled:
         return wrapped(*args, **kwargs)
 
     proxied_return_val = AsyncGeneratorProxy(wrapped(*args, **kwargs))

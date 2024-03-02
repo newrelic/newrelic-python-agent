@@ -83,6 +83,7 @@ OPENAI_AUDIT_LOG_CONTENTS = {}
 RECORDED_HEADERS = set(["x-request-id", "content-type"])
 
 disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.enabled": False})
+disabled_ai_monitoring_streaming_settings = override_application_settings({"ai_monitoring.streaming.enabled": False})
 
 
 @pytest.fixture(scope="session")

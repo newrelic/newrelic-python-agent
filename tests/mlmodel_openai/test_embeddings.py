@@ -54,7 +54,6 @@ embedding_recorded_events = [
             "response.organization": "new-relic-nkmd8b",
             "response.usage.total_tokens": 6,
             "response.usage.prompt_tokens": 6,
-            "response.api_type": "None",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 200,
             "response.headers.ratelimitLimitTokens": 150000,

@@ -16,6 +16,7 @@ import copy
 import json
 from io import BytesIO
 
+import botocore.eventstream
 import botocore.exceptions
 import pytest
 from _test_bedrock_chat_completion import (
@@ -194,6 +195,31 @@ def test_bedrock_chat_completion_streaming_in_txn_with_convo_id(
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         exercise_streaming_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_bedrock_chat_completion_error_in_stream(set_trace_info, exercise_streaming_model, expected_events):
+    # @validate_custom_events(expected_events)
+    # # One summary event, one user message, and one response message from the assistant
+    # @validate_custom_event_count(count=3)
+    # @validate_transaction_metrics(
+    #    name="test_bedrock_chat_completion_in_txn_with_convo_id",
+    #    scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+    #    rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+    #    custom_metrics=[
+    #        ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+    #    ],
+    #    background_task=True,
+    # )
+    # @validate_attributes("agent", ["llm"])
+    @background_task(name="test_bedrock_chat_completion_error_in_stream")
+    def _test():
+        with pytest.raises(botocore.eventstream.InvalidHeadersLength):
+            set_trace_info()
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
+            exercise_streaming_model(prompt="Stream parsing error.", temperature=0.7, max_tokens=100)
 
     _test()
 

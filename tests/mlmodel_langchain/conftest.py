@@ -34,7 +34,8 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
 )
 
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
+from newrelic.common.signature import bind_args
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -61,7 +62,7 @@ disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.
 
 
 @pytest.fixture(scope="session")
-def openai_clients(MockExternalOpenAIServer):  # noqa: F811
+def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
     """
     This configures the openai client and returns it for openai v1 and only configures
     openai for v0 since there is no client.
@@ -117,6 +118,7 @@ def openai_server(
     openai_version,  # noqa: F811
     openai_clients,
     wrap_httpx_client_send,
+    wrap_stream_iter_events,
 ):
     """
     This fixture will either create a mocked backend for testing purposes, or will
@@ -128,6 +130,11 @@ def openai_server(
 
     if _environ_as_bool("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
         wrap_function_wrapper("httpx._client", "Client.send", wrap_httpx_client_send)
+        wrap_function_wrapper(
+            "openai._streaming",
+            "Stream._iter_events",
+            wrap_stream_iter_events,
+        )
         yield  # Run tests
         # Write responses to audit log
         with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log_fp:
@@ -137,14 +144,12 @@ def openai_server(
         yield
 
 
-def bind_send_params(request, *, stream=False, **kwargs):
-    return request
-
-
 @pytest.fixture(scope="session")
 def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
     def _wrap_httpx_client_send(wrapped, instance, args, kwargs):
-        request = bind_send_params(*args, **kwargs)
+        bound_args = bind_args(wrapped, args, kwargs)
+        stream = bound_args.get("stream", False)
+        request = bound_args["request"]
         if not request:
             return wrapped(*args, **kwargs)
 
@@ -167,11 +172,79 @@ def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
                 rheaders.items(),
             )
         )
-
-        # Append response data to audit log
-        if not kwargs.get("stream", False):
+        # Append response data to log
+        if stream:
+            OPENAI_AUDIT_LOG_CONTENTS[prompt] = [headers, response.status_code, []]
+            if prompt == "error":
+                OPENAI_AUDIT_LOG_CONTENTS[prompt][2] = json.loads(response.read())
+        else:
             body = json.loads(response.content.decode("utf-8"))
-            OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to log
+            OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body
         return response
 
     return _wrap_httpx_client_send
+
+
+@pytest.fixture(scope="session")
+def generator_proxy(openai_version):
+    class GeneratorProxy(ObjectProxy):
+        def __init__(self, wrapped):
+            super(GeneratorProxy, self).__init__(wrapped)
+
+        def __iter__(self):
+            return self
+
+        # Make this Proxy a pass through to our instrumentation's proxy by passing along
+        # get attr and set attr calls to our instrumentation's proxy.
+        def __getattr__(self, attr):
+            return self.__wrapped__.__getattr__(attr)
+
+        def __setattr__(self, attr, value):
+            return self.__wrapped__.__setattr__(attr, value)
+
+        def __next__(self):
+            transaction = current_transaction()
+            if not transaction:
+                return self.__wrapped__.__next__()
+
+            try:
+                return_val = self.__wrapped__.__next__()
+                if return_val:
+                    prompt = [k for k in OPENAI_AUDIT_LOG_CONTENTS.keys()][-1]
+                    if openai_version < (1, 0):
+                        headers = dict(
+                            filter(
+                                lambda k: k[0].lower() in RECORDED_HEADERS
+                                or k[0].lower().startswith("openai")
+                                or k[0].lower().startswith("x-ratelimit"),
+                                return_val._nr_response_headers.items(),
+                            )
+                        )
+                        OPENAI_AUDIT_LOG_CONTENTS[prompt][0] = headers
+                        OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.to_dict_recursive())
+                    else:
+                        if not getattr(return_val, "data", "").startswith("[DONE]"):
+                            OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.json())
+                return return_val
+            except Exception as e:
+                raise
+
+        def close(self):
+            return super(GeneratorProxy, self).close()
+
+    return GeneratorProxy
+
+
+@pytest.fixture(scope="session")
+def wrap_stream_iter_events(generator_proxy):
+    def _wrap_stream_iter_events(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        return_val = wrapped(*args, **kwargs)
+        proxied_return_val = generator_proxy(return_val)
+        return proxied_return_val
+
+    return _wrap_stream_iter_events

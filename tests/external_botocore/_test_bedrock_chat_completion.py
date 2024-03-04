@@ -24,12 +24,12 @@ chat_completion_get_llm_message_ids = {
     "amazon.titan-text-express-v1": {
         "bedrock_key": [
             {
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
                 "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
                 "message_id": None,  # UUID that varies with each run
             },
             {
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
                 "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
                 "message_id": None,  # UUID that varies with each run
             },
@@ -38,12 +38,12 @@ chat_completion_get_llm_message_ids = {
     "ai21.j2-mid-v1": {
         "bedrock_key": [
             {
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
                 "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
                 "message_id": "1234-0",
             },
             {
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
                 "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
                 "message_id": "1234-1",
             },
@@ -52,12 +52,12 @@ chat_completion_get_llm_message_ids = {
     "anthropic.claude-instant-v1": {
         "bedrock_key": [
             {
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
                 "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
                 "message_id": None,  # UUID that varies with each run
             },
             {
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
                 "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
                 "message_id": None,  # UUID that varies with each run
             },
@@ -66,12 +66,12 @@ chat_completion_get_llm_message_ids = {
     "cohere.command-text-v14": {
         "bedrock_key": [
             {
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
                 "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
                 "message_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97-0",
             },
             {
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
                 "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
                 "message_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97-1",
             },
@@ -80,12 +80,12 @@ chat_completion_get_llm_message_ids = {
     "meta.llama2-13b-chat-v1": {
         "bedrock_key": [
             {
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
                 "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
                 "message_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a-0",
             },
             {
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
                 "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
                 "message_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a-1",
             },
@@ -100,7 +100,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -125,7 +126,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -144,7 +146,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -166,7 +169,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -189,7 +193,8 @@ chat_completion_expected_events = {
             {
                 "id": "1234-0",
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -208,7 +213,8 @@ chat_completion_expected_events = {
             {
                 "id": "1234-1",
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -230,7 +236,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -252,7 +259,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -271,7 +279,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -293,7 +302,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -316,7 +326,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -335,7 +346,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -357,7 +369,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -382,7 +395,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -401,7 +415,8 @@ chat_completion_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -424,39 +439,20 @@ chat_completion_invalid_model_error_events = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
+            "appName": "Python Agent Test (external_botocore)",
             "transaction_id": "transaction-id",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
             "api_key_last_four_digits": "CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "response.number_of_messages": 1,
+            "response.model": "does-not-exist",
             "vendor": "bedrock",
             "ingest_source": "Python",
             "error": True,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "my-awesome-id",
-            "request_id": "",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "You are a scientist.",
-            "role": "system",
-            "response.model": "",
-            "completion_id": None,
-            "sequence": 0,
-            "vendor": "bedrock",
-            "ingest_source": "Python",
         },
     ),
 ]
@@ -468,7 +464,8 @@ chat_completion_invalid_access_key_error_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -490,7 +487,8 @@ chat_completion_invalid_access_key_error_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -511,7 +509,8 @@ chat_completion_invalid_access_key_error_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -533,7 +532,8 @@ chat_completion_invalid_access_key_error_events = {
             {
                 "id": None,
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -554,7 +554,8 @@ chat_completion_invalid_access_key_error_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -576,7 +577,8 @@ chat_completion_invalid_access_key_error_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -597,7 +599,8 @@ chat_completion_invalid_access_key_error_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -619,7 +622,8 @@ chat_completion_invalid_access_key_error_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -640,7 +644,8 @@ chat_completion_invalid_access_key_error_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -662,7 +667,8 @@ chat_completion_invalid_access_key_error_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "request_id": "",
                 "span_id": None,
                 "trace_id": "trace-id",

@@ -44,7 +44,7 @@ chat_completion_recorded_events = [
         {
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -75,7 +75,7 @@ chat_completion_recorded_events = [
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-0",
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -94,7 +94,7 @@ chat_completion_recorded_events = [
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-1",
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -113,7 +113,7 @@ chat_completion_recorded_events = [
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-2",
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -136,7 +136,7 @@ chat_completion_recorded_events = [
 # One summary event, one system message, one user message, and one response message from the assistant
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_with_convo_id",
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_with_llm_metadata",
     custom_metrics=[
         ("Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
@@ -144,7 +144,7 @@ chat_completion_recorded_events = [
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_openai_chat_completion_sync_in_txn_with_convo_id(set_trace_info, sync_openai_client):
+def test_openai_chat_completion_sync_in_txn_with_llm_metadata(set_trace_info, sync_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     generator = sync_openai_client.chat.completions.create(
@@ -158,13 +158,12 @@ def test_openai_chat_completion_sync_in_txn_with_convo_id(set_trace_info, sync_o
         assert resp
 
 
-chat_completion_recorded_events_no_convo_id = [
+chat_completion_recorded_events_no_llm_metadata = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -195,7 +194,6 @@ chat_completion_recorded_events_no_convo_id = [
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-0",
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -214,7 +212,6 @@ chat_completion_recorded_events_no_convo_id = [
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-1",
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -233,7 +230,6 @@ chat_completion_recorded_events_no_convo_id = [
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-2",
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -252,17 +248,17 @@ chat_completion_recorded_events_no_convo_id = [
 
 
 @reset_core_stats_engine()
-@validate_custom_events(chat_completion_recorded_events_no_convo_id)
+@validate_custom_events(chat_completion_recorded_events_no_llm_metadata)
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    "test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_no_convo_id",
+    "test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_no_llm_metadata",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,
 )
 @background_task()
-def test_openai_chat_completion_sync_in_txn_no_convo_id(set_trace_info, sync_openai_client):
+def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info, sync_openai_client):
     set_trace_info()
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -359,7 +355,7 @@ def test_openai_chat_completion_sync_ai_monitoring_disabled(sync_openai_client):
 
 
 @reset_core_stats_engine()
-@validate_custom_events(chat_completion_recorded_events_no_convo_id)
+@validate_custom_events(chat_completion_recorded_events_no_llm_metadata)
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     "test_chat_completion_stream_v1:test_openai_chat_completion_async_conversation_id_unset",

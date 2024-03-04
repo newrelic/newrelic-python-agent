@@ -13,19 +13,20 @@
 # limitations under the License.
 
 import openai
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,
     reset_core_stats_engine,
-    validate_custom_event_count,
     validate_attributes,
+    validate_custom_event_count,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import add_custom_attribute
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
@@ -40,6 +41,8 @@ embedding_recorded_events = [
             "trace_id": "trace-id",
             "input": "This is an embedding test.",
             "api_key_last_four_digits": "sk-CRET",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "duration": None,  # Response time varies each test run
             "response.model": "text-embedding-ada-002-v2",
             "request.model": "text-embedding-ada-002",
@@ -78,6 +81,10 @@ embedding_recorded_events = [
 @background_task()
 def test_openai_embedding_sync(set_trace_info):
     set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
@@ -130,6 +137,9 @@ def test_openai_embedding_sync_disabled_ai_monitoring_events(set_trace_info):
 @background_task()
 def test_openai_embedding_async(loop, set_trace_info):
     set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
 
     loop.run_until_complete(
         openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")

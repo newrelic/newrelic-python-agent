@@ -35,7 +35,7 @@ from testing_support.validators.validate_transaction_metrics import (
 from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-from newrelic.common.package_version_utils import get_package_version
+
 
 vectorstore_recorded_events = [
     (

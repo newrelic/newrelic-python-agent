@@ -15,6 +15,7 @@
 import os
 
 import pytest
+import langchain
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (

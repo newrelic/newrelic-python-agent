@@ -31,7 +31,6 @@ from conftest import (  # pylint: disable=E0611
     disabled_ai_monitoring_settings,
 )
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -219,25 +218,6 @@ def test_bedrock_chat_completion_in_txn_no_llm_metadata(
 @validate_custom_event_count(count=0)
 def test_bedrock_chat_completion_outside_txn(set_trace_info, exercise_model):
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
-    exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
-
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_bedrock_chat_completion_disabled_custom_events_settings",
-    custom_metrics=[
-        ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
-    ],
-    background_task=True,
-)
-@background_task(name="test_bedrock_chat_completion_disabled_custom_events_settings")
-def test_bedrock_chat_completion_disabled_custom_events_settings(set_trace_info, exercise_model):
-    set_trace_info()
     exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
 

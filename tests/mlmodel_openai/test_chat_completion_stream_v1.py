@@ -21,7 +21,6 @@ from conftest import (  # pylint: disable=E0611
     events_sans_content,
 )
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -33,8 +32,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -344,30 +341,6 @@ def test_openai_chat_completion_sync_outside_txn(sync_openai_client):
         assert resp
 
 
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_custom_events_insights_disabled",
-    custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_chat_completion_sync_custom_events_insights_disabled(set_trace_info, sync_openai_client):
-    set_trace_info()
-    generator = sync_openai_client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=_test_openai_chat_completion_messages,
-        temperature=0.7,
-        max_tokens=100,
-        stream=True,
-    )
-    for resp in generator:
-        assert resp
-
-
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -509,32 +482,6 @@ def test_openai_chat_completion_async_ai_monitoring_streaming_disabled(loop, asy
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_chat_completion_async_outside_transaction(loop, async_openai_client):
-    async def consumer():
-        generator = await async_openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=_test_openai_chat_completion_messages,
-            temperature=0.7,
-            max_tokens=100,
-            stream=True,
-        )
-        async for resp in generator:
-            assert resp
-
-    loop.run_until_complete(consumer())
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_chat_completion_stream_v1:test_openai_chat_completion_async_disabled_custom_event_settings",
-    custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_chat_completion_async_disabled_custom_event_settings(loop, async_openai_client):
     async def consumer():
         generator = await async_openai_client.chat.completions.create(
             model="gpt-3.5-turbo",

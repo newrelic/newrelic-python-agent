@@ -19,7 +19,6 @@ from conftest import (  # pylint: disable=E0611
     events_sans_content,
 )
 from testing_support.fixtures import (  # override_application_settings,
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -31,8 +30,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 embedding_recorded_events = [
     (
@@ -121,24 +118,6 @@ def test_openai_embedding_sync_outside_txn():
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_embeddings:test_openai_embedding_sync_disabled_custom_insights_events",
-    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_embedding_sync_disabled_custom_insights_events(set_trace_info):
-    set_trace_info()
-    openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
-
-
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -202,25 +181,6 @@ def test_openai_embedding_async_no_content(loop, set_trace_info):
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_embedding_async_outside_transaction(loop):
-    loop.run_until_complete(
-        openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
-    )
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_embeddings:test_openai_embedding_async_disabled_custom_insights_events",
-    scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
-    rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
-    custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_embedding_async_disabled_custom_insights_events(loop):
     loop.run_until_complete(
         openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
     )

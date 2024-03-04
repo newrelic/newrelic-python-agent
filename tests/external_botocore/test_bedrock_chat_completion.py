@@ -97,8 +97,11 @@ def exercise_model(bedrock_server, model_id, request_streaming, response_streami
                 contentType="application/json",
             )
 
+            stream = response["body"]
+            breakpoint()
+
             chunks = list()
-            for event in response["body"]:
+            for event in stream:
                 chunks.append(event["chunk"]["bytes"].decode("utf-8"))
                 # TODO assert tracing here
 

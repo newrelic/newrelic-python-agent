@@ -14,6 +14,7 @@
 
 import json
 import logging
+import sys
 import uuid
 from io import BytesIO
 
@@ -26,9 +27,10 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import message_trace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper, ObjectProxy
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
+
 
 BOTOCORE_VERSION = get_package_version("botocore")
 
@@ -342,61 +344,58 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
 ]
 
 
-@function_wrapper
-def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
-    # Wrapped function only takes keyword arguments, no need for binding
-    transaction = current_transaction()
+def wrap_bedrock_runtime_invoke_model(response_streaming=False):
+    @function_wrapper
+    def _wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
+        # Wrapped function only takes keyword arguments, no need for binding
+        transaction = current_transaction()
 
-    if not transaction:
-        return wrapped(*args, **kwargs)
+        if not transaction:
+            return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
-        return wrapped(*args, **kwargs)
+        settings = transaction.settings if transaction.settings is not None else global_settings()
+        if not settings.ai_monitoring.enabled:
+            return wrapped(*args, **kwargs)
 
-    transaction.add_ml_model_info("Bedrock", BOTOCORE_VERSION)
-    transaction._add_agent_attribute("llm", True)
+        transaction.add_ml_model_info("Bedrock", BOTOCORE_VERSION)
+        transaction._add_agent_attribute("llm", True)
 
-    # Read and replace request file stream bodies
-    request_body = kwargs["body"]
-    if hasattr(request_body, "read"):
-        request_body = request_body.read()
-        kwargs["body"] = request_body
+        # Read and replace request file stream bodies
+        request_body = kwargs["body"]
+        if hasattr(request_body, "read"):
+            request_body = request_body.read()
+            kwargs["body"] = request_body
 
-    # Determine model to be used with extractor
-    model = kwargs.get("modelId")
-    if not model:
-        return wrapped(*args, **kwargs)
+        # Determine model to be used with extractor
+        model = kwargs.get("modelId")
+        if not model:
+            return wrapped(*args, **kwargs)
 
-    is_embedding = model.startswith("amazon.titan-embed")
+        is_embedding = model.startswith("amazon.titan-embed")
 
-    # Determine extractor by model type
-    for extractor_name, extractor in MODEL_EXTRACTORS:
-        if model.startswith(extractor_name):
-            break
-    else:
-        # Model was not found in extractor list
-        global UNSUPPORTED_MODEL_WARNING_SENT
-        if not UNSUPPORTED_MODEL_WARNING_SENT:
-            # Only send warning once to avoid spam
-            _logger.warning(
-                "Unsupported Amazon Bedrock model in use (%s). Upgrade to a newer version of the agent, and contact New Relic support if the issue persists.",
-                model,
-            )
-            UNSUPPORTED_MODEL_WARNING_SENT = True
+        # Determine extractor by model type
+        for extractor_name, extractor in MODEL_EXTRACTORS:
+            if model.startswith(extractor_name):
+                break
+        else:
+            # Model was not found in extractor list
+            global UNSUPPORTED_MODEL_WARNING_SENT
+            if not UNSUPPORTED_MODEL_WARNING_SENT:
+                # Only send warning once to avoid spam
+                _logger.warning(
+                    "Unsupported Amazon Bedrock model in use (%s). Upgrade to a newer version of the agent, and contact New Relic support if the issue persists.",
+                    model,
+                )
+                UNSUPPORTED_MODEL_WARNING_SENT = True
 
-        extractor = lambda *args: ([], [], {})  # Empty extractor that returns nothing
+            extractor = lambda *args: ([], [], {})  # Empty extractor that returns nothing
 
-    span_id = None
-    trace_id = None
+        function_name = wrapped.__name__
+        operation = "embedding" if model.startswith("amazon.titan-embed") else "completion"
 
-    span_id = None
-    trace_id = None
+        ft = FunctionTrace(name=function_name, group="Llm/%s/Bedrock" % (operation))
+        ft.__enter__()
 
-    function_name = wrapped.__name__
-    operation = "embedding" if model.startswith("amazon.titan-embed") else "completion"
-
-    with FunctionTrace(name=function_name, group="Llm/%s/Bedrock" % (operation)) as ft:
         # Get trace information
         available_metadata = get_trace_linking_metadata()
         span_id = available_metadata.get("span.id", "")
@@ -452,118 +451,155 @@ def wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
                         span_id,
                     )
 
+                ft.__exit__(*sys.exc_info())
             finally:
                 raise
 
-    if not response:
-        return response
+        if not response:
+            return response
 
-    # Read and replace response streaming bodies
-    response_body = response["body"].read()
-    response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
-    response_headers = response["ResponseMetadata"]["HTTPHeaders"]
+        if response_streaming:
+            breakpoint()
+            # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
+            # This class is used in numerous other services in botocore, and would cause conflicts.
+            response["body"] = body = EventStreamWrapper(response["body"])
+            body._nr_ft = ft
+            body._nr_bedrock_attrs = {}
+            return response
 
-    if operation == "embedding":  # Only available embedding models
-        handle_embedding_event(
-            instance,
-            transaction,
-            extractor,
-            model,
-            response_body,
-            response_headers,
-            request_body,
-            ft.duration,
-            False,
-            trace_id,
-            span_id,
-        )
-    else:
-        handle_chat_completion_event(
-            instance,
-            transaction,
-            extractor,
-            model,
-            response_body,
-            response_headers,
-            request_body,
-            ft.duration,
-            False,
-            trace_id,
-            span_id,
-        )
+        # Read and replace response streaming bodies
+        response_body = response["body"].read()
+        ft.__exit__(None, None, None)
+        response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
+        response_headers = response["ResponseMetadata"]["HTTPHeaders"]
 
-    return response
-
-@function_wrapper
-def wrap_bedrock_runtime_invoke_model_with_response_stream(wrapped, instance, args, kwargs):
-    # Wrapped function only takes keyword arguments, no need for binding
-
-    transaction = current_transaction()
-
-    if not transaction:
-        return wrapped(*args, **kwargs)
-
-    # Read and replace request file stream bodies
-    request_body = kwargs["body"]
-    if hasattr(request_body, "read"):
-        request_body = request_body.read()
-        kwargs["body"] = request_body
-
-    # Determine model to be used with extractor
-    model = kwargs.get("modelId")
-    if not model:
-        return wrapped(*args, **kwargs)
-
-    # Determine extractor by model type
-    for extractor_name, extractor in MODEL_EXTRACTORS:
-        if model.startswith(extractor_name):
-            break
-    else:
-        # Model was not found in extractor list
-        global UNSUPPORTED_MODEL_WARNING_SENT
-        if not UNSUPPORTED_MODEL_WARNING_SENT:
-            # Only send warning once to avoid spam
-            _logger.warning(
-                "Unsupported Amazon Bedrock model in use (%s). Upgrade to a newer version of the agent, and contact New Relic support if the issue persists.",
+        if operation == "embedding":  # Only available embedding models
+            handle_embedding_event(
+                instance,
+                transaction,
+                extractor,
                 model,
+                response_body,
+                response_headers,
+                request_body,
+                ft.duration,
+                False,
+                trace_id,
+                span_id,
             )
-            UNSUPPORTED_MODEL_WARNING_SENT = True
-        
-        extractor = lambda *args: ([], {})  # Empty extractor that returns nothing
+        else:
+            handle_chat_completion_event(
+                instance,
+                transaction,
+                extractor,
+                model,
+                response_body,
+                response_headers,
+                request_body,
+                ft.duration,
+                False,
+                trace_id,
+                span_id,
+            )
 
-    ft_name = callable_name(wrapped)
-    with FunctionTrace(ft_name) as ft:
-        try:
-            response = wrapped(*args, **kwargs)
-        except Exception as exc:
-            try:
-                error_attributes = extractor(request_body)
-                error_attributes = bedrock_error_attributes(exc, kwargs, instance, extractor)
-                ft.notice_error(
-                    attributes=error_attributes,
-                )
-            finally:
-                raise
-
-    if not response:
         return response
+    return _wrap_bedrock_runtime_invoke_model
 
-    # Read and replace response streaming bodies
-    # breakpoint()
-    # response_body = list(response["body"])
-    # response["body"] = EventStream(response_body)
-    response_headers = response["ResponseMetadata"]["HTTPHeaders"]
 
-    if model.startswith("amazon.titan-embed"):  # Only available embedding models
-        handle_embedding_event(
-            instance, transaction, extractor, model, None, response_headers, request_body, ft.duration
-        )
-    else:
-        handle_chat_completion_event(
-            instance, transaction, extractor, model, None, response_headers, request_body, ft.duration
-        )
+class EventStreamWrapper(ObjectProxy):
+    def __iter__(self):
+        g = GeneratorProxy(self.__wrapped__.__iter__())
+        g._nr_ft = getattr(self, "_nr_ft", None)
+        g._nr_bedrock_attrs = getattr(self, "_nr_ft", {})
+        return g
 
-    return response
+
+class GeneratorProxy(ObjectProxy):
+    def __init__(self, wrapped):
+        super(GeneratorProxy, self).__init__(wrapped)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.__next__()
+
+        return_val = None
+        try:
+            return_val = self.__wrapped__.__next__()
+            record_stream_chunk(self, return_val)
+        except StopIteration as e:
+            record_events_on_stop_iteration(self, transaction)
+            raise
+        except Exception as exc:
+            record_error(self, transaction, exc)
+            raise
+        return return_val
+
+    def close(self):
+        return super(GeneratorProxy, self).close()
+
+
+def record_stream_chunk(self, return_val):
+    breakpoint()
+    if return_val:
+        if OPENAI_V1:
+            if getattr(return_val, "data", "").startswith("[DONE]"):
+                return
+            return_val = return_val.json()
+            self._nr_bedrock_attrs["response_headers"] = getattr(self, "_nr_response_headers", {})
+        else:
+            self._nr_bedrock_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
+        choices = return_val.get("choices", [])
+        self._nr_bedrock_attrs["response.model"] = return_val.get("model", "")
+        self._nr_bedrock_attrs["id"] = return_val.get("id", "")
+        self._nr_bedrock_attrs["response.organization"] = return_val.get("organization", "")
+        if choices:
+            delta = choices[0].get("delta", {})
+            if delta:
+                self._nr_bedrock_attrs["content"] = self._nr_bedrock_attrs.get("content", "") + delta.get("content", "")
+                self._nr_bedrock_attrs["role"] = self._nr_bedrock_attrs.get("role", None) or delta.get("role")
+            self._nr_bedrock_attrs["finish_reason"] = choices[0].get("finish_reason", "")
+
+
+def record_events_on_stop_iteration(self, transaction):
+    breakpoint()
+    if hasattr(self, "_nr_ft"):
+        openai_attrs = getattr(self, "_nr_bedrock_attrs", {})
+        self._nr_ft.__exit__(None, None, None)
+
+        # If there are no openai attrs exit early as there's no data to record.
+        if not openai_attrs:
+            return
+
+        message_ids = record_streaming_chat_completion_events(self, transaction, openai_attrs)
+        # Clear cached data as this can be very large.
+        # Note this is also important for not reporting the events twice. In openai v1
+        # there are two loops around the iterator, the second is meant to clear the
+        # stream since there is a condition where the iterator may exit before all the
+        # stream contents is read. This results in StopIteration being raised twice
+        # instead of once at the end of the loop.
+        self._nr_bedrock_attrs = {}
+        # Cache message ids on transaction for retrieval after open ai call completion.
+        if not hasattr(transaction, "_nr_message_ids"):
+            transaction._nr_message_ids = {}
+        response_id = openai_attrs.get("id", None)
+        transaction._nr_message_ids[response_id] = message_ids
+
+
+def record_error(self, transaction, exc):
+    breakpoint()
+    if hasattr(self, "_nr_ft"):
+        openai_attrs = getattr(self, "_nr_bedrock_attrs", {})
+
+        # If there are no openai attrs exit early as there's no data to record.
+        if not openai_attrs:
+            self._nr_ft.__exit__(*sys.exc_info())
+            return
+
+        record_streaming_chat_completion_events_error(self, transaction, openai_attrs, exc)
 
 
 def handle_embedding_event(
@@ -690,8 +726,8 @@ CUSTOM_TRACE_POINTS = {
     ("sqs", "send_message"): message_trace("SQS", "Produce", "Queue", extract_sqs),
     ("sqs", "send_message_batch"): message_trace("SQS", "Produce", "Queue", extract_sqs),
     ("sqs", "receive_message"): message_trace("SQS", "Consume", "Queue", extract_sqs),
-    ("bedrock-runtime", "invoke_model"): wrap_bedrock_runtime_invoke_model,
-    ("bedrock-runtime", "invoke_model_with_response_stream"): wrap_bedrock_runtime_invoke_model_with_response_stream,
+    ("bedrock-runtime", "invoke_model"): wrap_bedrock_runtime_invoke_model(response_streaming=False),
+    ("bedrock-runtime", "invoke_model_with_response_stream"): wrap_bedrock_runtime_invoke_model(response_streaming=True),
 }
 
 

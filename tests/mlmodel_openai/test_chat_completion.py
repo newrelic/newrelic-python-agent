@@ -145,7 +145,7 @@ chat_completion_recorded_events = [
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_sync_in_txn_with_llm_metadata",
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -289,7 +289,7 @@ def test_openai_chat_completion_sync_outside_txn():
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_sync_custom_events_insights_disabled",
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -340,7 +340,7 @@ def test_openai_chat_completion_async_no_llm_metadata(loop, set_trace_info):
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -375,7 +375,7 @@ def test_openai_chat_completion_async_outside_transaction(loop):
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_async_disabled_custom_event_settings",
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )

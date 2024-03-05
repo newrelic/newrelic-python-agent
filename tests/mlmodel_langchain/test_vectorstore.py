@@ -15,7 +15,7 @@
 import os
 
 import pytest
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
+import langchain
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
@@ -30,13 +30,11 @@ from testing_support.validators.validate_error_trace_attributes import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
-from newrelic.common.package_version_utils import get_package_version
 
-LANGCHAIN_VERSION = get_package_version("langchain")
 
 vectorstore_recorded_events = [
     (
@@ -124,7 +122,7 @@ def test_vectorstore_modules_instrumented():
 @validate_transaction_metrics(
     name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -182,7 +180,7 @@ def test_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(set_trace_info, emb
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_pdf_pagesplitter_vectorstore_in_txn",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -270,7 +268,7 @@ vectorstore_error_events = [
 @validate_transaction_metrics(
     name="test_vectorstore:test_vectorstore_error_no_query",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -295,7 +293,7 @@ def test_vectorstore_error_no_query(set_trace_info, embedding_openai_client):
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_vectorstore_error_no_query",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )

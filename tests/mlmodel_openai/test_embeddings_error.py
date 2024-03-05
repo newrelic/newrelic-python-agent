@@ -77,7 +77,7 @@ embedding_recorded_events = [
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -139,7 +139,7 @@ invalid_model_events = [
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -195,7 +195,7 @@ embedding_auth_error_events = [
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -254,7 +254,7 @@ embedding_invalid_key_error_events = [
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -294,7 +294,7 @@ def test_embeddings_wrong_api_key_error(monkeypatch, set_trace_info):
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -335,7 +335,7 @@ def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -369,7 +369,7 @@ def test_embeddings_invalid_request_error_invalid_model_async(loop, set_trace_in
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )
@@ -406,7 +406,7 @@ def test_embeddings_authentication_error_async(loop, monkeypatch, set_trace_info
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
     background_task=True,
 )

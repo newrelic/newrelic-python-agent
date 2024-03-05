@@ -58,9 +58,7 @@ def get_llm_message_ids(response_id=None):
     return []
 
 
-def record_llm_feedback_event(
-    trace_id, rating, category=None, message=None, metadata=None
-):
+def record_llm_feedback_event(trace_id, rating, category=None, message=None, metadata=None):
     transaction = current_transaction()
     if not transaction:
         warnings.warn(

@@ -89,10 +89,11 @@ class NewRelicContextFormatter(logging.Formatter):
         output.update(get_linking_metadata())
 
         DEFAULT_LOG_RECORD_KEYS = cls.DEFAULT_LOG_RECORD_KEYS
-        if len(record.__dict__) > len(DEFAULT_LOG_RECORD_KEYS):
-            for key in record.__dict__:
-                if key not in DEFAULT_LOG_RECORD_KEYS:
-                    output["extra." + key] = getattr(record, key)
+        # If any keys are present in record that aren't in the default,
+        # add them to the output record.
+        keys_to_add = set(record.__dict__.keys()) - DEFAULT_LOG_RECORD_KEYS
+        for key in keys_to_add:
+            output["extra." + key] = getattr(record, key)
 
         if record.exc_info:
             output.update(format_exc_info(record.exc_info))

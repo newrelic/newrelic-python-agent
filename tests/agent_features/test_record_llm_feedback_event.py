@@ -29,14 +29,13 @@ def test_record_llm_feedback_event_all_args_supplied():
             {"type": "LlmFeedbackMessage"},
             {
                 "id": None,
+                "trace_id": "123456789abcdefgh",
                 "category": "informative",
                 "rating": 1,
-                "message_id": "message_id",
-                "request_id": "request_id",
-                "conversation_id": "conversation_id",
                 "ingest_source": "Python",
                 "message": "message",
                 "foo": "bar",
+                "my-message": "custom-message",
             },
         ),
     ]
@@ -46,12 +45,10 @@ def test_record_llm_feedback_event_all_args_supplied():
     def _test():
         record_llm_feedback_event(
             rating=1,
-            message_id="message_id",
+            trace_id="123456789abcdefgh",
             category="informative",
-            request_id="request_id",
-            conversation_id="conversation_id",
             message="message",
-            metadata={"foo": "bar", "message": "custom-message"},
+            metadata={"foo": "bar", "my-message": "custom-message"},
         )
 
     _test()
@@ -66,9 +63,7 @@ def test_record_llm_feedback_event_required_args_supplied():
                 "id": None,
                 "category": "",
                 "rating": "Good",
-                "message_id": "message_id",
-                "request_id": "",
-                "conversation_id": "",
+                "trace_id": "123456789abcdefgh",
                 "ingest_source": "Python",
                 "message": "",
             },
@@ -78,7 +73,7 @@ def test_record_llm_feedback_event_required_args_supplied():
     @validate_custom_events(llm_feedback_required_args_recorded_events)
     @background_task()
     def _test():
-        record_llm_feedback_event(message_id="message_id", rating="Good")
+        record_llm_feedback_event(trace_id="123456789abcdefgh", rating="Good")
 
     _test()
 
@@ -88,10 +83,8 @@ def test_record_llm_feedback_event_required_args_supplied():
 def test_record_llm_feedback_event_outside_txn():
     record_llm_feedback_event(
         rating="Good",
-        message_id="message_id",
+        trace_id="123456789abcdefgh",
         category="informative",
-        request_id="request_id",
-        conversation_id="conversation_id",
         message="message",
         metadata={"foo": "bar"},
     )

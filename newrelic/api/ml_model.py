@@ -59,7 +59,7 @@ def get_llm_message_ids(response_id=None):
 
 
 def record_llm_feedback_event(
-    message_id, rating, conversation_id=None, request_id=None, category=None, message=None, metadata=None
+    trace_id, rating, category=None, message=None, metadata=None
 ):
     transaction = current_transaction()
     if not transaction:
@@ -74,10 +74,8 @@ def record_llm_feedback_event(
     feedback_message_event.update(
         {
             "id": feedback_message_id,
-            "message_id": message_id,
+            "trace_id": trace_id,
             "rating": rating,
-            "conversation_id": conversation_id or "",
-            "request_id": request_id or "",
             "category": category or "",
             "message": message or "",
             "ingest_source": "Python",

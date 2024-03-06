@@ -199,11 +199,13 @@ def extract_bedrock_titan_text_model_request(request_body, bedrock_attrs):
 
     input_message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
 
-    bedrock_attrs.update({
-        "input_message_list": input_message_list,
-        "request.max_tokens": request_config.get("maxTokenCount", ""),
-        "request.temperature": request_config.get("temperature", ""),
-    })
+    bedrock_attrs.update(
+        {
+            "input_message_list": input_message_list,
+            "request.max_tokens": request_config.get("maxTokenCount", ""),
+            "request.temperature": request_config.get("temperature", ""),
+        }
+    )
 
     return bedrock_attrs
 
@@ -544,6 +546,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             )
 
         return response
+
     return _wrap_bedrock_runtime_invoke_model
 
 
@@ -601,7 +604,7 @@ def record_events_on_stop_iteration(self, transaction):
 
         message_ids = handle_chat_completion_event(transaction, bedrock_attrs)
         # message_ids = record_streaming_chat_completion_events(self, transaction, bedrock_attrs)
-        
+
         # Cache message ids on transaction for retrieval after bedrock call completion.
         if not hasattr(transaction, "_nr_message_ids"):
             transaction._nr_message_ids = {}
@@ -763,22 +766,7 @@ def handle_embedding_event(
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
 
 
-def handle_chat_completion_event(
-    transaction,
-    bedrock_attrs, 
-    
-    # client,
-    # transaction,
-    # extractor,
-    # model,
-    # response_body,
-    # response_headers,
-    # request_body,
-    # duration,
-    # is_error,
-    # trace_id,
-    # span_id,
-):
+def handle_chat_completion_event(transaction, bedrock_attrs):
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
 
@@ -812,17 +800,17 @@ def handle_chat_completion_event(
         "transaction_id": transaction.guid,
         "request_id": request_id,
         "duration": bedrock_attrs.get("duration", None),
-        'request.max_tokens': bedrock_attrs.get("request.max_tokens", None),
-        'request.temperature': bedrock_attrs.get("request.temperature", None),
-        'request.model': model,
-        'response.model': model,  # Duplicate data required by the UI
+        "request.max_tokens": bedrock_attrs.get("request.max_tokens", None),
+        "request.temperature": bedrock_attrs.get("request.temperature", None),
+        "request.model": model,
+        "response.model": model,  # Duplicate data required by the UI
         "response.number_of_messages": len(input_message_list) + len(output_message_list),
-        'response.choices.finish_reason': bedrock_attrs.get("response.choices.finish_reason", None),
-        'response.usage.completion_tokens': bedrock_attrs.get("response.usage.completion_tokens", None),
-        'response.usage.prompt_tokens': bedrock_attrs.get("response.usage.prompt_tokens", None),
-        'response.usage.total_tokens': bedrock_attrs.get("response.usage.total_tokens", None),
+        "response.choices.finish_reason": bedrock_attrs.get("response.choices.finish_reason", None),
+        "response.usage.completion_tokens": bedrock_attrs.get("response.usage.completion_tokens", None),
+        "response.usage.prompt_tokens": bedrock_attrs.get("response.usage.prompt_tokens", None),
+        "response.usage.total_tokens": bedrock_attrs.get("response.usage.total_tokens", None),
     }
-    
+
     if bedrock_attrs.get("error", False):
         chat_completion_summary_dict["error"] = True
 
@@ -861,7 +849,9 @@ CUSTOM_TRACE_POINTS = {
     ("sqs", "send_message_batch"): message_trace("SQS", "Produce", "Queue", extract_sqs),
     ("sqs", "receive_message"): message_trace("SQS", "Consume", "Queue", extract_sqs),
     ("bedrock-runtime", "invoke_model"): wrap_bedrock_runtime_invoke_model(response_streaming=False),
-    ("bedrock-runtime", "invoke_model_with_response_stream"): wrap_bedrock_runtime_invoke_model(response_streaming=True),
+    ("bedrock-runtime", "invoke_model_with_response_stream"): wrap_bedrock_runtime_invoke_model(
+        response_streaming=True
+    ),
 }
 
 

@@ -817,6 +817,10 @@ def handle_chat_completion_event(
         'request.model': model,
         'response.model': model,  # Duplicate data required by the UI
         "response.number_of_messages": len(input_message_list) + len(output_message_list),
+        'response.choices.finish_reason': bedrock_attrs.get("response.choices.finish_reason", None),
+        'response.usage.completion_tokens': bedrock_attrs.get("response.usage.completion_tokens", None),
+        'response.usage.prompt_tokens': bedrock_attrs.get("response.usage.prompt_tokens", None),
+        'response.usage.total_tokens': bedrock_attrs.get("response.usage.total_tokens", None),
     }
     
     if bedrock_attrs.get("error", False):

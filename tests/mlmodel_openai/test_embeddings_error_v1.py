@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import sys
 
 import openai
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
+    override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
 )
@@ -32,6 +34,14 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
+
+
+def events_sans_content(event):
+    new_event = copy.deepcopy(event)
+    for _event in new_event:
+        del _event[1]["input"]
+    return new_event
+
 
 # Sync tests:
 no_model_events = [
@@ -86,6 +96,42 @@ no_model_events = [
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model(set_trace_info, sync_openai_client):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        sync_openai_client.embeddings.create(input="This is an embedding test with no model.")  # no model provided
+
+
+@dt_enabled
+@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "create() missing 1 required keyword-only argument: 'model'"
+        if sys.version_info < (3, 10)
+        else "Embeddings.create() missing 1 required keyword-only argument: 'model'",
+    }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error_v1:test_embeddings_invalid_request_error_no_model_no_content",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(no_model_events))
+@validate_custom_event_count(count=1)
+@background_task()
+def test_embeddings_invalid_request_error_no_model_no_content(set_trace_info, sync_openai_client):
     with pytest.raises(TypeError):
         set_trace_info()
         sync_openai_client.embeddings.create(input="This is an embedding test with no model.")  # no model provided
@@ -217,6 +263,45 @@ def test_embeddings_invalid_request_error_invalid_model(set_trace_info, sync_ope
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model_async(set_trace_info, async_openai_client, loop):
+    with pytest.raises(openai.NotFoundError):
+        set_trace_info()
+        loop.run_until_complete(
+            async_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@validate_error_trace_attributes(
+    callable_name(openai.NotFoundError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "http.statusCode": 404,
+            "error.code": "model_not_found",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist",
+    }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_async_no_content",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(invalid_model_events))
+@validate_custom_event_count(count=1)
+@background_task()
+def test_embeddings_invalid_request_error_invalid_model_async_no_content(set_trace_info, async_openai_client, loop):
     with pytest.raises(openai.NotFoundError):
         set_trace_info()
         loop.run_until_complete(

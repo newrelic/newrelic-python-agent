@@ -115,6 +115,9 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                 "error": True,
             }
 
+            if not settings.ai_monitoring.record_content.enabled:
+                del error_embedding_dict["input"]
+
             error_embedding_dict.update(llm_metadata_dict)
 
             transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
@@ -178,6 +181,9 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "vendor": "openAI",
         "ingest_source": "Python",
     }
+
+    if not settings.ai_monitoring.record_content.enabled:
+        del full_embedding_response_dict["input"]
 
     full_embedding_response_dict.update(llm_metadata_dict)
 
@@ -454,6 +460,8 @@ def create_chat_completion_message_event(
     llm_metadata_dict,
     output_message_list,
 ):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+
     message_ids = []
 
     # Loop through all input messages received from the create request and emit a custom event for each one
@@ -484,6 +492,9 @@ def create_chat_completion_message_event(
             "vendor": "openAI",
             "ingest_source": "Python",
         }
+
+        if not settings.ai_monitoring.record_content.enabled:
+            del chat_completion_input_message_dict["content"]
 
         chat_completion_input_message_dict.update(llm_metadata_dict)
 
@@ -522,6 +533,9 @@ def create_chat_completion_message_event(
                 "ingest_source": "Python",
                 "is_response": True,
             }
+
+            if not settings.ai_monitoring.record_content.enabled:
+                del chat_completion_output_message_dict["content"]
 
             chat_completion_output_message_dict.update(llm_metadata_dict)
 
@@ -616,6 +630,9 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                 "error": True,
             }
 
+            if not settings.ai_monitoring.record_content.enabled:
+                del error_embedding_dict["input"]
+
             error_embedding_dict.update(llm_metadata_dict)
 
             transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
@@ -679,6 +696,9 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "vendor": "openAI",
         "ingest_source": "Python",
     }
+
+    if not settings.ai_monitoring.record_content.enabled:
+        del full_embedding_response_dict["input"]
 
     full_embedding_response_dict.update(llm_metadata_dict)
 

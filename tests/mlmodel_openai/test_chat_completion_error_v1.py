@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+
 import openai
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
+    override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
 )
@@ -31,6 +34,15 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
+
+
+def events_sans_content(event):
+    new_event = copy.deepcopy(event)
+    for _event in new_event:
+        if "content" in _event[1]:
+            del _event[1]["content"]
+    return new_event
+
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -133,6 +145,39 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info, sync_ope
         )
 
 
+@reset_core_stats_engine()
+@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_no_model_no_content",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(expected_events_on_no_model_error))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_no_content(set_trace_info, sync_openai_client):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        sync_openai_client.chat.completions.create(
+            messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+        )
+
+
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
@@ -158,6 +203,41 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info, sync_ope
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_info, async_openai_client):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        loop.run_until_complete(
+            async_openai_client.chat.completions.create(
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+            )
+        )
+
+
+@reset_core_stats_engine()
+@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_no_model_async_no_content",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(expected_events_on_no_model_error))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, set_trace_info, async_openai_client):
     with pytest.raises(TypeError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")

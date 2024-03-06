@@ -161,7 +161,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         return response
 
     # LLMVectorSearch
-    request_query, request_k = bind_similarity_search(*args, **kwargs)
+    request_query, request_k = bind_asimilarity_search(*args, **kwargs)
     duration = ft.duration
     response_number_of_documents = len(response)
 
@@ -172,6 +172,9 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         "duration": duration,
         "response.number_of_documents": response_number_of_documents,
     }
+
+    if not settings.ai_monitoring.record_content.enabled:
+        del LLMVectorSearch_dict["request.query"]
 
     # In both LlmVectorSearch and LlmVectorSearchResult dicts
     LLMVectorSearch_union_dict = {
@@ -204,6 +207,9 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
             "sequence": sequence,
             "page_content": page_content,
         }
+
+        if not settings.ai_monitoring.record_content.enabled:
+            del LLMVectorSearchResult_dict["page_content"]
 
         LLMVectorSearchResult_dict.update(LLMVectorSearch_union_dict)
         LLMVectorSearchResult_dict.update(metadata_dict)
@@ -270,6 +276,9 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         "response.number_of_documents": response_number_of_documents,
     }
 
+    if not settings.ai_monitoring.record_content.enabled:
+        del LLMVectorSearch_dict["request.query"]
+
     # In both LlmVectorSearch and LlmVectorSearchResult dicts
     LLMVectorSearch_union_dict = {
         "span_id": span_id,
@@ -301,6 +310,9 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
             "sequence": sequence,
             "page_content": page_content,
         }
+
+        if not settings.ai_monitoring.record_content.enabled:
+            del LLMVectorSearchResult_dict["page_content"]
 
         LLMVectorSearchResult_dict.update(LLMVectorSearch_union_dict)
         LLMVectorSearchResult_dict.update(metadata_dict)
@@ -391,6 +403,9 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                 }
             )
 
+            if not settings.ai_monitoring.record_content.enabled:
+                del error_tool_event_dict["input"]
+
             error_tool_event_dict.update(llm_metadata_dict)
 
             transaction.record_custom_event("LlmTool", error_tool_event_dict)
@@ -429,6 +444,9 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
             "tags": tags or "",
         }
     )
+
+    if not settings.ai_monitoring.record_content.enabled:
+        del full_tool_event_dict["input"], full_tool_event_dict["output"]
 
     full_tool_event_dict.update(llm_metadata_dict)
 
@@ -517,6 +535,9 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
                 }
             )
 
+            if not settings.ai_monitoring.record_content.enabled:
+                del error_tool_event_dict["input"]
+
             error_tool_event_dict.update(llm_metadata_dict)
 
             transaction.record_custom_event("LlmTool", error_tool_event_dict)
@@ -553,6 +574,9 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
             "tags": tags or "",
         }
     )
+
+    if not settings.ai_monitoring.record_content.enabled:
+        del full_tool_event_dict["input"], full_tool_event_dict["output"]
 
     full_tool_event_dict.update(llm_metadata_dict)
 
@@ -860,6 +884,8 @@ def create_chat_completion_message_event(
     output_message_list,
     message_ids,
 ):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+
     expected_message_ids_len = len(input_message_list) + len(output_message_list)
     actual_message_ids_len = len(message_ids)
     if actual_message_ids_len < expected_message_ids_len:
@@ -889,6 +915,9 @@ def create_chat_completion_message_event(
             "virtual_llm": True,
         }
 
+        if not settings.ai_monitoring.record_content.enabled:
+            del chat_completion_input_message_dict["content"]
+
         chat_completion_input_message_dict.update(llm_metadata_dict)
 
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_input_message_dict)
@@ -914,6 +943,9 @@ def create_chat_completion_message_event(
                 "is_response": True,
                 "virtual_llm": True,
             }
+
+            if not settings.ai_monitoring.record_content.enabled:
+                del chat_completion_output_message_dict["content"]
 
             chat_completion_output_message_dict.update(llm_metadata_dict)
 

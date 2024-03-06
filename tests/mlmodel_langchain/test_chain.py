@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import asyncio
+import copy
 import uuid
 
 import langchain
@@ -50,6 +52,16 @@ _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
 )
+
+
+def events_sans_content(event):
+    new_event = copy.deepcopy(event)
+    for _event in new_event:
+        if "content" in _event[1]:
+            del _event[1]["content"]
+    return new_event
+
+
 chat_completion_recorded_events_uuid_message_ids = [
     (
         {"type": "LlmChatCompletionSummary"},
@@ -1195,6 +1207,77 @@ def test_langchain_chain(
             ({"input": "Sally is 13"},),
             {
                 "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+            },
+            events_sans_content(chat_completion_recorded_events_runnable_invoke),
+            id="runnable_chain.invoke",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "invoke",
+            ({"input": "Sally is 13"},),
+            {
+                "config": {
+                    "tags": ["bar"],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
+            },
+            events_sans_content(chat_completion_recorded_events_invoke),
+            id="chain.invoke",
+        ),
+    ),
+)
+def test_langchain_chain_no_content(
+    set_trace_info,
+    chat_openai_client,
+    json_schema,
+    prompt,
+    create_function,
+    call_function,
+    call_function_args,
+    call_function_kwargs,
+    expected_events,
+):
+    @reset_core_stats_engine()
+    @override_application_settings({"ai_monitoring.record_content.enabled": False})
+    @validate_custom_events(expected_events)
+    # 3 langchain events and 5 openai events.
+    @validate_custom_event_count(count=8)
+    @validate_transaction_metrics(
+        name="test_chain:test_langchain_chain_no_content.<locals>._test",
+        custom_metrics=[
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ],
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
+        runnable = create_function(json_schema, chat_openai_client, prompt)
+
+        output = getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
+
+        assert output
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "create_function,call_function,call_function_args,call_function_kwargs,expected_events",
+    (
+        pytest.param(
+            create_structured_output_runnable,
+            "invoke",
+            ({"input": "Sally is 13"},),
+            {
+                "config": {
                     "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
                 }
             },
@@ -1401,6 +1484,82 @@ def test_langchain_chain_error_in_langchain(
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_langchain.<locals>._test",
+        custom_metrics=[
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ],
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
+        runnable = create_function(json_schema, chat_openai_client, prompt)
+
+        with pytest.raises(expected_error):
+            getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "create_function,call_function,call_function_args,call_function_kwargs,expected_events,expected_error",
+    (
+        pytest.param(
+            create_structured_output_runnable,
+            "invoke",
+            ({"no-exist": "Sally is 13"},),
+            {
+                "config": {
+                    "tags": [],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                }
+            },
+            events_sans_content(chat_completion_recorded_events_invoke_langchain_error),
+            KeyError,
+            id="runnable_chain.invoke",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "invoke",
+            ({"no-exist": "Sally is 13"},),
+            {
+                "config": {
+                    "tags": [],
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
+            },
+            events_sans_content(chat_completion_recorded_events_invoke_langchain_error),
+            ValueError,
+            id="chain.invoke",
+        ),
+    ),
+)
+def test_langchain_chain_error_in_langchain_no_content(
+    set_trace_info,
+    chat_openai_client,
+    json_schema,
+    prompt,
+    create_function,
+    call_function,
+    call_function_args,
+    call_function_kwargs,
+    expected_events,
+    expected_error,
+):
+    @reset_core_stats_engine()
+    @override_application_settings({"ai_monitoring.record_content.enabled": False})
+    @validate_transaction_error_event_count(1)
+    @validate_error_trace_attributes(
+        callable_name(expected_error),
+    )
+    @validate_custom_events(expected_events)
+    @validate_custom_event_count(count=2)
+    @validate_transaction_metrics(
+        name="test_chain:test_langchain_chain_error_in_langchain_no_content.<locals>._test",
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],

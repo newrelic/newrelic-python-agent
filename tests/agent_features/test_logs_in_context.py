@@ -61,6 +61,48 @@ class NonSerializableObject(object):
     __repr__ = __str__
 
 
+def test_newrelic_logger_min_extra_keys_no_error(log_buffer):
+    extra = {
+        "string": "foo",
+    }
+    _logger.info("Hello %s", "World", extra=extra)
+
+    log_buffer.seek(0)
+    message = json.load(log_buffer)
+
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    process_id = message.pop("process.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
+    assert filename.endswith("/test_logs_in_context.py")
+    assert isinstance(line_number, int)
+
+    expected = {
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "Hello World",
+        "log.level": "INFO",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "extra.string": "foo",
+    }
+    expected_extra_txn_keys = (
+        "entity.guid",
+        "hostname",
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
+
 def test_newrelic_logger_no_error(log_buffer):
     extra = {
         "string": "foo",

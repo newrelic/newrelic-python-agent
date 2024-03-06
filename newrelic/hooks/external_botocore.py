@@ -97,6 +97,8 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+
     message_ids = []
     for index, message in enumerate(input_message_list):
         if response_id:
@@ -111,7 +113,6 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "content": message.get("content", ""),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -119,6 +120,9 @@ def create_chat_completion_message_event(
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
+
+        if settings.ai_monitoring.record_content.enabled:
+            chat_completion_message_dict.update({"content": message.get("content", "")})
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -140,7 +144,6 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "content": message.get("content", ""),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -149,6 +152,9 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
             "is_response": True,
         }
+
+        if settings.ai_monitoring.record_content.enabled:
+            chat_completion_message_dict.update({"content": message.get("content", "")})
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -544,6 +550,10 @@ def handle_embedding_event(
             "response.model": model,
         }
     )
+
+    if not settings.ai_monitoring.record_content.enabled:
+        del embedding_dict["input"]
+
     if is_error:
         embedding_dict.update({"error": True})
 

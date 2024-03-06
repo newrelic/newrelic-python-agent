@@ -46,7 +46,6 @@ embedding_recorded_events = [
             "response.organization": "foobar-jtbczk",
             "response.usage.total_tokens": 6,
             "response.usage.prompt_tokens": 6,
-            "response.api_type": "",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 200,
             "response.headers.ratelimitLimitTokens": 150000,

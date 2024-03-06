@@ -489,13 +489,14 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         if not response:
             return response
 
+        response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders", {})
         custom_attrs_dict = transaction._custom_params
         bedrock_attrs = {
             "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
             # "id": chat_completion_id,
             "appName": settings.app_name,
             "conversation_id": custom_attrs_dict.get("llm.conversation_id", ""),
-            # "request_id": response_headers.get("x-amzn-requestid", "") if response_headers else "",
+            "request_id": response_headers.get("x-amzn-requestid", "") if response_headers else "",
             "duration": ft.duration,
             "model": model,
         }
@@ -514,7 +515,6 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         response_body = response["body"].read()
         ft.__exit__(None, None, None)
         response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
-        response_headers = response["ResponseMetadata"]["HTTPHeaders"]
 
         if operation == "embedding":  # Only available embedding models
             handle_embedding_event(
@@ -777,9 +777,8 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
 
-    # request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
+    request_id = bedrock_attrs.get("request_id", None)
     # response_id = chat_completion_summary_dict.get("response_id", "")
-    request_id = None
     response_id = None
     model = bedrock_attrs.get("model", None)
 

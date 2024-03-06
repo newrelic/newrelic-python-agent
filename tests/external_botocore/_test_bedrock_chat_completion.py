@@ -430,7 +430,7 @@ chat_completion_streaming_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "b427270f-371a-458d-81b6-a05aafb2704c",
                 "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-text-express-v1",
@@ -452,7 +452,7 @@ chat_completion_streaming_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "b427270f-371a-458d-81b6-a05aafb2704c",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -471,7 +471,7 @@ chat_completion_streaming_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "b427270f-371a-458d-81b6-a05aafb2704c",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",

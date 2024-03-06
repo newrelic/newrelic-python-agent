@@ -55,7 +55,6 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
@@ -76,7 +75,6 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_openai)",
             "llm.conversation_id": "my-awesome-id",
             "request_id": "",
             "span_id": None,
@@ -95,7 +93,6 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_openai)",
             "llm.conversation_id": "my-awesome-id",
             "request_id": "",
             "span_id": None,
@@ -196,7 +193,6 @@ expected_events_on_invalid_model_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
@@ -217,7 +213,6 @@ expected_events_on_invalid_model_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_openai)",
             "llm.conversation_id": "my-awesome-id",
             "request_id": "",
             "span_id": None,
@@ -280,7 +275,6 @@ expected_events_on_auth_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
@@ -301,7 +295,6 @@ expected_events_on_auth_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_openai)",
             "llm.conversation_id": "my-awesome-id",
             "request_id": "",
             "span_id": None,
@@ -320,7 +313,6 @@ expected_events_on_auth_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_openai)",
             "llm.conversation_id": "my-awesome-id",
             "request_id": "",
             "span_id": None,
@@ -381,7 +373,6 @@ expected_events_on_wrong_api_key_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -401,7 +392,6 @@ expected_events_on_wrong_api_key_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_openai)",
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",

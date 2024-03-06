@@ -54,7 +54,6 @@ chat_completion_recorded_events = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "llm.conversation_id": "my-awesome-id",
             "transaction_id": "transaction-id",
             "span_id": None,
@@ -85,7 +84,6 @@ chat_completion_recorded_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-0",
-            "appName": "Python Agent Test (mlmodel_openai)",
             "llm.conversation_id": "my-awesome-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
@@ -104,7 +102,6 @@ chat_completion_recorded_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-1",
-            "appName": "Python Agent Test (mlmodel_openai)",
             "llm.conversation_id": "my-awesome-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
@@ -123,7 +120,6 @@ chat_completion_recorded_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-2",
-            "appName": "Python Agent Test (mlmodel_openai)",
             "llm.conversation_id": "my-awesome-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
@@ -202,7 +198,6 @@ chat_completion_recorded_events_no_llm_metadata = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -232,7 +227,6 @@ chat_completion_recorded_events_no_llm_metadata = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-0",
-            "appName": "Python Agent Test (mlmodel_openai)",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -250,7 +244,6 @@ chat_completion_recorded_events_no_llm_metadata = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-1",
-            "appName": "Python Agent Test (mlmodel_openai)",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -268,7 +261,6 @@ chat_completion_recorded_events_no_llm_metadata = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-2",
-            "appName": "Python Agent Test (mlmodel_openai)",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",

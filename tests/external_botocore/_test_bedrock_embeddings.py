@@ -23,7 +23,6 @@ embedding_expected_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": "transaction-id",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
@@ -47,7 +46,6 @@ embedding_expected_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": "transaction-id",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
@@ -74,7 +72,6 @@ embedding_expected_error_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -95,7 +92,6 @@ embedding_expected_error_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",

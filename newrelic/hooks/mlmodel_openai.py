@@ -101,7 +101,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
             error_embedding_dict = {
                 "id": embedding_id,
-                "appName": settings.app_name,
                 "api_key_last_four_digits": api_key_last_four_digits,
                 "span_id": span_id,
                 "trace_id": trace_id,
@@ -145,7 +144,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     full_embedding_response_dict = {
         "id": embedding_id,
-        "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
@@ -221,7 +219,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
-    app_name = settings.app_name
     completion_id = str(uuid.uuid4())
 
     function_name = wrapped.__name__
@@ -270,7 +267,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         # Gather attributes to add to embedding summary event in error context
         error_chat_completion_dict = {
             "id": completion_id,
-            "appName": app_name,
             "api_key_last_four_digits": api_key_last_four_digits,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -292,7 +288,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
         create_chat_completion_message_event(
             transaction,
-            app_name,
             request_message_list,
             completion_id,
             span_id,
@@ -352,7 +347,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     full_chat_completion_summary_dict = {
         "id": completion_id,
-        "appName": app_name,
         "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
@@ -411,7 +405,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     message_ids = create_chat_completion_message_event(
         transaction,
-        settings.app_name,
         input_message_list,
         completion_id,
         span_id,
@@ -449,7 +442,6 @@ def check_rate_limit_header(response_headers, header_name, is_int):
 
 def create_chat_completion_message_event(
     transaction,
-    app_name,
     input_message_list,
     chat_completion_id,
     span_id,
@@ -479,7 +471,6 @@ def create_chat_completion_message_event(
 
         chat_completion_input_message_dict = {
             "id": message_id,
-            "appName": app_name,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -519,7 +510,6 @@ def create_chat_completion_message_event(
 
             chat_completion_output_message_dict = {
                 "id": message_id,
-                "appName": app_name,
                 "request_id": request_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
@@ -616,7 +606,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
             error_embedding_dict = {
                 "id": embedding_id,
-                "appName": settings.app_name,
                 "api_key_last_four_digits": api_key_last_four_digits,
                 "span_id": span_id,
                 "trace_id": trace_id,
@@ -660,7 +649,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     full_embedding_response_dict = {
         "id": embedding_id,
-        "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
@@ -736,7 +724,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
-    app_name = settings.app_name
     completion_id = str(uuid.uuid4())
 
     function_name = wrapped.__name__
@@ -784,7 +771,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         # Gather attributes to add to embedding summary event in error context
         error_chat_completion_dict = {
             "id": completion_id,
-            "appName": app_name,
             "api_key_last_four_digits": api_key_last_four_digits,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -806,7 +792,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
         create_chat_completion_message_event(
             transaction,
-            app_name,
             request_message_list,
             completion_id,
             span_id,
@@ -866,7 +851,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     full_chat_completion_summary_dict = {
         "id": completion_id,
-        "appName": app_name,
         "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
@@ -925,7 +909,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     message_ids = create_chat_completion_message_event(
         transaction,
-        settings.app_name,
         input_message_list,
         completion_id,
         span_id,
@@ -1161,7 +1144,6 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
 
     chat_completion_summary_dict = {
         "id": chat_completion_id,
-        "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
@@ -1188,7 +1170,6 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
 
     return create_chat_completion_message_event(
         transaction,
-        settings.app_name,
         list(messages),
         chat_completion_id,
         span_id,
@@ -1226,7 +1207,6 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
 
     chat_completion_summary_dict = {
         "id": chat_completion_id,
-        "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
@@ -1274,7 +1254,6 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
 
     return create_chat_completion_message_event(
         transaction,
-        settings.app_name,
         list(messages),
         chat_completion_id,
         span_id,

@@ -83,7 +83,6 @@ def bedrock_error_attributes(exception, request_args, client, extractor):
 
 def create_chat_completion_message_event(
     transaction,
-    app_name,
     input_message_list,
     output_message_list,
     chat_completion_id,
@@ -108,7 +107,6 @@ def create_chat_completion_message_event(
 
         chat_completion_message_dict = {
             "id": id_,
-            "appName": app_name,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -139,7 +137,6 @@ def create_chat_completion_message_event(
 
         chat_completion_message_dict = {
             "id": id_,
-            "appName": app_name,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -538,7 +535,6 @@ def handle_embedding_event(
             "vendor": "bedrock",
             "ingest_source": "Python",
             "id": embedding_id,
-            "appName": settings.app_name,
             "span_id": span_id,
             "trace_id": trace_id,
             "request_id": request_id,
@@ -593,7 +589,6 @@ def handle_chat_completion_event(
             "ingest_source": "Python",
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "id": chat_completion_id,
-            "appName": settings.app_name,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
@@ -612,7 +607,6 @@ def handle_chat_completion_event(
 
     message_ids = create_chat_completion_message_event(
         transaction=transaction,
-        app_name=settings.app_name,
         input_message_list=input_message_list,
         output_message_list=output_message_list,
         chat_completion_id=chat_completion_id,

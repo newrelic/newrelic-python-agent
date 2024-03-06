@@ -67,7 +67,6 @@ chat_completion_recorded_events_uuid_message_ids = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -84,7 +83,6 @@ chat_completion_recorded_events_uuid_message_ids = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -101,7 +99,6 @@ chat_completion_recorded_events_uuid_message_ids = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -123,7 +120,6 @@ chat_completion_recorded_events_invoke_langchain_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -144,7 +140,6 @@ chat_completion_recorded_events_invoke_langchain_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -165,7 +160,6 @@ chat_completion_recorded_events_runnable_invoke_openai_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -186,7 +180,6 @@ chat_completion_recorded_events_runnable_invoke_openai_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -207,7 +200,6 @@ chat_completion_recorded_events_runnable_invoke_openai_error_missing_message_ids
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -228,7 +220,6 @@ chat_completion_recorded_events_runnable_invoke_openai_error_missing_message_ids
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -249,7 +240,6 @@ chat_completion_recorded_events_runnable_invoke = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -269,7 +259,6 @@ chat_completion_recorded_events_runnable_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -288,7 +277,6 @@ chat_completion_recorded_events_runnable_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-1",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -310,7 +298,6 @@ chat_completion_recorded_events_invoke = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -330,7 +317,6 @@ chat_completion_recorded_events_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -349,7 +335,6 @@ chat_completion_recorded_events_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-1",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -371,7 +356,6 @@ chat_completion_recorded_events_runnable_invoke_missing_message_ids = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -391,7 +375,6 @@ chat_completion_recorded_events_runnable_invoke_missing_message_ids = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -410,7 +393,6 @@ chat_completion_recorded_events_runnable_invoke_missing_message_ids = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -432,7 +414,6 @@ chat_completion_recorded_events_invoke_missing_message_ids = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -452,7 +433,6 @@ chat_completion_recorded_events_invoke_missing_message_ids = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -471,7 +451,6 @@ chat_completion_recorded_events_invoke_missing_message_ids = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -493,7 +472,6 @@ chat_completion_recorded_events_runnable_invoke_missing_some_message_ids = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -513,7 +491,6 @@ chat_completion_recorded_events_runnable_invoke_missing_some_message_ids = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -532,7 +509,6 @@ chat_completion_recorded_events_runnable_invoke_missing_some_message_ids = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -554,7 +530,6 @@ chat_completion_recorded_events_invoke_missing_some_message_ids = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -574,7 +549,6 @@ chat_completion_recorded_events_invoke_missing_some_message_ids = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -593,7 +567,6 @@ chat_completion_recorded_events_invoke_missing_some_message_ids = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -615,7 +588,6 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -634,7 +606,6 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -653,7 +624,6 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -675,7 +645,6 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -694,7 +663,6 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -713,7 +681,6 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -735,7 +702,6 @@ chat_completion_recorded_events_invoke_missing_conversation_id = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -753,7 +719,6 @@ chat_completion_recorded_events_invoke_missing_conversation_id = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -770,7 +735,6 @@ chat_completion_recorded_events_invoke_missing_conversation_id = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-1",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -790,7 +754,6 @@ chat_completion_recorded_events_runnable_invoke_missing_conversation_id = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -808,7 +771,6 @@ chat_completion_recorded_events_runnable_invoke_missing_conversation_id = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -825,7 +787,6 @@ chat_completion_recorded_events_runnable_invoke_missing_conversation_id = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-1",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -846,7 +807,6 @@ chat_completion_recorded_events_list_response = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -866,7 +826,6 @@ chat_completion_recorded_events_list_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-0",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -885,7 +844,6 @@ chat_completion_recorded_events_list_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "message-id-1",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -908,7 +866,6 @@ chat_completion_recorded_events_error_in_openai = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -928,7 +885,6 @@ chat_completion_recorded_events_error_in_openai = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -950,7 +906,6 @@ chat_completion_recorded_events_error_in_langchain = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -969,7 +924,6 @@ chat_completion_recorded_events_error_in_langchain = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,

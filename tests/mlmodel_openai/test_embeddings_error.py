@@ -48,7 +48,6 @@ embedding_recorded_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -148,7 +147,6 @@ invalid_model_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -207,7 +205,6 @@ embedding_auth_error_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -264,7 +261,6 @@ embedding_invalid_key_error_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",

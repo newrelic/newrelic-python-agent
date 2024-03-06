@@ -77,7 +77,6 @@ single_arg_tool_recorded_events = [
         {"type": "LlmTool"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "run_id": None,
             "output": "Python Agent",
             "name": "_single_arg_tool",
@@ -178,7 +177,6 @@ multi_arg_tool_recorded_events = [
         {"type": "LlmTool"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "run_id": None,
             "output": "81",
             "name": "_multi_arg_tool",
@@ -253,7 +251,6 @@ multi_arg_error_recorded_events = [
         {"type": "LlmTool"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "run_id": None,  # No run ID created on error
             "name": "_multi_arg_tool",
             "description": "_multi_arg_tool(first_num: int, second_num: int) - A test tool that adds two integers together",

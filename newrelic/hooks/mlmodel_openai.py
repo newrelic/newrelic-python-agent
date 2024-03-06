@@ -102,7 +102,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                 "transaction_id": transaction.guid,
                 "input": kwargs.get("input", ""),
                 "request.model": kwargs.get("model") or kwargs.get("engine") or "",
-                "vendor": "openAI",
+                "vendor": "openai",
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
@@ -170,7 +170,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
     }
 
@@ -264,7 +264,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
             "request.model": kwargs.get("model") or kwargs.get("engine") or "",
             "request.temperature": kwargs.get("temperature", ""),
             "request.max_tokens": kwargs.get("max_tokens", ""),
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
             "response.organization": "" if exc_organization is None else exc_organization,
             "duration": ft.duration,
@@ -341,7 +341,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request.temperature": kwargs.get("temperature", ""),
         "request.max_tokens": kwargs.get("max_tokens", ""),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
         "request_id": request_id,
         "duration": ft.duration,
@@ -467,7 +467,7 @@ def create_chat_completion_message_event(
             "completion_id": chat_completion_id,
             "sequence": index,
             "response.model": response_model if response_model else "",
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
         }
 
@@ -506,7 +506,7 @@ def create_chat_completion_message_event(
                 "completion_id": chat_completion_id,
                 "sequence": index,
                 "response.model": response_model if response_model else "",
-                "vendor": "openAI",
+                "vendor": "openai",
                 "ingest_source": "Python",
                 "is_response": True,
             }
@@ -594,7 +594,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                 "transaction_id": transaction.guid,
                 "input": kwargs.get("input", ""),
                 "request.model": kwargs.get("model") or kwargs.get("engine") or "",
-                "vendor": "openAI",
+                "vendor": "openai",
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
@@ -662,7 +662,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
     }
 
@@ -755,7 +755,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
             "request.model": kwargs.get("model") or kwargs.get("engine") or "",
             "request.temperature": kwargs.get("temperature", ""),
             "request.max_tokens": kwargs.get("max_tokens", ""),
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
             "response.organization": "" if exc_organization is None else exc_organization,
             "duration": ft.duration,
@@ -832,7 +832,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request.temperature": kwargs.get("temperature", ""),
         "request.max_tokens": kwargs.get("max_tokens", ""),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
         "request_id": request_id,
         "duration": ft.duration,
@@ -1124,7 +1124,7 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
         # Usage tokens are not supported in streaming for now.
         "request.temperature": openai_attrs.get("temperature", ""),
         "request.max_tokens": openai_attrs.get("max_tokens", ""),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
         "response.number_of_messages": len(messages) + (1 if content else 0),
         "response.organization": organization,
@@ -1207,7 +1207,7 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
         "response.number_of_messages": len(messages) + (1 if content else 0),
     }

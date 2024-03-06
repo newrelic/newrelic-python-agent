@@ -323,7 +323,7 @@ vectorstore_error_events = [
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "vendor": "Langchain",
+            "vendor": "langchain",
             "ingest_source": "Python",
             "error": True,
         },

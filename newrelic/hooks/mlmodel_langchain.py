@@ -112,7 +112,7 @@ def _create_error_vectorstore_events(transaction, _id, span_id, trace_id):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "vendor": "Langchain",
+        "vendor": "langchain",
         "ingest_source": "Python",
         "error": True,
     }

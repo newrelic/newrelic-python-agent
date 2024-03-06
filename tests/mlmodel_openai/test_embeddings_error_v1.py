@@ -56,7 +56,7 @@ no_model_events = [
             "duration": None,  # Response time varies each test run
             "request.model": "",  # No model in this test case
             "response.organization": "",
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
             "error": True,
         },
@@ -184,7 +184,7 @@ invalid_model_events = [
             "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",
             "response.organization": None,
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
             "error": True,
         },
@@ -317,7 +317,7 @@ embedding_invalid_key_error_events = [
             "duration": None,  # Response time varies each test run
             "request.model": "text-embedding-ada-002",
             "response.organization": None,
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
             "error": True,
         },

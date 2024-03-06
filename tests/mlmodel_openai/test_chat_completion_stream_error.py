@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+
 import openai
 import pytest
 from testing_support.fixtures import (
     dt_enabled,
+    override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
 )
@@ -31,6 +34,15 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
+
+
+def events_sans_content(event):
+    new_event = copy.deepcopy(event)
+    for _event in new_event:
+        if "content" in _event[1]:
+            del _event[1]["content"]
+    return new_event
+
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -127,6 +139,48 @@ expected_events_on_no_model_error = [
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model(set_trace_info):
+    with pytest.raises(openai.InvalidRequestError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        generator = openai.ChatCompletion.create(
+            # no model provided,
+            messages=_test_openai_chat_completion_messages,
+            temperature=0.7,
+            max_tokens=100,
+            stream=True,
+        )
+        for resp in generator:
+            assert resp
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@validate_error_trace_attributes(
+    callable_name(openai.InvalidRequestError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "error.param": "engine",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_stream_error:test_chat_completion_invalid_request_error_no_model_no_content",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(expected_events_on_no_model_error))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_no_content(set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
@@ -440,6 +494,48 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_info):
+    with pytest.raises(openai.InvalidRequestError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        loop.run_until_complete(
+            openai.ChatCompletion.acreate(
+                # no model provided,
+                messages=_test_openai_chat_completion_messages,
+                temperature=0.7,
+                max_tokens=100,
+                stream=True,
+            )
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@validate_error_trace_attributes(
+    callable_name(openai.InvalidRequestError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "error.param": "engine",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_stream_error:test_chat_completion_invalid_request_error_no_model_async_no_content",
+    scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(expected_events_on_no_model_error))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")

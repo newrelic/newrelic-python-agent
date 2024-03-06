@@ -19,7 +19,6 @@ import uuid
 from io import BytesIO
 
 from botocore.response import StreamingBody
-from botocore.eventstream import EventStream
 
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import ExternalTrace
@@ -100,6 +99,7 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
+    breakpoint()
     message_ids = []
     for index, message in enumerate(input_message_list):
         if response_id:
@@ -192,6 +192,40 @@ def extract_bedrock_titan_text_model(request_body, response_body=None):
         output_message_list = []
 
     return input_message_list, output_message_list, chat_completion_summary_dict
+
+
+def extract_bedrock_titan_text_model_request(request_body, bedrock_attrs):
+    request_body = json.loads(request_body)
+    request_config = request_body.get("textGenerationConfig", {})
+
+    input_message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
+
+    bedrock_attrs.update({
+        "input_message_list": input_message_list,
+        "request.max_tokens": request_config.get("maxTokenCount", ""),
+        "request.temperature": request_config.get("temperature", ""),
+    })
+
+    return bedrock_attrs
+
+
+def extract_bedrock_titan_text_model_streaming_response(response_body, bedrock_attrs):
+    if response_body:
+        if "outputText" in response_body:
+            bedrock_attrs["output_message_list"] = messages = bedrock_attrs.get("output_message_list", [])
+            messages.append({"role": "assistant", "content": response_body["outputText"]})
+
+        invocation_metrics = response_body.get("amazon-bedrock-invocationMetrics", {})
+        prompt_tokens = invocation_metrics.get("inputTokenCount", 0)
+        completion_tokens = invocation_metrics.get("outputTokenCount", 0)
+        total_tokens = prompt_tokens + completion_tokens
+
+        bedrock_attrs["response.choices.finish_reason"] = response_body.get("completionReason", None)
+        bedrock_attrs["response.usage.completion_tokens"] = bedrock_attrs.get("response.usage.completion_tokens", 0) + completion_tokens
+        bedrock_attrs["response.usage.prompt_tokens"] = bedrock_attrs.get("response.usage.prompt_tokens", 0) + prompt_tokens
+        bedrock_attrs["response.usage.total_tokens"] = bedrock_attrs.get("response.usage.total_tokens", 0) + total_tokens
+
+    return bedrock_attrs
 
 
 def extract_bedrock_titan_embedding_model(request_body, response_body=None):
@@ -334,13 +368,14 @@ def extract_bedrock_cohere_model(request_body, response_body=None):
     return input_message_list, output_message_list, chat_completion_summary_dict
 
 
+NULL_EXTRACTOR = lambda *args: ([], [], {})  # Empty extractor that returns nothing
 MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
-    ("amazon.titan-embed", extract_bedrock_titan_embedding_model),
-    ("amazon.titan", extract_bedrock_titan_text_model),
-    ("ai21.j2", extract_bedrock_ai21_j2_model),
-    ("cohere", extract_bedrock_cohere_model),
-    ("anthropic.claude", extract_bedrock_claude_model),
-    ("meta.llama2", extract_bedrock_llama_model),
+    ("amazon.titan-embed", NULL_EXTRACTOR, extract_bedrock_titan_embedding_model, NULL_EXTRACTOR),
+    ("amazon.titan", extract_bedrock_titan_text_model_request, extract_bedrock_titan_text_model, extract_bedrock_titan_text_model_streaming_response),
+    ("ai21.j2", NULL_EXTRACTOR, extract_bedrock_ai21_j2_model, NULL_EXTRACTOR),
+    ("cohere", NULL_EXTRACTOR, extract_bedrock_cohere_model, NULL_EXTRACTOR),
+    ("anthropic.claude", NULL_EXTRACTOR, extract_bedrock_claude_model, NULL_EXTRACTOR),
+    ("meta.llama2", NULL_EXTRACTOR, extract_bedrock_llama_model, NULL_EXTRACTOR),
 ]
 
 
@@ -374,7 +409,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         is_embedding = model.startswith("amazon.titan-embed")
 
         # Determine extractor by model type
-        for extractor_name, extractor in MODEL_EXTRACTORS:
+        for extractor_name, request_extractor, response_extractor, stream_extractor in MODEL_EXTRACTORS:
             if model.startswith(extractor_name):
                 break
         else:
@@ -388,7 +423,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 )
                 UNSUPPORTED_MODEL_WARNING_SENT = True
 
-            extractor = lambda *args: ([], [], {})  # Empty extractor that returns nothing
+            request_extractor = response_extractor = stream_extractor = NULL_EXTRACTOR
 
         function_name = wrapped.__name__
         operation = "embedding" if model.startswith("amazon.titan-embed") else "completion"
@@ -396,17 +431,12 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         ft = FunctionTrace(name=function_name, group="Llm/%s/Bedrock" % (operation))
         ft.__enter__()
 
-        # Get trace information
-        available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
-
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             try:
-                error_attributes = extractor(request_body)
-                error_attributes = bedrock_error_attributes(exc, kwargs, instance, extractor)
+                error_attributes = response_extractor(request_body)
+                error_attributes = bedrock_error_attributes(exc, kwargs, instance, response_extractor)
                 notice_error_attributes = {
                     "http.statusCode": error_attributes["http.statusCode"],
                     "error.message": error_attributes["error.message"],
@@ -426,7 +456,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     handle_embedding_event(
                         instance,
                         transaction,
-                        extractor,
+                        response_extractor,
                         model,
                         None,
                         None,
@@ -440,7 +470,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     handle_chat_completion_event(
                         instance,
                         transaction,
-                        extractor,
+                        response_extractor,
                         model,
                         None,
                         None,
@@ -458,13 +488,25 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         if not response:
             return response
 
+        custom_attrs_dict = transaction._custom_params
+        bedrock_attrs = {
+            "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
+            # "id": chat_completion_id,
+            "appName": settings.app_name,
+            "conversation_id": custom_attrs_dict.get("llm.conversation_id", ""),
+            # "request_id": response_headers.get("x-amzn-requestid", "") if response_headers else "",
+            "duration": ft.duration,
+            "model": model,
+        }
+        bedrock_attrs = request_extractor(request_body, bedrock_attrs)
+
         if response_streaming:
-            breakpoint()
             # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
             # This class is used in numerous other services in botocore, and would cause conflicts.
             response["body"] = body = EventStreamWrapper(response["body"])
             body._nr_ft = ft
-            body._nr_bedrock_attrs = {}
+            body._nr_bedrock_attrs = bedrock_attrs
+            body._nr_model_extractor = stream_extractor
             return response
 
         # Read and replace response streaming bodies
@@ -477,7 +519,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             handle_embedding_event(
                 instance,
                 transaction,
-                extractor,
+                response_extractor,
                 model,
                 response_body,
                 response_headers,
@@ -491,7 +533,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             handle_chat_completion_event(
                 instance,
                 transaction,
-                extractor,
+                response_extractor,
                 model,
                 response_body,
                 response_headers,
@@ -510,7 +552,8 @@ class EventStreamWrapper(ObjectProxy):
     def __iter__(self):
         g = GeneratorProxy(self.__wrapped__.__iter__())
         g._nr_ft = getattr(self, "_nr_ft", None)
-        g._nr_bedrock_attrs = getattr(self, "_nr_ft", {})
+        g._nr_bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
+        g._nr_model_extractor = getattr(self, "_nr_model_extractor", NULL_EXTRACTOR)
         return g
 
 
@@ -530,7 +573,7 @@ class GeneratorProxy(ObjectProxy):
         try:
             return_val = self.__wrapped__.__next__()
             record_stream_chunk(self, return_val)
-        except StopIteration as e:
+        except StopIteration:
             record_events_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:
@@ -543,63 +586,136 @@ class GeneratorProxy(ObjectProxy):
 
 
 def record_stream_chunk(self, return_val):
-    breakpoint()
     if return_val:
-        if OPENAI_V1:
-            if getattr(return_val, "data", "").startswith("[DONE]"):
-                return
-            return_val = return_val.json()
-            self._nr_bedrock_attrs["response_headers"] = getattr(self, "_nr_response_headers", {})
-        else:
-            self._nr_bedrock_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
-        choices = return_val.get("choices", [])
-        self._nr_bedrock_attrs["response.model"] = return_val.get("model", "")
-        self._nr_bedrock_attrs["id"] = return_val.get("id", "")
-        self._nr_bedrock_attrs["response.organization"] = return_val.get("organization", "")
-        if choices:
-            delta = choices[0].get("delta", {})
-            if delta:
-                self._nr_bedrock_attrs["content"] = self._nr_bedrock_attrs.get("content", "") + delta.get("content", "")
-                self._nr_bedrock_attrs["role"] = self._nr_bedrock_attrs.get("role", None) or delta.get("role")
-            self._nr_bedrock_attrs["finish_reason"] = choices[0].get("finish_reason", "")
+        chunk = json.loads(return_val["chunk"]["bytes"].decode("utf-8"))
+        self._nr_model_extractor(chunk, self._nr_bedrock_attrs)
 
 
 def record_events_on_stop_iteration(self, transaction):
-    breakpoint()
     if hasattr(self, "_nr_ft"):
-        openai_attrs = getattr(self, "_nr_bedrock_attrs", {})
+        bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
         self._nr_ft.__exit__(None, None, None)
 
-        # If there are no openai attrs exit early as there's no data to record.
-        if not openai_attrs:
+        # If there are no bedrock attrs exit early as there's no data to record.
+        if not bedrock_attrs:
             return
 
-        message_ids = record_streaming_chat_completion_events(self, transaction, openai_attrs)
+        message_ids = handle_chat_completion_event(transaction, bedrock_attrs)
+        # message_ids = record_streaming_chat_completion_events(self, transaction, bedrock_attrs)
+        
+        # Cache message ids on transaction for retrieval after bedrock call completion.
+        if not hasattr(transaction, "_nr_message_ids"):
+            transaction._nr_message_ids = {}
+        response_id = bedrock_attrs.get("id", None)
+        transaction._nr_message_ids[response_id] = message_ids
+
         # Clear cached data as this can be very large.
         # Note this is also important for not reporting the events twice. In openai v1
         # there are two loops around the iterator, the second is meant to clear the
         # stream since there is a condition where the iterator may exit before all the
         # stream contents is read. This results in StopIteration being raised twice
         # instead of once at the end of the loop.
-        self._nr_bedrock_attrs = {}
-        # Cache message ids on transaction for retrieval after open ai call completion.
-        if not hasattr(transaction, "_nr_message_ids"):
-            transaction._nr_message_ids = {}
-        response_id = openai_attrs.get("id", None)
-        transaction._nr_message_ids[response_id] = message_ids
+        self._nr_bedrock_attrs.clear()
 
 
 def record_error(self, transaction, exc):
-    breakpoint()
     if hasattr(self, "_nr_ft"):
-        openai_attrs = getattr(self, "_nr_bedrock_attrs", {})
+        bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
 
-        # If there are no openai attrs exit early as there's no data to record.
-        if not openai_attrs:
+        # If there are no bedrock attrs exit early as there's no data to record.
+        if not bedrock_attrs:
             self._nr_ft.__exit__(*sys.exc_info())
             return
 
-        record_streaming_chat_completion_events_error(self, transaction, openai_attrs, exc)
+        return
+        record_streaming_chat_completion_events_error(self, transaction, bedrock_attrs, exc)
+
+
+def record_streaming_chat_completion_events(self, transaction, bedrock_attrs):
+    return
+    content = bedrock_attrs.get("content", None)
+    role = bedrock_attrs.get("role")
+
+    custom_attrs_dict = transaction._custom_params
+    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+
+    chat_completion_id = str(uuid.uuid4())
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+
+    response_headers = bedrock_attrs.get("response_headers", {})
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    response_id = bedrock_attrs.get("id", None)
+    request_id = response_headers.get("x-request-id", "")
+
+    api_key_last_four_digits = bedrock_attrs.get("api_key_last_four_digits", "")
+
+    messages = bedrock_attrs.get("messages", [])
+
+    chat_completion_summary_dict = {
+        "id": chat_completion_id,
+        "appName": settings.app_name,
+        "conversation_id": conversation_id,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "request_id": request_id,
+        "api_key_last_four_digits": api_key_last_four_digits,
+        "duration": self._nr_ft.duration,
+        "request.model": bedrock_attrs.get("request.model", ""),
+        "response.model": bedrock_attrs.get("response.model", ""),
+        
+        # Usage tokens are not supported in streaming for now.
+
+        "request.temperature": bedrock_attrs.get("temperature", ""),
+        "request.max_tokens": bedrock_attrs.get("max_tokens", ""),
+        "response.choices.finish_reason": bedrock_attrs.get("finish_reason", ""),
+
+        # "response.headers.llmVersion": response_headers.get("openai-version", ""),
+        
+        # "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-limit-requests", True
+        # ),
+        # "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-limit-tokens", True
+        # ),
+        # "response.headers.ratelimitResetTokens": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-reset-tokens", False
+        # ),
+        # "response.headers.ratelimitResetRequests": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-reset-requests", False
+        # ),
+        # "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-remaining-tokens", True
+        # ),
+        # "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+        #     response_headers, "x-ratelimit-remaining-requests", True
+        # ),
+        "vendor": "openAI",
+        "ingest_source": "Python",
+        "response.number_of_messages": len(messages) + (1 if content else 0),
+    }
+
+    transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
+
+    output_message_list = []
+    if content:
+        output_message_list = [{"content": content, "role": role}]
+
+    return create_chat_completion_message_event(
+        transaction,
+        settings.app_name,
+        list(messages),
+        chat_completion_id,
+        span_id,
+        trace_id,
+        bedrock_attrs.get("response.model", ""),
+        response_id,
+        request_id,
+        conversation_id,
+        output_message_list,
+    )
 
 
 def handle_embedding_event(
@@ -649,48 +765,63 @@ def handle_embedding_event(
 
 
 def handle_chat_completion_event(
-    client,
     transaction,
-    extractor,
-    model,
-    response_body,
-    response_headers,
-    request_body,
-    duration,
-    is_error,
-    trace_id,
-    span_id,
+    bedrock_attrs, 
+    
+    # client,
+    # transaction,
+    # extractor,
+    # model,
+    # response_body,
+    # response_headers,
+    # request_body,
+    # duration,
+    # is_error,
+    # trace_id,
+    # span_id,
 ):
     custom_attrs_dict = transaction._custom_params
     conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
 
     chat_completion_id = str(uuid.uuid4())
 
-    request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
+    # Get trace information
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
+
+    # request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
+    # response_id = chat_completion_summary_dict.get("response_id", "")
+    request_id = None
+    response_id = None
+    model = bedrock_attrs.get("model", None)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    input_message_list, output_message_list, chat_completion_summary_dict = extractor(request_body, response_body)
-    response_id = chat_completion_summary_dict.get("response_id", "")
-    chat_completion_summary_dict.update(
-        {
-            "vendor": "bedrock",
-            "ingest_source": "Python",
-            "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
-            "id": chat_completion_id,
-            "appName": settings.app_name,
-            "conversation_id": conversation_id,
-            "span_id": span_id,
-            "trace_id": trace_id,
-            "transaction_id": transaction.guid,
-            "request_id": request_id,
-            "duration": duration,
-            "request.model": model,
-            "response.model": model,  # Duplicate data required by the UI
-        }
-    )
-    if is_error:
-        chat_completion_summary_dict.update({"error": True})
+    input_message_list = bedrock_attrs.get("input_message_list", [])
+    output_message_list = bedrock_attrs.get("output_message_list", [])
+
+    chat_completion_summary_dict = {
+        "vendor": "bedrock",
+        "ingest_source": "Python",
+        "api_key_last_four_digits": bedrock_attrs.get("api_key_last_four_digits", None),
+        "id": chat_completion_id,
+        "appName": settings.app_name,
+        "conversation_id": conversation_id,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "request_id": request_id,
+        "duration": bedrock_attrs.get("duration", None),
+        'request.max_tokens': bedrock_attrs.get("request.max_tokens", None),
+        'request.temperature': bedrock_attrs.get("request.temperature", None),
+        'request.model': model,
+        'response.model': model,  # Duplicate data required by the UI
+        "response.number_of_messages": len(input_message_list) + len(output_message_list),
+    }
+    
+    if bedrock_attrs.get("error", False):
+        chat_completion_summary_dict["error"] = True
 
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
@@ -710,7 +841,7 @@ def handle_chat_completion_event(
 
     if not hasattr(transaction, "_nr_message_ids"):
         transaction._nr_message_ids = {}
-    transaction._nr_message_ids["bedrock_key"] = message_ids
+    transaction._nr_message_ids["bedrock_key"] = message_ids  # TODO What is this?
 
 
 CUSTOM_TRACE_POINTS = {

@@ -90,8 +90,8 @@ def exercise_model(bedrock_server, model_id, request_streaming):
 
 
 @pytest.fixture(scope="module")
-def exercise_streaming_model(bedrock_server, model_id, request_streaming):
-    payload_template = chat_completion_payload_templates[model_id]
+def exercise_streaming_model(bedrock_server, streaming_model_id, request_streaming):
+    payload_template = chat_completion_payload_templates[streaming_model_id]
 
     def _exercise_model(prompt, temperature=0.7, max_tokens=100):
         body = (payload_template % (prompt, temperature, max_tokens)).encode("utf-8")
@@ -100,7 +100,7 @@ def exercise_streaming_model(bedrock_server, model_id, request_streaming):
 
         response = bedrock_server.invoke_model_with_response_stream(
             body=body,
-            modelId=model_id,
+            modelId=streaming_model_id,
             accept="application/json",
             contentType="application/json",
         )
@@ -117,8 +117,8 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
-def streaming_expected_events(model_id):
-    return chat_completion_streaming_expected_events[model_id]
+def streaming_expected_events(streaming_model_id):
+    return chat_completion_streaming_expected_events[streaming_model_id]
 
 
 @pytest.fixture(scope="module")

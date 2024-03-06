@@ -98,7 +98,6 @@ def exercise_model(bedrock_server, model_id, request_streaming, response_streami
             )
 
             stream = response["body"]
-            breakpoint()
 
             chunks = list()
             for event in stream:
@@ -115,12 +114,12 @@ def exercise_model(bedrock_server, model_id, request_streaming, response_streami
 
 
 @pytest.fixture(scope="module")
-def exercise_streaming_model(bedrock_server, model_id, is_file_payload):
+def exercise_streaming_model(bedrock_server, model_id, request_streaming):
     payload_template = chat_completion_payload_templates[model_id]
 
     def _exercise_model(prompt, temperature=0.7, max_tokens=100):
         body = (payload_template % (prompt, temperature, max_tokens)).encode("utf-8")
-        if is_file_payload:
+        if request_streaming:
             body = BytesIO(body)
 
         response = bedrock_server.invoke_model_with_response_stream(

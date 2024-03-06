@@ -180,7 +180,7 @@ def set_trace_info():
 
 def wrap_botocore_eventstream_add_data(wrapped, instance, args, kwargs):
     bound_args = bind_args(wrapped, args, kwargs)
-    data = bound_args["data"]
+    data = bound_args["data"].hex()  # convert bytes to hex for storage
     prompt = [k for k in BEDROCK_AUDIT_LOG_CONTENTS.keys()][-1]
-    BEDROCK_AUDIT_LOG_CONTENTS[prompt][2].append(data.decode("cp037"))
+    BEDROCK_AUDIT_LOG_CONTENTS[prompt][2].append(data)
     return wrapped(*args, **kwargs)

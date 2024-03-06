@@ -99,7 +99,6 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
-    breakpoint()
     message_ids = []
     for index, message in enumerate(input_message_list):
         if response_id:

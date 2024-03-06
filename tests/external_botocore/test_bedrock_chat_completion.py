@@ -21,6 +21,7 @@ import pytest
 from _test_bedrock_chat_completion import (
     chat_completion_expected_client_errors,
     chat_completion_expected_events,
+    chat_completion_streaming_expected_events,
     chat_completion_invalid_access_key_error_events,
     chat_completion_payload_templates,
 )
@@ -141,6 +142,11 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
+def streaming_expected_events(model_id):
+    return chat_completion_streaming_expected_events[model_id]
+
+
+@pytest.fixture(scope="module")
 def expected_invalid_access_key_error_events(model_id):
     return chat_completion_invalid_access_key_error_events[model_id]
 
@@ -188,21 +194,21 @@ def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_m
 
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_streaming_in_txn_with_convo_id(
-    set_trace_info, exercise_streaming_model, expected_events
+    set_trace_info, exercise_streaming_model, streaming_expected_events
 ):
-    # @validate_custom_events(expected_events)
-    ## One summary event, one user message, and one response message from the assistant
-    # @validate_custom_event_count(count=3)
-    # @validate_transaction_metrics(
-    #    name="test_bedrock_chat_completion_in_txn_with_convo_id",
-    #    scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-    #    rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-    #    custom_metrics=[
-    #        ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
-    #    ],
-    #    background_task=True,
-    # )
-    # @validate_attributes("agent", ["llm"])
+    @validate_custom_events(streaming_expected_events)
+    # One summary event, one user message, and one response message from the assistant
+    @validate_custom_event_count(count=3)
+    @validate_transaction_metrics(
+       name="test_bedrock_chat_completion_streaming_in_txn_with_convo_id",
+       scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
+       rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
+       custom_metrics=[
+           ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+       ],
+       background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
     @background_task(name="test_bedrock_chat_completion_streaming_in_txn_with_convo_id")
     def _test():
         set_trace_info()

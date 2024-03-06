@@ -154,22 +154,23 @@ def create_chat_completion_message_event(
     return (conversation_id, request_id, message_ids)
 
 
-def extract_bedrock_titan_text_model(request_body, response_body=None):
+def extract_bedrock_titan_text_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
-    if response_body:
-        response_body = json.loads(response_body)
-
     request_config = request_body.get("textGenerationConfig", {})
 
     input_message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
 
-    chat_completion_summary_dict = {
-        "request.max_tokens": request_config.get("maxTokenCount", ""),
-        "request.temperature": request_config.get("temperature", ""),
-        "response.number_of_messages": len(input_message_list),
-    }
+    bedrock_attrs["input_message_list"] = input_message_list
+    bedrock_attrs["request.max_tokens"] = request_config.get("maxTokenCount", "")
+    bedrock_attrs["request.temperature"] = request_config.get("temperature", "")
 
+    return bedrock_attrs
+
+
+def extract_bedrock_titan_text_model_response(response_body, bedrock_attrs):
     if response_body:
+        response_body = json.loads(response_body)
+
         input_tokens = response_body["inputTextTokenCount"]
         completion_tokens = sum(result["tokenCount"] for result in response_body.get("results", []))
         total_tokens = input_tokens + completion_tokens
@@ -177,35 +178,12 @@ def extract_bedrock_titan_text_model(request_body, response_body=None):
         output_message_list = [
             {"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", [])
         ]
-
-        chat_completion_summary_dict.update(
-            {
-                "response.choices.finish_reason": response_body["results"][0]["completionReason"],
-                "response.usage.completion_tokens": completion_tokens,
-                "response.usage.prompt_tokens": input_tokens,
-                "response.usage.total_tokens": total_tokens,
-                "response.number_of_messages": len(input_message_list) + len(output_message_list),
-            }
-        )
-    else:
-        output_message_list = []
-
-    return input_message_list, output_message_list, chat_completion_summary_dict
-
-
-def extract_bedrock_titan_text_model_request(request_body, bedrock_attrs):
-    request_body = json.loads(request_body)
-    request_config = request_body.get("textGenerationConfig", {})
-
-    input_message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
-
-    bedrock_attrs.update(
-        {
-            "input_message_list": input_message_list,
-            "request.max_tokens": request_config.get("maxTokenCount", ""),
-            "request.temperature": request_config.get("temperature", ""),
-        }
-    )
+            
+        bedrock_attrs["response.choices.finish_reason"] = response_body["results"][0]["completionReason"]
+        bedrock_attrs["response.usage.completion_tokens"] = completion_tokens
+        bedrock_attrs["response.usage.prompt_tokens"] = input_tokens
+        bedrock_attrs["response.usage.total_tokens"] = total_tokens
+        bedrock_attrs["output_message_list"] = output_message_list
 
     return bedrock_attrs
 
@@ -372,7 +350,7 @@ def extract_bedrock_cohere_model(request_body, response_body=None):
 NULL_EXTRACTOR = lambda *args: ([], [], {})  # Empty extractor that returns nothing
 MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
     ("amazon.titan-embed", NULL_EXTRACTOR, extract_bedrock_titan_embedding_model, NULL_EXTRACTOR),
-    ("amazon.titan", extract_bedrock_titan_text_model_request, extract_bedrock_titan_text_model, extract_bedrock_titan_text_model_streaming_response),
+    ("amazon.titan", extract_bedrock_titan_text_model_request, extract_bedrock_titan_text_model_response, extract_bedrock_titan_text_model_streaming_response),
     ("ai21.j2", NULL_EXTRACTOR, extract_bedrock_ai21_j2_model, NULL_EXTRACTOR),
     ("cohere", NULL_EXTRACTOR, extract_bedrock_cohere_model, NULL_EXTRACTOR),
     ("anthropic.claude", NULL_EXTRACTOR, extract_bedrock_claude_model, NULL_EXTRACTOR),
@@ -516,34 +494,13 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         ft.__exit__(None, None, None)
         response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
 
-        if operation == "embedding":  # Only available embedding models
-            handle_embedding_event(
-                instance,
-                transaction,
-                response_extractor,
-                model,
-                response_body,
-                response_headers,
-                request_body,
-                ft.duration,
-                False,
-                trace_id,
-                span_id,
-            )
+        # Run response extractor for non-streaming responses
+        response_extractor(response_body, bedrock_attrs)
+
+        if operation == "embedding":
+            handle_embedding_event(transaction, bedrock_attrs)
         else:
-            handle_chat_completion_event(
-                instance,
-                transaction,
-                response_extractor,
-                model,
-                response_body,
-                response_headers,
-                request_body,
-                ft.duration,
-                False,
-                trace_id,
-                span_id,
-            )
+            handle_chat_completion_event(transaction, bedrock_attrs)
 
         return response
 

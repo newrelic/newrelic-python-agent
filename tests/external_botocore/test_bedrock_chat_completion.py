@@ -52,12 +52,6 @@ def request_streaming(request):
     return request.param
 
 
-# @pytest.fixture(scope="session", params=[False, True], ids=["ResponseStandard", "ResponseStreaming"])
-@pytest.fixture(scope="session", params=[True])
-def response_streaming(request):
-    return request.param
-
-
 @pytest.fixture(
     scope="module",
     params=[
@@ -73,7 +67,7 @@ def model_id(request):
 
 
 @pytest.fixture(scope="module")
-def exercise_model(bedrock_server, model_id, request_streaming, response_streaming):
+def exercise_model(bedrock_server, model_id, request_streaming):
     payload_template = chat_completion_payload_templates[model_id]
 
     def _exercise_model(prompt, temperature=0.7, max_tokens=100):
@@ -81,33 +75,14 @@ def exercise_model(bedrock_server, model_id, request_streaming, response_streami
         if request_streaming:
             body = BytesIO(body)
 
-        if not response_streaming:
-            response = bedrock_server.invoke_model(
-                body=body,
-                modelId=model_id,
-                accept="application/json",
-                contentType="application/json",
-            )
-            response_body = json.loads(response.get("body").read())
-            assert response_body
-        else:
-            response = bedrock_server.invoke_model_with_response_stream(
-                body=body,
-                modelId=model_id,
-                accept="application/json",
-                contentType="application/json",
-            )
-
-            stream = response["body"]
-
-            chunks = list()
-            for event in stream:
-                chunks.append(event["chunk"]["bytes"].decode("utf-8"))
-                # TODO assert tracing here
-
-            assert chunks
-            response_body = json.loads("".join(chunks))
-            assert response_body
+        response = bedrock_server.invoke_model(
+            body=body,
+            modelId=model_id,
+            accept="application/json",
+            contentType="application/json",
+        )
+        response_body = json.loads(response.get("body").read())
+        assert response_body
 
         return response_body
 

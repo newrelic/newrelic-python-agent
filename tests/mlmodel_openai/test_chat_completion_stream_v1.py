@@ -59,7 +59,6 @@ chat_completion_recorded_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
-            "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "gpt-3.5-turbo",
             "response.model": "gpt-3.5-turbo-0613",
@@ -202,7 +201,6 @@ chat_completion_recorded_events_no_llm_metadata = [
             "span_id": None,
             "trace_id": "trace-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
-            "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "gpt-3.5-turbo",
             "response.model": "gpt-3.5-turbo-0613",

@@ -105,7 +105,6 @@ chat_completion_expected_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
-                "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-text-express-v1",
                 "response.model": "amazon.titan-text-express-v1",
@@ -172,7 +171,6 @@ chat_completion_expected_events = {
                 "trace_id": "trace-id",
                 "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
                 "response_id": "1234",
-                "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "request.model": "ai21.j2-mid-v1",
                 "response.model": "ai21.j2-mid-v1",
@@ -235,7 +233,6 @@ chat_completion_expected_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
-                "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "request.model": "anthropic.claude-instant-v1",
                 "response.model": "anthropic.claude-instant-v1",
@@ -299,7 +296,6 @@ chat_completion_expected_events = {
                 "trace_id": "trace-id",
                 "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
                 "response_id": None,  # UUID that varies with each run
-                "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "request.model": "cohere.command-text-v14",
                 "response.model": "cohere.command-text-v14",
@@ -362,7 +358,6 @@ chat_completion_expected_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
-                "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "request.model": "meta.llama2-13b-chat-v1",
                 "response.model": "meta.llama2-13b-chat-v1",
@@ -430,7 +425,6 @@ chat_completion_invalid_model_error_events = [
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
-            "api_key_last_four_digits": "CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",
             "response.model": "does-not-exist",
@@ -453,7 +447,6 @@ chat_completion_invalid_access_key_error_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "",
-                "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-text-express-v1",
                 "response.model": "amazon.titan-text-express-v1",
@@ -496,7 +489,6 @@ chat_completion_invalid_access_key_error_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "",
-                "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "ai21.j2-mid-v1",
                 "response.model": "ai21.j2-mid-v1",
@@ -539,7 +531,6 @@ chat_completion_invalid_access_key_error_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "",
-                "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "anthropic.claude-instant-v1",
                 "response.model": "anthropic.claude-instant-v1",
@@ -582,7 +573,6 @@ chat_completion_invalid_access_key_error_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "",
-                "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "cohere.command-text-v14",
                 "response.model": "cohere.command-text-v14",
@@ -625,7 +615,6 @@ chat_completion_invalid_access_key_error_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "",
-                "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "meta.llama2-13b-chat-v1",
                 "response.model": "meta.llama2-13b-chat-v1",

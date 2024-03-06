@@ -52,7 +52,6 @@ embedding_recorded_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "input": "This is an embedding test with no model.",
-            "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "",  # No model in this test case
             "response.organization": "",
@@ -151,7 +150,6 @@ invalid_model_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "input": "Model does not exist.",
-            "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",  # No model in this test case
             "response.organization": None,
@@ -209,7 +207,6 @@ embedding_auth_error_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "input": "Invalid API key.",
-            "api_key_last_four_digits": "",
             "duration": None,  # Response time varies each test run
             "request.model": "text-embedding-ada-002",  # No model in this test case
             "response.organization": None,
@@ -265,7 +262,6 @@ embedding_invalid_key_error_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "input": "Embedded: Invalid API key.",
-            "api_key_last_four_digits": "sk-BEEF",
             "duration": None,  # Response time varies each test run
             "request.model": "text-embedding-ada-002",  # No model in this test case
             "response.organization": None,

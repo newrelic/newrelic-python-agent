@@ -29,7 +29,6 @@ embedding_expected_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "input": "This is an embedding test.",
-                "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "response.model": "amazon.titan-embed-text-v1",
                 "request.model": "amazon.titan-embed-text-v1",
@@ -52,7 +51,6 @@ embedding_expected_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "input": "This is an embedding test.",
-                "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "response.model": "amazon.titan-embed-g1-text-02",
                 "request.model": "amazon.titan-embed-g1-text-02",
@@ -76,7 +74,6 @@ embedding_expected_error_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "input": "Invalid Token",
-                "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-embed-text-v1",
                 "response.model": "amazon.titan-embed-text-v1",
@@ -96,7 +93,6 @@ embedding_expected_error_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "input": "Invalid Token",
-                "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-embed-g1-text-02",
                 "response.model": "amazon.titan-embed-g1-text-02",

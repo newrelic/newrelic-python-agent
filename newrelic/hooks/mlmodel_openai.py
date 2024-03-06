@@ -50,10 +50,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
 
-    # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(openai, "api_key", None)
-    api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
-
     span_id = None
     trace_id = None
 
@@ -101,7 +97,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
             error_embedding_dict = {
                 "id": embedding_id,
-                "api_key_last_four_digits": api_key_last_four_digits,
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
@@ -148,7 +143,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "input": kwargs.get("input", ""),
-        "api_key_last_four_digits": f"sk-{api_key[-4:]}" if api_key else "",
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
         "duration": ft.duration,
@@ -208,10 +202,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     request_message_list = kwargs.get("messages", [])
 
-    # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(instance._client, "api_key", None) if OPENAI_V1 else getattr(openai, "api_key", None)
-    api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
-
     span_id = None
     trace_id = None
 
@@ -267,7 +257,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         # Gather attributes to add to embedding summary event in error context
         error_chat_completion_dict = {
             "id": completion_id,
-            "api_key_last_four_digits": api_key_last_four_digits,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
@@ -321,7 +310,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         return_val._nr_openai_attrs["temperature"] = kwargs.get("temperature", "")
         return_val._nr_openai_attrs["max_tokens"] = kwargs.get("max_tokens", "")
         return_val._nr_openai_attrs["request.model"] = kwargs.get("model") or kwargs.get("engine") or ""
-        return_val._nr_openai_attrs["api_key_last_four_digits"] = api_key_last_four_digits
         return return_val
 
     # If response is not a stream generator, record the event data.
@@ -347,7 +335,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     full_chat_completion_summary_dict = {
         "id": completion_id,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
@@ -555,10 +542,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
 
-    # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(openai, "api_key", None)
-    api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
-
     span_id = None
     trace_id = None
 
@@ -606,7 +589,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
             error_embedding_dict = {
                 "id": embedding_id,
-                "api_key_last_four_digits": api_key_last_four_digits,
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
@@ -653,7 +635,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "input": kwargs.get("input", ""),
-        "api_key_last_four_digits": f"sk-{api_key[-4:]}" if api_key else "",
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
         "duration": ft.duration,
@@ -713,10 +694,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     request_message_list = kwargs.get("messages", [])
 
-    # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(instance._client, "api_key", None) if OPENAI_V1 else getattr(openai, "api_key", None)
-    api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
-
     span_id = None
     trace_id = None
 
@@ -771,7 +748,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         # Gather attributes to add to embedding summary event in error context
         error_chat_completion_dict = {
             "id": completion_id,
-            "api_key_last_four_digits": api_key_last_four_digits,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
@@ -825,7 +801,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         return_val._nr_openai_attrs["temperature"] = kwargs.get("temperature", "")
         return_val._nr_openai_attrs["max_tokens"] = kwargs.get("max_tokens", "")
         return_val._nr_openai_attrs["request.model"] = kwargs.get("model") or kwargs.get("engine") or ""
-        return_val._nr_openai_attrs["api_key_last_four_digits"] = api_key_last_four_digits
         return return_val
 
     # If response is not a stream generator, record the event data.
@@ -851,7 +826,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     full_chat_completion_summary_dict = {
         "id": completion_id,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
@@ -1138,8 +1112,6 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
     response_id = openai_attrs.get("id", None)
     request_id = response_headers.get("x-request-id", "")
 
-    api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
-
     messages = openai_attrs.get("messages", [])
 
     chat_completion_summary_dict = {
@@ -1147,7 +1119,6 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "duration": self._nr_ft.duration,
         "request.model": openai_attrs.get("request.model", ""),
         # Usage tokens are not supported in streaming for now.
@@ -1201,8 +1172,6 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
     request_id = response_headers.get("x-request-id", "")
     organization = response_headers.get("openai-organization", "")
 
-    api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
-
     messages = openai_attrs.get("messages", [])
 
     chat_completion_summary_dict = {
@@ -1211,7 +1180,6 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "request_id": request_id,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "duration": self._nr_ft.duration,
         "request.model": openai_attrs.get("request.model", ""),
         "response.model": openai_attrs.get("response.model", ""),

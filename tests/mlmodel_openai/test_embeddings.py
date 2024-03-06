@@ -49,7 +49,6 @@ embedding_recorded_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "input": "This is an embedding test.",
-            "api_key_last_four_digits": "sk-CRET",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "duration": None,  # Response time varies each test run

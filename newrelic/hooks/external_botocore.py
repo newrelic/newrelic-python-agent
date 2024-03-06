@@ -69,7 +69,6 @@ def bedrock_error_attributes(exception, request_args, client, extractor):
     error_attributes.update(
         {
             "request_id": response.get("ResponseMetadata", {}).get("RequestId", ""),
-            "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "request.model": request_args.get("modelId", ""),
             "vendor": "bedrock",
             "ingest_source": "Python",
@@ -540,7 +539,6 @@ def handle_embedding_event(
             "request_id": request_id,
             "input": request_body.get("inputText", ""),
             "transaction_id": transaction.guid,
-            "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "duration": duration,
             "request.model": model,
             "response.model": model,
@@ -587,7 +585,6 @@ def handle_chat_completion_event(
         {
             "vendor": "bedrock",
             "ingest_source": "Python",
-            "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "id": chat_completion_id,
             "span_id": span_id,
             "trace_id": trace_id,

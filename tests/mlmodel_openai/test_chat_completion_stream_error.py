@@ -58,7 +58,6 @@ expected_events_on_no_model_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "",  # No model in this test case
             "response.organization": "",
@@ -201,7 +200,6 @@ expected_events_on_invalid_model_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",
             "response.organization": "",
@@ -285,7 +283,6 @@ expected_events_on_auth_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "api_key_last_four_digits": "",
             "duration": None,  # Response time varies each test run
             "request.model": "gpt-3.5-turbo",
             "response.organization": "",
@@ -384,7 +381,6 @@ expected_events_on_wrong_api_key_error = [
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "api_key_last_four_digits": "sk-BEEF",
             "duration": None,  # Response time varies each test run
             "request.model": "gpt-3.5-turbo",
             "response.organization": "",
@@ -671,7 +667,6 @@ expected_events_stream_parsing_error = [
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "gpt-3.5-turbo",
             "response.organization": "new-relic-nkmd8b",

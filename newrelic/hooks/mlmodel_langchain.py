@@ -47,7 +47,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.databricks_vector_search": "DatabricksVectorSearch",
     "langchain_community.vectorstores.deeplake": "DeepLake",
     "langchain_community.vectorstores.dingo": "Dingo",
-    "langchain_community.vectorstores.documentdbvectorsearch": "DocumentDBVectorSearch",
+    "langchain_community.vectorstores.documentdb": "DocumentDBVectorSearch",
     "langchain_community.vectorstores.elastic_vector_search": "ElasticVectorSearch",
     # "langchain_community.vectorstores.elastic_vector_search": "ElasticKnnSearch", # Deprecated
     "langchain_community.vectorstores.elasticsearch": "ElasticsearchStore",

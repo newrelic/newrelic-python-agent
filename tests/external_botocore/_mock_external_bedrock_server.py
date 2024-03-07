@@ -32,17 +32,17 @@ STREAMED_RESPONSES = {
     "amazon.titan-text-express-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
         {
             "Content-Type": "application/vnd.amazon.eventstream",
-            "x-amzn-RequestId": "b427270f-371a-458d-81b6-a05aafb2704c"
+            "x-amzn-RequestId": "b427270f-371a-458d-81b6-a05aafb2704c",
         },
         200,
         [
             "000002370000004bdae582ec0b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a7664585277645852555a586830496a6f69584734784947526c5a334a6c5a534247595768795a57356f5a576c3049476c7a494441754e5459675a47566e636d566c637942445a57787a6158567a4c694255614756795a575a76636d5573494449784d69426b5a5764795a575567526d466f636d56756147567064434270626942445a57787a6158567a494864766457786b49474a6c494445784e5334334d6934694c434a70626d526c654349364d437769644739305957785064585277645852555a586830564739725a57354462335675644349364d7a5573496d4e76625842735a585270623235535a57467a623234694f694a475355354a553067694c434a70626e42316446526c654852556232746c626b4e7664573530496a6f784d69776959573168656d39754c574a6c5a484a76593273746157353262324e6864476c76626b316c64484a7059334d694f6e736961573577645852556232746c626b4e7664573530496a6f784d6977696233563063485630564739725a57354462335675644349364d7a5573496d6c75646d396a595852706232354d5958526c626d4e35496a6f794d7a4d354c434a6d61584a7a64454a356447564d5958526c626d4e35496a6f794d7a4d356658303d227d358ac004"
-        ]
+        ],
     ],
     "anthropic.claude-instant-v1::Human: What is 212 degrees Fahrenheit converted to Celsius? Assistant:": [
         {
             "Content-Type": "application/vnd.amazon.eventstream",
-            "x-amzn-RequestId": "a645548f-0b3a-47ce-a675-f51e6e9037de"
+            "x-amzn-RequestId": "a645548f-0b3a-47ce-a675-f51e6e9037de",
         },
         200,
         [
@@ -135,23 +135,23 @@ STREAMED_RESPONSES = {
             "000000b30000004bd34b35b50b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6a623231776247563061573975496a6f694947526c5a334a6c5a584d694c434a7a6447397758334a6c59584e7662694936626e5673624377696333527663434936626e56736248303d227dbe5287e4",
             "000000b30000004bd34b35b50b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6a623231776247563061573975496a6f6949454e6c62484e7064584d694c434a7a6447397758334a6c59584e7662694936626e5673624377696333527663434936626e56736248303d227df62aca9e",
             "000000ab0000004b83dbe9f60b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6a623231776247563061573975496a6f694c694973496e4e3062334266636d566863323975496a7075645778734c434a7a64473977496a70756457787366513d3d227dbe4ddce4",
-            "0000016b0000004ba192d2880b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6a623231776247563061573975496a6f694969776963335276634639795a57467a623234694f694a7a6447397758334e6c6358566c626d4e6c496977696333527663434936496c78755847354964573168626a6f694c434a686257463662323474596d566b636d396a61793170626e5a76593246306157397554575630636d6c6a6379493665794a70626e4231644652766132567551323931626e51694f6a45354c434a7664585277645852556232746c626b4e7664573530496a6f354f5377696157353262324e6864476c76626b78686447567559336b694f6a45314e7a4173496d5a70636e4e30516e6c305a5578686447567559336b694f6a51784d583139227d9a4fc171"
-        ]
+            "0000016b0000004ba192d2880b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6a623231776247563061573975496a6f694969776963335276634639795a57467a623234694f694a7a6447397758334e6c6358566c626d4e6c496977696333527663434936496c78755847354964573168626a6f694c434a686257463662323474596d566b636d396a61793170626e5a76593246306157397554575630636d6c6a6379493665794a70626e4231644652766132567551323931626e51694f6a45354c434a7664585277645852556232746c626b4e7664573530496a6f354f5377696157353262324e6864476c76626b78686447567559336b694f6a45314e7a4173496d5a70636e4e30516e6c305a5578686447567559336b694f6a51784d583139227d9a4fc171",
+        ],
     ],
     "cohere.command-text-v14::What is 212 degrees Fahrenheit converted to Celsius?": [
         {
             "Content-Type": "application/vnd.amazon.eventstream",
-            "x-amzn-RequestId": "4f8ab6c5-42d1-4e35-9573-30f9f41f821e"
+            "x-amzn-RequestId": "4f8ab6c5-42d1-4e35-9573-30f9f41f821e",
         },
         200,
         [
             "000003f70000004bf8acb9920b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6e5a57356c636d46306157397563794936573373695a6d6c7561584e6f58334a6c59584e7662694936496b4e505456424d5256524649697769615751694f694a695a5463794e475a6d5953316c5a6a63344c54517a4d444974595464684e7930794e6a4a6a4e4463784f54566a4e5755694c434a305a586830496a6f694946527649474e76626e5a6c636e5167526d466f636d56756147567064434230627942445a57787a6158567a4c43423562335567593246754948567a5a534230614755675a6d39796258567359547063626c78755132567363326c316379413949436847595768795a57356f5a576c30494330674d7a497049436f674e53383558473563626b6c754948526f61584d675932467a5a537767615759676557393149476868646d55674d6a45794947526c5a334a6c5a584d67526d466f636d567561475670644377676557393149474e686269423163325567644768706379426d62334a74645778684948527649474e6862474e31624746305a534230614755675a58463161585a6862475675644342305a5731775a584a68644856795a534270626942445a57787a6158567a4f6c7875584735445a57787a6158567a494430674b4449784d69417449444d794b534171494455764f534139494445774d434171494455764f5341394944557758473563626c526f5a584a6c5a6d39795a5377674d6a45794947526c5a334a6c5a584d67526d466f636d567561475670644342706379426c63585670646d46735a57353049485276494455774947526c5a334a6c5a584d675132567363326c316379346966563073496d6c6b496a6f694e47593459574932597a55744e444a6b4d5330305a544d314c546b314e7a4d744d7a426d4f5759304d5759344d6a466c4969776963484a7662584230496a6f695632686864434270637941794d5449675a47566e636d566c63794247595768795a57356f5a576c3049474e76626e5a6c636e526c5a434230627942445a57787a6158567a50794973496d467459587076626931695a57527962324e724c576c75646d396a595852706232354e5a58527961574e7a496a7037496d6c7563485630564739725a57354462335675644349364f5377696233563063485630564739725a57354462335675644349364f544573496d6c75646d396a595852706232354d5958526c626d4e35496a6f794f5463794c434a6d61584a7a64454a356447564d5958526c626d4e35496a6f794f5463796658303d227deba065e0"
-        ]
+        ],
     ],
     "meta.llama2-13b-chat-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
         {
             "Content-Type": "application/vnd.amazon.eventstream",
-            "x-amzn-RequestId": "6dd99878-0919-4f92-850c-48f50f923b76"
+            "x-amzn-RequestId": "6dd99878-0919-4f92-850c-48f50f923b76",
         },
         200,
         [
@@ -254,17 +254,14 @@ STREAMED_RESPONSES = {
             "000000e30000004beb58fa7e0b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6e5a57356c636d463061573975496a6f694e534973496e427962323177644639306232746c626c396a6233567564434936626e5673624377695a3256755a584a6864476c76626c39306232746c626c396a62335675644349364f546373496e4e3062334266636d566863323975496a70756457787366513d3d227d839ce6c1",
             "000000e30000004beb58fa7e0b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6e5a57356c636d463061573975496a6f694c794973496e427962323177644639306232746c626c396a6233567564434936626e5673624377695a3256755a584a6864476c76626c39306232746c626c396a62335675644349364f546773496e4e3062334266636d566863323975496a70756457787366513d3d227de12c5966",
             "000000e30000004beb58fa7e0b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6e5a57356c636d463061573975496a6f694f534973496e427962323177644639306232746c626c396a6233567564434936626e5673624377695a3256755a584a6864476c76626c39306232746c626c396a62335675644349364f546b73496e4e3062334266636d566863323975496a70756457787366513d3d227d103c913a",
-            "000001970000004b2c566fd40b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6e5a57356c636d463061573975496a6f69584734694c434a77636d397463485266644739725a57356659323931626e51694f6d353162477773496d646c626d56795958527062323566644739725a57356659323931626e51694f6a45774d43776963335276634639795a57467a623234694f694a735a57356e644767694c434a686257463662323474596d566b636d396a61793170626e5a76593246306157397554575630636d6c6a6379493665794a70626e4231644652766132567551323931626e51694f6a45334c434a7664585277645852556232746c626b4e7664573530496a6f784d444173496d6c75646d396a595852706232354d5958526c626d4e35496a6f794e7a59304c434a6d61584a7a64454a356447564d5958526c626d4e35496a6f7a4d7a683966513d3d227d7f984a9b"
-        ]
+            "000001970000004b2c566fd40b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6e5a57356c636d463061573975496a6f69584734694c434a77636d397463485266644739725a57356659323931626e51694f6d353162477773496d646c626d56795958527062323566644739725a57356659323931626e51694f6a45774d43776963335276634639795a57467a623234694f694a735a57356e644767694c434a686257463662323474596d566b636d396a61793170626e5a76593246306157397554575630636d6c6a6379493665794a70626e4231644652766132567551323931626e51694f6a45334c434a7664585277645852556232746c626b4e7664573530496a6f784d444173496d6c75646d396a595852706232354d5958526c626d4e35496a6f794e7a59304c434a6d61584a7a64454a356447564d5958526c626d4e35496a6f7a4d7a683966513d3d227d7f984a9b",
+        ],
     ],
 }
 
 RESPONSES = {
     "ai21.j2-mid-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "228ee63f-4eca-4b7d-b679-bc920de63525"
-        },
+        {"Content-Type": "application/json", "x-amzn-RequestId": "228ee63f-4eca-4b7d-b679-bc920de63525"},
         200,
         {
             "id": 1234,
@@ -275,87 +272,66 @@ RESPONSES = {
                         "generatedToken": {
                             "token": "\u2581What\u2581is",
                             "logprob": -7.703575134277344,
-                            "raw_logprob": -7.703575134277344
+                            "raw_logprob": -7.703575134277344,
                         },
                         "topTokens": None,
-                        "textRange": {
-                            "start": 0,
-                            "end": 7
-                        }
+                        "textRange": {"start": 0, "end": 7},
                     },
                     {
                         "generatedToken": {
                             "token": "\u2581",
                             "logprob": -3.4491159915924072,
-                            "raw_logprob": -3.4491159915924072
+                            "raw_logprob": -3.4491159915924072,
                         },
                         "topTokens": None,
-                        "textRange": {
-                            "start": 7,
-                            "end": 8
-                        }
+                        "textRange": {"start": 7, "end": 8},
                     },
                     {
                         "generatedToken": {
                             "token": "212",
                             "logprob": -9.432294845581055,
-                            "raw_logprob": -9.432294845581055
+                            "raw_logprob": -9.432294845581055,
                         },
                         "topTokens": None,
-                        "textRange": {
-                            "start": 8,
-                            "end": 11
-                        }
+                        "textRange": {"start": 8, "end": 11},
                     },
                     {
                         "generatedToken": {
                             "token": "\u2581degrees\u2581Fahrenheit",
                             "logprob": -9.64009952545166,
-                            "raw_logprob": -9.64009952545166
+                            "raw_logprob": -9.64009952545166,
                         },
                         "topTokens": None,
-                        "textRange": {
-                            "start": 11,
-                            "end": 30
-                        }
+                        "textRange": {"start": 11, "end": 30},
                     },
                     {
                         "generatedToken": {
                             "token": "\u2581converted\u2581to",
                             "logprob": -8.4347505569458,
-                            "raw_logprob": -8.4347505569458
+                            "raw_logprob": -8.4347505569458,
                         },
                         "topTokens": None,
-                        "textRange": {
-                            "start": 30,
-                            "end": 43
-                        }
+                        "textRange": {"start": 30, "end": 43},
                     },
                     {
                         "generatedToken": {
                             "token": "\u2581Celsius",
                             "logprob": -0.17065171897411346,
-                            "raw_logprob": -0.17065171897411346
+                            "raw_logprob": -0.17065171897411346,
                         },
                         "topTokens": None,
-                        "textRange": {
-                            "start": 43,
-                            "end": 51
-                        }
+                        "textRange": {"start": 43, "end": 51},
                     },
                     {
                         "generatedToken": {
                             "token": "?",
                             "logprob": -8.000349998474121,
-                            "raw_logprob": -8.000349998474121
+                            "raw_logprob": -8.000349998474121,
                         },
                         "topTokens": None,
-                        "textRange": {
-                            "start": 51,
-                            "end": 52
-                        }
-                    }
-                ]
+                        "textRange": {"start": 51, "end": 52},
+                    },
+                ],
             },
             "completions": [
                 {
@@ -366,136 +342,101 @@ RESPONSES = {
                                 "generatedToken": {
                                     "token": "<|newline|>",
                                     "logprob": 0.0,
-                                    "raw_logprob": -1.0609570381348021e-05
+                                    "raw_logprob": -1.0609570381348021e-05,
                                 },
                                 "topTokens": None,
-                                "textRange": {
-                                    "start": 0,
-                                    "end": 1
-                                }
+                                "textRange": {"start": 0, "end": 1},
                             },
                             {
                                 "generatedToken": {
                                     "token": "\u2581",
                                     "logprob": -0.0012434140080586076,
-                                    "raw_logprob": -0.017860885709524155
+                                    "raw_logprob": -0.017860885709524155,
                                 },
                                 "topTokens": None,
-                                "textRange": {
-                                    "start": 1,
-                                    "end": 1
-                                }
+                                "textRange": {"start": 1, "end": 1},
                             },
                             {
                                 "generatedToken": {
                                     "token": "212",
                                     "logprob": -0.047134462743997574,
-                                    "raw_logprob": -0.12055955827236176
+                                    "raw_logprob": -0.12055955827236176,
                                 },
                                 "topTokens": None,
-                                "textRange": {
-                                    "start": 1,
-                                    "end": 4
-                                }
+                                "textRange": {"start": 1, "end": 4},
                             },
                             {
                                 "generatedToken": {
                                     "token": "\u2581degrees\u2581Fahrenheit",
                                     "logprob": -0.006817296147346497,
-                                    "raw_logprob": -0.052842844277620316
+                                    "raw_logprob": -0.052842844277620316,
                                 },
                                 "topTokens": None,
-                                "textRange": {
-                                    "start": 4,
-                                    "end": 23
-                                }
+                                "textRange": {"start": 4, "end": 23},
                             },
                             {
                                 "generatedToken": {
                                     "token": "\u2581is\u2581equal\u2581to",
                                     "logprob": -0.008958976715803146,
-                                    "raw_logprob": -0.0576501227915287
+                                    "raw_logprob": -0.0576501227915287,
                                 },
                                 "topTokens": None,
-                                "textRange": {
-                                    "start": 23,
-                                    "end": 35
-                                }
+                                "textRange": {"start": 23, "end": 35},
                             },
                             {
                                 "generatedToken": {
                                     "token": "\u2581",
                                     "logprob": -4.756337511935271e-05,
-                                    "raw_logprob": -0.002072569215670228
+                                    "raw_logprob": -0.002072569215670228,
                                 },
                                 "topTokens": None,
-                                "textRange": {
-                                    "start": 35,
-                                    "end": 36
-                                }
+                                "textRange": {"start": 35, "end": 36},
                             },
                             {
                                 "generatedToken": {
                                     "token": "100",
                                     "logprob": -1.6689286894688848e-06,
-                                    "raw_logprob": -0.00014327930693980306
+                                    "raw_logprob": -0.00014327930693980306,
                                 },
                                 "topTokens": None,
-                                "textRange": {
-                                    "start": 36,
-                                    "end": 39
-                                }
+                                "textRange": {"start": 36, "end": 39},
                             },
                             {
                                 "generatedToken": {
                                     "token": "\u2581degrees\u2581Celsius",
                                     "logprob": -0.0009832315845414996,
-                                    "raw_logprob": -0.009537134319543839
+                                    "raw_logprob": -0.009537134319543839,
                                 },
                                 "topTokens": None,
-                                "textRange": {
-                                    "start": 39,
-                                    "end": 55
-                                }
+                                "textRange": {"start": 39, "end": 55},
                             },
                             {
                                 "generatedToken": {
                                     "token": ".",
                                     "logprob": -0.009822133928537369,
-                                    "raw_logprob": -0.04313727468252182
+                                    "raw_logprob": -0.04313727468252182,
                                 },
                                 "topTokens": None,
-                                "textRange": {
-                                    "start": 55,
-                                    "end": 56
-                                }
+                                "textRange": {"start": 55, "end": 56},
                             },
                             {
                                 "generatedToken": {
                                     "token": "<|endoftext|>",
                                     "logprob": -0.10973381996154785,
-                                    "raw_logprob": -0.2600202262401581
+                                    "raw_logprob": -0.2600202262401581,
                                 },
                                 "topTokens": None,
-                                "textRange": {
-                                    "start": 56,
-                                    "end": 56
-                                }
-                            }
-                        ]
+                                "textRange": {"start": 56, "end": 56},
+                            },
+                        ],
                     },
-                    "finishReason": {
-                        "reason": "endoftext"
-                    }
+                    "finishReason": {"reason": "endoftext"},
                 }
-            ]
-        }
+            ],
+        },
     ],
     "amazon.titan-text-express-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "81508a1c-33a8-4294-8743-f0c629af2f49"
-        },
+        {"Content-Type": "application/json", "x-amzn-RequestId": "81508a1c-33a8-4294-8743-f0c629af2f49"},
         200,
         {
             "inputTextTokenCount": 12,
@@ -503,53 +444,44 @@ RESPONSES = {
                 {
                     "tokenCount": 32,
                     "outputText": "\n1 degree Fahrenheit is 0.56 Celsius. Therefore, 212 degree Fahrenheit in Celsius would be 115.42.",
-                    "completionReason": "FINISH"
+                    "completionReason": "FINISH",
                 }
-            ]
-        }
+            ],
+        },
     ],
     "anthropic.claude-instant-v1::Human: What is 212 degrees Fahrenheit converted to Celsius? Assistant:": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "6a886158-b39f-46ce-b214-97458ab76f2f"
-        },
+        {"Content-Type": "application/json", "x-amzn-RequestId": "6a886158-b39f-46ce-b214-97458ab76f2f"},
         200,
         {
             "completion": " Okay, here are the steps to convert 212 degrees Fahrenheit to Celsius:\n\n1) The formula to convert between Fahrenheit and Celsius is:\n   C = (F - 32) * 5/9\n\n2) Plug in 212 degrees Fahrenheit for F:\n   C = (212 - 32) * 5/9\n   C = 180 * 5/9\n   C = 100\n\n3) Therefore, 212 degrees Fahrenheit converted to Celsius is 100 degrees Celsius.",
             "stop_reason": "max_tokens",
-            "stop": None
-        }
+            "stop": None,
+        },
     ],
     "cohere.command-text-v14::What is 212 degrees Fahrenheit converted to Celsius?": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "12912a17-aa13-45f3-914c-cc82166f3601"
-        },
+        {"Content-Type": "application/json", "x-amzn-RequestId": "12912a17-aa13-45f3-914c-cc82166f3601"},
         200,
         {
             "generations": [
                 {
                     "finish_reason": "MAX_TOKENS",
                     "id": "deafebbd-7cdb-461f-8d6a-846602141f8f",
-                    "text": " To convert from Fahrenheit to Celsius, you can use the following formula:\n\nCelsius = (Fahrenheit - 32) * 5/9\n\nIn this case, 212 degrees Fahrenheit is converted to Celsius as follows:\n\nCelsius = (212 - 32) * 5/9 = (180) * 5/9 = (180/9) = 20 degrees Celsius\n\nTherefore, 212 degrees Fahrenheit is equivalent to 20 degrees Celsius.\n\nIt's important to note that"
+                    "text": " To convert from Fahrenheit to Celsius, you can use the following formula:\n\nCelsius = (Fahrenheit - 32) * 5/9\n\nIn this case, 212 degrees Fahrenheit is converted to Celsius as follows:\n\nCelsius = (212 - 32) * 5/9 = (180) * 5/9 = (180/9) = 20 degrees Celsius\n\nTherefore, 212 degrees Fahrenheit is equivalent to 20 degrees Celsius.\n\nIt's important to note that",
                 }
             ],
             "id": "12912a17-aa13-45f3-914c-cc82166f3601",
-            "prompt": "What is 212 degrees Fahrenheit converted to Celsius?"
-        }
+            "prompt": "What is 212 degrees Fahrenheit converted to Celsius?",
+        },
     ],
     "meta.llama2-13b-chat-v1::What is 212 degrees Fahrenheit converted to Celsius?": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "a168214d-742d-4244-bd7f-62214ffa07df"
-        },
+        {"Content-Type": "application/json", "x-amzn-RequestId": "a168214d-742d-4244-bd7f-62214ffa07df"},
         200,
         {
             "generation": "\n\n212\u00b0F = ?\u00b0C\n\nPlease help! I'm stuck!\n\nThank you!\n\nI hope this is the correct place to ask this question. Please let me know if it isn't.\n\nI appreciate your help!\n\nBest regards,\n\n[Your Name]",
             "prompt_token_count": 17,
             "generation_token_count": 69,
-            "stop_reason": "stop"
-        }
+            "stop_reason": "stop",
+        },
     ],
     "amazon.titan-embed-g1-text-02::This is an embedding test.": [
         {"Content-Type": "application/json", "x-amzn-RequestId": "b10ac895-eae3-4f07-b926-10b2866c55ed"},

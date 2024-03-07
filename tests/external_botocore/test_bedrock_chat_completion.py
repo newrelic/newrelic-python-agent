@@ -188,13 +188,13 @@ def test_bedrock_chat_completion_streaming_in_txn_with_convo_id(
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
-       name="test_bedrock_chat_completion_streaming_in_txn_with_convo_id",
-       scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-       rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-       custom_metrics=[
-           ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
-       ],
-       background_task=True,
+        name="test_bedrock_chat_completion_streaming_in_txn_with_convo_id",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
+        custom_metrics=[
+            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
     )
     @validate_attributes("agent", ["llm"])
     @background_task(name="test_bedrock_chat_completion_streaming_in_txn_with_convo_id")

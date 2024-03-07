@@ -608,7 +608,7 @@ chat_completion_streaming_expected_events = {
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
-                "content": ' To convert Fahrenheit to Celsius, you can use the formula:\n\nCelsius = (Fahrenheit - 32) * 5/9\n\nIn this case, if you have 212 degrees Fahrenheit, you can use this formula to calculate the equivalent temperature in Celsius:\n\nCelsius = (212 - 32) * 5/9 = 100 * 5/9 = 50\n\nTherefore, 212 degrees Fahrenheit is equivalent to 50 degrees Celsius.',
+                "content": " To convert Fahrenheit to Celsius, you can use the formula:\n\nCelsius = (Fahrenheit - 32) * 5/9\n\nIn this case, if you have 212 degrees Fahrenheit, you can use this formula to calculate the equivalent temperature in Celsius:\n\nCelsius = (212 - 32) * 5/9 = 100 * 5/9 = 50\n\nTherefore, 212 degrees Fahrenheit is equivalent to 50 degrees Celsius.",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,

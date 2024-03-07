@@ -52,7 +52,6 @@ collector_agent_registration = collector_agent_registration_fixture(
     linked_applications=["Python Agent Test (mlmodel_openai)"],
 )
 
-# Ignore all get_llm_message_id tests until they are removed in a subsequent PR
 if get_openai_version() < (1, 0):
     collect_ignore = [
         "test_chat_completion_v1.py",
@@ -61,8 +60,6 @@ if get_openai_version() < (1, 0):
         "test_embeddings_error_v1.py",
         "test_chat_completion_stream_v1.py",
         "test_chat_completion_stream_error_v1.py",
-        "test_get_llm_message_ids.py",
-        "test_get_llm_message_ids_v1.py",
     ]
 else:
     collect_ignore = [
@@ -72,8 +69,6 @@ else:
         "test_chat_completion_error.py",
         "test_chat_completion_stream.py",
         "test_chat_completion_stream_error.py",
-        "test_get_llm_message_ids.py",
-        "test_get_llm_message_ids_v1.py",
     ]
 
 

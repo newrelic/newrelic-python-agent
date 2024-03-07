@@ -35,7 +35,6 @@ def test_record_llm_feedback_event_all_args_supplied():
                 "ingest_source": "Python",
                 "message": "message",
                 "foo": "bar",
-                "my-message": "custom-message",
             },
         ),
     ]
@@ -48,7 +47,8 @@ def test_record_llm_feedback_event_all_args_supplied():
             trace_id="123456789abcdefgh",
             category="informative",
             message="message",
-            metadata={"foo": "bar", "my-message": "custom-message"},
+            # Add metadata key with same name as built-in event key to verify no override occurs in the event
+            metadata={"foo": "bar", "message": "custom-message"},
         )
 
     _test()

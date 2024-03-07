@@ -25,12 +25,12 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
                 "message_id": None,  # UUID that varies with each run
             },
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
                 "message_id": None,  # UUID that varies with each run
             },
         ]
@@ -39,12 +39,12 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
+                "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
                 "message_id": "1234-0",
             },
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
+                "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
                 "message_id": "1234-1",
             },
         ]
@@ -53,12 +53,12 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
+                "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
                 "message_id": None,  # UUID that varies with each run
             },
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
+                "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
                 "message_id": None,  # UUID that varies with each run
             },
         ]
@@ -67,13 +67,13 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
-                "message_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97-0",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
+                "message_id": "12912a17-aa13-45f3-914c-cc82166f3601-0",
             },
             {
                 "conversation_id": "my-awesome-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
-                "message_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97-1",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
+                "message_id": "12912a17-aa13-45f3-914c-cc82166f3601-1",
             },
         ]
     },
@@ -104,13 +104,13 @@ chat_completion_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
                 "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-text-express-v1",
                 "response.model": "amazon.titan-text-express-v1",
-                "response.usage.completion_tokens": 75,
-                "response.usage.total_tokens": 87,
+                "response.usage.completion_tokens": 32,
+                "response.usage.total_tokens": 44,
                 "response.usage.prompt_tokens": 12,
                 "request.temperature": 0.7,
                 "request.max_tokens": 100,
@@ -126,7 +126,7 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -145,11 +145,11 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
-                "content": "\nUse the formula,\n°C = (°F - 32) x 5/9\n= 212 x 5/9\n= 100 degrees Celsius\n212 degrees Fahrenheit is 100 degrees Celsius.",
+                "content": "\n1 degree Fahrenheit is 0.56 Celsius. Therefore, 212 degree Fahrenheit in Celsius would be 115.42.",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,
@@ -170,7 +170,7 @@ chat_completion_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
+                "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
                 "response_id": "1234",
                 "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
@@ -190,7 +190,7 @@ chat_completion_expected_events = {
                 "id": "1234-0",
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
+                "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -209,7 +209,7 @@ chat_completion_expected_events = {
                 "id": "1234-1",
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
+                "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -234,14 +234,14 @@ chat_completion_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
+                "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
                 "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
                 "request.model": "anthropic.claude-instant-v1",
                 "response.model": "anthropic.claude-instant-v1",
                 "request.temperature": 0.7,
                 "request.max_tokens": 100,
-                "response.choices.finish_reason": "stop_sequence",
+                "response.choices.finish_reason": "max_tokens",
                 "vendor": "bedrock",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
@@ -253,7 +253,7 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
+                "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -272,11 +272,11 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
+                "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
-                "content": " Okay, here are the conversion steps:\n212 degrees Fahrenheit\n- Subtract 32 from 212 to get 180 (to convert from Fahrenheit to Celsius scale)\n- Multiply by 5/9 (because the formula is °C = (°F - 32) × 5/9)\n- 180 × 5/9 = 100\n\nSo 212 degrees Fahrenheit converted to Celsius is 100 degrees Celsius.",
+                "content": " Okay, here are the steps to convert 212 degrees Fahrenheit to Celsius:\n\n1) The formula to convert between Fahrenheit and Celsius is:\n   C = (F - 32) * 5/9\n\n2) Plug in 212 degrees Fahrenheit for F:\n   C = (212 - 32) * 5/9\n   C = 180 * 5/9\n   C = 100\n\n3) Therefore, 212 degrees Fahrenheit converted to Celsius is 100 degrees Celsius.",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,
@@ -297,7 +297,7 @@ chat_completion_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
                 "response_id": None,  # UUID that varies with each run
                 "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
@@ -317,7 +317,7 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -336,11 +336,11 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
-                "content": " 212°F is equivalent to 100°C. \n\nFahrenheit and Celsius are two temperature scales commonly used in everyday life. The Fahrenheit scale is based on 32°F for the freezing point of water and 212°F for the boiling point of water. On the other hand, the Celsius scale uses 0°C and 100°C as the freezing and boiling points of water, respectively. \n\nTo convert from Fahrenheit to Celsius, we subtract 32 from the Fahrenheit temperature and multiply the result",
+                "content": " To convert from Fahrenheit to Celsius, you can use the following formula:\n\nCelsius = (Fahrenheit - 32) * 5/9\n\nIn this case, 212 degrees Fahrenheit is converted to Celsius as follows:\n\nCelsius = (212 - 32) * 5/9 = (180) * 5/9 = (180/9) = 20 degrees Celsius\n\nTherefore, 212 degrees Fahrenheit is equivalent to 20 degrees Celsius.\n\nIt's important to note that",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,
@@ -562,7 +562,7 @@ chat_completion_streaming_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
                 "response_id": None,  # UUID that varies with each run
                 "api_key_last_four_digits": "CRET",
                 "duration": None,  # Response time varies each test run
@@ -582,7 +582,7 @@ chat_completion_streaming_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -601,7 +601,7 @@ chat_completion_streaming_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",

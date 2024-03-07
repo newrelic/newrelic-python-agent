@@ -47,6 +47,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.databricks_vector_search": "DatabricksVectorSearch",
     "langchain_community.vectorstores.deeplake": "DeepLake",
     "langchain_community.vectorstores.dingo": "Dingo",
+    "langchain_community.vectorstores.documentdb": "DocumentDBVectorSearch",
     "langchain_community.vectorstores.elastic_vector_search": "ElasticVectorSearch",
     # "langchain_community.vectorstores.elastic_vector_search": "ElasticKnnSearch", # Deprecated
     "langchain_community.vectorstores.elasticsearch": "ElasticsearchStore",
@@ -55,6 +56,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.hanavector": "HanaDB",
     "langchain_community.vectorstores.hippo": "Hippo",
     "langchain_community.vectorstores.hologres": "Hologres",
+    "langchain_community.vectorstores.infinispanvs": "InfinispanVS",
     "langchain_community.vectorstores.kdbai": "KDBAI",
     "langchain_community.vectorstores.kinetica": "Kinetica",
     "langchain_community.vectorstores.lancedb": "LanceDB",

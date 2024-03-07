@@ -24,8 +24,11 @@ from _test_bedrock_embeddings import (
     embedding_expected_events,
     embedding_payload_templates,
 )
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
-from conftest import BOTOCORE_VERSION
+from conftest import (  # pylint: disable=E0611
+    BOTOCORE_VERSION,
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+)
 from testing_support.fixtures import (  # override_application_settings,
     dt_enabled,
     override_application_settings,
@@ -141,7 +144,7 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 def test_bedrock_embedding_no_content(set_trace_info, exercise_model, expected_events_no_content):
     @validate_custom_events(expected_events_no_content)
     @validate_custom_event_count(count=1)
@@ -237,7 +240,7 @@ def test_bedrock_embedding_error_incorrect_access_key(
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 def test_bedrock_embedding_error_incorrect_access_key_no_content(
     monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_error_events_no_content, expected_client_error
 ):

@@ -19,7 +19,10 @@ import uuid
 import langchain
 import pydantic
 import pytest
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
+from conftest import (  # pylint: disable=E0611
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+)
 from langchain.tools import tool
 from mock import patch
 from testing_support.fixtures import (
@@ -115,7 +118,7 @@ def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
@@ -154,7 +157,7 @@ def test_langchain_single_arg_tool_async(set_trace_info, single_arg_tool, loop):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
@@ -305,7 +308,7 @@ def test_langchain_error_in_run(set_trace_info, multi_arg_tool):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(
     callable_name(pydantic.v1.error_wrappers.ValidationError),
@@ -370,7 +373,7 @@ def test_langchain_error_in_run_async(set_trace_info, multi_arg_tool, loop):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(
     callable_name(pydantic.v1.error_wrappers.ValidationError),

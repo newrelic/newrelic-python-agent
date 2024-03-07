@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import json
 import os
 
@@ -84,6 +85,19 @@ RECORDED_HEADERS = set(["x-request-id", "content-type"])
 
 disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.enabled": False})
 disabled_ai_monitoring_streaming_settings = override_application_settings({"ai_monitoring.streaming.enabled": False})
+disabled_ai_monitoring_record_content_settings = override_application_settings(
+    {"ai_monitoring.record_content.enabled": False}
+)
+
+
+def events_sans_content(event):
+    new_event = copy.deepcopy(event)
+    for _event in new_event:
+        if "input" in _event[1]:
+            del _event[1]["input"]
+        elif "content" in _event[1]:
+            del _event[1]["content"]
+    return new_event
 
 
 @pytest.fixture(scope="session")

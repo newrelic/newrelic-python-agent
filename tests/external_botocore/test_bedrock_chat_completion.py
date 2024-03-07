@@ -25,8 +25,11 @@ from _test_bedrock_chat_completion import (
     chat_completion_invalid_model_error_events,
     chat_completion_payload_templates,
 )
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
-from conftest import BOTOCORE_VERSION
+from conftest import (  # pylint: disable=E0611
+    BOTOCORE_VERSION,
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+)
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
@@ -159,7 +162,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(set_trace_info, exerci
 
 # not working with claude
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
     set_trace_info, exercise_model, expected_events_no_content
 ):
@@ -336,7 +339,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     monkeypatch,
     bedrock_server,

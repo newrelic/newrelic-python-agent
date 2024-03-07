@@ -213,7 +213,6 @@ def extract_bedrock_titan_embedding_model(request_body, response_body=None):
     input_tokens = response_body.get("inputTextTokenCount", None)
 
     embedding_dict = {
-        "input": request_body.get("inputText", ""),
         "response.usage.prompt_tokens": input_tokens,
         "response.usage.total_tokens": input_tokens,
     }
@@ -542,7 +541,6 @@ def handle_embedding_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "request_id": request_id,
-            "input": request_body.get("inputText", ""),
             "transaction_id": transaction.guid,
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "duration": duration,
@@ -551,8 +549,8 @@ def handle_embedding_event(
         }
     )
 
-    if not settings.ai_monitoring.record_content.enabled:
-        del embedding_dict["input"]
+    if settings.ai_monitoring.record_content.enabled:
+        embedding_dict.update({"input": request_body.get("inputText", "")})
 
     if is_error:
         embedding_dict.update({"error": True})

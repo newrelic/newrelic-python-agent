@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-
 import openai
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
-from testing_support.fixtures import (  # override_application_settings,
+from conftest import (  # pylint: disable=E0611
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    events_sans_content,
+)
+from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
@@ -28,14 +30,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-
-
-def events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        del _event[1]["input"]
-    return new_event
-
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
@@ -92,7 +86,7 @@ def test_openai_embedding_sync(set_trace_info, sync_openai_client):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
@@ -166,7 +160,7 @@ def test_openai_embedding_async(loop, set_trace_info, async_openai_client):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(

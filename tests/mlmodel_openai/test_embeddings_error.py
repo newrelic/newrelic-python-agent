@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-
 import openai
 import pytest
+from conftest import disabled_ai_monitoring_record_content_settings, events_sans_content
 from testing_support.fixtures import (
     dt_enabled,
-    override_application_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
 )
@@ -33,14 +31,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-
-
-def events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        del _event[1]["input"]
-    return new_event
-
 
 # Sync tests:
 embedding_recorded_events = [
@@ -106,7 +96,7 @@ def test_embeddings_invalid_request_error_no_model(set_trace_info):
 
 @dt_enabled
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
     exact_attrs={
@@ -364,7 +354,7 @@ def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
 
 @dt_enabled
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
     exact_attrs={

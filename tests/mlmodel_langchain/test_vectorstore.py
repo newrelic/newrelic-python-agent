@@ -17,11 +17,13 @@ import os
 
 import langchain
 import pytest
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
+from conftest import (  # pylint: disable=E0611
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+)
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -157,7 +159,7 @@ def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_cl
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(vectorstore_recorded_events))
 # Two OpenAI LlmEmbedded, two LangChain LlmVectorSearch
 @validate_custom_event_count(count=4)
@@ -248,7 +250,7 @@ def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embeddi
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(vectorstore_recorded_events))
 # Two OpenAI LlmEmbedded, two LangChain LlmVectorSearch
 @validate_custom_event_count(count=4)
@@ -360,7 +362,7 @@ def test_vectorstore_error_no_query(set_trace_info, embedding_openai_client):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
     callable_name(TypeError),
     required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
@@ -416,7 +418,7 @@ def test_async_vectorstore_error_no_query(loop, set_trace_info, embedding_openai
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
     callable_name(TypeError),
     required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},

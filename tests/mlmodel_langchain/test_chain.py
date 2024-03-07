@@ -1321,8 +1321,12 @@ def test_multiple_async_langchain_chain(
 ):
     call1 = expected_events.copy()
     call1[0][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
+    call1[1][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
+    call1[2][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
     call2 = expected_events.copy()
     call2[0][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
+    call2[1][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
+    call2[2][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
 
     @reset_core_stats_engine()
     @validate_custom_events(call1 + call2)

@@ -153,7 +153,7 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
     status_code = response.status_code
 
     # Log response
-    if response.raw.stream:
+    if response.raw.chunked:
         # Log response
         BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, status_code, []  # Append response data to audit log
     else:

@@ -66,6 +66,19 @@ def model_id(request):
     return request.param
 
 
+@pytest.fixture(
+    scope="module",
+    params=[
+        "amazon.titan-text-express-v1",
+        "anthropic.claude-instant-v1",
+        "cohere.command-text-v14",
+        "meta.llama2-13b-chat-v1",
+    ],
+)
+def streaming_model_id(request):
+    return request.param
+
+
 @pytest.fixture(scope="module")
 def exercise_model(bedrock_server, model_id, request_streaming):
     payload_template = chat_completion_payload_templates[model_id]

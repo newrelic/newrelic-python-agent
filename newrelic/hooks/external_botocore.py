@@ -289,41 +289,72 @@ def extract_bedrock_claude_model_streaming_response(response_body, bedrock_attrs
             bedrock_attrs["output_message_list"] = [{"role": "assistant", "content": "".join(bedrock_attrs["_output_message_stream"])}]
             bedrock_attrs.pop("_output_message_stream", None)
 
+            # Extract token information
+            invocation_metrics = response_body.get("amazon-bedrock-invocationMetrics", {})
+            prompt_tokens = invocation_metrics.get("inputTokenCount", 0)
+            completion_tokens = invocation_metrics.get("outputTokenCount", 0)
+            total_tokens = prompt_tokens + completion_tokens
+
+            bedrock_attrs["response.usage.completion_tokens"] = bedrock_attrs.get("response.usage.completion_tokens", 0) + completion_tokens
+            bedrock_attrs["response.usage.prompt_tokens"] = bedrock_attrs.get("response.usage.prompt_tokens", 0) + prompt_tokens
+            bedrock_attrs["response.usage.total_tokens"] = bedrock_attrs.get("response.usage.total_tokens", 0) + total_tokens
+
     return bedrock_attrs
 
 
-def extract_bedrock_llama_model(request_body, response_body=None):
+def extract_bedrock_llama_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
-    if response_body:
-        response_body = json.loads(response_body)
 
     input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
 
-    chat_completion_summary_dict = {
-        "request.max_tokens": request_body.get("max_gen_len", ""),
-        "request.temperature": request_body.get("temperature", ""),
-        "response.number_of_messages": len(input_message_list),
-    }
+    bedrock_attrs["request.max_tokens"] = request_body.get("max_gen_len", "")
+    bedrock_attrs["request.temperature"] = request_body.get("temperature", "")
+    bedrock_attrs["input_message_list"] = input_message_list
 
+    return bedrock_attrs
+
+
+def extract_bedrock_llama_model_response(response_body, bedrock_attrs):
     if response_body:
+        response_body = json.loads(response_body)
         output_message_list = [{"role": "assistant", "content": response_body.get("generation", "")}]
         prompt_tokens = response_body.get("prompt_token_count", None)
         completion_tokens = response_body.get("generation_token_count", None)
         total_tokens = prompt_tokens + completion_tokens if prompt_tokens and completion_tokens else None
 
-        chat_completion_summary_dict.update(
-            {
-                "response.usage.completion_tokens": completion_tokens,
-                "response.usage.prompt_tokens": prompt_tokens,
-                "response.usage.total_tokens": total_tokens,
-                "response.choices.finish_reason": response_body.get("stop_reason", ""),
-                "response.number_of_messages": len(input_message_list) + len(output_message_list),
-            }
-        )
-    else:
-        output_message_list = []
+        bedrock_attrs["response.usage.completion_tokens"] = completion_tokens
+        bedrock_attrs["response.usage.prompt_tokens"] = prompt_tokens
+        bedrock_attrs["response.usage.total_tokens"] = total_tokens
+        bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason", "")
+        bedrock_attrs["output_message_list"] = output_message_list
 
-    return input_message_list, output_message_list, chat_completion_summary_dict
+    return bedrock_attrs
+
+
+def extract_bedrock_llama_model_streaming_response(response_body, bedrock_attrs):
+    if response_body:
+        bedrock_attrs["_output_message_stream"] = messages = bedrock_attrs.get("_output_message_stream", [])
+        messages.append(response_body.get("generation", "") or "")
+
+        stop_reason = response_body.get("stop_reason", "")
+        if stop_reason:
+            bedrock_attrs["response.choices.finish_reason"] = stop_reason
+
+            # Join all message fragments
+            bedrock_attrs["output_message_list"] = [{"role": "assistant", "content": "".join(bedrock_attrs["_output_message_stream"])}]
+            bedrock_attrs.pop("_output_message_stream", None)
+
+            # Extract token information
+            invocation_metrics = response_body.get("amazon-bedrock-invocationMetrics", {})
+            prompt_tokens = invocation_metrics.get("inputTokenCount", 0)
+            completion_tokens = invocation_metrics.get("outputTokenCount", 0)
+            total_tokens = prompt_tokens + completion_tokens
+
+            bedrock_attrs["response.usage.completion_tokens"] = bedrock_attrs.get("response.usage.completion_tokens", 0) + completion_tokens
+            bedrock_attrs["response.usage.prompt_tokens"] = bedrock_attrs.get("response.usage.prompt_tokens", 0) + prompt_tokens
+            bedrock_attrs["response.usage.total_tokens"] = bedrock_attrs.get("response.usage.total_tokens", 0) + total_tokens
+
+    return bedrock_attrs
 
 
 def extract_bedrock_cohere_model_request(request_body, bedrock_attrs):
@@ -355,13 +386,12 @@ def extract_bedrock_cohere_model_response(response_body, bedrock_attrs):
 
 def extract_bedrock_cohere_model_streaming_response(response_body, bedrock_attrs):
     if response_body:
-        breakpoint()
-        output_message_list = [
+        bedrock_attrs["output_message_list"] = messages = bedrock_attrs.get("output_message_list", [])
+        messages.extend([
             {"role": "assistant", "content": result["text"]} for result in response_body.get("generations", [])
-        ]
+        ])
         
         bedrock_attrs["response.choices.finish_reason"] = response_body["generations"][0]["finish_reason"]
-        bedrock_attrs["output_message_list"] = output_message_list
         bedrock_attrs["response_id"] = str(response_body.get("id", ""))
 
         # Extract token information
@@ -383,7 +413,7 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
     ("ai21.j2", extract_bedrock_ai21_j2_model_request, extract_bedrock_ai21_j2_model_response, NULL_EXTRACTOR),
     ("cohere", extract_bedrock_cohere_model_request, extract_bedrock_cohere_model_response, extract_bedrock_cohere_model_streaming_response),
     ("anthropic.claude", extract_bedrock_claude_model_request, extract_bedrock_claude_model_response, extract_bedrock_claude_model_streaming_response),
-    ("meta.llama2", NULL_EXTRACTOR, extract_bedrock_llama_model, NULL_EXTRACTOR),
+    ("meta.llama2", extract_bedrock_llama_model_request, extract_bedrock_llama_model_response, extract_bedrock_llama_model_streaming_response),
 ]
 
 

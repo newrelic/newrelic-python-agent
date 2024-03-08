@@ -215,21 +215,23 @@ def extract_bedrock_titan_text_model_streaming_response(response_body, bedrock_a
     return bedrock_attrs
 
 
-def extract_bedrock_titan_embedding_model(request_body, response_body=None):
-    if not response_body:
-        return [], [], {}  # No extracted information necessary for embedding
-
+def extract_bedrock_titan_embedding_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
-    response_body = json.loads(response_body)
 
-    input_tokens = response_body.get("inputTextTokenCount", None)
+    bedrock_attrs["input"] = request_body.get("inputText", "")
 
-    embedding_dict = {
-        "input": request_body.get("inputText", ""),
-        "response.usage.prompt_tokens": input_tokens,
-        "response.usage.total_tokens": input_tokens,
-    }
-    return [], [], embedding_dict
+    return bedrock_attrs
+
+
+def extract_bedrock_titan_embedding_model_response(response_body, bedrock_attrs):
+    if response_body:
+        response_body = json.loads(response_body)
+
+        input_tokens = response_body.get("inputTextTokenCount", None)
+        bedrock_attrs["response.usage.prompt_tokens"] = input_tokens
+        bedrock_attrs["response.usage.total_tokens"] = input_tokens
+
+    return bedrock_attrs
 
 
 def extract_bedrock_ai21_j2_model_request(request_body, bedrock_attrs):
@@ -437,7 +439,7 @@ def extract_bedrock_cohere_model_streaming_response(response_body, bedrock_attrs
 
 NULL_EXTRACTOR = lambda *args: {}  # Empty extractor that returns nothing
 MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
-    ("amazon.titan-embed", NULL_EXTRACTOR, extract_bedrock_titan_embedding_model, NULL_EXTRACTOR),
+    ("amazon.titan-embed", extract_bedrock_titan_embedding_model_request, extract_bedrock_titan_embedding_model_response, NULL_EXTRACTOR),
     (
         "amazon.titan",
         extract_bedrock_titan_text_model_request,
@@ -669,7 +671,6 @@ def record_events_on_stop_iteration(self, transaction):
 
         bedrock_attrs["duration"] = self._nr_ft.duration
         message_ids = handle_chat_completion_event(transaction, bedrock_attrs)
-        # message_ids = record_streaming_chat_completion_events(self, transaction, bedrock_attrs)
 
         # Cache message ids on transaction for retrieval after bedrock call completion.
         if not hasattr(transaction, "_nr_message_ids"):
@@ -699,48 +700,40 @@ def record_error(self, transaction, exc):
         record_streaming_chat_completion_events_error(self, transaction, bedrock_attrs, exc)
 
 
-def handle_embedding_event(
-    client,
-    transaction,
-    extractor,
-    model,
-    response_body,
-    response_headers,
-    request_body,
-    duration,
-    is_error,
-    trace_id,
-    span_id,
-):
+def handle_embedding_event(transaction, bedrock_attrs):
     embedding_id = str(uuid.uuid4())
-
-    request_id = response_headers.get("x-amzn-requestid", "") if response_headers else ""
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    _, _, embedding_dict = extractor(request_body, response_body)
+    # Get trace information
+    available_metadata = get_trace_linking_metadata()
+    span_id = available_metadata.get("span.id", "")
+    trace_id = available_metadata.get("trace.id", "")
 
-    request_body = json.loads(request_body)
+    request_id = bedrock_attrs.get("request_id", None)
+    # response_id = bedrock_attrs.get("response_id", None)
+    model = bedrock_attrs.get("model", None)
 
-    embedding_dict.update(
-        {
-            "vendor": "bedrock",
-            "ingest_source": "Python",
-            "id": embedding_id,
-            "appName": settings.app_name,
-            "span_id": span_id,
-            "trace_id": trace_id,
-            "request_id": request_id,
-            "input": request_body.get("inputText", ""),
-            "transaction_id": transaction.guid,
-            "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
-            "duration": duration,
-            "request.model": model,
-            "response.model": model,
-        }
-    )
-    if is_error:
-        embedding_dict.update({"error": True})
+    embedding_dict = {
+        "vendor": "bedrock",
+        "ingest_source": "Python",
+        "id": embedding_id,
+        "appName": settings.app_name,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "request_id": request_id,
+        "input": bedrock_attrs.get("input", ""),
+        "transaction_id": transaction.guid,
+        "api_key_last_four_digits": bedrock_attrs.get("api_key_last_four_digits", None),
+        "duration": bedrock_attrs.get("duration", None),
+        "request.model": model,
+        "response.model": model,
+        "response.usage.prompt_tokens": bedrock_attrs.get("response.usage.prompt_tokens", None),
+        "response.usage.total_tokens": bedrock_attrs.get("response.usage.total_tokens", None),
+        "error": bedrock_attrs.get("error", None),
+    }
+    # TODO: is this filter acceptable?
+    embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
 
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
 
@@ -764,6 +757,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
 
     input_message_list = bedrock_attrs.get("input_message_list", [])
     output_message_list = bedrock_attrs.get("output_message_list", [])
+    number_of_messages = (len(input_message_list) + len(output_message_list)) or None  # If 0, attribute will be set to None and removed
 
     chat_completion_summary_dict = {
         "vendor": "bedrock",
@@ -782,15 +776,15 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
         "request.temperature": bedrock_attrs.get("request.temperature", None),
         "request.model": model,
         "response.model": model,  # Duplicate data required by the UI
-        "response.number_of_messages": len(input_message_list) + len(output_message_list),
+        "response.number_of_messages": number_of_messages,
         "response.choices.finish_reason": bedrock_attrs.get("response.choices.finish_reason", None),
         "response.usage.completion_tokens": bedrock_attrs.get("response.usage.completion_tokens", None),
         "response.usage.prompt_tokens": bedrock_attrs.get("response.usage.prompt_tokens", None),
         "response.usage.total_tokens": bedrock_attrs.get("response.usage.total_tokens", None),
+        "error": bedrock_attrs.get("error", None),
     }
-
-    if bedrock_attrs.get("error", False):
-        chat_completion_summary_dict["error"] = True
+    # TODO: is this filter acceptable?
+    chat_completion_summary_dict = {k: v for k, v in chat_completion_summary_dict.items() if v is not None}
 
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 

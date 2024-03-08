@@ -60,24 +60,25 @@ def extract(argument_names, default=None):
     return extractor_list
 
 
-def bedrock_error_attributes(exception, request_args, client, extractor):
+def bedrock_error_attributes(exception, request_args, client, request_extractor):
     response = getattr(exception, "response", None)
     if not response:
         return {}
 
     request_body = request_args.get("body", "")
-    error_attributes = extractor(request_body)[2]
+    error_attributes = request_extractor(request_body, {})
 
     error_attributes.update(
         {
             "request_id": response.get("ResponseMetadata", {}).get("RequestId", ""),
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
-            "request.model": request_args.get("modelId", ""),
+            "model": request_args.get("modelId", ""),
             "vendor": "bedrock",
             "ingest_source": "Python",
             "http.statusCode": response.get("ResponseMetadata", "").get("HTTPStatusCode", ""),
             "error.message": response.get("Error", "").get("Message", ""),
             "error.code": response.get("Error", "").get("Code", ""),
+            "error": True,
         }
     )
     return error_attributes
@@ -524,8 +525,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             try:
-                error_attributes = response_extractor(request_body)
-                error_attributes = bedrock_error_attributes(exc, kwargs, instance, response_extractor)
+                error_attributes = bedrock_error_attributes(exc, kwargs, instance, request_extractor)
                 notice_error_attributes = {
                     "http.statusCode": error_attributes["http.statusCode"],
                     "error.message": error_attributes["error.message"],
@@ -541,34 +541,12 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     attributes=notice_error_attributes,
                 )
 
-                if operation == "embedding":  # Only available embedding models
-                    handle_embedding_event(
-                        instance,
-                        transaction,
-                        response_extractor,
-                        model,
-                        None,
-                        None,
-                        request_body,
-                        ft.duration,
-                        True,
-                        trace_id,
-                        span_id,
-                    )
+                error_attributes["duration"] = ft.duration
+
+                if operation == "embedding":
+                    handle_embedding_event(transaction, error_attributes)
                 else:
-                    handle_chat_completion_event(
-                        instance,
-                        transaction,
-                        response_extractor,
-                        model,
-                        None,
-                        None,
-                        request_body,
-                        ft.duration,
-                        True,
-                        trace_id,
-                        span_id,
-                    )
+                    handle_chat_completion_event(transaction, error_attributes)
 
                 ft.__exit__(*sys.exc_info())
             finally:

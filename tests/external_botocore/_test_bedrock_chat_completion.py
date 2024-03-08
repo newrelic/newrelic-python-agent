@@ -740,7 +740,7 @@ chat_completion_invalid_access_key_error_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "",
+                "request_id": "15b39c8b-8e85-42c9-9623-06720301bda3",
                 "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-text-express-v1",
@@ -759,7 +759,7 @@ chat_completion_invalid_access_key_error_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "",
+                "request_id": "15b39c8b-8e85-42c9-9623-06720301bda3",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -783,7 +783,7 @@ chat_completion_invalid_access_key_error_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "",
+                "request_id": "9021791d-3797-493d-9277-e33aa6f6d544",
                 "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "ai21.j2-mid-v1",
@@ -802,7 +802,7 @@ chat_completion_invalid_access_key_error_events = {
                 "id": None,
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "",
+                "request_id": "9021791d-3797-493d-9277-e33aa6f6d544",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -826,7 +826,7 @@ chat_completion_invalid_access_key_error_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "",
+                "request_id": "37396f55-b721-4bae-9461-4c369f5a080d",
                 "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "anthropic.claude-instant-v1",
@@ -845,7 +845,7 @@ chat_completion_invalid_access_key_error_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "",
+                "request_id": "37396f55-b721-4bae-9461-4c369f5a080d",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -869,7 +869,7 @@ chat_completion_invalid_access_key_error_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "",
+                "request_id": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
                 "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "cohere.command-text-v14",
@@ -888,7 +888,7 @@ chat_completion_invalid_access_key_error_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "",
+                "request_id": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -912,7 +912,7 @@ chat_completion_invalid_access_key_error_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "",
+                "request_id": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
                 "api_key_last_four_digits": "-KEY",
                 "duration": None,  # Response time varies each test run
                 "request.model": "meta.llama2-13b-chat-v1",
@@ -931,7 +931,7 @@ chat_completion_invalid_access_key_error_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "conversation_id": "my-awesome-id",
-                "request_id": "",
+                "request_id": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",

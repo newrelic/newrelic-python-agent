@@ -3647,6 +3647,11 @@ RESPONSES = {
     ],
 }
 
+# Patch error responses into stream responses
+for prompt, value in RESPONSES.items():
+    if value[1] >= 400:
+        STREAMED_RESPONSES[prompt] = value
+
 MODEL_PATH_RE = re.compile(r"/model/([^/]+)/invoke")
 
 

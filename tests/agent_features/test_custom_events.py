@@ -14,6 +14,7 @@
 
 import time
 
+import pytest
 from testing_support.fixtures import (
     function_not_called,
     override_application_settings,
@@ -21,10 +22,11 @@ from testing_support.fixtures import (
     validate_custom_event_count,
     validate_custom_event_in_application_stats_engine,
 )
+from testing_support.validators.validate_custom_events import validate_custom_events
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import record_custom_event
+from newrelic.api.transaction import current_transaction, record_custom_event
 from newrelic.core.custom_event import process_event_type
 
 # Test process_event_type()
@@ -212,3 +214,103 @@ def test_transaction_create_custom_event_not_called():
 def test_application_create_custom_event_not_called():
     app = application()
     record_custom_event("FooEvent", _user_params, application=app)
+
+
+# Test completness of LLM content/input despite attribute limits being set
+
+
+LlmChatCompletionMessage = {
+    "content": "A" * 9001,  # Should print out to completion
+    "input": "B" * 5000,  # Should cap out at 255 or 4095
+    "foo": "b" + "a" * 6000 + "r",
+}
+LlmEmbedding = {
+    "content": "A" * 9001,  # Should cap out at 255 or 4095
+    "input": "B" * 5000,  # Should print out to completion
+    "foo": "b" + "a" * 6000 + "r",
+}
+SomeOtherDict = {
+    "content": "A" * 9001,
+    "input": "B" * 5000,
+    "foo": "b" + "a" * 6000 + "r",
+}
+
+
+recorded_events_256 = [
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "content": "A" * 9001,  # Should print out to completion
+            "input": "B" * 255,  # Should cap out at 255 or 4095
+            "foo": "b" + "a" * 254,
+        },
+    ),
+    (
+        {"type": "LlmEmbedding"},
+        {
+            "content": "A" * 255,  # Should cap out at 255 or 4095
+            "input": "B" * 5000,  # Should print out to completion
+            "foo": "b" + "a" * 254,
+        },
+    ),
+    (
+        {"type": "SomeOtherDict"},
+        {
+            "content": "A" * 255,
+            "input": "B" * 255,
+            "foo": "b" + "a" * 254,
+        },
+    ),
+]
+
+recorded_events_4096 = [
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "content": "A" * 9001,  # Should print out to completion
+            "input": "B" * 4095,  # Should cap out at 255 or 4095
+            "foo": "b" + "a" * 4094,
+        },
+    ),
+    (
+        {"type": "LlmEmbedding"},
+        {
+            "content": "A" * 4095,  # Should cap out at 255 or 4095
+            "input": "B" * 5000,  # Should print out to completion
+            "foo": "b" + "a" * 4094,
+        },
+    ),
+    (
+        {"type": "SomeOtherDict"},
+        {
+            "content": "A" * 4095,
+            "input": "B" * 4095,
+            "foo": "b" + "a" * 4094,
+        },
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "max_val,expected_events",
+    (
+        (255, recorded_events_256),
+        (4095, recorded_events_4096),
+    ),
+)
+def test_create_custom_event_no_limit(max_val, expected_events):
+    @reset_core_stats_engine()
+    @override_application_settings({"custom_insights_events.max_attribute_value": max_val})
+    @validate_custom_event_count(3)
+    @validate_custom_events(expected_events)
+    @background_task()
+    def _test():
+        transaction = current_transaction()
+        if not transaction:
+            return
+
+        transaction.record_custom_event("LlmChatCompletionMessage", LlmChatCompletionMessage)
+        transaction.record_custom_event("LlmEmbedding", LlmEmbedding)
+        transaction.record_custom_event("SomeOtherDict", SomeOtherDict)
+
+    _test()

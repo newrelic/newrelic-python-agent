@@ -30,6 +30,10 @@ from newrelic.core.config import global_settings
 _logger = logging.getLogger(__name__)
 
 EVENT_TYPE_VALID_CHARS_REGEX = re.compile(r"^[a-zA-Z0-9:_ ]+$")
+NO_LIMIT_LLM_EVENT_TYPE = {
+    "LlmChatCompletionMessage": "content",
+    "LlmEmbedding": "input",
+}
 
 
 class NameInvalidCharactersException(Exception):
@@ -115,7 +119,11 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
                 max_length = MAX_ML_ATTRIBUTE_LENGTH
                 max_num_attrs = MAX_NUM_ML_USER_ATTRIBUTES
             else:
-                max_length = settings.custom_insights_events.max_attribute_value
+                max_length = (
+                    settings.custom_insights_events.max_attribute_value
+                    if not (name in NO_LIMIT_LLM_EVENT_TYPE.keys() and NO_LIMIT_LLM_EVENT_TYPE[name] == k)
+                    else None
+                )
                 max_num_attrs = MAX_NUM_USER_ATTRIBUTES
             key, value = process_user_attribute(k, v, max_length=max_length)
             if key:

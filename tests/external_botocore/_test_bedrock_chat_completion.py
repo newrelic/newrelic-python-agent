@@ -441,8 +441,9 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "b427270f-371a-458d-81b6-a05aafb2704c",
@@ -466,11 +467,12 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "request_id": "b427270f-371a-458d-81b6-a05aafb2704c",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "content": "What is 212 degrees Fahrenheit converted to Celsius?",
                 "role": "user",
                 "completion_id": None,
@@ -485,11 +487,12 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "request_id": "b427270f-371a-458d-81b6-a05aafb2704c",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "content": "\n1 degree Fahrenheit is 0.56 degrees Celsius. Therefore, 212 degree Fahrenheit in Celsius would be 115.72.",
                 "role": "assistant",
                 "completion_id": None,
@@ -507,8 +510,9 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "a645548f-0b3a-47ce-a675-f51e6e9037de",
@@ -532,11 +536,12 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "request_id": "a645548f-0b3a-47ce-a675-f51e6e9037de",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "content": "Human: What is 212 degrees Fahrenheit converted to Celsius? Assistant:",
                 "role": "user",
                 "completion_id": None,
@@ -551,11 +556,12 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "request_id": "a645548f-0b3a-47ce-a675-f51e6e9037de",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "content": " Here are the steps to convert 212 degrees Fahrenheit to Celsius:\n\n1) The formula to convert between Fahrenheit and Celsius is:\n   C = (F - 32) * 5/9\n\n2) Plug in 212 degrees Fahrenheit for F:\n   C = (212 - 32) * 5/9\n   C = 180 * 5/9\n   C = 100\n\n3) Therefore, 212 degrees Fahrenheit is equal to 100 degrees Celsius.",
                 "role": "assistant",
                 "completion_id": None,
@@ -573,8 +579,9 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "4f8ab6c5-42d1-4e35-9573-30f9f41f821e",
@@ -599,11 +606,12 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "request_id": "4f8ab6c5-42d1-4e35-9573-30f9f41f821e",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "content": "What is 212 degrees Fahrenheit converted to Celsius?",
                 "role": "user",
                 "completion_id": None,
@@ -618,11 +626,12 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "request_id": "4f8ab6c5-42d1-4e35-9573-30f9f41f821e",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "content": " To convert Fahrenheit to Celsius, you can use the formula:\n\nCelsius = (Fahrenheit - 32) * 5/9\n\nIn this case, if you have 212 degrees Fahrenheit, you can use this formula to calculate the equivalent temperature in Celsius:\n\nCelsius = (212 - 32) * 5/9 = 100 * 5/9 = 50\n\nTherefore, 212 degrees Fahrenheit is equivalent to 50 degrees Celsius.",
                 "role": "assistant",
                 "completion_id": None,
@@ -640,8 +649,9 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "request_id": "6dd99878-0919-4f92-850c-48f50f923b76",
@@ -665,11 +675,12 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "request_id": "6dd99878-0919-4f92-850c-48f50f923b76",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "content": "What is 212 degrees Fahrenheit converted to Celsius?",
                 "role": "user",
                 "completion_id": None,
@@ -684,11 +695,12 @@ chat_completion_streaming_expected_events = {
             {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
-                "conversation_id": "my-awesome-id",
                 "request_id": "6dd99878-0919-4f92-850c-48f50f923b76",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "content": "  What is the conversion formula?\n\n212 degrees Fahrenheit is equal to 100 degrees Celsius.\n\nThe conversion formula is:\n\n°C = (°F - 32) × 5/9\n\nSo, to convert 212 degrees Fahrenheit to Celsius, we can use the formula like this:\n\n°C = (212 - 32) × 5/9\n",
                 "role": "assistant",
                 "completion_id": None,

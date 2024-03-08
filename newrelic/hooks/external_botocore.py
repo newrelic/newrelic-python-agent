@@ -60,28 +60,21 @@ def extract(argument_names, default=None):
     return extractor_list
 
 
-def bedrock_error_attributes(exception, request_args, client, request_extractor):
+def bedrock_error_attributes(exception, bedrock_attrs):
     response = getattr(exception, "response", None)
     if not response:
-        return {}
+        return bedrock_attrs
 
-    request_body = request_args.get("body", "")
-    error_attributes = request_extractor(request_body, {})
-
-    error_attributes.update(
+    bedrock_attrs.update(
         {
             "request_id": response.get("ResponseMetadata", {}).get("RequestId", ""),
-            "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
-            "model": request_args.get("modelId", ""),
-            "vendor": "bedrock",
-            "ingest_source": "Python",
-            "http.statusCode": response.get("ResponseMetadata", "").get("HTTPStatusCode", ""),
+            "http.statusCode": response.get("ResponseMetadata", {}).get("HTTPStatusCode", ""),
             "error.message": response.get("Error", "").get("Message", ""),
             "error.code": response.get("Error", "").get("Code", ""),
             "error": True,
         }
     )
-    return error_attributes
+    return bedrock_attrs
 
 
 def create_chat_completion_message_event(
@@ -525,7 +518,17 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             try:
-                error_attributes = bedrock_error_attributes(exc, kwargs, instance, request_extractor)
+                custom_attrs_dict = transaction._custom_params
+                bedrock_attrs = {
+                    "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
+                    # "id": chat_completion_id,
+                    "appName": settings.app_name,
+                    "conversation_id": custom_attrs_dict.get("llm.conversation_id", ""),
+                    "model": model,
+                }
+                request_extractor(request_body, bedrock_attrs)
+
+                error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
                 notice_error_attributes = {
                     "http.statusCode": error_attributes["http.statusCode"],
                     "error.message": error_attributes["error.message"],
@@ -674,8 +677,11 @@ def record_error(self, transaction, exc):
             self._nr_ft.__exit__(*sys.exc_info())
             return
 
-        return
-        record_streaming_chat_completion_events_error(self, transaction, bedrock_attrs, exc)
+        bedrock_attrs["duration"] = self._nr_ft.duration
+        bedrock_error_attributes(exc, bedrock_attrs)
+        handle_chat_completion_event(transaction, bedrock_attrs)
+        
+        self._nr_ft.__exit__(*sys.exc_info())
 
 
 def handle_embedding_event(transaction, bedrock_attrs):

@@ -524,12 +524,9 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             try:
-                custom_attrs_dict = transaction._custom_params
                 bedrock_attrs = {
                     "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
-                    # "id": chat_completion_id,
                     "appName": settings.app_name,
-                    "conversation_id": custom_attrs_dict.get("llm.conversation_id", ""),
                     "model": model,
                 }
                 request_extractor(request_body, bedrock_attrs)
@@ -565,12 +562,9 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             return response
 
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders", {})
-        custom_attrs_dict = transaction._custom_params
         bedrock_attrs = {
             "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
-            # "id": chat_completion_id,
             "appName": settings.app_name,
-            "conversation_id": custom_attrs_dict.get("llm.conversation_id", ""),
             "request_id": response_headers.get("x-amzn-requestid", "") if response_headers else "",
             "model": model,
         }
@@ -735,10 +729,11 @@ def handle_embedding_event(transaction, bedrock_attrs):
 
 
 def handle_chat_completion_event(transaction, bedrock_attrs):
+    chat_completion_id = str(uuid.uuid4())
+
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
-
-    chat_completion_id = str(uuid.uuid4())
 
     # Get trace information
     available_metadata = get_trace_linking_metadata()

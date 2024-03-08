@@ -45,6 +45,12 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import function_wrapper
+
+
+@pytest.fixture(scope="session", params=[False, True], ids=["ResponseStandard", "ResponseStreaming"])
+def response_streaming(request):
+    return request.param
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["RequestStandard", "RequestStreaming"])
@@ -62,25 +68,16 @@ def request_streaming(request):
         "meta.llama2-13b-chat-v1",
     ],
 )
-def model_id(request):
-    return request.param
+def model_id(request, response_streaming):
+    model = request.param
+    if response_streaming and model == "ai21.j2-mid-v1":
+        pytest.skip(reason="Streaming not supported.")
 
-
-@pytest.fixture(
-    scope="module",
-    params=[
-        "amazon.titan-text-express-v1",
-        "anthropic.claude-instant-v1",
-        "cohere.command-text-v14",
-        "meta.llama2-13b-chat-v1",
-    ],
-)
-def streaming_model_id(request):
-    return request.param
+    return model
 
 
 @pytest.fixture(scope="module")
-def exercise_model(bedrock_server, model_id, request_streaming):
+def exercise_model(bedrock_server, model_id, request_streaming, response_streaming):
     payload_template = chat_completion_payload_templates[model_id]
 
     def _exercise_model(prompt, temperature=0.7, max_tokens=100):
@@ -99,21 +96,14 @@ def exercise_model(bedrock_server, model_id, request_streaming):
 
         return response_body
 
-    return _exercise_model
-
-
-@pytest.fixture(scope="module")
-def exercise_streaming_model(bedrock_server, streaming_model_id, request_streaming):
-    payload_template = chat_completion_payload_templates[streaming_model_id]
-
-    def _exercise_model(prompt, temperature=0.7, max_tokens=100):
+    def _exercise_streaming_model(prompt, temperature=0.7, max_tokens=100):
         body = (payload_template % (prompt, temperature, max_tokens)).encode("utf-8")
         if request_streaming:
             body = BytesIO(body)
 
         response = bedrock_server.invoke_model_with_response_stream(
             body=body,
-            modelId=streaming_model_id,
+            modelId=model_id,
             accept="application/json",
             contentType="application/json",
         )
@@ -121,17 +111,26 @@ def exercise_streaming_model(bedrock_server, streaming_model_id, request_streami
         for resp in body:
             assert resp
 
-    return _exercise_model
+    if response_streaming:
+        return _exercise_streaming_model
+    else:
+        return _exercise_model
 
 
 @pytest.fixture(scope="module")
-def expected_events(model_id):
-    return chat_completion_expected_events[model_id]
+def expected_events(model_id, response_streaming):
+    if response_streaming:
+        return chat_completion_streaming_expected_events[model_id]
+    else:
+        return chat_completion_expected_events[model_id]
 
 
 @pytest.fixture(scope="module")
-def streaming_expected_events(streaming_model_id):
-    return chat_completion_streaming_expected_events[streaming_model_id]
+def expected_metrics(response_streaming):
+    if response_streaming:
+        return [("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)]
+    else:
+        return [("Llm/completion/Bedrock/invoke_model", 1)]
 
 
 @pytest.fixture(scope="module")
@@ -140,8 +139,8 @@ def expected_invalid_access_key_error_events(model_id):
 
 
 @pytest.fixture(scope="module")
-def expected_events_no_convo_id(model_id):
-    events = copy.deepcopy(chat_completion_expected_events[model_id])
+def expected_events_no_convo_id(expected_events):
+    events = copy.deepcopy(expected_events)
     for event in events:
         event[1]["conversation_id"] = ""
     return events
@@ -157,14 +156,14 @@ _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted
 
 # not working with claude
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_model, expected_events):
+def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_model, expected_events, expected_metrics):
     @validate_custom_events(expected_events)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_in_txn_with_convo_id",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -180,42 +179,16 @@ def test_bedrock_chat_completion_in_txn_with_convo_id(set_trace_info, exercise_m
     _test()
 
 
-@reset_core_stats_engine()
-def test_bedrock_chat_completion_streaming_in_txn_with_convo_id(
-    set_trace_info, exercise_streaming_model, streaming_expected_events
-):
-    @validate_custom_events(streaming_expected_events)
-    # One summary event, one user message, and one response message from the assistant
-    @validate_custom_event_count(count=3)
-    @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_streaming_in_txn_with_convo_id",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-        custom_metrics=[
-            ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
-        ],
-        background_task=True,
-    )
-    @validate_attributes("agent", ["llm"])
-    @background_task(name="test_bedrock_chat_completion_streaming_in_txn_with_convo_id")
-    def _test():
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        exercise_streaming_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
-
-    _test()
-
-
 # not working with claude
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_no_convo_id(set_trace_info, exercise_model, expected_events_no_convo_id):
+def test_bedrock_chat_completion_in_txn_no_convo_id(set_trace_info, exercise_model, expected_events_no_convo_id, expected_metrics):
     @validate_custom_events(expected_events_no_convo_id)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_in_txn_no_convo_id",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -282,7 +255,7 @@ chat_completion_invalid_model_error_events = [
             "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",
             "response.model": "does-not-exist",
-            "request_id": "",
+            "request_id": "f4908827-3db9-4742-9103-2bbc34578b03",
             "vendor": "bedrock",
             "ingest_source": "Python",
             "error": True,
@@ -292,7 +265,7 @@ chat_completion_invalid_model_error_events = [
 
 
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_info):
+def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_info, response_streaming, expected_metrics):
     @validate_custom_events(chat_completion_invalid_model_error_events)
     @validate_error_trace_attributes(
         "botocore.errorfactory:ValidationException",
@@ -308,8 +281,8 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
     )
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_error_invalid_model",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -320,12 +293,21 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         with pytest.raises(_client_error):
-            bedrock_server.invoke_model(
-                body=b"{}",
-                modelId="does-not-exist",
-                accept="application/json",
-                contentType="application/json",
-            )
+            if response_streaming:
+                stream = bedrock_server.invoke_model_with_response_stream(
+                    body=b"{}",
+                    modelId="does-not-exist",
+                    accept="application/json",
+                    contentType="application/json",
+                )
+                for _ in stream: pass
+            else:
+                bedrock_server.invoke_model(
+                    body=b"{}",
+                    modelId="does-not-exist",
+                    accept="application/json",
+                    contentType="application/json",
+                )
 
     _test()
 
@@ -339,6 +321,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
     set_trace_info,
     expected_client_error,
     expected_invalid_access_key_error_events,
+    expected_metrics,
 ):
     @validate_custom_events(expected_invalid_access_key_error_events)
     @validate_error_trace_attributes(
@@ -351,8 +334,8 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
     )
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],

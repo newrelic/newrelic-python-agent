@@ -93,7 +93,7 @@ single_arg_tool_recorded_events = [
     scoped_metrics=[("Llm/tool/Langchain/run", 1)],
     rollup_metrics=[("Llm/tool/Langchain/run", 1)],
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -112,7 +112,7 @@ def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
     scoped_metrics=[("Llm/tool/Langchain/arun", 1)],
     rollup_metrics=[("Llm/tool/Langchain/arun", 1)],
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -156,7 +156,7 @@ multi_arg_tool_recorded_events = [
     scoped_metrics=[("Llm/tool/Langchain/run", 1)],
     rollup_metrics=[("Llm/tool/Langchain/run", 1)],
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -180,7 +180,7 @@ def test_langchain_multi_arg_tool(set_trace_info, multi_arg_tool):
     scoped_metrics=[("Llm/tool/Langchain/arun", 1)],
     rollup_metrics=[("Llm/tool/Langchain/arun", 1)],
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -240,7 +240,7 @@ multi_arg_error_recorded_events = [
     scoped_metrics=[("Llm/tool/Langchain/run", 1)],
     rollup_metrics=[("Llm/tool/Langchain/run", 1)],
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -271,7 +271,7 @@ def test_langchain_error_in_run(set_trace_info, multi_arg_tool):
     scoped_metrics=[("Llm/tool/Langchain/arun", 1)],
     rollup_metrics=[("Llm/tool/Langchain/arun", 1)],
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -316,7 +316,7 @@ disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
     scoped_metrics=[("Llm/tool/Langchain/run", 1)],
     rollup_metrics=[("Llm/tool/Langchain/run", 1)],
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -347,7 +347,7 @@ def test_langchain_tool_disabled_ai_monitoring_events_sync(set_trace_info, singl
     scoped_metrics=[("Llm/tool/Langchain/arun", 1)],
     rollup_metrics=[("Llm/tool/Langchain/arun", 1)],
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -387,7 +387,7 @@ def test_langchain_multiple_async_calls(set_trace_info, single_arg_tool, multi_a
     @validate_transaction_metrics(
         name="test_tool:test_langchain_multiple_async_calls.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )

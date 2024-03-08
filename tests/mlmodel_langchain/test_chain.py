@@ -17,6 +17,7 @@ import uuid
 import langchain
 import openai
 import pytest
+from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from langchain.chains.openai_functions import (
     create_structured_output_chain,
     create_structured_output_runnable,
@@ -40,7 +41,7 @@ from testing_support.validators.validate_transaction_error_event_count import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
+
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
@@ -55,7 +56,6 @@ chat_completion_recorded_events_uuid_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -73,7 +73,6 @@ chat_completion_recorded_events_uuid_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -91,7 +90,6 @@ chat_completion_recorded_events_uuid_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -114,7 +112,8 @@ chat_completion_recorded_events_invoke_langchain_error = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -134,7 +133,8 @@ chat_completion_recorded_events_invoke_langchain_error = [
         {
             "id": "message-id-0",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -154,7 +154,8 @@ chat_completion_recorded_events_runnable_invoke_openai_error = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -174,7 +175,8 @@ chat_completion_recorded_events_runnable_invoke_openai_error = [
         {
             "id": "message-id-0",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -194,7 +196,8 @@ chat_completion_recorded_events_runnable_invoke_openai_error_missing_message_ids
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -214,7 +217,8 @@ chat_completion_recorded_events_runnable_invoke_openai_error_missing_message_ids
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -234,7 +238,8 @@ chat_completion_recorded_events_runnable_invoke = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -253,7 +258,8 @@ chat_completion_recorded_events_runnable_invoke = [
         {
             "id": "message-id-0",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -271,7 +277,8 @@ chat_completion_recorded_events_runnable_invoke = [
         {
             "id": "message-id-1",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -292,7 +299,8 @@ chat_completion_recorded_events_invoke = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -311,7 +319,8 @@ chat_completion_recorded_events_invoke = [
         {
             "id": "message-id-0",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -329,7 +338,8 @@ chat_completion_recorded_events_invoke = [
         {
             "id": "message-id-1",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -350,7 +360,8 @@ chat_completion_recorded_events_runnable_invoke_missing_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -369,7 +380,8 @@ chat_completion_recorded_events_runnable_invoke_missing_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -387,7 +399,8 @@ chat_completion_recorded_events_runnable_invoke_missing_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -408,7 +421,8 @@ chat_completion_recorded_events_invoke_missing_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -427,7 +441,8 @@ chat_completion_recorded_events_invoke_missing_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -445,7 +460,8 @@ chat_completion_recorded_events_invoke_missing_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -466,7 +482,8 @@ chat_completion_recorded_events_runnable_invoke_missing_some_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -485,7 +502,8 @@ chat_completion_recorded_events_runnable_invoke_missing_some_message_ids = [
         {
             "id": "message-id-0",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -503,7 +521,8 @@ chat_completion_recorded_events_runnable_invoke_missing_some_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -524,7 +543,8 @@ chat_completion_recorded_events_invoke_missing_some_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -543,7 +563,8 @@ chat_completion_recorded_events_invoke_missing_some_message_ids = [
         {
             "id": "message-id-0",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -561,7 +582,8 @@ chat_completion_recorded_events_invoke_missing_some_message_ids = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -582,7 +604,8 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -600,7 +623,8 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -618,7 +642,8 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -639,7 +664,8 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -657,7 +683,8 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -675,7 +702,8 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -696,7 +724,6 @@ chat_completion_recorded_events_invoke_missing_conversation_id = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -715,7 +742,6 @@ chat_completion_recorded_events_invoke_missing_conversation_id = [
         {
             "id": "message-id-0",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -733,7 +759,6 @@ chat_completion_recorded_events_invoke_missing_conversation_id = [
         {
             "id": "message-id-1",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -754,7 +779,6 @@ chat_completion_recorded_events_runnable_invoke_missing_conversation_id = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -773,7 +797,6 @@ chat_completion_recorded_events_runnable_invoke_missing_conversation_id = [
         {
             "id": "message-id-0",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -791,7 +814,6 @@ chat_completion_recorded_events_runnable_invoke_missing_conversation_id = [
         {
             "id": "message-id-1",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -813,7 +835,8 @@ chat_completion_recorded_events_list_response = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -832,7 +855,8 @@ chat_completion_recorded_events_list_response = [
         {
             "id": "message-id-0",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -850,7 +874,8 @@ chat_completion_recorded_events_list_response = [
         {
             "id": "message-id-1",
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -872,7 +897,8 @@ chat_completion_recorded_events_error_in_openai = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -891,7 +917,8 @@ chat_completion_recorded_events_error_in_openai = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -912,7 +939,8 @@ chat_completion_recorded_events_error_in_langchain = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
@@ -930,7 +958,8 @@ chat_completion_recorded_events_error_in_langchain = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_langchain)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -952,7 +981,7 @@ chat_completion_recorded_events_error_in_langchain = [
 @validate_transaction_metrics(
     name="test_chain:test_langchain_chain_list_response",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -960,6 +989,8 @@ chat_completion_recorded_events_error_in_langchain = [
 def test_langchain_chain_list_response(set_trace_info, comma_separated_list_output_parser, chat_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
 
     template = """You are a helpful assistant who generates comma separated lists.
     A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
@@ -1134,7 +1165,7 @@ def test_langchain_chain(
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1143,6 +1174,9 @@ def test_langchain_chain(
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
         runnable = create_function(json_schema, chat_openai_client, prompt)
 
         output = getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
@@ -1200,7 +1234,7 @@ def test_langchain_chain_without_conversation_id(
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_without_conversation_id.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1293,7 +1327,7 @@ def test_langchain_chain_error_in_openai(
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_openai.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1301,6 +1335,9 @@ def test_langchain_chain_error_in_openai(
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
         runnable = create_function(json_schema, chat_openai_client, prompt_openai_error)
 
         with pytest.raises(openai.AuthenticationError):
@@ -1365,7 +1402,7 @@ def test_langchain_chain_error_in_langchain(
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_langchain.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1373,6 +1410,9 @@ def test_langchain_chain_error_in_langchain(
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
         runnable = create_function(json_schema, chat_openai_client, prompt)
 
         with pytest.raises(expected_error):
@@ -1392,6 +1432,8 @@ def test_langchain_chain_outside_transaction(
 ):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
 
     runnable = create_function(json_schema, chat_openai_client, prompt)
 
@@ -1413,7 +1455,7 @@ disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 @validate_transaction_metrics(
     name="test_chain:test_langchain_chain_custom_insights_disabled",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -1458,7 +1500,7 @@ def test_langchain_chain_ai_monitoring_disabled(
 @validate_transaction_metrics(
     name="test_chain:test_async_langchain_chain_list_response",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -1468,6 +1510,8 @@ def test_async_langchain_chain_list_response(
 ):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
 
     template = """You are a helpful assistant who generates comma separated lists.
     A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
@@ -1648,7 +1692,7 @@ def test_async_langchain_chain(
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1657,6 +1701,9 @@ def test_async_langchain_chain(
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
         runnable = create_function(json_schema, chat_openai_client, prompt)
 
         loop.run_until_complete(getattr(runnable, call_function)(*call_function_args, **call_function_kwargs))
@@ -1701,7 +1748,7 @@ def test_async_langchain_chain_without_conversation_id(
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_without_conversation_id.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1793,7 +1840,7 @@ def test_async_langchain_chain_error_in_openai(
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_openai.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1801,6 +1848,9 @@ def test_async_langchain_chain_error_in_openai(
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
         runnable = create_function(json_schema, chat_openai_client, prompt_openai_error)
 
         with pytest.raises(openai.AuthenticationError):
@@ -1864,7 +1914,7 @@ def test_async_langchain_chain_error_in_lanchain(
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_lanchain.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1872,6 +1922,9 @@ def test_async_langchain_chain_error_in_lanchain(
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
         runnable = create_function(json_schema, chat_openai_client, prompt)
 
         with pytest.raises(expected_error):
@@ -1894,6 +1947,8 @@ def test_async_langchain_chain_outside_transaction(
 ):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
 
     runnable = create_function(json_schema, chat_openai_client, prompt)
 
@@ -1956,7 +2011,7 @@ def test_multiple_async_langchain_chain(
     @validate_transaction_metrics(
         name="test_chain:test_multiple_async_langchain_chain.<locals>._test",
         custom_metrics=[
-            ("Python/ML/Langchain/%s" % langchain.__version__, 1),
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
         background_task=True,
     )
@@ -1975,6 +2030,9 @@ def test_multiple_async_langchain_chain(
             ]
             set_trace_info()
             add_custom_attribute("llm.conversation_id", "my-awesome-id")
+            add_custom_attribute("llm.foo", "bar")
+            add_custom_attribute("non_llm_attr", "python-agent")
+
             runnable = create_function(json_schema, chat_openai_client, prompt)
 
             call1 = asyncio.ensure_future(

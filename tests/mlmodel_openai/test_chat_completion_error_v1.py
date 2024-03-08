@@ -44,7 +44,7 @@ expected_events_on_no_model_error = [
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
             "api_key_last_four_digits": "sk-CRET",
@@ -64,7 +64,7 @@ expected_events_on_no_model_error = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
@@ -83,7 +83,7 @@ expected_events_on_no_model_error = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
@@ -175,7 +175,7 @@ expected_events_on_invalid_model_error = [
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
             "api_key_last_four_digits": "sk-CRET",
@@ -195,7 +195,7 @@ expected_events_on_invalid_model_error = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "my-awesome-id",
+            "llm.conversation_id": "my-awesome-id",
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
@@ -299,7 +299,6 @@ expected_events_on_wrong_api_key_error = [
             "id": None,  # UUID that varies with each run
             "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
-            "conversation_id": "",
             "span_id": None,
             "trace_id": "trace-id",
             "api_key_last_four_digits": "sk-BEEF",
@@ -319,7 +318,6 @@ expected_events_on_wrong_api_key_error = [
         {
             "id": None,
             "appName": "Python Agent Test (mlmodel_openai)",
-            "conversation_id": "",
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",

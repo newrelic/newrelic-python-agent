@@ -87,7 +87,7 @@ def create_chat_completion_message_event(
     trace_id,
     request_model,
     request_id,
-    conversation_id,
+    llm_metadata_dict,
     response_id="",
 ):
     if not transaction:
@@ -103,7 +103,6 @@ def create_chat_completion_message_event(
         chat_completion_message_dict = {
             "id": id_,
             "appName": app_name,
-            "conversation_id": conversation_id,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -116,6 +115,9 @@ def create_chat_completion_message_event(
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
+
+        chat_completion_message_dict.update(llm_metadata_dict)
+
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
 
     for index, message in enumerate(output_message_list):
@@ -130,7 +132,6 @@ def create_chat_completion_message_event(
         chat_completion_message_dict = {
             "id": id_,
             "appName": app_name,
-            "conversation_id": conversation_id,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -144,7 +145,12 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
             "is_response": True,
         }
+
+        chat_completion_message_dict.update(llm_metadata_dict)
+
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_message_dict)
+
+    conversation_id = None
     return (conversation_id, request_id, message_ids)
 
 
@@ -693,6 +699,10 @@ def handle_embedding_event(transaction, bedrock_attrs):
     available_metadata = get_trace_linking_metadata()
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
+    
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
+    custom_attrs_dict = transaction._custom_params
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
     request_id = bedrock_attrs.get("request_id", None)
     # response_id = bedrock_attrs.get("response_id", None)
@@ -716,15 +726,17 @@ def handle_embedding_event(transaction, bedrock_attrs):
         "response.usage.total_tokens": bedrock_attrs.get("response.usage.total_tokens", None),
         "error": bedrock_attrs.get("error", None),
     }
+    embedding_dict.update(llm_metadata_dict)
     # TODO: is this filter acceptable?
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
+
 
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
 
 
 def handle_chat_completion_event(transaction, bedrock_attrs):
     custom_attrs_dict = transaction._custom_params
-    conversation_id = custom_attrs_dict.get("llm.conversation_id", "")
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
     chat_completion_id = str(uuid.uuid4())
 
@@ -749,7 +761,6 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
         "api_key_last_four_digits": bedrock_attrs.get("api_key_last_four_digits", None),
         "id": chat_completion_id,
         "appName": settings.app_name,
-        "conversation_id": conversation_id,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
@@ -767,8 +778,10 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
         "response.usage.total_tokens": bedrock_attrs.get("response.usage.total_tokens", None),
         "error": bedrock_attrs.get("error", None),
     }
+    chat_completion_summary_dict.update(llm_metadata_dict)
     # TODO: is this filter acceptable?
     chat_completion_summary_dict = {k: v for k, v in chat_completion_summary_dict.items() if v is not None}
+
 
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
@@ -782,7 +795,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
         trace_id=trace_id,
         request_model=model,
         request_id=request_id,
-        conversation_id=conversation_id,
+        llm_metadata_dict=llm_metadata_dict,
         response_id=response_id,
     )
 

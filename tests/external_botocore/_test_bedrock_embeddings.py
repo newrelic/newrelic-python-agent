@@ -25,6 +25,8 @@ embedding_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "input": "This is an embedding test.",
@@ -47,6 +49,8 @@ embedding_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "appName": "Python Agent Test (external_botocore)",
                 "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "input": "This is an embedding test.",

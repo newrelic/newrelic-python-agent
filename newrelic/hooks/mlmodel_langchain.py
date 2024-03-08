@@ -47,6 +47,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.databricks_vector_search": "DatabricksVectorSearch",
     "langchain_community.vectorstores.deeplake": "DeepLake",
     "langchain_community.vectorstores.dingo": "Dingo",
+    "langchain_community.vectorstores.documentdb": "DocumentDBVectorSearch",
     "langchain_community.vectorstores.elastic_vector_search": "ElasticVectorSearch",
     # "langchain_community.vectorstores.elastic_vector_search": "ElasticKnnSearch", # Deprecated
     "langchain_community.vectorstores.elasticsearch": "ElasticsearchStore",
@@ -55,7 +56,9 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.hanavector": "HanaDB",
     "langchain_community.vectorstores.hippo": "Hippo",
     "langchain_community.vectorstores.hologres": "Hologres",
+    "langchain_community.vectorstores.infinispanvs": "InfinispanVS",
     "langchain_community.vectorstores.kdbai": "KDBAI",
+    "langchain_community.vectorstores.kinetica": "Kinetica",
     "langchain_community.vectorstores.lancedb": "LanceDB",
     "langchain_community.vectorstores.lantern": "Lantern",
     "langchain_community.vectorstores.llm_rails": "LLMRails",
@@ -139,6 +142,8 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
 
     function_name = callable_name(wrapped)
 
+    llm_metadata_dict = _get_llm_metadata(transaction)
+
     # LLMVectorSearch and Error data
     available_metadata = get_trace_linking_metadata()
     span_id = available_metadata.get("span.id", "")
@@ -155,10 +160,10 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
             raise
 
     if not response:
-        return response  # Should always be None
+        return response
 
     # LLMVectorSearch
-    request_query, request_k = bind_asimilarity_search(*args, **kwargs)
+    request_query, request_k = bind_similarity_search(*args, **kwargs)
     duration = ft.duration
     response_number_of_documents = len(response)
 
@@ -182,6 +187,9 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     }
 
     LLMVectorSearch_dict.update(LLMVectorSearch_union_dict)
+
+    LLMVectorSearch_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmVectorSearch", LLMVectorSearch_dict)
 
     # LLMVectorSearchResult
@@ -201,6 +209,12 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
 
         LLMVectorSearchResult_dict.update(LLMVectorSearch_union_dict)
         LLMVectorSearchResult_dict.update(metadata_dict)
+        # This works in Python 3.9.8+
+        # https://peps.python.org/pep-0584/
+        # LLMVectorSearchResult_dict |= LLMVectorSearch_dict
+        # LLMVectorSearchResult_dict |= metadata_dict
+
+        LLMVectorSearchResult_dict.update(llm_metadata_dict)
 
         transaction.record_custom_event("LlmVectorSearchResult", LLMVectorSearchResult_dict)
 
@@ -224,6 +238,8 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     transaction._add_agent_attribute("llm", True)
 
     function_name = callable_name(wrapped)
+
+    llm_metadata_dict = _get_llm_metadata(transaction)
 
     # LLMVectorSearch and Error data
     available_metadata = get_trace_linking_metadata()
@@ -268,6 +284,9 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     }
 
     LLMVectorSearch_dict.update(LLMVectorSearch_union_dict)
+
+    LLMVectorSearch_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmVectorSearch", LLMVectorSearch_dict)
 
     # LLMVectorSearchResult
@@ -291,6 +310,8 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         # https://peps.python.org/pep-0584/
         # LLMVectorSearchResult_dict |= LLMVectorSearch_dict
         # LLMVectorSearchResult_dict |= metadata_dict
+
+        LLMVectorSearchResult_dict.update(llm_metadata_dict)
 
         transaction.record_custom_event("LlmVectorSearchResult", LLMVectorSearchResult_dict)
 
@@ -320,6 +341,8 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     tool_input = run_args.get("tool_input", "")
     tool_name = instance.name or ""
     tool_description = instance.description or ""
+
+    llm_metadata_dict = _get_llm_metadata(transaction)
 
     span_id = None
     trace_id = None
@@ -370,6 +393,8 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                 }
             )
 
+            error_tool_event_dict.update(llm_metadata_dict)
+
             transaction.record_custom_event("LlmTool", error_tool_event_dict)
 
             raise
@@ -407,6 +432,8 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
         }
     )
 
+    full_tool_event_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmTool", full_tool_event_dict)
 
     return return_val
@@ -440,6 +467,11 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
 
     span_id = None
     trace_id = None
+
+    llm_metadata_dict = _get_llm_metadata(transaction)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    app_name = settings.app_name
 
     function_name = wrapped.__name__
 
@@ -487,6 +519,8 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
                 }
             )
 
+            error_tool_event_dict.update(llm_metadata_dict)
+
             transaction.record_custom_event("LlmTool", error_tool_event_dict)
 
             raise
@@ -521,6 +555,8 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
             "tags": tags or "",
         }
     )
+
+    full_tool_event_dict.update(llm_metadata_dict)
 
     transaction.record_custom_event("LlmTool", full_tool_event_dict)
 
@@ -690,7 +726,7 @@ def _create_error_chain_run_events(
 ):
     _input = _get_chain_run_input(run_args)
     app_name = _get_app_name(transaction)
-    conversation_id = _get_conversation_id(transaction)
+    llm_metadata_dict = _get_llm_metadata(transaction)
     run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
     input_message_list = [_input]
 
@@ -700,7 +736,6 @@ def _create_error_chain_run_events(
         {
             "id": completion_id,
             "appName": app_name,
-            "conversation_id": conversation_id,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
@@ -714,6 +749,9 @@ def _create_error_chain_run_events(
             "error": True,
         }
     )
+
+    full_chat_completion_summary_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
     create_chat_completion_message_event(
@@ -724,7 +762,7 @@ def _create_error_chain_run_events(
         span_id,
         trace_id,
         run_id,
-        conversation_id,
+        llm_metadata_dict,
         [],
         message_ids,
     )
@@ -751,9 +789,11 @@ def _get_app_name(transaction):
     return settings.app_name
 
 
-def _get_conversation_id(transaction):
+def _get_llm_metadata(transaction):
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
-    return custom_attrs_dict.get("llm.conversation_id", "")
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+    return llm_metadata_dict
 
 
 def _create_successful_chain_run_events(
@@ -761,7 +801,7 @@ def _create_successful_chain_run_events(
 ):
     _input = _get_chain_run_input(run_args)
     app_name = _get_app_name(transaction)
-    conversation_id = _get_conversation_id(transaction)
+    llm_metadata_dict = _get_llm_metadata(transaction)
     run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
     input_message_list = [_input]
     output_message_list = []
@@ -779,7 +819,6 @@ def _create_successful_chain_run_events(
         {
             "id": completion_id,
             "appName": app_name,
-            "conversation_id": conversation_id,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
@@ -792,6 +831,9 @@ def _create_successful_chain_run_events(
             "tags": tags,
         }
     )
+
+    full_chat_completion_summary_dict.update(llm_metadata_dict)
+
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
     create_chat_completion_message_event(
@@ -802,7 +844,7 @@ def _create_successful_chain_run_events(
         span_id,
         trace_id,
         run_id,
-        conversation_id,
+        llm_metadata_dict,
         output_message_list,
         message_ids,
     )
@@ -816,7 +858,7 @@ def create_chat_completion_message_event(
     span_id,
     trace_id,
     run_id,
-    conversation_id,
+    llm_metadata_dict,
     output_message_list,
     message_ids,
 ):
@@ -837,7 +879,6 @@ def create_chat_completion_message_event(
         chat_completion_input_message_dict = {
             "id": message_ids[index],
             "appName": app_name,
-            "conversation_id": conversation_id,
             "request_id": run_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -850,6 +891,8 @@ def create_chat_completion_message_event(
             "virtual_llm": True,
         }
 
+        chat_completion_input_message_dict.update(llm_metadata_dict)
+
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_input_message_dict)
 
     if output_message_list:
@@ -861,7 +904,6 @@ def create_chat_completion_message_event(
             chat_completion_output_message_dict = {
                 "id": message_ids[index],
                 "appName": app_name,
-                "conversation_id": conversation_id,
                 "request_id": run_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
@@ -874,6 +916,8 @@ def create_chat_completion_message_event(
                 "is_response": True,
                 "virtual_llm": True,
             }
+
+            chat_completion_output_message_dict.update(llm_metadata_dict)
 
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
 

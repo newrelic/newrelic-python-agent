@@ -15,10 +15,10 @@
 import os
 
 import pytest
+import langchain
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -30,13 +30,11 @@ from testing_support.validators.validate_error_trace_attributes import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-
 from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
-from newrelic.common.package_version_utils import get_package_version
 
-LANGCHAIN_VERSION = get_package_version("langchain")
 
 vectorstore_recorded_events = [
     (
@@ -45,6 +43,8 @@ vectorstore_recorded_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "id": None,  # UUID that changes with each run
             "vendor": "langchain",
             "ingest_source": "Python",
@@ -64,6 +64,8 @@ vectorstore_recorded_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "id": None,  # UUID that changes with each run
             "vendor": "langchain",
             "ingest_source": "Python",
@@ -120,7 +122,7 @@ def test_vectorstore_modules_instrumented():
 @validate_transaction_metrics(
     name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -128,6 +130,9 @@ def test_vectorstore_modules_instrumented():
 @background_task()
 def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_client):
     set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
 
     script_dir = os.path.dirname(__file__)
     loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
@@ -175,7 +180,7 @@ def test_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(set_trace_info, emb
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_pdf_pagesplitter_vectorstore_in_txn",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -184,6 +189,9 @@ def test_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(set_trace_info, emb
 def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embedding_openai_client):
     async def _test():
         set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
 
         script_dir = os.path.dirname(__file__)
         loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
@@ -260,7 +268,7 @@ vectorstore_error_events = [
 @validate_transaction_metrics(
     name="test_vectorstore:test_vectorstore_error_no_query",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -285,7 +293,7 @@ def test_vectorstore_error_no_query(set_trace_info, embedding_openai_client):
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_vectorstore_error_no_query",
     custom_metrics=[
-        ("Python/ML/Langchain/%s" % LANGCHAIN_VERSION, 1),
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )

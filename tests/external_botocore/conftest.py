@@ -137,11 +137,15 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
     success, exception = result
     response = (success or exception)[0]
 
-    if isinstance(request.body, io.BytesIO):
-        request.body.seek(0)
-        body = json.loads(request.body.read())
-    else:
-        body = json.loads(request.body)
+    try:
+        if isinstance(request.body, io.BytesIO):
+            request.body.seek(0)
+            body = json.loads(request.body.read())
+        else:
+            body = json.loads(request.body)
+    except Exception:
+        body = {}
+
     prompt = extract_shortened_prompt(body, model)
     headers = dict(response.headers.items())
     headers = dict(

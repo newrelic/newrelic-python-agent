@@ -43,10 +43,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
 
-    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
-    custom_attrs_dict = transaction._custom_params
-    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
-
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
 
@@ -64,123 +60,13 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
-            if OPENAI_V1:
-                response = getattr(exc, "response", "")
-                response_headers = getattr(response, "headers", "")
-                exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
-                # There appears to be a bug here in openai v1 where despite having code,
-                # param, etc in the error response, they are not populated on the exception
-                # object so grab them from the response body object instead.
-                body = getattr(exc, "body", {}) or {}
-                notice_error_attributes = {
-                    "http.statusCode": getattr(exc, "status_code", "") or "",
-                    "error.message": body.get("message", "") or "",
-                    "error.code": body.get("code", "") or "",
-                    "error.param": body.get("param", "") or "",
-                    "embedding_id": embedding_id,
-                }
-            else:
-                exc_organization = getattr(exc, "organization", "")
-                notice_error_attributes = {
-                    "http.statusCode": getattr(exc, "http_status", ""),
-                    "error.message": getattr(exc, "_message", ""),
-                    "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                    "error.param": getattr(exc, "param", ""),
-                    "embedding_id": embedding_id,
-                }
-            message = notice_error_attributes.pop("error.message")
-            if message:
-                exc._nr_message = message
-            ft.notice_error(
-                attributes=notice_error_attributes,
-            )
-
-            error_embedding_dict = {
-                "id": embedding_id,
-                "span_id": span_id,
-                "trace_id": trace_id,
-                "transaction_id": transaction.guid,
-                "input": kwargs.get("input", ""),
-                "request.model": kwargs.get("model") or kwargs.get("engine") or "",
-                "vendor": "openai",
-                "ingest_source": "Python",
-                "response.organization": "" if exc_organization is None else exc_organization,
-                "duration": ft.duration,
-                "error": True,
-            }
-
-            if not settings.ai_monitoring.record_content.enabled:
-                del error_embedding_dict["input"]
-
-            error_embedding_dict.update(llm_metadata_dict)
-
-            transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
-
+            _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs, ft, exc)
             raise
 
     if not response:
         return response
 
-    response_headers = getattr(response, "_nr_response_headers", {})
-
-    # In v1, response objects are pydantic models so this function call converts the object back to a dictionary for backwards compatibility
-    # Use standard response object returned from create call for v0
-    if OPENAI_V1:
-        attribute_response = response.model_dump()
-    else:
-        attribute_response = response
-
-    request_id = response_headers.get("x-request-id", "") if response_headers else ""
-
-    response_model = attribute_response.get("model", "") or ""
-    response_usage = attribute_response.get("usage", {}) or {}
-    api_type = getattr(attribute_response, "api_type", "")
-    organization = response_headers.get("openai-organization", "") if OPENAI_V1 else attribute_response.organization
-
-    full_embedding_response_dict = {
-        "id": embedding_id,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "transaction_id": transaction.guid,
-        "input": kwargs.get("input", ""),
-        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
-        "request_id": request_id,
-        "duration": ft.duration,
-        "response.model": response_model,
-        "response.organization": organization,
-        "response.api_type": api_type,  # API type was removed in v1
-        "response.usage.total_tokens": response_usage.get("total_tokens", "") if response_usage else "",
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens", "") if response_usage else "",
-        "response.headers.llmVersion": response_headers.get("openai-version", ""),
-        "response.headers.ratelimitLimitRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-limit-requests", True
-        ),
-        "response.headers.ratelimitLimitTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-limit-tokens", True
-        ),
-        "response.headers.ratelimitResetTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-reset-tokens", False
-        ),
-        "response.headers.ratelimitResetRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-reset-requests", False
-        ),
-        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-remaining-tokens", True
-        ),
-        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-remaining-requests", True
-        ),
-        "vendor": "openai",
-        "ingest_source": "Python",
-    }
-
-    if not settings.ai_monitoring.record_content.enabled:
-        del full_embedding_response_dict["input"]
-
-    full_embedding_response_dict.update(llm_metadata_dict)
-
-    transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
-
+    _record_embedding_success(transaction, embedding_id, span_id, trace_id, kwargs, ft, response)
     return response
 
 
@@ -197,8 +83,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
-    if not settings.ai_monitoring.streaming.enabled:
-        transaction.record_custom_metric("Supportability/Python/ML/Streaming/Disabled", 1)
 
     request_message_list = kwargs.get("messages", [])
 
@@ -462,7 +346,6 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "content": message_content,
             "role": message.get("role", ""),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -471,8 +354,8 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
         }
 
-        if not settings.ai_monitoring.record_content.enabled:
-            del chat_completion_input_message_dict["content"]
+        if settings.ai_monitoring.record_content.enabled:
+            chat_completion_input_message_dict["content"] = message_content
 
         chat_completion_input_message_dict.update(llm_metadata_dict)
 
@@ -501,7 +384,6 @@ def create_chat_completion_message_event(
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
-                "content": message_content,
                 "role": message.get("role", ""),
                 "completion_id": chat_completion_id,
                 "sequence": index,
@@ -511,8 +393,8 @@ def create_chat_completion_message_event(
                 "is_response": True,
             }
 
-            if not settings.ai_monitoring.record_content.enabled:
-                del chat_completion_output_message_dict["content"]
+            if settings.ai_monitoring.record_content.enabled:
+                chat_completion_output_message_dict["content"] = message_content
 
             chat_completion_output_message_dict.update(llm_metadata_dict)
 
@@ -535,10 +417,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
 
-    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
-    custom_attrs_dict = transaction._custom_params
-    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
-
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
 
@@ -556,62 +434,21 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         try:
             response = await wrapped(*args, **kwargs)
         except Exception as exc:
-            if OPENAI_V1:
-                response = getattr(exc, "response", "")
-                response_headers = getattr(response, "headers", "")
-                exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
-                # There appears to be a bug here in openai v1 where despite having code,
-                # param, etc in the error response, they are not populated on the exception
-                # object so grab them from the response body object instead.
-                body = getattr(exc, "body", {}) or {}
-                notice_error_attributes = {
-                    "http.statusCode": getattr(exc, "status_code", "") or "",
-                    "error.message": body.get("message", "") or "",
-                    "error.code": body.get("code", "") or "",
-                    "error.param": body.get("param", "") or "",
-                    "embedding_id": embedding_id,
-                }
-            else:
-                exc_organization = getattr(exc, "organization", "")
-                notice_error_attributes = {
-                    "http.statusCode": getattr(exc, "http_status", ""),
-                    "error.message": getattr(exc, "_message", ""),
-                    "error.code": getattr(getattr(exc, "error", ""), "code", ""),
-                    "error.param": getattr(exc, "param", ""),
-                    "embedding_id": embedding_id,
-                }
-            message = notice_error_attributes.pop("error.message")
-            if message:
-                exc._nr_message = message
-            ft.notice_error(
-                attributes=notice_error_attributes,
-            )
-
-            error_embedding_dict = {
-                "id": embedding_id,
-                "span_id": span_id,
-                "trace_id": trace_id,
-                "transaction_id": transaction.guid,
-                "input": kwargs.get("input", ""),
-                "request.model": kwargs.get("model") or kwargs.get("engine") or "",
-                "vendor": "openai",
-                "ingest_source": "Python",
-                "response.organization": "" if exc_organization is None else exc_organization,
-                "duration": ft.duration,
-                "error": True,
-            }
-
-            if not settings.ai_monitoring.record_content.enabled:
-                del error_embedding_dict["input"]
-
-            error_embedding_dict.update(llm_metadata_dict)
-
-            transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
-
+            _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs, ft, exc)
             raise
 
     if not response:
         return response
+
+    _record_embedding_success(transaction, embedding_id, span_id, trace_id, kwargs, ft, response)
+    return response
+
+
+def _record_embedding_success(transaction, embedding_id, span_id, trace_id, kwargs, ft, response):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
+    custom_attrs_dict = transaction._custom_params
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
     response_headers = getattr(response, "_nr_response_headers", {})
 
@@ -634,7 +471,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "input": kwargs.get("input", ""),
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
         "duration": ft.duration,
@@ -666,14 +502,69 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "ingest_source": "Python",
     }
 
-    if not settings.ai_monitoring.record_content.enabled:
-        del full_embedding_response_dict["input"]
+    if settings.ai_monitoring.record_content.enabled:
+        full_embedding_response_dict["input"] = kwargs.get("input", "")
 
     full_embedding_response_dict.update(llm_metadata_dict)
 
     transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
-    return response
+
+def _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs, ft, exc):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
+    custom_attrs_dict = transaction._custom_params
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+
+    if OPENAI_V1:
+        response = getattr(exc, "response", "")
+        response_headers = getattr(response, "headers", "")
+        exc_organization = response_headers.get("openai-organization", "") if response_headers else ""
+        # There appears to be a bug here in openai v1 where despite having code,
+        # param, etc in the error response, they are not populated on the exception
+        # object so grab them from the response body object instead.
+        body = getattr(exc, "body", {}) or {}
+        notice_error_attributes = {
+            "http.statusCode": getattr(exc, "status_code", "") or "",
+            "error.message": body.get("message", "") or "",
+            "error.code": body.get("code", "") or "",
+            "error.param": body.get("param", "") or "",
+            "embedding_id": embedding_id,
+        }
+    else:
+        exc_organization = getattr(exc, "organization", "")
+        notice_error_attributes = {
+            "http.statusCode": getattr(exc, "http_status", ""),
+            "error.message": getattr(exc, "_message", ""),
+            "error.code": getattr(getattr(exc, "error", ""), "code", ""),
+            "error.param": getattr(exc, "param", ""),
+            "embedding_id": embedding_id,
+        }
+    message = notice_error_attributes.pop("error.message")
+    if message:
+        exc._nr_message = message
+    ft.notice_error(
+        attributes=notice_error_attributes,
+    )
+
+    error_embedding_dict = {
+        "id": embedding_id,
+        "appName": settings.app_name,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "transaction_id": transaction.guid,
+        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+        "vendor": "openAI",
+        "ingest_source": "Python",
+        "response.organization": "" if exc_organization is None else exc_organization,
+        "duration": ft.duration,
+        "error": True,
+    }
+    if settings.ai_monitoring.record_content.enabled:
+        error_embedding_dict["input"] = kwargs.get("input", "")
+
+    error_embedding_dict.update(llm_metadata_dict)
+    transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
 
 
 async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
@@ -689,8 +580,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
     transaction._add_agent_attribute("llm", True)
-    if not settings.ai_monitoring.streaming.enabled:
-        transaction.record_custom_metric("Supportability/Python/ML/Streaming/Disabled", 1)
 
     request_message_list = kwargs.get("messages", [])
 

@@ -19,7 +19,10 @@ import uuid
 import langchain
 import openai
 import pytest
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
+from conftest import (  # pylint: disable=E0611
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+)
 from langchain.chains.openai_functions import (
     create_structured_output_chain,
     create_structured_output_runnable,
@@ -28,7 +31,6 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
 from mock import patch
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -1196,7 +1198,7 @@ def test_langchain_chain_no_content(
     expected_events,
 ):
     @reset_core_stats_engine()
-    @override_application_settings({"ai_monitoring.record_content.enabled": False})
+    @disabled_ai_monitoring_record_content_settings
     @validate_custom_events(expected_events)
     # 3 langchain events and 5 openai events.
     @validate_custom_event_count(count=8)
@@ -1505,7 +1507,7 @@ def test_langchain_chain_error_in_langchain_no_content(
     expected_error,
 ):
     @reset_core_stats_engine()
-    @override_application_settings({"ai_monitoring.record_content.enabled": False})
+    @disabled_ai_monitoring_record_content_settings
     @validate_transaction_error_event_count(1)
     @validate_error_trace_attributes(
         callable_name(expected_error),
@@ -1555,37 +1557,6 @@ def test_langchain_chain_outside_transaction(
     assert output == {"name": "Sally", "age": 13}
 
 
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@pytest.mark.parametrize(
-    "create_function,call_function,input_",
-    ((create_structured_output_runnable, "invoke", {"input": "Sally is 13"}),),
-)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_chain:test_langchain_chain_custom_insights_disabled",
-    custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_langchain_chain_custom_insights_disabled(
-    set_trace_info, chat_openai_client, json_schema, prompt, create_function, call_function, input_
-):
-    set_trace_info()
-    add_custom_attribute("llm.conversation_id", "my-awesome-id")
-
-    runnable = create_function(json_schema, chat_openai_client, prompt)
-
-    output = getattr(runnable, call_function)(input_)
-
-    assert output == {"name": "Sally", "age": 13}
-
-
 @disabled_ai_monitoring_settings
 @pytest.mark.parametrize(
     "create_function,call_function,input_",
@@ -1619,6 +1590,49 @@ def test_langchain_chain_ai_monitoring_disabled(
 )
 @background_task()
 def test_async_langchain_chain_list_response(
+    set_trace_info, comma_separated_list_output_parser, chat_openai_client, loop
+):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+
+    template = """You are a helpful assistant who generates comma separated lists.
+    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
+    ONLY return a comma separated list, and nothing more."""
+    human_template = "{text}"
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", template),
+            ("human", human_template),
+        ]
+    )
+    chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
+
+    loop.run_until_complete(
+        chain.ainvoke(
+            {"text": "colors"},
+            config={
+                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+            },
+        )
+    )
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_custom_events(events_sans_content(chat_completion_recorded_events_list_response))
+@validate_custom_event_count(count=7)
+@validate_transaction_metrics(
+    name="test_chain:test_async_langchain_chain_list_response_no_content",
+    custom_metrics=[
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_async_langchain_chain_list_response_no_content(
     set_trace_info, comma_separated_list_output_parser, chat_openai_client, loop
 ):
     set_trace_info()
@@ -2026,6 +2040,81 @@ def test_async_langchain_chain_error_in_lanchain(
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_lanchain.<locals>._test",
+        custom_metrics=[
+            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ],
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
+        runnable = create_function(json_schema, chat_openai_client, prompt)
+
+        with pytest.raises(expected_error):
+            loop.run_until_complete(getattr(runnable, call_function)(*call_function_args, **call_function_kwargs))
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "create_function,call_function,call_function_args,call_function_kwargs,expected_events,expected_error",
+    (
+        pytest.param(
+            create_structured_output_runnable,
+            "ainvoke",
+            ({"no-exist": "Sally is 13"},),
+            {
+                "config": {
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                }
+            },
+            events_sans_content(chat_completion_recorded_events_invoke_langchain_error),
+            KeyError,
+            id="runnable_chain.ainvoke",
+        ),
+        pytest.param(
+            create_structured_output_chain,
+            "ainvoke",
+            ({"no-exist": "Sally is 13"},),
+            {
+                "config": {
+                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                },
+                "return_only_outputs": True,
+            },
+            events_sans_content(chat_completion_recorded_events_invoke_langchain_error),
+            ValueError,
+            id="chain.ainvoke",
+        ),
+    ),
+)
+def test_async_langchain_chain_error_in_lanchain_no_content(
+    set_trace_info,
+    chat_openai_client,
+    json_schema,
+    prompt,
+    create_function,
+    call_function,
+    call_function_args,
+    call_function_kwargs,
+    expected_events,
+    expected_error,
+    loop,
+):
+    @reset_core_stats_engine()
+    @disabled_ai_monitoring_record_content_settings
+    @validate_transaction_error_event_count(1)
+    @validate_error_trace_attributes(
+        callable_name(expected_error),
+    )
+    @validate_custom_events(expected_events)
+    @validate_custom_event_count(count=2)
+    @validate_transaction_metrics(
+        name="test_chain:test_async_langchain_chain_error_in_lanchain_no_content.<locals>._test",
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],

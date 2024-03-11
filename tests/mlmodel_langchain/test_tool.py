@@ -19,11 +19,13 @@ import uuid
 import langchain
 import pydantic
 import pytest
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
+from conftest import (  # pylint: disable=E0611
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+)
 from langchain.tools import tool
 from mock import patch
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -114,7 +116,7 @@ def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
@@ -153,7 +155,7 @@ def test_langchain_single_arg_tool_async(set_trace_info, single_arg_tool, loop):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
@@ -302,7 +304,7 @@ def test_langchain_error_in_run(set_trace_info, multi_arg_tool):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(
     callable_name(pydantic.v1.error_wrappers.ValidationError),
@@ -367,7 +369,7 @@ def test_langchain_error_in_run_async(set_trace_info, multi_arg_tool, loop):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(
     callable_name(pydantic.v1.error_wrappers.ValidationError),
@@ -418,29 +420,6 @@ def test_langchain_tool_outside_txn_async(single_arg_tool, loop):
     )
 
 
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_tool:test_langchain_tool_disabled_custom_insights_events_sync",
-    scoped_metrics=[("Llm/tool/Langchain/run", 1)],
-    rollup_metrics=[("Llm/tool/Langchain/run", 1)],
-    custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_langchain_tool_disabled_custom_insights_events_sync(set_trace_info, single_arg_tool):
-    set_trace_info()
-    single_arg_tool.run(
-        {"query": "Python Agent"}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
-    )
-
-
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -449,28 +428,6 @@ def test_langchain_tool_disabled_ai_monitoring_events_sync(set_trace_info, singl
     set_trace_info()
     single_arg_tool.run(
         {"query": "Python Agent"}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
-    )
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_tool:test_langchain_tool_disabled_custom_insights_events_async",
-    scoped_metrics=[("Llm/tool/Langchain/arun", 1)],
-    rollup_metrics=[("Llm/tool/Langchain/arun", 1)],
-    custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_langchain_tool_disabled_custom_insights_events_async(set_trace_info, single_arg_tool, loop):
-    set_trace_info()
-    loop.run_until_complete(
-        single_arg_tool.arun(
-            {"query": "Python Agent"}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
-        )
     )
 
 

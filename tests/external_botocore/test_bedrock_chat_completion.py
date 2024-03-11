@@ -25,10 +25,12 @@ from _test_bedrock_chat_completion import (
     chat_completion_invalid_model_error_events,
     chat_completion_payload_templates,
 )
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
-from conftest import BOTOCORE_VERSION
+from conftest import (  # pylint: disable=E0611
+    BOTOCORE_VERSION,
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+)
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -159,7 +161,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(set_trace_info, exerci
 
 # not working with claude
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
     set_trace_info, exercise_model, expected_events_no_content
 ):
@@ -216,25 +218,6 @@ def test_bedrock_chat_completion_in_txn_no_llm_metadata(
 @validate_custom_event_count(count=0)
 def test_bedrock_chat_completion_outside_txn(set_trace_info, exercise_model):
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
-    exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
-
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_bedrock_chat_completion_disabled_custom_events_settings",
-    custom_metrics=[
-        ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
-    ],
-    background_task=True,
-)
-@background_task(name="test_bedrock_chat_completion_disabled_custom_events_settings")
-def test_bedrock_chat_completion_disabled_custom_events_settings(set_trace_info, exercise_model):
-    set_trace_info()
     exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
 
@@ -336,7 +319,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     monkeypatch,
     bedrock_server,

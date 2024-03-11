@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-
 import openai
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
+from conftest import (  # pylint: disable=E0611
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    events_sans_content,
+)
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -29,17 +30,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
-
-
-def events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        if "content" in _event[1]:
-            del _event[1]["content"]
-    return new_event
-
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -67,7 +57,6 @@ chat_completion_recorded_events = [
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.choices.finish_reason": "stop",
-            "response.api_type": "None",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 200,
             "response.headers.ratelimitLimitTokens": 40000,
@@ -169,7 +158,7 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata(set_trace_info):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
@@ -212,7 +201,6 @@ chat_completion_recorded_events_no_llm_metadata = [
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.choices.finish_reason": "stop",
-            "response.api_type": "None",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 200,
             "response.headers.ratelimitLimitTokens": 40000,
@@ -309,24 +297,6 @@ def test_openai_chat_completion_sync_outside_txn():
     )
 
 
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_chat_completion:test_openai_chat_completion_sync_custom_events_insights_disabled",
-    custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_chat_completion_sync_custom_events_insights_disabled(set_trace_info):
-    set_trace_info()
-    openai.ChatCompletion.create(
-        model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
-    )
-
-
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -386,7 +356,7 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(chat_completion_recorded_events))
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -416,25 +386,6 @@ def test_openai_chat_completion_async_with_llm_metadata_no_content(loop, set_tra
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_chat_completion_async_outside_transaction(loop):
-    loop.run_until_complete(
-        openai.ChatCompletion.acreate(
-            model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
-        )
-    )
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_chat_completion:test_openai_chat_completion_async_disabled_custom_event_settings",
-    custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_chat_completion_async_disabled_custom_event_settings(loop):
     loop.run_until_complete(
         openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100

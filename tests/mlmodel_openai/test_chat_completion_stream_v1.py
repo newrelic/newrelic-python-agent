@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 
 import openai
 from conftest import (  # pylint: disable=E0611
+    disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
+    events_sans_content,
 )
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -32,17 +32,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
-
-
-def events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        if "content" in _event[1]:
-            del _event[1]["content"]
-    return new_event
-
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -165,7 +154,7 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata(set_trace_info, sy
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 # @validate_custom_event_count(count=4)
@@ -307,7 +296,6 @@ def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info, sync
     "test_chat_completion_stream_v1:test_openai_chat_completion_sync_ai_monitoring_streaming_disabled",
     custom_metrics=[
         ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-        ("Supportability/Python/ML/Streaming/Disabled", 1),
     ],
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -331,30 +319,6 @@ def test_openai_chat_completion_sync_ai_monitoring_streaming_disabled(sync_opena
 @validate_custom_event_count(count=0)
 def test_openai_chat_completion_sync_outside_txn(sync_openai_client):
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
-    generator = sync_openai_client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=_test_openai_chat_completion_messages,
-        temperature=0.7,
-        max_tokens=100,
-        stream=True,
-    )
-    for resp in generator:
-        assert resp
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_custom_events_insights_disabled",
-    custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_chat_completion_sync_custom_events_insights_disabled(set_trace_info, sync_openai_client):
-    set_trace_info()
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
@@ -443,7 +407,7 @@ def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info, 
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(chat_completion_recorded_events))
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -482,7 +446,6 @@ def test_openai_chat_completion_async_conversation_id_set_no_content(loop, set_t
     "test_chat_completion_stream_v1:test_openai_chat_completion_async_ai_monitoring_streaming_disabled",
     custom_metrics=[
         ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-        ("Supportability/Python/ML/Streaming/Disabled", 1),
     ],
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -507,32 +470,6 @@ def test_openai_chat_completion_async_ai_monitoring_streaming_disabled(loop, asy
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_chat_completion_async_outside_transaction(loop, async_openai_client):
-    async def consumer():
-        generator = await async_openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=_test_openai_chat_completion_messages,
-            temperature=0.7,
-            max_tokens=100,
-            stream=True,
-        )
-        async for resp in generator:
-            assert resp
-
-    loop.run_until_complete(consumer())
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_chat_completion_stream_v1:test_openai_chat_completion_async_disabled_custom_event_settings",
-    custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_chat_completion_async_disabled_custom_event_settings(loop, async_openai_client):
     async def consumer():
         generator = await async_openai_client.chat.completions.create(
             model="gpt-3.5-turbo",

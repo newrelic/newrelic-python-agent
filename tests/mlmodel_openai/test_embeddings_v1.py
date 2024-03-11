@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-
 import openai
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
-from testing_support.fixtures import (  # override_application_settings,
-    override_application_settings,
+from conftest import (  # pylint: disable=E0611
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    events_sans_content,
+)
+from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -28,16 +29,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-
-
-def events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        del _event[1]["input"]
-    return new_event
-
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
 embedding_recorded_events = [
     (
@@ -90,7 +81,7 @@ def test_openai_embedding_sync(set_trace_info, sync_openai_client):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
@@ -112,24 +103,6 @@ def test_openai_embedding_sync_no_content(set_trace_info, sync_openai_client):
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_embedding_sync_outside_txn(sync_openai_client):
-    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_embeddings_v1:test_openai_embedding_sync_disabled_settings",
-    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_embedding_sync_disabled_settings(set_trace_info, sync_openai_client):
-    set_trace_info()
     sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
@@ -164,7 +137,7 @@ def test_openai_embedding_async(loop, set_trace_info, async_openai_client):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
@@ -189,25 +162,6 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_embedding_async_outside_transaction(loop, async_openai_client):
-    loop.run_until_complete(
-        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
-    )
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_embeddings_v1:test_openai_embedding_async_disabled_custom_insights_events",
-    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_openai_embedding_async_disabled_custom_insights_events(loop, async_openai_client):
     loop.run_until_complete(
         async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
     )

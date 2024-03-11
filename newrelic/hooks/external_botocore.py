@@ -119,7 +119,7 @@ def create_chat_completion_message_event(
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            chat_completion_message_dict.update({"content": message.get("content", "")})
+            chat_completion_message_dict["content"] = message.get("content", "")
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -150,7 +150,7 @@ def create_chat_completion_message_event(
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            chat_completion_message_dict.update({"content": message.get("content", "")})
+            chat_completion_message_dict["content"] = message.get("content", "")
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -209,7 +209,6 @@ def extract_bedrock_titan_embedding_model(request_body, response_body=None):
     input_tokens = response_body.get("inputTextTokenCount", None)
 
     embedding_dict = {
-        "input": request_body.get("inputText", ""),
         "response.usage.prompt_tokens": input_tokens,
         "response.usage.total_tokens": input_tokens,
     }
@@ -537,7 +536,6 @@ def handle_embedding_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "request_id": request_id,
-            "input": request_body.get("inputText", ""),
             "transaction_id": transaction.guid,
             "duration": duration,
             "request.model": model,
@@ -545,8 +543,8 @@ def handle_embedding_event(
         }
     )
 
-    if not settings.ai_monitoring.record_content.enabled:
-        del embedding_dict["input"]
+    if settings.ai_monitoring.record_content.enabled:
+        embedding_dict["input"] = request_body.get("inputText", "")
 
     if is_error:
         embedding_dict.update({"error": True})

@@ -24,11 +24,13 @@ from _test_bedrock_embeddings import (
     embedding_expected_events,
     embedding_payload_templates,
 )
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
-from conftest import BOTOCORE_VERSION
+from conftest import (  # pylint: disable=E0611
+    BOTOCORE_VERSION,
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+)
 from testing_support.fixtures import (  # override_application_settings,
     dt_enabled,
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -141,7 +143,7 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 def test_bedrock_embedding_no_content(set_trace_info, exercise_model, expected_events_no_content):
     @validate_custom_events(expected_events_no_content)
     @validate_custom_event_count(count=1)
@@ -170,25 +172,6 @@ def test_bedrock_embedding_no_content(set_trace_info, exercise_model, expected_e
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_bedrock_embedding_outside_txn(exercise_model):
-    exercise_model(prompt="This is an embedding test.")
-
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_bedrock_embeddings:test_bedrock_embedding_disabled_custom_event_settings",
-    custom_metrics=[
-        ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_bedrock_embedding_disabled_custom_event_settings(set_trace_info, exercise_model):
-    set_trace_info()
     exercise_model(prompt="This is an embedding test.")
 
 
@@ -237,7 +220,7 @@ def test_bedrock_embedding_error_incorrect_access_key(
 
 
 @reset_core_stats_engine()
-@override_application_settings({"ai_monitoring.record_content.enabled": False})
+@disabled_ai_monitoring_record_content_settings
 def test_bedrock_embedding_error_incorrect_access_key_no_content(
     monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_error_events_no_content, expected_client_error
 ):

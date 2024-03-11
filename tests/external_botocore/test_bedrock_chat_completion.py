@@ -136,8 +136,8 @@ def expected_metrics(response_streaming):
 
 
 @pytest.fixture(scope="module")
-def expected_events_no_content(model_id):
-    events = copy.deepcopy(chat_completion_expected_events[model_id])
+def expected_events_no_content(expected_events):
+    events = copy.deepcopy(expected_events)
     for event in events:
         if "content" in event[1]:
             del event[1]["content"]
@@ -202,6 +202,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(set_trace_info, exerci
 
 
 @disabled_ai_monitoring_record_content_settings
+@reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
     set_trace_info, exercise_model, expected_events_no_content, expected_metrics
 ):
@@ -374,6 +375,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     set_trace_info,
     expected_client_error,
     expected_invalid_access_key_error_events_no_content,
+    expected_metrics,
 ):
     @validate_custom_events(expected_invalid_access_key_error_events_no_content)
     @validate_error_trace_attributes(
@@ -386,8 +388,8 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     )
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],

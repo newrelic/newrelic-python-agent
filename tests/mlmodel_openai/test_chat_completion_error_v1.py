@@ -14,6 +14,7 @@
 
 import openai
 import pytest
+from conftest import disabled_ai_monitoring_record_content_settings, events_sans_content
 from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
@@ -133,6 +134,39 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info, sync_ope
         )
 
 
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_no_model_no_content",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(expected_events_on_no_model_error))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_no_content(set_trace_info, sync_openai_client):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        sync_openai_client.chat.completions.create(
+            messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+        )
+
+
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
@@ -158,6 +192,41 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info, sync_ope
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_info, async_openai_client):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        loop.run_until_complete(
+            async_openai_client.chat.completions.create(
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+            )
+        )
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_no_model_async_no_content",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(expected_events_on_no_model_error))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, set_trace_info, async_openai_client):
     with pytest.raises(TypeError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")

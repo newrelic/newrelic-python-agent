@@ -152,6 +152,10 @@ class AIMonitoringStreamingSettings(Settings):
     pass
 
 
+class AIMonitoringRecordContentSettings(Settings):
+    pass
+
+
 class PackageReportingSettings(Settings):
     pass
 
@@ -419,6 +423,7 @@ _settings.machine_learning = MachineLearningSettings()
 _settings.machine_learning.inference_events_value = MachineLearningInferenceEventsValueSettings()
 _settings.ai_monitoring = AIMonitoringSettings()
 _settings.ai_monitoring.streaming = AIMonitoringStreamingSettings()
+_settings.ai_monitoring.record_content = AIMonitoringRecordContentSettings()
 _settings.package_reporting = PackageReportingSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
@@ -935,6 +940,9 @@ _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
 )
 _settings.ai_monitoring.enabled = _environ_as_bool("NEW_RELIC_AI_MONITORING_ENABLED", default=False)
 _settings.ai_monitoring.streaming.enabled = _environ_as_bool("NEW_RELIC_AI_MONITORING_STREAMING_ENABLED", default=True)
+_settings.ai_monitoring.record_content.enabled = _environ_as_bool(
+    "NEW_RELIC_AI_MONITORING_RECORD_CONTENT_ENABLED", default=True
+)
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 

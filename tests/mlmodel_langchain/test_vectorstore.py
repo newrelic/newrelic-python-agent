@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import os
 
-import pytest
 import langchain
+import pytest
+from conftest import (  # pylint: disable=E0611
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+)
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
@@ -30,10 +35,20 @@ from testing_support.validators.validate_error_trace_attributes import (
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
+
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
+
+
+def events_sans_content(event):
+    new_event = copy.deepcopy(event)
+    for _event in new_event:
+        if "request.query" in _event[1]:
+            del _event[1]["request.query"]
+        if "page_content" in _event[1]:
+            del _event[1]["page_content"]
+    return new_event
 
 
 vectorstore_recorded_events = [
@@ -144,6 +159,35 @@ def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_cl
 
 
 @reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_custom_events(events_sans_content(vectorstore_recorded_events))
+# Two OpenAI LlmEmbedded, two LangChain LlmVectorSearch
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn_no_content",
+    custom_metrics=[
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_pdf_pagesplitter_vectorstore_in_txn_no_content(set_trace_info, embedding_openai_client):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+
+    script_dir = os.path.dirname(__file__)
+    loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+    docs = loader.load()
+
+    faiss_index = FAISS.from_documents(docs, embedding_openai_client)
+    docs = faiss_index.similarity_search("Complete this sentence: Hello", k=1)
+    assert "Hello world" in docs[0].page_content
+
+
+@reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_pdf_pagesplitter_vectorstore_outside_txn(set_trace_info, embedding_openai_client):
     set_trace_info()
@@ -187,6 +231,39 @@ def test_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(set_trace_info, emb
 @validate_attributes("agent", ["llm"])
 @background_task()
 def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embedding_openai_client):
+    async def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
+        script_dir = os.path.dirname(__file__)
+        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        docs = loader.load()
+
+        faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
+        docs = await faiss_index.asimilarity_search("Complete this sentence: Hello", k=1)
+        return docs
+
+    docs = loop.run_until_complete(_test())
+    assert "Hello world" in docs[0].page_content
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_custom_events(events_sans_content(vectorstore_recorded_events))
+# Two OpenAI LlmEmbedded, two LangChain LlmVectorSearch
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    name="test_vectorstore:test_async_pdf_pagesplitter_vectorstore_in_txn_no_content",
+    custom_metrics=[
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_async_pdf_pagesplitter_vectorstore_in_txn_no_content(loop, set_trace_info, embedding_openai_client):
     async def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
@@ -285,6 +362,32 @@ def test_vectorstore_error_no_query(set_trace_info, embedding_openai_client):
 
 
 @reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
+)
+@validate_custom_events(events_sans_content(vectorstore_error_events))
+@validate_transaction_metrics(
+    name="test_vectorstore:test_vectorstore_error_no_query_no_content",
+    custom_metrics=[
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_vectorstore_error_no_query_no_content(set_trace_info, embedding_openai_client):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        script_dir = os.path.dirname(__file__)
+        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        docs = loader.load()
+
+        faiss_index = FAISS.from_documents(docs, embedding_openai_client)
+        faiss_index.similarity_search(k=1)
+
+
+@reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(TypeError),
     required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
@@ -299,6 +402,37 @@ def test_vectorstore_error_no_query(set_trace_info, embedding_openai_client):
 )
 @background_task()
 def test_async_vectorstore_error_no_query(loop, set_trace_info, embedding_openai_client):
+    async def _test():
+        set_trace_info()
+
+        script_dir = os.path.dirname(__file__)
+        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        docs = loader.load()
+
+        faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
+        docs = await faiss_index.asimilarity_search(k=1)
+        return docs
+
+    with pytest.raises(TypeError):
+        loop.run_until_complete(_test())
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
+)
+@validate_custom_events(events_sans_content(vectorstore_error_events))
+@validate_transaction_metrics(
+    name="test_vectorstore:test_async_vectorstore_error_no_query_no_content",
+    custom_metrics=[
+        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+    ],
+    background_task=True,
+)
+@background_task()
+def test_async_vectorstore_error_no_query_no_content(loop, set_trace_info, embedding_openai_client):
     async def _test():
         set_trace_info()
 

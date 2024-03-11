@@ -14,6 +14,7 @@
 
 import openai
 import pytest
+from conftest import disabled_ai_monitoring_record_content_settings, events_sans_content
 from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
@@ -85,6 +86,45 @@ embedding_recorded_events = [
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model(set_trace_info):
+    with pytest.raises(openai.InvalidRequestError):
+        set_trace_info()
+        openai.Embedding.create(
+            input="This is an embedding test with no model.",
+            # no model provided
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_error_trace_attributes(
+    callable_name(openai.InvalidRequestError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "error.param": "engine",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
+    }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_no_content",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(embedding_recorded_events))
+@validate_custom_event_count(count=1)
+@background_task()
+def test_embeddings_invalid_request_error_no_model_no_content(set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
         openai.Embedding.create(
@@ -302,6 +342,47 @@ def test_embeddings_wrong_api_key_error(monkeypatch, set_trace_info):
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
+    with pytest.raises(openai.InvalidRequestError):
+        set_trace_info()
+        loop.run_until_complete(
+            openai.Embedding.acreate(
+                input="This is an embedding test with no model.",
+                # No model provided
+            )
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_error_trace_attributes(
+    callable_name(openai.InvalidRequestError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "error.param": "engine",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
+    }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_async_no_content",
+    scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(embedding_recorded_events))
+@validate_custom_event_count(count=1)
+@background_task()
+def test_embeddings_invalid_request_error_no_model_async_no_content(loop, set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
         loop.run_until_complete(

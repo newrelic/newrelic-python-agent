@@ -108,10 +108,11 @@ VECTORSTORE_CLASSES = {
 }
 
 
-def _create_error_vectorstore_events(transaction, _id, span_id, trace_id):
+def _create_error_vectorstore_events(transaction, search_id, span_id, trace_id):
     app_name = _get_app_name(transaction)
+    llm_metadata_dict = _get_llm_metadata(transaction)
     vectorstore_error_dict = {
-        "id": _id,
+        "id": search_id,
         "appName": app_name,
         "span_id": span_id,
         "trace_id": trace_id,
@@ -120,12 +121,8 @@ def _create_error_vectorstore_events(transaction, _id, span_id, trace_id):
         "ingest_source": "Python",
         "error": True,
     }
-
+    vectorstore_error_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmVectorSearch", vectorstore_error_dict)
-
-
-def bind_asimilarity_search(query, k, *args, **kwargs):
-    return query, k
 
 
 async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
@@ -142,82 +139,23 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
 
     function_name = callable_name(wrapped)
 
-    llm_metadata_dict = _get_llm_metadata(transaction)
-
-    # LLMVectorSearch and Error data
     available_metadata = get_trace_linking_metadata()
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
-    transaction_id = transaction.guid
-    _id = str(uuid.uuid4())
+    search_id = str(uuid.uuid4())
 
     with FunctionTrace(name=function_name, group="Llm/vectorstore/Langchain") as ft:
         try:
             response = await wrapped(*args, **kwargs)
         except Exception as exc:
-            ft.notice_error(attributes={"vector_store_id": _id})
-            _create_error_vectorstore_events(transaction, _id, span_id, trace_id)
+            ft.notice_error(attributes={"vector_store_id": search_id})
+            _create_error_vectorstore_events(transaction, search_id, span_id, trace_id)
             raise
 
     if not response:
         return response
 
-    # LLMVectorSearch
-    request_query, request_k = bind_similarity_search(*args, **kwargs)
-    duration = ft.duration
-    response_number_of_documents = len(response)
-
-    # Only in LlmVectorSearch dict
-    LLMVectorSearch_dict = {
-        "request.query": request_query,
-        "request.k": request_k,
-        "duration": duration,
-        "response.number_of_documents": response_number_of_documents,
-    }
-
-    # In both LlmVectorSearch and LlmVectorSearchResult dicts
-    LLMVectorSearch_union_dict = {
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "transaction_id": transaction_id,
-        "id": _id,
-        "vendor": "langchain",
-        "ingest_source": "Python",
-        "appName": _get_app_name(transaction),
-    }
-
-    LLMVectorSearch_dict.update(LLMVectorSearch_union_dict)
-
-    LLMVectorSearch_dict.update(llm_metadata_dict)
-
-    transaction.record_custom_event("LlmVectorSearch", LLMVectorSearch_dict)
-
-    # LLMVectorSearchResult
-    for index, doc in enumerate(response):
-        search_id = str(uuid.uuid4())
-        sequence = index
-        page_content = getattr(doc, "page_content", "")
-        metadata = getattr(doc, "metadata", {})
-
-        metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
-
-        LLMVectorSearchResult_dict = {
-            "search_id": search_id,
-            "sequence": sequence,
-            "page_content": page_content,
-        }
-
-        LLMVectorSearchResult_dict.update(LLMVectorSearch_union_dict)
-        LLMVectorSearchResult_dict.update(metadata_dict)
-        # This works in Python 3.9.8+
-        # https://peps.python.org/pep-0584/
-        # LLMVectorSearchResult_dict |= LLMVectorSearch_dict
-        # LLMVectorSearchResult_dict |= metadata_dict
-
-        LLMVectorSearchResult_dict.update(llm_metadata_dict)
-
-        transaction.record_custom_event("LlmVectorSearchResult", LLMVectorSearchResult_dict)
-
+    _record_vector_search_success(transaction, span_id, trace_id, ft, search_id, args, kwargs, response)
     return response
 
 
@@ -239,83 +177,78 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
 
     function_name = callable_name(wrapped)
 
-    llm_metadata_dict = _get_llm_metadata(transaction)
-
     # LLMVectorSearch and Error data
     available_metadata = get_trace_linking_metadata()
     span_id = available_metadata.get("span.id", "")
     trace_id = available_metadata.get("trace.id", "")
-    transaction_id = transaction.guid
-    _id = str(uuid.uuid4())
+    search_id = str(uuid.uuid4())
 
     with FunctionTrace(name=function_name, group="Llm/vectorstore/Langchain") as ft:
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
-            ft.notice_error(attributes={"vector_store_id": _id})
-            _create_error_vectorstore_events(transaction, _id, span_id, trace_id)
+            ft.notice_error(attributes={"vector_store_id": search_id})
+            _create_error_vectorstore_events(transaction, search_id, span_id, trace_id)
             raise
 
     if not response:
         return response
 
-    # LLMVectorSearch
+    _record_vector_search_success(transaction, span_id, trace_id, ft, search_id, args, kwargs, response)
+    return response
+
+
+def _record_vector_search_success(transaction, span_id, trace_id, ft, search_id, args, kwargs, response):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
     request_query, request_k = bind_similarity_search(*args, **kwargs)
     duration = ft.duration
     response_number_of_documents = len(response)
+    transaction_id = transaction.guid
+    llm_metadata_dict = _get_llm_metadata(transaction)
 
-    # Only in LlmVectorSearch dict
-    LLMVectorSearch_dict = {
-        "request.query": request_query,
+    llm_vector_search = {
         "request.k": request_k,
         "duration": duration,
         "response.number_of_documents": response_number_of_documents,
-    }
-
-    # In both LlmVectorSearch and LlmVectorSearchResult dicts
-    LLMVectorSearch_union_dict = {
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction_id,
-        "id": _id,
+        "id": search_id,
         "vendor": "langchain",
         "ingest_source": "Python",
         "appName": _get_app_name(transaction),
     }
 
-    LLMVectorSearch_dict.update(LLMVectorSearch_union_dict)
+    if settings.ai_monitoring.record_content.enabled:
+        llm_vector_search["request.query"] = request_query
 
-    LLMVectorSearch_dict.update(llm_metadata_dict)
+    llm_vector_search.update(llm_metadata_dict)
+    transaction.record_custom_event("LlmVectorSearch", llm_vector_search)
 
-    transaction.record_custom_event("LlmVectorSearch", LLMVectorSearch_dict)
-
-    # LLMVectorSearchResult
     for index, doc in enumerate(response):
-        search_id = str(uuid.uuid4())
         sequence = index
         page_content = getattr(doc, "page_content", "")
         metadata = getattr(doc, "metadata", {})
 
         metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
 
-        LLMVectorSearchResult_dict = {
+        llm_vector_search_result = {
+            "id": str(uuid.uuid4()),
             "search_id": search_id,
             "sequence": sequence,
-            "page_content": page_content,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "transaction_id": transaction_id,
+            "search_id": search_id,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "appName": _get_app_name(transaction),
         }
-
-        LLMVectorSearchResult_dict.update(LLMVectorSearch_union_dict)
-        LLMVectorSearchResult_dict.update(metadata_dict)
-        # This works in Python 3.9.8+
-        # https://peps.python.org/pep-0584/
-        # LLMVectorSearchResult_dict |= LLMVectorSearch_dict
-        # LLMVectorSearchResult_dict |= metadata_dict
-
-        LLMVectorSearchResult_dict.update(llm_metadata_dict)
-
-        transaction.record_custom_event("LlmVectorSearchResult", LLMVectorSearchResult_dict)
-
-    return response
+        if settings.ai_monitoring.record_content.enabled:
+            llm_vector_search_result["page_content"] = page_content
+        llm_vector_search_result.update(metadata_dict)
+        llm_vector_search_result.update(llm_metadata_dict)
+        transaction.record_custom_event("LlmVectorSearchResult", llm_vector_search_result)
 
 
 def wrap_tool_sync_run(wrapped, instance, args, kwargs):
@@ -384,7 +317,6 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                     "span_id": span_id,
                     "trace_id": trace_id,
                     "transaction_id": transaction.guid,
-                    "input": tool_input,
                     "vendor": "langchain",
                     "ingest_source": "Python",
                     "duration": ft.duration,
@@ -392,6 +324,9 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                     "error": True,
                 }
             )
+
+            if settings.ai_monitoring.record_content.enabled:
+                error_tool_event_dict["input"] = tool_input
 
             error_tool_event_dict.update(llm_metadata_dict)
 
@@ -418,19 +353,25 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
             "id": tool_id,
             "run_id": run_id,
             "appName": settings.app_name,
-            "output": str(response),
             "name": tool_name,
             "description": tool_description,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "input": tool_input,
             "vendor": "langchain",
             "ingest_source": "Python",
             "duration": ft.duration,
             "tags": tags or "",
         }
     )
+
+    if settings.ai_monitoring.record_content.enabled:
+        full_tool_event_dict.update(
+            {
+                "input": tool_input,
+                "output": str(response),
+            }
+        )
 
     full_tool_event_dict.update(llm_metadata_dict)
 
@@ -510,7 +451,6 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
                     "span_id": span_id,
                     "trace_id": trace_id,
                     "transaction_id": transaction.guid,
-                    "input": tool_input,
                     "vendor": "langchain",
                     "ingest_source": "Python",
                     "duration": ft.duration,
@@ -518,6 +458,9 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
                     "error": True,
                 }
             )
+
+            if settings.ai_monitoring.record_content.enabled:
+                error_tool_event_dict["input"] = tool_input
 
             error_tool_event_dict.update(llm_metadata_dict)
 
@@ -542,19 +485,25 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
             "id": tool_id,
             "run_id": run_id,
             "appName": settings.app_name,
-            "output": str(response),
             "name": tool_name,
             "description": tool_description,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "input": tool_input,
             "vendor": "langchain",
             "ingest_source": "Python",
             "duration": ft.duration,
             "tags": tags or "",
         }
     )
+
+    if settings.ai_monitoring.record_content.enabled:
+        full_tool_event_dict.update(
+            {
+                "input": tool_input,
+                "output": str(response),
+            }
+        )
 
     full_tool_event_dict.update(llm_metadata_dict)
 
@@ -862,6 +811,8 @@ def create_chat_completion_message_event(
     output_message_list,
     message_ids,
 ):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+
     expected_message_ids_len = len(input_message_list) + len(output_message_list)
     actual_message_ids_len = len(message_ids)
     if actual_message_ids_len < expected_message_ids_len:
@@ -883,13 +834,15 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "content": message,
             "completion_id": chat_completion_id,
             "sequence": index,
             "vendor": "langchain",
             "ingest_source": "Python",
             "virtual_llm": True,
         }
+
+        if settings.ai_monitoring.record_content.enabled:
+            chat_completion_input_message_dict["content"] = message
 
         chat_completion_input_message_dict.update(llm_metadata_dict)
 
@@ -908,7 +861,6 @@ def create_chat_completion_message_event(
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
-                "content": message,
                 "completion_id": chat_completion_id,
                 "sequence": index,
                 "vendor": "langchain",
@@ -916,6 +868,9 @@ def create_chat_completion_message_event(
                 "is_response": True,
                 "virtual_llm": True,
             }
+
+            if settings.ai_monitoring.record_content.enabled:
+                chat_completion_output_message_dict["content"] = message
 
             chat_completion_output_message_dict.update(llm_metadata_dict)
 

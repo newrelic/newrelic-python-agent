@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-
 import openai
 import pytest
 from conftest import disabled_ai_monitoring_record_content_settings, events_sans_content
@@ -33,14 +31,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-
-
-def events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        del _event[1]["input"]
-    return new_event
-
 
 # Sync tests:
 embedding_recorded_events = [

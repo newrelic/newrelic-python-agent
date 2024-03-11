@@ -236,7 +236,6 @@ def _record_vector_search_success(transaction, span_id, trace_id, ft, search_id,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction_id,
-            "search_id": search_id,
             "vendor": "langchain",
             "ingest_source": "Python",
         }

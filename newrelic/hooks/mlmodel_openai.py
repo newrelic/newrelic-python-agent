@@ -106,7 +106,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
-                "input": kwargs.get("input", ""),
                 "request.model": kwargs.get("model") or kwargs.get("engine") or "",
                 "vendor": "openAI",
                 "ingest_source": "Python",
@@ -114,6 +113,9 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                 "duration": ft.duration,
                 "error": True,
             }
+
+            if settings.ai_monitoring.record_content.enabled:
+                error_embedding_dict["input"] = kwargs.get("input", "")
 
             error_embedding_dict.update(llm_metadata_dict)
 
@@ -146,7 +148,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "input": kwargs.get("input", ""),
         "api_key_last_four_digits": f"sk-{api_key[-4:]}" if api_key else "",
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
@@ -178,6 +179,9 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "vendor": "openAI",
         "ingest_source": "Python",
     }
+
+    if settings.ai_monitoring.record_content.enabled:
+        full_embedding_response_dict["input"] = kwargs.get("input", "")
 
     full_embedding_response_dict.update(llm_metadata_dict)
 
@@ -454,6 +458,8 @@ def create_chat_completion_message_event(
     llm_metadata_dict,
     output_message_list,
 ):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+
     message_ids = []
 
     # Loop through all input messages received from the create request and emit a custom event for each one
@@ -476,7 +482,6 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "content": message_content,
             "role": message.get("role", ""),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -484,6 +489,9 @@ def create_chat_completion_message_event(
             "vendor": "openAI",
             "ingest_source": "Python",
         }
+
+        if settings.ai_monitoring.record_content.enabled:
+            chat_completion_input_message_dict["content"] = message_content
 
         chat_completion_input_message_dict.update(llm_metadata_dict)
 
@@ -513,7 +521,6 @@ def create_chat_completion_message_event(
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
-                "content": message_content,
                 "role": message.get("role", ""),
                 "completion_id": chat_completion_id,
                 "sequence": index,
@@ -522,6 +529,9 @@ def create_chat_completion_message_event(
                 "ingest_source": "Python",
                 "is_response": True,
             }
+
+            if settings.ai_monitoring.record_content.enabled:
+                chat_completion_output_message_dict["content"] = message_content
 
             chat_completion_output_message_dict.update(llm_metadata_dict)
 
@@ -607,7 +617,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
-                "input": kwargs.get("input", ""),
                 "request.model": kwargs.get("model") or kwargs.get("engine") or "",
                 "vendor": "openAI",
                 "ingest_source": "Python",
@@ -615,6 +624,9 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                 "duration": ft.duration,
                 "error": True,
             }
+
+            if settings.ai_monitoring.record_content.enabled:
+                error_embedding_dict["input"] = kwargs.get("input", "")
 
             error_embedding_dict.update(llm_metadata_dict)
 
@@ -647,7 +659,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "input": kwargs.get("input", ""),
         "api_key_last_four_digits": f"sk-{api_key[-4:]}" if api_key else "",
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
@@ -679,6 +690,9 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "vendor": "openAI",
         "ingest_source": "Python",
     }
+
+    if settings.ai_monitoring.record_content.enabled:
+        full_embedding_response_dict["input"] = kwargs.get("input", "")
 
     full_embedding_response_dict.update(llm_metadata_dict)
 

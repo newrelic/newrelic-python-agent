@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import openai
 from conftest import (  # pylint: disable=E0611
+    disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
+    events_sans_content,
 )
 from testing_support.fixtures import (
     reset_core_stats_engine,
@@ -147,6 +150,37 @@ chat_completion_recorded_events = [
 @validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_chat_completion_sync_in_txn_with_llm_metadata(set_trace_info):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+
+    generator = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=_test_openai_chat_completion_messages,
+        temperature=0.7,
+        max_tokens=100,
+        stream=True,
+    )
+    for resp in generator:
+        assert resp
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_custom_events(events_sans_content(chat_completion_recorded_events))
+# One summary event, one system message, one user message, and one response message from the assistant
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    name="test_chat_completion_stream:test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content",
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_trace_info):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
@@ -362,10 +396,6 @@ def test_openai_chat_completion_async_no_llm_metadata(loop, set_trace_info):
     "test_chat_completion_stream:test_openai_chat_completion_async_with_llm_metadata",
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
-    background_task=True,
-)
-@validate_transaction_metrics(
-    name="test_chat_completion_stream:test_openai_chat_completion_async_with_llm_metadata",
     custom_metrics=[
         ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
@@ -374,6 +404,41 @@ def test_openai_chat_completion_async_no_llm_metadata(loop, set_trace_info):
 @validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+
+    async def consumer():
+        generator = await openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_messages,
+            temperature=0.7,
+            max_tokens=100,
+            stream=True,
+        )
+        async for resp in generator:
+            assert resp
+
+    loop.run_until_complete(consumer())
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_custom_events(events_sans_content(chat_completion_recorded_events))
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    "test_chat_completion_stream:test_openai_chat_completion_async_with_llm_metadata_no_content",
+    scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_async_with_llm_metadata_no_content(loop, set_trace_info):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")

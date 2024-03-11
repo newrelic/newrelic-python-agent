@@ -31,7 +31,11 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
-from conftest import llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val
+from conftest import (
+    llm_token_count_callback_success,
+    llm_token_count_callback_negative_return_val,
+    llm_token_count_callback_non_int_return_val,
+)
 from newrelic.api.ml_model import set_llm_token_count_callback
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
@@ -370,7 +374,14 @@ chat_completion_token_recorded_events = [
 ]
 
 
-@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
 @reset_core_stats_engine()
 def test_openai_chat_completion_sync_with_token_count_callback(set_trace_info, sync_openai_client, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
@@ -552,9 +563,18 @@ def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info, 
     loop.run_until_complete(consumer())
 
 
-@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
 @reset_core_stats_engine()
-def test_openai_chat_completion_async_with_token_count_callback(set_trace_info, loop, async_openai_client, llm_token_callback):
+def test_openai_chat_completion_async_with_token_count_callback(
+    set_trace_info, loop, async_openai_client, llm_token_callback
+):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
         expected_events = chat_completion_token_recorded_events
     else:

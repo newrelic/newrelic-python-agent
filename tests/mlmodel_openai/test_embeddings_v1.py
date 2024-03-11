@@ -27,7 +27,11 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from newrelic.api.background_task import background_task
-from conftest import llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val
+from conftest import (
+    llm_token_count_callback_success,
+    llm_token_count_callback_negative_return_val,
+    llm_token_count_callback_non_int_return_val,
+)
 from newrelic.api.ml_model import set_llm_token_count_callback
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
@@ -97,6 +101,7 @@ embedding_token_recorded_events = [
     ),
 ]
 
+
 @reset_core_stats_engine()
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
@@ -116,7 +121,14 @@ def test_openai_embedding_sync(set_trace_info, sync_openai_client):
     sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
-@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
 @reset_core_stats_engine()
 def test_openai_embedding_sync_with_token_count_callback(set_trace_info, sync_openai_client, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
@@ -200,9 +212,18 @@ def test_openai_embedding_async(loop, set_trace_info, async_openai_client):
     )
 
 
-@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
 @reset_core_stats_engine()
-def test_openai_embedding_async_with_token_count_callback(set_trace_info, loop, async_openai_client, llm_token_callback):
+def test_openai_embedding_async_with_token_count_callback(
+    set_trace_info, loop, async_openai_client, llm_token_callback
+):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
         expected_events = embedding_token_recorded_events
     else:
@@ -230,6 +251,7 @@ def test_openai_embedding_async_with_token_count_callback(set_trace_info, loop, 
         )
 
     _test()
+
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)

@@ -46,7 +46,11 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
-from conftest import llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val
+from conftest import (
+    llm_token_count_callback_success,
+    llm_token_count_callback_negative_return_val,
+    llm_token_count_callback_non_int_return_val,
+)
 from newrelic.api.ml_model import set_llm_token_count_callback
 
 
@@ -173,7 +177,14 @@ def test_bedrock_chat_completion_in_txn_no_llm_metadata(
     _test()
 
 
-@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_with_token_count(
     set_trace_info, exercise_model, expected_events, expected_token_events, llm_token_callback

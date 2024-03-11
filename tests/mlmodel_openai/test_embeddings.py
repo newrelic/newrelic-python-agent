@@ -29,7 +29,11 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.ml_model import set_llm_token_count_callback
 from newrelic.api.transaction import add_custom_attribute
-from conftest import llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val
+from conftest import (
+    llm_token_count_callback_success,
+    llm_token_count_callback_negative_return_val,
+    llm_token_count_callback_non_int_return_val,
+)
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
@@ -126,7 +130,14 @@ def test_openai_embedding_sync(set_trace_info):
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
-@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
 @reset_core_stats_engine()
 def test_openai_embedding_sync_with_token_count_callback(set_trace_info, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
@@ -217,7 +228,14 @@ def test_openai_embedding_async(loop, set_trace_info):
     )
 
 
-@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
 @reset_core_stats_engine()
 def test_openai_embedding_async_with_token_count_callback(loop, set_trace_info, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":

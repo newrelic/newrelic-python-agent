@@ -29,7 +29,11 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.ml_model import set_llm_token_count_callback
 from newrelic.api.transaction import add_custom_attribute
-from conftest import llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val
+from conftest import (
+    llm_token_count_callback_success,
+    llm_token_count_callback_negative_return_val,
+    llm_token_count_callback_non_int_return_val,
+)
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
@@ -383,14 +387,21 @@ def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info):
     )
 
 
-@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
 @reset_core_stats_engine()
 def test_openai_chat_completion_sync_with_token_count_callback(set_trace_info, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        #chat_completion_token_recorded_events = list(chat_completion_recorded_events)
-        #chat_completion_token_recorded_events[1][1]["token_count"] = 105
-        #chat_completion_token_recorded_events[2][1]["token_count"] = 105
-        #chat_completion_token_recorded_events[3][1]["token_count"] = 105
+        # chat_completion_token_recorded_events = list(chat_completion_recorded_events)
+        # chat_completion_token_recorded_events[1][1]["token_count"] = 105
+        # chat_completion_token_recorded_events[2][1]["token_count"] = 105
+        # chat_completion_token_recorded_events[3][1]["token_count"] = 105
         expected_events = chat_completion_token_recorded_events
     else:
         expected_events = chat_completion_recorded_events

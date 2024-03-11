@@ -37,7 +37,7 @@ _logger = logging.getLogger(__name__)
 def calculate_token_count(settings, model, content):
     # Check if the user has calculated their token counts
     user_token_count_callback = settings.ai_monitoring.llm_token_count_callback
-    if user_token_count_callback is None: #or record content is off
+    if user_token_count_callback is None:  # or record content is off
         return None
 
     token_count_val = user_token_count_callback(model, content)

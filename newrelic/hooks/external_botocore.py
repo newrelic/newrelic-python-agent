@@ -530,13 +530,10 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             try:
-                ft.__exit__(*sys.exc_info())
-
                 bedrock_attrs = {
                     "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
                     "appName": settings.app_name,
                     "model": model,
-                    "duration": ft.duration,
                     "span_id": span_id,
                     "trace_id": trace_id,
                 }
@@ -561,14 +558,17 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     attributes=notice_error_attributes,
                 )
 
+                ft.__exit__(*sys.exc_info())
                 error_attributes["duration"] = ft.duration
 
                 if operation == "embedding":
                     handle_embedding_event(transaction, error_attributes)
                 else:
                     handle_chat_completion_event(transaction, error_attributes)
-            finally:
-                raise
+            except Exception as nr_exc:
+                _logger.debug("Exception encountered in botocore instrumentation for AWS Bedrock: %s" % str(nr_exc))
+            
+            raise
 
         if not response:
             ft.__exit__(None, None, None)
@@ -670,13 +670,7 @@ def record_events_on_stop_iteration(self, transaction):
             return
 
         bedrock_attrs["duration"] = self._nr_ft.duration
-        message_ids = handle_chat_completion_event(transaction, bedrock_attrs)
-
-        # Cache message ids on transaction for retrieval after bedrock call completion.
-        if not hasattr(transaction, "_nr_message_ids"):
-            transaction._nr_message_ids = {}
-        response_id = bedrock_attrs.get("response_id", None)
-        transaction._nr_message_ids[response_id] = message_ids
+        handle_chat_completion_event(transaction, bedrock_attrs)
 
         # Clear cached data as this can be very large.
         self._nr_bedrock_attrs.clear()

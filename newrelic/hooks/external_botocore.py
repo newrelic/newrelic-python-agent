@@ -110,7 +110,6 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "content": message.get("content", ""),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -118,6 +117,9 @@ def create_chat_completion_message_event(
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
+
+        if settings.ai_monitoring.record_content.enabled:
+            chat_completion_message_dict["content"] = message.get("content", "")
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -138,7 +140,6 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "content": message.get("content", ""),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -147,6 +148,9 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
             "is_response": True,
         }
+
+        if settings.ai_monitoring.record_content.enabled:
+            chat_completion_message_dict["content"] = message.get("content", "")
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -202,7 +206,6 @@ def extract_bedrock_titan_embedding_model(request_body, response_body=None):
     input_tokens = response_body.get("inputTextTokenCount", None)
 
     embedding_dict = {
-        "input": request_body.get("inputText", ""),
         "response.usage.prompt_tokens": input_tokens,
         "response.usage.total_tokens": input_tokens,
     }
@@ -531,7 +534,6 @@ def handle_embedding_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "request_id": request_id,
-            "input": request_body.get("inputText", ""),
             "transaction_id": transaction.guid,
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "duration": duration,
@@ -539,6 +541,10 @@ def handle_embedding_event(
             "response.model": model,
         }
     )
+
+    if settings.ai_monitoring.record_content.enabled:
+        embedding_dict["input"] = request_body.get("inputText", "")
+
     if is_error:
         embedding_dict.update({"error": True})
 

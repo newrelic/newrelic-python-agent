@@ -561,6 +561,7 @@ def _process_configuration(section):
     _process_setting(section, "machine_learning.enabled", "getboolean", None)
     _process_setting(section, "machine_learning.inference_events_value.enabled", "getboolean", None)
     _process_setting(section, "ai_monitoring.enabled", "getboolean", None)
+    _process_setting(section, "ai_monitoring.record_content.enabled", "getboolean", None)
     _process_setting(section, "ai_monitoring.streaming.enabled", "getboolean", None)
     _process_setting(section, "package_reporting.enabled", "getboolean", None)
 

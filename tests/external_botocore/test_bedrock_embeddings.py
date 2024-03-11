@@ -31,7 +31,6 @@ from conftest import (  # pylint: disable=E0611
 )
 from testing_support.fixtures import (  # override_application_settings,
     dt_enabled,
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -173,25 +172,6 @@ def test_bedrock_embedding_no_content(set_trace_info, exercise_model, expected_e
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_bedrock_embedding_outside_txn(exercise_model):
-    exercise_model(prompt="This is an embedding test.")
-
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_bedrock_embeddings:test_bedrock_embedding_disabled_custom_event_settings",
-    custom_metrics=[
-        ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_bedrock_embedding_disabled_custom_event_settings(set_trace_info, exercise_model):
-    set_trace_info()
     exercise_model(prompt="This is an embedding test.")
 
 

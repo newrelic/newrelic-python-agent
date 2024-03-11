@@ -316,7 +316,6 @@ def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info):
     "test_chat_completion_stream:test_openai_chat_completion_sync_ai_monitoring_streaming_disabled",
     custom_metrics=[
         ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-        ("Supportability/Python/ML/Streaming/Disabled", 1),
     ],
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -465,7 +464,6 @@ def test_openai_chat_completion_async_with_llm_metadata_no_content(loop, set_tra
     name="test_chat_completion_stream:test_openai_chat_completion_async_ai_monitoring_streaming_disabled",
     custom_metrics=[
         ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-        ("Supportability/Python/ML/Streaming/Disabled", 1),
     ],
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],

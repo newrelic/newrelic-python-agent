@@ -29,8 +29,6 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction, record_custom_event
 from newrelic.core.custom_event import process_event_type
 
-# Test process_event_type()
-
 
 def test_process_event_type_name_is_string():
     name = "string"
@@ -70,6 +68,25 @@ _intrinsics = {
 }
 _user_params = {"foo": "bar"}
 _event = [_intrinsics, _user_params]
+
+
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine(_event)
+@background_task()
+def test_add_custom_event_to_transaction_stats_engine_drops_none_attr():
+    attrs = {"drop-me": None}
+    attrs.update(_user_params)
+    record_custom_event("FooEvent", attrs)
+
+
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine(_event)
+def test_add_custom_event_to_application_stats_engine_drops_none_attr():
+    attrs = {"drop-me": None}
+    attrs.update(_user_params)
+
+    app = application()
+    record_custom_event("FooEvent", attrs, application=app)
 
 
 @reset_core_stats_engine()

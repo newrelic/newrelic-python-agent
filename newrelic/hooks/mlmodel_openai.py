@@ -140,7 +140,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
             user_callback_token_count = calculate_token_count(settings, request_model, input)
             if user_callback_token_count:
-                error_embedding_dict.update({"token_count": user_callback_token_count})
+                error_embedding_dict["token_count"] = user_callback_token_count
 
             error_embedding_dict.update(llm_metadata_dict)
 
@@ -208,7 +208,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     user_callback_token_count = calculate_token_count(settings, response_model, input)
     if user_callback_token_count:
-        full_embedding_response_dict.update({"token_count": user_callback_token_count})
+        full_embedding_response_dict["token_count"] = user_callback_token_count
 
     full_embedding_response_dict.update(llm_metadata_dict)
 
@@ -518,10 +518,9 @@ def create_chat_completion_message_event(
             "vendor": "openAI",
             "ingest_source": "Python",
         }
-
         user_callback_token_count = calculate_token_count(settings, response_model, message_content)
         if user_callback_token_count:
-            chat_completion_input_message_dict.update({"token_count": user_callback_token_count})
+            chat_completion_input_message_dict["token_count"] = user_callback_token_count
 
         chat_completion_input_message_dict.update(llm_metadata_dict)
 
@@ -563,7 +562,7 @@ def create_chat_completion_message_event(
 
             user_callback_token_count = calculate_token_count(settings, response_model, message_content)
             if user_callback_token_count:
-                chat_completion_output_message_dict.update({"token_count": user_callback_token_count})
+                chat_completion_output_message_dict["token_count"] = user_callback_token_count
 
             chat_completion_output_message_dict.update(llm_metadata_dict)
 
@@ -663,7 +662,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
             }
             user_callback_token_count = calculate_token_count(settings, request_model, input)
             if user_callback_token_count:
-                error_embedding_dict.update({"token_count": user_callback_token_count})
+                error_embedding_dict["token_count"] = user_callback_token_count
 
             error_embedding_dict.update(llm_metadata_dict)
 
@@ -730,7 +729,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     }
     user_callback_token_count = calculate_token_count(settings, response_model, input)
     if user_callback_token_count:
-        full_embedding_response_dict.update({"token_count": user_callback_token_count})
+        full_embedding_response_dict["token_count"] = user_callback_token_count
 
     full_embedding_response_dict.update(llm_metadata_dict)
 

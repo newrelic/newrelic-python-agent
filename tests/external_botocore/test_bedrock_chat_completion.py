@@ -21,6 +21,7 @@ import pytest
 from _test_bedrock_chat_completion import (
     chat_completion_expected_client_errors,
     chat_completion_expected_events,
+    chat_completion_expected_token_events,
     chat_completion_invalid_access_key_error_events,
     chat_completion_invalid_model_error_events,
     chat_completion_payload_templates,
@@ -45,6 +46,8 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
+from conftest import llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val
+from newrelic.api.ml_model import set_llm_token_count_callback
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])
@@ -90,6 +93,11 @@ def exercise_model(bedrock_server, model_id, is_file_payload):
 @pytest.fixture(scope="module")
 def expected_events(model_id):
     return chat_completion_expected_events[model_id]
+
+
+@pytest.fixture(scope="module")
+def expected_token_events(model_id):
+    return chat_completion_expected_token_events[model_id]
 
 
 @pytest.fixture(scope="module")
@@ -160,6 +168,41 @@ def test_bedrock_chat_completion_in_txn_no_llm_metadata(
     @background_task(name="test_bedrock_chat_completion_in_txn_no_llm_metadata")
     def _test():
         set_trace_info()
+        exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+
+    _test()
+
+
+@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@reset_core_stats_engine()
+def test_bedrock_chat_completion_in_txn_with_token_count(
+    set_trace_info, exercise_model, expected_events, expected_token_events, llm_token_callback
+):
+    if llm_token_callback.__name__ == "llm_token_count_callback_success":
+        expected_completion_events = expected_token_events
+    else:
+        expected_completion_events = expected_events
+
+    @validate_custom_events(expected_completion_events)
+    # One summary event, one user message, and one response message from the assistant
+    @validate_custom_event_count(count=3)
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion_in_txn_with_token_count",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_chat_completion_in_txn_with_token_count")
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+        set_llm_token_count_callback(llm_token_callback)
+
         exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
     _test()

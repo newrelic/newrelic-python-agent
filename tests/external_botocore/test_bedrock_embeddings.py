@@ -133,7 +133,7 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
 
 @pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
 @reset_core_stats_engine()
-def test_bedrock_embedding(set_trace_info, exercise_model, expected_events, expected_token_events, llm_token_callback):
+def test_bedrock_embedding_with_token_count(set_trace_info, exercise_model, expected_events, expected_token_events, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
         expected_embedding_events = expected_token_events
     else:
@@ -157,6 +157,7 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events, expe
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
+        set_llm_token_count_callback(llm_token_callback)
 
         exercise_model(prompt="This is an embedding test.")
 

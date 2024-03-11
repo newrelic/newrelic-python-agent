@@ -61,7 +61,6 @@ def extract(argument_names, default=None):
 def calculate_token_count(settings, model, content):
     # Check if the user has calculated their token counts
     user_token_count_callback = settings.ai_monitoring.llm_token_count_callback
-    breakpoint()
     if user_token_count_callback is None: #or record content is off
         return None
 
@@ -100,6 +99,7 @@ def bedrock_error_attributes(exception, request_args, client, extractor):
 def create_chat_completion_message_event(
     transaction,
     app_name,
+    settings,
     input_message_list,
     output_message_list,
     chat_completion_id,
@@ -120,6 +120,8 @@ def create_chat_completion_message_event(
         else:
             id_ = str(uuid.uuid4())  # No response IDs, use random UUID
 
+        content = message.get("content", "")
+
         chat_completion_message_dict = {
             "id": id_,
             "appName": app_name,
@@ -127,7 +129,7 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "content": message.get("content", ""),
+            "content": content,
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -135,6 +137,10 @@ def create_chat_completion_message_event(
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
+
+        user_callback_token_count = calculate_token_count(settings, request_model, content)
+        if user_callback_token_count:
+            chat_completion_message_dict.update({"token_count": user_callback_token_count})
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -148,6 +154,7 @@ def create_chat_completion_message_event(
         else:
             id_ = str(uuid.uuid4())  # No response IDs, use random UUID
         message_ids.append(id_)
+        content = message.get("content", "")
 
         chat_completion_message_dict = {
             "id": id_,
@@ -156,7 +163,7 @@ def create_chat_completion_message_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
-            "content": message.get("content", ""),
+            "content": content,
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -165,6 +172,10 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
             "is_response": True,
         }
+
+        user_callback_token_count = calculate_token_count(settings, request_model, content)
+        if user_callback_token_count:
+            chat_completion_message_dict["token_count"] = user_callback_token_count
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -566,7 +577,7 @@ def handle_embedding_event(
 
     user_callback_token_count = calculate_token_count(settings, model, input)
     if user_callback_token_count:
-        embedding_dict.update({"token_count": user_callback_token_count})
+        embedding_dict["token_count"] = user_callback_token_count
 
     embedding_dict.update(llm_metadata_dict)
 
@@ -624,6 +635,7 @@ def handle_chat_completion_event(
     message_ids = create_chat_completion_message_event(
         transaction=transaction,
         app_name=settings.app_name,
+        settings=settings,
         input_message_list=input_message_list,
         output_message_list=output_message_list,
         chat_completion_id=chat_completion_id,

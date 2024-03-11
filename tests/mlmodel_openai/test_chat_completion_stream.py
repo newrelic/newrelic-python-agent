@@ -381,7 +381,7 @@ chat_completion_token_recorded_events = [
 @reset_core_stats_engine()
 def test_openai_chat_completion_sync_with_token_count_callback(set_trace_info, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        expected_events = chat_completion_recorded_events
+        expected_events = chat_completion_token_recorded_events
     else:
         expected_events = chat_completion_recorded_events
 
@@ -400,6 +400,7 @@ def test_openai_chat_completion_sync_with_token_count_callback(set_trace_info, l
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
+        set_llm_token_count_callback(llm_token_callback)
 
         generator = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -555,6 +556,7 @@ def test_openai_chat_completion_async_with_token_count_callback(set_trace_info, 
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
+        set_llm_token_count_callback(llm_token_callback)
 
         async def consumer():
             generator = await openai.ChatCompletion.acreate(
@@ -570,6 +572,7 @@ def test_openai_chat_completion_async_with_token_count_callback(set_trace_info, 
         loop.run_until_complete(consumer())
 
     _test()
+
 
 @disabled_ai_monitoring_streaming_settings
 @reset_core_stats_engine()

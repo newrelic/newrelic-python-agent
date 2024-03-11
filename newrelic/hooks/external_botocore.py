@@ -517,8 +517,14 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         function_name = wrapped.__name__
         operation = "embedding" if model.startswith("amazon.titan-embed") else "completion"
 
+        # Function trace may not be exited in this function in the case of streaming, so start manually
         ft = FunctionTrace(name=function_name, group="Llm/%s/Bedrock" % (operation))
         ft.__enter__()
+
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id", "")
+        trace_id = available_metadata.get("trace.id", "")
 
         try:
             response = wrapped(*args, **kwargs)
@@ -530,7 +536,9 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
                     "appName": settings.app_name,
                     "model": model,
-                    "duration": ft.duration
+                    "duration": ft.duration,
+                    "span_id": span_id,
+                    "trace_id": trace_id,
                 }
                 try:
                     request_extractor(request_body, bedrock_attrs)
@@ -572,6 +580,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             "appName": settings.app_name,
             "request_id": response_headers.get("x-amzn-requestid", "") if response_headers else "",
             "model": model,
+            "span_id": span_id,
+            "trace_id": trace_id,
         }
 
         try:
@@ -691,18 +701,14 @@ def handle_embedding_event(transaction, bedrock_attrs):
     embedding_id = str(uuid.uuid4())
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
-
-    # Get trace information
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
     
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
+    span_id = bedrock_attrs.get("span_id", None)
+    trace_id = bedrock_attrs.get("trace_id", None)
     request_id = bedrock_attrs.get("request_id", None)
-    # response_id = bedrock_attrs.get("response_id", None)
     model = bedrock_attrs.get("model", None)
 
     embedding_dict = {
@@ -737,11 +743,8 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
-    # Get trace information
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
-
+    span_id = bedrock_attrs.get("span_id", None)
+    trace_id = bedrock_attrs.get("trace_id", None)
     request_id = bedrock_attrs.get("request_id", None)
     response_id = bedrock_attrs.get("response_id", None)
     model = bedrock_attrs.get("model", None)

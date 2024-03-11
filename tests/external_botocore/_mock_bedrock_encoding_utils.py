@@ -11,13 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+""" Utilities for encoding and decoding streaming payloads from Bedrock. """
 import base64
 import binascii
 import json
 
 
-# Utilities for encoding and decoding streaming payloads from Bedrock
 def crc(b):
     """Encode the crc32 of the bytes stream into a 4 byte sequence."""
     return int_to_escaped_bytes(binascii.crc32(b), 4)

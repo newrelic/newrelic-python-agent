@@ -25,10 +25,12 @@ from _test_bedrock_chat_completion import (
     chat_completion_invalid_model_error_events,
     chat_completion_payload_templates,
 )
-from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
-from conftest import BOTOCORE_VERSION
+from conftest import (  # pylint: disable=E0611
+    BOTOCORE_VERSION,
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+)
 from testing_support.fixtures import (
-    dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
@@ -93,8 +95,26 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
+def expected_events_no_content(model_id):
+    events = copy.deepcopy(chat_completion_expected_events[model_id])
+    for event in events:
+        if "content" in event[1]:
+            del event[1]["content"]
+    return events
+
+
+@pytest.fixture(scope="module")
 def expected_invalid_access_key_error_events(model_id):
     return chat_completion_invalid_access_key_error_events[model_id]
+
+
+@pytest.fixture(scope="module")
+def expected_invalid_access_key_error_events_no_content(model_id):
+    events = copy.deepcopy(chat_completion_invalid_access_key_error_events[model_id])
+    for event in events:
+        if "content" in event[1]:
+            del event[1]["content"]
+    return events
 
 
 @pytest.fixture(scope="module")
@@ -130,6 +150,36 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(set_trace_info, exerci
     )
     @validate_attributes("agent", ["llm"])
     @background_task(name="test_bedrock_chat_completion_in_txn_with_llm_metadata")
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+        exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+
+    _test()
+
+
+# not working with claude
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
+    set_trace_info, exercise_model, expected_events_no_content
+):
+    @validate_custom_events(expected_events_no_content)
+    # One summary event, one user message, and one response message from the assistant
+    @validate_custom_event_count(count=3)
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task(name="test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content")
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
@@ -246,7 +296,6 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
     _test()
 
 
-@dt_enabled
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_error_incorrect_access_key(
     monkeypatch,
@@ -257,6 +306,49 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
     expected_invalid_access_key_error_events,
 ):
     @validate_custom_events(expected_invalid_access_key_error_events)
+    @validate_error_trace_attributes(
+        _client_error_name,
+        exact_attrs={
+            "agent": {},
+            "intrinsic": {},
+            "user": expected_client_error,
+        },
+    )
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_chat_completion")
+    def _test():
+        monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
+
+        with pytest.raises(_client_error):  # not sure where this exception actually comes from
+            set_trace_info()
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
+            add_custom_attribute("llm.foo", "bar")
+            add_custom_attribute("non_llm_attr", "python-agent")
+
+            exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
+
+    _test()
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
+    monkeypatch,
+    bedrock_server,
+    exercise_model,
+    set_trace_info,
+    expected_client_error,
+    expected_invalid_access_key_error_events_no_content,
+):
+    @validate_custom_events(expected_invalid_access_key_error_events_no_content)
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={

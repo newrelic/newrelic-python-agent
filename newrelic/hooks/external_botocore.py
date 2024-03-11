@@ -524,10 +524,13 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             try:
+                ft.__exit__(*sys.exc_info())
+
                 bedrock_attrs = {
                     "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
                     "appName": settings.app_name,
                     "model": model,
+                    "duration": ft.duration
                 }
                 try:
                     request_extractor(request_body, bedrock_attrs)
@@ -556,8 +559,6 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     handle_embedding_event(transaction, error_attributes)
                 else:
                     handle_chat_completion_event(transaction, error_attributes)
-
-                ft.__exit__(*sys.exc_info())
             finally:
                 raise
 
@@ -677,14 +678,10 @@ def record_error(self, transaction, exc):
 
         # If there are no bedrock attrs exit early as there's no data to record.
         if not bedrock_attrs:
-            self._nr_ft.__exit__(*sys.exc_info())
             return
 
-        bedrock_attrs["duration"] = self._nr_ft.duration
         bedrock_error_attributes(exc, bedrock_attrs)
         handle_chat_completion_event(transaction, bedrock_attrs)
-
-        self._nr_ft.__exit__(*sys.exc_info())
 
         # Clear cached data as this can be very large.
         self._nr_bedrock_attrs.clear()

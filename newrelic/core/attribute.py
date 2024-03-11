@@ -113,6 +113,10 @@ class CastingFailureException(Exception):
     pass
 
 
+class NullValueException(ValueError):
+    pass
+
+
 class Attribute(_Attribute):
     def __repr__(self):
         return "Attribute(name=%r, value=%r, destinations=%r)" % (self.name, self.value, bin(self.destinations))
@@ -129,6 +133,13 @@ def create_attributes(attr_dict, destinations, attribute_filter):
 
 
 def create_agent_attributes(attr_dict, attribute_filter):
+    """
+    Returns a dictionary of Attribute objects with appropriate destinations.
+
+    If the attribute's key is in the known list of event attributes, it is assigned
+    to _DESTINATIONS_WITH_EVENTS, otherwise it is assigned to _DESTINATIONS.
+    Note attributes with a value of None are filtered out.
+    """
     attributes = []
 
     for k, v in attr_dict.items():
@@ -146,12 +157,15 @@ def create_agent_attributes(attr_dict, attribute_filter):
 
 
 def resolve_user_attributes(attr_dict, attribute_filter, target_destination, attr_class=dict):
+    """
+    Returns an attr_class of key value attributes filtered to the target_destination.
+
+    process_user_attribute MUST be called before this function to filter out invalid
+    attributes.
+    """
     u_attrs = attr_class()
 
     for attr_name, attr_value in attr_dict.items():
-        if attr_value is None:
-            continue
-
         dest = attribute_filter.apply(attr_name, DST_ALL)
 
         if dest & target_destination:
@@ -202,11 +216,6 @@ def resolve_logging_context_attributes(attr_dict, attribute_filter, attr_prefix,
                 )
 
     return c_attrs
-
-
-def create_user_attributes(attr_dict, attribute_filter):
-    destinations = DST_ALL
-    return create_attributes(attr_dict, destinations, attribute_filter)
 
 
 def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding="utf-8", ending=None):
@@ -288,6 +297,15 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
         _logger.debug("Attribute value cannot be cast to a string. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
+    except NullValueException:
+        _logger.debug(
+            "Attribute value is None. There is no difference between omitting the key "
+            "and sending None. Dropping attribute: %r=%r",
+            name,
+            value,
+        )
+        return FAILED_RESULT
+
     else:
         # Check length after casting
 
@@ -314,9 +332,18 @@ def sanitize(value):
     Insights. Otherwise, convert value to a string.
 
     Raise CastingFailureException, if str(value) somehow fails.
+    Raise NullValueException, if value is None (null values SHOULD NOT be reported).
     """
 
     valid_value_types = (six.text_type, six.binary_type, bool, float, six.integer_types)
+    # According to the agent spec, agents should not report None attribute values.
+    # There is no difference between omitting the key and sending a None, so we can
+    # reduce the payload size by not sending None values.
+    if value is None:
+        raise NullValueException(
+            "Attribute value is of type: None. Omitting value since there is "
+            "no difference between omitting the key and sending None."
+        )
 
     # When working with numpy, note that numpy has its own `int`s, `str`s,
     # et cetera. `numpy.str_` and `numpy.float_` inherit from Python's native

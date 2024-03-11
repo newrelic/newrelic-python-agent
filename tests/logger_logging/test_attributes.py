@@ -58,7 +58,7 @@ def test_logging_extra_attributes(logger):
     logger.error("extras", extra={"extra_attr": 1})
 
 
-@validate_log_events([{"message": "exc_info"}], required_attrs=["context.exc_info", "context.exc_text"])
+@validate_log_events([{"message": "exc_info"}], required_attrs=["context.exc_info"])
 @validate_log_event_count(1)
 @background_task()
 def test_logging_exc_info_context_attributes(logger):

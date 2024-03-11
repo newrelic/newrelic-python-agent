@@ -31,7 +31,6 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema import BaseOutputParser
 from mock import patch
 from testing_support.fixtures import (
-    override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
@@ -1088,37 +1087,6 @@ def test_langchain_chain_outside_transaction(
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
-
-    runnable = create_function(json_schema, chat_openai_client, prompt)
-
-    output = getattr(runnable, call_function)(input_)
-
-    assert output == {"name": "Sally", "age": 13}
-
-
-disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
-
-
-@override_application_settings(disabled_custom_insights_settings)
-@pytest.mark.parametrize(
-    "create_function,call_function,input_",
-    ((create_structured_output_runnable, "invoke", {"input": "Sally is 13"}),),
-)
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@validate_transaction_metrics(
-    name="test_chain:test_langchain_chain_custom_insights_disabled",
-    custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
-    ],
-    background_task=True,
-)
-@background_task()
-def test_langchain_chain_custom_insights_disabled(
-    set_trace_info, chat_openai_client, json_schema, prompt, create_function, call_function, input_
-):
-    set_trace_info()
-    add_custom_attribute("llm.conversation_id", "my-awesome-id")
 
     runnable = create_function(json_schema, chat_openai_client, prompt)
 

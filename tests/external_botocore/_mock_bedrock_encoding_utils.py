@@ -16,8 +16,8 @@ import base64
 import binascii
 import json
 
-# Utilities for encoding and decoding streaming payloads from Bedrock
 
+# Utilities for encoding and decoding streaming payloads from Bedrock
 def crc(b):
     """Encode the crc32 of the bytes stream into a 4 byte sequence."""
     return int_to_escaped_bytes(binascii.crc32(b), 4)
@@ -25,7 +25,7 @@ def crc(b):
 
 def int_to_escaped_bytes(i, num_bytes=1):
     """Convert an integer into an arbitrary number of bytes."""
-    return bytes.fromhex(("{:0" + str(num_bytes*2) + "x}").format(i))
+    return bytes.fromhex(("{:0" + str(num_bytes * 2) + "x}").format(i))
 
 
 def encode_headers(headers):
@@ -33,7 +33,7 @@ def encode_headers(headers):
     new_headers = []
     for h, v in headers.items():
         if not h.startswith(":"):
-            h = (":%s" % h)
+            h = ":%s" % h
         h = h.encode("utf-8")
         v = v.encode("utf-8")
         new_headers.append(b"".join((int_to_escaped_bytes(len(h)), h, b"\x07\x00", int_to_escaped_bytes(len(v)), v)))
@@ -52,12 +52,12 @@ def decode_body(body):
 
 def encode_body(body):
     """Encode a dictionary body into JSON, base64, then JSON again under a bytes key."""
-    body = json.dumps(body, separators=(',', ':'))
+    body = json.dumps(body, separators=(",", ":"))
     body = body.encode("utf-8")
     body = base64.b64encode(body)
     body = body.decode("utf-8")
     body = {"bytes": body}
-    body = json.dumps(body, separators=(',', ':'))
+    body = json.dumps(body, separators=(",", ":"))
     body = body.encode("utf-8")
     return body
 

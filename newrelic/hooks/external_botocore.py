@@ -26,10 +26,13 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import message_trace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper, ObjectProxy
+from newrelic.common.object_wrapper import (
+    ObjectProxy,
+    function_wrapper,
+    wrap_function_wrapper,
+)
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
-
 
 BOTOCORE_VERSION = get_package_version("botocore")
 
@@ -445,7 +448,12 @@ def extract_bedrock_cohere_model_streaming_response(response_body, bedrock_attrs
 
 NULL_EXTRACTOR = lambda *args: {}  # Empty extractor that returns nothing
 MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
-    ("amazon.titan-embed", extract_bedrock_titan_embedding_model_request, extract_bedrock_titan_embedding_model_response, NULL_EXTRACTOR),
+    (
+        "amazon.titan-embed",
+        extract_bedrock_titan_embedding_model_request,
+        extract_bedrock_titan_embedding_model_response,
+        NULL_EXTRACTOR,
+    ),
     (
         "amazon.titan",
         extract_bedrock_titan_text_model_request,
@@ -573,7 +581,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     handle_chat_completion_event(transaction, error_attributes)
             except Exception as nr_exc:
                 _logger.debug("Exception encountered in botocore instrumentation for AWS Bedrock: %s" % str(nr_exc))
-            
+
             raise
 
         if not response:
@@ -701,7 +709,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     embedding_id = str(uuid.uuid4())
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
-    
+
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
@@ -734,8 +742,6 @@ def handle_embedding_event(transaction, bedrock_attrs):
         embedding_dict["input"] = bedrock_attrs.get("input", "")
 
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
-
-
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
 
 
@@ -756,7 +762,9 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
 
     input_message_list = bedrock_attrs.get("input_message_list", [])
     output_message_list = bedrock_attrs.get("output_message_list", [])
-    number_of_messages = (len(input_message_list) + len(output_message_list)) or None  # If 0, attribute will be set to None and removed
+    number_of_messages = (
+        len(input_message_list) + len(output_message_list)
+    ) or None  # If 0, attribute will be set to None and removed
 
     chat_completion_summary_dict = {
         "vendor": "bedrock",

@@ -21,10 +21,10 @@ import pytest
 from _test_bedrock_chat_completion import (
     chat_completion_expected_client_errors,
     chat_completion_expected_events,
-    chat_completion_streaming_expected_events,
     chat_completion_invalid_access_key_error_events,
     chat_completion_invalid_model_error_events,
     chat_completion_payload_templates,
+    chat_completion_streaming_expected_events,
 )
 from conftest import (  # pylint: disable=E0611
     BOTOCORE_VERSION,
@@ -47,7 +47,6 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import function_wrapper
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["ResponseStandard", "ResponseStreaming"])
@@ -176,7 +175,9 @@ _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted
 
 # not working with claude
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_with_llm_metadata(set_trace_info, exercise_model, expected_events, expected_metrics):
+def test_bedrock_chat_completion_in_txn_with_llm_metadata(
+    set_trace_info, exercise_model, expected_events, expected_metrics
+):
     @validate_custom_events(expected_events)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
@@ -231,7 +232,9 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
 
 
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_no_llm_metadata(set_trace_info, exercise_model, expected_events_no_llm_metadata, expected_metrics):
+def test_bedrock_chat_completion_in_txn_no_llm_metadata(
+    set_trace_info, exercise_model, expected_events_no_llm_metadata, expected_metrics
+):
     @validate_custom_events(expected_events_no_llm_metadata)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
@@ -273,7 +276,9 @@ _client_error_name = callable_name(_client_error)
 
 
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_info, response_streaming, expected_metrics):
+def test_bedrock_chat_completion_error_invalid_model(
+    bedrock_server, set_trace_info, response_streaming, expected_metrics
+):
     @validate_custom_events(chat_completion_invalid_model_error_events)
     @validate_error_trace_attributes(
         "botocore.errorfactory:ValidationException",
@@ -311,7 +316,8 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
                     accept="application/json",
                     contentType="application/json",
                 )
-                for _ in stream: pass
+                for _ in stream:
+                    pass
             else:
                 bedrock_server.invoke_model(
                     body=b"{}",

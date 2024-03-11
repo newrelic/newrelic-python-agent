@@ -236,98 +236,58 @@ def test_application_create_custom_event_not_called():
 # Test completness of LLM content/input despite attribute limits being set
 
 
-LlmChatCompletionMessage = {
-    "content": "A" * 9001,  # Should print out to completion
-    "input": "B" * 5000,  # Should cap out at 255 or 4095
-    "foo": "b" + "a" * 6000 + "r",
-}
-LlmEmbedding = {
-    "content": "A" * 9001,  # Should cap out at 255 or 4095
-    "input": "B" * 5000,  # Should print out to completion
-    "foo": "b" + "a" * 6000 + "r",
-}
-SomeOtherDict = {
-    "content": "A" * 9001,
-    "input": "B" * 5000,
-    "foo": "b" + "a" * 6000 + "r",
-}
-
-
-recorded_events_256 = [
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "content": "A" * 9001,  # Should print out to completion
-            "input": "B" * 255,  # Should cap out at 255 or 4095
-            "foo": "b" + "a" * 254,
-        },
-    ),
-    (
-        {"type": "LlmEmbedding"},
-        {
-            "content": "A" * 255,  # Should cap out at 255 or 4095
-            "input": "B" * 5000,  # Should print out to completion
-            "foo": "b" + "a" * 254,
-        },
-    ),
-    (
-        {"type": "SomeOtherDict"},
-        {
-            "content": "A" * 255,
-            "input": "B" * 255,
-            "foo": "b" + "a" * 254,
-        },
-    ),
-]
-
-recorded_events_4096 = [
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "content": "A" * 9001,  # Should print out to completion
-            "input": "B" * 4095,  # Should cap out at 255 or 4095
-            "foo": "b" + "a" * 4094,
-        },
-    ),
-    (
-        {"type": "LlmEmbedding"},
-        {
-            "content": "A" * 4095,  # Should cap out at 255 or 4095
-            "input": "B" * 5000,  # Should print out to completion
-            "foo": "b" + "a" * 4094,
-        },
-    ),
-    (
-        {"type": "SomeOtherDict"},
-        {
-            "content": "A" * 4095,
-            "input": "B" * 4095,
-            "foo": "b" + "a" * 4094,
-        },
-    ),
-]
-
-
 @pytest.mark.parametrize(
-    "max_val,expected_events",
+    "event_type,event_data,expected_event_data",
     (
-        (255, recorded_events_256),
-        (4095, recorded_events_4096),
+        [
+            "LlmChatCompletionMessage",
+            {
+                "content": "A" * 9001,
+                "input": "B" * 9001,
+                "foo": "b" + "a" * 9000 + "r",
+            },
+            {
+                "content": "A" * 9001,
+                "input": "B" * 300,
+                "foo": "b" + "a" * 299,
+            },
+        ],
+        [
+            "LlmEmbedding",
+            {
+                "content": "A" * 9001,
+                "input": "B" * 9001,
+                "foo": "b" + "a" * 9000 + "r",
+            },
+            {
+                "content": "A" * 300,
+                "input": "B" * 9001,
+                "foo": "b" + "a" * 299,
+            },
+        ],
+        [
+            "MyCustomEvent",
+            {
+                "content": "A" * 9001,
+                "input": "B" * 9001,
+                "foo": "b" + "a" * 9000 + "r",
+            },
+            {
+                "content": "A" * 300,
+                "input": "B" * 300,
+                "foo": "b" + "a" * 299,
+            },
+        ],
     ),
 )
-def test_create_custom_event_no_limit(max_val, expected_events):
+def test_create_custom_event_no_limit(event_type, event_data, expected_event_data):
     @reset_core_stats_engine()
-    @override_application_settings({"custom_insights_events.max_attribute_value": max_val})
-    @validate_custom_event_count(3)
-    @validate_custom_events(expected_events)
+    @override_application_settings({"custom_insights_events.max_attribute_value": 300})
+    @validate_custom_event_count(1)
+    @validate_custom_events([({"type": event_type}, expected_event_data)])
     @background_task()
     def _test():
         transaction = current_transaction()
-        if not transaction:
-            return
-
-        transaction.record_custom_event("LlmChatCompletionMessage", LlmChatCompletionMessage)
-        transaction.record_custom_event("LlmEmbedding", LlmEmbedding)
-        transaction.record_custom_event("SomeOtherDict", SomeOtherDict)
+        transaction.record_custom_event(event_type, event_data)
 
     _test()

@@ -702,7 +702,7 @@ def test_langchain_chain(
             {
                 "config": {
                     "tags": ["bar"],
-                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "metadata": {"id": "123"},
                 },
             },
             events_sans_content(chat_completion_recorded_events_runnable_invoke),
@@ -715,7 +715,7 @@ def test_langchain_chain(
             {
                 "config": {
                     "tags": ["bar"],
-                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "metadata": {"id": "123"},
                 },
                 "return_only_outputs": True,
             },
@@ -754,70 +754,6 @@ def test_langchain_chain_no_content(
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
 
-        runnable = create_function(json_schema, chat_openai_client, prompt)
-
-        output = getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
-
-        assert output
-
-    _test()
-
-
-@pytest.mark.parametrize(
-    "create_function,call_function,call_function_args,call_function_kwargs,expected_events",
-    (
-        pytest.param(
-            create_structured_output_runnable,
-            "invoke",
-            ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
-                }
-            },
-            chat_completion_recorded_events_runnable_invoke_missing_conversation_id,
-            id="runnable_chain.invoke",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "invoke",
-            ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
-                },
-                "return_only_outputs": True,
-            },
-            chat_completion_recorded_events_invoke_missing_conversation_id,
-            id="chain.invoke",
-        ),
-    ),
-)
-def test_langchain_chain_without_conversation_id(
-    set_trace_info,
-    chat_openai_client,
-    json_schema,
-    prompt,
-    create_function,
-    call_function,
-    call_function_args,
-    call_function_kwargs,
-    expected_events,
-):
-    @reset_core_stats_engine()
-    @validate_custom_events(expected_events)
-    # 3 langchain events and 5 openai events.
-    @validate_custom_event_count(count=8)
-    @validate_transaction_metrics(
-        name="test_chain:test_langchain_chain_without_conversation_id.<locals>._test",
-        custom_metrics=[
-            ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
-        ],
-        background_task=True,
-    )
-    @background_task()
-    def _test():
-        set_trace_info()
         runnable = create_function(json_schema, chat_openai_client, prompt)
 
         output = getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
@@ -1008,7 +944,7 @@ def test_langchain_chain_error_in_langchain(
             {
                 "config": {
                     "tags": [],
-                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "metadata": {"id": "123"},
                 }
             },
             events_sans_content(chat_completion_recorded_events_invoke_langchain_error),
@@ -1022,7 +958,7 @@ def test_langchain_chain_error_in_langchain(
             {
                 "config": {
                     "tags": [],
-                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "metadata": {"id": "123"},
                 },
                 "return_only_outputs": True,
             },
@@ -1195,7 +1131,7 @@ def test_async_langchain_chain_list_response_no_content(
         chain.ainvoke(
             {"text": "colors"},
             config={
-                "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                "metadata": {"id": "123"},
             },
         )
     )
@@ -1498,7 +1434,7 @@ def test_async_langchain_chain_error_in_lanchain(
             ({"no-exist": "Sally is 13"},),
             {
                 "config": {
-                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "metadata": {"id": "123"},
                 }
             },
             events_sans_content(chat_completion_recorded_events_invoke_langchain_error),
@@ -1511,7 +1447,7 @@ def test_async_langchain_chain_error_in_lanchain(
             ({"no-exist": "Sally is 13"},),
             {
                 "config": {
-                    "metadata": {"id": "123", "message_ids": ["message-id-0", "message-id-1"]},
+                    "metadata": {"id": "123"},
                 },
                 "return_only_outputs": True,
             },

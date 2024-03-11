@@ -805,6 +805,7 @@ def create_chat_completion_message_event(
     llm_metadata_dict,
     output_message_list,
 ):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     # Loop through all input messages received from the create request and emit a custom event for each one
     for index, message in enumerate(input_message_list):

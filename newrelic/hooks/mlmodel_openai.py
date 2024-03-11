@@ -115,7 +115,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
             }
 
             if settings.ai_monitoring.record_content.enabled:
-                error_embedding_dict.update({"input": kwargs.get("input", "")})
+                error_embedding_dict["input"] = kwargs.get("input", "")
 
             error_embedding_dict.update(llm_metadata_dict)
 
@@ -181,7 +181,7 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     }
 
     if settings.ai_monitoring.record_content.enabled:
-        full_embedding_response_dict.update({"input": kwargs.get("input", "")})
+        full_embedding_response_dict["input"] = kwargs.get("input", "")
 
     full_embedding_response_dict.update(llm_metadata_dict)
 
@@ -491,7 +491,7 @@ def create_chat_completion_message_event(
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            chat_completion_input_message_dict.update({"content": message_content})
+            chat_completion_input_message_dict["content"] = message_content
 
         chat_completion_input_message_dict.update(llm_metadata_dict)
 
@@ -531,7 +531,7 @@ def create_chat_completion_message_event(
             }
 
             if settings.ai_monitoring.record_content.enabled:
-                chat_completion_output_message_dict.update({"content": message_content})
+                chat_completion_output_message_dict["content"] = message_content
 
             chat_completion_output_message_dict.update(llm_metadata_dict)
 
@@ -626,7 +626,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
             }
 
             if settings.ai_monitoring.record_content.enabled:
-                error_embedding_dict.update({"input": kwargs.get("input", "")})
+                error_embedding_dict["input"] = kwargs.get("input", "")
 
             error_embedding_dict.update(llm_metadata_dict)
 
@@ -692,7 +692,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     }
 
     if settings.ai_monitoring.record_content.enabled:
-        full_embedding_response_dict.update({"input": kwargs.get("input", "")})
+        full_embedding_response_dict["input"] = kwargs.get("input", "")
 
     full_embedding_response_dict.update(llm_metadata_dict)
 

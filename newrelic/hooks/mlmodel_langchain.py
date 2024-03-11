@@ -171,7 +171,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     }
 
     if settings.ai_monitoring.record_content.enabled:
-        LLMVectorSearch_dict.update({"request.query": request_query})
+        LLMVectorSearch_dict["request.query"] = request_query
 
     # In both LlmVectorSearch and LlmVectorSearchResult dicts
     LLMVectorSearch_union_dict = {
@@ -205,7 +205,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            LLMVectorSearchResult_dict.update({"page_content": page_content})
+            LLMVectorSearchResult_dict["page_content"] = page_content
 
         LLMVectorSearchResult_dict.update(LLMVectorSearch_union_dict)
         LLMVectorSearchResult_dict.update(metadata_dict)
@@ -272,7 +272,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     }
 
     if settings.ai_monitoring.record_content.enabled:
-        LLMVectorSearch_dict.update({"request.query": request_query})
+        LLMVectorSearch_dict["request.query"] = request_query
 
     # In both LlmVectorSearch and LlmVectorSearchResult dicts
     LLMVectorSearch_union_dict = {
@@ -306,7 +306,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            LLMVectorSearchResult_dict.update({"page_content": page_content})
+            LLMVectorSearchResult_dict["page_content"] = page_content
 
         LLMVectorSearchResult_dict.update(LLMVectorSearch_union_dict)
         LLMVectorSearchResult_dict.update(metadata_dict)
@@ -397,7 +397,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
             )
 
             if settings.ai_monitoring.record_content.enabled:
-                error_tool_event_dict.update({"input": tool_input})
+                error_tool_event_dict["input"] = tool_input
 
             error_tool_event_dict.update(llm_metadata_dict)
 
@@ -531,7 +531,7 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
             )
 
             if settings.ai_monitoring.record_content.enabled:
-                error_tool_event_dict.update({"input": tool_input})
+                error_tool_event_dict["input"] = tool_input
 
             error_tool_event_dict.update(llm_metadata_dict)
 
@@ -913,7 +913,7 @@ def create_chat_completion_message_event(
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            chat_completion_input_message_dict.update({"content": message})
+            chat_completion_input_message_dict["content"] = message
 
         chat_completion_input_message_dict.update(llm_metadata_dict)
 
@@ -941,7 +941,7 @@ def create_chat_completion_message_event(
             }
 
             if settings.ai_monitoring.record_content.enabled:
-                chat_completion_output_message_dict.update({"content": message})
+                chat_completion_output_message_dict["content"] = message
 
             chat_completion_output_message_dict.update(llm_metadata_dict)
 

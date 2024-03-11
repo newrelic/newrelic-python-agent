@@ -122,7 +122,7 @@ def create_chat_completion_message_event(
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            chat_completion_message_dict.update({"content": message.get("content", "")})
+            chat_completion_message_dict["content"] = message.get("content", "")
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -154,7 +154,7 @@ def create_chat_completion_message_event(
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            chat_completion_message_dict.update({"content": message.get("content", "")})
+            chat_completion_message_dict["content"] = message.get("content", "")
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -550,7 +550,7 @@ def handle_embedding_event(
     )
 
     if settings.ai_monitoring.record_content.enabled:
-        embedding_dict.update({"input": request_body.get("inputText", "")})
+        embedding_dict["input"] = request_body.get("inputText", "")
 
     if is_error:
         embedding_dict.update({"error": True})

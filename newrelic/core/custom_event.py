@@ -121,7 +121,7 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
             else:
                 max_length = (
                     settings.custom_insights_events.max_attribute_value
-                    if not (name in NO_LIMIT_LLM_EVENT_TYPE.keys() and NO_LIMIT_LLM_EVENT_TYPE[name] == k)
+                    if not (NO_LIMIT_LLM_EVENT_TYPE.get(name) == k)
                     else None
                 )
                 max_num_attrs = MAX_NUM_USER_ATTRIBUTES

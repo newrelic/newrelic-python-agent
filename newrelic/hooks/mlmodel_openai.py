@@ -14,7 +14,7 @@
 
 import sys
 import uuid
-
+import logging
 import openai
 
 from newrelic.api.function_trace import FunctionTrace
@@ -24,10 +24,29 @@ from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
+from newrelic.api.application import application_instance
+
 
 OPENAI_VERSION = get_package_version("openai")
 OPENAI_VERSION_TUPLE = tuple(map(int, OPENAI_VERSION.split(".")))
 OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
+
+_logger = logging.getLogger(__name__)
+
+
+def calculate_token_count(settings, model, content):
+    # Check if the user has calculated their token counts
+    user_token_count_callback = settings.ai_monitoring.llm_token_count_callback
+    if user_token_count_callback is None: #or record content is off
+        return None
+
+    token_count_val = user_token_count_callback(model, content)
+
+    if not isinstance(token_count_val, int) or token_count_val < 0:
+        _logger.warning("Callback function passed to set_llm_token_count_callback must return a positive integer.")
+        return None
+
+    return token_count_val
 
 
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
@@ -56,6 +75,8 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
     span_id = None
     trace_id = None
+
+    input = kwargs.get("input", "")
 
     function_name = wrapped.__name__
 
@@ -99,6 +120,8 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                 attributes=notice_error_attributes,
             )
 
+            request_model = kwargs.get("model") or kwargs.get("engine") or ""
+
             error_embedding_dict = {
                 "id": embedding_id,
                 "appName": settings.app_name,
@@ -106,14 +129,18 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
-                "input": kwargs.get("input", ""),
-                "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+                "input": input,
+                "request.model": request_model,
                 "vendor": "openAI",
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
                 "error": True,
             }
+
+            user_callback_token_count = calculate_token_count(settings, request_model, input)
+            if user_callback_token_count:
+                error_embedding_dict.update({"token_count": user_callback_token_count})
 
             error_embedding_dict.update(llm_metadata_dict)
 
@@ -178,6 +205,10 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         "vendor": "openAI",
         "ingest_source": "Python",
     }
+
+    user_callback_token_count = calculate_token_count(settings, response_model, input)
+    if user_callback_token_count:
+        full_embedding_response_dict.update({"token_count": user_callback_token_count})
 
     full_embedding_response_dict.update(llm_metadata_dict)
 
@@ -287,6 +318,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         create_chat_completion_message_event(
             transaction,
             app_name,
+            settings,
             request_message_list,
             completion_id,
             span_id,
@@ -406,6 +438,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     message_ids = create_chat_completion_message_event(
         transaction,
         settings.app_name,
+        settings,
         input_message_list,
         completion_id,
         span_id,
@@ -444,6 +477,7 @@ def check_rate_limit_header(response_headers, header_name, is_int):
 def create_chat_completion_message_event(
     transaction,
     app_name,
+    settings,
     input_message_list,
     chat_completion_id,
     span_id,
@@ -485,6 +519,10 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
         }
 
+        user_callback_token_count = calculate_token_count(settings, response_model, message_content)
+        if user_callback_token_count:
+            chat_completion_input_message_dict.update({"token_count": user_callback_token_count})
+
         chat_completion_input_message_dict.update(llm_metadata_dict)
 
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_input_message_dict)
@@ -523,6 +561,10 @@ def create_chat_completion_message_event(
                 "is_response": True,
             }
 
+            user_callback_token_count = calculate_token_count(settings, response_model, message_content)
+            if user_callback_token_count:
+                chat_completion_output_message_dict.update({"token_count": user_callback_token_count})
+
             chat_completion_output_message_dict.update(llm_metadata_dict)
 
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
@@ -557,6 +599,8 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
     span_id = None
     trace_id = None
+
+    input = kwargs.get("input", "")
 
     function_name = wrapped.__name__
 
@@ -600,6 +644,8 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                 attributes=notice_error_attributes,
             )
 
+            request_model = kwargs.get("model") or kwargs.get("engine") or ""
+
             error_embedding_dict = {
                 "id": embedding_id,
                 "appName": settings.app_name,
@@ -607,14 +653,17 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
                 "span_id": span_id,
                 "trace_id": trace_id,
                 "transaction_id": transaction.guid,
-                "input": kwargs.get("input", ""),
-                "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+                "input": input,
+                "request.model": request_model,
                 "vendor": "openAI",
                 "ingest_source": "Python",
                 "response.organization": "" if exc_organization is None else exc_organization,
                 "duration": ft.duration,
                 "error": True,
             }
+            user_callback_token_count = calculate_token_count(settings, request_model, input)
+            if user_callback_token_count:
+                error_embedding_dict.update({"token_count": user_callback_token_count})
 
             error_embedding_dict.update(llm_metadata_dict)
 
@@ -647,7 +696,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "input": kwargs.get("input", ""),
+        "input": input,
         "api_key_last_four_digits": f"sk-{api_key[-4:]}" if api_key else "",
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
@@ -679,6 +728,9 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         "vendor": "openAI",
         "ingest_source": "Python",
     }
+    user_callback_token_count = calculate_token_count(settings, response_model, input)
+    if user_callback_token_count:
+        full_embedding_response_dict.update({"token_count": user_callback_token_count})
 
     full_embedding_response_dict.update(llm_metadata_dict)
 
@@ -787,6 +839,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         create_chat_completion_message_event(
             transaction,
             app_name,
+            settings,
             request_message_list,
             completion_id,
             span_id,
@@ -906,6 +959,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     message_ids = create_chat_completion_message_event(
         transaction,
         settings.app_name,
+        settings,
         input_message_list,
         completion_id,
         span_id,
@@ -1169,6 +1223,7 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
     return create_chat_completion_message_event(
         transaction,
         settings.app_name,
+        settings,
         list(messages),
         chat_completion_id,
         span_id,
@@ -1255,6 +1310,7 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
     return create_chat_completion_message_event(
         transaction,
         settings.app_name,
+        settings,
         list(messages),
         chat_completion_id,
         span_id,

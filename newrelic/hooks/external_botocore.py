@@ -58,6 +58,22 @@ def extract(argument_names, default=None):
     return extractor_list
 
 
+def calculate_token_count(settings, model, content):
+    # Check if the user has calculated their token counts
+    user_token_count_callback = settings.ai_monitoring.llm_token_count_callback
+    breakpoint()
+    if user_token_count_callback is None: #or record content is off
+        return None
+
+    token_count_val = user_token_count_callback(model, content)
+
+    if not isinstance(token_count_val, int) or token_count_val < 0:
+        _logger.warning("Callback function passed to set_llm_token_count_callback must return a positive integer.")
+        return None
+
+    return token_count_val
+
+
 def bedrock_error_attributes(exception, request_args, client, extractor):
     response = getattr(exception, "response", None)
     if not response:
@@ -526,6 +542,7 @@ def handle_embedding_event(
     _, _, embedding_dict = extractor(request_body, response_body)
 
     request_body = json.loads(request_body)
+    input = request_body.get("inputText", "")
 
     embedding_dict.update(
         {
@@ -536,7 +553,7 @@ def handle_embedding_event(
             "span_id": span_id,
             "trace_id": trace_id,
             "request_id": request_id,
-            "input": request_body.get("inputText", ""),
+            "input": input,
             "transaction_id": transaction.guid,
             "api_key_last_four_digits": client._request_signer._credentials.access_key[-4:],
             "duration": duration,
@@ -546,6 +563,10 @@ def handle_embedding_event(
     )
     if is_error:
         embedding_dict.update({"error": True})
+
+    user_callback_token_count = calculate_token_count(settings, model, input)
+    if user_callback_token_count:
+        embedding_dict.update({"token_count": user_callback_token_count})
 
     embedding_dict.update(llm_metadata_dict)
 

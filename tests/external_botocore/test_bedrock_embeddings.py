@@ -20,6 +20,7 @@ import pytest
 from _test_bedrock_embeddings import (
     embedding_expected_client_errors,
     embedding_expected_error_events,
+    embedding_expected_token_events,
     embedding_expected_events,
     embedding_payload_templates,
 )
@@ -43,6 +44,8 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
+from conftest import llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val
+from newrelic.api.ml_model import set_llm_token_count_callback
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])
@@ -88,6 +91,11 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
+def expected_token_events(model_id):
+    return embedding_expected_token_events[model_id]
+
+
+@pytest.fixture(scope="module")
 def expected_error_events(model_id):
     return embedding_expected_error_events[model_id]
 
@@ -100,6 +108,38 @@ def expected_client_error(model_id):
 @reset_core_stats_engine()
 def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
     @validate_custom_events(expected_events)
+    @validate_custom_event_count(count=1)
+    @validate_transaction_metrics(
+        name="test_bedrock_embedding",
+        scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task(name="test_bedrock_embedding")
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
+        exercise_model(prompt="This is an embedding test.")
+
+    _test()
+
+
+@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@reset_core_stats_engine()
+def test_bedrock_embedding(set_trace_info, exercise_model, expected_events, expected_token_events, llm_token_callback):
+    if llm_token_callback.__name__ == "llm_token_count_callback_success":
+        expected_embedding_events = expected_token_events
+    else:
+        expected_embedding_events = expected_events
+
+    @validate_custom_events(expected_embedding_events)
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
         name="test_bedrock_embedding",

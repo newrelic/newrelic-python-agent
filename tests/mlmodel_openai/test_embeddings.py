@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import openai
+import pytest
 from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
 from testing_support.fixtures import (  # override_application_settings,
     override_application_settings,
@@ -26,7 +27,9 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.api.ml_model import set_llm_token_count_callback
 from newrelic.api.transaction import add_custom_attribute
+from conftest import llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
@@ -43,6 +46,41 @@ embedding_recorded_events = [
             "api_key_last_four_digits": "sk-CRET",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
+            "duration": None,  # Response time varies each test run
+            "response.model": "text-embedding-ada-002-v2",
+            "request.model": "text-embedding-ada-002",
+            "request_id": "c70828b2293314366a76a2b1dcb20688",
+            "response.organization": "new-relic-nkmd8b",
+            "response.usage.total_tokens": 6,
+            "response.usage.prompt_tokens": 6,
+            "response.api_type": "None",
+            "response.headers.llmVersion": "2020-10-01",
+            "response.headers.ratelimitLimitRequests": 200,
+            "response.headers.ratelimitLimitTokens": 150000,
+            "response.headers.ratelimitResetTokens": "2ms",
+            "response.headers.ratelimitResetRequests": "19m45.394s",
+            "response.headers.ratelimitRemainingTokens": 149994,
+            "response.headers.ratelimitRemainingRequests": 197,
+            "vendor": "openAI",
+            "ingest_source": "Python",
+        },
+    ),
+]
+
+embedding_token_recorded_events = [
+    (
+        {"type": "LlmEmbedding"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (mlmodel_openai)",
+            "transaction_id": "transaction-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "input": "This is an embedding test.",
+            "api_key_last_four_digits": "sk-CRET",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "token_count": 105,
             "duration": None,  # Response time varies each test run
             "response.model": "text-embedding-ada-002-v2",
             "request.model": "text-embedding-ada-002",
@@ -86,6 +124,39 @@ def test_openai_embedding_sync(set_trace_info):
     add_custom_attribute("non_llm_attr", "python-agent")
 
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
+
+
+@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@reset_core_stats_engine()
+def test_openai_embedding_sync_with_token_count_callback(set_trace_info, llm_token_callback):
+    if llm_token_callback.__name__ == "llm_token_count_callback_success":
+        expected_events = embedding_token_recorded_events
+    else:
+        expected_events = embedding_recorded_events
+
+    @validate_custom_event_count(count=1)
+    @validate_custom_events(expected_events)
+    @validate_transaction_metrics(
+        name="test_embeddings:test_openai_embedding_sync_with_token_count_callback.<locals>._test",
+        scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+        rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task()
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+        set_llm_token_count_callback(llm_token_callback)
+
+        openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
+
+    _test()
 
 
 @reset_core_stats_engine()
@@ -144,6 +215,41 @@ def test_openai_embedding_async(loop, set_trace_info):
     loop.run_until_complete(
         openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
     )
+
+
+@pytest.mark.parametrize("llm_token_callback", [llm_token_count_callback_success, llm_token_count_callback_negative_return_val, llm_token_count_callback_non_int_return_val])
+@reset_core_stats_engine()
+def test_openai_embedding_async_with_token_count_callback(loop, set_trace_info, llm_token_callback):
+    if llm_token_callback.__name__ == "llm_token_count_callback_success":
+        expected_events = embedding_token_recorded_events
+    else:
+        expected_events = embedding_recorded_events
+
+    @validate_custom_event_count(count=1)
+    @validate_custom_events(expected_events)
+    @validate_transaction_metrics(
+        name="test_embeddings:test_openai_embedding_async_with_token_count_callback.<locals>._test",
+        scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+        rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task()
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+        set_llm_token_count_callback(llm_token_callback)
+
+        loop.run_until_complete(
+            openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
+        )
+
+    _test()
 
 
 @reset_core_stats_engine()

@@ -473,6 +473,8 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         transaction, embedding_id, span_id, trace_id, kwargs, api_key_last_four_digits, ft, response
     )
     return response
+
+
 def _record_embedding_success(
     transaction, embedding_id, span_id, trace_id, kwargs, api_key_last_four_digits, ft, response
 ):

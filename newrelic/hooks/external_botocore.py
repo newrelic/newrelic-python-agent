@@ -97,6 +97,8 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+
     for index, message in enumerate(input_message_list):
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.

@@ -549,12 +549,11 @@ def _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs
 
     error_embedding_dict = {
         "id": embedding_id,
-        "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
         "response.organization": "" if exc_organization is None else exc_organization,
         "duration": ft.duration,

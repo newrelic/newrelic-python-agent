@@ -529,13 +529,16 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     "appName": settings.app_name,
                     "model": model,
                 }
-                request_extractor(request_body, bedrock_attrs)
+                try:
+                    request_extractor(request_body, bedrock_attrs)
+                except Exception:
+                    pass
 
                 error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
                 notice_error_attributes = {
-                    "http.statusCode": error_attributes["http.statusCode"],
-                    "error.message": error_attributes["error.message"],
-                    "error.code": error_attributes["error.code"],
+                    "http.statusCode": error_attributes.get("http.statusCode"),
+                    "error.message": error_attributes.get("error.message"),
+                    "error.code": error_attributes.get("error.code"),
                 }
 
                 if is_embedding:
@@ -559,6 +562,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 raise
 
         if not response:
+            ft.__exit__(None, None, None)
             return response
 
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders", {})
@@ -568,7 +572,11 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             "request_id": response_headers.get("x-amzn-requestid", "") if response_headers else "",
             "model": model,
         }
-        bedrock_attrs = request_extractor(request_body, bedrock_attrs)
+
+        try:
+            request_extractor(request_body, bedrock_attrs)
+        except Exception:
+            pass
 
         if response_streaming:
             # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
@@ -660,11 +668,6 @@ def record_events_on_stop_iteration(self, transaction):
         transaction._nr_message_ids[response_id] = message_ids
 
         # Clear cached data as this can be very large.
-        # Note this is also important for not reporting the events twice. In openai v1
-        # there are two loops around the iterator, the second is meant to clear the
-        # stream since there is a condition where the iterator may exit before all the
-        # stream contents is read. This results in StopIteration being raised twice
-        # instead of once at the end of the loop.
         self._nr_bedrock_attrs.clear()
 
 
@@ -680,8 +683,11 @@ def record_error(self, transaction, exc):
         bedrock_attrs["duration"] = self._nr_ft.duration
         bedrock_error_attributes(exc, bedrock_attrs)
         handle_chat_completion_event(transaction, bedrock_attrs)
-        
+
         self._nr_ft.__exit__(*sys.exc_info())
+
+        # Clear cached data as this can be very large.
+        self._nr_bedrock_attrs.clear()
 
 
 def handle_embedding_event(transaction, bedrock_attrs):
@@ -721,7 +727,6 @@ def handle_embedding_event(transaction, bedrock_attrs):
         "error": bedrock_attrs.get("error", None),
     }
     embedding_dict.update(llm_metadata_dict)
-    # TODO: is this filter acceptable?
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
 
 
@@ -774,9 +779,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
         "error": bedrock_attrs.get("error", None),
     }
     chat_completion_summary_dict.update(llm_metadata_dict)
-    # TODO: is this filter acceptable?
     chat_completion_summary_dict = {k: v for k, v in chat_completion_summary_dict.items() if v is not None}
-
 
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
@@ -796,7 +799,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
 
     if not hasattr(transaction, "_nr_message_ids"):
         transaction._nr_message_ids = {}
-    transaction._nr_message_ids["bedrock_key"] = message_ids  # TODO What is this?
+    transaction._nr_message_ids["bedrock_key"] = message_ids
 
 
 CUSTOM_TRACE_POINTS = {

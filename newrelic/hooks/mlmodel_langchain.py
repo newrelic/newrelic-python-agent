@@ -814,7 +814,7 @@ def create_chat_completion_message_event(
             id_ = str(uuid.uuid4())
 
             chat_completion_output_message_dict = {
-                "id": id_,
+                "id": str(uuid.uuid4()),
                 "request_id": run_id,
                 "span_id": span_id,
                 "trace_id": trace_id,

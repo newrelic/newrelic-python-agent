@@ -50,9 +50,14 @@ def decode_body(body):
     return json.loads(body)
 
 
-def encode_body(body):
+def encode_body(body, malformed_body=False):
     """Encode a dictionary body into JSON, base64, then JSON again under a bytes key."""
+    
     body = json.dumps(body, separators=(',', ':'))
+    if malformed_body:
+        # Remove characters from end of body to make it unreadable
+        body = body[:-4]  
+
     body = body.encode("utf-8")
     body = base64.b64encode(body)
     body = body.decode("utf-8")
@@ -62,10 +67,10 @@ def encode_body(body):
     return body
 
 
-def encode_streaming_payload(headers, body):
+def encode_streaming_payload(headers, body, malformed_body=False):
     """Encode dictionary headers and dictionary body into bedrock's binary payload format including calculated lengths and CRC32."""
     headers = encode_headers(headers)
-    body = encode_body(body)
+    body = encode_body(body, malformed_body=malformed_body)
 
     header_length = len(headers)
     payload_length = len(body)

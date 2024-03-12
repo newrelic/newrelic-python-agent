@@ -992,3 +992,49 @@ chat_completion_expected_client_errors = {
         "error.code": "UnrecognizedClientException",
     },
 }
+
+
+chat_completion_expected_malformed_payload_events = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (external_botocore)",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "transaction_id": "transaction-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
+            "api_key_last_four_digits": "CRET",
+            "duration": None,  # Response time varies each test run
+            "request.model": "amazon.titan-text-express-v1",
+            "response.model": "amazon.titan-text-express-v1",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+            "response.number_of_messages": 1,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (external_botocore)",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "Malformed Payload",
+            "role": "user",
+            "completion_id": None,
+            "sequence": 0,  
+            "response.model": "amazon.titan-text-express-v1",
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+        },
+    ),
+]

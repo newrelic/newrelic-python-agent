@@ -17,14 +17,17 @@ import json
 from io import BytesIO
 
 import botocore.exceptions
+import botocore.eventstream
+
 import pytest
 from _test_bedrock_chat_completion import (
     chat_completion_expected_client_errors,
     chat_completion_expected_events,
-    chat_completion_streaming_expected_events,
     chat_completion_invalid_access_key_error_events,
     chat_completion_invalid_model_error_events,
+    chat_completion_expected_malformed_payload_events,
     chat_completion_payload_templates,
+    chat_completion_streaming_expected_events,
 )
 from conftest import (  # pylint: disable=E0611
     BOTOCORE_VERSION,
@@ -408,6 +411,44 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
             exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
 
     _test()
+
+
+@reset_core_stats_engine()
+def test_bedrock_chat_completion_malformed_payload(
+    bedrock_server,
+    set_trace_info,
+):
+    # No actual error should be raised, an invalid payload is returned
+    @validate_custom_events(chat_completion_expected_malformed_payload_events)
+    @validate_custom_event_count(count=2)
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_chat_completion")
+    def _test():
+        model = "amazon.titan-text-express-v1"
+        body = (chat_completion_payload_templates[model] % ("Malformed Payload", 0.7, 100)).encode("utf-8")
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
+        response = bedrock_server.invoke_model(
+            body=body,
+            modelId=model,
+            accept="application/json",
+            contentType="application/json",
+        )
+        assert response
+
+    _test()
+
 
 
 def test_bedrock_chat_completion_functions_marked_as_wrapped_for_sdk_compatibility(bedrock_server):

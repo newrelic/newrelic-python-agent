@@ -63,7 +63,7 @@ def events_sans_content(event):
             del _event[1]["content"]
     return new_event
 
- 
+
 chat_completion_recorded_events_invoke_langchain_error = [
     (
         {"type": "LlmChatCompletionSummary"},

@@ -915,7 +915,6 @@ def record_events_on_stop_iteration(self, transaction):
         self._nr_openai_attrs = {}
 
 
-
 def record_error(self, transaction, exc):
     if hasattr(self, "_nr_ft"):
         openai_attrs = getattr(self, "_nr_openai_attrs", {})

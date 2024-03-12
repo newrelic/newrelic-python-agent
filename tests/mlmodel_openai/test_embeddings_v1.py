@@ -35,12 +35,10 @@ embedding_recorded_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "This is an embedding test.",
-            "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "response.model": "text-embedding-ada-002-v2",
             "request.model": "text-embedding-ada-002",
@@ -56,7 +54,7 @@ embedding_recorded_events = [
             "response.headers.ratelimitResetRequests": "19m5.228s",
             "response.headers.ratelimitRemainingTokens": 149993,
             "response.headers.ratelimitRemainingRequests": 197,
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
         },
     ),

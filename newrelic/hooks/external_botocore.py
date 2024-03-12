@@ -82,7 +82,6 @@ def bedrock_error_attributes(exception, bedrock_attrs):
 
 def create_chat_completion_message_event(
     transaction,
-    app_name,
     input_message_list,
     output_message_list,
     chat_completion_id,
@@ -107,7 +106,6 @@ def create_chat_completion_message_event(
 
         chat_completion_message_dict = {
             "id": id_,
-            "appName": app_name,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -138,7 +136,6 @@ def create_chat_completion_message_event(
 
         chat_completion_message_dict = {
             "id": id_,
-            "appName": app_name,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -545,8 +542,6 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         except Exception as exc:
             try:
                 bedrock_attrs = {
-                    "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
-                    "appName": settings.app_name,
                     "model": model,
                     "span_id": span_id,
                     "trace_id": trace_id,
@@ -590,8 +585,6 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
 
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders", {})
         bedrock_attrs = {
-            "api_key_last_four_digits": instance._request_signer._credentials.access_key[-4:],
-            "appName": settings.app_name,
             "request_id": response_headers.get("x-amzn-requestid", "") if response_headers else "",
             "model": model,
             "span_id": span_id,
@@ -723,12 +716,10 @@ def handle_embedding_event(transaction, bedrock_attrs):
         "vendor": "bedrock",
         "ingest_source": "Python",
         "id": embedding_id,
-        "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "request_id": request_id,
         "transaction_id": transaction.guid,
-        "api_key_last_four_digits": bedrock_attrs.get("api_key_last_four_digits", None),
         "duration": bedrock_attrs.get("duration", None),
         "request.model": model,
         "response.model": model,
@@ -769,9 +760,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     chat_completion_summary_dict = {
         "vendor": "bedrock",
         "ingest_source": "Python",
-        "api_key_last_four_digits": bedrock_attrs.get("api_key_last_four_digits", None),
         "id": chat_completion_id,
-        "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
@@ -796,7 +785,6 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
 
     message_ids = create_chat_completion_message_event(
         transaction=transaction,
-        app_name=settings.app_name,
         input_message_list=input_message_list,
         output_message_list=output_message_list,
         chat_completion_id=chat_completion_id,

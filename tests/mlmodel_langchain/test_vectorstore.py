@@ -63,7 +63,6 @@ vectorstore_recorded_events = [
             "id": None,  # UUID that changes with each run
             "vendor": "langchain",
             "ingest_source": "Python",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "request.query": "Complete this sentence: Hello",
             "request.k": 1,
             "duration": None,  # Changes with every run
@@ -84,7 +83,6 @@ vectorstore_recorded_events = [
             "id": None,  # UUID that changes with each run
             "vendor": "langchain",
             "ingest_source": "Python",
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "metadata.source": os.path.join(os.path.dirname(__file__), "hello.pdf"),
             "metadata.page": 0,
         },
@@ -324,11 +322,10 @@ vectorstore_error_events = [
         {"type": "LlmVectorSearch"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_langchain)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "vendor": "Langchain",
+            "vendor": "langchain",
             "ingest_source": "Python",
             "error": True,
         },

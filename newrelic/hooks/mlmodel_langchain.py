@@ -109,15 +109,13 @@ VECTORSTORE_CLASSES = {
 
 
 def _create_error_vectorstore_events(transaction, search_id, span_id, trace_id):
-    app_name = _get_app_name(transaction)
     llm_metadata_dict = _get_llm_metadata(transaction)
     vectorstore_error_dict = {
         "id": search_id,
-        "appName": app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "vendor": "Langchain",
+        "vendor": "langchain",
         "ingest_source": "Python",
         "error": True,
     }
@@ -216,7 +214,6 @@ def _record_vector_search_success(transaction, span_id, trace_id, ft, search_id,
         "id": search_id,
         "vendor": "langchain",
         "ingest_source": "Python",
-        "appName": _get_app_name(transaction),
     }
 
     if settings.ai_monitoring.record_content.enabled:
@@ -239,11 +236,10 @@ def _record_vector_search_success(transaction, span_id, trace_id, ft, search_id,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction_id,
-            "search_id": search_id,
             "vendor": "langchain",
             "ingest_source": "Python",
-            "appName": _get_app_name(transaction),
         }
+
         if settings.ai_monitoring.record_content.enabled:
             llm_vector_search_result["page_content"] = page_content
         llm_vector_search_result.update(metadata_dict)
@@ -311,7 +307,6 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
                 {
                     "id": tool_id,
                     "run_id": run_id,
-                    "appName": settings.app_name,
                     "name": tool_name,
                     "description": tool_description,
                     "span_id": span_id,
@@ -352,7 +347,6 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
         {
             "id": tool_id,
             "run_id": run_id,
-            "appName": settings.app_name,
             "name": tool_name,
             "description": tool_description,
             "span_id": span_id,
@@ -412,7 +406,6 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     llm_metadata_dict = _get_llm_metadata(transaction)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
-    app_name = settings.app_name
 
     function_name = wrapped.__name__
 
@@ -445,7 +438,6 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
                 {
                     "id": tool_id,
                     "run_id": run_id,
-                    "appName": settings.app_name,
                     "name": tool_name,
                     "description": tool_description,
                     "span_id": span_id,
@@ -484,7 +476,6 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
         {
             "id": tool_id,
             "run_id": run_id,
-            "appName": settings.app_name,
             "name": tool_name,
             "description": tool_description,
             "span_id": span_id,
@@ -671,7 +662,6 @@ def _create_error_chain_run_events(
     transaction, instance, run_args, completion_id, span_id, trace_id, duration
 ):
     _input = _get_chain_run_input(run_args)
-    app_name = _get_app_name(transaction)
     llm_metadata_dict = _get_llm_metadata(transaction)
     run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
     input_message_list = [_input]
@@ -681,7 +671,6 @@ def _create_error_chain_run_events(
     full_chat_completion_summary_dict.update(
         {
             "id": completion_id,
-            "appName": app_name,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
@@ -702,7 +691,6 @@ def _create_error_chain_run_events(
 
     create_chat_completion_message_event(
         transaction,
-        app_name,
         input_message_list,
         completion_id,
         span_id,
@@ -729,11 +717,6 @@ def _get_chain_run_input(run_args):
     return run_args.get("input", "")
 
 
-def _get_app_name(transaction):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    return settings.app_name
-
-
 def _get_llm_metadata(transaction):
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
@@ -745,7 +728,6 @@ def _create_successful_chain_run_events(
     transaction, instance, run_args, completion_id, response, span_id, trace_id, duration
 ):
     _input = _get_chain_run_input(run_args)
-    app_name = _get_app_name(transaction)
     llm_metadata_dict = _get_llm_metadata(transaction)
     run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
     input_message_list = [_input]
@@ -763,7 +745,6 @@ def _create_successful_chain_run_events(
     full_chat_completion_summary_dict.update(
         {
             "id": completion_id,
-            "appName": app_name,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
@@ -783,7 +764,6 @@ def _create_successful_chain_run_events(
 
     create_chat_completion_message_event(
         transaction,
-        app_name,
         input_message_list,
         completion_id,
         span_id,
@@ -796,7 +776,6 @@ def _create_successful_chain_run_events(
 
 def create_chat_completion_message_event(
     transaction,
-    app_name,
     input_message_list,
     chat_completion_id,
     span_id,
@@ -812,7 +791,6 @@ def create_chat_completion_message_event(
         id_ = str(uuid.uuid4())
         chat_completion_input_message_dict = {
             "id": id_,
-            "appName": app_name,
             "request_id": run_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -840,7 +818,6 @@ def create_chat_completion_message_event(
 
             chat_completion_output_message_dict = {
                 "id": id_,
-                "appName": app_name,
                 "request_id": run_id,
                 "span_id": span_id,
                 "trace_id": trace_id,

@@ -46,10 +46,6 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
 
-    # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(openai, "api_key", None)
-    api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
-
     span_id = None
     trace_id = None
 
@@ -64,17 +60,13 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
-            _record_embedding_error(
-                transaction, embedding_id, span_id, trace_id, kwargs, api_key_last_four_digits, ft, exc
-            )
+            _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs, ft, exc)
             raise
 
     if not response:
         return response
 
-    _record_embedding_success(
-        transaction, embedding_id, span_id, trace_id, kwargs, api_key_last_four_digits, ft, response
-    )
+    _record_embedding_success(transaction, embedding_id, span_id, trace_id, kwargs, ft, response)
     return response
 
 
@@ -94,10 +86,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     request_message_list = kwargs.get("messages", [])
 
-    # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(instance._client, "api_key", None) if OPENAI_V1 else getattr(openai, "api_key", None)
-    api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
-
     span_id = None
     trace_id = None
 
@@ -105,7 +93,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
-    app_name = settings.app_name
     completion_id = str(uuid.uuid4())
 
     function_name = wrapped.__name__
@@ -154,8 +141,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         # Gather attributes to add to embedding summary event in error context
         error_chat_completion_dict = {
             "id": completion_id,
-            "appName": app_name,
-            "api_key_last_four_digits": api_key_last_four_digits,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
@@ -163,7 +148,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
             "request.model": kwargs.get("model") or kwargs.get("engine") or "",
             "request.temperature": kwargs.get("temperature", ""),
             "request.max_tokens": kwargs.get("max_tokens", ""),
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
             "response.organization": "" if exc_organization is None else exc_organization,
             "duration": ft.duration,
@@ -176,7 +161,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
         create_chat_completion_message_event(
             transaction,
-            app_name,
             request_message_list,
             completion_id,
             span_id,
@@ -210,7 +194,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         return_val._nr_openai_attrs["temperature"] = kwargs.get("temperature", "")
         return_val._nr_openai_attrs["max_tokens"] = kwargs.get("max_tokens", "")
         return_val._nr_openai_attrs["request.model"] = kwargs.get("model") or kwargs.get("engine") or ""
-        return_val._nr_openai_attrs["api_key_last_four_digits"] = api_key_last_four_digits
         return return_val
 
     # If response is not a stream generator, record the event data.
@@ -236,15 +219,13 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     full_chat_completion_summary_dict = {
         "id": completion_id,
-        "appName": app_name,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request.temperature": kwargs.get("temperature", ""),
         "request.max_tokens": kwargs.get("max_tokens", ""),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
         "request_id": request_id,
         "duration": ft.duration,
@@ -295,7 +276,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     create_chat_completion_message_event(
         transaction,
-        settings.app_name,
         input_message_list,
         completion_id,
         span_id,
@@ -328,7 +308,6 @@ def check_rate_limit_header(response_headers, header_name, is_int):
 
 def create_chat_completion_message_event(
     transaction,
-    app_name,
     input_message_list,
     chat_completion_id,
     span_id,
@@ -354,7 +333,6 @@ def create_chat_completion_message_event(
 
         chat_completion_input_message_dict = {
             "id": message_id,
-            "appName": app_name,
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -363,7 +341,7 @@ def create_chat_completion_message_event(
             "completion_id": chat_completion_id,
             "sequence": index,
             "response.model": response_model if response_model else "",
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
         }
 
@@ -391,7 +369,6 @@ def create_chat_completion_message_event(
 
             chat_completion_output_message_dict = {
                 "id": message_id,
-                "appName": app_name,
                 "request_id": request_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
@@ -400,7 +377,7 @@ def create_chat_completion_message_event(
                 "completion_id": chat_completion_id,
                 "sequence": index,
                 "response.model": response_model if response_model else "",
-                "vendor": "openAI",
+                "vendor": "openai",
                 "ingest_source": "Python",
                 "is_response": True,
             }
@@ -429,10 +406,6 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
 
-    # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(instance._client, "api_key", "") if OPENAI_V1 else getattr(openai, "api_key", None)
-    api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
-
     span_id = None
     trace_id = None
 
@@ -447,23 +420,17 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
         try:
             response = await wrapped(*args, **kwargs)
         except Exception as exc:
-            _record_embedding_error(
-                transaction, embedding_id, span_id, trace_id, kwargs, api_key_last_four_digits, ft, exc
-            )
+            _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs, ft, exc)
             raise
 
     if not response:
         return response
 
-    _record_embedding_success(
-        transaction, embedding_id, span_id, trace_id, kwargs, api_key_last_four_digits, ft, response
-    )
+    _record_embedding_success(transaction, embedding_id, span_id, trace_id, kwargs, ft, response)
     return response
 
 
-def _record_embedding_success(
-    transaction, embedding_id, span_id, trace_id, kwargs, api_key_last_four_digits, ft, response
-):
+def _record_embedding_success(transaction, embedding_id, span_id, trace_id, kwargs, ft, response):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
@@ -487,11 +454,9 @@ def _record_embedding_success(
 
     full_embedding_response_dict = {
         "id": embedding_id,
-        "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request_id": request_id,
         "duration": ft.duration,
@@ -519,7 +484,7 @@ def _record_embedding_success(
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
     }
 
@@ -531,7 +496,7 @@ def _record_embedding_success(
     transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
 
-def _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs, api_key_last_four_digits, ft, exc):
+def _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs, ft, exc):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
@@ -570,13 +535,11 @@ def _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs
 
     error_embedding_dict = {
         "id": embedding_id,
-        "appName": settings.app_name,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
         "response.organization": "" if exc_organization is None else exc_organization,
         "duration": ft.duration,
@@ -605,10 +568,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     request_message_list = kwargs.get("messages", [])
 
-    # Get API key without using the response so we can store it before the response is returned in case of errors
-    api_key = getattr(instance._client, "api_key", None) if OPENAI_V1 else getattr(openai, "api_key", None)
-    api_key_last_four_digits = f"sk-{api_key[-4:]}" if api_key else ""
-
     span_id = None
     trace_id = None
 
@@ -616,7 +575,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
-    app_name = settings.app_name
     completion_id = str(uuid.uuid4())
 
     function_name = wrapped.__name__
@@ -664,8 +622,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         # Gather attributes to add to embedding summary event in error context
         error_chat_completion_dict = {
             "id": completion_id,
-            "appName": app_name,
-            "api_key_last_four_digits": api_key_last_four_digits,
             "span_id": span_id,
             "trace_id": trace_id,
             "transaction_id": transaction.guid,
@@ -673,7 +629,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
             "request.model": kwargs.get("model") or kwargs.get("engine") or "",
             "request.temperature": kwargs.get("temperature", ""),
             "request.max_tokens": kwargs.get("max_tokens", ""),
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
             "response.organization": "" if exc_organization is None else exc_organization,
             "duration": ft.duration,
@@ -686,7 +642,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
         create_chat_completion_message_event(
             transaction,
-            app_name,
             request_message_list,
             completion_id,
             span_id,
@@ -720,7 +675,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         return_val._nr_openai_attrs["temperature"] = kwargs.get("temperature", "")
         return_val._nr_openai_attrs["max_tokens"] = kwargs.get("max_tokens", "")
         return_val._nr_openai_attrs["request.model"] = kwargs.get("model") or kwargs.get("engine") or ""
-        return_val._nr_openai_attrs["api_key_last_four_digits"] = api_key_last_four_digits
         return return_val
 
     # If response is not a stream generator, record the event data.
@@ -746,15 +700,13 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     full_chat_completion_summary_dict = {
         "id": completion_id,
-        "appName": app_name,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "request.model": kwargs.get("model") or kwargs.get("engine") or "",
         "request.temperature": kwargs.get("temperature", ""),
         "request.max_tokens": kwargs.get("max_tokens", ""),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
         "request_id": request_id,
         "duration": ft.duration,
@@ -805,7 +757,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     create_chat_completion_message_event(
         transaction,
-        settings.app_name,
         input_message_list,
         completion_id,
         span_id,
@@ -1026,23 +977,19 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
     response_id = openai_attrs.get("id", None)
     request_id = response_headers.get("x-request-id", "")
 
-    api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
-
     messages = openai_attrs.get("messages", [])
 
     chat_completion_summary_dict = {
         "id": chat_completion_id,
-        "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "duration": self._nr_ft.duration,
         "request.model": openai_attrs.get("request.model", ""),
         # Usage tokens are not supported in streaming for now.
         "request.temperature": openai_attrs.get("temperature", ""),
         "request.max_tokens": openai_attrs.get("max_tokens", ""),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
         "response.number_of_messages": len(messages) + (1 if content else 0),
         "response.organization": organization,
@@ -1059,7 +1006,6 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
 
     create_chat_completion_message_event(
         transaction,
-        settings.app_name,
         list(messages),
         chat_completion_id,
         span_id,
@@ -1091,18 +1037,14 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
     request_id = response_headers.get("x-request-id", "")
     organization = response_headers.get("openai-organization", "")
 
-    api_key_last_four_digits = openai_attrs.get("api_key_last_four_digits", "")
-
     messages = openai_attrs.get("messages", [])
 
     chat_completion_summary_dict = {
         "id": chat_completion_id,
-        "appName": settings.app_name,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "request_id": request_id,
-        "api_key_last_four_digits": api_key_last_four_digits,
         "duration": self._nr_ft.duration,
         "request.model": openai_attrs.get("request.model", ""),
         "response.model": openai_attrs.get("response.model", ""),
@@ -1130,7 +1072,7 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
         "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-remaining-requests", True
         ),
-        "vendor": "openAI",
+        "vendor": "openai",
         "ingest_source": "Python",
         "response.number_of_messages": len(messages) + (1 if content else 0),
     }
@@ -1145,7 +1087,6 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
 
     create_chat_completion_message_event(
         transaction,
-        settings.app_name,
         list(messages),
         chat_completion_id,
         span_id,

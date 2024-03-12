@@ -24,6 +24,7 @@ from _test_bedrock_chat_completion import (
     chat_completion_invalid_access_key_error_events,
     chat_completion_invalid_model_error_events,
     chat_completion_payload_templates,
+    chat_completion_streaming_expected_events,
 )
 from conftest import (  # pylint: disable=E0611
     BOTOCORE_VERSION,
@@ -48,8 +49,13 @@ from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 
 
-@pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])
-def is_file_payload(request):
+@pytest.fixture(scope="session", params=[False, True], ids=["ResponseStandard", "ResponseStreaming"])
+def response_streaming(request):
+    return request.param
+
+
+@pytest.fixture(scope="session", params=[False, True], ids=["RequestStandard", "RequestStreaming"])
+def request_streaming(request):
     return request.param
 
 
@@ -63,17 +69,21 @@ def is_file_payload(request):
         "meta.llama2-13b-chat-v1",
     ],
 )
-def model_id(request):
-    return request.param
+def model_id(request, response_streaming):
+    model = request.param
+    if response_streaming and model == "ai21.j2-mid-v1":
+        pytest.skip(reason="Streaming not supported.")
+
+    return model
 
 
 @pytest.fixture(scope="module")
-def exercise_model(bedrock_server, model_id, is_file_payload):
+def exercise_model(bedrock_server, model_id, request_streaming, response_streaming):
     payload_template = chat_completion_payload_templates[model_id]
 
     def _exercise_model(prompt, temperature=0.7, max_tokens=100):
         body = (payload_template % (prompt, temperature, max_tokens)).encode("utf-8")
-        if is_file_payload:
+        if request_streaming:
             body = BytesIO(body)
 
         response = bedrock_server.invoke_model(
@@ -85,17 +95,48 @@ def exercise_model(bedrock_server, model_id, is_file_payload):
         response_body = json.loads(response.get("body").read())
         assert response_body
 
-    return _exercise_model
+        return response_body
+
+    def _exercise_streaming_model(prompt, temperature=0.7, max_tokens=100):
+        body = (payload_template % (prompt, temperature, max_tokens)).encode("utf-8")
+        if request_streaming:
+            body = BytesIO(body)
+
+        response = bedrock_server.invoke_model_with_response_stream(
+            body=body,
+            modelId=model_id,
+            accept="application/json",
+            contentType="application/json",
+        )
+        body = response.get("body")
+        for resp in body:
+            assert resp
+
+    if response_streaming:
+        return _exercise_streaming_model
+    else:
+        return _exercise_model
 
 
 @pytest.fixture(scope="module")
-def expected_events(model_id):
-    return chat_completion_expected_events[model_id]
+def expected_events(model_id, response_streaming):
+    if response_streaming:
+        return chat_completion_streaming_expected_events[model_id]
+    else:
+        return chat_completion_expected_events[model_id]
 
 
 @pytest.fixture(scope="module")
-def expected_events_no_content(model_id):
-    events = copy.deepcopy(chat_completion_expected_events[model_id])
+def expected_metrics(response_streaming):
+    if response_streaming:
+        return [("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)]
+    else:
+        return [("Llm/completion/Bedrock/invoke_model", 1)]
+
+
+@pytest.fixture(scope="module")
+def expected_events_no_content(expected_events):
+    events = copy.deepcopy(expected_events)
     for event in events:
         if "content" in event[1]:
             del event[1]["content"]
@@ -108,19 +149,19 @@ def expected_invalid_access_key_error_events(model_id):
 
 
 @pytest.fixture(scope="module")
-def expected_invalid_access_key_error_events_no_content(model_id):
-    events = copy.deepcopy(chat_completion_invalid_access_key_error_events[model_id])
+def expected_events_no_llm_metadata(expected_events):
+    events = copy.deepcopy(expected_events)
     for event in events:
-        if "content" in event[1]:
-            del event[1]["content"]
+        del event[1]["llm.conversation_id"], event[1]["llm.foo"]
     return events
 
 
 @pytest.fixture(scope="module")
-def expected_events_no_llm_metadata(model_id):
-    events = copy.deepcopy(chat_completion_expected_events[model_id])
+def expected_invalid_access_key_error_events_no_content(expected_invalid_access_key_error_events):
+    events = copy.deepcopy(expected_invalid_access_key_error_events)
     for event in events:
-        del event[1]["llm.conversation_id"], event[1]["llm.foo"]
+        if "content" in event[1]:
+            del event[1]["content"]
     return events
 
 
@@ -134,14 +175,16 @@ _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted
 
 # not working with claude
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_with_llm_metadata(set_trace_info, exercise_model, expected_events):
+def test_bedrock_chat_completion_in_txn_with_llm_metadata(
+    set_trace_info, exercise_model, expected_events, expected_metrics
+):
     @validate_custom_events(expected_events)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_in_txn_with_llm_metadata",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -159,19 +202,18 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(set_trace_info, exerci
     _test()
 
 
-# not working with claude
-@reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
+@reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
-    set_trace_info, exercise_model, expected_events_no_content
+    set_trace_info, exercise_model, expected_events_no_content, expected_metrics
 ):
     @validate_custom_events(expected_events_no_content)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -189,18 +231,17 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
     _test()
 
 
-# not working with claude
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_no_llm_metadata(
-    set_trace_info, exercise_model, expected_events_no_llm_metadata
+    set_trace_info, exercise_model, expected_events_no_llm_metadata, expected_metrics
 ):
     @validate_custom_events(expected_events_no_llm_metadata)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_in_txn_no_llm_metadata",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -235,7 +276,9 @@ _client_error_name = callable_name(_client_error)
 
 
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_info):
+def test_bedrock_chat_completion_error_invalid_model(
+    bedrock_server, set_trace_info, response_streaming, expected_metrics
+):
     @validate_custom_events(chat_completion_invalid_model_error_events)
     @validate_error_trace_attributes(
         "botocore.errorfactory:ValidationException",
@@ -251,8 +294,8 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
     )
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion_error_invalid_model",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -266,12 +309,22 @@ def test_bedrock_chat_completion_error_invalid_model(bedrock_server, set_trace_i
         add_custom_attribute("non_llm_attr", "python-agent")
 
         with pytest.raises(_client_error):
-            bedrock_server.invoke_model(
-                body=b"{}",
-                modelId="does-not-exist",
-                accept="application/json",
-                contentType="application/json",
-            )
+            if response_streaming:
+                stream = bedrock_server.invoke_model_with_response_stream(
+                    body=b"{}",
+                    modelId="does-not-exist",
+                    accept="application/json",
+                    contentType="application/json",
+                )
+                for _ in stream:
+                    pass
+            else:
+                bedrock_server.invoke_model(
+                    body=b"{}",
+                    modelId="does-not-exist",
+                    accept="application/json",
+                    contentType="application/json",
+                )
 
     _test()
 
@@ -284,6 +337,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
     set_trace_info,
     expected_client_error,
     expected_invalid_access_key_error_events,
+    expected_metrics,
 ):
     @validate_custom_events(expected_invalid_access_key_error_events)
     @validate_error_trace_attributes(
@@ -296,8 +350,8 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
     )
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],
@@ -327,6 +381,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     set_trace_info,
     expected_client_error,
     expected_invalid_access_key_error_events_no_content,
+    expected_metrics,
 ):
     @validate_custom_events(expected_invalid_access_key_error_events_no_content)
     @validate_error_trace_attributes(
@@ -339,8 +394,8 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     )
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion",
-        scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
         custom_metrics=[
             ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
         ],

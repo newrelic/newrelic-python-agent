@@ -965,36 +965,31 @@ chat_completion_invalid_access_key_error_events = {
     ],
 }
 
-chat_completion_expected_client_errors = {
-    "amazon.titan-text-express-v1": {
-        "http.statusCode": 403,
-        "error.message": "The security token included in the request is invalid.",
-        "error.code": "UnrecognizedClientException",
-    },
-    "ai21.j2-mid-v1": {
-        "http.statusCode": 403,
-        "error.message": "The security token included in the request is invalid.",
-        "error.code": "UnrecognizedClientException",
-    },
-    "anthropic.claude-instant-v1": {
-        "http.statusCode": 403,
-        "error.message": "The security token included in the request is invalid.",
-        "error.code": "UnrecognizedClientException",
-    },
-    "cohere.command-text-v14": {
-        "http.statusCode": 403,
-        "error.message": "The security token included in the request is invalid.",
-        "error.code": "UnrecognizedClientException",
-    },
-    "meta.llama2-13b-chat-v1": {
-        "http.statusCode": 403,
-        "error.message": "The security token included in the request is invalid.",
-        "error.code": "UnrecognizedClientException",
-    },
-}
 
+chat_completion_expected_malformed_request_body_events = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (external_botocore)",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "transaction_id": "transaction-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "request_id": "e72d1b46-9f16-4bf0-8eee-f7778f32e5a5",
+            "api_key_last_four_digits": "CRET",
+            "duration": None,  # Response time varies each test run
+            "request.model": "amazon.titan-text-express-v1",
+            "response.model": "amazon.titan-text-express-v1",
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+            "error": True,
+        },
+    ),
+]
 
-chat_completion_expected_malformed_payload_events = [
+chat_completion_expected_malformed_response_body_events = [
     (
         {"type": "LlmChatCompletionSummary"},
         {
@@ -1028,7 +1023,142 @@ chat_completion_expected_malformed_payload_events = [
             "span_id": None,
             "trace_id": "trace-id",
             "transaction_id": "transaction-id",
-            "content": "Malformed Payload",
+            "content": "Malformed Body",
+            "role": "user",
+            "completion_id": None,
+            "sequence": 0,  
+            "response.model": "amazon.titan-text-express-v1",
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+        },
+    ),
+]
+
+chat_completion_expected_malformed_response_streaming_body_events = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (external_botocore)",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "transaction_id": "transaction-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "request_id": "a5a8cebb-fd33-4437-8168-5667fbdfc1fb",
+            "api_key_last_four_digits": "CRET",
+            "duration": None,  # Response time varies each test run
+            "request.model": "amazon.titan-text-express-v1",
+            "response.model": "amazon.titan-text-express-v1",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+            "response.number_of_messages": 1,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (external_botocore)",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "request_id": "a5a8cebb-fd33-4437-8168-5667fbdfc1fb",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "Malformed Streaming Body",
+            "role": "user",
+            "completion_id": None,
+            "sequence": 0,  
+            "response.model": "amazon.titan-text-express-v1",
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+        },
+    ),
+]
+
+chat_completion_expected_malformed_response_streaming_chunk_events = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (external_botocore)",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "transaction_id": "transaction-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "request_id": "a5a8cebb-fd33-4437-8168-5667fbdfc1fb",
+            "api_key_last_four_digits": "CRET",
+            "duration": None,  # Response time varies each test run
+            "request.model": "amazon.titan-text-express-v1",
+            "response.model": "amazon.titan-text-express-v1",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+            "response.number_of_messages": 1,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (external_botocore)",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "request_id": "a5a8cebb-fd33-4437-8168-5667fbdfc1fb",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "Malformed Streaming Chunk",
+            "role": "user",
+            "completion_id": None,
+            "sequence": 0,  
+            "response.model": "amazon.titan-text-express-v1",
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+        },
+    ),
+]
+
+
+chat_completion_expected_streaming_error_events = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (external_botocore)",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "transaction_id": "transaction-id",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "api_key_last_four_digits": "CRET",
+            "duration": None,  # Response time varies each test run
+            "request.model": "amazon.titan-text-express-v1",
+            "response.model": "amazon.titan-text-express-v1",
+            "request.temperature": 0.7,
+            "request.max_tokens": 100,
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+            "response.number_of_messages": 1,
+            "error": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,  # UUID that varies with each run
+            "appName": "Python Agent Test (external_botocore)",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "transaction_id": "transaction-id",
+            "content": "Streaming Exception",
             "role": "user",
             "completion_id": None,
             "sequence": 0,  

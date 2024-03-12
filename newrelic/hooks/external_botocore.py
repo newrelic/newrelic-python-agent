@@ -67,10 +67,10 @@ def bedrock_error_attributes(exception, bedrock_attrs):
 
     bedrock_attrs.update(
         {
-            "request_id": response.get("ResponseMetadata", {}).get("RequestId", ""),
-            "http.statusCode": response.get("ResponseMetadata", {}).get("HTTPStatusCode", ""),
-            "error.message": response.get("Error", {}).get("Message", ""),
-            "error.code": response.get("Error", {}).get("Code", ""),
+            "request_id": response.get("ResponseMetadata", {}).get("RequestId"),
+            "http.statusCode": response.get("ResponseMetadata", {}).get("HTTPStatusCode"),
+            "error.message": response.get("Error", {}).get("Message"),
+            "error.code": response.get("Error", {}).get("Code"),
             "error": True,
         }
     )
@@ -665,8 +665,11 @@ class GeneratorProxy(ObjectProxy):
 
 def record_stream_chunk(self, return_val):
     if return_val:
-        chunk = json.loads(return_val["chunk"]["bytes"].decode("utf-8"))
-        self._nr_model_extractor(chunk, self._nr_bedrock_attrs)
+        try:
+            chunk = json.loads(return_val["chunk"]["bytes"].decode("utf-8"))
+            self._nr_model_extractor(chunk, self._nr_bedrock_attrs)
+        except Exception:
+            pass
 
 
 def record_events_on_stop_iteration(self, transaction):
@@ -689,13 +692,13 @@ def record_error(self, transaction, exc):
     if hasattr(self, "_nr_ft"):
         try:
             ft = self._nr_ft
-            bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
+            error_attributes = getattr(self, "_nr_bedrock_attrs", {})
 
             # If there are no bedrock attrs exit early as there's no data to record.
-            if not bedrock_attrs:
+            if not error_attributes:
                 return
 
-            error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
+            error_attributes = bedrock_error_attributes(exc, error_attributes)
             notice_error_attributes = {
                 "http.statusCode": error_attributes.get("http.statusCode"),
                 "error.message": error_attributes.get("error.message"),
@@ -710,10 +713,10 @@ def record_error(self, transaction, exc):
             ft.__exit__(*sys.exc_info())
             error_attributes["duration"] = ft.duration
 
-            handle_chat_completion_event(transaction, bedrock_attrs)
+            handle_chat_completion_event(transaction, error_attributes)
 
             # Clear cached data as this can be very large.
-            bedrock_attrs.clear()
+            error_attributes.clear()
         except Exception:
             pass
 

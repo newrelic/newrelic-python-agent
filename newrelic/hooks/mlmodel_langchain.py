@@ -554,7 +554,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     span_id = None
     trace_id = None
     completion_id = str(uuid.uuid4())
-    message_ids = get_message_ids_add_nr_completion_id(run_args, completion_id)
+    add_nr_completion_id(run_args, completion_id)
     # Check to see if launched from agent or directly from chain.
     # The trace group will reflect from where it has started.
     # The AgentExecutor class has an attribute "agent" that does
@@ -575,7 +575,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
                 }
             )
             _create_error_chain_run_events(
-                transaction, instance, run_args, completion_id, span_id, trace_id, ft.duration, message_ids
+                transaction, instance, run_args, completion_id, span_id, trace_id, ft.duration
             )
             raise
 
@@ -583,7 +583,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
         return response
 
     _create_successful_chain_run_events(
-        transaction, instance, run_args, completion_id, response, span_id, trace_id, ft.duration, message_ids
+        transaction, instance, run_args, completion_id, response, span_id, trace_id, ft.duration
     )
     return response
 
@@ -605,7 +605,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     span_id = None
     trace_id = None
     completion_id = str(uuid.uuid4())
-    message_ids = get_message_ids_add_nr_completion_id(run_args, completion_id)
+    add_nr_completion_id(run_args, completion_id)
     # Check to see if launched from agent or directly from chain.
     # The trace group will reflect from where it has started.
     # The AgentExecutor class has an attribute "agent" that does
@@ -626,7 +626,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
                 }
             )
             _create_error_chain_run_events(
-                transaction, instance, run_args, completion_id, span_id, trace_id, ft.duration, message_ids
+                transaction, instance, run_args, completion_id, span_id, trace_id, ft.duration
             )
             raise
 
@@ -634,29 +634,24 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
         return response
 
     _create_successful_chain_run_events(
-        transaction, instance, run_args, completion_id, response, span_id, trace_id, ft.duration, message_ids
+        transaction, instance, run_args, completion_id, response, span_id, trace_id, ft.duration
     )
     return response
 
 
-def get_message_ids_add_nr_completion_id(run_args, completion_id):
+def add_nr_completion_id(run_args, completion_id):
     # invoke has an argument named "config" that contains metadata and tags.
-    # Pop the message_ids provided by the customer off the metadata.
     # Add the nr_completion_id into the metadata to be used as the function call
     # identifier when grabbing the run_id off the transaction.
     metadata = (run_args.get("config") or {}).get("metadata") or {}
-    message_ids = metadata.pop("message_ids", [])
     metadata["nr_completion_id"] = completion_id
     if not run_args["config"]:
         run_args["config"] = {"metadata": metadata}
     else:
         run_args["config"]["metadata"] = metadata
-    return message_ids
 
 
-def _create_error_chain_run_events(
-    transaction, instance, run_args, completion_id, span_id, trace_id, duration, message_ids
-):
+def _create_error_chain_run_events(transaction, instance, run_args, completion_id, span_id, trace_id, duration):
     _input = _get_chain_run_input(run_args)
     llm_metadata_dict = _get_llm_metadata(transaction)
     run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
@@ -693,7 +688,6 @@ def _create_error_chain_run_events(
         run_id,
         llm_metadata_dict,
         [],
-        message_ids,
     )
 
 
@@ -721,7 +715,7 @@ def _get_llm_metadata(transaction):
 
 
 def _create_successful_chain_run_events(
-    transaction, instance, run_args, completion_id, response, span_id, trace_id, duration, message_ids
+    transaction, instance, run_args, completion_id, response, span_id, trace_id, duration
 ):
     _input = _get_chain_run_input(run_args)
     llm_metadata_dict = _get_llm_metadata(transaction)
@@ -766,7 +760,6 @@ def _create_successful_chain_run_events(
         run_id,
         llm_metadata_dict,
         output_message_list,
-        message_ids,
     )
 
 
@@ -779,26 +772,13 @@ def create_chat_completion_message_event(
     run_id,
     llm_metadata_dict,
     output_message_list,
-    message_ids,
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
-
-    expected_message_ids_len = len(input_message_list) + len(output_message_list)
-    actual_message_ids_len = len(message_ids)
-    if actual_message_ids_len < expected_message_ids_len:
-        message_ids.extend([str(uuid.uuid4()) for i in range(expected_message_ids_len - actual_message_ids_len)])
-        _logger.warning(
-            "The provided metadata['message_ids'] list was found to be %s when it "
-            "needs to be at least %s. Internally generated UUIDs will be used in place "
-            "of missing message IDs.",
-            actual_message_ids_len,
-            expected_message_ids_len,
-        )
 
     # Loop through all input messages received from the create request and emit a custom event for each one
     for index, message in enumerate(input_message_list):
         chat_completion_input_message_dict = {
-            "id": message_ids[index],
+            "id": str(uuid.uuid4()),
             "request_id": run_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -823,7 +803,7 @@ def create_chat_completion_message_event(
             index += len(input_message_list)
 
             chat_completion_output_message_dict = {
-                "id": message_ids[index],
+                "id": str(uuid.uuid4()),
                 "request_id": run_id,
                 "span_id": span_id,
                 "trace_id": trace_id,

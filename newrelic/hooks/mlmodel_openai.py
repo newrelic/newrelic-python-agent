@@ -272,7 +272,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     input_message_list = list(messages)
     output_message_list = [choices[0].get("message", "")] if choices else None
 
-    message_ids = create_chat_completion_message_event(
+    create_chat_completion_message_event(
         transaction,
         input_message_list,
         completion_id,
@@ -284,11 +284,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         llm_metadata_dict,
         output_message_list,
     )
-
-    # Cache message IDs on transaction for retrieval after OpenAI call completion.
-    if not hasattr(transaction, "_nr_message_ids"):
-        transaction._nr_message_ids = {}
-    transaction._nr_message_ids[response_id] = message_ids
 
     return return_val
 
@@ -323,8 +318,6 @@ def create_chat_completion_message_event(
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
-    message_ids = []
-
     # Loop through all input messages received from the create request and emit a custom event for each one
     for index, message in enumerate(input_message_list):
         message_content = message.get("content", "")
@@ -335,8 +328,6 @@ def create_chat_completion_message_event(
         # No response IDs, use random UUID
         else:
             message_id = str(uuid.uuid4())
-
-        message_ids.append(message_id)
 
         chat_completion_input_message_dict = {
             "id": message_id,
@@ -373,8 +364,6 @@ def create_chat_completion_message_event(
             else:
                 message_id = str(uuid.uuid4())
 
-            message_ids.append(message_id)
-
             chat_completion_output_message_dict = {
                 "id": message_id,
                 "request_id": request_id,
@@ -395,9 +384,6 @@ def create_chat_completion_message_event(
             chat_completion_output_message_dict.update(llm_metadata_dict)
 
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
-
-    # TODO: Remove this logic when message-based feedback is removed from the agent
-    return (request_id, message_ids)
 
 
 async def wrap_embedding_async(wrapped, instance, args, kwargs):
@@ -761,7 +747,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     input_message_list = list(messages)
     output_message_list = [choices[0].get("message", "")] if choices else None
 
-    message_ids = create_chat_completion_message_event(
+    create_chat_completion_message_event(
         transaction,
         input_message_list,
         completion_id,
@@ -773,11 +759,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         llm_metadata_dict,
         output_message_list,
     )
-
-    # Cache message ids on transaction for retrieval after open ai call completion.
-    if not hasattr(transaction, "_nr_message_ids"):
-        transaction._nr_message_ids = {}
-    transaction._nr_message_ids[response_id] = message_ids
 
     return return_val
 
@@ -916,7 +897,7 @@ def record_events_on_stop_iteration(self, transaction):
         if not openai_attrs:
             return
 
-        message_ids = record_streaming_chat_completion_events(self, transaction, openai_attrs)
+        record_streaming_chat_completion_events(self, transaction, openai_attrs)
         # Clear cached data as this can be very large.
         # Note this is also important for not reporting the events twice. In openai v1
         # there are two loops around the iterator, the second is meant to clear the
@@ -924,11 +905,6 @@ def record_events_on_stop_iteration(self, transaction):
         # stream contents is read. This results in StopIteration being raised twice
         # instead of once at the end of the loop.
         self._nr_openai_attrs = {}
-        # Cache message ids on transaction for retrieval after open ai call completion.
-        if not hasattr(transaction, "_nr_message_ids"):
-            transaction._nr_message_ids = {}
-        response_id = openai_attrs.get("id", None)
-        transaction._nr_message_ids[response_id] = message_ids
 
 
 def record_error(self, transaction, exc):
@@ -1018,7 +994,7 @@ def record_streaming_chat_completion_events_error(self, transaction, openai_attr
     if content:
         output_message_list = [{"content": content, "role": role}]
 
-    return create_chat_completion_message_event(
+    create_chat_completion_message_event(
         transaction,
         list(messages),
         chat_completion_id,
@@ -1098,7 +1074,7 @@ def record_streaming_chat_completion_events(self, transaction, openai_attrs):
     if content:
         output_message_list = [{"content": content, "role": role}]
 
-    return create_chat_completion_message_event(
+    create_chat_completion_message_event(
         transaction,
         list(messages),
         chat_completion_id,

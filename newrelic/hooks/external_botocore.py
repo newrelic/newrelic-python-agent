@@ -69,8 +69,8 @@ def bedrock_error_attributes(exception, bedrock_attrs):
         {
             "request_id": response.get("ResponseMetadata", {}).get("RequestId", ""),
             "http.statusCode": response.get("ResponseMetadata", {}).get("HTTPStatusCode", ""),
-            "error.message": response.get("Error", "").get("Message", ""),
-            "error.code": response.get("Error", "").get("Code", ""),
+            "error.message": response.get("Error", {}).get("Message", ""),
+            "error.code": response.get("Error", {}).get("Code", ""),
             "error": True,
         }
     )
@@ -611,7 +611,10 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
 
         # Run response extractor for non-streaming responses
-        response_extractor(response_body, bedrock_attrs)
+        try:
+            response_extractor(response_body, bedrock_attrs)
+        except Exception:
+            pass
 
         if operation == "embedding":
             handle_embedding_event(transaction, bedrock_attrs)
@@ -684,17 +687,35 @@ def record_events_on_stop_iteration(self, transaction):
 
 def record_error(self, transaction, exc):
     if hasattr(self, "_nr_ft"):
-        bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
+        try:
+            ft = self._nr_ft
+            bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
 
-        # If there are no bedrock attrs exit early as there's no data to record.
-        if not bedrock_attrs:
-            return
+            # If there are no bedrock attrs exit early as there's no data to record.
+            if not bedrock_attrs:
+                return
 
-        bedrock_error_attributes(exc, bedrock_attrs)
-        handle_chat_completion_event(transaction, bedrock_attrs)
+            error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
+            notice_error_attributes = {
+                "http.statusCode": error_attributes.get("http.statusCode"),
+                "error.message": error_attributes.get("error.message"),
+                "error.code": error_attributes.get("error.code"),
+            }
+            notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
 
-        # Clear cached data as this can be very large.
-        self._nr_bedrock_attrs.clear()
+            ft.notice_error(
+                attributes=notice_error_attributes,
+            )
+
+            ft.__exit__(*sys.exc_info())
+            error_attributes["duration"] = ft.duration
+
+            handle_chat_completion_event(transaction, bedrock_attrs)
+
+            # Clear cached data as this can be very large.
+            bedrock_attrs.clear()
+        except Exception:
+            pass
 
 
 def handle_embedding_event(transaction, bedrock_attrs):

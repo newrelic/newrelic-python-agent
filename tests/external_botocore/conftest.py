@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
 import json
 import os
 import re
@@ -33,6 +34,7 @@ from newrelic.common.package_version_utils import (
     get_package_version,
     get_package_version_tuple,
 )
+from newrelic.common.signature import bind_args
 
 BOTOCORE_VERSION = get_package_version("botocore")
 
@@ -106,6 +108,11 @@ def bedrock_server():
         wrap_function_wrapper(
             "botocore.endpoint", "Endpoint._do_get_response", wrap_botocore_endpoint_Endpoint__do_get_response
         )
+        wrap_function_wrapper(
+            "botocore.eventstream",
+            "EventStreamBuffer.add_data",
+            wrap_botocore_eventstream_add_data,
+        )
         yield client  # Run tests
 
         # Write responses to audit log
@@ -123,11 +130,8 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
     if not request:
         return wrapped(*args, **kwargs)
 
-    body = json.loads(request.body)
-
     match = re.search(r"/model/([0-9a-zA-Z.-]+)/", request.url)
     model = match.group(1)
-    prompt = extract_shortened_prompt(body, model)
 
     # Send request
     result = wrapped(*args, **kwargs)
@@ -136,8 +140,16 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
     success, exception = result
     response = (success or exception)[0]
 
-    # Clean up data
-    data = json.loads(response.content.decode("utf-8"))
+    try:
+        if isinstance(request.body, io.BytesIO):
+            request.body.seek(0)
+            body = json.loads(request.body.read())
+        else:
+            body = json.loads(request.body)
+    except Exception:
+        body = {}
+
+    prompt = extract_shortened_prompt(body, model)
     headers = dict(response.headers.items())
     headers = dict(
         filter(
@@ -148,7 +160,13 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
     status_code = response.status_code
 
     # Log response
-    BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, status_code, data  # Append response data to audit log
+    if response.raw.chunked:
+        # Log response
+        BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, status_code, []  # Append response data to audit log
+    else:
+        # Clean up data
+        data = json.loads(response.content.decode("utf-8"))
+        BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, status_code, data  # Append response data to audit log
     return result
 
 
@@ -165,3 +183,11 @@ def set_trace_info():
             txn._trace_id = "trace-id"
 
     return _set_trace_info
+
+
+def wrap_botocore_eventstream_add_data(wrapped, instance, args, kwargs):
+    bound_args = bind_args(wrapped, args, kwargs)
+    data = bound_args["data"].hex()  # convert bytes to hex for storage
+    prompt = [k for k in BEDROCK_AUDIT_LOG_CONTENTS.keys()][-1]
+    BEDROCK_AUDIT_LOG_CONTENTS[prompt][2].append(data)
+    return wrapped(*args, **kwargs)

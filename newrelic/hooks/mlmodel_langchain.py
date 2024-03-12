@@ -786,7 +786,6 @@ def create_chat_completion_message_event(
 
     # Loop through all input messages received from the create request and emit a custom event for each one
     for index, message in enumerate(input_message_list):
-        id_ = str(uuid.uuid4())
         chat_completion_input_message_dict = {
             "id": str(uuid.uuid4()),
             "request_id": run_id,

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import pytest
 import openai
 from conftest import (  # pylint: disable=E0611
@@ -278,102 +279,6 @@ def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info, sync
         assert resp
 
 
-chat_completion_token_recorded_events = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
-            "llm.conversation_id": "my-awesome-id",
-            "transaction_id": "transaction-id",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
-            "api_key_last_four_digits": "sk-CRET",
-            "duration": None,  # Response time varies each test run
-            "request.model": "gpt-3.5-turbo",
-            "response.model": "gpt-3.5-turbo-0613",
-            "response.organization": "new-relic-nkmd8b",
-            # Usage tokens aren't available when streaming.
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "response.choices.finish_reason": "stop",
-            "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 200,
-            "response.headers.ratelimitLimitTokens": 40000,
-            "response.headers.ratelimitResetTokens": "180ms",
-            "response.headers.ratelimitResetRequests": "11m32.334s",
-            "response.headers.ratelimitRemainingTokens": 39880,
-            "response.headers.ratelimitRemainingRequests": 198,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-            "response.number_of_messages": 3,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-0",
-            "appName": "Python Agent Test (mlmodel_openai)",
-            "llm.conversation_id": "my-awesome-id",
-            "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
-            "token_count": 105,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "You are a scientist.",
-            "role": "system",
-            "completion_id": None,
-            "sequence": 0,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openAI",
-            "ingest_source": "Python",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-1",
-            "appName": "Python Agent Test (mlmodel_openai)",
-            "llm.conversation_id": "my-awesome-id",
-            "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
-            "token_count": 105,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "What is 212 degrees Fahrenheit converted to Celsius?",
-            "role": "user",
-            "completion_id": None,
-            "sequence": 1,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openAI",
-            "ingest_source": "Python",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-2",
-            "appName": "Python Agent Test (mlmodel_openai)",
-            "llm.conversation_id": "my-awesome-id",
-            "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
-            "token_count": 105,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
-            "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
-            "role": "assistant",
-            "completion_id": None,
-            "sequence": 2,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openAI",
-            "is_response": True,
-            "ingest_source": "Python",
-        },
-    ),
-]
-
-
 @pytest.mark.parametrize(
     "llm_token_callback",
     [
@@ -385,7 +290,10 @@ chat_completion_token_recorded_events = [
 @reset_core_stats_engine()
 def test_openai_chat_completion_sync_with_token_count_callback(set_trace_info, sync_openai_client, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        expected_events = chat_completion_token_recorded_events
+        expected_events = copy.deepcopy(chat_completion_recorded_events)
+        expected_events[1][1]["token_count"] = 105
+        expected_events[2][1]["token_count"] = 105
+        expected_events[3][1]["token_count"] = 105
     else:
         expected_events = chat_completion_recorded_events
 
@@ -576,7 +484,10 @@ def test_openai_chat_completion_async_with_token_count_callback(
     set_trace_info, loop, async_openai_client, llm_token_callback
 ):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        expected_events = chat_completion_token_recorded_events
+        expected_events = copy.deepcopy(chat_completion_recorded_events)
+        expected_events[1][1]["token_count"] = 105
+        expected_events[2][1]["token_count"] = 105
+        expected_events[3][1]["token_count"] = 105
     else:
         expected_events = chat_completion_recorded_events
 

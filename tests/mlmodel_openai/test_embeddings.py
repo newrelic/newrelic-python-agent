@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import openai
 import pytest
 from conftest import disabled_ai_monitoring_settings  # pylint: disable=E0611
@@ -71,41 +72,6 @@ embedding_recorded_events = [
     ),
 ]
 
-embedding_token_recorded_events = [
-    (
-        {"type": "LlmEmbedding"},
-        {
-            "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
-            "transaction_id": "transaction-id",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "input": "This is an embedding test.",
-            "api_key_last_four_digits": "sk-CRET",
-            "llm.conversation_id": "my-awesome-id",
-            "llm.foo": "bar",
-            "token_count": 105,
-            "duration": None,  # Response time varies each test run
-            "response.model": "text-embedding-ada-002-v2",
-            "request.model": "text-embedding-ada-002",
-            "request_id": "c70828b2293314366a76a2b1dcb20688",
-            "response.organization": "new-relic-nkmd8b",
-            "response.usage.total_tokens": 6,
-            "response.usage.prompt_tokens": 6,
-            "response.api_type": "None",
-            "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 200,
-            "response.headers.ratelimitLimitTokens": 150000,
-            "response.headers.ratelimitResetTokens": "2ms",
-            "response.headers.ratelimitResetRequests": "19m45.394s",
-            "response.headers.ratelimitRemainingTokens": 149994,
-            "response.headers.ratelimitRemainingRequests": 197,
-            "vendor": "openAI",
-            "ingest_source": "Python",
-        },
-    ),
-]
-
 
 @reset_core_stats_engine()
 @validate_custom_events(embedding_recorded_events)
@@ -141,7 +107,8 @@ def test_openai_embedding_sync(set_trace_info):
 @reset_core_stats_engine()
 def test_openai_embedding_sync_with_token_count_callback(set_trace_info, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        expected_events = embedding_token_recorded_events
+        expected_events = copy.deepcopy(embedding_recorded_events)
+        expected_events[0][1]["token_count"] = 105
     else:
         expected_events = embedding_recorded_events
 
@@ -239,7 +206,8 @@ def test_openai_embedding_async(loop, set_trace_info):
 @reset_core_stats_engine()
 def test_openai_embedding_async_with_token_count_callback(loop, set_trace_info, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        expected_events = embedding_token_recorded_events
+        expected_events = copy.deepcopy(embedding_recorded_events)
+        expected_events[0][1]["token_count"] = 105
     else:
         expected_events = embedding_recorded_events
 

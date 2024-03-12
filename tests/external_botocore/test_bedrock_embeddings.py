@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import json
 from io import BytesIO
 
@@ -20,7 +21,6 @@ import pytest
 from _test_bedrock_embeddings import (
     embedding_expected_client_errors,
     embedding_expected_error_events,
-    embedding_expected_token_events,
     embedding_expected_events,
     embedding_payload_templates,
 )
@@ -95,11 +95,6 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
-def expected_token_events(model_id):
-    return embedding_expected_token_events[model_id]
-
-
-@pytest.fixture(scope="module")
 def expected_error_events(model_id):
     return embedding_expected_error_events[model_id]
 
@@ -145,10 +140,11 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
 )
 @reset_core_stats_engine()
 def test_bedrock_embedding_with_token_count(
-    set_trace_info, exercise_model, expected_events, expected_token_events, llm_token_callback
+    set_trace_info, exercise_model, expected_events, llm_token_callback
 ):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        expected_embedding_events = expected_token_events
+        expected_embedding_events = copy.deepcopy(expected_events)
+        expected_embedding_events[0][1]["token_count"] = 105
     else:
         expected_embedding_events = expected_events
 

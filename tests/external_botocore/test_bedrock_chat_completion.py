@@ -21,7 +21,6 @@ import pytest
 from _test_bedrock_chat_completion import (
     chat_completion_expected_client_errors,
     chat_completion_expected_events,
-    chat_completion_expected_token_events,
     chat_completion_invalid_access_key_error_events,
     chat_completion_invalid_model_error_events,
     chat_completion_payload_templates,
@@ -97,11 +96,6 @@ def exercise_model(bedrock_server, model_id, is_file_payload):
 @pytest.fixture(scope="module")
 def expected_events(model_id):
     return chat_completion_expected_events[model_id]
-
-
-@pytest.fixture(scope="module")
-def expected_token_events(model_id):
-    return chat_completion_expected_token_events[model_id]
 
 
 @pytest.fixture(scope="module")
@@ -187,10 +181,12 @@ def test_bedrock_chat_completion_in_txn_no_llm_metadata(
 )
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_with_token_count(
-    set_trace_info, exercise_model, expected_events, expected_token_events, llm_token_callback
+    set_trace_info, exercise_model, expected_events, llm_token_callback
 ):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        expected_completion_events = expected_token_events
+        expected_completion_events = copy.deepcopy(expected_events)
+        expected_completion_events[1][1]["token_count"] = 105
+        expected_completion_events[2][1]["token_count"] = 105
     else:
         expected_completion_events = expected_events
 

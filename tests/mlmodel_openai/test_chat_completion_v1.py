@@ -287,11 +287,10 @@ def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info, sync
 @reset_core_stats_engine()
 def test_openai_chat_completion_sync_with_token_count_callback(set_trace_info, sync_openai_client, llm_token_callback):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        chat_completion_token_recorded_events = copy.deepcopy(chat_completion_recorded_events)
-        chat_completion_token_recorded_events[1][1]["token_count"] = 105
-        chat_completion_token_recorded_events[2][1]["token_count"] = 105
-        chat_completion_token_recorded_events[3][1]["token_count"] = 105
-        expected_events = chat_completion_token_recorded_events
+        expected_events = copy.deepcopy(chat_completion_recorded_events)
+        expected_events[1][1]["token_count"] = 105
+        expected_events[2][1]["token_count"] = 105
+        expected_events[3][1]["token_count"] = 105
     else:
         expected_events = chat_completion_recorded_events
 
@@ -417,11 +416,10 @@ def test_openai_chat_completion_async_with_token_count_callback(
     set_trace_info, loop, async_openai_client, llm_token_callback
 ):
     if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        chat_completion_token_recorded_events = copy.deepcopy(chat_completion_recorded_events)
-        chat_completion_token_recorded_events[1][1]["token_count"] = 105
-        chat_completion_token_recorded_events[2][1]["token_count"] = 105
-        chat_completion_token_recorded_events[3][1]["token_count"] = 105
-        expected_events = chat_completion_token_recorded_events
+        expected_events = copy.deepcopy(chat_completion_recorded_events)
+        expected_events[1][1]["token_count"] = 105
+        expected_events[2][1]["token_count"] = 105
+        expected_events[3][1]["token_count"] = 105
     else:
         expected_events = chat_completion_recorded_events
 

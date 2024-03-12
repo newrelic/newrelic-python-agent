@@ -658,9 +658,7 @@ def add_nr_completion_id(run_args, completion_id):
         run_args["config"]["metadata"] = metadata
 
 
-def _create_error_chain_run_events(
-    transaction, instance, run_args, completion_id, span_id, trace_id, duration
-):
+def _create_error_chain_run_events(transaction, instance, run_args, completion_id, span_id, trace_id, duration):
     _input = _get_chain_run_input(run_args)
     llm_metadata_dict = _get_llm_metadata(transaction)
     run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)

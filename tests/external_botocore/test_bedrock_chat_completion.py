@@ -278,6 +278,7 @@ def test_bedrock_chat_completion_streaming_disabled(
     bedrock_server,
 ):
     """Streaming is disabled, but the rest of the AI settings are enabled. Custom events should not be collected."""
+
     @validate_custom_event_count(count=0)
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion",
@@ -291,7 +292,9 @@ def test_bedrock_chat_completion_streaming_disabled(
     @background_task(name="test_bedrock_chat_completion")
     def _test():
         model = "amazon.titan-text-express-v1"
-        body = (chat_completion_payload_templates[model] % (_test_bedrock_chat_completion_prompt, 0.7, 100)).encode("utf-8")
+        body = (chat_completion_payload_templates[model] % (_test_bedrock_chat_completion_prompt, 0.7, 100)).encode(
+            "utf-8"
+        )
 
         response = bedrock_server.invoke_model_with_response_stream(
             body=body,

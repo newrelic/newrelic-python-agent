@@ -811,7 +811,6 @@ def create_chat_completion_message_event(
         for index, message in enumerate(output_message_list):
             # Add offset of input_message_length so we don't receive any duplicate index values that match the input message IDs
             index += len(input_message_list)
-            id_ = str(uuid.uuid4())
 
             chat_completion_output_message_dict = {
                 "id": str(uuid.uuid4()),

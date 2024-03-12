@@ -40,16 +40,14 @@ no_model_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "This is an embedding test with no model.",
-            "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "",  # No model in this test case
             "response.organization": "",
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
             "error": True,
         },
@@ -170,16 +168,14 @@ invalid_model_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "Model does not exist.",
-            "api_key_last_four_digits": "sk-CRET",
             "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",
             "response.organization": None,
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
             "error": True,
         },
@@ -305,16 +301,14 @@ embedding_invalid_key_error_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "appName": "Python Agent Test (mlmodel_openai)",
             "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "Invalid API key.",
-            "api_key_last_four_digits": "sk-BEEF",
             "duration": None,  # Response time varies each test run
             "request.model": "text-embedding-ada-002",
             "response.organization": None,
-            "vendor": "openAI",
+            "vendor": "openai",
             "ingest_source": "Python",
             "error": True,
         },

@@ -51,11 +51,11 @@ def decode_body(body):
 
 def encode_body(body, malformed_body=False):
     """Encode a dictionary body into JSON, base64, then JSON again under a bytes key."""
-    
+
     body = json.dumps(body, separators=(",", ":"))
     if malformed_body:
         # Remove characters from end of body to make it unreadable
-        body = body[:-4]  
+        body = body[:-4]
 
     body = body.encode("utf-8")
     body = base64.b64encode(body)

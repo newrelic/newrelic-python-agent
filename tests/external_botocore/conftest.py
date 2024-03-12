@@ -145,7 +145,7 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
         body = request.body.read()
     else:
         body = request.body
-    
+
     try:
         content = json.loads(body)
     except Exception:

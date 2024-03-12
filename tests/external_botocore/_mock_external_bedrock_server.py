@@ -15,9 +15,8 @@
 import json
 import re
 
-from testing_support.mock_external_http_server import MockExternalHTTPServer
 from _mock_bedrock_encoding_utils import encode_streaming_payload
-
+from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 # This defines an external server test apps can make requests to instead of
 # the real Bedrock backend. This provides 3 features:
@@ -281,7 +280,19 @@ STREAMED_RESPONSES = {
             # Computes an example payload for an error inside a stream, from human readable format to a hex string.
             encode_streaming_payload(
                 {"event-type": "chunk", "content-type": "application/json"},
-                {'outputText': 'ValidationException', 'index': 0, 'totalOutputTextTokenCount': 35, 'completionReason': 'FINISH', 'inputTextTokenCount': 12, 'amazon-bedrock-invocationMetrics': {'inputTokenCount': 12, 'outputTokenCount': 35, 'invocationLatency': 2339, 'firstByteLatency': 2339}},
+                {
+                    "outputText": "ValidationException",
+                    "index": 0,
+                    "totalOutputTextTokenCount": 35,
+                    "completionReason": "FINISH",
+                    "inputTextTokenCount": 12,
+                    "amazon-bedrock-invocationMetrics": {
+                        "inputTokenCount": 12,
+                        "outputTokenCount": 35,
+                        "invocationLatency": 2339,
+                        "firstByteLatency": 2339,
+                    },
+                },
                 malformed_body=True,
             ).hex()
         ],
@@ -296,8 +307,27 @@ STREAMED_RESPONSES = {
         [
             # Computes an example payload for an error inside a stream, from human readable format to a hex string.
             encode_streaming_payload(
-                {"event-type": "chunk", "content-type": "application/json", "message-type": "error", "exception-type": "ValidationException", "error-code": "ValidationException", "error-message": "Malformed input request, please reformat your input and try again."},
-                {'outputText': 'ValidationException', 'index': 0, 'totalOutputTextTokenCount': 35, 'completionReason': 'FINISH', 'inputTextTokenCount': 12, 'amazon-bedrock-invocationMetrics': {'inputTokenCount': 12, 'outputTokenCount': 35, 'invocationLatency': 2339, 'firstByteLatency': 2339}},
+                {
+                    "event-type": "chunk",
+                    "content-type": "application/json",
+                    "message-type": "error",
+                    "exception-type": "ValidationException",
+                    "error-code": "ValidationException",
+                    "error-message": "Malformed input request, please reformat your input and try again.",
+                },
+                {
+                    "outputText": "ValidationException",
+                    "index": 0,
+                    "totalOutputTextTokenCount": 35,
+                    "completionReason": "FINISH",
+                    "inputTextTokenCount": 12,
+                    "amazon-bedrock-invocationMetrics": {
+                        "inputTokenCount": 12,
+                        "outputTokenCount": 35,
+                        "invocationLatency": 2339,
+                        "firstByteLatency": 2339,
+                    },
+                },
             ).hex()
         ],
     ],
@@ -3704,15 +3734,13 @@ RESPONSES = {
         },
     ],
     "amazon.titan-text-express-v1::{ Malformed Request Body": [
-    {
-        "Content-Type": "application/json",
-        "x-amzn-RequestId": "e72d1b46-9f16-4bf0-8eee-f7778f32e5a5",
-        "x-amzn-ErrorType": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/"
-    },
-    400,
-    {
-        "message": "Malformed input request, please reformat your input and try again."
-    }
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "e72d1b46-9f16-4bf0-8eee-f7778f32e5a5",
+            "x-amzn-ErrorType": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/",
+        },
+        400,
+        {"message": "Malformed input request, please reformat your input and try again."},
     ],
 }
 

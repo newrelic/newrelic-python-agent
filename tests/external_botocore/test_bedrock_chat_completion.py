@@ -17,9 +17,8 @@ import json
 from io import BytesIO
 
 import botocore.errorfactory
-import botocore.exceptions
 import botocore.eventstream
-
+import botocore.exceptions
 import pytest
 from _test_bedrock_chat_completion import (
     chat_completion_expected_events,
@@ -465,7 +464,7 @@ def test_bedrock_chat_completion_error_malformed_request_body(
             "intrinsic": {},
             "user": {
                 "http.statusCode": 400,
-                "error.message": "Malformed input request, please reformat your input and try again.", 
+                "error.message": "Malformed input request, please reformat your input and try again.",
                 "error.code": "ValidationException",
             },
         },
@@ -505,7 +504,6 @@ def test_bedrock_chat_completion_error_malformed_request_body(
                 )
 
     _test()
-
 
 
 @reset_core_stats_engine()
@@ -585,14 +583,14 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_body(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
-        
+
         response = bedrock_server.invoke_model_with_response_stream(
             body=body,
             modelId=model,
             accept="application/json",
             contentType="application/json",
         )
-        
+
         chunks = list(response["body"])
         assert chunks, "No response chunks returned"
         for chunk in chunks:
@@ -604,6 +602,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_body(
 
 _headers_error = botocore.eventstream.InvalidHeadersLength
 _headers_error_name = "botocore.eventstream:InvalidHeadersLength"
+
 
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
@@ -617,7 +616,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
     * The thrown error will not include a response attribute as the response was invalid.
     * No response can be parsed, meaning all response data should be missing.
     """
-    
+
     @validate_custom_events(chat_completion_expected_malformed_response_streaming_chunk_events)
     @validate_custom_event_count(count=2)
     @validate_error_trace_attributes(
@@ -626,7 +625,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
             "agent": {},
             "intrinsic": {},
             "user": {
-                'llm.conversation_id': 'my-awesome-id',
+                "llm.conversation_id": "my-awesome-id",
             },
         },
         forgone_params={
@@ -699,7 +698,7 @@ def test_bedrock_chat_completion_error_streaming_exception(
             "agent": (),
             "intrinsic": (),
             "user": ("http.statusCode"),
-        }
+        },
     )
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion",
@@ -748,7 +747,9 @@ def test_bedrock_chat_completion_error_streaming_exception_no_content(
     * The parsed response will include exception attributes as normal.
     * The contents of all messages will not be included in events.
     """
-    chat_completion_expected_streaming_error_events_no_content = copy.deepcopy(chat_completion_expected_streaming_error_events)
+    chat_completion_expected_streaming_error_events_no_content = copy.deepcopy(
+        chat_completion_expected_streaming_error_events
+    )
     del chat_completion_expected_streaming_error_events_no_content[1][1]["content"]
 
     @validate_custom_events(chat_completion_expected_streaming_error_events_no_content)
@@ -767,7 +768,7 @@ def test_bedrock_chat_completion_error_streaming_exception_no_content(
             "agent": (),
             "intrinsic": (),
             "user": ("http.statusCode"),
-        }
+        },
     )
     @validate_transaction_metrics(
         name="test_bedrock_chat_completion",

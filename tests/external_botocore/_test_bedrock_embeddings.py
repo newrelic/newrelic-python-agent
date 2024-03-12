@@ -23,7 +23,6 @@ embedding_expected_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "transaction_id": "transaction-id",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "span_id": None,
@@ -45,7 +44,6 @@ embedding_expected_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "transaction_id": "transaction-id",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "span_id": None,
@@ -70,7 +68,6 @@ embedding_expected_error_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "input": "Invalid Token",
@@ -89,7 +86,6 @@ embedding_expected_error_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "input": "Invalid Token",

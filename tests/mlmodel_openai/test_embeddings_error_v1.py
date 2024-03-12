@@ -40,7 +40,6 @@ no_model_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "This is an embedding test with no model.",
@@ -168,7 +167,6 @@ invalid_model_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "Model does not exist.",
@@ -301,7 +299,6 @@ embedding_invalid_key_error_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "Invalid API key.",

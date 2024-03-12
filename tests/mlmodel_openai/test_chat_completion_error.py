@@ -45,7 +45,6 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -68,7 +67,6 @@ expected_events_on_no_model_error = [
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "You are a scientist.",
             "role": "system",
             "response.model": "",
@@ -86,7 +84,6 @@ expected_events_on_no_model_error = [
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "What is 212 degrees Fahrenheit converted to Celsius?",
             "role": "user",
             "completion_id": None,
@@ -182,7 +179,6 @@ expected_events_on_invalid_model_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -205,7 +201,6 @@ expected_events_on_invalid_model_error = [
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "Model does not exist.",
             "role": "user",
             "response.model": "",
@@ -263,7 +258,6 @@ expected_events_on_auth_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -286,7 +280,6 @@ expected_events_on_auth_error = [
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "You are a scientist.",
             "role": "system",
             "response.model": "",
@@ -304,7 +297,6 @@ expected_events_on_auth_error = [
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "What is 212 degrees Fahrenheit converted to Celsius?",
             "role": "user",
             "completion_id": None,
@@ -360,7 +352,6 @@ expected_events_on_wrong_api_key_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
@@ -381,7 +372,6 @@ expected_events_on_wrong_api_key_error = [
             "request_id": "",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "Invalid API key.",
             "role": "user",
             "completion_id": None,

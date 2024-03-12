@@ -77,7 +77,7 @@ embedding_expected_error_events = {
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-embed-text-v1",
                 "response.model": "amazon.titan-embed-text-v1",
-                "request_id": "",
+                "request_id": "aece6ad7-e2ff-443b-a953-ba7d385fd0cc",
                 "vendor": "bedrock",
                 "ingest_source": "Python",
                 "error": True,
@@ -96,7 +96,7 @@ embedding_expected_error_events = {
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-embed-g1-text-02",
                 "response.model": "amazon.titan-embed-g1-text-02",
-                "request_id": "",
+                "request_id": "73328313-506e-4da8-af0f-51017fa6ca3f",
                 "vendor": "bedrock",
                 "ingest_source": "Python",
                 "error": True,

@@ -25,12 +25,12 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "llm.conversation_id": "my-awesome-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
                 "message_id": None,  # UUID that varies with each run
             },
             {
                 "llm.conversation_id": "my-awesome-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
                 "message_id": None,  # UUID that varies with each run
             },
         ]
@@ -39,12 +39,12 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "llm.conversation_id": "my-awesome-id",
-                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
+                "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
                 "message_id": "1234-0",
             },
             {
                 "llm.conversation_id": "my-awesome-id",
-                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
+                "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
                 "message_id": "1234-1",
             },
         ]
@@ -53,12 +53,12 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "llm.conversation_id": "my-awesome-id",
-                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
+                "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
                 "message_id": None,  # UUID that varies with each run
             },
             {
                 "llm.conversation_id": "my-awesome-id",
-                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
+                "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
                 "message_id": None,  # UUID that varies with each run
             },
         ]
@@ -67,13 +67,13 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "llm.conversation_id": "my-awesome-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
-                "message_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97-0",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
+                "message_id": "12912a17-aa13-45f3-914c-cc82166f3601-0",
             },
             {
                 "llm.conversation_id": "my-awesome-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
-                "message_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97-1",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
+                "message_id": "12912a17-aa13-45f3-914c-cc82166f3601-1",
             },
         ]
     },
@@ -81,13 +81,13 @@ chat_completion_get_llm_message_ids = {
         "bedrock_key": [
             {
                 "llm.conversation_id": "my-awesome-id",
-                "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
-                "message_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a-0",
+                "request_id": "a168214d-742d-4244-bd7f-62214ffa07df",
+                "message_id": "a168214d-742d-4244-bd7f-62214ffa07df-0",
             },
             {
                 "llm.conversation_id": "my-awesome-id",
-                "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
-                "message_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a-1",
+                "request_id": "a168214d-742d-4244-bd7f-62214ffa07df",
+                "message_id": "a168214d-742d-4244-bd7f-62214ffa07df-1",
             },
         ]
     },
@@ -104,12 +104,12 @@ chat_completion_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-text-express-v1",
                 "response.model": "amazon.titan-text-express-v1",
-                "response.usage.completion_tokens": 75,
-                "response.usage.total_tokens": 87,
+                "response.usage.completion_tokens": 32,
+                "response.usage.total_tokens": 44,
                 "response.usage.prompt_tokens": 12,
                 "request.temperature": 0.7,
                 "request.max_tokens": 100,
@@ -125,7 +125,7 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -144,11 +144,11 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "03524118-8d77-430f-9e08-63b5c03a40cf",
+                "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
-                "content": "\nUse the formula,\n°C = (°F - 32) x 5/9\n= 212 x 5/9\n= 100 degrees Celsius\n212 degrees Fahrenheit is 100 degrees Celsius.",
+                "content": "\n1 degree Fahrenheit is 0.56 Celsius. Therefore, 212 degree Fahrenheit in Celsius would be 115.42.",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,
@@ -169,7 +169,7 @@ chat_completion_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
+                "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
                 "response_id": "1234",
                 "duration": None,  # Response time varies each test run
                 "request.model": "ai21.j2-mid-v1",
@@ -188,7 +188,7 @@ chat_completion_expected_events = {
                 "id": "1234-0",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
+                "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -207,7 +207,7 @@ chat_completion_expected_events = {
                 "id": "1234-1",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "c863d9fc-888b-421c-a175-ac5256baec62",
+                "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -232,13 +232,13 @@ chat_completion_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
+                "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
                 "duration": None,  # Response time varies each test run
                 "request.model": "anthropic.claude-instant-v1",
                 "response.model": "anthropic.claude-instant-v1",
                 "request.temperature": 0.7,
                 "request.max_tokens": 100,
-                "response.choices.finish_reason": "stop_sequence",
+                "response.choices.finish_reason": "max_tokens",
                 "vendor": "bedrock",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
@@ -250,7 +250,7 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
+                "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -269,11 +269,11 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "7b0b37c6-85fb-4664-8f5b-361ca7b1aa18",
+                "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
-                "content": " Okay, here are the conversion steps:\n212 degrees Fahrenheit\n- Subtract 32 from 212 to get 180 (to convert from Fahrenheit to Celsius scale)\n- Multiply by 5/9 (because the formula is °C = (°F - 32) × 5/9)\n- 180 × 5/9 = 100\n\nSo 212 degrees Fahrenheit converted to Celsius is 100 degrees Celsius.",
+                "content": " Okay, here are the steps to convert 212 degrees Fahrenheit to Celsius:\n\n1) The formula to convert between Fahrenheit and Celsius is:\n   C = (F - 32) * 5/9\n\n2) Plug in 212 degrees Fahrenheit for F:\n   C = (212 - 32) * 5/9\n   C = 180 * 5/9\n   C = 100\n\n3) Therefore, 212 degrees Fahrenheit converted to Celsius is 100 degrees Celsius.",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,
@@ -294,7 +294,7 @@ chat_completion_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
                 "response_id": None,  # UUID that varies with each run
                 "duration": None,  # Response time varies each test run
                 "request.model": "cohere.command-text-v14",
@@ -313,7 +313,7 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -332,11 +332,11 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "e77422c8-fbbf-4e17-afeb-c758425c9f97",
+                "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
-                "content": " 212°F is equivalent to 100°C. \n\nFahrenheit and Celsius are two temperature scales commonly used in everyday life. The Fahrenheit scale is based on 32°F for the freezing point of water and 212°F for the boiling point of water. On the other hand, the Celsius scale uses 0°C and 100°C as the freezing and boiling points of water, respectively. \n\nTo convert from Fahrenheit to Celsius, we subtract 32 from the Fahrenheit temperature and multiply the result",
+                "content": " To convert from Fahrenheit to Celsius, you can use the following formula:\n\nCelsius = (Fahrenheit - 32) * 5/9\n\nIn this case, 212 degrees Fahrenheit is converted to Celsius as follows:\n\nCelsius = (212 - 32) * 5/9 = (180) * 5/9 = (180/9) = 20 degrees Celsius\n\nTherefore, 212 degrees Fahrenheit is equivalent to 20 degrees Celsius.\n\nIt's important to note that",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,
@@ -357,13 +357,13 @@ chat_completion_expected_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
+                "request_id": "a168214d-742d-4244-bd7f-62214ffa07df",
                 "duration": None,  # Response time varies each test run
                 "request.model": "meta.llama2-13b-chat-v1",
                 "response.model": "meta.llama2-13b-chat-v1",
                 "response.usage.prompt_tokens": 17,
-                "response.usage.completion_tokens": 46,
-                "response.usage.total_tokens": 63,
+                "response.usage.completion_tokens": 69,
+                "response.usage.total_tokens": 86,
                 "request.temperature": 0.7,
                 "request.max_tokens": 100,
                 "response.choices.finish_reason": "stop",
@@ -378,7 +378,7 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
+                "request_id": "a168214d-742d-4244-bd7f-62214ffa07df",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -397,11 +397,275 @@ chat_completion_expected_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "9a64cdb0-3e82-41c7-873a-c12a77e0143a",
+                "request_id": "a168214d-742d-4244-bd7f-62214ffa07df",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
-                "content": " Here's the answer:\n\n212°F = 100°C\n\nSo, 212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                "content": "\n\n212°F = ?°C\n\nPlease help! I'm stuck!\n\nThank you!\n\nI hope this is the correct place to ask this question. Please let me know if it isn't.\n\nI appreciate your help!\n\nBest regards,\n\n[Your Name]",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "meta.llama2-13b-chat-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
+}
+
+chat_completion_streaming_expected_events = {
+    "amazon.titan-text-express-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "b427270f-371a-458d-81b6-a05aafb2704c",
+                "duration": None,  # Response time varies each test run
+                "request.model": "amazon.titan-text-express-v1",
+                "response.model": "amazon.titan-text-express-v1",
+                "response.usage.completion_tokens": 35,
+                "response.usage.total_tokens": 47,
+                "response.usage.prompt_tokens": 12,
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "FINISH",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "request_id": "b427270f-371a-458d-81b6-a05aafb2704c",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "content": "What is 212 degrees Fahrenheit converted to Celsius?",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "amazon.titan-text-express-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "request_id": "b427270f-371a-458d-81b6-a05aafb2704c",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "content": "\n1 degree Fahrenheit is 0.56 degrees Celsius. Therefore, 212 degree Fahrenheit in Celsius would be 115.72.",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "amazon.titan-text-express-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
+    "anthropic.claude-instant-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "a645548f-0b3a-47ce-a675-f51e6e9037de",
+                "duration": None,  # Response time varies each test run
+                "request.model": "anthropic.claude-instant-v1",
+                "response.model": "anthropic.claude-instant-v1",
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "stop_sequence",
+                "response.usage.completion_tokens": 99,
+                "response.usage.prompt_tokens": 19,
+                "response.usage.total_tokens": 118,
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "request_id": "a645548f-0b3a-47ce-a675-f51e6e9037de",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "content": "Human: What is 212 degrees Fahrenheit converted to Celsius? Assistant:",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "anthropic.claude-instant-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "request_id": "a645548f-0b3a-47ce-a675-f51e6e9037de",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "content": " Here are the steps to convert 212 degrees Fahrenheit to Celsius:\n\n1) The formula to convert between Fahrenheit and Celsius is:\n   C = (F - 32) * 5/9\n\n2) Plug in 212 degrees Fahrenheit for F:\n   C = (212 - 32) * 5/9\n   C = 180 * 5/9\n   C = 100\n\n3) Therefore, 212 degrees Fahrenheit is equal to 100 degrees Celsius.",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "anthropic.claude-instant-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
+    "cohere.command-text-v14": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "4f8ab6c5-42d1-4e35-9573-30f9f41f821e",
+                "response_id": None,  # UUID that varies with each run
+                "duration": None,  # Response time varies each test run
+                "request.model": "cohere.command-text-v14",
+                "response.model": "cohere.command-text-v14",
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "COMPLETE",
+                "response.usage.completion_tokens": 91,
+                "response.usage.total_tokens": 100,
+                "response.usage.prompt_tokens": 9,
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "request_id": "4f8ab6c5-42d1-4e35-9573-30f9f41f821e",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "content": "What is 212 degrees Fahrenheit converted to Celsius?",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "cohere.command-text-v14",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "request_id": "4f8ab6c5-42d1-4e35-9573-30f9f41f821e",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "content": " To convert Fahrenheit to Celsius, you can use the formula:\n\nCelsius = (Fahrenheit - 32) * 5/9\n\nIn this case, if you have 212 degrees Fahrenheit, you can use this formula to calculate the equivalent temperature in Celsius:\n\nCelsius = (212 - 32) * 5/9 = 100 * 5/9 = 50\n\nTherefore, 212 degrees Fahrenheit is equivalent to 50 degrees Celsius.",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "cohere.command-text-v14",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
+    "meta.llama2-13b-chat-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "6dd99878-0919-4f92-850c-48f50f923b76",
+                "duration": None,  # Response time varies each test run
+                "request.model": "meta.llama2-13b-chat-v1",
+                "response.model": "meta.llama2-13b-chat-v1",
+                "response.usage.prompt_tokens": 17,
+                "response.usage.completion_tokens": 100,
+                "response.usage.total_tokens": 117,
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "length",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "request_id": "6dd99878-0919-4f92-850c-48f50f923b76",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "content": "What is 212 degrees Fahrenheit converted to Celsius?",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "meta.llama2-13b-chat-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "request_id": "6dd99878-0919-4f92-850c-48f50f923b76",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "content": "  What is the conversion formula?\n\n212 degrees Fahrenheit is equal to 100 degrees Celsius.\n\nThe conversion formula is:\n\n°C = (°F - 32) × 5/9\n\nSo, to convert 212 degrees Fahrenheit to Celsius, we can use the formula like this:\n\n°C = (212 - 32) × 5/9\n",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,
@@ -422,7 +686,7 @@ chat_completion_invalid_model_error_events = [
             "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
-            "request_id": "",
+            "request_id": "f4908827-3db9-4742-9103-2bbc34578b03",
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
@@ -446,7 +710,7 @@ chat_completion_invalid_access_key_error_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "",
+                "request_id": "15b39c8b-8e85-42c9-9623-06720301bda3",
                 "duration": None,  # Response time varies each test run
                 "request.model": "amazon.titan-text-express-v1",
                 "response.model": "amazon.titan-text-express-v1",
@@ -464,7 +728,7 @@ chat_completion_invalid_access_key_error_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "",
+                "request_id": "15b39c8b-8e85-42c9-9623-06720301bda3",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -488,7 +752,7 @@ chat_completion_invalid_access_key_error_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "",
+                "request_id": "9021791d-3797-493d-9277-e33aa6f6d544",
                 "duration": None,  # Response time varies each test run
                 "request.model": "ai21.j2-mid-v1",
                 "response.model": "ai21.j2-mid-v1",
@@ -506,7 +770,7 @@ chat_completion_invalid_access_key_error_events = {
                 "id": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "",
+                "request_id": "9021791d-3797-493d-9277-e33aa6f6d544",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -530,7 +794,7 @@ chat_completion_invalid_access_key_error_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "",
+                "request_id": "37396f55-b721-4bae-9461-4c369f5a080d",
                 "duration": None,  # Response time varies each test run
                 "request.model": "anthropic.claude-instant-v1",
                 "response.model": "anthropic.claude-instant-v1",
@@ -548,7 +812,7 @@ chat_completion_invalid_access_key_error_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "",
+                "request_id": "37396f55-b721-4bae-9461-4c369f5a080d",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -572,7 +836,7 @@ chat_completion_invalid_access_key_error_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "",
+                "request_id": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
                 "duration": None,  # Response time varies each test run
                 "request.model": "cohere.command-text-v14",
                 "response.model": "cohere.command-text-v14",
@@ -590,7 +854,7 @@ chat_completion_invalid_access_key_error_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "",
+                "request_id": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",
@@ -614,7 +878,7 @@ chat_completion_invalid_access_key_error_events = {
                 "transaction_id": "transaction-id",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "request_id": "",
+                "request_id": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
                 "duration": None,  # Response time varies each test run
                 "request.model": "meta.llama2-13b-chat-v1",
                 "response.model": "meta.llama2-13b-chat-v1",
@@ -632,7 +896,7 @@ chat_completion_invalid_access_key_error_events = {
                 "id": None,  # UUID that varies with each run
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "request_id": "",
+                "request_id": "22476490-a0d6-42db-b5ea-32d0b8a7f751",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "transaction_id": "transaction-id",

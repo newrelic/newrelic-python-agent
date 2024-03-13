@@ -376,10 +376,9 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
     expected_metrics,
 ):
     """
-    For both streaming or non-streaming, request has invalid credentials.
-
-    * Library will reach out to server and receive a UnrecognizedClientException as a response.
-    * Request and response can both be parsed, so request information and error attributes from response are available.
+    A request is made to the server with invalid credentials. botocore will reach out to the server and receive a
+    UnrecognizedClientException as a response. Information from the request will be parsed and reported in customer
+    events. The error response can also be parsed, and will be included as attributes on the recorded exception.
     """
 
     @validate_custom_events(expected_invalid_access_key_error_events)
@@ -432,11 +431,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     """
     Duplicate of test_bedrock_chat_completion_error_incorrect_access_key, but with content recording is disabled.
 
-    For both streaming or non-streaming, request has invalid credentials.
-
-    * Library will reach out to server and receive a UnrecognizedClientException as a response.
-    * Request and response can both be parsed, so request information and error attributes from response are available.
-    * The contents of all messages will not be included in events.
+    See the original test for a description of the error case.
     """
 
     @validate_custom_events(expected_invalid_access_key_error_events_no_content)
@@ -484,11 +479,11 @@ def test_bedrock_chat_completion_error_malformed_request_body(
     expected_metrics,
 ):
     """
-    For both streaming or non-streaming, request body contains invalid JSON.
-
-    * Library will still reach out to server and receive a ValidationException as a response.
-    * Request cannot be parsed, so no request information will be added.
-    * Response payload can be parsed, so error attributes from response will appear as normal.
+    A request was made to the server, but the request body contains invalid JSON. The library will accept the invalid
+    payload, and still send a request. Our instrumentation will be unable to read it. As a result, no request
+    information will be recorded in custom events. This includes the initial prompt message event, which cannot be read
+    so it cannot be captured. The server will then respond with a ValidationException response immediately due to the
+    bad request. The response can still be parsed, so error information from the response will be recorded as normal.
     """
 
     @validate_custom_events(chat_completion_expected_malformed_request_body_events)
@@ -548,11 +543,11 @@ def test_bedrock_chat_completion_error_malformed_response_body(
     set_trace_info,
 ):
     """
-    After a non-streaming call, the response body contains invalid JSON.
-
-    * No actual error should be raised by the library or our code.
-    * An invalid payload is returned by the library to the user.
-    * No response can be parsed, meaning all response data should be missing.
+    After a non-streaming request was made to the server, the server responded with a response body that contains
+    invalid JSON. Since the JSON body is not parsed by botocore and just returned to the user as bytes, no parsing
+    exceptions will be raised. Instrumentation will attempt to parse the invalid body, and should not raise an
+    exception when it fails to do so. The result should be all streamed response data missing from the recorded
+    events, but request and summary events are recorded as normal.
     """
 
     @validate_custom_events(chat_completion_expected_malformed_response_body_events)
@@ -592,11 +587,11 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_body(
     set_trace_info,
 ):
     """
-    After a streaming call, the chunk returned by the server is valid, but contains a body with JSON that cannot be parsed.
-
-    * No actual error should be raised by the library or our code.
-    * An invalid payload is returned by the library to the user.
-    * No response can be parsed, meaning all response data should be missing.
+    A chunk in the stream returned by the server is valid, but contains a body with JSON that cannot be parsed.
+    Since the JSON body is not parsed by botocore and just returned to the user as bytes, no parsing exceptions will
+    be raised. Instrumentation will attempt to parse the invalid body, and should not raise an exception when it fails
+    to do so. The result should be all streamed response data missing from the recorded events, but request and summary
+    events are recorded as normal.
     """
 
     @validate_custom_events(chat_completion_expected_malformed_response_streaming_body_events)
@@ -642,11 +637,10 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
     set_trace_info,
 ):
     """
-    After a streaming call, the chunk returned by the server is invalid and cannot be parsed.
-
-    * The library should throw an appropriate error, in this case InvalidHeadersLength.
-    * The thrown error will not include a response attribute as the response was invalid.
-    * No response can be parsed, meaning all response data should be missing.
+    A chunk in the stream returned by the server is missing the prelude which causes an InvalidHeadersLength exception
+    to be raised during parsing of the chunk. Since the streamed chunk is not able to be parsed, the response
+    attribute on the raised exception is not present. This means all streamed response data will be missing from the
+    recorded events.
     """
 
     @validate_custom_events(chat_completion_expected_malformed_response_streaming_chunk_events)
@@ -707,11 +701,13 @@ def test_bedrock_chat_completion_error_streaming_exception(
     set_trace_info,
 ):
     """
-    During a streaming call, the chunk's headers indicate an exception.
-
-    * The library converts this into an actual exception and raises it.
-    * The response attribute on the exception will contain only the error information.
-    * The parsed response will include exception attributes but no response message.
+    During a streaming call, the streamed chunk's headers indicate an error. These headers are not HTTP headers, but
+    headers embedded in the binary format of the response from the server. The streamed chunk's response body is not
+    required to contain any information regarding the exception, the headers are sufficient to cause botocore's
+    parser to raise an actual exception based on the error code. The response attribute on the raised exception will
+    contain the error information. This means error data will be reported for the response, but all response message
+    data will be missing from the recorded events since the server returned an error instead of message data inside
+    the streamed response.
     """
 
     @validate_custom_events(chat_completion_expected_streaming_error_events)
@@ -772,12 +768,7 @@ def test_bedrock_chat_completion_error_streaming_exception_no_content(
     """
     Duplicate of test_bedrock_chat_completion_error_streaming_exception, but with content recording is disabled.
 
-    During a streaming call, the chunk's headers indicate an exception.
-
-    * The library converts this into an actual exception and raises it.
-    * The response attribute on the exception will contain only the error information.
-    * The parsed response will include exception attributes as normal.
-    * The contents of all messages will not be included in events.
+    See the original test for a description of the error case.
     """
     chat_completion_expected_streaming_error_events_no_content = copy.deepcopy(
         chat_completion_expected_streaming_error_events

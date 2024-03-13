@@ -67,25 +67,22 @@ def record_llm_feedback_event(trace_id, rating, category=None, message=None, met
     transaction.record_custom_event("LlmFeedbackMessage", feedback_event)
 
 
-def set_llm_token_count_callback(user_callback, application=None):
-    if user_callback is not None and not callable(user_callback):
-        _logger.error("set_llm_token_count_callback must be passed a callable argument.")
+def set_llm_token_count_callback(callback, application=None):
+    """Set the current callback to be used to count tokens."""
+    if not callback or callback and not callable(callback):
+        _logger.error("callback passed to set_llm_token_count_callback must be a callable type.")
         return
 
-    """Set the current callback to be used to count tokens."""
     from newrelic.api.application import application_instance
 
     # Check for activated application if it exists and was not given.
-    application = application_instance(activate=False) if application is None else application
+    application = application or application_instance(activate=False)
 
-    # Get application settings if it exists, or fallback to global settings object
-    _settings = application.settings if application is not None else global_settings()
+    # Get application settings if it exists, or fallback to global settings object.
+    settings = application.settings if application else global_settings()
 
-    if _settings is None:
-        _logger.error(
-            "Failed to set llm token count_callback in application settings. Report this issue to New Relic support."
-        )
+    if not settings:
+        _logger.error("Failed to set llm_token_count_callback. Report this issue to New Relic support.")
         return
 
-    if _settings.ai_monitoring:
-        _settings.ai_monitoring._llm_token_count_callback = user_callback
+    settings.ai_monitoring._llm_token_count_callback = callback

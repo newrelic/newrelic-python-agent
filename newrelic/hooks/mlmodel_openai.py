@@ -609,7 +609,7 @@ def bind_base_client_process_response(
 
 
 def wrap_base_client_process_response_sync(wrapped, instance, args, kwargs):
-    """Obtain reponse headers for v1."""
+    """Obtain response headers for v1."""
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -625,7 +625,7 @@ def wrap_base_client_process_response_sync(wrapped, instance, args, kwargs):
 
 
 async def wrap_base_client_process_response_async(wrapped, instance, args, kwargs):
-    """Obtain reponse headers for v1."""
+    """Obtain response headers for v1."""
     transaction = current_transaction()
     if not transaction:
         return await wrapped(*args, **kwargs)

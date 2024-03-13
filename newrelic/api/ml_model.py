@@ -69,8 +69,10 @@ def record_llm_feedback_event(trace_id, rating, category=None, message=None, met
 
 def set_llm_token_count_callback(callback, application=None):
     """Set the current callback to be used to count tokens."""
-    if not callback or callback and not callable(callback):
-        _logger.error("callback passed to set_llm_token_count_callback must be a callable type.")
+    if callback and not callable(callback):
+        _logger.error(
+            "callback passed to set_llm_token_count_callback must be a Callable type or None to unset the callback."
+        )
         return
 
     from newrelic.api.application import application_instance

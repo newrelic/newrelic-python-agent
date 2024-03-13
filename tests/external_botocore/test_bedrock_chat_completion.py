@@ -175,7 +175,6 @@ def expected_invalid_access_key_error_events_no_content(expected_invalid_access_
 _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted to Celsius?"
 
 
-# not working with claude
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_with_llm_metadata(
     set_trace_info, exercise_model, expected_events, expected_metrics

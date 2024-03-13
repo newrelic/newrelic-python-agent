@@ -2474,6 +2474,13 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.tidb_vector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
     _process_module_definition(
         "langchain_community.vectorstores.tigris",
         "newrelic.hooks.mlmodel_langchain",

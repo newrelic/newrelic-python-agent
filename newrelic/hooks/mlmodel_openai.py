@@ -235,7 +235,6 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
     request_id = response_headers.get("x-request-id")
     response_model = attribute_response.get("model")
     response_usage = attribute_response.get("usage", {}) or {}
-    api_type = getattr(attribute_response, "api_type", None)
     organization = (
         response_headers.get("openai-organization") if OPENAI_V1 else getattr(attribute_response, "organization", None)
     )
@@ -250,7 +249,6 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         "duration": ft.duration,
         "response.model": response_model,
         "response.organization": organization,
-        "response.api_type": api_type,  # API type was removed in v1
         "response.usage.total_tokens": response_usage.get("total_tokens"),
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens"),
         "response.headers.llmVersion": response_headers.get("openai-version"),
@@ -447,7 +445,6 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         "response.usage.total_tokens": response_usage.get("total_tokens"),
         "response.usage.prompt_tokens": response_usage.get("prompt_tokens"),
         "response.choices.finish_reason": finish_reason,
-        "response.api_type": getattr(response, "api_type", None),
         "response.headers.llmVersion": response_headers.get("openai-version"),
         "response.headers.ratelimitLimitRequests": check_rate_limit_header(
             response_headers, "x-ratelimit-limit-requests", True

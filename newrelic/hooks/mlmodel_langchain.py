@@ -90,6 +90,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.surrealdb": "SurrealDBStore",
     "langchain_community.vectorstores.tair": "Tair",
     "langchain_community.vectorstores.tencentvectordb": "TencentVectorDB",
+    "langchain_community.vectorstores.tidb_vector": "TiDBVectorStore",
     "langchain_community.vectorstores.tigris": "Tigris",
     "langchain_community.vectorstores.tiledb": "TileDB",
     "langchain_community.vectorstores.timescalevector": "TimescaleVector",

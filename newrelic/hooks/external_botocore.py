@@ -15,6 +15,7 @@
 import json
 import logging
 import sys
+import traceback
 import uuid
 from io import BytesIO
 
@@ -68,12 +69,14 @@ def bedrock_error_attributes(exception, bedrock_attrs):
     if not response:
         return bedrock_attrs
 
+    response_metadata = response.get("ResponseMetadata", {})
+    response_error = response.get("Error", {})
     bedrock_attrs.update(
         {
-            "request_id": response.get("ResponseMetadata", {}).get("RequestId"),
-            "http.statusCode": response.get("ResponseMetadata", {}).get("HTTPStatusCode"),
-            "error.message": response.get("Error", {}).get("Message"),
-            "error.code": response.get("Error", {}).get("Code"),
+            "request_id": response_metadata.get("RequestId"),
+            "http.statusCode": response_metadata.get("HTTPStatusCode"),
+            "error.message": response_error.get("Message"),
+            "error.code": response_error.get("Code"),
             "error": True,
         }
     )
@@ -543,8 +546,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 }
                 try:
                     request_extractor(request_body, bedrock_attrs)
-                except Exception:
-                    pass
+                except Exception as nr_exc:
+                    _logger.debug("Exception occured in botocore instrumentation for AWS Bedrock: Failed to extract request information. Request payload may contain invalid JSON.\n%s" % traceback.format_exception(nr_exc))
 
                 error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
                 notice_error_attributes = {
@@ -570,17 +573,17 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 else:
                     handle_chat_completion_event(transaction, error_attributes)
             except Exception as nr_exc:
-                _logger.debug("Exception encountered in botocore instrumentation for AWS Bedrock: %s" % str(nr_exc))
-
+                _logger.debug("Exception occured in botocore instrumentation for AWS Bedrock: While reporting an exception in botocore, another exception occured.\n%s" % traceback.format_exception(nr_exc))
+            
             raise
 
         if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
             ft.__exit__(None, None, None)
             return response
 
-        response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders", {})
+        response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
         bedrock_attrs = {
-            "request_id": response_headers.get("x-amzn-requestid", "") if response_headers else "",
+            "request_id": response_headers.get("x-amzn-requestid", ""),
             "model": model,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -588,8 +591,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
 
         try:
             request_extractor(request_body, bedrock_attrs)
-        except Exception:
-            pass
+        except Exception as nr_exc:
+            _logger.debug("Exception occured in botocore instrumentation for AWS Bedrock: Failed to extract request information. Request payload may contain invalid JSON.\n%s" % traceback.format_exception(nr_exc))
 
         if response_streaming:
             # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
@@ -609,8 +612,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         # Run response extractor for non-streaming responses
         try:
             response_extractor(response_body, bedrock_attrs)
-        except Exception:
-            pass
+        except Exception as nr_exc:
+            _logger.debug("Exception occured in botocore instrumentation for AWS Bedrock: Failed to extract response information. If the issue persists, report this issue to New Relic support.\n%s" % traceback.format_exception(nr_exc))
 
         if operation == "embedding":
             handle_embedding_event(transaction, bedrock_attrs)
@@ -664,8 +667,8 @@ def record_stream_chunk(self, return_val):
         try:
             chunk = json.loads(return_val["chunk"]["bytes"].decode("utf-8"))
             self._nr_model_extractor(chunk, self._nr_bedrock_attrs)
-        except Exception:
-            pass
+        except Exception as nr_exc:
+            _logger.debug("Exception occured in botocore instrumentation for AWS Bedrock: Failed to extract response information. If the issue persists, report this issue to New Relic support.\n%s" % traceback.format_exception(nr_exc))
 
 
 def record_events_on_stop_iteration(self, transaction):
@@ -713,8 +716,8 @@ def record_error(self, transaction, exc):
 
             # Clear cached data as this can be very large.
             error_attributes.clear()
-        except Exception:
-            pass
+        except Exception as nr_exc:
+                _logger.debug("Exception occured in botocore instrumentation for AWS Bedrock: While reporting an exception in botocore, another exception occured.\n%s" % traceback.format_exception(nr_exc))
 
 
 def handle_embedding_event(transaction, bedrock_attrs):

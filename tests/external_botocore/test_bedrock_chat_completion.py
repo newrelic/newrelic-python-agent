@@ -430,7 +430,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     expected_metrics,
 ):
     """
-    Duplicate of the above test, but with content recording is disabled.
+    Duplicate of test_bedrock_chat_completion_error_incorrect_access_key, but with content recording is disabled.
 
     For both streaming or non-streaming, request has invalid credentials.
 
@@ -636,10 +636,6 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_body(
     _test()
 
 
-_headers_error = botocore.eventstream.InvalidHeadersLength
-_headers_error_name = "botocore.eventstream:InvalidHeadersLength"
-
-
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
     bedrock_server,
@@ -656,7 +652,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
     @validate_custom_events(chat_completion_expected_malformed_response_streaming_chunk_events)
     @validate_custom_event_count(count=2)
     @validate_error_trace_attributes(
-        _headers_error_name,
+        "botocore.eventstream:InvalidHeadersLength",
         exact_attrs={
             "agent": {},
             "intrinsic": {},
@@ -683,7 +679,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
     def _test():
         model = "amazon.titan-text-express-v1"
         body = (chat_completion_payload_templates[model] % ("Malformed Streaming Chunk", 0.7, 100)).encode("utf-8")
-        with pytest.raises(_headers_error):
+        with pytest.raises(botocore.eventstream.InvalidHeadersLength):
             set_trace_info()
             add_custom_attribute("llm.conversation_id", "my-awesome-id")
             add_custom_attribute("llm.foo", "bar")
@@ -774,7 +770,7 @@ def test_bedrock_chat_completion_error_streaming_exception_no_content(
     set_trace_info,
 ):
     """
-    Duplicate of the above test, but with content recording is disabled.
+    Duplicate of test_bedrock_chat_completion_error_streaming_exception, but with content recording is disabled.
 
     During a streaming call, the chunk's headers indicate an exception.
 

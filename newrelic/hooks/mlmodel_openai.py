@@ -85,7 +85,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     except Exception as exc:
         _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
         raise
-    record_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
+    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
     return return_val
 
 
@@ -359,11 +359,11 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
         _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
         raise
 
-    record_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
+    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
     return return_val
 
 
-def record_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val):
+def _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
@@ -655,12 +655,12 @@ class GeneratorProxy(ObjectProxy):
         return_val = None
         try:
             return_val = self.__wrapped__.__next__()
-            record_stream_chunk(self, return_val)
+            _record_stream_chunk(self, return_val)
         except StopIteration as e:
-            record_events_on_stop_iteration(self, transaction)
+            _record_events_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:
-            record_error(self, transaction, exc)
+            _handle_streaming_completion_error(self, transaction, exc)
             raise
         return return_val
 
@@ -668,7 +668,7 @@ class GeneratorProxy(ObjectProxy):
         return super(GeneratorProxy, self).close()
 
 
-def record_stream_chunk(self, return_val):
+def _record_stream_chunk(self, return_val):
     if return_val:
         if OPENAI_V1:
             if getattr(return_val, "data", "").startswith("[DONE]"):
@@ -691,7 +691,7 @@ def record_stream_chunk(self, return_val):
             self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason")
 
 
-def record_events_on_stop_iteration(self, transaction):
+def _record_events_on_stop_iteration(self, transaction):
     if hasattr(self, "_nr_ft"):
         openai_attrs = getattr(self, "_nr_openai_attrs", {})
         self._nr_ft.__exit__(None, None, None)
@@ -715,7 +715,7 @@ def record_events_on_stop_iteration(self, transaction):
         self._nr_openai_attrs = {}
 
 
-def record_error(self, transaction, exc):
+def _handle_streaming_completion_error(self, transaction, exc):
     if hasattr(self, "_nr_ft"):
         openai_attrs = getattr(self, "_nr_openai_attrs", {})
 
@@ -744,12 +744,12 @@ class AsyncGeneratorProxy(ObjectProxy):
         return_val = None
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
-            record_stream_chunk(self, return_val)
+            _record_stream_chunk(self, return_val)
         except StopAsyncIteration as e:
-            record_events_on_stop_iteration(self, transaction)
+            _record_events_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:
-            record_error(self, transaction, exc)
+            _handle_streaming_completion_error(self, transaction, exc)
             raise
         return return_val
 

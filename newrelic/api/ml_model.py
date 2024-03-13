@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import sys
 import uuid
 import warnings
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.core.config import global_settings
 from newrelic.hooks.mlmodel_sklearn import _nr_instrument_model
+
+_logger = logging.getLogger(__name__)
 
 
 def wrap_mlmodel(model, name=None, version=None, feature_names=None, label_names=None, metadata=None):
@@ -61,3 +65,27 @@ def record_llm_feedback_event(trace_id, rating, category=None, message=None, met
     )
 
     transaction.record_custom_event("LlmFeedbackMessage", feedback_event)
+
+
+def set_llm_token_count_callback(user_callback, application=None):
+    if user_callback is not None and not callable(user_callback):
+        _logger.error("set_llm_token_count_callback must be passed a callable argument.")
+        return
+
+    """Set the current callback to be used to count tokens."""
+    from newrelic.api.application import application_instance
+
+    # Check for activated application if it exists and was not given.
+    application = application_instance(activate=False) if application is None else application
+
+    # Get application settings if it exists, or fallback to global settings object
+    _settings = application.settings if application is not None else global_settings()
+
+    if _settings is None:
+        _logger.error(
+            "Failed to set llm token count_callback in application settings. Report this issue to New Relic support."
+        )
+        return
+
+    if _settings.ai_monitoring:
+        _settings.ai_monitoring._llm_token_count_callback = user_callback

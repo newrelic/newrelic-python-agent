@@ -269,8 +269,27 @@ STREAMED_RESPONSES = {
         [
             # Computes an example payload for an error inside a stream, from human readable format to a hex string.
             encode_streaming_payload(
-                {"event-type": "chunk", "content-type": "application/json", "message-type": "error", "exception-type": "ValidationException", "error-code": "ValidationException", "error-message": "Malformed input request, please reformat your input and try again."},
-                {'outputText': 'ValidationException', 'index': 0, 'totalOutputTextTokenCount': 35, 'completionReason': 'FINISH', 'inputTextTokenCount': 12, 'amazon-bedrock-invocationMetrics': {'inputTokenCount': 12, 'outputTokenCount': 35, 'invocationLatency': 2339, 'firstByteLatency': 2339}},
+                {
+                    "event-type": "chunk",
+                    "content-type": "application/json",
+                    "message-type": "error",
+                    "exception-type": "ValidationException",
+                    "error-code": "ValidationException",
+                    "error-message": "Malformed input request, please reformat your input and try again.",
+                },
+                {
+                    "outputText": "ValidationException",
+                    "index": 0,
+                    "totalOutputTextTokenCount": 35,
+                    "completionReason": "FINISH",
+                    "inputTextTokenCount": 12,
+                    "amazon-bedrock-invocationMetrics": {
+                        "inputTokenCount": 12,
+                        "outputTokenCount": 35,
+                        "invocationLatency": 2339,
+                        "firstByteLatency": 2339,
+                    },
+                },
             ).hex()
         ],
     ],

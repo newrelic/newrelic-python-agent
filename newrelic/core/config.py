@@ -145,7 +145,9 @@ class MachineLearningInferenceEventsValueSettings(Settings):
 
 
 class AIMonitoringSettings(Settings):
-    pass
+    @property
+    def llm_token_count_callback(self):
+        return self._llm_token_count_callback
 
 
 class AIMonitoringStreamingSettings(Settings):
@@ -943,6 +945,7 @@ _settings.ai_monitoring.streaming.enabled = _environ_as_bool("NEW_RELIC_AI_MONIT
 _settings.ai_monitoring.record_content.enabled = _environ_as_bool(
     "NEW_RELIC_AI_MONITORING_RECORD_CONTENT_ENABLED", default=True
 )
+_settings.ai_monitoring._llm_token_count_callback = None
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 

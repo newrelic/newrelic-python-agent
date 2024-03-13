@@ -64,6 +64,18 @@ disabled_ai_monitoring_record_content_settings = override_application_settings(
     {"ai_monitoring.record_content.enabled": False}
 )
 
+# Token callback test functions
+def llm_token_count_callback_success(model, content):
+    return 105
+
+
+def llm_token_count_callback_negative_return_val(model, content):
+    return -3
+
+
+def llm_token_count_callback_non_int_return_val(model, content):
+    return "python"
+
 
 @pytest.fixture(scope="session")
 def bedrock_server():

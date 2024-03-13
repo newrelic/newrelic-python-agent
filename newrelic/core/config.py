@@ -332,6 +332,8 @@ class SecurityDetectionRXSSSettings(Settings):
 class SecurityDetectionDeserializationSettings(Settings):
     pass
 
+class SecurityRequestSettings(Settings):
+    pass
 
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
@@ -459,6 +461,7 @@ _settings.security.detection = SecurityDetectionSettings()
 _settings.security.detection.deserialization = SecurityDetectionDeserializationSettings()
 _settings.security.detection.rci = SecurityDetectionRCISettings()
 _settings.security.detection.rxss = SecurityDetectionRXSSSettings()
+_settings.security.request = SecurityRequestSettings()
 _settings.serverless_mode = ServerlessModeSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.span_events = SpanEventSettings()
@@ -943,6 +946,7 @@ _settings.security.detection.rxss.enabled = _environ_as_bool("NEW_RELIC_SECURITY
 _settings.security.detection.deserialization.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_DETECTION_DESERIALIZATION_ENABLED", True
 )
+_settings.security.request.body_limit = os.environ.get("NEW_RELIC_SECURITY_REQUEST_BODY_LIMIT", None)
 
 
 def global_settings():

@@ -12,13 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import copy
 import openai
+import pytest
 from conftest import (  # pylint: disable=E0611
+    add_token_count_to_event,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
     events_sans_content,
+    llm_token_count_callback_success,
+    llm_token_count_callback_negative_return_val,
+    llm_token_count_callback_non_int_return_val,
 )
 from testing_support.fixtures import (
     reset_core_stats_engine,
@@ -32,6 +37,7 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
+from newrelic.api.ml_model import set_llm_token_count_callback
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -71,7 +77,7 @@ chat_completion_recorded_events = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-0",
+            "id": None,
             "llm.conversation_id": "my-awesome-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
@@ -89,7 +95,7 @@ chat_completion_recorded_events = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-1",
+            "id": None,
             "llm.conversation_id": "my-awesome-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
@@ -107,7 +113,7 @@ chat_completion_recorded_events = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-2",
+            "id": None,
             "llm.conversation_id": "my-awesome-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
@@ -181,6 +187,52 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_tra
         assert resp
 
 
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
+@reset_core_stats_engine()
+def test_openai_chat_completion_sync_with_token_count_callback(set_trace_info, sync_openai_client, llm_token_callback):
+    if llm_token_callback.__name__ == "llm_token_count_callback_success":
+        expected_events = copy.deepcopy(chat_completion_recorded_events)
+        expected_events[1][1]["token_count"] = 105
+        expected_events[2][1]["token_count"] = 105
+        expected_events[3][1]["token_count"] = 105
+    else:
+        expected_events = chat_completion_recorded_events
+
+    @validate_custom_event_count(count=4)
+    @validate_custom_events(expected_events)
+    @validate_transaction_metrics(
+        "test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_token_count_callback.<locals>._test",
+        scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+        rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task()
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        set_llm_token_count_callback(llm_token_callback)
+
+        generator = sync_openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_messages,
+            temperature=0.7,
+            max_tokens=100,
+            stream=True,
+        )
+        for resp in generator:
+            assert resp
+
+    _test()
+
+
 chat_completion_recorded_events_no_llm_metadata = [
     (
         {"type": "LlmChatCompletionSummary"},
@@ -213,7 +265,7 @@ chat_completion_recorded_events_no_llm_metadata = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-0",
+            "id": None,
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -230,7 +282,7 @@ chat_completion_recorded_events_no_llm_metadata = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-1",
+            "id": None,
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -247,7 +299,7 @@ chat_completion_recorded_events_no_llm_metadata = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-2",
+            "id": None,
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -437,6 +489,54 @@ def test_openai_chat_completion_async_conversation_id_set_no_content(loop, set_t
             assert resp
 
     loop.run_until_complete(consumer())
+
+
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
+@reset_core_stats_engine()
+def test_openai_chat_completion_async_with_token_count_callback(
+    set_trace_info, loop, async_openai_client, llm_token_callback
+):
+    if llm_token_callback.__name__ == "llm_token_count_callback_success":
+        expected_events = add_token_count_to_event(chat_completion_recorded_events)
+    else:
+        expected_events = chat_completion_recorded_events
+
+    @validate_custom_event_count(count=4)
+    @validate_custom_events(expected_events)
+    @validate_transaction_metrics(
+        "test_chat_completion_stream_v1:test_openai_chat_completion_async_with_token_count_callback.<locals>._test",
+        scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+        rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task()
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        set_llm_token_count_callback(llm_token_callback)
+
+        async def consumer():
+            generator = await async_openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=_test_openai_chat_completion_messages,
+                temperature=0.7,
+                max_tokens=100,
+                stream=True,
+            )
+            async for resp in generator:
+                assert resp
+
+        loop.run_until_complete(consumer())
+
+    _test()
 
 
 @disabled_ai_monitoring_streaming_settings

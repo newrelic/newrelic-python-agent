@@ -12,9 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import openai
 import pytest
-from conftest import disabled_ai_monitoring_record_content_settings, events_sans_content
+from conftest import (
+    add_token_count_to_event,
+    disabled_ai_monitoring_record_content_settings,
+    events_sans_content,
+    llm_token_count_callback_success,
+    llm_token_count_callback_negative_return_val,
+    llm_token_count_callback_non_int_return_val,
+)
 from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
@@ -31,8 +39,9 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
+from newrelic.api.ml_model import set_llm_token_count_callback
 
-# Sync tests:
+
 embedding_recorded_events = [
     (
         {"type": "LlmEmbedding"},
@@ -129,6 +138,60 @@ def test_embeddings_invalid_request_error_no_model_no_content(set_trace_info):
             input="This is an embedding test with no model.",
             # no model provided
         )
+
+
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
+@dt_enabled
+@reset_core_stats_engine()
+def test_embeddings_invalid_request_error_no_model_token_count(set_trace_info, llm_token_callback):
+    if llm_token_callback.__name__ == "llm_token_count_callback_success":
+        expected_events = add_token_count_to_event(embedding_recorded_events)
+    else:
+        expected_events = embedding_recorded_events
+
+    @validate_error_trace_attributes(
+        callable_name(openai.InvalidRequestError),
+        exact_attrs={
+            "agent": {},
+            "intrinsic": {},
+            "user": {
+                "error.param": "engine",
+            },
+        },
+    )
+    @validate_span_events(
+        exact_agents={
+            "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.embedding.Embedding'>",
+        }
+    )
+    @validate_transaction_metrics(
+        name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_token_count.<locals>._test",
+        scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+        rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ],
+        background_task=True,
+    )
+    @validate_custom_events(expected_events)
+    @validate_custom_event_count(count=1)
+    @background_task()
+    def _test():
+        with pytest.raises(openai.InvalidRequestError):
+            set_trace_info()
+            set_llm_token_count_callback(llm_token_callback)
+            openai.Embedding.create(
+                input="This is an embedding test with no model.",
+                # no model provided
+            )
+    _test()
 
 
 invalid_model_events = [

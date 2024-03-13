@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import openai
 import sys
 import uuid
-
-import openai
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
@@ -28,6 +28,23 @@ from newrelic.core.config import global_settings
 OPENAI_VERSION = get_package_version("openai")
 OPENAI_VERSION_TUPLE = tuple(map(int, OPENAI_VERSION.split(".")))
 OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
+
+_logger = logging.getLogger(__name__)
+
+
+def calculate_token_count(settings, model, content):
+    # Check if the user has calculated their token counts
+    user_token_count_callback = settings.ai_monitoring.llm_token_count_callback
+    if user_token_count_callback is None:  # or record content is off
+        return None
+
+    token_count_val = user_token_count_callback(model, content)
+
+    if not isinstance(token_count_val, int) or token_count_val < 0:
+        _logger.warning("Callback function passed to set_llm_token_count_callback must return a positive integer.")
+        return None
+
+    return token_count_val
 
 
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
@@ -324,15 +341,8 @@ def create_chat_completion_message_event(
     for index, message in enumerate(input_message_list):
         message_content = message.get("content", "")
 
-        # Response ID was set, append message index to it.
-        if response_id:
-            message_id = "%s-%d" % (response_id, index)
-        # No response IDs, use random UUID
-        else:
-            message_id = str(uuid.uuid4())
-
         chat_completion_input_message_dict = {
-            "id": message_id,
+            "id": str(uuid.uuid4()),
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -348,6 +358,10 @@ def create_chat_completion_message_event(
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_input_message_dict["content"] = message_content
 
+            user_callback_token_count = calculate_token_count(settings, response_model, message_content)
+            if user_callback_token_count:
+                chat_completion_input_message_dict["token_count"] = user_callback_token_count
+
         chat_completion_input_message_dict.update(llm_metadata_dict)
 
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_input_message_dict)
@@ -360,15 +374,8 @@ def create_chat_completion_message_event(
             # Add offset of input_message_length so we don't receive any duplicate index values that match the input message IDs
             index += len(input_message_list)
 
-            # Response ID was set, append message index to it.
-            if response_id:
-                message_id = "%s-%d" % (response_id, index)
-            # No response IDs, use random UUID
-            else:
-                message_id = str(uuid.uuid4())
-
             chat_completion_output_message_dict = {
-                "id": message_id,
+                "id": str(uuid.uuid4()),
                 "request_id": request_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
@@ -384,6 +391,10 @@ def create_chat_completion_message_event(
 
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_output_message_dict["content"] = message_content
+
+                user_callback_token_count = calculate_token_count(settings, response_model, message_content)
+                if user_callback_token_count:
+                    chat_completion_output_message_dict["token_count"] = user_callback_token_count
 
             chat_completion_output_message_dict.update(llm_metadata_dict)
 
@@ -435,7 +446,7 @@ def _record_embedding_success(transaction, embedding_id, span_id, trace_id, kwar
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
-
+    input = kwargs.get("input", "")
     response_headers = getattr(response, "_nr_response_headers", {})
 
     # In v1, response objects are pydantic models so this function call converts the object back to a dictionary for backwards compatibility
@@ -489,7 +500,11 @@ def _record_embedding_success(transaction, embedding_id, span_id, trace_id, kwar
     }
 
     if settings.ai_monitoring.record_content.enabled:
-        full_embedding_response_dict["input"] = kwargs.get("input", "")
+        full_embedding_response_dict["input"] = input
+
+        user_callback_token_count = calculate_token_count(settings, response_model, input)
+        if user_callback_token_count:
+            full_embedding_response_dict["token_count"] = user_callback_token_count
 
     full_embedding_response_dict.update(llm_metadata_dict)
 
@@ -501,6 +516,8 @@ def _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+    input = kwargs.get("input", "")
+    request_model = kwargs.get("model") or kwargs.get("engine") or ""
 
     if OPENAI_V1:
         response = getattr(exc, "response", "")
@@ -538,7 +555,7 @@ def _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "request.model": kwargs.get("model") or kwargs.get("engine") or "",
+        "request.model": request_model,
         "vendor": "openai",
         "ingest_source": "Python",
         "response.organization": "" if exc_organization is None else exc_organization,
@@ -546,7 +563,11 @@ def _record_embedding_error(transaction, embedding_id, span_id, trace_id, kwargs
         "error": True,
     }
     if settings.ai_monitoring.record_content.enabled:
-        error_embedding_dict["input"] = kwargs.get("input", "")
+        error_embedding_dict["input"] = input
+
+        user_callback_token_count = calculate_token_count(settings, request_model, input)
+        if user_callback_token_count:
+            error_embedding_dict["token_count"] = user_callback_token_count
 
     error_embedding_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmEmbedding", error_embedding_dict)

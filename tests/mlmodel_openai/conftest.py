@@ -85,6 +85,18 @@ disabled_ai_monitoring_record_content_settings = override_application_settings(
 )
 
 
+def llm_token_count_callback_success(model, content):
+    return 105
+
+
+def llm_token_count_callback_negative_return_val(model, content):
+    return -3
+
+
+def llm_token_count_callback_non_int_return_val(model, content):
+    return "python"
+
+
 def events_sans_content(event):
     new_event = copy.deepcopy(event)
     for _event in new_event:
@@ -92,6 +104,14 @@ def events_sans_content(event):
             del _event[1]["input"]
         elif "content" in _event[1]:
             del _event[1]["content"]
+    return new_event
+
+
+def add_token_count_to_event(event):
+    new_event = copy.deepcopy(event)
+    for _event in new_event:
+        if _event[0]["type"] != "LlmChatCompletionSummary":
+            _event[1]["token_count"] = 105
     return new_event
 
 

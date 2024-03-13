@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import openai
+import pytest
 from conftest import (  # pylint: disable=E0611
+    add_token_count_to_event,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
+    llm_token_count_callback_success,
+    llm_token_count_callback_negative_return_val,
+    llm_token_count_callback_non_int_return_val,
 )
 from testing_support.fixtures import (
     reset_core_stats_engine,
@@ -29,6 +35,7 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.api.ml_model import set_llm_token_count_callback
 
 embedding_recorded_events = [
     (
@@ -100,6 +107,42 @@ def test_openai_embedding_sync_no_content(set_trace_info, sync_openai_client):
     sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
+@reset_core_stats_engine()
+def test_openai_embedding_sync_with_token_count_callback(set_trace_info, sync_openai_client, llm_token_callback):
+    if llm_token_callback.__name__ == "llm_token_count_callback_success":
+        expected_events = add_token_count_to_event(embedding_recorded_events)
+    else:
+        expected_events = embedding_recorded_events
+
+    @validate_custom_event_count(count=1)
+    @validate_custom_events(expected_events)
+    @validate_transaction_metrics(
+        name="test_embeddings_v1:test_openai_embedding_sync_with_token_count_callback.<locals>._test",
+        scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+        rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task()
+    def _test():
+        set_trace_info()
+        set_llm_token_count_callback(llm_token_callback)
+        sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+
+    _test()
+
+
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_embedding_sync_outside_txn(sync_openai_client):
@@ -157,6 +200,47 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
     loop.run_until_complete(
         async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
     )
+
+
+@pytest.mark.parametrize(
+    "llm_token_callback",
+    [
+        llm_token_count_callback_success,
+        llm_token_count_callback_negative_return_val,
+        llm_token_count_callback_non_int_return_val,
+    ],
+)
+@reset_core_stats_engine()
+def test_openai_embedding_async_with_token_count_callback(
+    set_trace_info, loop, async_openai_client, llm_token_callback
+):
+    if llm_token_callback.__name__ == "llm_token_count_callback_success":
+        expected_events = add_token_count_to_event(embedding_recorded_events)
+    else:
+        expected_events = embedding_recorded_events
+
+    @validate_custom_event_count(count=1)
+    @validate_custom_events(expected_events)
+    @validate_transaction_metrics(
+        name="test_embeddings_v1:test_openai_embedding_async_with_token_count_callback.<locals>._test",
+        scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+        rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        ],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task()
+    def _test():
+        set_trace_info()
+        set_llm_token_count_callback(llm_token_callback)
+
+        loop.run_until_complete(
+            async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+        )
+
+    _test()
 
 
 @reset_core_stats_engine()

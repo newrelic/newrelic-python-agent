@@ -43,28 +43,34 @@ from newrelic.api.web_transaction import web_transaction
 from newrelic.common.object_names import callable_name
 
 
-def basic_callback(model, content):
-    return 45
-
-
-def test_clear_llm_token_count_callback():
+def test_unset_llm_token_count_callback():
     settings = application().settings
-    set_llm_token_count_callback(basic_callback)
-    assert settings.ai_monitoring.llm_token_count_callback is not None, "Failed to set callback."
+    set_llm_token_count_callback(lambda model, content: 45)
+    assert callable(settings.ai_monitoring.llm_token_count_callback)
     set_llm_token_count_callback(None)
-    assert settings.ai_monitoring.llm_token_count_callback is None, "Failed to clear callback."
 
 
 @pytest.mark.parametrize(
-    "callback,accepted", [(basic_callback, True), (lambda x, y: None, True), (None, False), ("string", False)]
+    "set_args,call_args,expected_value",
+    [
+        ((lambda model, content: 45,), ("model", "content"), 45),
+        ((lambda model, content: 45, application().settings), ("model", "content"), 45),
+        ((lambda model, content: 1.1,), ("model", "content"), None),
+        ((lambda model, content: -1,), ("model", "content"), None),
+        ((lambda model, content: 45,), (None, "content"), None),
+        ((lambda model, content: 45,), ("model", None), None),
+    ],
 )
-def test_set_llm_token_count_callback(callback, accepted):
-    try:
-        set_llm_token_count_callback(callback)
-        settings = application().settings
-        if accepted:
-            assert settings.ai_monitoring.llm_token_count_callback is not None, "Failed to set callback."
-        else:
-            assert settings.ai_monitoring.llm_token_count_callback is None, "Accepted bad callback."
-    finally:
-        set_llm_token_count_callback(None)
+def test_set_llm_token_count_callback(set_args, call_args, expected_value):
+    settings = application().settings
+    set_llm_token_count_callback(*set_args)
+    assert settings.ai_monitoring.llm_token_count_callback(*call_args) == expected_value
+
+
+def exc_callback(model, content):
+    raise TypeError
+
+
+def test_exception_in_user_callback():
+    set_llm_token_count_callback(exc_callback)
+

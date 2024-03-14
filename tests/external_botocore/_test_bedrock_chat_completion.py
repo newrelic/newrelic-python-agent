@@ -112,7 +112,7 @@ chat_completion_expected_events = {
         (
             {"type": "LlmChatCompletionMessage"},
             {
-                "id": None,
+                "id": "1234-0",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
@@ -131,7 +131,7 @@ chat_completion_expected_events = {
         (
             {"type": "LlmChatCompletionMessage"},
             {
-                "id": None,
+                "id": "1234-1",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",

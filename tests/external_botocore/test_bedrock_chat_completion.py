@@ -32,8 +32,6 @@ from conftest import (  # pylint: disable=E0611
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
     llm_token_count_callback_success,
-    llm_token_count_callback_negative_return_val,
-    llm_token_count_callback_non_int_return_val,
 )
 from testing_support.fixtures import (
     reset_core_stats_engine,
@@ -152,7 +150,7 @@ def expected_events_no_content(expected_events):
 def expected_events_with_token_count(expected_events):
     events = copy.deepcopy(expected_events)
     for event in events:
-        if event[0]["type"] != "LlmChatCompletionSummary":
+        if event[0]["type"] == "LlmChatCompletionMessage":
             event[1]["token_count"] = 105
     return events
 
@@ -176,6 +174,15 @@ def expected_invalid_access_key_error_events_no_content(expected_invalid_access_
     for event in events:
         if "content" in event[1]:
             del event[1]["content"]
+    return events
+
+
+@pytest.fixture(scope="module")
+def expected_invalid_access_key_error_events_with_token_count(expected_invalid_access_key_error_events):
+    events = copy.deepcopy(expected_invalid_access_key_error_events)
+    for event in events:
+        if event[0]["type"] == "LlmChatCompletionMessage":
+            event[1]["token_count"] = 105
     return events
 
 
@@ -246,6 +253,36 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
 
 
 @reset_core_stats_engine()
+def test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count(
+    set_trace_info, exercise_model, expected_events_with_token_count, expected_metrics
+):
+    @validate_custom_events(expected_events_with_token_count)
+    # One summary event, one user message, and one response message from the assistant
+    @validate_custom_event_count(count=3)
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count",
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
+        custom_metrics=[
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task(name="test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count")
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+        set_llm_token_count_callback(llm_token_count_callback_success)
+        exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+        set_llm_token_count_callback(None)
+
+    _test()
+
+
+@reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_no_llm_metadata(
     set_trace_info, exercise_model, expected_events_no_llm_metadata, expected_metrics
 ):
@@ -264,53 +301,6 @@ def test_bedrock_chat_completion_in_txn_no_llm_metadata(
     @background_task(name="test_bedrock_chat_completion_in_txn_no_llm_metadata")
     def _test():
         set_trace_info()
-        exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
-
-    _test()
-
-
-@pytest.mark.parametrize(
-    "llm_token_callback",
-    [
-        llm_token_count_callback_success,
-        llm_token_count_callback_negative_return_val,
-        llm_token_count_callback_non_int_return_val,
-    ],
-)
-@reset_core_stats_engine()
-def test_bedrock_chat_completion_with_token_count(
-    set_trace_info,
-    exercise_model,
-    expected_events,
-    expected_events_with_token_count,
-    expected_metrics,
-    llm_token_callback,
-):
-    if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        expected_completion_events = expected_events_with_token_count
-    else:
-        expected_completion_events = expected_events
-
-    @validate_custom_events(expected_completion_events)
-    # One summary event, one user message, and one response message from the assistant
-    @validate_custom_event_count(count=3)
-    @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_with_token_count",
-        scoped_metrics=expected_metrics,
-        rollup_metrics=expected_metrics,
-        custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
-        ],
-        background_task=True,
-    )
-    @background_task(name="test_bedrock_chat_completion_with_token_count")
-    def _test():
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        add_custom_attribute("llm.foo", "bar")
-        add_custom_attribute("non_llm_attr", "python-agent")
-        set_llm_token_count_callback(llm_token_callback)
-
         exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
     _test()
@@ -508,6 +498,51 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
             add_custom_attribute("non_llm_attr", "python-agent")
 
             exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_bedrock_chat_completion_error_incorrect_access_key_with_token(
+    monkeypatch,
+    bedrock_server,
+    exercise_model,
+    set_trace_info,
+    expected_client_error,
+    expected_invalid_access_key_error_events_with_token_count,
+    expected_metrics,
+):
+    @validate_custom_events(expected_invalid_access_key_error_events_with_token_count)
+    @validate_error_trace_attributes(
+        _client_error_name,
+        exact_attrs={
+            "agent": {},
+            "intrinsic": {},
+            "user": expected_client_error,
+        },
+    )
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion",
+        scoped_metrics=expected_metrics,
+        rollup_metrics=expected_metrics,
+        custom_metrics=[
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_chat_completion")
+    def _test():
+        monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
+
+        with pytest.raises(_client_error):  # not sure where this exception actually comes from
+            set_trace_info()
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
+            add_custom_attribute("llm.foo", "bar")
+            add_custom_attribute("non_llm_attr", "python-agent")
+            set_llm_token_count_callback(llm_token_count_callback_success)
+
+            exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
+            set_llm_token_count_callback(None)
 
     _test()
 

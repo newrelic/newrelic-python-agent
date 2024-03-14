@@ -21,8 +21,6 @@ from conftest import (  # pylint: disable=E0611
     disabled_ai_monitoring_settings,
     events_sans_content,
     llm_token_count_callback_success,
-    llm_token_count_callback_negative_return_val,
-    llm_token_count_callback_non_int_return_val,
 )
 from testing_support.fixtures import (  # override_application_settings,
     reset_core_stats_engine,
@@ -117,44 +115,29 @@ def test_openai_embedding_sync_no_content(set_trace_info):
     openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
 
 
-@pytest.mark.parametrize(
-    "llm_token_callback",
-    [
-        llm_token_count_callback_success,
-        llm_token_count_callback_negative_return_val,
-        llm_token_count_callback_non_int_return_val,
-    ],
-)
 @reset_core_stats_engine()
-def test_openai_embedding_sync_with_token_count_callback(set_trace_info, llm_token_callback):
-    if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        expected_events = add_token_count_to_event(embedding_recorded_events)
-    else:
-        expected_events = embedding_recorded_events
+@validate_custom_events(add_token_count_to_event(embedding_recorded_events))
+@validate_custom_event_count(count=1)
+@validate_transaction_metrics(
+    name="test_embeddings:test_openai_embedding_sync_with_token_count",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_embedding_sync_with_token_count(set_trace_info):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+    set_llm_token_count_callback(llm_token_count_callback_success)
 
-    @validate_custom_event_count(count=1)
-    @validate_custom_events(expected_events)
-    @validate_transaction_metrics(
-        name="test_embeddings:test_openai_embedding_sync_with_token_count_callback.<locals>._test",
-        scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
-        rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-        custom_metrics=[
-            ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-        ],
-        background_task=True,
-    )
-    @validate_attributes("agent", ["llm"])
-    @background_task()
-    def _test():
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        add_custom_attribute("llm.foo", "bar")
-        add_custom_attribute("non_llm_attr", "python-agent")
-        set_llm_token_count_callback(llm_token_callback)
-
-        openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
-
-    _test()
+    openai.Embedding.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    set_llm_token_count_callback(None)
 
 
 @reset_core_stats_engine()
@@ -223,46 +206,31 @@ def test_openai_embedding_async_no_content(loop, set_trace_info):
     )
 
 
-@pytest.mark.parametrize(
-    "llm_token_callback",
-    [
-        llm_token_count_callback_success,
-        llm_token_count_callback_negative_return_val,
-        llm_token_count_callback_non_int_return_val,
-    ],
-)
 @reset_core_stats_engine()
-def test_openai_embedding_async_with_token_count_callback(loop, set_trace_info, llm_token_callback):
-    if llm_token_callback.__name__ == "llm_token_count_callback_success":
-        expected_events = add_token_count_to_event(embedding_recorded_events)
-    else:
-        expected_events = embedding_recorded_events
+@validate_custom_events(add_token_count_to_event(embedding_recorded_events))
+@validate_custom_event_count(count=1)
+@validate_transaction_metrics(
+    name="test_embeddings:test_openai_embedding_async_with_token_count",
+    scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_embedding_async_with_token_count(loop, set_trace_info):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+    set_llm_token_count_callback(llm_token_count_callback_success)
 
-    @validate_custom_event_count(count=1)
-    @validate_custom_events(expected_events)
-    @validate_transaction_metrics(
-        name="test_embeddings:test_openai_embedding_async_with_token_count_callback.<locals>._test",
-        scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
-        rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
-        custom_metrics=[
-            ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
-        ],
-        background_task=True,
+    loop.run_until_complete(
+        openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
     )
-    @validate_attributes("agent", ["llm"])
-    @background_task()
-    def _test():
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        add_custom_attribute("llm.foo", "bar")
-        add_custom_attribute("non_llm_attr", "python-agent")
-        set_llm_token_count_callback(llm_token_callback)
-
-        loop.run_until_complete(
-            openai.Embedding.acreate(input="This is an embedding test.", model="text-embedding-ada-002")
-        )
-
-    _test()
+    set_llm_token_count_callback(None)
 
 
 @reset_core_stats_engine()

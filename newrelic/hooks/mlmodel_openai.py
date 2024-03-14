@@ -32,21 +32,6 @@ OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
 _logger = logging.getLogger(__name__)
 
 
-def calculate_token_count(settings, model, content):
-    # Check if the user has calculated their token counts
-    user_token_count_callback = settings.ai_monitoring.llm_token_count_callback
-    if user_token_count_callback is None:  # or record content is off
-        return None
-
-    token_count_val = user_token_count_callback(model, content)
-
-    if not isinstance(token_count_val, int) or token_count_val < 0:
-        _logger.warning("Callback function passed to set_llm_token_count_callback must return a positive integer.")
-        return None
-
-    return token_count_val
-
-
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction or kwargs.get("stream", False):
@@ -152,6 +137,7 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
+            "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, message_content) if settings.ai_monitoring.llm_token_count_callback else None,
             "transaction_id": transaction.guid,
             "role": message.get("role"),
             "completion_id": chat_completion_id,
@@ -163,10 +149,6 @@ def create_chat_completion_message_event(
 
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_input_message_dict["content"] = message_content
-
-            user_callback_token_count = calculate_token_count(settings, response_model, message_content)
-            if user_callback_token_count:
-                chat_completion_input_message_dict["token_count"] = user_callback_token_count
 
         chat_completion_input_message_dict.update(llm_metadata)
 
@@ -192,6 +174,7 @@ def create_chat_completion_message_event(
                 "request_id": request_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
+                "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, message_content) if settings.ai_monitoring.llm_token_count_callback else None,
                 "transaction_id": transaction.guid,
                 "role": message.get("role"),
                 "completion_id": chat_completion_id,
@@ -204,10 +187,6 @@ def create_chat_completion_message_event(
 
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_output_message_dict["content"] = message_content
-
-                user_callback_token_count = calculate_token_count(settings, response_model, message_content)
-                if user_callback_token_count:
-                    chat_completion_output_message_dict["token_count"] = user_callback_token_count
         
             chat_completion_output_message_dict.update(llm_metadata)
 
@@ -250,6 +229,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     response_headers = getattr(response, "_nr_response_headers", {})
+    input = kwargs.get("input")
 
     # In v1, response objects are pydantic models so this function call converts the
     # object back to a dictionary for backwards compatibility.
@@ -269,6 +249,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
+        "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, input) if settings.ai_monitoring.llm_token_count_callback else None,
         "request.model": kwargs.get("model") or kwargs.get("engine"),
         "request_id": request_id,
         "duration": ft.duration,
@@ -299,7 +280,8 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         "ingest_source": "Python",
     }
     if settings.ai_monitoring.record_content.enabled:
-        full_embedding_response_dict["input"] = kwargs.get("input")
+        full_embedding_response_dict["input"] = input
+
     full_embedding_response_dict.update(_get_llm_attributes(transaction))
     transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
@@ -308,6 +290,8 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
+    model = kwargs.get("model") or kwargs.get("engine")
+    input = kwargs.get("input")
 
     if OPENAI_V1:
         response = getattr(exc, "response", None)
@@ -345,7 +329,8 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "request.model": kwargs.get("model") or kwargs.get("engine"),
+        "token_count": settings.ai_monitoring.llm_token_count_callback(model, input) if settings.ai_monitoring.llm_token_count_callback else None,
+        "request.model": model,
         "vendor": "openai",
         "ingest_source": "Python",
         "response.organization": exc_organization,
@@ -353,7 +338,8 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
         "error": True,
     }
     if settings.ai_monitoring.record_content.enabled:
-        error_embedding_dict["input"] = kwargs.get("input")
+        error_embedding_dict["input"] = input
+
     error_embedding_dict.update(_get_llm_attributes(transaction))
     transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
 
@@ -584,6 +570,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
     output_message_list = []
     if "content" in kwargs:
         output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
+
     create_chat_completion_message_event(
         transaction,
         request_message_list,

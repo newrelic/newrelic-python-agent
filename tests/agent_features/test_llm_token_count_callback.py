@@ -69,13 +69,12 @@ def test_set_llm_token_count_callback(set_args, call_args, expected_value):
     assert settings.ai_monitoring.llm_token_count_callback(*call_args) == expected_value
 
 
-
 def test_exception_in_user_callback():
     settings = application().settings
 
     def user_exc():
         raise TypeError()
-    
+
     set_llm_token_count_callback(user_exc)
 
     with pytest.raises(TypeError):
@@ -87,4 +86,3 @@ def test_with_application_not_active():
 
     set_llm_token_count_callback(lambda model, content: 45)
     assert settings.ai_monitoring.llm_token_count_callback("model", "content") == 45
-

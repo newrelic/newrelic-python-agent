@@ -68,13 +68,18 @@ def record_llm_feedback_event(trace_id, rating, category=None, message=None, met
 
 
 def set_llm_token_count_callback(callback, application=None):
-    """Set the current callback to be used to count tokens."""
+    """
+    Set the current callback to be used to calculate LLM token counts.
+
+    Arguments:
+    callback -- the user-defined callback that will calculate and return the total token count
+    application -- optional application object to associate call with
+    """
     if callback and not callable(callback):
         _logger.error(
             "callback passed to set_llm_token_count_callback must be a Callable type or None to unset the callback."
         )
         return
-
 
     from newrelic.api.application import application_instance
 
@@ -85,7 +90,9 @@ def set_llm_token_count_callback(callback, application=None):
     settings = application.settings if application else global_settings()
 
     if not settings:
-        _logger.error("Failed to set llm_token_count_callback. Please report this issue to New Relic support.")
+        _logger.error(
+            "Failed to set llm_token_count_callback. Settings not found on application or in global_settings."
+        )
         return
 
     if callback is None:
@@ -95,19 +102,23 @@ def set_llm_token_count_callback(callback, application=None):
     def _wrap_callback(model, content):
         if model is None:
             _logger.debug(
-               "The model argument passed to the user-defined token calculation callback is None. The callback will not be run.")
+                "The model argument passed to the user-defined token calculation callback is None. The callback will not be run."
+            )
             return None
 
         if content is None:
             _logger.debug(
-                "The content argument passed to the user-defined token calculation callback is None. The callback will not be run.")
+                "The content argument passed to the user-defined token calculation callback is None. The callback will not be run."
+            )
             return None
 
         token_count_val = callback(model, content)
 
         if not isinstance(token_count_val, int) or token_count_val < 0:
             _logger.warning(
-                "llm_token_count_callback returned an invalid value of %s. This value must be a positive integer." % token_count_val)
+                "llm_token_count_callback returned an invalid value of %s. This value must be a positive integer."
+                % token_count_val
+            )
             return None
 
         return token_count_val

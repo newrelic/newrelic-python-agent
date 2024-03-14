@@ -25,6 +25,7 @@ from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
     validate_custom_event_count,
+    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -222,6 +223,7 @@ expected_events_on_invalid_model_error = [
 
 @dt_enabled
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback_success)
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
     exact_attrs={
@@ -251,7 +253,6 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        set_llm_token_count_callback(llm_token_count_callback_success)
         generator = openai.ChatCompletion.create(
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
@@ -561,6 +562,7 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, s
 
 @dt_enabled
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback_success)
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
     exact_attrs={
@@ -590,7 +592,6 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count_as
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        set_llm_token_count_callback(llm_token_count_callback_success)
         loop.run_until_complete(
             openai.ChatCompletion.acreate(
                 model="does-not-exist",
@@ -600,8 +601,6 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count_as
                 stream=True,
             )
         )
-
-        set_llm_token_count_callback(None)
 
 
 @dt_enabled

@@ -89,14 +89,6 @@ def llm_token_count_callback_success(model, content):
     return 105
 
 
-def llm_token_count_callback_negative_return_val(model, content):
-    return -3
-
-
-def llm_token_count_callback_non_int_return_val(model, content):
-    return "python"
-
-
 def events_sans_content(event):
     new_event = copy.deepcopy(event)
     for _event in new_event:

@@ -26,6 +26,7 @@ from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
+    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -185,6 +186,7 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_tra
 
 
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback_success)
 @validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
@@ -202,13 +204,10 @@ def test_openai_chat_completion_sync_with_token_count(set_trace_info):
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
-    set_llm_token_count_callback(llm_token_count_callback_success)
 
     openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
     )
-
-    set_llm_token_count_callback(None)
 
 
 chat_completion_recorded_events_no_llm_metadata = [
@@ -410,6 +409,7 @@ def test_openai_chat_completion_async_with_llm_metadata_no_content(loop, set_tra
 
 
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback_success)
 @validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
@@ -427,14 +427,12 @@ def test_openai_chat_completion_async_with_token_count(loop, set_trace_info):
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
-    set_llm_token_count_callback(llm_token_count_callback_success)
 
     loop.run_until_complete(
         openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
         )
     )
-    set_llm_token_count_callback(None)
 
 
 @reset_core_stats_engine()

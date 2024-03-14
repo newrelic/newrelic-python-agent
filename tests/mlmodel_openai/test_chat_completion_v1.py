@@ -26,7 +26,7 @@ from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
-    override_llm_token_callback_settings
+    override_llm_token_callback_settings,
 )
 
 from testing_support.validators.validate_custom_events import validate_custom_events

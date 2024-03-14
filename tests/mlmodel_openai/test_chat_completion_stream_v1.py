@@ -203,7 +203,6 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_tra
 def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count(set_trace_info, sync_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
-    set_llm_token_count_callback(llm_token_count_callback_success)
 
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -214,8 +213,6 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count(s
     )
     for resp in generator:
         assert resp
-
-    set_llm_token_count_callback(None)
 
 
 chat_completion_recorded_events_no_llm_metadata = [
@@ -508,7 +505,6 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count_a
             assert resp
 
     loop.run_until_complete(consumer())
-
 
 
 @disabled_ai_monitoring_streaming_settings

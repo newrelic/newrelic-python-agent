@@ -25,6 +25,7 @@ from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
     validate_custom_event_count,
+    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -157,6 +158,7 @@ invalid_model_events = [
 
 @dt_enabled
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback_success)
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
     exact_attrs={
@@ -188,9 +190,7 @@ invalid_model_events = [
 def test_embeddings_invalid_request_error_invalid_model_with_token_count(set_trace_info):
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
-        set_llm_token_count_callback(llm_token_count_callback_success)
         openai.Embedding.create(input="Model does not exist.", model="does-not-exist")
-        set_llm_token_count_callback(None)
 
 
 # Invalid model provided
@@ -425,9 +425,9 @@ def test_embeddings_invalid_request_error_no_model_async_no_content(loop, set_tr
         )
 
 
-# Invalid model provided
 @dt_enabled
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback_success)
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
     exact_attrs={
@@ -458,10 +458,7 @@ def test_embeddings_invalid_request_error_no_model_async_no_content(loop, set_tr
 def test_embeddings_invalid_request_error_invalid_model_with_token_count_async(set_trace_info, loop):
     with pytest.raises(openai.InvalidRequestError):
         set_trace_info()
-        set_llm_token_count_callback(llm_token_count_callback_success)
         loop.run_until_complete(openai.Embedding.acreate(input="Model does not exist.", model="does-not-exist"))
-
-        set_llm_token_count_callback(None)
 
 
 # Invalid model provided

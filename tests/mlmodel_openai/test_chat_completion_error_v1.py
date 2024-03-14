@@ -24,7 +24,7 @@ from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
     validate_custom_event_count,
-    override_llm_token_callback_settings
+    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -164,6 +164,7 @@ def test_chat_completion_invalid_request_error_no_model_no_content(set_trace_inf
             messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
         )
 
+
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
@@ -232,6 +233,7 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, s
                 messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
             )
         )
+
 
 expected_events_on_invalid_model_error = [
     (
@@ -419,7 +421,9 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
 @validate_custom_events(add_token_count_to_event(expected_events_on_invalid_model_error))
 @validate_custom_event_count(count=2)
 @background_task()
-def test_chat_completion_invalid_request_error_invalid_model_with_token_count_async(loop, set_trace_info, async_openai_client):
+def test_chat_completion_invalid_request_error_invalid_model_with_token_count_async(
+    loop, set_trace_info, async_openai_client
+):
     with pytest.raises(openai.NotFoundError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")

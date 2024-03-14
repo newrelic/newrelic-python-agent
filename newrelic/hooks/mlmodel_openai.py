@@ -375,7 +375,7 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
     stream = kwargs.get("stream", False)
     # Only if streaming and streaming monitoring is enabled and the response is not empty
     # do we not exit the function trace.
-    if not (stream and settings.ai_monitoring.streaming.enabled and return_val):
+    if not stream or not settings.ai_monitoring.streaming.enabled or not return_val:
         ft.__exit__(None, None, None)
 
     # If the return value is empty or stream monitoring is disabled exit early.

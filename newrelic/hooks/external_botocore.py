@@ -63,21 +63,6 @@ def extract(argument_names, default=None):
     return extractor_list
 
 
-def calculate_token_count(settings, model, content):
-    # Check if the user has calculated their token counts
-    user_token_count_callback = settings.ai_monitoring.llm_token_count_callback
-    if user_token_count_callback is None:  # or record content is off
-        return None
-
-    token_count_val = user_token_count_callback(model, content)
-
-    if not isinstance(token_count_val, int) or token_count_val < 0:
-        _logger.warning("Callback function passed to set_llm_token_count_callback must return a positive integer.")
-        return None
-
-    return token_count_val
-
-
 def bedrock_error_attributes(exception, bedrock_attrs):
     response = getattr(exception, "response", None)
     if not response:
@@ -748,10 +733,6 @@ def handle_embedding_event(transaction, bedrock_attrs):
 
     if settings.ai_monitoring.record_content.enabled:
         embedding_dict["input"] = input
-
-        user_callback_token_count = calculate_token_count(settings, model, input)
-        if user_callback_token_count:
-            embedding_dict["token_count"] = user_callback_token_count
 
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
     transaction.record_custom_event("LlmEmbedding", embedding_dict)

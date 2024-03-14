@@ -25,6 +25,7 @@ from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
     validate_custom_event_count,
+    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -248,49 +249,6 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, s
         loop.run_until_complete(consumer())
 
 
-@dt_enabled
-@reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
-@validate_span_events(
-    exact_agents={
-        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
-    }
-)
-@validate_transaction_metrics(
-    "test_chat_completion_stream_error_v1:test_chat_completion_invalid_request_error_no_model_with_token_count_async",
-    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
-    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
-    background_task=True,
-)
-@validate_custom_events(add_token_count_to_event(expected_events_on_no_model_error))
-@validate_custom_event_count(count=3)
-@background_task()
-def test_chat_completion_invalid_request_error_no_model_with_token_count_async(
-    set_trace_info, loop, async_openai_client
-):
-    with pytest.raises(TypeError):
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        set_llm_token_count_callback(llm_token_count_callback_success)
-
-        async def consumer():
-            generator = await async_openai_client.chat.completions.create(
-                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100, stream=True
-            )
-            async for resp in generator:
-                assert resp
-
-        loop.run_until_complete(consumer())
-        set_llm_token_count_callback(None)
-
-
 expected_events_on_invalid_model_error = [
     (
         {"type": "LlmChatCompletionSummary"},
@@ -373,6 +331,7 @@ def test_chat_completion_invalid_request_error_invalid_model(set_trace_info, syn
 
 @dt_enabled
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback_success)
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
     exact_attrs={
@@ -402,7 +361,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
     with pytest.raises(openai.NotFoundError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        set_llm_token_count_callback(llm_token_count_callback_success)
+
         generator = sync_openai_client.chat.completions.create(
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
@@ -413,7 +372,51 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
         for resp in generator:
             assert resp
 
-        set_llm_token_count_callback(None)
+
+@dt_enabled
+@reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback_success)
+@validate_error_trace_attributes(
+    callable_name(openai.NotFoundError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "error.code": "model_not_found",
+            "http.statusCode": 404,
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_stream_error_v1:test_chat_completion_invalid_request_error_invalid_model_async_with_token_count",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(add_token_count_to_event(expected_events_on_invalid_model_error))
+@validate_custom_event_count(count=2)
+@background_task()
+def test_chat_completion_invalid_request_error_invalid_model_async_with_token_count(loop, set_trace_info, async_openai_client):
+    with pytest.raises(openai.NotFoundError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
+        async def consumer():
+            generator = await async_openai_client.chat.completions.create(
+                model="does-not-exist",
+                messages=({"role": "user", "content": "Model does not exist."},),
+                temperature=0.7,
+                max_tokens=100,
+                stream=True,
+            )
+            async for resp in generator:
+                assert resp
+        loop.run_until_complete(consumer())
 
 
 @dt_enabled

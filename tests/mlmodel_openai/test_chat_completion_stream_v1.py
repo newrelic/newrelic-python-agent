@@ -27,6 +27,7 @@ from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
+    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -186,9 +187,10 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_tra
 
 
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback_success)
 @validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
-# @validate_custom_event_count(count=4)
+@validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count",
     custom_metrics=[
@@ -475,6 +477,7 @@ def test_openai_chat_completion_async_conversation_id_set_no_content(loop, set_t
 
 
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback_success)
 @validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 # @validate_custom_event_count(count=4)
@@ -492,7 +495,6 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count_a
 ):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
-    set_llm_token_count_callback(llm_token_count_callback_success)
 
     async def consumer():
         generator = await async_openai_client.chat.completions.create(
@@ -507,7 +509,6 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count_a
 
     loop.run_until_complete(consumer())
 
-    set_llm_token_count_callback(None)
 
 
 @disabled_ai_monitoring_streaming_settings

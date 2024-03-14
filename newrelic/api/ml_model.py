@@ -75,6 +75,7 @@ def set_llm_token_count_callback(callback, application=None):
         )
         return
 
+
     from newrelic.api.application import application_instance
 
     # Check for activated application if it exists and was not given.
@@ -87,18 +88,19 @@ def set_llm_token_count_callback(callback, application=None):
         _logger.error("Failed to set llm_token_count_callback. Please report this issue to New Relic support.")
         return
 
+    if callback is None:
+        settings.ai_monitoring._llm_token_count_callback = None
+        return
+
     def _wrap_callback(model, content):
         if model is None:
-           _logger.warning(
+            _logger.debug(
                "The model argument passed to the user-defined token calculation callback is None. The callback will not be run.")
-           return None
-
-        if content is None:
-            _logger.warning(
-                "The content argument passed to the user-defined token calculation callback is None. The callback will not be run.")
             return None
 
-        if callback is None:
+        if content is None:
+            _logger.debug(
+                "The content argument passed to the user-defined token calculation callback is None. The callback will not be run.")
             return None
 
         token_count_val = callback(model, content)

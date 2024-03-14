@@ -114,6 +114,7 @@ def create_chat_completion_message_event(
     span_id,
     trace_id,
     response_model,
+    request_model,
     response_id,
     request_id,
     llm_metadata,
@@ -137,7 +138,7 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, message_content) if settings.ai_monitoring.llm_token_count_callback else None,
+            "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, message_content) if settings.ai_monitoring.llm_token_count_callback else None,
             "transaction_id": transaction.guid,
             "role": message.get("role"),
             "completion_id": chat_completion_id,
@@ -413,6 +414,7 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
 def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
+    request_model = kwargs.get("model") or kwargs.get("engine")
 
     if response:
         response_model = response.get("model")
@@ -443,7 +445,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "request.model": kwargs.get("model") or kwargs.get("engine"),
+        "request.model": request_model,
         "request.temperature": kwargs.get("temperature"),
         "request.max_tokens": kwargs.get("max_tokens"),
         "vendor": "openai",
@@ -497,6 +499,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         span_id,
         trace_id,
         response_model,
+        request_model,
         response_id,
         request_id,
         llm_metadata,
@@ -508,6 +511,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     request_message_list = kwargs.get("messages", None) or []
+    request_model = kwargs.get("model") or kwargs.get("engine")
     if OPENAI_V1:
         response = getattr(exc, "response", None)
         response_headers = getattr(response, "headers", None) or {}
@@ -554,7 +558,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "response.number_of_messages": len(request_message_list),
-        "request.model": kwargs.get("model") or kwargs.get("engine"),
+        "request.model": request_model,
         "request.temperature": kwargs.get("temperature"),
         "request.max_tokens": kwargs.get("max_tokens"),
         "vendor": "openai",
@@ -578,6 +582,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
         span_id,
         trace_id,
         kwargs.get("response.model"),
+        request_model,
         response_id,
         request_id,
         llm_metadata,

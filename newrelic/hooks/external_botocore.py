@@ -554,8 +554,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     request_extractor(request_body, bedrock_attrs)
                 except json.decoder.JSONDecodeError:
                     pass
-                except Exception as nr_exc:
-                    _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(nr_exc))
+                except Exception:
+                    _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
                 error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
                 notice_error_attributes = {
@@ -580,8 +580,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     handle_embedding_event(transaction, error_attributes)
                 else:
                     handle_chat_completion_event(transaction, error_attributes)
-            except Exception as nr_exc:
-                _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(nr_exc))
+            except Exception:
+                _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
             raise
 
@@ -601,8 +601,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             request_extractor(request_body, bedrock_attrs)
         except json.decoder.JSONDecodeError:
             pass
-        except Exception as nr_exc:
-            _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(nr_exc))
+        except Exception:
+            _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
         try:
             if response_streaming:
@@ -623,16 +623,16 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             # Run response extractor for non-streaming responses
             try:
                 response_extractor(response_body, bedrock_attrs)
-            except Exception as nr_exc:
-                _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(nr_exc))
+            except Exception:
+                _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
             if operation == "embedding":
                 handle_embedding_event(transaction, bedrock_attrs)
             else:
                 handle_chat_completion_event(transaction, bedrock_attrs)
 
-        except Exception as nr_exc:
-            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(nr_exc))
+        except Exception:
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
         return response
 
@@ -681,8 +681,8 @@ def record_stream_chunk(self, return_val):
         try:
             chunk = json.loads(return_val["chunk"]["bytes"].decode("utf-8"))
             self._nr_model_extractor(chunk, self._nr_bedrock_attrs)
-        except Exception as nr_exc:
-            _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(nr_exc))
+        except Exception:
+            _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
 def record_events_on_stop_iteration(self, transaction):
@@ -697,8 +697,8 @@ def record_events_on_stop_iteration(self, transaction):
         try:
             bedrock_attrs["duration"] = self._nr_ft.duration
             handle_chat_completion_event(transaction, bedrock_attrs)
-        except Exception as nr_exc:
-            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(nr_exc))
+        except Exception:
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
         # Clear cached data as this can be very large.
         self._nr_bedrock_attrs.clear()
@@ -733,8 +733,8 @@ def record_error(self, transaction, exc):
 
             # Clear cached data as this can be very large.
             error_attributes.clear()
-        except Exception as nr_exc:
-            _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(nr_exc))
+        except Exception:
+            _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
 def handle_embedding_event(transaction, bedrock_attrs):

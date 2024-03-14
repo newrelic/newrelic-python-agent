@@ -60,6 +60,7 @@ BEDROCK_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)
 BEDROCK_AUDIT_LOG_CONTENTS = {}
 
 disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.enabled": False})
+disabled_ai_monitoring_streaming_settings = override_application_settings({"ai_monitoring.streaming.enabled": False})
 disabled_ai_monitoring_record_content_settings = override_application_settings(
     {"ai_monitoring.record_content.enabled": False}
 )

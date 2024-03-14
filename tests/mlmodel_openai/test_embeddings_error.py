@@ -52,8 +52,6 @@ embedding_recorded_events = [
             "trace_id": "trace-id",
             "input": "This is an embedding test with no model.",
             "duration": None,  # Response time varies each test run
-            "request.model": "",  # No model in this test case
-            "response.organization": "",
             "vendor": "openai",
             "ingest_source": "Python",
             "error": True,
@@ -205,7 +203,6 @@ invalid_model_events = [
             "input": "Model does not exist.",
             "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",  # No model in this test case
-            "response.organization": None,
             "vendor": "openai",
             "ingest_source": "Python",
             "error": True,
@@ -262,7 +259,6 @@ embedding_auth_error_events = [
             "input": "Invalid API key.",
             "duration": None,  # Response time varies each test run
             "request.model": "text-embedding-ada-002",  # No model in this test case
-            "response.organization": None,
             "vendor": "openai",
             "ingest_source": "Python",
             "error": True,
@@ -317,7 +313,6 @@ embedding_invalid_key_error_events = [
             "input": "Embedded: Invalid API key.",
             "duration": None,  # Response time varies each test run
             "request.model": "text-embedding-ada-002",  # No model in this test case
-            "response.organization": None,
             "vendor": "openai",
             "ingest_source": "Python",
             "error": True,

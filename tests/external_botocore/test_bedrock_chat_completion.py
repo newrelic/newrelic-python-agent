@@ -30,6 +30,7 @@ from conftest import (  # pylint: disable=E0611
     BOTOCORE_VERSION,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
+    disabled_ai_monitoring_streaming_settings,
     llm_token_count_callback_success,
     llm_token_count_callback_negative_return_val,
     llm_token_count_callback_non_int_return_val,
@@ -329,6 +330,41 @@ def test_bedrock_chat_completion_outside_txn(set_trace_info, exercise_model):
 def test_bedrock_chat_completion_disabled_ai_monitoring_settings(set_trace_info, exercise_model):
     set_trace_info()
     exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_streaming_settings
+def test_bedrock_chat_completion_streaming_disabled(
+    bedrock_server,
+):
+    """Streaming is disabled, but the rest of the AI settings are enabled. Custom events should not be collected."""
+
+    @validate_custom_event_count(count=0)
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion",
+        scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
+        rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_chat_completion")
+    def _test():
+        model = "amazon.titan-text-express-v1"
+        body = (chat_completion_payload_templates[model] % (_test_bedrock_chat_completion_prompt, 0.7, 100)).encode(
+            "utf-8"
+        )
+
+        response = bedrock_server.invoke_model_with_response_stream(
+            body=body,
+            modelId=model,
+            accept="application/json",
+            contentType="application/json",
+        )
+        list(response["body"])  # Iterate
+
+    _test()
 
 
 _client_error = botocore.exceptions.ClientError

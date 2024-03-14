@@ -590,7 +590,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
 
             raise
 
-        if not response:
+        if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
             ft.__exit__(None, None, None)
             return response
 

@@ -40,10 +40,10 @@ BOTOCORE_VERSION = get_package_version("botocore")
 
 _logger = logging.getLogger(__name__)
 
-EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occured in botocore instrumentation for AWS Bedrock: While reporting an exception in botocore, another exception occured. Report this issue to New Relic Support.\n%s"
-REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE = "Exception occured in botocore instrumentation for AWS Bedrock: Failed to extract request information. Report this issue to New Relic Support.\n%s"
-RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occured in botocore instrumentation for AWS Bedrock: Failed to extract response information. If the issue persists, report this issue to New Relic support.\n%s"
-RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE = "Exception occured in botocore instrumentation for AWS Bedrock: Failed to report response data. Report this issue to New Relic Support.\n%s"
+EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: While reporting an exception in botocore, another exception occurred. Report this issue to New Relic Support.\n%s"
+REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract request information. Report this issue to New Relic Support.\n%s"
+RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract response information. If the issue persists, report this issue to New Relic support.\n%s"
+RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to report response data. Report this issue to New Relic Support.\n%s"
 
 UNSUPPORTED_MODEL_WARNING_SENT = False
 

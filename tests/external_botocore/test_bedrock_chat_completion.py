@@ -375,7 +375,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
     expected_metrics,
 ):
     """
-    A request is made to the server with invalid credentials. botocore will reach out to the server and receive a
+    A request is made to the server with invalid credentials. botocore will reach out to the server and receive an
     UnrecognizedClientException as a response. Information from the request will be parsed and reported in customer
     events. The error response can also be parsed, and will be included as attributes on the recorded exception.
     """
@@ -428,7 +428,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     expected_metrics,
 ):
     """
-    Duplicate of test_bedrock_chat_completion_error_incorrect_access_key, but with content recording is disabled.
+    Duplicate of test_bedrock_chat_completion_error_incorrect_access_key, but with content recording disabled.
 
     See the original test for a description of the error case.
     """
@@ -545,8 +545,7 @@ def test_bedrock_chat_completion_error_malformed_response_body(
     After a non-streaming request was made to the server, the server responded with a response body that contains
     invalid JSON. Since the JSON body is not parsed by botocore and just returned to the user as bytes, no parsing
     exceptions will be raised. Instrumentation will attempt to parse the invalid body, and should not raise an
-    exception when it fails to do so. The result should be all streamed response data missing from the recorded
-    events, but request and summary events are recorded as normal.
+    exception when it fails to do so. As a result, recorded events will not contain the streamed response data but will contain the request data.
     """
 
     @validate_custom_events(chat_completion_expected_malformed_response_body_events)
@@ -765,7 +764,7 @@ def test_bedrock_chat_completion_error_streaming_exception_no_content(
     set_trace_info,
 ):
     """
-    Duplicate of test_bedrock_chat_completion_error_streaming_exception, but with content recording is disabled.
+    Duplicate of test_bedrock_chat_completion_error_streaming_exception, but with content recording disabled.
 
     See the original test for a description of the error case.
     """

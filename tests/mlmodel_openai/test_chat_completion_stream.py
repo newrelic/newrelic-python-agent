@@ -78,7 +78,7 @@ chat_completion_recorded_events = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": None,
+            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-0",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
@@ -97,7 +97,7 @@ chat_completion_recorded_events = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": None,
+            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-1",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
@@ -116,7 +116,7 @@ chat_completion_recorded_events = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": None,
+            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
@@ -259,7 +259,7 @@ chat_completion_recorded_events_no_llm_metadata = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": None,
+            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-0",
             "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
             "span_id": None,
             "trace_id": "trace-id",
@@ -276,7 +276,7 @@ chat_completion_recorded_events_no_llm_metadata = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": None,
+            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-1",
             "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
             "span_id": None,
             "trace_id": "trace-id",
@@ -293,7 +293,7 @@ chat_completion_recorded_events_no_llm_metadata = [
     (
         {"type": "LlmChatCompletionMessage"},
         {
-            "id": None,
+            "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
             "request_id": "49dbbffbd3c3f4612aa48def69059ccd",
             "span_id": None,
             "trace_id": "trace-id",

@@ -258,7 +258,7 @@ def test_bedrock_chat_completion_in_txn_no_llm_metadata(
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
-def test_bedrock_chat_completion_outside_txn(set_trace_info, exercise_model):
+def test_bedrock_chat_completion_outside_txn(exercise_model):
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 

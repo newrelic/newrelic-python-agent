@@ -769,7 +769,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     embedding_dict.update(llm_metadata_dict)
 
     if settings.ai_monitoring.record_content.enabled:
-        embedding_dict["input"] = bedrock_attrs.get("input", "")
+        embedding_dict["input"] = bedrock_attrs.get("input", None)
 
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
     transaction.record_custom_event("LlmEmbedding", embedding_dict)

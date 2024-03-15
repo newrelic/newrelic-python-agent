@@ -312,13 +312,13 @@ def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info, sync
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    "test_chat_completion_v1:test_openai_chat_completion_sync_in_txn_no_llm_metadata_stream_monitoring_disabled",
+    "test_chat_completion_v1:test_openai_chat_completion_sync_in_txn_stream_monitoring_disabled",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,
 )
 @background_task()
-def test_openai_chat_completion_sync_in_txn_no_llm_metadata_stream_monitoring_disabled(
+def test_openai_chat_completion_sync_in_txn_stream_monitoring_disabled(
     set_trace_info, sync_openai_client
 ):
     set_trace_info()
@@ -372,13 +372,13 @@ def test_openai_chat_completion_async_no_llm_metadata(loop, set_trace_info, asyn
 @validate_custom_events(chat_completion_recorded_events_no_llm_metadata)
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    "test_chat_completion_v1:test_openai_chat_completion_async_no_llm_metadata_stream_monitoring_disabled",
+    "test_chat_completion_v1:test_openai_chat_completion_async_stream_monitoring_disabled",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,
 )
 @background_task()
-def test_openai_chat_completion_async_no_llm_metadata_stream_monitoring_disabled(
+def test_openai_chat_completion_async_stream_monitoring_disabled(
     loop, set_trace_info, async_openai_client
 ):
     set_trace_info()

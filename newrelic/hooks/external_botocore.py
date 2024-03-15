@@ -44,6 +44,7 @@ EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrum
 REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract request information. Report this issue to New Relic Support.\n%s"
 RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract response information. If the issue persists, report this issue to New Relic support.\n%s"
 RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to report response data. Report this issue to New Relic Support.\n%s"
+EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE = "Response streaming with embedding models is unsupported in botocore instrumentation for AWS Bedrock. If this feature is now supported by AWS and botocore, report this issue to New Relic Support."
 
 UNSUPPORTED_MODEL_WARNING_SENT = False
 
@@ -588,6 +589,15 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
             ft.__exit__(None, None, None)
             return response
+
+        if response_streaming and operation == "embedding":
+            # This combination is not supported at time of writing, but may become
+            # a supported feature in the future. Instrumentation will need to be written
+            # if this becomes available.
+            _logger.warning(EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE)
+            ft.__exit__(None, None, None)
+            return response
+
 
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
         bedrock_attrs = {

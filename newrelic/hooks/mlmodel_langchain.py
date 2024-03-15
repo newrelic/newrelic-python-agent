@@ -27,6 +27,8 @@ from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 LANGCHAIN_VERSION = get_package_version("langchain")
+EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in langchain instrumentation: While reporting an exception in langchain, another exception occurred. Report this issue to New Relic Support.\n%s"
+RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in langchain instrumentation: Failed to record LLM events. Report this issue to New Relic Support.\n%s"
 
 VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.alibabacloud_opensearch": "AlibabaCloudOpenSearch",
@@ -110,11 +112,14 @@ VECTORSTORE_CLASSES = {
 }
 
 
-def _create_error_vectorstore_events(transaction, search_id, linking_metadata):
+def _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
+    request_query, request_k = bind_similarity_search(*args, **kwargs)
     llm_metadata_dict = _get_llm_metadata(transaction)
     vectorstore_error_dict = {
+        "request.k": request_k,
         "id": search_id,
         "span_id": span_id,
         "trace_id": trace_id,
@@ -123,6 +128,10 @@ def _create_error_vectorstore_events(transaction, search_id, linking_metadata):
         "ingest_source": "Python",
         "error": True,
     }
+
+    if settings.ai_monitoring.record_content.enabled:
+        vectorstore_error_dict["request.query"] = request_query
+
     vectorstore_error_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmVectorSearch", vectorstore_error_dict)
 
@@ -149,7 +158,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     except Exception as exc:
         ft.notice_error(attributes={"vector_store_id": search_id})
         ft.__exit__(*sys.exc_info())
-        _create_error_vectorstore_events(transaction, search_id, linking_metadata)
+        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata)
         raise
     ft.__exit__(None, None, None)
 
@@ -186,7 +195,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     except Exception as exc:
         ft.notice_error(attributes={"vector_store_id": search_id})
         ft.__exit__(*sys.exc_info())
-        _create_error_vectorstore_events(transaction, search_id, linking_metadata)
+        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata)
         raise
     ft.__exit__(None, None, None)
 
@@ -228,7 +237,7 @@ def _record_vector_search_success(transaction, linking_metadata, ft, search_id, 
     for index, doc in enumerate(response):
         sequence = index
         page_content = getattr(doc, "page_content")
-        metadata = getattr(doc, "metadata", {})
+        metadata = getattr(doc, "metadata") or {}
 
         metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
 
@@ -412,11 +421,18 @@ def _record_tool_success(
             "tags": tags or None,
         }
     )
+    result = None
+    try:
+        result = str(response)
+    except Exception:
+        _logger.debug(
+            "Failed to convert tool response into a string.\n%s" % traceback.format_exception(*sys.exc_info())
+        )
     if settings.ai_monitoring.record_content.enabled:
         full_tool_event_dict.update(
             {
                 "input": tool_input,
-                "output": str(response),
+                "output": result,
             }
         )
     full_tool_event_dict.update(_get_llm_metadata(transaction))
@@ -602,7 +618,7 @@ def add_nr_completion_id(run_args, completion_id):
     # identifier when grabbing the run_id off the transaction.
     metadata = (run_args.get("config") or {}).get("metadata") or {}
     metadata["nr_completion_id"] = completion_id
-    if not run_args["config"]:
+    if not run_args.get("config"):
         run_args["config"] = {"metadata": metadata}
     else:
         run_args["config"]["metadata"] = metadata
@@ -657,7 +673,7 @@ def _get_run_manager_info(transaction, run_args, instance, completion_id):
     metadata = {key: value for key, value in metadata.items() if key != "nr_completion_id"}
     tags = []
     tags.extend((run_args.get("config") or {}).get("tags") or [])
-    return run_id, metadata, tags or ""
+    return run_id, metadata, tags or None
 
 
 def _get_llm_metadata(transaction):
@@ -806,7 +822,7 @@ async def wrap_async_on_chain_start(wrapped, instance, args, kwargs):
 
 
 def _get_completion_id(instance):
-    return (getattr(instance, "metadata", None) or {}).pop("nr_completion_id")
+    return (getattr(instance, "metadata", None) or {}).pop("nr_completion_id", None)
 
 
 def _capture_chain_run_id(transaction, run_manager, completion_id):

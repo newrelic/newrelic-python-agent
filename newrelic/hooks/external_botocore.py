@@ -15,6 +15,7 @@
 import json
 import logging
 import sys
+import traceback
 import uuid
 from io import BytesIO
 
@@ -38,6 +39,12 @@ BOTOCORE_VERSION = get_package_version("botocore")
 
 
 _logger = logging.getLogger(__name__)
+
+EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: While reporting an exception in botocore, another exception occurred. Report this issue to New Relic Support.\n%s"
+REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract request information. Report this issue to New Relic Support.\n%s"
+RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract response information. If the issue persists, report this issue to New Relic support.\n%s"
+RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to report response data. Report this issue to New Relic Support.\n%s"
+
 UNSUPPORTED_MODEL_WARNING_SENT = False
 
 
@@ -68,12 +75,14 @@ def bedrock_error_attributes(exception, bedrock_attrs):
     if not response:
         return bedrock_attrs
 
+    response_metadata = response.get("ResponseMetadata", {})
+    response_error = response.get("Error", {})
     bedrock_attrs.update(
         {
-            "request_id": response.get("ResponseMetadata", {}).get("RequestId", ""),
-            "http.statusCode": response.get("ResponseMetadata", {}).get("HTTPStatusCode", ""),
-            "error.message": response.get("Error", "").get("Message", ""),
-            "error.code": response.get("Error", "").get("Code", ""),
+            "request_id": response_metadata.get("RequestId"),
+            "http.statusCode": response_metadata.get("HTTPStatusCode"),
+            "error.message": response_error.get("Message"),
+            "error.code": response_error.get("Code"),
             "error": True,
         }
     )
@@ -552,8 +561,10 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 }
                 try:
                     request_extractor(request_body, bedrock_attrs)
-                except Exception:
+                except json.decoder.JSONDecodeError:
                     pass
+                except Exception:
+                    _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
                 error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
                 notice_error_attributes = {
@@ -578,8 +589,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                     handle_embedding_event(transaction, error_attributes)
                 else:
                     handle_chat_completion_event(transaction, error_attributes)
-            except Exception as nr_exc:
-                _logger.debug("Exception encountered in botocore instrumentation for AWS Bedrock: %s" % str(nr_exc))
+            except Exception:
+                _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
             raise
 
@@ -587,9 +598,9 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             ft.__exit__(None, None, None)
             return response
 
-        response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders", {})
+        response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
         bedrock_attrs = {
-            "request_id": response_headers.get("x-amzn-requestid", "") if response_headers else "",
+            "request_id": response_headers.get("x-amzn-requestid", ""),
             "model": model,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -597,31 +608,40 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
 
         try:
             request_extractor(request_body, bedrock_attrs)
-        except Exception:
+        except json.decoder.JSONDecodeError:
             pass
+        except Exception:
+            _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
-        if response_streaming:
-            # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
-            # This class is used in numerous other services in botocore, and would cause conflicts.
-            response["body"] = body = EventStreamWrapper(response["body"])
-            body._nr_ft = ft
-            body._nr_bedrock_attrs = bedrock_attrs
-            body._nr_model_extractor = stream_extractor
-            return response
+        try:
+            if response_streaming:
+                # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
+                # This class is used in numerous other services in botocore, and would cause conflicts.
+                response["body"] = body = EventStreamWrapper(response["body"])
+                body._nr_ft = ft
+                body._nr_bedrock_attrs = bedrock_attrs
+                body._nr_model_extractor = stream_extractor
+                return response
 
-        # Read and replace response streaming bodies
-        response_body = response["body"].read()
-        ft.__exit__(None, None, None)
-        bedrock_attrs["duration"] = ft.duration
-        response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
+            # Read and replace response streaming bodies
+            response_body = response["body"].read()
+            ft.__exit__(None, None, None)
+            bedrock_attrs["duration"] = ft.duration
+            response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
 
-        # Run response extractor for non-streaming responses
-        response_extractor(response_body, bedrock_attrs)
+            # Run response extractor for non-streaming responses
+            try:
+                response_extractor(response_body, bedrock_attrs)
+            except Exception:
+                _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
-        if operation == "embedding":
-            handle_embedding_event(transaction, bedrock_attrs)
-        else:
-            handle_chat_completion_event(transaction, bedrock_attrs)
+            if operation == "embedding":
+                handle_embedding_event(transaction, bedrock_attrs)
+            else:
+                handle_chat_completion_event(transaction, bedrock_attrs)
+
+        except Exception:
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
         return response
 
@@ -667,8 +687,11 @@ class GeneratorProxy(ObjectProxy):
 
 def record_stream_chunk(self, return_val):
     if return_val:
-        chunk = json.loads(return_val["chunk"]["bytes"].decode("utf-8"))
-        self._nr_model_extractor(chunk, self._nr_bedrock_attrs)
+        try:
+            chunk = json.loads(return_val["chunk"]["bytes"].decode("utf-8"))
+            self._nr_model_extractor(chunk, self._nr_bedrock_attrs)
+        except Exception:
+            _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
 def record_events_on_stop_iteration(self, transaction):
@@ -680,8 +703,11 @@ def record_events_on_stop_iteration(self, transaction):
         if not bedrock_attrs:
             return
 
-        bedrock_attrs["duration"] = self._nr_ft.duration
-        handle_chat_completion_event(transaction, bedrock_attrs)
+        try:
+            bedrock_attrs["duration"] = self._nr_ft.duration
+            handle_chat_completion_event(transaction, bedrock_attrs)
+        except Exception:
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
         # Clear cached data as this can be very large.
         self._nr_bedrock_attrs.clear()
@@ -689,17 +715,35 @@ def record_events_on_stop_iteration(self, transaction):
 
 def record_error(self, transaction, exc):
     if hasattr(self, "_nr_ft"):
-        bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
+        try:
+            ft = self._nr_ft
+            error_attributes = getattr(self, "_nr_bedrock_attrs", {})
 
-        # If there are no bedrock attrs exit early as there's no data to record.
-        if not bedrock_attrs:
-            return
+            # If there are no bedrock attrs exit early as there's no data to record.
+            if not error_attributes:
+                return
 
-        bedrock_error_attributes(exc, bedrock_attrs)
-        handle_chat_completion_event(transaction, bedrock_attrs)
+            error_attributes = bedrock_error_attributes(exc, error_attributes)
+            notice_error_attributes = {
+                "http.statusCode": error_attributes.get("http.statusCode"),
+                "error.message": error_attributes.get("error.message"),
+                "error.code": error_attributes.get("error.code"),
+            }
+            notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
 
-        # Clear cached data as this can be very large.
-        self._nr_bedrock_attrs.clear()
+            ft.notice_error(
+                attributes=notice_error_attributes,
+            )
+
+            ft.__exit__(*sys.exc_info())
+            error_attributes["duration"] = ft.duration
+
+            handle_chat_completion_event(transaction, error_attributes)
+
+            # Clear cached data as this can be very large.
+            error_attributes.clear()
+        except Exception:
+            _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
 def handle_embedding_event(transaction, bedrock_attrs):

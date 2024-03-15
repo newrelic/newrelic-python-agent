@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import logging
-import openai
 import sys
 import uuid
+
+import openai
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata

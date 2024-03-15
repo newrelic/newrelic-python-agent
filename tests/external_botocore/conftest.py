@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import io
 import json
 import os
@@ -64,6 +65,18 @@ disabled_ai_monitoring_streaming_settings = override_application_settings({"ai_m
 disabled_ai_monitoring_record_content_settings = override_application_settings(
     {"ai_monitoring.record_content.enabled": False}
 )
+
+
+def llm_token_count_callback(model, content):
+    return 105
+
+
+def add_token_count_to_events(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        if event[0]["type"] != "LlmChatCompletionSummary":
+            event[1]["token_count"] = 105
+    return events
 
 
 @pytest.fixture(scope="session")

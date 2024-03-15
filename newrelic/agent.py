@@ -156,6 +156,7 @@ from newrelic.api.message_transaction import (
 from newrelic.api.ml_model import (
     record_llm_feedback_event as __record_llm_feedback_event,
 )
+from newrelic.api.ml_model import set_llm_token_count_callback as __set_llm_token_count_callback
 from newrelic.api.ml_model import wrap_mlmodel as __wrap_mlmodel
 from newrelic.api.profile_trace import ProfileTraceWrapper as __ProfileTraceWrapper
 from newrelic.api.profile_trace import profile_trace as __profile_trace
@@ -347,3 +348,4 @@ insert_html_snippet = __wrap_api_call(__insert_html_snippet, "insert_html_snippe
 verify_body_exists = __wrap_api_call(__verify_body_exists, "verify_body_exists")
 wrap_mlmodel = __wrap_api_call(__wrap_mlmodel, "wrap_mlmodel")
 record_llm_feedback_event = __wrap_api_call(__record_llm_feedback_event, "record_llm_feedback_event")
+set_llm_token_count_callback = __wrap_api_call(__set_llm_token_count_callback, "set_llm_token_count_callback")

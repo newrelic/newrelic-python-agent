@@ -403,7 +403,7 @@ def test_openai_chat_completion_async_with_llm_metadata_no_content(loop, set_tra
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    name="test_chat_completion_v1:test_openai_chat_completion_sync_in_txn_with_token_count",
+    name="test_chat_completion_v1:test_openai_chat_completion_async_in_txn_with_token_count",
     custom_metrics=[
         ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
@@ -411,7 +411,7 @@ def test_openai_chat_completion_async_with_llm_metadata_no_content(loop, set_tra
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_openai_chat_completion_sync_in_txn_with_token_count(set_trace_info, loop, async_openai_client):
+def test_openai_chat_completion_async_in_txn_with_token_count(set_trace_info, loop, async_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
 

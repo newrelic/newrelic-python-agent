@@ -49,7 +49,6 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
-from newrelic.api.ml_model import set_llm_token_count_callback
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["Bytes", "Stream"])

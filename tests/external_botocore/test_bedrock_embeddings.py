@@ -25,10 +25,11 @@ from _test_bedrock_embeddings import (
     embedding_payload_templates,
 )
 from conftest import (  # pylint: disable=E0611
+    add_token_count_to_events,
     BOTOCORE_VERSION,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
-    llm_token_count_callback_success,
+    llm_token_count_callback,
 )
 from testing_support.fixtures import (  # override_application_settings,
     dt_enabled,
@@ -102,14 +103,6 @@ def expected_events_no_content(model_id):
 
 
 @pytest.fixture(scope="module")
-def expected_events_with_token_count(model_id):
-    events = copy.deepcopy(embedding_expected_events[model_id])
-    for event in events:
-        event[1]["token_count"] = 105
-    return events
-
-
-@pytest.fixture(scope="module")
 def expected_error_events(model_id):
     return embedding_expected_error_events[model_id]
 
@@ -119,14 +112,6 @@ def expected_error_events_no_content(model_id):
     events = copy.deepcopy(embedding_expected_error_events[model_id])
     for event in events:
         del event[1]["input"]
-    return events
-
-
-@pytest.fixture(scope="module")
-def expected_error_events_with_token_count(model_id):
-    events = copy.deepcopy(embedding_expected_error_events[model_id])
-    for event in events:
-        event[1]["token_count"] = 105
     return events
 
 
@@ -189,9 +174,9 @@ def test_bedrock_embedding_no_content(set_trace_info, exercise_model, expected_e
 
 
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback_success)
-def test_bedrock_embedding_with_token_count(set_trace_info, exercise_model, expected_events_with_token_count):
-    @validate_custom_events(expected_events_with_token_count)
+@override_llm_token_callback_settings(llm_token_count_callback)
+def test_bedrock_embedding_with_token_count(set_trace_info, exercise_model, expected_events):
+    @validate_custom_events(add_token_count_to_events(expected_events))
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
         name="test_bedrock_embedding",
@@ -297,16 +282,16 @@ def test_bedrock_embedding_error_incorrect_access_key_no_content(
 
 
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback_success)
+@override_llm_token_callback_settings(llm_token_count_callback)
 def test_bedrock_embedding_error_incorrect_access_key_with_token_count(
     monkeypatch,
     bedrock_server,
     exercise_model,
     set_trace_info,
-    expected_error_events_with_token_count,
+    expected_error_events,
     expected_client_error,
 ):
-    @validate_custom_events(expected_error_events_with_token_count)
+    @validate_custom_events(add_token_count_to_events(expected_error_events))
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={

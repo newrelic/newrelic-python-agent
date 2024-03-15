@@ -72,7 +72,7 @@ def set_llm_token_count_callback(callback, application=None):
     Set the current callback to be used to calculate LLM token counts.
 
     Arguments:
-    callback -- the user-defined callback that will calculate and return the total token count
+    callback -- the user-defined callback that will calculate and return the total token count as an integer or None if it does not know
     application -- optional application object to associate call with
     """
     if callback and not callable(callback):
@@ -95,7 +95,7 @@ def set_llm_token_count_callback(callback, application=None):
         )
         return
 
-    if callback is None:
+    if not callback:
         settings.ai_monitoring._llm_token_count_callback = None
         return
 
@@ -116,7 +116,7 @@ def set_llm_token_count_callback(callback, application=None):
 
         if not isinstance(token_count_val, int) or token_count_val < 0:
             _logger.warning(
-                "llm_token_count_callback returned an invalid value of %s. This value must be a positive integer."
+                "llm_token_count_callback returned an invalid value of %s. This value must be a positive integer and will not be recorded for the token_count."
                 % token_count_val
             )
             return None

@@ -27,11 +27,12 @@ from _test_bedrock_chat_completion import (
     chat_completion_streaming_expected_events,
 )
 from conftest import (  # pylint: disable=E0611
+    add_token_count_to_events,
     BOTOCORE_VERSION,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
-    llm_token_count_callback_success,
+    llm_token_count_callback,
 )
 from testing_support.fixtures import (
     reset_core_stats_engine,
@@ -49,7 +50,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
-from newrelic.api.ml_model import set_llm_token_count_callback
 from newrelic.common.object_names import callable_name
 
 
@@ -148,15 +148,6 @@ def expected_events_no_content(expected_events):
 
 
 @pytest.fixture(scope="module")
-def expected_events_with_token_count(expected_events):
-    events = copy.deepcopy(expected_events)
-    for event in events:
-        if event[0]["type"] == "LlmChatCompletionMessage":
-            event[1]["token_count"] = 105
-    return events
-
-
-@pytest.fixture(scope="module")
 def expected_invalid_access_key_error_events(model_id):
     return chat_completion_invalid_access_key_error_events[model_id]
 
@@ -175,15 +166,6 @@ def expected_invalid_access_key_error_events_no_content(expected_invalid_access_
     for event in events:
         if "content" in event[1]:
             del event[1]["content"]
-    return events
-
-
-@pytest.fixture(scope="module")
-def expected_invalid_access_key_error_events_with_token_count(expected_invalid_access_key_error_events):
-    events = copy.deepcopy(expected_invalid_access_key_error_events)
-    for event in events:
-        if event[0]["type"] == "LlmChatCompletionMessage":
-            event[1]["token_count"] = 105
     return events
 
 
@@ -254,11 +236,11 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
 
 
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback_success)
+@override_llm_token_callback_settings(llm_token_count_callback)
 def test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count(
-    set_trace_info, exercise_model, expected_events_with_token_count, expected_metrics
+    set_trace_info, exercise_model, expected_events, expected_metrics
 ):
-    @validate_custom_events(expected_events_with_token_count)
+    @validate_custom_events(add_token_count_to_events(expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
@@ -503,17 +485,17 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
 
 
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback_success)
+@override_llm_token_callback_settings(llm_token_count_callback)
 def test_bedrock_chat_completion_error_incorrect_access_key_with_token(
     monkeypatch,
     bedrock_server,
     exercise_model,
     set_trace_info,
     expected_client_error,
-    expected_invalid_access_key_error_events_with_token_count,
+    expected_invalid_access_key_error_events,
     expected_metrics,
 ):
-    @validate_custom_events(expected_invalid_access_key_error_events_with_token_count)
+    @validate_custom_events(add_token_count_to_events(expected_invalid_access_key_error_events))
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={

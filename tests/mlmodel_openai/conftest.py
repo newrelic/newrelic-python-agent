@@ -85,7 +85,7 @@ disabled_ai_monitoring_record_content_settings = override_application_settings(
 )
 
 
-def llm_token_count_callback_success(model, content):
+def llm_token_count_callback(model, content):
     return 105
 
 

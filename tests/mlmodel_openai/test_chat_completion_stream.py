@@ -12,16 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import openai
-import pytest
 from conftest import (  # pylint: disable=E0611
     add_token_count_to_event,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
     events_sans_content,
-    llm_token_count_callback_success,
+    llm_token_count_callback,
 )
 from testing_support.fixtures import (
     reset_core_stats_engine,
@@ -36,7 +34,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
-from newrelic.api.ml_model import set_llm_token_count_callback
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
 
@@ -198,7 +195,7 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_tra
 
 
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback_success)
+@override_llm_token_callback_settings(llm_token_count_callback)
 @validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
@@ -484,7 +481,7 @@ def test_openai_chat_completion_async_with_llm_metadata_no_content(loop, set_tra
 
 
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback_success)
+@override_llm_token_callback_settings(llm_token_count_callback)
 @validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(

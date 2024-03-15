@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import openai
 import pytest
 from conftest import (
     add_token_count_to_event,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
-    llm_token_count_callback_success,
+    llm_token_count_callback,
 )
 from testing_support.fixtures import (
     dt_enabled,
@@ -38,7 +37,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-from newrelic.api.ml_model import set_llm_token_count_callback
 
 
 embedding_recorded_events = [
@@ -158,7 +156,7 @@ invalid_model_events = [
 
 @dt_enabled
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback_success)
+@override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
     exact_attrs={
@@ -427,7 +425,7 @@ def test_embeddings_invalid_request_error_no_model_async_no_content(loop, set_tr
 
 @dt_enabled
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback_success)
+@override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
     exact_attrs={

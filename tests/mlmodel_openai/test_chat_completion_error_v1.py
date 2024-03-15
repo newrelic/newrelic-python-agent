@@ -18,7 +18,7 @@ from conftest import (
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
     add_token_count_to_event,
-    llm_token_count_callback_success,
+    llm_token_count_callback,
 )
 from testing_support.fixtures import (
     dt_enabled,
@@ -38,7 +38,6 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
-from newrelic.api.ml_model import set_llm_token_count_callback
 
 
 _test_openai_chat_completion_messages = (
@@ -314,7 +313,7 @@ def test_chat_completion_invalid_request_error_invalid_model(set_trace_info, syn
 
 @dt_enabled
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback_success)
+@override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
     exact_attrs={
@@ -395,7 +394,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
 
 @dt_enabled
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback_success)
+@override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
     exact_attrs={

@@ -154,16 +154,18 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
     success, exception = result
     response = (success or exception)[0]
 
-    try:
-        if isinstance(request.body, io.BytesIO):
-            request.body.seek(0)
-            body = json.loads(request.body.read())
-        else:
-            body = json.loads(request.body)
-    except Exception:
-        body = {}
+    if isinstance(request.body, io.BytesIO):
+        request.body.seek(0)
+        body = request.body.read()
+    else:
+        body = request.body
 
-    prompt = extract_shortened_prompt(body, model)
+    try:
+        content = json.loads(body)
+    except Exception:
+        content = body.decode("utf-8")
+
+    prompt = extract_shortened_prompt(content, model)
     headers = dict(response.headers.items())
     headers = dict(
         filter(

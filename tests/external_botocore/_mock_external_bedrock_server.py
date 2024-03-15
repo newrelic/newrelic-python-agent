@@ -15,9 +15,8 @@
 import json
 import re
 
-from testing_support.mock_external_http_server import MockExternalHTTPServer
 from _mock_bedrock_encoding_utils import encode_streaming_payload
-
+from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 # This defines an external server test apps can make requests to instead of
 # the real Bedrock backend. This provides 3 features:
@@ -257,6 +256,45 @@ STREAMED_RESPONSES = {
             "000000e30000004beb58fa7e0b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6e5a57356c636d463061573975496a6f694c794973496e427962323177644639306232746c626c396a6233567564434936626e5673624377695a3256755a584a6864476c76626c39306232746c626c396a62335675644349364f546773496e4e3062334266636d566863323975496a70756457787366513d3d227de12c5966",
             "000000e30000004beb58fa7e0b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6e5a57356c636d463061573975496a6f694f534973496e427962323177644639306232746c626c396a6233567564434936626e5673624377695a3256755a584a6864476c76626c39306232746c626c396a62335675644349364f546b73496e4e3062334266636d566863323975496a70756457787366513d3d227d103c913a",
             "000001970000004b2c566fd40b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a6e5a57356c636d463061573975496a6f69584734694c434a77636d397463485266644739725a57356659323931626e51694f6d353162477773496d646c626d56795958527062323566644739725a57356659323931626e51694f6a45774d43776963335276634639795a57467a623234694f694a735a57356e644767694c434a686257463662323474596d566b636d396a61793170626e5a76593246306157397554575630636d6c6a6379493665794a70626e4231644652766132567551323931626e51694f6a45334c434a7664585277645852556232746c626b4e7664573530496a6f784d444173496d6c75646d396a595852706232354d5958526c626d4e35496a6f794e7a59304c434a6d61584a7a64454a356447564d5958526c626d4e35496a6f7a4d7a683966513d3d227d7f984a9b",
+        ],
+    ],
+    "amazon.titan-text-express-v1::Malformed Streaming Chunk": [
+        {
+            "Content-Type": "application/vnd.amazon.eventstream",
+            "x-amzn-RequestId": "a5a8cebb-fd33-4437-8168-5667fbdfc1fb",
+        },
+        200,
+        [
+            # Payload is intentionally damaged to throw an exception
+            "00004bdae582ec0b3a6576656e742d747970650700056368756e6b0d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226279746573223a2265794a7664585277645852555a586830496a6f69584734784947526c5a334a6c5a534247595768795a57356f5a576c3049476c7a494441754e5459675a47566e636d566c637942445a57787a6158567a4c694255614756795a575a76636d5573494449784d69426b5a5764795a575567526d466f636d56756147567064434270626942445a57787a6158567a494864766457786b49474a6c494445784e5334334d6934694c434a70626d526c654349364d437769644739305957785064585277645852555a586830564739725a57354462335675644349364d7a5573496d4e76625842735a585270623235535a57467a623234694f694a475355354a553067694c434a70626e42316446526c654852556232746c626b4e7664573530496a6f784d69776959573168656d39754c574a6c5a484a76593273746157353262324e6864476c76626b316c64484a7059334d694f6e736961573577645852556232746c626b4e7664573530496a6f784d6977696233563063485630564739725a57354462335675644349364d7a5573496d6c75646d396a595852706232354d5958526c626d4e35496a6f794d7a4d354c434a6d61584a7a64454a356447564d5958526c626d4e35496a6f794d7a4d356658303d227d358ac004"
+        ],
+    ],
+    "amazon.titan-text-express-v1::Malformed Streaming Body": [
+        {
+            "Content-Type": "application/vnd.amazon.eventstream",
+            "x-amzn-RequestId": "a5a8cebb-fd33-4437-8168-5667fbdfc1fb",
+            "x-amzn-errortype": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/",
+        },
+        200,
+        [
+            # Computes an example payload for an error inside a stream, from human readable format to a hex string.
+            encode_streaming_payload(
+                {"event-type": "chunk", "content-type": "application/json"},
+                {
+                    "outputText": "ValidationException",
+                    "index": 0,
+                    "totalOutputTextTokenCount": 35,
+                    "completionReason": "FINISH",
+                    "inputTextTokenCount": 12,
+                    "amazon-bedrock-invocationMetrics": {
+                        "inputTokenCount": 12,
+                        "outputTokenCount": 35,
+                        "invocationLatency": 2339,
+                        "firstByteLatency": 2339,
+                    },
+                },
+                malformed_body=True,
+            ).hex()
         ],
     ],
     "amazon.titan-text-express-v1::Streaming Exception": [
@@ -3681,19 +3719,42 @@ RESPONSES = {
         403,
         {"message": "The security token included in the request is invalid."},
     ],
+    "amazon.titan-text-express-v1::Malformed Body": [
+        {"Content-Type": "application/json", "x-amzn-RequestId": "81508a1c-33a8-4294-8743-f0c629af2f49"},
+        200,
+        {
+            "inputTextTokenCount": 12,
+            "results": [
+                {
+                    "tokenCount": 32,
+                    "outputText": "\n1 degree Fahrenheit is 0.56 Celsius. Therefore, 212 degree Fahrenheit in Celsius would be 115.42.",
+                    "completionReason": "FINISH",
+                }
+            ],
+        },
+    ],
+    "amazon.titan-text-express-v1::{ Malformed Request Body": [
+        {
+            "Content-Type": "application/json",
+            "x-amzn-RequestId": "e72d1b46-9f16-4bf0-8eee-f7778f32e5a5",
+            "x-amzn-ErrorType": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/",
+        },
+        400,
+        {"message": "Malformed input request, please reformat your input and try again."},
+    ],
 }
 
-# Patch error responses into stream responses
-for prompt, value in RESPONSES.items():
-    if value[1] >= 400:
-        STREAMED_RESPONSES[prompt] = value
 
 MODEL_PATH_RE = re.compile(r"/model/([^/]+)/invoke")
 
 
 def simple_get(self):
     content_len = int(self.headers.get("content-length"))
-    content = json.loads(self.rfile.read(content_len).decode("utf-8"))
+    body = self.rfile.read(content_len).decode("utf-8")
+    try:
+        content = json.loads(body)
+    except Exception:
+        content = body
 
     stream = self.path.endswith("invoke-with-response-stream")
     model = MODEL_PATH_RE.match(self.path).group(1)
@@ -3704,21 +3765,33 @@ def simple_get(self):
         self.wfile.write("Could not parse prompt.".encode("utf-8"))
         return
 
-    headers, response = ({}, "")
-    mocked_responses = RESPONSES
+    headers, status_code, response = ({}, 0, "")
     if stream:
-        mocked_responses = STREAMED_RESPONSES
-    for k, v in mocked_responses.items():
-        if prompt.startswith(k):
-            headers, status_code, response = v
-            break
-    else:  # If no matches found
+        for k, v in STREAMED_RESPONSES.items():
+            if prompt.startswith(k):
+                headers, status_code, response = v
+                break
+        if not response:
+            for k, v in RESPONSES.items():
+                # Only look for error responses returned immediately instead of in a stream
+                if prompt.startswith(k) and v[1] >= 400:
+                    headers, status_code, response = v
+                    stream = False  # Response will not be streamed
+                    break
+    else:
+        for k, v in RESPONSES.items():
+            if prompt.startswith(k):
+                headers, status_code, response = v
+                break
+
+    if not response:
+        # If no matches found
         self.send_response(500)
         self.end_headers()
         self.wfile.write(("Unknown Prompt:\n%s" % prompt).encode("utf-8"))
         return
 
-    if stream and status_code < 400:
+    if stream:
         # Send response code
         self.send_response(status_code)
 
@@ -3740,12 +3813,21 @@ def simple_get(self):
         self.end_headers()
 
         # Send response body
-        self.wfile.write(json.dumps(response).encode("utf-8"))
+        response_body = json.dumps(response).encode("utf-8")
+
+        if "Malformed Body" in prompt:
+            # Remove end of response to make invalid JSON
+            response_body = response_body[:-4]
+
+        self.wfile.write(response_body)
     return
 
 
 def extract_shortened_prompt(content, model):
-    prompt = content.get("inputText", "") or content.get("prompt", "")
+    if isinstance(content, str):
+        prompt = content
+    else:
+        prompt = content.get("inputText", "") or content.get("prompt", "")
     prompt = "::".join((model, prompt))  # Prepend model name to prompt key to keep separate copies
     return prompt.lstrip().split("\n")[0]
 

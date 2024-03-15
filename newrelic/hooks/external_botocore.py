@@ -769,7 +769,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     trace_id = bedrock_attrs.get("trace_id", None)
     request_id = bedrock_attrs.get("request_id", None)
     model = bedrock_attrs.get("model", None)
-    input = bedrock_attrs.get("input", "")
+    input = bedrock_attrs.get("input")
 
     embedding_dict = {
         "vendor": "bedrock",

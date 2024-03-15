@@ -366,16 +366,19 @@ def test_bedrock_embedding_error_incorrect_access_key_with_token_count(
     bedrock_server,
     exercise_model,
     set_trace_info,
-    expected_error_events,
-    expected_client_error,
+    expected_invalid_access_key_error_events,
 ):
-    @validate_custom_events(add_token_count_to_events(expected_error_events))
+    @validate_custom_events(add_token_count_to_events(expected_invalid_access_key_error_events))
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={
             "agent": {},
             "intrinsic": {},
-            "user": expected_client_error,
+            "user": {
+                "http.statusCode": 403,
+                "error.message": "The security token included in the request is invalid.",
+                "error.code": "UnrecognizedClientException",
+            },
         },
     )
     @validate_transaction_metrics(
@@ -390,7 +393,11 @@ def test_bedrock_embedding_error_incorrect_access_key_with_token_count(
 
         with pytest.raises(_client_error):  # not sure where this exception actually comes from
             set_trace_info()
-            exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
+            add_custom_attribute("llm.foo", "bar")
+            add_custom_attribute("non_llm_attr", "python-agent")
+
+            exercise_model(prompt="Invalid Token")
 
     _test()
 

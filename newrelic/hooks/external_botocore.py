@@ -108,6 +108,8 @@ def create_chat_completion_message_event(
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
     for index, message in enumerate(input_message_list):
+        content = message.get("content", "")
+
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
         else:
@@ -118,6 +120,9 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
+            "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, content)
+            if settings.ai_monitoring.llm_token_count_callback
+            else None,
             "transaction_id": transaction.guid,
             "role": message.get("role"),
             "completion_id": chat_completion_id,
@@ -128,7 +133,7 @@ def create_chat_completion_message_event(
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            chat_completion_message_dict["content"] = message.get("content")
+            chat_completion_message_dict["content"] = content
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -136,6 +141,7 @@ def create_chat_completion_message_event(
 
     for index, message in enumerate(output_message_list):
         index += len(input_message_list)
+        content = message.get("content", "")
 
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
@@ -147,6 +153,9 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
+            "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, content)
+            if settings.ai_monitoring.llm_token_count_callback
+            else None,
             "transaction_id": transaction.guid,
             "role": message.get("role"),
             "completion_id": chat_completion_id,
@@ -158,7 +167,7 @@ def create_chat_completion_message_event(
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            chat_completion_message_dict["content"] = message.get("content")
+            chat_completion_message_dict["content"] = content
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -760,6 +769,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     trace_id = bedrock_attrs.get("trace_id", None)
     request_id = bedrock_attrs.get("request_id", None)
     model = bedrock_attrs.get("model", None)
+    input = bedrock_attrs.get("input", "")
 
     embedding_dict = {
         "vendor": "bedrock",
@@ -767,6 +777,9 @@ def handle_embedding_event(transaction, bedrock_attrs):
         "id": embedding_id,
         "span_id": span_id,
         "trace_id": trace_id,
+        "token_count": settings.ai_monitoring.llm_token_count_callback(model, input)
+        if settings.ai_monitoring.llm_token_count_callback
+        else None,
         "request_id": request_id,
         "transaction_id": transaction.guid,
         "duration": bedrock_attrs.get("duration", None),
@@ -779,7 +792,8 @@ def handle_embedding_event(transaction, bedrock_attrs):
     embedding_dict.update(llm_metadata_dict)
 
     if settings.ai_monitoring.record_content.enabled:
-        embedding_dict["input"] = bedrock_attrs.get("input")
+        embedding_dict["input"] = input
+
 
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
     transaction.record_custom_event("LlmEmbedding", embedding_dict)

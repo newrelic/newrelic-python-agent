@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import openai
 import sys
 import uuid
-
-import openai
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
@@ -28,6 +28,8 @@ from newrelic.core.config import global_settings
 OPENAI_VERSION = get_package_version("openai")
 OPENAI_VERSION_TUPLE = tuple(map(int, OPENAI_VERSION.split(".")))
 OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
+
+_logger = logging.getLogger(__name__)
 
 
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
@@ -112,6 +114,7 @@ def create_chat_completion_message_event(
     span_id,
     trace_id,
     response_model,
+    request_model,
     response_id,
     request_id,
     llm_metadata,
@@ -135,6 +138,9 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
+            "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, message_content)
+            if settings.ai_monitoring.llm_token_count_callback
+            else None,
             "transaction_id": transaction.guid,
             "role": message.get("role"),
             "completion_id": chat_completion_id,
@@ -171,6 +177,9 @@ def create_chat_completion_message_event(
                 "request_id": request_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
+                "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, message_content)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None,
                 "transaction_id": transaction.guid,
                 "role": message.get("role"),
                 "completion_id": chat_completion_id,
@@ -225,6 +234,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     response_headers = getattr(response, "_nr_response_headers", {})
+    input = kwargs.get("input")
 
     # In v1, response objects are pydantic models so this function call converts the
     # object back to a dictionary for backwards compatibility.
@@ -244,6 +254,9 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
+        "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, input)
+        if settings.ai_monitoring.llm_token_count_callback
+        else None,
         "request.model": kwargs.get("model") or kwargs.get("engine"),
         "request_id": request_id,
         "duration": ft.duration,
@@ -274,7 +287,8 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         "ingest_source": "Python",
     }
     if settings.ai_monitoring.record_content.enabled:
-        full_embedding_response_dict["input"] = kwargs.get("input")
+        full_embedding_response_dict["input"] = input
+
     full_embedding_response_dict.update(_get_llm_attributes(transaction))
     transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
@@ -283,6 +297,8 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
+    model = kwargs.get("model") or kwargs.get("engine")
+    input = kwargs.get("input")
 
     if OPENAI_V1:
         response = getattr(exc, "response", None)
@@ -320,7 +336,10 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "request.model": kwargs.get("model") or kwargs.get("engine"),
+        "token_count": settings.ai_monitoring.llm_token_count_callback(model, input)
+        if settings.ai_monitoring.llm_token_count_callback
+        else None,
+        "request.model": model,
         "vendor": "openai",
         "ingest_source": "Python",
         "response.organization": exc_organization,
@@ -328,7 +347,8 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
         "error": True,
     }
     if settings.ai_monitoring.record_content.enabled:
-        error_embedding_dict["input"] = kwargs.get("input")
+        error_embedding_dict["input"] = input
+
     error_embedding_dict.update(_get_llm_attributes(transaction))
     transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
 
@@ -402,6 +422,7 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
 def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
+    request_model = kwargs.get("model") or kwargs.get("engine")
 
     if response:
         response_model = response.get("model")
@@ -432,7 +453,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         "span_id": span_id,
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
-        "request.model": kwargs.get("model") or kwargs.get("engine"),
+        "request.model": request_model,
         "request.temperature": kwargs.get("temperature"),
         "request.max_tokens": kwargs.get("max_tokens"),
         "vendor": "openai",
@@ -486,6 +507,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         span_id,
         trace_id,
         response_model,
+        request_model,
         response_id,
         request_id,
         llm_metadata,
@@ -497,6 +519,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     request_message_list = kwargs.get("messages", None) or []
+    request_model = kwargs.get("model") or kwargs.get("engine")
     if OPENAI_V1:
         response = getattr(exc, "response", None)
         response_headers = getattr(response, "headers", None) or {}
@@ -543,7 +566,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
         "trace_id": trace_id,
         "transaction_id": transaction.guid,
         "response.number_of_messages": len(request_message_list),
-        "request.model": kwargs.get("model") or kwargs.get("engine"),
+        "request.model": request_model,
         "request.temperature": kwargs.get("temperature"),
         "request.max_tokens": kwargs.get("max_tokens"),
         "vendor": "openai",
@@ -559,6 +582,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
     output_message_list = []
     if "content" in kwargs:
         output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
+
     create_chat_completion_message_event(
         transaction,
         request_message_list,
@@ -566,6 +590,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
         span_id,
         trace_id,
         kwargs.get("response.model"),
+        request_model,
         response_id,
         request_id,
         llm_metadata,

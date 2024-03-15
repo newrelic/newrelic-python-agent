@@ -28,14 +28,17 @@ from _test_bedrock_embeddings import (
     embedding_payload_templates,
 )
 from conftest import (  # pylint: disable=E0611
+    add_token_count_to_events,
     BOTOCORE_VERSION,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
+    llm_token_count_callback,
 )
 from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
+    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -207,6 +210,33 @@ def test_bedrock_embedding_in_txn_no_llm_metadata(
 
 
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback)
+def test_bedrock_embedding_with_token_count(set_trace_info, exercise_model, expected_events):
+    @validate_custom_events(add_token_count_to_events(expected_events))
+    @validate_custom_event_count(count=1)
+    @validate_transaction_metrics(
+        name="test_bedrock_embedding",
+        scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        custom_metrics=[
+            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+        ],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task(name="test_bedrock_embedding")
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
+        exercise_model(prompt="This is an embedding test.")
+
+    _test()
+
+
+@reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_bedrock_embedding_outside_txn(exercise_model):
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
@@ -325,6 +355,42 @@ def test_bedrock_embedding_error_incorrect_access_key_no_content(
             add_custom_attribute("non_llm_attr", "python-agent")
 
             exercise_model(prompt="Invalid Token")
+
+    _test()
+
+
+@reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback)
+def test_bedrock_embedding_error_incorrect_access_key_with_token_count(
+    monkeypatch,
+    bedrock_server,
+    exercise_model,
+    set_trace_info,
+    expected_error_events,
+    expected_client_error,
+):
+    @validate_custom_events(add_token_count_to_events(expected_error_events))
+    @validate_error_trace_attributes(
+        _client_error_name,
+        exact_attrs={
+            "agent": {},
+            "intrinsic": {},
+            "user": expected_client_error,
+        },
+    )
+    @validate_transaction_metrics(
+        name="test_bedrock_embedding",
+        scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_embedding")
+    def _test():
+        monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
+
+        with pytest.raises(_client_error):  # not sure where this exception actually comes from
+            set_trace_info()
+            exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
 
     _test()
 

@@ -99,7 +99,7 @@ def create_chat_completion_message_event(
     request_model,
     request_id,
     llm_metadata_dict,
-    response_id="",
+    response_id=None,
 ):
     if not transaction:
         return
@@ -127,7 +127,7 @@ def create_chat_completion_message_event(
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            chat_completion_message_dict["content"] = message.get("content", "")
+            chat_completion_message_dict["content"] = message.get("content")
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -157,7 +157,7 @@ def create_chat_completion_message_event(
         }
 
         if settings.ai_monitoring.record_content.enabled:
-            chat_completion_message_dict["content"] = message.get("content", "")
+            chat_completion_message_dict["content"] = message.get("content")
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -168,11 +168,11 @@ def extract_bedrock_titan_text_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
     request_config = request_body.get("textGenerationConfig", {})
 
-    input_message_list = [{"role": "user", "content": request_body.get("inputText", "")}]
+    input_message_list = [{"role": "user", "content": request_body.get("inputText")}]
 
     bedrock_attrs["input_message_list"] = input_message_list
-    bedrock_attrs["request.max_tokens"] = request_config.get("maxTokenCount", "")
-    bedrock_attrs["request.temperature"] = request_config.get("temperature", "")
+    bedrock_attrs["request.max_tokens"] = request_config.get("maxTokenCount")
+    bedrock_attrs["request.temperature"] = request_config.get("temperature")
 
     return bedrock_attrs
 
@@ -228,7 +228,7 @@ def extract_bedrock_titan_text_model_streaming_response(response_body, bedrock_a
 def extract_bedrock_titan_embedding_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
 
-    bedrock_attrs["input"] = request_body.get("inputText", "")
+    bedrock_attrs["input"] = request_body.get("inputText")
 
     return bedrock_attrs
 
@@ -247,10 +247,10 @@ def extract_bedrock_titan_embedding_model_response(response_body, bedrock_attrs)
 def extract_bedrock_ai21_j2_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
 
-    input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+    input_message_list = [{"role": "user", "content": request_body.get("prompt")}]
 
-    bedrock_attrs["request.max_tokens"] = request_body.get("maxTokens", "")
-    bedrock_attrs["request.temperature"] = request_body.get("temperature", "")
+    bedrock_attrs["request.max_tokens"] = request_body.get("maxTokens")
+    bedrock_attrs["request.temperature"] = request_body.get("temperature")
     bedrock_attrs["input_message_list"] = input_message_list
 
     return bedrock_attrs
@@ -265,7 +265,7 @@ def extract_bedrock_ai21_j2_model_response(response_body, bedrock_attrs):
 
         bedrock_attrs["response.choices.finish_reason"] = response_body["completions"][0]["finishReason"]["reason"]
         bedrock_attrs["output_message_list"] = output_message_list
-        bedrock_attrs["response_id"] = str(response_body.get("id", ""))
+        bedrock_attrs["response_id"] = str(response_body.get("id"))
 
     return bedrock_attrs
 
@@ -273,10 +273,10 @@ def extract_bedrock_ai21_j2_model_response(response_body, bedrock_attrs):
 def extract_bedrock_claude_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
 
-    input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+    input_message_list = [{"role": "user", "content": request_body.get("prompt")}]
 
-    bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens_to_sample", "")
-    bedrock_attrs["request.temperature"] = request_body.get("temperature", "")
+    bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens_to_sample")
+    bedrock_attrs["request.temperature"] = request_body.get("temperature")
     bedrock_attrs["input_message_list"] = input_message_list
 
     return bedrock_attrs
@@ -286,9 +286,9 @@ def extract_bedrock_claude_model_response(response_body, bedrock_attrs):
     if response_body:
         response_body = json.loads(response_body)
 
-        output_message_list = [{"role": "assistant", "content": response_body.get("completion", "")}]
+        output_message_list = [{"role": "assistant", "content": response_body.get("completion")}]
 
-        bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason", "")
+        bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
         bedrock_attrs["output_message_list"] = output_message_list
 
     return bedrock_attrs
@@ -297,9 +297,9 @@ def extract_bedrock_claude_model_response(response_body, bedrock_attrs):
 def extract_bedrock_claude_model_streaming_response(response_body, bedrock_attrs):
     if response_body:
         bedrock_attrs["_output_message_stream"] = messages = bedrock_attrs.get("_output_message_stream", [])
-        messages.append(response_body.get("completion", "") or "")
+        messages.append(response_body.get("completion"))
 
-        stop_reason = response_body.get("stop_reason", "")
+        stop_reason = response_body.get("stop_reason")
         if stop_reason:
             bedrock_attrs["response.choices.finish_reason"] = stop_reason
 
@@ -331,10 +331,10 @@ def extract_bedrock_claude_model_streaming_response(response_body, bedrock_attrs
 def extract_bedrock_llama_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
 
-    input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+    input_message_list = [{"role": "user", "content": request_body.get("prompt")}]
 
-    bedrock_attrs["request.max_tokens"] = request_body.get("max_gen_len", "")
-    bedrock_attrs["request.temperature"] = request_body.get("temperature", "")
+    bedrock_attrs["request.max_tokens"] = request_body.get("max_gen_len")
+    bedrock_attrs["request.temperature"] = request_body.get("temperature")
     bedrock_attrs["input_message_list"] = input_message_list
 
     return bedrock_attrs
@@ -343,7 +343,7 @@ def extract_bedrock_llama_model_request(request_body, bedrock_attrs):
 def extract_bedrock_llama_model_response(response_body, bedrock_attrs):
     if response_body:
         response_body = json.loads(response_body)
-        output_message_list = [{"role": "assistant", "content": response_body.get("generation", "")}]
+        output_message_list = [{"role": "assistant", "content": response_body.get("generation")}]
         prompt_tokens = response_body.get("prompt_token_count", None)
         completion_tokens = response_body.get("generation_token_count", None)
         total_tokens = prompt_tokens + completion_tokens if prompt_tokens and completion_tokens else None
@@ -351,7 +351,7 @@ def extract_bedrock_llama_model_response(response_body, bedrock_attrs):
         bedrock_attrs["response.usage.completion_tokens"] = completion_tokens
         bedrock_attrs["response.usage.prompt_tokens"] = prompt_tokens
         bedrock_attrs["response.usage.total_tokens"] = total_tokens
-        bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason", "")
+        bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
         bedrock_attrs["output_message_list"] = output_message_list
 
     return bedrock_attrs
@@ -360,9 +360,9 @@ def extract_bedrock_llama_model_response(response_body, bedrock_attrs):
 def extract_bedrock_llama_model_streaming_response(response_body, bedrock_attrs):
     if response_body:
         bedrock_attrs["_output_message_stream"] = messages = bedrock_attrs.get("_output_message_stream", [])
-        messages.append(response_body.get("generation", "") or "")
+        messages.append(response_body.get("generation"))
 
-        stop_reason = response_body.get("stop_reason", "")
+        stop_reason = response_body.get("stop_reason")
         if stop_reason:
             bedrock_attrs["response.choices.finish_reason"] = stop_reason
 
@@ -394,10 +394,10 @@ def extract_bedrock_llama_model_streaming_response(response_body, bedrock_attrs)
 def extract_bedrock_cohere_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
 
-    input_message_list = [{"role": "user", "content": request_body.get("prompt", "")}]
+    input_message_list = [{"role": "user", "content": request_body.get("prompt")}]
 
-    bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens", "")
-    bedrock_attrs["request.temperature"] = request_body.get("temperature", "")
+    bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens")
+    bedrock_attrs["request.temperature"] = request_body.get("temperature")
     bedrock_attrs["input_message_list"] = input_message_list
 
     return bedrock_attrs
@@ -413,7 +413,7 @@ def extract_bedrock_cohere_model_response(response_body, bedrock_attrs):
 
         bedrock_attrs["response.choices.finish_reason"] = response_body["generations"][0]["finish_reason"]
         bedrock_attrs["output_message_list"] = output_message_list
-        bedrock_attrs["response_id"] = str(response_body.get("id", ""))
+        bedrock_attrs["response_id"] = str(response_body.get("id"))
 
     return bedrock_attrs
 
@@ -426,7 +426,7 @@ def extract_bedrock_cohere_model_streaming_response(response_body, bedrock_attrs
         )
 
         bedrock_attrs["response.choices.finish_reason"] = response_body["generations"][0]["finish_reason"]
-        bedrock_attrs["response_id"] = str(response_body.get("id", ""))
+        bedrock_attrs["response_id"] = str(response_body.get("id"))
 
         # Extract token information
         invocation_metrics = response_body.get("amazon-bedrock-invocationMetrics", {})
@@ -538,8 +538,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
 
         # Get trace information
         available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
+        span_id = available_metadata.get("span.id")
+        trace_id = available_metadata.get("trace.id")
 
         try:
             response = wrapped(*args, **kwargs)
@@ -591,7 +591,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
 
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
         bedrock_attrs = {
-            "request_id": response_headers.get("x-amzn-requestid", ""),
+            "request_id": response_headers.get("x-amzn-requestid"),
             "model": model,
             "span_id": span_id,
             "trace_id": trace_id,
@@ -769,7 +769,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     embedding_dict.update(llm_metadata_dict)
 
     if settings.ai_monitoring.record_content.enabled:
-        embedding_dict["input"] = bedrock_attrs.get("input", "")
+        embedding_dict["input"] = bedrock_attrs.get("input")
 
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
@@ -886,8 +886,8 @@ def _bind_make_request_params(operation_model, request_dict, *args, **kwargs):
 
 def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     operation_model, request_dict = _bind_make_request_params(*args, **kwargs)
-    url = request_dict.get("url", "")
-    method = request_dict.get("method", None)
+    url = request_dict.get("url")
+    method = request_dict.get("method")
 
     with ExternalTrace(library="botocore", url=url, method=method, source=wrapped) as trace:
         try:

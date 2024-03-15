@@ -33,8 +33,8 @@ from _test_bedrock_chat_completion import (
     chat_completion_streaming_expected_events,
 )
 from conftest import (  # pylint: disable=E0611
-    add_token_count_to_events,
     BOTOCORE_VERSION,
+    add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,

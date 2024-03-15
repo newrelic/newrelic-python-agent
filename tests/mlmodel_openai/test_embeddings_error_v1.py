@@ -13,14 +13,20 @@
 # limitations under the License.
 
 import sys
-
 import openai
 import pytest
-from conftest import disabled_ai_monitoring_record_content_settings, events_sans_content
+
+from conftest import (
+    add_token_count_to_event,
+    disabled_ai_monitoring_record_content_settings,
+    events_sans_content,
+    llm_token_count_callback,
+)
 from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
     validate_custom_event_count,
+    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -182,6 +188,43 @@ invalid_model_events = [
 
 @dt_enabled
 @reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback)
+@validate_error_trace_attributes(
+    callable_name(openai.NotFoundError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "http.statusCode": 404,
+            "error.code": "model_not_found",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist",
+    }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_with_token_count",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_custom_events(add_token_count_to_event(invalid_model_events))
+@validate_custom_event_count(count=1)
+@background_task()
+def test_embeddings_invalid_request_error_invalid_model_with_token_count(set_trace_info, sync_openai_client):
+    with pytest.raises(openai.NotFoundError):
+        set_trace_info()
+        sync_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
+
+
+@dt_enabled
+@reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
     exact_attrs={
@@ -288,6 +331,48 @@ def test_embeddings_invalid_request_error_invalid_model_async(set_trace_info, as
 def test_embeddings_invalid_request_error_invalid_model_async_no_content(set_trace_info, async_openai_client, loop):
     with pytest.raises(openai.NotFoundError):
         set_trace_info()
+        loop.run_until_complete(
+            async_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback)
+@validate_error_trace_attributes(
+    callable_name(openai.NotFoundError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "http.statusCode": 404,
+            "error.code": "model_not_found",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist",
+    }
+)
+@validate_transaction_metrics(
+    name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_async_with_token_count",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_custom_events(add_token_count_to_event(invalid_model_events))
+@validate_custom_event_count(count=1)
+@background_task()
+def test_embeddings_invalid_request_error_invalid_model_async_with_token_count(
+    set_trace_info, async_openai_client, loop
+):
+    with pytest.raises(openai.NotFoundError):
+        set_trace_info()
+
         loop.run_until_complete(
             async_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
         )

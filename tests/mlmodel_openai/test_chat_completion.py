@@ -17,14 +17,15 @@ from conftest import (  # pylint: disable=E0611
     add_token_count_to_event,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
+    disabled_ai_monitoring_streaming_settings,
     events_sans_content,
     llm_token_count_callback,
 )
 from testing_support.fixtures import (
+    override_llm_token_callback_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
-    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -312,6 +313,25 @@ def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info):
 
 
 @reset_core_stats_engine()
+@disabled_ai_monitoring_streaming_settings
+@validate_custom_events(chat_completion_recorded_events_no_llm_metadata)
+# One summary event, one system message, one user message, and one response message from the assistant
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    "test_chat_completion:test_openai_chat_completion_sync_in_txn_stream_monitoring_disabled",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@background_task()
+def test_openai_chat_completion_sync_in_txn_stream_monitoring_disabled(set_trace_info):
+    set_trace_info()
+    openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+    )
+
+
+@reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_chat_completion_sync_outside_txn():
     openai.ChatCompletion.create(
@@ -341,6 +361,27 @@ def test_openai_chat_completion_sync_ai_monitoring_disabled():
 )
 @background_task()
 def test_openai_chat_completion_async_no_llm_metadata(loop, set_trace_info):
+    set_trace_info()
+
+    loop.run_until_complete(
+        openai.ChatCompletion.acreate(
+            model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+        )
+    )
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_streaming_settings
+@validate_custom_events(chat_completion_recorded_events_no_llm_metadata)
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    "test_chat_completion:test_openai_chat_completion_async_stream_monitoring_disabled",
+    scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
+    background_task=True,
+)
+@background_task()
+def test_openai_chat_completion_async_stream_monitoring_disabled(loop, set_trace_info):
     set_trace_info()
 
     loop.run_until_complete(

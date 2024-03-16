@@ -318,9 +318,7 @@ def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info, sync
     background_task=True,
 )
 @background_task()
-def test_openai_chat_completion_sync_in_txn_stream_monitoring_disabled(
-    set_trace_info, sync_openai_client
-):
+def test_openai_chat_completion_sync_in_txn_stream_monitoring_disabled(set_trace_info, sync_openai_client):
     set_trace_info()
     sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
@@ -378,9 +376,7 @@ def test_openai_chat_completion_async_no_llm_metadata(loop, set_trace_info, asyn
     background_task=True,
 )
 @background_task()
-def test_openai_chat_completion_async_stream_monitoring_disabled(
-    loop, set_trace_info, async_openai_client
-):
+def test_openai_chat_completion_async_stream_monitoring_disabled(loop, set_trace_info, async_openai_client):
     set_trace_info()
 
     loop.run_until_complete(

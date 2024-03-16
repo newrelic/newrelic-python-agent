@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import logging
-import openai
 import sys
 import uuid
+
+import openai
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
@@ -48,13 +49,15 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
 
-    with FunctionTrace(name=wrapped.__name__, group="Llm/embedding/OpenAI") as ft:
-        linking_metadata = get_trace_linking_metadata()
-        try:
-            response = wrapped(*args, **kwargs)
-        except Exception as exc:
-            _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
-            raise
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/embedding/OpenAI")
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        response = wrapped(*args, **kwargs)
+    except Exception as exc:
+        _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
+        raise
+    ft.__exit__(None, None, None)
 
     if not response:
         return response
@@ -214,13 +217,15 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     # Obtain attributes to be stored on embedding events regardless of whether we hit an error
     embedding_id = str(uuid.uuid4())
 
-    with FunctionTrace(name=wrapped.__name__, group="Llm/embedding/OpenAI") as ft:
-        linking_metadata = get_trace_linking_metadata()
-        try:
-            response = await wrapped(*args, **kwargs)
-        except Exception as exc:
-            _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
-            raise
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/embedding/OpenAI")
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        response = await wrapped(*args, **kwargs)
+    except Exception as exc:
+        _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
+        raise
+    ft.__exit__(None, None, None)
 
     if not response:
         return response
@@ -330,6 +335,8 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
     ft.notice_error(
         attributes=notice_error_attributes,
     )
+    # Exit the trace now so that the duration is calculated.
+    ft.__exit__(*sys.exc_info())
 
     error_embedding_dict = {
         "id": embedding_id,
@@ -387,13 +394,13 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
     trace_id = linking_metadata.get("trace.id")
     request_message_list = kwargs.get("messages", [])
     stream = kwargs.get("stream", False)
-    # If response is not a stream generator or stream monitoring is disabled, we exit
-    # the function trace now.
-    if not stream or not settings.ai_monitoring.streaming.enabled:
+    # Only if streaming and streaming monitoring is enabled and the response is not empty
+    # do we not exit the function trace.
+    if not stream or not settings.ai_monitoring.streaming.enabled or not return_val:
         ft.__exit__(None, None, None)
 
     # If the return value is empty or stream monitoring is disabled exit early.
-    if not return_val or not settings.ai_monitoring.streaming.enabled:
+    if not return_val or (stream and not settings.ai_monitoring.streaming.enabled):
         return
 
     if stream:

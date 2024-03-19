@@ -154,14 +154,6 @@ def expected_invalid_access_key_error_events(model_id):
     return chat_completion_invalid_access_key_error_events[model_id]
 
 
-@pytest.fixture(scope="module")
-def expected_events_no_llm_metadata(expected_events):
-    events = copy.deepcopy(expected_events)
-    for event in events:
-        del event[1]["llm.conversation_id"], event[1]["llm.foo"]
-    return events
-
-
 _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted to Celsius?"
 
 
@@ -195,12 +187,12 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(
 
 @disabled_ai_monitoring_record_content_settings
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_no_content(set_trace_info, exercise_model, expected_events, expected_metrics):
+def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model, expected_events, expected_metrics):
     @validate_custom_events(events_sans_content(expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content",
+        name="test_bedrock_chat_completion_no_content",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
@@ -209,7 +201,7 @@ def test_bedrock_chat_completion_in_txn_no_content(set_trace_info, exercise_mode
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
-    @background_task(name="test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content")
+    @background_task(name="test_bedrock_chat_completion_no_content")
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
@@ -222,14 +214,14 @@ def test_bedrock_chat_completion_in_txn_no_content(set_trace_info, exercise_mode
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-def test_bedrock_chat_completion_in_txn_with_token_count(
+def test_bedrock_chat_completion_with_token_count(
     set_trace_info, exercise_model, expected_events, expected_metrics
 ):
     @validate_custom_events(add_token_count_to_events(expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count",
+        name="test_bedrock_chat_completion_with_token_count",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
@@ -238,7 +230,7 @@ def test_bedrock_chat_completion_in_txn_with_token_count(
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
-    @background_task(name="test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count")
+    @background_task(name="test_bedrock_chat_completion_with_token_count")
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
@@ -250,7 +242,7 @@ def test_bedrock_chat_completion_in_txn_with_token_count(
 
 
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_no_llm_metadata(
+def test_bedrock_chat_completion_no_llm_metadata(
     set_trace_info, exercise_model, expected_events, expected_metrics
 ):
     @validate_custom_events(events_sans_llm_metadata(expected_events))

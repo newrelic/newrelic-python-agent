@@ -187,7 +187,7 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
 @validate_custom_events(add_token_count_to_events(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings_v1:test_openai_embedding_sync_with_token_count_async",
+    name="test_embeddings_v1:test_openai_embedding_async_with_token_count",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
@@ -197,7 +197,7 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_openai_embedding_sync_with_token_count_async(set_trace_info, loop, async_openai_client):
+def test_openai_embedding_async_with_token_count(set_trace_info, loop, async_openai_client):
     set_trace_info()
     loop.run_until_complete(
         async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")

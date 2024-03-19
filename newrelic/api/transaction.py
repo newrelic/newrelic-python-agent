@@ -52,12 +52,12 @@ from newrelic.core.attribute import (
     MAX_NUM_USER_ATTRIBUTES,
     create_agent_attributes,
     create_attributes,
-    create_user_attributes,
     process_user_attribute,
     resolve_logging_context_attributes,
     truncate,
 )
 from newrelic.core.attribute_filter import (
+    DST_ALL,
     DST_ERROR_COLLECTOR,
     DST_NONE,
     DST_TRANSACTION_TRACER,
@@ -1004,7 +1004,7 @@ class Transaction(object):
 
     @property
     def user_attributes(self):
-        return create_user_attributes(self._custom_params, self.attribute_filter)
+        return create_attributes(self._custom_params, DST_ALL, self.attribute_filter)
 
     def _compute_sampled_and_priority(self):
         if self._priority is None:

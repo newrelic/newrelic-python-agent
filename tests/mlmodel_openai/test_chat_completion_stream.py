@@ -13,13 +13,14 @@
 # limitations under the License.
 
 import openai
-from conftest import (  # pylint: disable=E0611
-    add_token_count_to_event,
+from testing_support.ml_testing_utils import (
+    add_token_count_to_events,
+    events_sans_content,
+    llm_token_count_callback,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
-    events_sans_content,
-    llm_token_count_callback,
+    set_trace_info,
 )
 from testing_support.fixtures import (
     reset_core_stats_engine,
@@ -196,7 +197,7 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_tra
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
+@validate_custom_events(add_token_count_to_events(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -482,7 +483,7 @@ def test_openai_chat_completion_async_with_llm_metadata_no_content(loop, set_tra
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
+@validate_custom_events(add_token_count_to_events(chat_completion_recorded_events))
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_async_in_txn_with_token_count",

@@ -19,9 +19,10 @@ import uuid
 import langchain
 import pydantic
 import pytest
-from conftest import (  # pylint: disable=E0611
+from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
+    set_trace_info,
 )
 from langchain.tools import tool
 from mock import patch

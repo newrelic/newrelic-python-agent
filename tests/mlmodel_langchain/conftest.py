@@ -58,11 +58,6 @@ OPENAI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking
 RECORDED_HEADERS = set(["x-request-id", "content-type"])
 
-disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.enabled": False})
-disabled_ai_monitoring_record_content_settings = override_application_settings(
-    {"ai_monitoring.record_content.enabled": False}
-)
-
 
 @pytest.fixture(scope="session")
 def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
@@ -103,17 +98,6 @@ def embedding_openai_client(openai_clients):
 def chat_openai_client(openai_clients):
     chat_client, _ = openai_clients
     return chat_client
-
-
-@pytest.fixture
-def set_trace_info():
-    def set_info():
-        txn = current_transaction()
-        if txn:
-            txn.guid = "transaction-id"
-            txn._trace_id = "trace-id"
-
-    return set_info
 
 
 @pytest.fixture(autouse=True, scope="session")

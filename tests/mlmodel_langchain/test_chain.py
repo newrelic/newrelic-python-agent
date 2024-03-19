@@ -19,9 +19,11 @@ import uuid
 import langchain
 import openai
 import pytest
-from conftest import (  # pylint: disable=E0611
+from testing_support.ml_testing_utils import (
+    events_sans_content,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
+    set_trace_info,
 )
 from langchain.chains.openai_functions import (
     create_structured_output_chain,
@@ -54,14 +56,6 @@ _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
 )
-
-
-def events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        if "content" in _event[1]:
-            del _event[1]["content"]
-    return new_event
 
 
 chat_completion_recorded_events_invoke_langchain_error = [

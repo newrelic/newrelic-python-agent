@@ -15,13 +15,13 @@
 
 import openai
 import pytest
-from conftest import (
-    disabled_ai_monitoring_record_content_settings,
+from testing_support.ml_testing_utils import (
+    add_token_count_to_events,
     events_sans_content,
-    add_token_count_to_event,
     llm_token_count_callback,
+    disabled_ai_monitoring_record_content_settings,
+    set_trace_info,
 )
-
 from testing_support.fixtures import (
     dt_enabled,
     reset_core_stats_engine,
@@ -241,7 +241,7 @@ expected_events_on_invalid_model_error = [
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,
 )
-@validate_custom_events(add_token_count_to_event(expected_events_on_invalid_model_error))
+@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model_with_token_count(set_trace_info):
@@ -572,7 +572,7 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, s
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     background_task=True,
 )
-@validate_custom_events(add_token_count_to_event(expected_events_on_invalid_model_error))
+@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model_with_token_count_async(loop, set_trace_info):

@@ -25,11 +25,7 @@ from _test_bedrock_embeddings import (
     embedding_payload_templates,
 )
 from conftest import (  # pylint: disable=E0611
-    add_token_count_to_events,
     BOTOCORE_VERSION,
-    disabled_ai_monitoring_record_content_settings,
-    disabled_ai_monitoring_settings,
-    llm_token_count_callback,
 )
 from testing_support.fixtures import (  # override_application_settings,
     dt_enabled,
@@ -37,6 +33,14 @@ from testing_support.fixtures import (  # override_application_settings,
     validate_attributes,
     validate_custom_event_count,
     override_llm_token_callback_settings,
+)
+from testing_support.ml_testing_utils import (
+    add_token_count_to_events,
+    events_sans_content,
+    llm_token_count_callback,
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    set_trace_info,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -94,24 +98,8 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
-def expected_events_no_content(model_id):
-    events = copy.deepcopy(embedding_expected_events[model_id])
-    for event in events:
-        del event[1]["input"]
-    return events
-
-
-@pytest.fixture(scope="module")
 def expected_error_events(model_id):
     return embedding_expected_error_events[model_id]
-
-
-@pytest.fixture(scope="module")
-def expected_error_events_no_content(model_id):
-    events = copy.deepcopy(embedding_expected_error_events[model_id])
-    for event in events:
-        del event[1]["input"]
-    return events
 
 
 @pytest.fixture(scope="module")
@@ -147,8 +135,8 @@ def test_bedrock_embedding(set_trace_info, exercise_model, expected_events):
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-def test_bedrock_embedding_no_content(set_trace_info, exercise_model, expected_events_no_content):
-    @validate_custom_events(expected_events_no_content)
+def test_bedrock_embedding_no_content(set_trace_info, exercise_model, model_id):
+    @validate_custom_events(events_sans_content(embedding_expected_events[model_id]))
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
         name="test_bedrock_embedding",
@@ -252,9 +240,9 @@ def test_bedrock_embedding_error_incorrect_access_key(
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 def test_bedrock_embedding_error_incorrect_access_key_no_content(
-    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_error_events_no_content, expected_client_error
+    monkeypatch, bedrock_server, exercise_model, set_trace_info, model_id, expected_client_error
 ):
-    @validate_custom_events(expected_error_events_no_content)
+    @validate_custom_events(events_sans_content(embedding_expected_error_events[model_id]))
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={

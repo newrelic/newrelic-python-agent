@@ -15,12 +15,12 @@
 import sys
 import openai
 import pytest
-
-from conftest import (
-    add_token_count_to_event,
-    disabled_ai_monitoring_record_content_settings,
+from testing_support.ml_testing_utils import (
+    add_token_count_to_events,
     events_sans_content,
     llm_token_count_callback,
+    disabled_ai_monitoring_record_content_settings,
+    set_trace_info,
 )
 from testing_support.fixtures import (
     dt_enabled,
@@ -214,7 +214,7 @@ invalid_model_events = [
     ],
     background_task=True,
 )
-@validate_custom_events(add_token_count_to_event(invalid_model_events))
+@validate_custom_events(add_token_count_to_events(invalid_model_events))
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model_with_token_count(set_trace_info, sync_openai_client):
@@ -364,7 +364,7 @@ def test_embeddings_invalid_request_error_invalid_model_async_no_content(set_tra
     ],
     background_task=True,
 )
-@validate_custom_events(add_token_count_to_event(invalid_model_events))
+@validate_custom_events(add_token_count_to_events(invalid_model_events))
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model_async_with_token_count(

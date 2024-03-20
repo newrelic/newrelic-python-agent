@@ -38,7 +38,6 @@ _logger = logging.getLogger(__name__)
 
 
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
-    breakpoint()
     transaction = current_transaction()
     if (
         not transaction

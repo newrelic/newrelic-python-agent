@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import openai
 from conftest import (  # pylint: disable=E0611
+    add_token_count_to_event,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
     events_sans_content,
+    llm_token_count_callback,
 )
 from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
+    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -166,6 +168,35 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata(set_trace_info, sy
 def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_trace_info, sync_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    generator = sync_openai_client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=_test_openai_chat_completion_messages,
+        temperature=0.7,
+        max_tokens=100,
+        stream=True,
+    )
+    for resp in generator:
+        assert resp
+
+
+@reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback)
+@validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
+# One summary event, one system message, one user message, and one response message from the assistant
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count",
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count(set_trace_info, sync_openai_client):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
@@ -414,6 +445,40 @@ def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info, 
 @validate_attributes("agent", ["llm"])
 @background_task()
 def test_openai_chat_completion_async_conversation_id_set_no_content(loop, set_trace_info, async_openai_client):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
+    async def consumer():
+        generator = await async_openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_messages,
+            temperature=0.7,
+            max_tokens=100,
+            stream=True,
+        )
+        async for resp in generator:
+            assert resp
+
+    loop.run_until_complete(consumer())
+
+
+@reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback)
+@validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
+# One summary event, one system message, one user message, and one response message from the assistant
+# @validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count_async",
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count_async(
+    set_trace_info, loop, async_openai_client
+):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
 

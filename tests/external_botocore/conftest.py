@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import io
 import json
 import os
@@ -60,9 +61,22 @@ BEDROCK_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)
 BEDROCK_AUDIT_LOG_CONTENTS = {}
 
 disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.enabled": False})
+disabled_ai_monitoring_streaming_settings = override_application_settings({"ai_monitoring.streaming.enabled": False})
 disabled_ai_monitoring_record_content_settings = override_application_settings(
     {"ai_monitoring.record_content.enabled": False}
 )
+
+
+def llm_token_count_callback(model, content):
+    return 105
+
+
+def add_token_count_to_events(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        if event[0]["type"] != "LlmChatCompletionSummary":
+            event[1]["token_count"] = 105
+    return events
 
 
 @pytest.fixture(scope="session")
@@ -140,16 +154,18 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
     success, exception = result
     response = (success or exception)[0]
 
-    try:
-        if isinstance(request.body, io.BytesIO):
-            request.body.seek(0)
-            body = json.loads(request.body.read())
-        else:
-            body = json.loads(request.body)
-    except Exception:
-        body = {}
+    if isinstance(request.body, io.BytesIO):
+        request.body.seek(0)
+        body = request.body.read()
+    else:
+        body = request.body
 
-    prompt = extract_shortened_prompt(body, model)
+    try:
+        content = json.loads(body)
+    except Exception:
+        content = body.decode("utf-8")
+
+    prompt = extract_shortened_prompt(content, model)
     headers = dict(response.headers.items())
     headers = dict(
         filter(

@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import logging
+import sys
+import traceback
 import uuid
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
@@ -26,6 +27,8 @@ from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 LANGCHAIN_VERSION = get_package_version("langchain")
+EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in langchain instrumentation: While reporting an exception in langchain, another exception occurred. Report this issue to New Relic Support.\n%s"
+RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in langchain instrumentation: Failed to record LLM events. Report this issue to New Relic Support.\n%s"
 
 VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.alibabacloud_opensearch": "AlibabaCloudOpenSearch",
@@ -109,9 +112,14 @@ VECTORSTORE_CLASSES = {
 }
 
 
-def _create_error_vectorstore_events(transaction, search_id, span_id, trace_id):
+def _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    span_id = linking_metadata.get("span.id")
+    trace_id = linking_metadata.get("trace.id")
+    request_query, request_k = bind_similarity_search(*args, **kwargs)
     llm_metadata_dict = _get_llm_metadata(transaction)
     vectorstore_error_dict = {
+        "request.k": request_k,
         "id": search_id,
         "span_id": span_id,
         "trace_id": trace_id,
@@ -120,6 +128,10 @@ def _create_error_vectorstore_events(transaction, search_id, span_id, trace_id):
         "ingest_source": "Python",
         "error": True,
     }
+
+    if settings.ai_monitoring.record_content.enabled:
+        vectorstore_error_dict["request.query"] = request_query
+
     vectorstore_error_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmVectorSearch", vectorstore_error_dict)
 
@@ -136,25 +148,24 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
-    function_name = callable_name(wrapped)
-
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
     search_id = str(uuid.uuid4())
 
-    with FunctionTrace(name=function_name, group="Llm/vectorstore/Langchain") as ft:
-        try:
-            response = await wrapped(*args, **kwargs)
-        except Exception as exc:
-            ft.notice_error(attributes={"vector_store_id": search_id})
-            _create_error_vectorstore_events(transaction, search_id, span_id, trace_id)
-            raise
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/vectorstore/Langchain")
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        response = await wrapped(*args, **kwargs)
+    except Exception as exc:
+        ft.notice_error(attributes={"vector_store_id": search_id})
+        ft.__exit__(*sys.exc_info())
+        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata)
+        raise
+    ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_vector_search_success(transaction, span_id, trace_id, ft, search_id, args, kwargs, response)
+    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response)
     return response
 
 
@@ -174,36 +185,36 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
-    function_name = callable_name(wrapped)
-
-    # LLMVectorSearch and Error data
-    available_metadata = get_trace_linking_metadata()
-    span_id = available_metadata.get("span.id", "")
-    trace_id = available_metadata.get("trace.id", "")
     search_id = str(uuid.uuid4())
 
-    with FunctionTrace(name=function_name, group="Llm/vectorstore/Langchain") as ft:
-        try:
-            response = wrapped(*args, **kwargs)
-        except Exception as exc:
-            ft.notice_error(attributes={"vector_store_id": search_id})
-            _create_error_vectorstore_events(transaction, search_id, span_id, trace_id)
-            raise
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/vectorstore/Langchain")
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        response = wrapped(*args, **kwargs)
+    except Exception as exc:
+        ft.notice_error(attributes={"vector_store_id": search_id})
+        ft.__exit__(*sys.exc_info())
+        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata)
+        raise
+    ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_vector_search_success(transaction, span_id, trace_id, ft, search_id, args, kwargs, response)
+    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response)
     return response
 
 
-def _record_vector_search_success(transaction, span_id, trace_id, ft, search_id, args, kwargs, response):
+def _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     request_query, request_k = bind_similarity_search(*args, **kwargs)
     duration = ft.duration
     response_number_of_documents = len(response)
     transaction_id = transaction.guid
     llm_metadata_dict = _get_llm_metadata(transaction)
+    span_id = linking_metadata.get("span.id")
+    trace_id = linking_metadata.get("trace.id")
 
     llm_vector_search = {
         "request.k": request_k,
@@ -225,8 +236,8 @@ def _record_vector_search_success(transaction, span_id, trace_id, ft, search_id,
 
     for index, doc in enumerate(response):
         sequence = index
-        page_content = getattr(doc, "page_content", "")
-        metadata = getattr(doc, "metadata", {})
+        page_content = getattr(doc, "page_content")
+        metadata = getattr(doc, "metadata") or {}
 
         metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
 
@@ -261,117 +272,47 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
-    tool_id = str(uuid.uuid4())
+    tool_id, metadata, tags, tool_input, tool_name, tool_description, run_args = _capture_tool_info(
+        instance, wrapped, args, kwargs
+    )
 
-    run_args = bind_args(wrapped, args, kwargs)
-
-    metadata = run_args.get("metadata") or {}
-    tags = run_args.get("tags") or []
-
-    tool_input = run_args.get("tool_input", "")
-    tool_name = instance.name or ""
-    tool_description = instance.description or ""
-
-    llm_metadata_dict = _get_llm_metadata(transaction)
-
-    span_id = None
-    trace_id = None
-
-    function_name = wrapped.__name__
-
-    with FunctionTrace(name=function_name, group="Llm/tool/Langchain") as ft:
-        # Get trace information
-        available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
-
-        try:
-            return_val = wrapped(**run_args)
-        except Exception as exc:
-            ft.notice_error(
-                attributes={
-                    "tool_id": tool_id,
-                }
-            )
-
-            run_id = getattr(transaction, "_nr_run_manager_tools_info", {}).get("run_id", "")
-            if hasattr(transaction, "_nr_run_manager_tools_info"):
-                del transaction._nr_run_manager_tools_info
-
-            # Update tags and metadata previously obtained from run_args with instance values
-            metadata.update(getattr(instance, "metadata", None) or {})
-            tags.extend(getattr(instance, "tags", None) or [])
-
-            # Make sure the builtin attributes take precedence over metadata attributes.
-            error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
-            error_tool_event_dict.update(
-                {
-                    "id": tool_id,
-                    "run_id": run_id,
-                    "name": tool_name,
-                    "description": tool_description,
-                    "span_id": span_id,
-                    "trace_id": trace_id,
-                    "transaction_id": transaction.guid,
-                    "vendor": "langchain",
-                    "ingest_source": "Python",
-                    "duration": ft.duration,
-                    "tags": tags or "",
-                    "error": True,
-                }
-            )
-
-            if settings.ai_monitoring.record_content.enabled:
-                error_tool_event_dict["input"] = tool_input
-
-            error_tool_event_dict.update(llm_metadata_dict)
-
-            transaction.record_custom_event("LlmTool", error_tool_event_dict)
-
-            raise
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/tool/Langchain")
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        return_val = wrapped(**run_args)
+    except Exception as exc:
+        _record_tool_error(
+            instance,
+            transaction,
+            linking_metadata,
+            tags,
+            metadata,
+            tool_id,
+            tool_input,
+            tool_name,
+            tool_description,
+            ft,
+        )
+        raise
+    ft.__exit__(None, None, None)
 
     if not return_val:
         return return_val
 
-    response = return_val
-
-    run_id = getattr(transaction, "_nr_run_manager_tools_info", {}).get("run_id", "")
-    if hasattr(transaction, "_nr_run_manager_tools_info"):
-        del transaction._nr_run_manager_tools_info
-
-    # Update tags and metadata previously obtained from run_args with instance values
-    metadata.update(getattr(instance, "metadata", None) or {})
-    tags.extend(getattr(instance, "tags", None) or [])
-
-    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
-    full_tool_event_dict.update(
-        {
-            "id": tool_id,
-            "run_id": run_id,
-            "name": tool_name,
-            "description": tool_description,
-            "span_id": span_id,
-            "trace_id": trace_id,
-            "transaction_id": transaction.guid,
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "duration": ft.duration,
-            "tags": tags or "",
-        }
+    _record_tool_success(
+        instance,
+        transaction,
+        linking_metadata,
+        tags,
+        metadata,
+        tool_id,
+        tool_input,
+        tool_name,
+        tool_description,
+        ft,
+        return_val,
     )
-
-    if settings.ai_monitoring.record_content.enabled:
-        full_tool_event_dict.update(
-            {
-                "input": tool_input,
-                "output": str(response),
-            }
-        )
-
-    full_tool_event_dict.update(llm_metadata_dict)
-
-    transaction.record_custom_event("LlmTool", full_tool_event_dict)
-
     return return_val
 
 
@@ -388,90 +329,82 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
+    tool_id, metadata, tags, tool_input, tool_name, tool_description, run_args = _capture_tool_info(
+        instance, wrapped, args, kwargs
+    )
+
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/tool/Langchain")
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        return_val = await wrapped(**run_args)
+    except Exception as exc:
+        _record_tool_error(
+            instance,
+            transaction,
+            linking_metadata,
+            tags,
+            metadata,
+            tool_id,
+            tool_input,
+            tool_name,
+            tool_description,
+            ft,
+        )
+        raise
+    ft.__exit__(None, None, None)
+
+    if not return_val:
+        return return_val
+
+    _record_tool_success(
+        instance,
+        transaction,
+        linking_metadata,
+        tags,
+        metadata,
+        tool_id,
+        tool_input,
+        tool_name,
+        tool_description,
+        ft,
+        return_val,
+    )
+    return return_val
+
+
+def _capture_tool_info(instance, wrapped, args, kwargs):
     run_args = bind_args(wrapped, args, kwargs)
 
     tool_id = str(uuid.uuid4())
     metadata = run_args.get("metadata") or {}
     metadata["nr_tool_id"] = tool_id
     run_args["metadata"] = metadata
-
     tags = run_args.get("tags") or []
+    tool_input = run_args.get("tool_input")
+    tool_name = getattr(instance, "name", None)
+    tool_description = getattr(instance, "description", None)
+    return tool_id, metadata, tags, tool_input, tool_name, tool_description, run_args
 
-    tool_input = run_args.get("tool_input", "")
-    tool_name = instance.name or ""
-    tool_description = instance.description or ""
 
-    span_id = None
-    trace_id = None
-
-    llm_metadata_dict = _get_llm_metadata(transaction)
-
+def _record_tool_success(
+    instance,
+    transaction,
+    linking_metadata,
+    tags,
+    metadata,
+    tool_id,
+    tool_input,
+    tool_name,
+    tool_description,
+    ft,
+    response,
+):
     settings = transaction.settings if transaction.settings is not None else global_settings()
-
-    function_name = wrapped.__name__
-
-    with FunctionTrace(name=function_name, group="Llm/tool/Langchain") as ft:
-        # Get trace information
-        available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
-
-        try:
-            return_val = await wrapped(**run_args)
-        except Exception as exc:
-            ft.notice_error(
-                attributes={
-                    "tool_id": tool_id,
-                }
-            )
-
-            run_id = getattr(transaction, "_nr_tool_ids", {}).pop(tool_id, "")
-
-            # Update tags and metadata previously obtained from run_args with instance values
-            metadata.update(getattr(instance, "metadata", None) or {})
-            tags.extend(getattr(instance, "tags", None) or [])
-
-            # Make sure the builtin attributes take precedence over metadata attributes.
-            error_tool_event_dict = {
-                "metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"
-            }
-            error_tool_event_dict.update(
-                {
-                    "id": tool_id,
-                    "run_id": run_id,
-                    "name": tool_name,
-                    "description": tool_description,
-                    "span_id": span_id,
-                    "trace_id": trace_id,
-                    "transaction_id": transaction.guid,
-                    "vendor": "langchain",
-                    "ingest_source": "Python",
-                    "duration": ft.duration,
-                    "tags": tags or "",
-                    "error": True,
-                }
-            )
-
-            if settings.ai_monitoring.record_content.enabled:
-                error_tool_event_dict["input"] = tool_input
-
-            error_tool_event_dict.update(llm_metadata_dict)
-
-            transaction.record_custom_event("LlmTool", error_tool_event_dict)
-
-            raise
-
-    if not return_val:
-        return return_val
-
-    response = return_val
-
-    run_id = getattr(transaction, "_nr_tool_run_ids", {}).pop(tool_id, "")
-
+    run_id = getattr(transaction, "_nr_tool_run_ids", {}).pop(tool_id, None)
     # Update tags and metadata previously obtained from run_args with instance values
     metadata.update(getattr(instance, "metadata", None) or {})
     tags.extend(getattr(instance, "tags", None) or [])
-
     full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
     full_tool_event_dict.update(
         {
@@ -479,70 +412,112 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
             "run_id": run_id,
             "name": tool_name,
             "description": tool_description,
-            "span_id": span_id,
-            "trace_id": trace_id,
+            "span_id": linking_metadata.get("span.id"),
+            "trace_id": linking_metadata.get("trace.id"),
             "transaction_id": transaction.guid,
             "vendor": "langchain",
             "ingest_source": "Python",
             "duration": ft.duration,
-            "tags": tags or "",
+            "tags": tags or None,
         }
     )
-
+    result = None
+    try:
+        result = str(response)
+    except Exception:
+        _logger.debug(
+            "Failed to convert tool response into a string.\n%s" % traceback.format_exception(*sys.exc_info())
+        )
     if settings.ai_monitoring.record_content.enabled:
         full_tool_event_dict.update(
             {
                 "input": tool_input,
-                "output": str(response),
+                "output": result,
             }
         )
-
-    full_tool_event_dict.update(llm_metadata_dict)
-
+    full_tool_event_dict.update(_get_llm_metadata(transaction))
     transaction.record_custom_event("LlmTool", full_tool_event_dict)
 
-    return return_val
+
+def _record_tool_error(
+    instance, transaction, linking_metadata, tags, metadata, tool_id, tool_input, tool_name, tool_description, ft
+):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    ft.notice_error(
+        attributes={
+            "tool_id": tool_id,
+        }
+    )
+    ft.__exit__(*sys.exc_info())
+    run_id = getattr(transaction, "_nr_tool_run_ids", {}).pop(tool_id, None)
+    # Update tags and metadata previously obtained from run_args with instance values
+    metadata.update(getattr(instance, "metadata", None) or {})
+    tags.extend(getattr(instance, "tags", None) or [])
+
+    # Make sure the builtin attributes take precedence over metadata attributes.
+    error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
+    error_tool_event_dict.update(
+        {
+            "id": tool_id,
+            "run_id": run_id,
+            "name": tool_name,
+            "description": tool_description,
+            "span_id": linking_metadata.get("span.id"),
+            "trace_id": linking_metadata.get("trace.id"),
+            "transaction_id": transaction.guid,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "duration": ft.duration,
+            "tags": tags or None,
+            "error": True,
+        }
+    )
+    if settings.ai_monitoring.record_content.enabled:
+        error_tool_event_dict["input"] = tool_input
+    error_tool_event_dict.update(_get_llm_metadata(transaction))
+    transaction.record_custom_event("LlmTool", error_tool_event_dict)
 
 
 def wrap_on_tool_start_sync(wrapped, instance, args, kwargs):
-    run_manager = wrapped(*args, **kwargs)
     transaction = current_transaction()
-
     if not transaction:
-        return run_manager
+        return wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
-        return run_manager
+        return wrapped(*args, **kwargs)
 
-    # Only capture the first run_id.
-    if not hasattr(transaction, "_nr_run_manager_tools_info"):
-        transaction._nr_run_manager_tools_info = {
-            "run_id": run_manager.run_id,
-        }
-
+    tool_id = _get_tool_id(instance)
+    run_manager = wrapped(*args, **kwargs)
+    _capture_tool_run_id(transaction, run_manager, tool_id)
     return run_manager
 
 
 async def wrap_on_tool_start_async(wrapped, instance, args, kwargs):
-    run_manager = await wrapped(*args, **kwargs)
     transaction = current_transaction()
     if not transaction:
-        return run_manager
+        return await wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
-        return run_manager
+        return await wrapped(*args, **kwargs)
 
-    tool_id = getattr(instance, "metadata", {}).pop("nr_tool_id")
+    tool_id = _get_tool_id(instance)
+    run_manager = await wrapped(*args, **kwargs)
+    _capture_tool_run_id(transaction, run_manager, tool_id)
+    return run_manager
 
+
+def _get_tool_id(instance):
+    return (getattr(instance, "metadata", None) or {}).pop("nr_tool_id", None)
+
+
+def _capture_tool_run_id(transaction, run_manager, tool_id):
     if tool_id:
         if not hasattr(transaction, "_nr_tool_run_ids"):
             transaction._nr_tool_run_ids = {}
         if tool_id not in transaction._nr_tool_run_ids:
-            transaction._nr_tool_run_ids[tool_id] = getattr(run_manager, "run_id", "")
-
-    return run_manager
+            transaction._nr_tool_run_ids[tool_id] = getattr(run_manager, "run_id", None)
 
 
 async def wrap_chain_async_run(wrapped, instance, args, kwargs):
@@ -559,8 +534,6 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     transaction._add_agent_attribute("llm", True)
 
     run_args = bind_args(wrapped, args, kwargs)
-    span_id = None
-    trace_id = None
     completion_id = str(uuid.uuid4())
     add_nr_completion_id(run_args, completion_id)
     # Check to see if launched from agent or directly from chain.
@@ -568,30 +541,27 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     # The AgentExecutor class has an attribute "agent" that does
     # not exist within the Chain class
     group_name = "Llm/agent/Langchain" if hasattr(instance, "agent") else "Llm/chain/Langchain"
-    with FunctionTrace(name=wrapped.__name__, group=group_name) as ft:
-        # Get trace information
-        available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
-
-        try:
-            response = await wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
-        except Exception as exc:
-            ft.notice_error(
-                attributes={
-                    "completion_id": completion_id,
-                }
-            )
-            _create_error_chain_run_events(
-                transaction, instance, run_args, completion_id, span_id, trace_id, ft.duration
-            )
-            raise
+    ft = FunctionTrace(name=wrapped.__name__, group=group_name)
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        response = await wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
+    except Exception as exc:
+        ft.notice_error(
+            attributes={
+                "completion_id": completion_id,
+            }
+        )
+        ft.__exit__(*sys.exc_info())
+        _create_error_chain_run_events(transaction, instance, run_args, completion_id, linking_metadata, ft.duration)
+        raise
+    ft.__exit__(None, None, None)
 
     if not response:
         return response
 
     _create_successful_chain_run_events(
-        transaction, instance, run_args, completion_id, response, span_id, trace_id, ft.duration
+        transaction, instance, run_args, completion_id, response, linking_metadata, ft.duration
     )
     return response
 
@@ -610,8 +580,6 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     transaction._add_agent_attribute("llm", True)
 
     run_args = bind_args(wrapped, args, kwargs)
-    span_id = None
-    trace_id = None
     completion_id = str(uuid.uuid4())
     add_nr_completion_id(run_args, completion_id)
     # Check to see if launched from agent or directly from chain.
@@ -619,30 +587,27 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     # The AgentExecutor class has an attribute "agent" that does
     # not exist within the Chain class
     group_name = "Llm/agent/Langchain" if hasattr(instance, "agent") else "Llm/chain/Langchain"
-    with FunctionTrace(name=wrapped.__name__, group=group_name) as ft:
-        # Get trace information
-        available_metadata = get_trace_linking_metadata()
-        span_id = available_metadata.get("span.id", "")
-        trace_id = available_metadata.get("trace.id", "")
-
-        try:
-            response = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
-        except Exception as exc:
-            ft.notice_error(
-                attributes={
-                    "completion_id": completion_id,
-                }
-            )
-            _create_error_chain_run_events(
-                transaction, instance, run_args, completion_id, span_id, trace_id, ft.duration
-            )
-            raise
+    ft = FunctionTrace(name=wrapped.__name__, group=group_name)
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        response = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
+    except Exception as exc:
+        ft.notice_error(
+            attributes={
+                "completion_id": completion_id,
+            }
+        )
+        ft.__exit__(*sys.exc_info())
+        _create_error_chain_run_events(transaction, instance, run_args, completion_id, linking_metadata, ft.duration)
+        raise
+    ft.__exit__(None, None, None)
 
     if not response:
         return response
 
     _create_successful_chain_run_events(
-        transaction, instance, run_args, completion_id, response, span_id, trace_id, ft.duration
+        transaction, instance, run_args, completion_id, response, linking_metadata, ft.duration
     )
     return response
 
@@ -653,16 +618,18 @@ def add_nr_completion_id(run_args, completion_id):
     # identifier when grabbing the run_id off the transaction.
     metadata = (run_args.get("config") or {}).get("metadata") or {}
     metadata["nr_completion_id"] = completion_id
-    if not run_args["config"]:
+    if not run_args.get("config"):
         run_args["config"] = {"metadata": metadata}
     else:
         run_args["config"]["metadata"] = metadata
 
 
-def _create_error_chain_run_events(transaction, instance, run_args, completion_id, span_id, trace_id, duration):
-    _input = _get_chain_run_input(run_args)
+def _create_error_chain_run_events(transaction, instance, run_args, completion_id, linking_metadata, duration):
+    _input = run_args.get("input")
     llm_metadata_dict = _get_llm_metadata(transaction)
     run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
+    span_id = linking_metadata.get("span.id")
+    trace_id = linking_metadata.get("trace.id")
     input_message_list = [_input]
 
     # Make sure the builtin attributes take precedence over metadata attributes.
@@ -683,11 +650,8 @@ def _create_error_chain_run_events(transaction, instance, run_args, completion_i
             "error": True,
         }
     )
-
     full_chat_completion_summary_dict.update(llm_metadata_dict)
-
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
-
     create_chat_completion_message_event(
         transaction,
         input_message_list,
@@ -709,11 +673,7 @@ def _get_run_manager_info(transaction, run_args, instance, completion_id):
     metadata = {key: value for key, value in metadata.items() if key != "nr_completion_id"}
     tags = []
     tags.extend((run_args.get("config") or {}).get("tags") or [])
-    return run_id, metadata, tags or ""
-
-
-def _get_chain_run_input(run_args):
-    return run_args.get("input", "")
+    return run_id, metadata, tags or None
 
 
 def _get_llm_metadata(transaction):
@@ -724,11 +684,13 @@ def _get_llm_metadata(transaction):
 
 
 def _create_successful_chain_run_events(
-    transaction, instance, run_args, completion_id, response, span_id, trace_id, duration
+    transaction, instance, run_args, completion_id, response, linking_metadata, duration
 ):
-    _input = _get_chain_run_input(run_args)
+    _input = run_args.get("input")
     llm_metadata_dict = _get_llm_metadata(transaction)
     run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
+    span_id = linking_metadata.get("span.id")
+    trace_id = linking_metadata.get("trace.id")
     input_message_list = [_input]
     output_message_list = []
     try:
@@ -736,8 +698,11 @@ def _create_successful_chain_run_events(
     except:
         try:
             output_message_list = [str(response)]
-        except:
-            _logger.warning("Unable to capture response. No response message event will be captured.")
+        except Exception as e:
+            _logger.warning(
+                "Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n%s"
+                % traceback.format_exception(*sys.exc_info())
+            )
 
     # Make sure the builtin attributes take precedence over metadata attributes.
     full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
@@ -756,11 +721,8 @@ def _create_successful_chain_run_events(
             "tags": tags,
         }
     )
-
     full_chat_completion_summary_dict.update(llm_metadata_dict)
-
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
-
     create_chat_completion_message_event(
         transaction,
         input_message_list,
@@ -799,12 +761,9 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
             "virtual_llm": True,
         }
-
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_input_message_dict["content"] = message
-
         chat_completion_input_message_dict.update(llm_metadata_dict)
-
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_input_message_dict)
 
     if output_message_list:
@@ -826,12 +785,9 @@ def create_chat_completion_message_event(
                 "is_response": True,
                 "virtual_llm": True,
             }
-
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_output_message_dict["content"] = message
-
             chat_completion_output_message_dict.update(llm_metadata_dict)
-
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
 
 
@@ -844,17 +800,9 @@ def wrap_on_chain_start(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
-    run_args = bind_args(wrapped, args, kwargs)
-    completion_id = getattr(instance, "metadata", {}).pop("nr_completion_id")
-    run_manager = wrapped(**run_args)
-
-    if completion_id:
-        if not hasattr(transaction, "_nr_chain_run_ids"):
-            transaction._nr_chain_run_ids = {}
-        # Only capture the first run_id.
-        if completion_id not in transaction._nr_chain_run_ids:
-            transaction._nr_chain_run_ids[completion_id] = getattr(run_manager, "run_id", "")
-
+    completion_id = _get_completion_id(instance)
+    run_manager = wrapped(*args, **kwargs)
+    _capture_chain_run_id(transaction, run_manager, completion_id)
     return run_manager
 
 
@@ -867,18 +815,23 @@ async def wrap_async_on_chain_start(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
-    run_args = bind_args(wrapped, args, kwargs)
-    completion_id = getattr(instance, "metadata", {}).pop("nr_completion_id")
-    run_manager = await wrapped(**run_args)
+    completion_id = _get_completion_id(instance)
+    run_manager = await wrapped(*args, **kwargs)
+    _capture_chain_run_id(transaction, run_manager, completion_id)
+    return run_manager
 
+
+def _get_completion_id(instance):
+    return (getattr(instance, "metadata", None) or {}).pop("nr_completion_id", None)
+
+
+def _capture_chain_run_id(transaction, run_manager, completion_id):
     if completion_id:
         if not hasattr(transaction, "_nr_chain_run_ids"):
             transaction._nr_chain_run_ids = {}
         # Only capture the first run_id.
         if completion_id not in transaction._nr_chain_run_ids:
             transaction._nr_chain_run_ids[completion_id] = getattr(run_manager, "run_id", "")
-
-    return run_manager
 
 
 def instrument_langchain_runnables_chains_base(module):

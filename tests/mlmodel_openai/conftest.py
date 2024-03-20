@@ -61,6 +61,7 @@ if get_openai_version() < (1, 0):
         "test_embeddings_error_v1.py",
         "test_chat_completion_stream_v1.py",
         "test_chat_completion_stream_error_v1.py",
+        "test_embeddings_stream_v1.py",
     ]
 else:
     collect_ignore = [

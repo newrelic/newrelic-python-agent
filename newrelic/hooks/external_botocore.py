@@ -607,7 +607,6 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             ft.__exit__(None, None, None)
             return response
 
-
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
         bedrock_attrs = {
             "request_id": response_headers.get("x-amzn-requestid"),
@@ -793,7 +792,6 @@ def handle_embedding_event(transaction, bedrock_attrs):
 
     if settings.ai_monitoring.record_content.enabled:
         embedding_dict["input"] = input
-
 
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
     transaction.record_custom_event("LlmEmbedding", embedding_dict)

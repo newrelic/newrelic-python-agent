@@ -5291,12 +5291,10 @@ RESPONSES = {
         {
             "Content-Type": "application/json",
             "x-amzn-RequestId": "b3646569-18c5-4173-a9fa-bbe9c648f636",
-            "x-amzn-ErrorType": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/"
+            "x-amzn-ErrorType": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/",
         },
         400,
-        {
-            "message": "Malformed input request, please reformat your input and try again."
-        }
+        {"message": "Malformed input request, please reformat your input and try again."},
     ],
 }
 

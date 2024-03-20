@@ -28,17 +28,17 @@ from _test_bedrock_embeddings import (
     embedding_payload_templates,
 )
 from conftest import (  # pylint: disable=E0611
-    add_token_count_to_events,
     BOTOCORE_VERSION,
+    add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     llm_token_count_callback,
 )
 from testing_support.fixtures import (
+    override_llm_token_callback_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
-    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -132,9 +132,7 @@ _test_bedrock_embedding_prompt = "This is an embedding test."
 
 
 @reset_core_stats_engine()
-def test_bedrock_embedding_in_txn_with_llm_metadata(
-    set_trace_info, exercise_model, expected_events
-):
+def test_bedrock_embedding_in_txn_with_llm_metadata(set_trace_info, exercise_model, expected_events):
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
@@ -187,9 +185,7 @@ def test_bedrock_embedding_in_txn_with_llm_metadata_no_content(
 
 
 @reset_core_stats_engine()
-def test_bedrock_embedding_in_txn_no_llm_metadata(
-    set_trace_info, exercise_model, expected_events_no_llm_metadata
-):
+def test_bedrock_embedding_in_txn_no_llm_metadata(set_trace_info, exercise_model, expected_events_no_llm_metadata):
     @validate_custom_events(expected_events_no_llm_metadata)
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(

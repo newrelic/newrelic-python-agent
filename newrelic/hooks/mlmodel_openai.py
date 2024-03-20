@@ -38,10 +38,14 @@ _logger = logging.getLogger(__name__)
 
 
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
+    breakpoint()
     transaction = current_transaction()
-    if not transaction or kwargs.get("stream", False):
+    if (
+        not transaction
+        or kwargs.get("stream", False)
+        or (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream"
+    ):
         return wrapped(*args, **kwargs)
-
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)

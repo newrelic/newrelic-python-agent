@@ -31,8 +31,8 @@ OPENAI_VERSION = get_package_version("openai")
 OPENAI_VERSION_TUPLE = tuple(map(int, OPENAI_VERSION.split(".")))
 OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
 EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in openai instrumentation: While reporting an exception in openai, another exception occurred. Report this issue to New Relic Support.\n%s"
-RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in openai instrumentation: Failed to record LLM events. Report this issue to New Relic Support.\n%s"
-STREAM_PARSING_FAILURE_LOG_MESSAGE = "Exception occurred in openai instrumentation: Failed to process event stream information. Report this issue to New Relic Support.\n%s"
+RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in OpenAI instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n%s"
+STREAM_PARSING_FAILURE_LOG_MESSAGE = "Exception occurred in OpenAI instrumentation: Failed to process event stream information. Please report this issue to New Relic Support.\n%s"
 
 _logger = logging.getLogger(__name__)
 

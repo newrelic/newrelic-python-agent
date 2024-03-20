@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import asyncio
-import copy
 import uuid
 
 import langchain
@@ -1354,7 +1353,7 @@ def test_async_langchain_chain_error_in_openai(
         ),
     ),
 )
-def test_async_langchain_chain_error_in_lanchain(
+def test_async_langchain_chain_error_in_langchain(
     set_trace_info,
     chat_openai_client,
     json_schema,
@@ -1375,7 +1374,7 @@ def test_async_langchain_chain_error_in_lanchain(
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
-        name="test_chain:test_async_langchain_chain_error_in_lanchain.<locals>._test",
+        name="test_chain:test_async_langchain_chain_error_in_langchain.<locals>._test",
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
@@ -1428,7 +1427,7 @@ def test_async_langchain_chain_error_in_lanchain(
         ),
     ),
 )
-def test_async_langchain_chain_error_in_lanchain_no_content(
+def test_async_langchain_chain_error_in_langchain_no_content(
     set_trace_info,
     chat_openai_client,
     json_schema,
@@ -1450,7 +1449,7 @@ def test_async_langchain_chain_error_in_lanchain_no_content(
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
-        name="test_chain:test_async_langchain_chain_error_in_lanchain_no_content.<locals>._test",
+        name="test_chain:test_async_langchain_chain_error_in_langchain_no_content.<locals>._test",
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],

@@ -71,7 +71,6 @@ else:
         "test_chat_completion_error.py",
         "test_chat_completion_stream.py",
         "test_chat_completion_stream_error.py",
-        "test_embeddings_stream.py",
     ]
 
 

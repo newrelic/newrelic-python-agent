@@ -123,7 +123,6 @@ embedding_expected_malformed_request_body_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -144,7 +143,6 @@ embedding_expected_malformed_response_body_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,

@@ -809,7 +809,6 @@ chat_completion_expected_malformed_request_body_events = [
             "id": None,  # UUID that varies with each run
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "request_id": "e72d1b46-9f16-4bf0-8eee-f7778f32e5a5",
@@ -830,7 +829,6 @@ chat_completion_expected_malformed_response_body_events = [
             "id": None,  # UUID that varies with each run
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
@@ -853,7 +851,6 @@ chat_completion_expected_malformed_response_body_events = [
             "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "Malformed Body",
             "role": "user",
             "completion_id": None,
@@ -872,7 +869,6 @@ chat_completion_expected_malformed_response_streaming_body_events = [
             "id": None,  # UUID that varies with each run
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "request_id": "a5a8cebb-fd33-4437-8168-5667fbdfc1fb",
@@ -895,7 +891,6 @@ chat_completion_expected_malformed_response_streaming_body_events = [
             "request_id": "a5a8cebb-fd33-4437-8168-5667fbdfc1fb",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "Malformed Streaming Body",
             "role": "user",
             "completion_id": None,
@@ -914,7 +909,6 @@ chat_completion_expected_malformed_response_streaming_chunk_events = [
             "id": None,  # UUID that varies with each run
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "request_id": "a5a8cebb-fd33-4437-8168-5667fbdfc1fb",
@@ -937,7 +931,6 @@ chat_completion_expected_malformed_response_streaming_chunk_events = [
             "request_id": "a5a8cebb-fd33-4437-8168-5667fbdfc1fb",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "Malformed Streaming Chunk",
             "role": "user",
             "completion_id": None,
@@ -957,7 +950,6 @@ chat_completion_expected_streaming_error_events = [
             "id": None,  # UUID that varies with each run
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
@@ -979,7 +971,6 @@ chat_completion_expected_streaming_error_events = [
             "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "Streaming Exception",
             "role": "user",
             "completion_id": None,

@@ -83,7 +83,6 @@ single_arg_tool_recorded_events = [
             "output": "Python Agent",
             "name": "_single_arg_tool",
             "description": "_single_arg_tool(query: str) - A test tool that returns query string",
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "{'query': 'Python Agent'}",
@@ -182,7 +181,6 @@ multi_arg_tool_recorded_events = [
             "output": "81",
             "name": "_multi_arg_tool",
             "description": "_multi_arg_tool(first_num: int, second_num: int) - A test tool that adds two integers together",
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "{'first_num': 53, 'second_num': 28}",
@@ -255,7 +253,6 @@ multi_arg_error_recorded_events = [
             "run_id": None,  # No run ID created on error
             "name": "_multi_arg_tool",
             "description": "_multi_arg_tool(first_num: int, second_num: int) - A test tool that adds two integers together",
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "{'first_num': 53}",

@@ -151,7 +151,6 @@ def create_chat_completion_message_event(
             "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, message_content)
             if settings.ai_monitoring.llm_token_count_callback
             else None,
-            "transaction_id": transaction.guid,
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -190,7 +189,6 @@ def create_chat_completion_message_event(
                 "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, message_content)
                 if settings.ai_monitoring.llm_token_count_callback
                 else None,
-                "transaction_id": transaction.guid,
                 "role": message.get("role"),
                 "completion_id": chat_completion_id,
                 "sequence": index,
@@ -268,7 +266,6 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             "id": embedding_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "transaction_id": transaction.guid,
             "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, input)
             if settings.ai_monitoring.llm_token_count_callback
             else None,
@@ -360,7 +357,6 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
             "id": embedding_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "transaction_id": transaction.guid,
             "token_count": settings.ai_monitoring.llm_token_count_callback(model, input)
             if settings.ai_monitoring.llm_token_count_callback
             else None,
@@ -483,7 +479,6 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             "id": completion_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "transaction_id": transaction.guid,
             "request.model": request_model,
             "request.temperature": kwargs.get("temperature"),
             "request.max_tokens": kwargs.get("max_tokens"),
@@ -602,7 +597,6 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             "id": completion_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "transaction_id": transaction.guid,
             "response.number_of_messages": len(request_message_list),
             "request.model": request_model,
             "request.temperature": kwargs.get("temperature"),

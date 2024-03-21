@@ -21,10 +21,10 @@ from conftest import (  # pylint: disable=E0611
     llm_token_count_callback,
 )
 from testing_support.fixtures import (  # override_application_settings,
+    override_llm_token_callback_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
-    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -39,7 +39,6 @@ embedding_recorded_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "This is an embedding test.",

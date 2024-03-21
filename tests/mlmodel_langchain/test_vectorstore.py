@@ -57,7 +57,6 @@ vectorstore_recorded_events = [
         {
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "id": None,  # UUID that changes with each run
@@ -77,7 +76,6 @@ vectorstore_recorded_events = [
             "page_content": "Hello world!\n1",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "id": None,  # UUID that changes with each run
@@ -332,7 +330,6 @@ vectorstore_error_events = [
             "id": None,  # UUID that varies with each run
             "request.query": "Complete this sentence: Hello",
             "request.k": -1,
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "vendor": "langchain",

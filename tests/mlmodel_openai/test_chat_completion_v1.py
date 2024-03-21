@@ -46,7 +46,6 @@ chat_completion_recorded_events = [
         {
             "id": None,  # UUID that varies with each run
             "llm.conversation_id": "my-awesome-id",
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
@@ -83,7 +82,6 @@ chat_completion_recorded_events = [
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "You are a scientist.",
             "role": "system",
             "completion_id": None,
@@ -101,7 +99,6 @@ chat_completion_recorded_events = [
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "What is 212 degrees Fahrenheit converted to Celsius?",
             "role": "user",
             "completion_id": None,
@@ -119,7 +116,6 @@ chat_completion_recorded_events = [
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
             "role": "assistant",
             "completion_id": None,
@@ -204,7 +200,6 @@ chat_completion_recorded_events_no_llm_metadata = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
@@ -240,7 +235,6 @@ chat_completion_recorded_events_no_llm_metadata = [
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "You are a scientist.",
             "role": "system",
             "completion_id": None,
@@ -257,7 +251,6 @@ chat_completion_recorded_events_no_llm_metadata = [
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "What is 212 degrees Fahrenheit converted to Celsius?",
             "role": "user",
             "completion_id": None,
@@ -274,7 +267,6 @@ chat_completion_recorded_events_no_llm_metadata = [
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
             "role": "assistant",
             "completion_id": None,

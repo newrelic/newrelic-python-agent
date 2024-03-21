@@ -46,8 +46,6 @@ embedding_recorded_events = [
             "request.model": "text-embedding-ada-002",
             "request_id": "fef7adee5adcfb03c083961bdce4f6a4",
             "response.organization": "foobar-jtbczk",
-            "response.usage.total_tokens": 6,
-            "response.usage.prompt_tokens": 6,
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 200,
             "response.headers.ratelimitLimitTokens": 150000,

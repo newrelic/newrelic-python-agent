@@ -274,8 +274,6 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             "duration": ft.duration,
             "response.model": response_model,
             "response.organization": organization,
-            "response.usage.total_tokens": response_usage.get("total_tokens"),
-            "response.usage.prompt_tokens": response_usage.get("prompt_tokens"),
             "response.headers.llmVersion": response_headers.get("openai-version"),
             "response.headers.ratelimitLimitRequests": check_rate_limit_header(
                 response_headers, "x-ratelimit-limit-requests", True
@@ -488,9 +486,6 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             "duration": ft.duration,
             "response.model": response_model,
             "response.organization": organization,
-            "response.usage.completion_tokens": response_usage.get("completion_tokens"),
-            "response.usage.total_tokens": response_usage.get("total_tokens"),
-            "response.usage.prompt_tokens": response_usage.get("prompt_tokens"),
             "response.choices.finish_reason": finish_reason,
             "response.headers.llmVersion": response_headers.get("openai-version"),
             "response.headers.ratelimitLimitRequests": check_rate_limit_header(

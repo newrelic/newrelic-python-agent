@@ -49,8 +49,6 @@ embedding_recorded_events = [
             "request.model": "text-embedding-ada-002",
             "request_id": "c70828b2293314366a76a2b1dcb20688",
             "response.organization": "new-relic-nkmd8b",
-            "response.usage.total_tokens": 6,
-            "response.usage.prompt_tokens": 6,
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 200,
             "response.headers.ratelimitLimitTokens": 150000,

@@ -14,6 +14,7 @@
 
 import logging
 import sys
+import traceback
 import uuid
 
 import openai
@@ -29,15 +30,21 @@ from newrelic.core.config import global_settings
 OPENAI_VERSION = get_package_version("openai")
 OPENAI_VERSION_TUPLE = tuple(map(int, OPENAI_VERSION.split(".")))
 OPENAI_V1 = OPENAI_VERSION_TUPLE >= (1,)
+EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in openai instrumentation: While reporting an exception in openai, another exception occurred. Report this issue to New Relic Support.\n%s"
+RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in OpenAI instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n%s"
+STREAM_PARSING_FAILURE_LOG_MESSAGE = "Exception occurred in OpenAI instrumentation: Failed to process event stream information. Please report this issue to New Relic Support.\n%s"
 
 _logger = logging.getLogger(__name__)
 
 
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if not transaction or kwargs.get("stream", False):
+    if (
+        not transaction
+        or kwargs.get("stream", False)
+        or (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream"
+    ):
         return wrapped(*args, **kwargs)
-
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
@@ -236,63 +243,67 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
-    response_headers = getattr(response, "_nr_response_headers", {})
-    input = kwargs.get("input")
+    try:
+        response_headers = getattr(response, "_nr_response_headers", {})
+        input = kwargs.get("input")
 
-    # In v1, response objects are pydantic models so this function call converts the
-    # object back to a dictionary for backwards compatibility.
-    attribute_response = response
-    if OPENAI_V1:
-        attribute_response = response.model_dump()
+        # In v1, response objects are pydantic models so this function call converts the
+        # object back to a dictionary for backwards compatibility.
+        attribute_response = response
+        if OPENAI_V1:
+            attribute_response = response.model_dump()
 
-    request_id = response_headers.get("x-request-id")
-    response_model = attribute_response.get("model")
-    response_usage = attribute_response.get("usage", {}) or {}
-    organization = (
-        response_headers.get("openai-organization") if OPENAI_V1 else getattr(attribute_response, "organization", None)
-    )
+        request_id = response_headers.get("x-request-id")
+        response_model = attribute_response.get("model")
+        response_usage = attribute_response.get("usage", {}) or {}
+        organization = (
+            response_headers.get("openai-organization")
+            if OPENAI_V1
+            else getattr(attribute_response, "organization", None)
+        )
 
-    full_embedding_response_dict = {
-        "id": embedding_id,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, input)
-        if settings.ai_monitoring.llm_token_count_callback
-        else None,
-        "request.model": kwargs.get("model") or kwargs.get("engine"),
-        "request_id": request_id,
-        "duration": ft.duration,
-        "response.model": response_model,
-        "response.organization": organization,
-        "response.usage.total_tokens": response_usage.get("total_tokens"),
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens"),
-        "response.headers.llmVersion": response_headers.get("openai-version"),
-        "response.headers.ratelimitLimitRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-limit-requests", True
-        ),
-        "response.headers.ratelimitLimitTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-limit-tokens", True
-        ),
-        "response.headers.ratelimitResetTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-reset-tokens", False
-        ),
-        "response.headers.ratelimitResetRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-reset-requests", False
-        ),
-        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-remaining-tokens", True
-        ),
-        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-remaining-requests", True
-        ),
-        "vendor": "openai",
-        "ingest_source": "Python",
-    }
-    if settings.ai_monitoring.record_content.enabled:
-        full_embedding_response_dict["input"] = input
-
-    full_embedding_response_dict.update(_get_llm_attributes(transaction))
-    transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
+        full_embedding_response_dict = {
+            "id": embedding_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, input)
+            if settings.ai_monitoring.llm_token_count_callback
+            else None,
+            "request.model": kwargs.get("model") or kwargs.get("engine"),
+            "request_id": request_id,
+            "duration": ft.duration,
+            "response.model": response_model,
+            "response.organization": organization,
+            "response.usage.total_tokens": response_usage.get("total_tokens"),
+            "response.usage.prompt_tokens": response_usage.get("prompt_tokens"),
+            "response.headers.llmVersion": response_headers.get("openai-version"),
+            "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+                response_headers, "x-ratelimit-limit-requests", True
+            ),
+            "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+                response_headers, "x-ratelimit-limit-tokens", True
+            ),
+            "response.headers.ratelimitResetTokens": check_rate_limit_header(
+                response_headers, "x-ratelimit-reset-tokens", False
+            ),
+            "response.headers.ratelimitResetRequests": check_rate_limit_header(
+                response_headers, "x-ratelimit-reset-requests", False
+            ),
+            "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+                response_headers, "x-ratelimit-remaining-tokens", True
+            ),
+            "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+                response_headers, "x-ratelimit-remaining-requests", True
+            ),
+            "vendor": "openai",
+            "ingest_source": "Python",
+        }
+        if settings.ai_monitoring.record_content.enabled:
+            full_embedding_response_dict["input"] = input
+        full_embedding_response_dict.update(_get_llm_attributes(transaction))
+        transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
 def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc):
@@ -302,30 +313,36 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
     model = kwargs.get("model") or kwargs.get("engine")
     input = kwargs.get("input")
 
-    if OPENAI_V1:
-        response = getattr(exc, "response", None)
-        response_headers = getattr(response, "headers", None) or {}
-        exc_organization = response_headers.get("openai-organization")
-        # There appears to be a bug here in openai v1 where despite having code,
-        # param, etc in the error response, they are not populated on the exception
-        # object so grab them from the response body object instead.
-        body = getattr(exc, "body", None) or {}
-        notice_error_attributes = {
-            "http.statusCode": getattr(exc, "status_code", None),
-            "error.message": body.get("message"),
-            "error.code": body.get("code"),
-            "error.param": body.get("param"),
-            "embedding_id": embedding_id,
-        }
-    else:
-        exc_organization = getattr(exc, "organization", None)
-        notice_error_attributes = {
-            "http.statusCode": getattr(exc, "http_status", None),
-            "error.message": getattr(exc, "_message", None),
-            "error.code": getattr(getattr(exc, "error", None), "code", None),
-            "error.param": getattr(exc, "param", None),
-            "embedding_id": embedding_id,
-        }
+    exc_organization = None
+    notice_error_attributes = {}
+    try:
+        if OPENAI_V1:
+            response = getattr(exc, "response", None)
+            response_headers = getattr(response, "headers", None) or {}
+            exc_organization = response_headers.get("openai-organization")
+            # There appears to be a bug here in openai v1 where despite having code,
+            # param, etc in the error response, they are not populated on the exception
+            # object so grab them from the response body object instead.
+            body = getattr(exc, "body", None) or {}
+            notice_error_attributes = {
+                "http.statusCode": getattr(exc, "status_code", None),
+                "error.message": body.get("message"),
+                "error.code": body.get("code"),
+                "error.param": body.get("param"),
+                "embedding_id": embedding_id,
+            }
+        else:
+            exc_organization = getattr(exc, "organization", None)
+            notice_error_attributes = {
+                "http.statusCode": getattr(exc, "http_status", None),
+                "error.message": getattr(exc, "_message", None),
+                "error.code": getattr(getattr(exc, "error", None), "code", None),
+                "error.param": getattr(exc, "param", None),
+                "embedding_id": embedding_id,
+            }
+    except Exception:
+        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+
     message = notice_error_attributes.pop("error.message")
     if message:
         exc._nr_message = message
@@ -335,25 +352,27 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
     # Exit the trace now so that the duration is calculated.
     ft.__exit__(*sys.exc_info())
 
-    error_embedding_dict = {
-        "id": embedding_id,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "token_count": settings.ai_monitoring.llm_token_count_callback(model, input)
-        if settings.ai_monitoring.llm_token_count_callback
-        else None,
-        "request.model": model,
-        "vendor": "openai",
-        "ingest_source": "Python",
-        "response.organization": exc_organization,
-        "duration": ft.duration,
-        "error": True,
-    }
-    if settings.ai_monitoring.record_content.enabled:
-        error_embedding_dict["input"] = input
-
-    error_embedding_dict.update(_get_llm_attributes(transaction))
-    transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
+    try:
+        error_embedding_dict = {
+            "id": embedding_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "token_count": settings.ai_monitoring.llm_token_count_callback(model, input)
+            if settings.ai_monitoring.llm_token_count_callback
+            else None,
+            "request.model": model,
+            "vendor": "openai",
+            "ingest_source": "Python",
+            "response.organization": exc_organization,
+            "duration": ft.duration,
+            "error": True,
+        }
+        if settings.ai_monitoring.record_content.enabled:
+            error_embedding_dict["input"] = input
+        error_embedding_dict.update(_get_llm_attributes(transaction))
+        transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
 async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
@@ -388,7 +407,7 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
-    request_message_list = kwargs.get("messages", [])
+    request_message_list = kwargs.get("messages") or []
     stream = kwargs.get("stream", False)
     # Only if streaming and streaming monitoring is enabled and the response is not empty
     # do we not exit the function trace.
@@ -398,154 +417,164 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
     # If the return value is empty or stream monitoring is disabled exit early.
     if not return_val or (stream and not settings.ai_monitoring.streaming.enabled):
         return
-
     if stream:
-        # The function trace will be exited when in the final iteration of the response
-        # generator.
-        setattr(return_val, "_nr_ft", ft)
-        setattr(return_val, "_nr_openai_attrs", getattr(return_val, "_nr_openai_attrs", {}))
-        return_val._nr_openai_attrs["messages"] = kwargs.get("messages", [])
-        return_val._nr_openai_attrs["temperature"] = kwargs.get("temperature")
-        return_val._nr_openai_attrs["max_tokens"] = kwargs.get("max_tokens")
-        return_val._nr_openai_attrs["model"] = kwargs.get("model") or kwargs.get("engine")
-        return
+        try:
+            # The function trace will be exited when in the final iteration of the response
+            # generator.
+            setattr(return_val, "_nr_ft", ft)
+            setattr(return_val, "_nr_openai_attrs", getattr(return_val, "_nr_openai_attrs", {}))
+            return_val._nr_openai_attrs["messages"] = kwargs.get("messages", [])
+            return_val._nr_openai_attrs["temperature"] = kwargs.get("temperature")
+            return_val._nr_openai_attrs["max_tokens"] = kwargs.get("max_tokens")
+            return_val._nr_openai_attrs["model"] = kwargs.get("model") or kwargs.get("engine")
+            return
+        except Exception:
+            _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
-    # If response is not a stream generator, record the event data.
-    # At this point, we have a response so we can grab attributes only available on the response object
-    response_headers = getattr(return_val, "_nr_response_headers", {})
-    # In v1, response objects are pydantic models so this function call converts the
-    # object back to a dictionary for backwards compatibility.
-    response = return_val
-    if OPENAI_V1:
-        response = response.model_dump()
+    try:
+        # If response is not a stream generator, record the event data.
+        # At this point, we have a response so we can grab attributes only available on the response object
+        response_headers = getattr(return_val, "_nr_response_headers", {})
+        # In v1, response objects are pydantic models so this function call converts the
+        # object back to a dictionary for backwards compatibility.
+        response = return_val
+        if OPENAI_V1:
+            response = response.model_dump()
 
-    _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)
+        _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
 def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
-    request_model = kwargs.get("model") or kwargs.get("engine")
+    try:
+        if response:
+            response_model = response.get("model")
+            response_id = response.get("id")
+            response_usage = response.get("usage") or {}
+            output_message_list = []
+            finish_reason = None
+            choices = response.get("choices") or []
+            if choices:
+                output_message_list = [choices[0].get("message")]
+                finish_reason = choices[0].get("finish_reason")
+        else:
+            response_model = kwargs.get("response.model")
+            response_id = kwargs.get("id")
+            response_usage = {}
+            output_message_list = []
+            finish_reason = None
+            if "content" in kwargs:
+                output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
+                finish_reason = kwargs.get("finish_reason")
+        request_model = kwargs.get("model") or kwargs.get("engine")
 
-    if response:
-        response_model = response.get("model")
-        response_id = response.get("id")
-        response_usage = response.get("usage") or {}
-        output_message_list = []
-        finish_reason = None
-        choices = response.get("choices") or []
-        if choices:
-            output_message_list = [choices[0].get("message")]
-            finish_reason = choices[0].get("finish_reason")
-    else:
-        response_model = kwargs.get("response.model")
-        response_id = kwargs.get("id")
-        response_usage = {}
-        output_message_list = []
-        finish_reason = None
-        if "content" in kwargs:
-            output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
-            finish_reason = kwargs.get("finish_reason")
+        request_id = response_headers.get("x-request-id")
+        organization = response_headers.get("openai-organization") or getattr(response, "organization", None)
+        messages = kwargs.get("messages", None) or []
+        input_message_list = list(messages)
+        full_chat_completion_summary_dict = {
+            "id": completion_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "request.model": request_model,
+            "request.temperature": kwargs.get("temperature"),
+            "request.max_tokens": kwargs.get("max_tokens"),
+            "vendor": "openai",
+            "ingest_source": "Python",
+            "request_id": request_id,
+            "duration": ft.duration,
+            "response.model": response_model,
+            "response.organization": organization,
+            "response.usage.completion_tokens": response_usage.get("completion_tokens"),
+            "response.usage.total_tokens": response_usage.get("total_tokens"),
+            "response.usage.prompt_tokens": response_usage.get("prompt_tokens"),
+            "response.choices.finish_reason": finish_reason,
+            "response.headers.llmVersion": response_headers.get("openai-version"),
+            "response.headers.ratelimitLimitRequests": check_rate_limit_header(
+                response_headers, "x-ratelimit-limit-requests", True
+            ),
+            "response.headers.ratelimitLimitTokens": check_rate_limit_header(
+                response_headers, "x-ratelimit-limit-tokens", True
+            ),
+            "response.headers.ratelimitResetTokens": check_rate_limit_header(
+                response_headers, "x-ratelimit-reset-tokens", False
+            ),
+            "response.headers.ratelimitResetRequests": check_rate_limit_header(
+                response_headers, "x-ratelimit-reset-requests", False
+            ),
+            "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
+                response_headers, "x-ratelimit-remaining-tokens", True
+            ),
+            "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
+                response_headers, "x-ratelimit-remaining-requests", True
+            ),
+            "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
+                response_headers, "x-ratelimit-limit-tokens_usage_based", True
+            ),
+            "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
+                response_headers, "x-ratelimit-reset-tokens_usage_based", False
+            ),
+            "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
+                response_headers, "x-ratelimit-remaining-tokens_usage_based", True
+            ),
+            "response.number_of_messages": len(input_message_list) + len(output_message_list),
+        }
+        llm_metadata = _get_llm_attributes(transaction)
+        full_chat_completion_summary_dict.update(llm_metadata)
+        transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
-    request_id = response_headers.get("x-request-id")
-    organization = response_headers.get("openai-organization") or getattr(response, "organization", None)
-    messages = kwargs.get("messages", None) or []
-    input_message_list = list(messages)
-    full_chat_completion_summary_dict = {
-        "id": completion_id,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "request.model": request_model,
-        "request.temperature": kwargs.get("temperature"),
-        "request.max_tokens": kwargs.get("max_tokens"),
-        "vendor": "openai",
-        "ingest_source": "Python",
-        "request_id": request_id,
-        "duration": ft.duration,
-        "response.model": response_model,
-        "response.organization": organization,
-        "response.usage.completion_tokens": response_usage.get("completion_tokens"),
-        "response.usage.total_tokens": response_usage.get("total_tokens"),
-        "response.usage.prompt_tokens": response_usage.get("prompt_tokens"),
-        "response.choices.finish_reason": finish_reason,
-        "response.headers.llmVersion": response_headers.get("openai-version"),
-        "response.headers.ratelimitLimitRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-limit-requests", True
-        ),
-        "response.headers.ratelimitLimitTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-limit-tokens", True
-        ),
-        "response.headers.ratelimitResetTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-reset-tokens", False
-        ),
-        "response.headers.ratelimitResetRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-reset-requests", False
-        ),
-        "response.headers.ratelimitRemainingTokens": check_rate_limit_header(
-            response_headers, "x-ratelimit-remaining-tokens", True
-        ),
-        "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
-            response_headers, "x-ratelimit-remaining-requests", True
-        ),
-        "response.headers.ratelimitLimitTokensUsageBased": check_rate_limit_header(
-            response_headers, "x-ratelimit-limit-tokens_usage_based", True
-        ),
-        "response.headers.ratelimitResetTokensUsageBased": check_rate_limit_header(
-            response_headers, "x-ratelimit-reset-tokens_usage_based", False
-        ),
-        "response.headers.ratelimitRemainingTokensUsageBased": check_rate_limit_header(
-            response_headers, "x-ratelimit-remaining-tokens_usage_based", True
-        ),
-        "response.number_of_messages": len(input_message_list) + len(output_message_list),
-    }
-    llm_metadata = _get_llm_attributes(transaction)
-    full_chat_completion_summary_dict.update(llm_metadata)
-    transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
-
-    create_chat_completion_message_event(
-        transaction,
-        input_message_list,
-        completion_id,
-        span_id,
-        trace_id,
-        response_model,
-        request_model,
-        response_id,
-        request_id,
-        llm_metadata,
-        output_message_list,
-    )
+        create_chat_completion_message_event(
+            transaction,
+            input_message_list,
+            completion_id,
+            span_id,
+            trace_id,
+            response_model,
+            request_model,
+            response_id,
+            request_id,
+            llm_metadata,
+            output_message_list,
+        )
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
 def _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     request_message_list = kwargs.get("messages", None) or []
-    request_model = kwargs.get("model") or kwargs.get("engine")
-    if OPENAI_V1:
-        response = getattr(exc, "response", None)
-        response_headers = getattr(response, "headers", None) or {}
-        exc_organization = response_headers.get("openai-organization")
-        # There appears to be a bug here in openai v1 where despite having code,
-        # param, etc in the error response, they are not populated on the exception
-        # object so grab them from the response body object instead.
-        body = getattr(exc, "body", None) or {}
-        notice_error_attributes = {
-            "http.statusCode": getattr(exc, "status_code", None),
-            "error.message": body.get("message"),
-            "error.code": body.get("code"),
-            "error.param": body.get("param"),
-            "completion_id": completion_id,
-        }
-    else:
-        exc_organization = getattr(exc, "organization", None)
-        notice_error_attributes = {
-            "http.statusCode": getattr(exc, "http_status", None),
-            "error.message": getattr(exc, "_message", None),
-            "error.code": getattr(getattr(exc, "error", None), "code", None),
-            "error.param": getattr(exc, "param", None),
-            "completion_id": completion_id,
-        }
+    notice_error_attributes = {}
+    try:
+        if OPENAI_V1:
+            response = getattr(exc, "response", None)
+            response_headers = getattr(response, "headers", None) or {}
+            exc_organization = response_headers.get("openai-organization")
+            # There appears to be a bug here in openai v1 where despite having code,
+            # param, etc in the error response, they are not populated on the exception
+            # object so grab them from the response body object instead.
+            body = getattr(exc, "body", None) or {}
+            notice_error_attributes = {
+                "http.statusCode": getattr(exc, "status_code", None),
+                "error.message": body.get("message"),
+                "error.code": body.get("code"),
+                "error.param": body.get("param"),
+                "completion_id": completion_id,
+            }
+        else:
+            exc_organization = getattr(exc, "organization", None)
+            notice_error_attributes = {
+                "http.statusCode": getattr(exc, "http_status", None),
+                "error.message": getattr(exc, "_message", None),
+                "error.code": getattr(getattr(exc, "error", None), "code", None),
+                "error.param": getattr(exc, "param", None),
+                "completion_id": completion_id,
+            }
+    except Exception:
+        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
     # Override the default message if it is not empty.
     message = notice_error_attributes.pop("error.message")
     if message:
@@ -557,46 +586,49 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
     # Stop the span now so we compute the duration before we create the events.
     ft.__exit__(*sys.exc_info())
 
-    # In a rare case where we are streaming the response and we do get back a request
-    # and response id, even though an error was encountered, record them.
-    response_headers = kwargs.get("response_headers") or {}
-    request_id = response_headers.get("x-request-id")
-    response_id = kwargs.get("id")
-    error_chat_completion_dict = {
-        "id": completion_id,
-        "span_id": span_id,
-        "trace_id": trace_id,
-        "response.number_of_messages": len(request_message_list),
-        "request.model": request_model,
-        "request.temperature": kwargs.get("temperature"),
-        "request.max_tokens": kwargs.get("max_tokens"),
-        "vendor": "openai",
-        "ingest_source": "Python",
-        "response.organization": exc_organization,
-        "duration": ft.duration,
-        "error": True,
-    }
-    llm_metadata = _get_llm_attributes(transaction)
-    error_chat_completion_dict.update(llm_metadata)
-    transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
+    try:
+        # In a rare case where we are streaming the response and we do get back a request
+        # and response id, even though an error was encountered, record them.
+        response_headers = kwargs.get("response_headers") or {}
+        request_id = response_headers.get("x-request-id")
+        response_id = kwargs.get("id")
+        request_model = kwargs.get("model") or kwargs.get("engine")
+        error_chat_completion_dict = {
+            "id": completion_id,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "response.number_of_messages": len(request_message_list),
+            "request.model": request_model,
+            "request.temperature": kwargs.get("temperature"),
+            "request.max_tokens": kwargs.get("max_tokens"),
+            "vendor": "openai",
+            "ingest_source": "Python",
+            "response.organization": exc_organization,
+            "duration": ft.duration,
+            "error": True,
+        }
+        llm_metadata = _get_llm_attributes(transaction)
+        error_chat_completion_dict.update(llm_metadata)
+        transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
-    output_message_list = []
-    if "content" in kwargs:
-        output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
-
-    create_chat_completion_message_event(
-        transaction,
-        request_message_list,
-        completion_id,
-        span_id,
-        trace_id,
-        kwargs.get("response.model"),
-        request_model,
-        response_id,
-        request_id,
-        llm_metadata,
-        output_message_list,
-    )
+        output_message_list = []
+        if "content" in kwargs:
+            output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
+        create_chat_completion_message_event(
+            transaction,
+            request_message_list,
+            completion_id,
+            span_id,
+            trace_id,
+            kwargs.get("response.model"),
+            request_model,
+            response_id,
+            request_id,
+            llm_metadata,
+            output_message_list,
+        )
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
 def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
@@ -693,49 +725,57 @@ class GeneratorProxy(ObjectProxy):
 
 def _record_stream_chunk(self, return_val):
     if return_val:
-        if OPENAI_V1:
-            if getattr(return_val, "data", "").startswith("[DONE]"):
-                return
-            return_val = return_val.json()
-            self._nr_openai_attrs["response_headers"] = getattr(self, "_nr_response_headers", {})
-        else:
-            self._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
-        choices = return_val.get("choices") or []
-        self._nr_openai_attrs["response.model"] = return_val.get("model")
-        self._nr_openai_attrs["id"] = return_val.get("id")
-        self._nr_openai_attrs["response.organization"] = return_val.get("organization")
-        if choices:
-            delta = choices[0].get("delta") or {}
-            if delta:
-                self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + (
-                    delta.get("content") or ""
-                )
-                self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role") or delta.get("role")
-            self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason")
+        try:
+            if OPENAI_V1:
+                if getattr(return_val, "data", "").startswith("[DONE]"):
+                    return
+                return_val = return_val.json()
+                self._nr_openai_attrs["response_headers"] = getattr(self, "_nr_response_headers", {})
+            else:
+                self._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
+            choices = return_val.get("choices") or []
+            self._nr_openai_attrs["response.model"] = return_val.get("model")
+            self._nr_openai_attrs["id"] = return_val.get("id")
+            self._nr_openai_attrs["response.organization"] = return_val.get("organization")
+            if choices:
+                delta = choices[0].get("delta") or {}
+                if delta:
+                    self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + (
+                        delta.get("content") or ""
+                    )
+                    self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role") or delta.get("role")
+                self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason")
+        except Exception:
+            _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
 def _record_events_on_stop_iteration(self, transaction):
     if hasattr(self, "_nr_ft"):
-        openai_attrs = getattr(self, "_nr_openai_attrs", {})
         self._nr_ft.__exit__(None, None, None)
+        try:
+            openai_attrs = getattr(self, "_nr_openai_attrs", {})
 
-        # If there are no openai attrs exit early as there's no data to record.
-        if not openai_attrs:
-            return
+            # If there are no openai attrs exit early as there's no data to record.
+            if not openai_attrs:
+                return
 
-        completion_id = str(uuid.uuid4())
-        linking_metadata = get_trace_linking_metadata()
-        response_headers = openai_attrs.get("response_headers") or {}
-        _record_completion_success(
-            transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, response_headers, None
-        )
-        # Clear cached data as this can be very large.
-        # Note this is also important for not reporting the events twice. In openai v1
-        # there are two loops around the iterator, the second is meant to clear the
-        # stream since there is a condition where the iterator may exit before all the
-        # stream contents is read. This results in StopIteration being raised twice
-        # instead of once at the end of the loop.
-        self._nr_openai_attrs = {}
+            completion_id = str(uuid.uuid4())
+            linking_metadata = get_trace_linking_metadata()
+            response_headers = openai_attrs.get("response_headers") or {}
+            _record_completion_success(
+                transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, response_headers, None
+            )
+        except Exception:
+            _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        finally:
+            # Clear cached data as this can be very large.
+            # Note this is also important for not reporting the events twice. In openai v1
+            # there are two loops around the iterator, the second is meant to clear the
+            # stream since there is a condition where the iterator may exit before all the
+            # stream contents is read. This results in StopIteration being raised twice
+            # instead of once at the end of the loop.
+            if hasattr(self, "_nr_openai_attrs"):
+                self._nr_openai_attrs.clear()
 
 
 def _handle_streaming_completion_error(self, transaction, exc):
@@ -812,9 +852,12 @@ def wrap_stream_iter_events_async(wrapped, instance, args, kwargs):
 
 def set_attrs_on_generator_proxy(proxy, instance):
     """Pass the nr attributes to the generator proxy."""
-    proxy._nr_ft = instance._nr_ft
-    proxy._nr_response_headers = instance._nr_response_headers
-    proxy._nr_openai_attrs = instance._nr_openai_attrs
+    if hasattr(instance, "_nr_ft"):
+        proxy._nr_ft = instance._nr_ft
+    if hasattr(instance, "_nr_response_headers"):
+        proxy._nr_response_headers = instance._nr_response_headers
+    if hasattr(instance, "_nr_openai_attrs"):
+        proxy._nr_openai_attrs = instance._nr_openai_attrs
 
 
 def wrap_engine_api_resource_create_sync(wrapped, instance, args, kwargs):

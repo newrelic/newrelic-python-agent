@@ -80,7 +80,6 @@ chat_completion_recorded_events_invoke_langchain_error = [
             "duration": None,
             "response.number_of_messages": 1,
             "metadata.id": "123",
-            "tags": "",
             "error": True,
         },
     ),
@@ -119,7 +118,6 @@ chat_completion_recorded_events_runnable_invoke_openai_error = [
             "duration": None,
             "response.number_of_messages": 1,
             "metadata.id": "123",
-            "tags": "",
             "error": True,
         },
     ),
@@ -266,7 +264,6 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 2,
-            "tags": "",
         },
     ),
     (
@@ -320,7 +317,6 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 2,
-            "tags": "",
         },
     ),
     (
@@ -376,7 +372,6 @@ chat_completion_recorded_events_list_response = [
             "duration": None,
             "response.number_of_messages": 2,
             "metadata.id": "123",
-            "tags": "",
         },
     ),
     (
@@ -432,7 +427,6 @@ chat_completion_recorded_events_error_in_openai = [
             "duration": None,
             "response.number_of_messages": 1,
             "metadata.id": "123",
-            "tags": "",
         },
     ),
     (
@@ -469,7 +463,6 @@ chat_completion_recorded_events_error_in_langchain = [
             "request_id": None,
             "duration": None,
             "response.number_of_messages": 1,
-            "tags": "",
         },
     ),
     (
@@ -497,6 +490,8 @@ chat_completion_recorded_events_error_in_langchain = [
 @validate_custom_event_count(count=7)
 @validate_transaction_metrics(
     name="test_chain:test_langchain_chain_list_response",
+    scoped_metrics=[("Llm/chain/Langchain/invoke", 1)],
+    rollup_metrics=[("Llm/chain/Langchain/invoke", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
@@ -623,6 +618,8 @@ def test_langchain_chain(
     @validate_custom_event_count(count=8)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain.<locals>._test",
+        scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
+        rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
@@ -695,6 +692,8 @@ def test_langchain_chain_no_content(
     @validate_custom_event_count(count=8)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_no_content.<locals>._test",
+        scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
+        rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
@@ -792,6 +791,8 @@ def test_langchain_chain_error_in_openai(
     @validate_custom_event_count(count=6)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_openai.<locals>._test",
+        scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
+        rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
@@ -867,6 +868,8 @@ def test_langchain_chain_error_in_langchain(
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_langchain.<locals>._test",
+        scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
+        rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
@@ -943,6 +946,8 @@ def test_langchain_chain_error_in_langchain_no_content(
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_langchain_no_content.<locals>._test",
+        scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
+        rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
@@ -1010,6 +1015,8 @@ def test_langchain_chain_ai_monitoring_disabled(
 @validate_custom_event_count(count=7)
 @validate_transaction_metrics(
     name="test_chain:test_async_langchain_chain_list_response",
+    scoped_metrics=[("Llm/chain/Langchain/ainvoke", 1)],
+    rollup_metrics=[("Llm/chain/Langchain/ainvoke", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
@@ -1053,6 +1060,8 @@ def test_async_langchain_chain_list_response(
 @validate_custom_event_count(count=7)
 @validate_transaction_metrics(
     name="test_chain:test_async_langchain_chain_list_response_no_content",
+    scoped_metrics=[("Llm/chain/Langchain/ainvoke", 1)],
+    rollup_metrics=[("Llm/chain/Langchain/ainvoke", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
@@ -1187,6 +1196,8 @@ def test_async_langchain_chain(
     @validate_custom_event_count(count=8)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain.<locals>._test",
+        scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
+        rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
@@ -1284,6 +1295,8 @@ def test_async_langchain_chain_error_in_openai(
     @validate_custom_event_count(count=6)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_openai.<locals>._test",
+        scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
+        rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
@@ -1358,6 +1371,8 @@ def test_async_langchain_chain_error_in_lanchain(
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_lanchain.<locals>._test",
+        scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
+        rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
@@ -1433,6 +1448,8 @@ def test_async_langchain_chain_error_in_lanchain_no_content(
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_lanchain_no_content.<locals>._test",
+        scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
+        rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],
@@ -1534,6 +1551,8 @@ def test_multiple_async_langchain_chain(
     @validate_custom_event_count(count=16)
     @validate_transaction_metrics(
         name="test_chain:test_multiple_async_langchain_chain.<locals>._test",
+        scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 2)],
+        rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 2)],
         custom_metrics=[
             ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
         ],

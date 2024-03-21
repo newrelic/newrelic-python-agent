@@ -89,7 +89,6 @@ single_arg_tool_recorded_events = [
             "vendor": "langchain",
             "ingest_source": "Python",
             "duration": None,
-            "tags": "",
         },
     ),
 ]

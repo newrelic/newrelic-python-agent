@@ -44,6 +44,7 @@ EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrum
 REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract request information. Report this issue to New Relic Support.\n%s"
 RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract response information. If the issue persists, report this issue to New Relic support.\n%s"
 RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to report response data. Report this issue to New Relic Support.\n%s"
+EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE = "Response streaming with embedding models is unsupported in botocore instrumentation for AWS Bedrock. If this feature is now supported by AWS and botocore, report this issue to New Relic Support."
 
 UNSUPPORTED_MODEL_WARNING_SENT = False
 
@@ -596,6 +597,14 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             ft.__exit__(None, None, None)
             return response
 
+        if response_streaming and operation == "embedding":
+            # This combination is not supported at time of writing, but may become
+            # a supported feature in the future. Instrumentation will need to be written
+            # if this becomes available.
+            _logger.warning(EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE)
+            ft.__exit__(None, None, None)
+            return response
+
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
         bedrock_attrs = {
             "request_id": response_headers.get("x-amzn-requestid"),
@@ -757,7 +766,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     trace_id = bedrock_attrs.get("trace_id", None)
     request_id = bedrock_attrs.get("request_id", None)
     model = bedrock_attrs.get("model", None)
-    input = bedrock_attrs.get("input", "")
+    input = bedrock_attrs.get("input")
 
     embedding_dict = {
         "vendor": "bedrock",
@@ -780,7 +789,6 @@ def handle_embedding_event(transaction, bedrock_attrs):
 
     if settings.ai_monitoring.record_content.enabled:
         embedding_dict["input"] = input
-
 
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
     transaction.record_custom_event("LlmEmbedding", embedding_dict)

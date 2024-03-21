@@ -213,9 +213,7 @@ def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model, expe
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-def test_bedrock_chat_completion_with_token_count(
-    set_trace_info, exercise_model, expected_events, expected_metrics
-):
+def test_bedrock_chat_completion_with_token_count(set_trace_info, exercise_model, expected_events, expected_metrics):
     @validate_custom_events(add_token_count_to_events(expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
@@ -241,9 +239,7 @@ def test_bedrock_chat_completion_with_token_count(
 
 
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_no_llm_metadata(
-    set_trace_info, exercise_model, expected_events, expected_metrics
-):
+def test_bedrock_chat_completion_no_llm_metadata(set_trace_info, exercise_model, expected_events, expected_metrics):
     @validate_custom_events(events_sans_llm_metadata(expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)

@@ -415,9 +415,7 @@ def test_openai_chat_completion_async_no_content(loop, set_trace_info, async_ope
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_openai_chat_completion_async_with_token_count(
-    set_trace_info, loop, async_openai_client
-):
+def test_openai_chat_completion_async_with_token_count(set_trace_info, loop, async_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")

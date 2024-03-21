@@ -18,9 +18,10 @@ from io import BytesIO
 import botocore.exceptions
 import pytest
 from _test_bedrock_embeddings import (
-    embedding_expected_client_errors,
-    embedding_expected_error_events,
     embedding_expected_events,
+    embedding_expected_malformed_request_body_events,
+    embedding_expected_malformed_response_body_events,
+    embedding_invalid_access_key_error_events,
     embedding_payload_templates,
 )
 from conftest import (  # pylint: disable=E0611
@@ -36,6 +37,7 @@ from testing_support.fixtures import (
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
     events_sans_content,
+    events_sans_llm_metadata,
     llm_token_count_callback,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
@@ -99,18 +101,11 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
-def expected_error_events(model_id):
-    return embedding_expected_error_events[model_id]
-
-
-@pytest.fixture(scope="module")
-def expected_client_error(model_id):
-    return embedding_expected_client_errors[model_id]
-
-  
-@pytest.fixture(scope="module")
 def expected_invalid_access_key_error_events(model_id):
     return embedding_invalid_access_key_error_events[model_id]
+
+
+_test_bedrock_embedding_prompt = "This is an embedding test."
 
 
 @reset_core_stats_engine()
@@ -165,8 +160,8 @@ def test_bedrock_embedding_no_content(set_trace_info, exercise_model, model_id):
 
 
 @reset_core_stats_engine()
-def test_bedrock_embedding_in_txn_no_llm_metadata(set_trace_info, exercise_model, expected_events_no_llm_metadata):
-    @validate_custom_events(expected_events_no_llm_metadata)
+def test_bedrock_embedding_in_txn_no_llm_metadata(set_trace_info, exercise_model, expected_events):
+    @validate_custom_events(events_sans_llm_metadata(expected_events))
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
         name="test_bedrock_embedding_in_txn_no_llm_metadata",
@@ -205,7 +200,6 @@ def test_bedrock_embedding_with_token_count(set_trace_info, exercise_model, expe
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
-        add_custom_attribute("non_llm_attr", "python-agent")
 
         exercise_model(prompt="This is an embedding test.")
 
@@ -238,8 +232,7 @@ def test_bedrock_embedding_error_incorrect_access_key(
     bedrock_server,
     exercise_model,
     set_trace_info,
-    
-  ,
+    expected_invalid_access_key_error_events,
 ):
     """
     A request is made to the server with invalid credentials. botocore will reach out to the server and receive an
@@ -287,15 +280,23 @@ def test_bedrock_embedding_error_incorrect_access_key(
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 def test_bedrock_embedding_error_incorrect_access_key_no_content(
-    monkeypatch, bedrock_server, exercise_model, set_trace_info, model_id, expected_client_error
+    monkeypatch,
+    bedrock_server,
+    exercise_model,
+    set_trace_info,
+    expected_invalid_access_key_error_events,
 ):
-    @validate_custom_events(events_sans_content(embedding_expected_error_events[model_id]))
+    @validate_custom_events(events_sans_content(expected_invalid_access_key_error_events))
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={
             "agent": {},
             "intrinsic": {},
-            "user": expected_client_error,
+            "user": {
+                "http.statusCode": 403,
+                "error.message": "The security token included in the request is invalid.",
+                "error.code": "UnrecognizedClientException",
+            },
         },
     )
     @validate_transaction_metrics(

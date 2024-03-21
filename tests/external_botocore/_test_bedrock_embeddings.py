@@ -23,7 +23,6 @@ embedding_expected_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "transaction_id": "transaction-id",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "span_id": None,
@@ -33,8 +32,6 @@ embedding_expected_events = {
                 "response.model": "amazon.titan-embed-text-v1",
                 "request.model": "amazon.titan-embed-text-v1",
                 "request_id": "11233989-07e8-4ecb-9ba6-79601ba6d8cc",
-                "response.usage.total_tokens": 6,
-                "response.usage.prompt_tokens": 6,
                 "vendor": "bedrock",
                 "ingest_source": "Python",
             },
@@ -45,7 +42,6 @@ embedding_expected_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "transaction_id": "transaction-id",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "span_id": None,
@@ -55,8 +51,6 @@ embedding_expected_events = {
                 "response.model": "amazon.titan-embed-g1-text-02",
                 "request.model": "amazon.titan-embed-g1-text-02",
                 "request_id": "b10ac895-eae3-4f07-b926-10b2866c55ed",
-                "response.usage.total_tokens": 6,
-                "response.usage.prompt_tokens": 6,
                 "vendor": "bedrock",
                 "ingest_source": "Python",
             },
@@ -64,13 +58,14 @@ embedding_expected_events = {
     ],
 }
 
-embedding_expected_error_events = {
+embedding_invalid_access_key_error_events = {
     "amazon.titan-embed-text-v1": [
         (
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "input": "Invalid Token",
@@ -89,7 +84,8 @@ embedding_expected_error_events = {
             {"type": "LlmEmbedding"},
             {
                 "id": None,  # UUID that varies with each run
-                "transaction_id": "transaction-id",
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
                 "span_id": None,
                 "trace_id": "trace-id",
                 "input": "Invalid Token",
@@ -117,3 +113,43 @@ embedding_expected_client_errors = {
         "error.code": "UnrecognizedClientException",
     },
 }
+
+embedding_expected_malformed_request_body_events = [
+    (
+        {"type": "LlmEmbedding"},
+        {
+            "id": None,  # UUID that varies with each run
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "duration": None,  # Response time varies each test run
+            "request.model": "amazon.titan-embed-g1-text-02",
+            "response.model": "amazon.titan-embed-g1-text-02",
+            "request_id": "b3646569-18c5-4173-a9fa-bbe9c648f636",
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+            "error": True,
+        },
+    ),
+]
+
+embedding_expected_malformed_response_body_events = [
+    (
+        {"type": "LlmEmbedding"},
+        {
+            "id": None,  # UUID that varies with each run
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "input": "Malformed Body",
+            "duration": None,  # Response time varies each test run
+            "request.model": "amazon.titan-embed-g1-text-02",
+            "response.model": "amazon.titan-embed-g1-text-02",
+            "request_id": "b10ac895-eae3-4f07-b926-10b2866c55ed",
+            "vendor": "bedrock",
+            "ingest_source": "Python",
+        },
+    ),
+]

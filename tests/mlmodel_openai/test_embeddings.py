@@ -22,10 +22,10 @@ from testing_support.ml_testing_utils import (
     set_trace_info,
 )
 from testing_support.fixtures import (  # override_application_settings,
+    override_llm_token_callback_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
-    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -40,7 +40,6 @@ embedding_recorded_events = [
         {"type": "LlmEmbedding"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "This is an embedding test.",
@@ -51,8 +50,6 @@ embedding_recorded_events = [
             "request.model": "text-embedding-ada-002",
             "request_id": "c70828b2293314366a76a2b1dcb20688",
             "response.organization": "new-relic-nkmd8b",
-            "response.usage.total_tokens": 6,
-            "response.usage.prompt_tokens": 6,
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 200,
             "response.headers.ratelimitLimitTokens": 150000,

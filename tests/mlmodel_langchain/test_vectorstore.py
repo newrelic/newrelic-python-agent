@@ -58,7 +58,6 @@ vectorstore_recorded_events = [
         {
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "id": None,  # UUID that changes with each run
@@ -78,7 +77,6 @@ vectorstore_recorded_events = [
             "page_content": "Hello world!\n1",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "id": None,  # UUID that changes with each run
@@ -135,6 +133,8 @@ def test_vectorstore_modules_instrumented():
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn",
+    scoped_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
@@ -164,6 +164,8 @@ def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_cl
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn_no_content",
+    scoped_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
@@ -222,6 +224,8 @@ def test_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(set_trace_info, emb
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_pdf_pagesplitter_vectorstore_in_txn",
+    scoped_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
@@ -255,6 +259,8 @@ def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embeddi
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_pdf_pagesplitter_vectorstore_in_txn_no_content",
+    scoped_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
@@ -323,7 +329,8 @@ vectorstore_error_events = [
         {"type": "LlmVectorSearch"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
+            "request.query": "Complete this sentence: Hello",
+            "request.k": -1,
             "span_id": None,
             "trace_id": "trace-id",
             "vendor": "langchain",
@@ -336,70 +343,76 @@ vectorstore_error_events = [
 
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(TypeError),
+    callable_name(AssertionError),
     required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
 )
 @validate_custom_events(vectorstore_error_events)
 @validate_transaction_metrics(
-    name="test_vectorstore:test_vectorstore_error_no_query",
+    name="test_vectorstore:test_vectorstore_error",
+    scoped_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
 @background_task()
-def test_vectorstore_error_no_query(set_trace_info, embedding_openai_client):
-    with pytest.raises(TypeError):
+def test_vectorstore_error(set_trace_info, embedding_openai_client, loop):
+    with pytest.raises(AssertionError):
         set_trace_info()
         script_dir = os.path.dirname(__file__)
         loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
         docs = loader.load()
 
         faiss_index = FAISS.from_documents(docs, embedding_openai_client)
-        faiss_index.similarity_search(k=1)
+        faiss_index.similarity_search(query="Complete this sentence: Hello", k=-1)
 
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
-    callable_name(TypeError),
+    callable_name(AssertionError),
     required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
 )
 @validate_custom_events(vectorstore_events_sans_content(vectorstore_error_events))
 @validate_transaction_metrics(
-    name="test_vectorstore:test_vectorstore_error_no_query_no_content",
+    name="test_vectorstore:test_vectorstore_error_no_content",
+    scoped_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
 @background_task()
-def test_vectorstore_error_no_query_no_content(set_trace_info, embedding_openai_client):
-    with pytest.raises(TypeError):
+def test_vectorstore_error_no_content(set_trace_info, embedding_openai_client):
+    with pytest.raises(AssertionError):
         set_trace_info()
         script_dir = os.path.dirname(__file__)
         loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
         docs = loader.load()
 
         faiss_index = FAISS.from_documents(docs, embedding_openai_client)
-        faiss_index.similarity_search(k=1)
+        faiss_index.similarity_search(query="Complete this sentence: Hello", k=-1)
 
 
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(TypeError),
+    callable_name(AssertionError),
     required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
 )
 @validate_custom_events(vectorstore_error_events)
 @validate_transaction_metrics(
-    name="test_vectorstore:test_async_vectorstore_error_no_query",
+    name="test_vectorstore:test_async_vectorstore_error",
+    scoped_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
 @background_task()
-def test_async_vectorstore_error_no_query(loop, set_trace_info, embedding_openai_client):
+def test_async_vectorstore_error(loop, set_trace_info, embedding_openai_client):
     async def _test():
         set_trace_info()
 
@@ -408,29 +421,31 @@ def test_async_vectorstore_error_no_query(loop, set_trace_info, embedding_openai
         docs = loader.load()
 
         faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
-        docs = await faiss_index.asimilarity_search(k=1)
+        docs = await faiss_index.asimilarity_search(query="Complete this sentence: Hello", k=-1)
         return docs
 
-    with pytest.raises(TypeError):
+    with pytest.raises(AssertionError):
         loop.run_until_complete(_test())
 
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
-    callable_name(TypeError),
+    callable_name(AssertionError),
     required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
 )
 @validate_custom_events(vectorstore_events_sans_content(vectorstore_error_events))
 @validate_transaction_metrics(
-    name="test_vectorstore:test_async_vectorstore_error_no_query_no_content",
+    name="test_vectorstore:test_async_vectorstore_error_no_content",
+    scoped_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
     custom_metrics=[
         ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
 @background_task()
-def test_async_vectorstore_error_no_query_no_content(loop, set_trace_info, embedding_openai_client):
+def test_async_vectorstore_error_no_content(loop, set_trace_info, embedding_openai_client):
     async def _test():
         set_trace_info()
 
@@ -439,8 +454,8 @@ def test_async_vectorstore_error_no_query_no_content(loop, set_trace_info, embed
         docs = loader.load()
 
         faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
-        docs = await faiss_index.asimilarity_search(k=1)
+        docs = await faiss_index.asimilarity_search(query="Complete this sentence: Hello", k=-1)
         return docs
 
-    with pytest.raises(TypeError):
+    with pytest.raises(AssertionError):
         loop.run_until_complete(_test())

@@ -24,9 +24,9 @@ from testing_support.ml_testing_utils import (
 )
 from testing_support.fixtures import (
     dt_enabled,
+    override_llm_token_callback_settings,
     reset_core_stats_engine,
     validate_custom_event_count,
-    override_llm_token_callback_settings,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -41,7 +41,6 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 
-
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
@@ -52,7 +51,6 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -72,7 +70,6 @@ expected_events_on_no_model_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "You are a scientist.",
             "role": "system",
             "completion_id": None,
@@ -88,7 +85,6 @@ expected_events_on_no_model_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "What is 212 degrees Fahrenheit converted to Celsius?",
             "role": "user",
             "completion_id": None,
@@ -183,7 +179,6 @@ expected_events_on_invalid_model_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -204,7 +199,6 @@ expected_events_on_invalid_model_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "Model does not exist.",
             "role": "user",
             "completion_id": None,
@@ -302,7 +296,6 @@ expected_events_on_auth_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -323,7 +316,6 @@ expected_events_on_auth_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "You are a scientist.",
             "role": "system",
             "completion_id": None,
@@ -339,7 +331,6 @@ expected_events_on_auth_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "What is 212 degrees Fahrenheit converted to Celsius?",
             "role": "user",
             "completion_id": None,
@@ -394,7 +385,6 @@ expected_events_on_wrong_api_key_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
-            "transaction_id": "transaction-id",
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
@@ -413,7 +403,6 @@ expected_events_on_wrong_api_key_error = [
             "id": None,
             "span_id": None,
             "trace_id": "trace-id",
-            "transaction_id": "transaction-id",
             "content": "Invalid API key.",
             "role": "user",
             "completion_id": None,

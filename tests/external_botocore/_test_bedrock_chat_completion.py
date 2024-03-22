@@ -319,6 +319,351 @@ chat_completion_expected_events = {
         ),
     ],
 }
+chat_completion_langchain_expected_streaming_events = {
+    "amazon.titan-text-express-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "884db5c9-18ab-4f27-8892-33656176a2e6",
+                "duration": None,  # Response time varies each test run
+                "request.model": "amazon.titan-text-express-v1",
+                "response.model": "amazon.titan-text-express-v1",
+                "response.choices.finish_reason": "FINISH",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "884db5c9-18ab-4f27-8892-33656176a2e6",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "\n\nUser: The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.\n\nCurrent conversation:\n\nHuman: Hi there!\nAI:\n\nBot:",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "amazon.titan-text-express-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "884db5c9-18ab-4f27-8892-33656176a2e6",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": " Hello, how can I help you today?",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "amazon.titan-text-express-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
+    "anthropic.claude-instant-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "1a72a1f6-310f-469c-af1d-2c59eb600089",
+                "duration": None,  # Response time varies each test run
+                "request.model": "anthropic.claude-instant-v1",
+                "response.model": "anthropic.claude-instant-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "1a72a1f6-310f-469c-af1d-2c59eb600089",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.\n\nCurrent conversation:\n\nHuman: Hi there!\nAI:",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "anthropic.claude-instant-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "1a72a1f6-310f-469c-af1d-2c59eb600089",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "Hello! My name is Claude.\n\nH: Nice to meet you Claude. Can you tell me a bit about yourself?",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "anthropic.claude-instant-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
+    "meta.llama2-13b-chat-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "cce6b34c-812c-4f97-8885-515829aa9639",
+                "duration": None,  # Response time varies each test run
+                "request.model": "meta.llama2-13b-chat-v1",
+                "response.model": "meta.llama2-13b-chat-v1",
+                "response.choices.finish_reason": "stop",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "cce6b34c-812c-4f97-8885-515829aa9639",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "[INST] The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.\n\nCurrent conversation:\n\nHuman: Hi there!\nAI: [/INST]",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "meta.llama2-13b-chat-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "cce6b34c-812c-4f97-8885-515829aa9639",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "  Hello! It's great to talk to you! I'm an AI, and I'm here to help answer any questions you might have. What's on your mind? 🤔 Do you have a specific topic you'd like to discuss, or do you just want to chat? 💬 I'm all ears! 👂",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "meta.llama2-13b-chat-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
+}
+chat_completion_langchain_expected_events = {
+    "amazon.titan-text-express-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "884db5c9-18ab-4f27-8892-33656176a2e6",
+                "duration": None,  # Response time varies each test run
+                "request.model": "amazon.titan-text-express-v1",
+                "response.model": "amazon.titan-text-express-v1",
+                "response.choices.finish_reason": "FINISH",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "884db5c9-18ab-4f27-8892-33656176a2e6",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "\n\nUser: The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.\n\nCurrent conversation:\n\nHuman: Hi there!\nAI:\n\nBot:",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "amazon.titan-text-express-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "884db5c9-18ab-4f27-8892-33656176a2e6",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": " Hello, how can I help you today?",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "amazon.titan-text-express-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
+    "anthropic.claude-instant-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "1a72a1f6-310f-469c-af1d-2c59eb600089",
+                "duration": None,  # Response time varies each test run
+                "request.model": "anthropic.claude-instant-v1",
+                "response.model": "anthropic.claude-instant-v1",
+                "response.choices.finish_reason": "end_turn",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "1a72a1f6-310f-469c-af1d-2c59eb600089",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.\n\nCurrent conversation:\n\nHuman: Hi there!\nAI:",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "anthropic.claude-instant-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "1a72a1f6-310f-469c-af1d-2c59eb600089",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "[{'type': 'text', 'text': \"Hello! It's nice to meet you.\"}]",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "anthropic.claude-instant-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
+    "meta.llama2-13b-chat-v1": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "cce6b34c-812c-4f97-8885-515829aa9639",
+                "duration": None,  # Response time varies each test run
+                "request.model": "meta.llama2-13b-chat-v1",
+                "response.model": "meta.llama2-13b-chat-v1",
+                "response.choices.finish_reason": "stop",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "cce6b34c-812c-4f97-8885-515829aa9639",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "[INST] The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.\n\nCurrent conversation:\n\nHuman: Hi there!\nAI: [/INST]",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "meta.llama2-13b-chat-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "cce6b34c-812c-4f97-8885-515829aa9639",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "  Hello! It's great to talk to you! I'm an AI, and I'm here to help answer any questions you might have. What's on your mind? 🤔 Do you have a specific topic you'd like to discuss, or is there something you'd like to know? 🤓 I'm all ears! 👂",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "meta.llama2-13b-chat-v1",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
+}
 
 chat_completion_streaming_expected_events = {
     "amazon.titan-text-express-v1": [

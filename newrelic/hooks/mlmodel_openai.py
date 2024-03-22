@@ -746,6 +746,7 @@ def _record_stream_chunk(self, return_val):
 
 def _record_events_on_stop_iteration(self, transaction):
     if hasattr(self, "_nr_ft"):
+        linking_metadata = get_trace_linking_metadata()
         self._nr_ft.__exit__(None, None, None)
         try:
             openai_attrs = getattr(self, "_nr_openai_attrs", {})
@@ -755,7 +756,6 @@ def _record_events_on_stop_iteration(self, transaction):
                 return
 
             completion_id = str(uuid.uuid4())
-            linking_metadata = get_trace_linking_metadata()
             response_headers = openai_attrs.get("response_headers") or {}
             _record_completion_success(
                 transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, response_headers, None

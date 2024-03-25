@@ -28,7 +28,6 @@ from conftest import (  # pylint: disable=E0611
     BOTOCORE_VERSION,
 )
 from testing_support.fixtures import (
-    dt_enabled,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,

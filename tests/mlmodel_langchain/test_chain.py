@@ -19,9 +19,9 @@ import langchain
 import openai
 import pytest
 from testing_support.ml_testing_utils import (  # noqa: F401
-    events_sans_content,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
+    events_sans_content,
     set_trace_info,
 )
 from langchain.chains.openai_functions import (

@@ -475,7 +475,6 @@ def test_embedding_models_instrumented():
     )
     response = client.list_foundation_models(byOutputModality="EMBEDDING")
     models = [model["modelId"] for model in response["modelSummaries"]]
-    breakpoint()
     not_supported = []
     for model in models:
         is_supported = any([model.startswith(supported_model) for supported_model in SUPPORTED_MODELS])

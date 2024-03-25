@@ -19,7 +19,7 @@ import uuid
 import langchain
 import pydantic
 import pytest
-from testing_support.ml_testing_utils import (
+from testing_support.ml_testing_utils import (  # noqa: F401
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     set_trace_info,

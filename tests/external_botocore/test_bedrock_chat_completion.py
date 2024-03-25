@@ -40,7 +40,7 @@ from testing_support.fixtures import (
     validate_attributes,
     validate_custom_event_count,
 )
-from testing_support.ml_testing_utils import (
+from testing_support.ml_testing_utils import (  # noqa: F401
     add_token_count_to_events,
     events_sans_content,
     events_sans_llm_metadata,

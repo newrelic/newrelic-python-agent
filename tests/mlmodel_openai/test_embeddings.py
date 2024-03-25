@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import openai
-from testing_support.ml_testing_utils import (
+from testing_support.ml_testing_utils import (  # noqa: F401
     add_token_count_to_events,
     events_sans_content,
     llm_token_count_callback,

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import io
 import json
 import os
@@ -30,7 +29,6 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     override_application_settings,
 )
 
-from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import (
     get_package_version,
@@ -57,27 +55,8 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 
 # Bedrock Fixtures
-
 BEDROCK_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "bedrock_audit.log")
 BEDROCK_AUDIT_LOG_CONTENTS = {}
-
-disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.enabled": False})
-disabled_ai_monitoring_streaming_settings = override_application_settings({"ai_monitoring.streaming.enabled": False})
-disabled_ai_monitoring_record_content_settings = override_application_settings(
-    {"ai_monitoring.record_content.enabled": False}
-)
-
-
-def llm_token_count_callback(model, content):
-    return 105
-
-
-def add_token_count_to_events(expected_events):
-    events = copy.deepcopy(expected_events)
-    for event in events:
-        if event[0]["type"] != "LlmChatCompletionSummary":
-            event[1]["token_count"] = 105
-    return events
 
 
 @pytest.fixture(scope="session")
@@ -191,17 +170,6 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
 
 def bind__do_get_response(request, operation_model, context):
     return request
-
-
-@pytest.fixture(scope="session")
-def set_trace_info():
-    def _set_trace_info():
-        txn = current_transaction()
-        if txn:
-            txn.guid = "transaction-id"
-            txn._trace_id = "trace-id"
-
-    return _set_trace_info
 
 
 def wrap_botocore_eventstream_add_data(wrapped, instance, args, kwargs):

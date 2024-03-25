@@ -13,18 +13,19 @@
 # limitations under the License.
 
 import openai
-from conftest import (  # pylint: disable=E0611
-    add_token_count_to_event,
-    disabled_ai_monitoring_record_content_settings,
-    disabled_ai_monitoring_settings,
-    events_sans_content,
-    llm_token_count_callback,
-)
 from testing_support.fixtures import (
     override_llm_token_callback_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
+)
+from testing_support.ml_testing_utils import (  # noqa: F401
+    add_token_count_to_events,
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    events_sans_content,
+    llm_token_count_callback,
+    set_trace_info,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -101,7 +102,7 @@ def test_openai_embedding_sync_no_content(set_trace_info, sync_openai_client):
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_event(embedding_recorded_events))
+@validate_custom_events(add_token_count_to_events(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_embeddings_v1:test_openai_embedding_sync_with_token_count",
@@ -180,10 +181,10 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_event(embedding_recorded_events))
+@validate_custom_events(add_token_count_to_events(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings_v1:test_openai_embedding_sync_with_token_count_async",
+    name="test_embeddings_v1:test_openai_embedding_async_with_token_count",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
@@ -193,7 +194,7 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_openai_embedding_sync_with_token_count_async(set_trace_info, loop, async_openai_client):
+def test_openai_embedding_async_with_token_count(set_trace_info, loop, async_openai_client):
     set_trace_info()
     loop.run_until_complete(
         async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")

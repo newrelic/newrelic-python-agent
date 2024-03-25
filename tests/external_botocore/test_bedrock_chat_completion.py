@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import json
 from io import BytesIO
 
@@ -32,19 +31,22 @@ from _test_bedrock_chat_completion import (
     chat_completion_payload_templates,
     chat_completion_streaming_expected_events,
 )
-from conftest import (  # pylint: disable=E0611
-    BOTOCORE_VERSION,
-    add_token_count_to_events,
-    disabled_ai_monitoring_record_content_settings,
-    disabled_ai_monitoring_settings,
-    disabled_ai_monitoring_streaming_settings,
-    llm_token_count_callback,
-)
+from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
 from testing_support.fixtures import (
     override_llm_token_callback_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
+)
+from testing_support.ml_testing_utils import (  # noqa: F401
+    add_token_count_to_events,
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    disabled_ai_monitoring_streaming_settings,
+    events_sans_content,
+    events_sans_llm_metadata,
+    llm_token_count_callback,
+    set_trace_info,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -145,34 +147,8 @@ def expected_metrics(response_streaming):
 
 
 @pytest.fixture(scope="module")
-def expected_events_no_content(expected_events):
-    events = copy.deepcopy(expected_events)
-    for event in events:
-        if "content" in event[1]:
-            del event[1]["content"]
-    return events
-
-
-@pytest.fixture(scope="module")
 def expected_invalid_access_key_error_events(model_id):
     return chat_completion_invalid_access_key_error_events[model_id]
-
-
-@pytest.fixture(scope="module")
-def expected_events_no_llm_metadata(expected_events):
-    events = copy.deepcopy(expected_events)
-    for event in events:
-        del event[1]["llm.conversation_id"], event[1]["llm.foo"]
-    return events
-
-
-@pytest.fixture(scope="module")
-def expected_invalid_access_key_error_events_no_content(expected_invalid_access_key_error_events):
-    events = copy.deepcopy(expected_invalid_access_key_error_events)
-    for event in events:
-        if "content" in event[1]:
-            del event[1]["content"]
-    return events
 
 
 _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted to Celsius?"
@@ -208,14 +184,12 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(
 
 @disabled_ai_monitoring_record_content_settings
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
-    set_trace_info, exercise_model, expected_events_no_content, expected_metrics
-):
-    @validate_custom_events(expected_events_no_content)
+def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model, expected_events, expected_metrics):
+    @validate_custom_events(events_sans_content(expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content",
+        name="test_bedrock_chat_completion_no_content",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
@@ -224,7 +198,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
-    @background_task(name="test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content")
+    @background_task(name="test_bedrock_chat_completion_no_content")
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
@@ -237,14 +211,12 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata_no_content(
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-def test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count(
-    set_trace_info, exercise_model, expected_events, expected_metrics
-):
+def test_bedrock_chat_completion_with_token_count(set_trace_info, exercise_model, expected_events, expected_metrics):
     @validate_custom_events(add_token_count_to_events(expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count",
+        name="test_bedrock_chat_completion_with_token_count",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
@@ -253,7 +225,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count(
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
-    @background_task(name="test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count")
+    @background_task(name="test_bedrock_chat_completion_with_token_count")
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
@@ -265,10 +237,8 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata_with_token_count(
 
 
 @reset_core_stats_engine()
-def test_bedrock_chat_completion_in_txn_no_llm_metadata(
-    set_trace_info, exercise_model, expected_events_no_llm_metadata, expected_metrics
-):
-    @validate_custom_events(expected_events_no_llm_metadata)
+def test_bedrock_chat_completion_no_llm_metadata(set_trace_info, exercise_model, expected_events, expected_metrics):
+    @validate_custom_events(events_sans_llm_metadata(expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
@@ -456,7 +426,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     bedrock_server,
     exercise_model,
     set_trace_info,
-    expected_invalid_access_key_error_events_no_content,
+    expected_invalid_access_key_error_events,
     expected_metrics,
 ):
     """
@@ -465,7 +435,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
     See the original test for a description of the error case.
     """
 
-    @validate_custom_events(expected_invalid_access_key_error_events_no_content)
+    @validate_custom_events(events_sans_content(expected_invalid_access_key_error_events))
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={
@@ -847,12 +817,8 @@ def test_bedrock_chat_completion_error_streaming_exception_no_content(
 
     See the original test for a description of the error case.
     """
-    chat_completion_expected_streaming_error_events_no_content = copy.deepcopy(
-        chat_completion_expected_streaming_error_events
-    )
-    del chat_completion_expected_streaming_error_events_no_content[1][1]["content"]
 
-    @validate_custom_events(chat_completion_expected_streaming_error_events_no_content)
+    @validate_custom_events(events_sans_content(chat_completion_expected_streaming_error_events))
     @validate_custom_event_count(count=2)
     @validate_error_trace_attributes(
         _event_stream_error_name,

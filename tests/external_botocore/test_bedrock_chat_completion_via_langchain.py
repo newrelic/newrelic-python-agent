@@ -20,6 +20,7 @@ from _test_bedrock_chat_completion import (
 from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
 from langchain.chains import ConversationChain
 from langchain_community.chat_models import BedrockChat
+from testing_support.ml_testing_utils import set_trace_info  # noqa: F401
 from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,

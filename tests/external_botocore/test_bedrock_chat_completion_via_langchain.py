@@ -18,8 +18,6 @@ from _test_bedrock_chat_completion import (
     chat_completion_langchain_expected_streaming_events,
 )
 from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
-from langchain.chains import ConversationChain
-from langchain_community.chat_models import BedrockChat
 from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
@@ -64,6 +62,10 @@ def response_streaming(request):
 
 @pytest.fixture(scope="module")
 def exercise_model(bedrock_server, model_id, response_streaming):
+    # These are only available in botocore latest environment.
+    from langchain.chains import ConversationChain
+    from langchain_community.chat_models import BedrockChat
+
     def _exercise_model(prompt):
         bedrock_llm = BedrockChat(
             model_id=model_id,

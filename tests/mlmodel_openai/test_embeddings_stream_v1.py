@@ -19,6 +19,7 @@ from testing_support.fixtures import (
     validate_custom_event_count,
 )
 from testing_support.ml_testing_utils import set_trace_info  # noqa: F401
+
 from newrelic.api.background_task import background_task
 
 OPENAI_VERSION = get_openai_version()

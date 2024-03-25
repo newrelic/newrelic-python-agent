@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import copy
+
 import pytest
-from newrelic.api.transaction import current_transaction
 from testing_support.fixtures import override_application_settings
+
+from newrelic.api.transaction import current_transaction
 
 disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.enabled": False})
 disabled_ai_monitoring_streaming_settings = override_application_settings({"ai_monitoring.streaming.enabled": False})

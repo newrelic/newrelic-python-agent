@@ -13,19 +13,21 @@
 # limitations under the License.
 
 import openai
-from conftest import (  # pylint: disable=E0611
-    add_token_count_to_event,
-    disabled_ai_monitoring_record_content_settings,
-    disabled_ai_monitoring_settings,
-    disabled_ai_monitoring_streaming_settings,
-    events_sans_content,
-    llm_token_count_callback,
-)
 from testing_support.fixtures import (
     override_llm_token_callback_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
+)
+from testing_support.ml_testing_utils import (  # noqa: F401
+    add_token_count_to_events,
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    disabled_ai_monitoring_streaming_settings,
+    events_sans_content,
+    events_sans_llm_metadata,
+    llm_token_count_callback,
+    set_trace_info,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -46,6 +48,7 @@ chat_completion_recorded_events = [
         {
             "id": None,  # UUID that varies with each run
             "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
@@ -74,6 +77,7 @@ chat_completion_recorded_events = [
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-0",
             "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -91,6 +95,7 @@ chat_completion_recorded_events = [
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-1",
             "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -108,6 +113,7 @@ chat_completion_recorded_events = [
         {
             "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-2",
             "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
             "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
             "span_id": None,
             "trace_id": "trace-id",
@@ -129,7 +135,7 @@ chat_completion_recorded_events = [
 # One summary event, one system message, one user message, and one response message from the assistant
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_with_llm_metadata",
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata",
     custom_metrics=[
         ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
@@ -137,9 +143,12 @@ chat_completion_recorded_events = [
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_openai_chat_completion_sync_in_txn_with_llm_metadata(set_trace_info, sync_openai_client):
+def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info, sync_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
@@ -147,6 +156,7 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata(set_trace_info, sy
         max_tokens=100,
         stream=True,
     )
+
     for resp in generator:
         assert resp
 
@@ -157,7 +167,7 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata(set_trace_info, sy
 # One summary event, one system message, one user message, and one response message from the assistant
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content",
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_no_content",
     custom_metrics=[
         ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
@@ -165,9 +175,11 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata(set_trace_info, sy
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_trace_info, sync_openai_client):
+def test_openai_chat_completion_sync_no_content(set_trace_info, sync_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
@@ -175,13 +187,14 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_tra
         max_tokens=100,
         stream=True,
     )
+
     for resp in generator:
         assert resp
 
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
+@validate_custom_events(add_token_count_to_events(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -196,6 +209,7 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_no_content(set_tra
 def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count(set_trace_info, sync_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
 
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -208,99 +222,20 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count(s
         assert resp
 
 
-chat_completion_recorded_events_no_llm_metadata = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,  # UUID that varies with each run
-            "span_id": None,
-            "trace_id": "trace-id",
-            "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
-            "duration": None,  # Response time varies each test run
-            "request.model": "gpt-3.5-turbo",
-            "response.model": "gpt-3.5-turbo-0613",
-            "response.organization": "new-relic-nkmd8b",
-            # Usage tokens aren't available when streaming.
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "response.choices.finish_reason": "stop",
-            "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 200,
-            "response.headers.ratelimitLimitTokens": 40000,
-            "response.headers.ratelimitResetTokens": "180ms",
-            "response.headers.ratelimitResetRequests": "11m32.334s",
-            "response.headers.ratelimitRemainingTokens": 39880,
-            "response.headers.ratelimitRemainingRequests": 198,
-            "vendor": "openai",
-            "ingest_source": "Python",
-            "response.number_of_messages": 3,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-0",
-            "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "content": "You are a scientist.",
-            "role": "system",
-            "completion_id": None,
-            "sequence": 0,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openai",
-            "ingest_source": "Python",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-1",
-            "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "content": "What is 212 degrees Fahrenheit converted to Celsius?",
-            "role": "user",
-            "completion_id": None,
-            "sequence": 1,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openai",
-            "ingest_source": "Python",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug-2",
-            "request_id": "f8d0f53b6881c5c0a3698e55f8f410ac",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
-            "role": "assistant",
-            "completion_id": None,
-            "sequence": 2,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openai",
-            "is_response": True,
-            "ingest_source": "Python",
-        },
-    ),
-]
-
-
 @reset_core_stats_engine()
-@validate_custom_events(chat_completion_recorded_events_no_llm_metadata)
+@validate_custom_events(events_sans_llm_metadata(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    "test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_no_llm_metadata",
+    "test_chat_completion_stream_v1:test_openai_chat_completion_sync_no_llm_metadata",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,
 )
 @background_task()
-def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info, sync_openai_client):
+def test_openai_chat_completion_sync_no_llm_metadata(set_trace_info, sync_openai_client):
     set_trace_info()
+
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
@@ -308,6 +243,7 @@ def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info, sync
         max_tokens=100,
         stream=True,
     )
+
     for resp in generator:
         assert resp
 
@@ -326,7 +262,6 @@ def test_openai_chat_completion_sync_in_txn_no_llm_metadata(set_trace_info, sync
 )
 @background_task()
 def test_openai_chat_completion_sync_ai_monitoring_streaming_disabled(sync_openai_client):
-    add_custom_attribute("llm.conversation_id", "my-awesome-id")
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
@@ -334,6 +269,7 @@ def test_openai_chat_completion_sync_ai_monitoring_streaming_disabled(sync_opena
         max_tokens=100,
         stream=True,
     )
+
     for resp in generator:
         assert resp
 
@@ -341,7 +277,6 @@ def test_openai_chat_completion_sync_ai_monitoring_streaming_disabled(sync_opena
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_chat_completion_sync_outside_txn(sync_openai_client):
-    add_custom_attribute("llm.conversation_id", "my-awesome-id")
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
@@ -349,6 +284,7 @@ def test_openai_chat_completion_sync_outside_txn(sync_openai_client):
         max_tokens=100,
         stream=True,
     )
+
     for resp in generator:
         assert resp
 
@@ -358,7 +294,6 @@ def test_openai_chat_completion_sync_outside_txn(sync_openai_client):
 @validate_custom_event_count(count=0)
 @background_task()
 def test_openai_chat_completion_sync_ai_monitoring_disabled(sync_openai_client):
-    add_custom_attribute("llm.conversation_id", "my-awesome-id")
     generator = sync_openai_client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
@@ -366,21 +301,22 @@ def test_openai_chat_completion_sync_ai_monitoring_disabled(sync_openai_client):
         max_tokens=100,
         stream=True,
     )
+
     for resp in generator:
         assert resp
 
 
 @reset_core_stats_engine()
-@validate_custom_events(chat_completion_recorded_events_no_llm_metadata)
+@validate_custom_events(events_sans_llm_metadata(chat_completion_recorded_events))
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    "test_chat_completion_stream_v1:test_openai_chat_completion_async_conversation_id_unset",
+    "test_chat_completion_stream_v1:test_openai_chat_completion_async_no_llm_metadata",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,
 )
 @background_task()
-def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info, async_openai_client):
+def test_openai_chat_completion_async_no_llm_metadata(loop, set_trace_info, async_openai_client):
     set_trace_info()
 
     async def consumer():
@@ -401,7 +337,7 @@ def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info
 @validate_custom_events(chat_completion_recorded_events)
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    "test_chat_completion_stream_v1:test_openai_chat_completion_async_conversation_id_set",
+    "test_chat_completion_stream_v1:test_openai_chat_completion_async_with_llm_metadata",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     custom_metrics=[
@@ -411,9 +347,11 @@ def test_openai_chat_completion_async_conversation_id_unset(loop, set_trace_info
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info, async_openai_client):
+def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info, async_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
 
     async def consumer():
         generator = await async_openai_client.chat.completions.create(
@@ -434,7 +372,7 @@ def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info, 
 @validate_custom_events(events_sans_content(chat_completion_recorded_events))
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    "test_chat_completion_stream_v1:test_openai_chat_completion_async_conversation_id_set_no_content",
+    "test_chat_completion_stream_v1:test_openai_chat_completion_async_no_content",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     custom_metrics=[
@@ -444,9 +382,10 @@ def test_openai_chat_completion_async_conversation_id_set(loop, set_trace_info, 
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_openai_chat_completion_async_conversation_id_set_no_content(loop, set_trace_info, async_openai_client):
+def test_openai_chat_completion_async_no_content(loop, set_trace_info, async_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
 
     async def consumer():
         generator = await async_openai_client.chat.completions.create(
@@ -464,11 +403,11 @@ def test_openai_chat_completion_async_conversation_id_set_no_content(loop, set_t
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_event(chat_completion_recorded_events))
+@validate_custom_events(add_token_count_to_events(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
-    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count_async",
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_async_with_token_count",
     custom_metrics=[
         ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
     ],
@@ -476,11 +415,10 @@ def test_openai_chat_completion_async_conversation_id_set_no_content(loop, set_t
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count_async(
-    set_trace_info, loop, async_openai_client
-):
+def test_openai_chat_completion_async_with_token_count(set_trace_info, loop, async_openai_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
 
     async def consumer():
         generator = await async_openai_client.chat.completions.create(

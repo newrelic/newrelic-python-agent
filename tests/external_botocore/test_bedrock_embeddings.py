@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import json
 from io import BytesIO
 
-import botocore.errorfactory
-import botocore.eventstream
 import botocore.exceptions
 import pytest
 from _test_bedrock_embeddings import (
@@ -27,18 +24,21 @@ from _test_bedrock_embeddings import (
     embedding_invalid_access_key_error_events,
     embedding_payload_templates,
 )
-from conftest import (  # pylint: disable=E0611
-    BOTOCORE_VERSION,
-    add_token_count_to_events,
-    disabled_ai_monitoring_record_content_settings,
-    disabled_ai_monitoring_settings,
-    llm_token_count_callback,
-)
+from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
 from testing_support.fixtures import (
     override_llm_token_callback_settings,
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
+)
+from testing_support.ml_testing_utils import (  # noqa: F401
+    add_token_count_to_events,
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    events_sans_content,
+    events_sans_llm_metadata,
+    llm_token_count_callback,
+    set_trace_info,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -98,34 +98,8 @@ def expected_events(model_id):
 
 
 @pytest.fixture(scope="module")
-def expected_events_no_content(expected_events):
-    events = copy.deepcopy(expected_events)
-    for event in events:
-        if "input" in event[1]:
-            del event[1]["input"]
-    return events
-
-
-@pytest.fixture(scope="module")
 def expected_invalid_access_key_error_events(model_id):
     return embedding_invalid_access_key_error_events[model_id]
-
-
-@pytest.fixture(scope="module")
-def expected_events_no_llm_metadata(expected_events):
-    events = copy.deepcopy(expected_events)
-    for event in events:
-        del event[1]["llm.conversation_id"], event[1]["llm.foo"]
-    return events
-
-
-@pytest.fixture(scope="module")
-def expected_invalid_access_key_error_events_no_content(expected_invalid_access_key_error_events):
-    events = copy.deepcopy(expected_invalid_access_key_error_events)
-    for event in events:
-        if "input" in event[1]:
-            del event[1]["input"]
-    return events
 
 
 _test_bedrock_embedding_prompt = "This is an embedding test."
@@ -156,12 +130,10 @@ def test_bedrock_embedding_in_txn_with_llm_metadata(set_trace_info, exercise_mod
     _test()
 
 
-@disabled_ai_monitoring_record_content_settings
 @reset_core_stats_engine()
-def test_bedrock_embedding_in_txn_with_llm_metadata_no_content(
-    set_trace_info, exercise_model, expected_events_no_content
-):
-    @validate_custom_events(expected_events_no_content)
+@disabled_ai_monitoring_record_content_settings
+def test_bedrock_embedding_no_content(set_trace_info, exercise_model, model_id):
+    @validate_custom_events(events_sans_content(embedding_expected_events[model_id]))
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
         name="test_bedrock_embedding",
@@ -185,8 +157,8 @@ def test_bedrock_embedding_in_txn_with_llm_metadata_no_content(
 
 
 @reset_core_stats_engine()
-def test_bedrock_embedding_in_txn_no_llm_metadata(set_trace_info, exercise_model, expected_events_no_llm_metadata):
-    @validate_custom_events(expected_events_no_llm_metadata)
+def test_bedrock_embedding_in_txn_no_llm_metadata(set_trace_info, exercise_model, expected_events):
+    @validate_custom_events(events_sans_llm_metadata(expected_events))
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
         name="test_bedrock_embedding_in_txn_no_llm_metadata",
@@ -225,7 +197,6 @@ def test_bedrock_embedding_with_token_count(set_trace_info, exercise_model, expe
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
-        add_custom_attribute("non_llm_attr", "python-agent")
 
         exercise_model(prompt="This is an embedding test.")
 
@@ -310,15 +281,9 @@ def test_bedrock_embedding_error_incorrect_access_key_no_content(
     bedrock_server,
     exercise_model,
     set_trace_info,
-    expected_invalid_access_key_error_events_no_content,
+    expected_invalid_access_key_error_events,
 ):
-    """
-    Duplicate of test_bedrock_embedding_error_incorrect_access_key, but with content recording disabled.
-
-    See the original test for a description of the error case.
-    """
-
-    @validate_custom_events(expected_invalid_access_key_error_events_no_content)
+    @validate_custom_events(events_sans_content(expected_invalid_access_key_error_events))
     @validate_error_trace_attributes(
         _client_error_name,
         exact_attrs={
@@ -335,9 +300,6 @@ def test_bedrock_embedding_error_incorrect_access_key_no_content(
         name="test_bedrock_embedding",
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
-        ],
         background_task=True,
     )
     @background_task(name="test_bedrock_embedding")

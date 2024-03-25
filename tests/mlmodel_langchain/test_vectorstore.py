@@ -17,16 +17,17 @@ import os
 
 import langchain
 import pytest
-from conftest import (  # pylint: disable=E0611
-    disabled_ai_monitoring_record_content_settings,
-    disabled_ai_monitoring_settings,
-)
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
+)
+from testing_support.ml_testing_utils import (  # noqa: F401
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    set_trace_info,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -41,7 +42,7 @@ from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 
 
-def events_sans_content(event):
+def vectorstore_events_sans_content(event):
     new_event = copy.deepcopy(event)
     for _event in new_event:
         if "request.query" in _event[1]:
@@ -158,7 +159,7 @@ def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_cl
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-@validate_custom_events(events_sans_content(vectorstore_recorded_events))
+@validate_custom_events(vectorstore_events_sans_content(vectorstore_recorded_events))
 # Two OpenAI LlmEmbedded, two LangChain LlmVectorSearch
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -253,7 +254,7 @@ def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embeddi
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-@validate_custom_events(events_sans_content(vectorstore_recorded_events))
+@validate_custom_events(vectorstore_events_sans_content(vectorstore_recorded_events))
 # Two OpenAI LlmEmbedded, two LangChain LlmVectorSearch
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -373,7 +374,7 @@ def test_vectorstore_error(set_trace_info, embedding_openai_client, loop):
     callable_name(AssertionError),
     required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
 )
-@validate_custom_events(events_sans_content(vectorstore_error_events))
+@validate_custom_events(vectorstore_events_sans_content(vectorstore_error_events))
 @validate_transaction_metrics(
     name="test_vectorstore:test_vectorstore_error_no_content",
     scoped_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
@@ -433,7 +434,7 @@ def test_async_vectorstore_error(loop, set_trace_info, embedding_openai_client):
     callable_name(AssertionError),
     required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
 )
-@validate_custom_events(events_sans_content(vectorstore_error_events))
+@validate_custom_events(vectorstore_events_sans_content(vectorstore_error_events))
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_vectorstore_error_no_content",
     scoped_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],

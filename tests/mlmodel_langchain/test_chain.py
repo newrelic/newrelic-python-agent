@@ -13,16 +13,11 @@
 # limitations under the License.
 
 import asyncio
-import copy
 import uuid
 
 import langchain
 import openai
 import pytest
-from conftest import (  # pylint: disable=E0611
-    disabled_ai_monitoring_record_content_settings,
-    disabled_ai_monitoring_settings,
-)
 from langchain.chains.openai_functions import (
     create_structured_output_chain,
     create_structured_output_runnable,
@@ -34,6 +29,12 @@ from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
     validate_custom_event_count,
+)
+from testing_support.ml_testing_utils import (  # noqa: F401
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    events_sans_content,
+    set_trace_info,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
@@ -54,14 +55,6 @@ _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
 )
-
-
-def events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        if "content" in _event[1]:
-            del _event[1]["content"]
-    return new_event
 
 
 chat_completion_recorded_events_invoke_langchain_error = [
@@ -1349,7 +1342,7 @@ def test_async_langchain_chain_error_in_openai(
         ),
     ),
 )
-def test_async_langchain_chain_error_in_lanchain(
+def test_async_langchain_chain_error_in_langchain(
     set_trace_info,
     chat_openai_client,
     json_schema,
@@ -1370,7 +1363,7 @@ def test_async_langchain_chain_error_in_lanchain(
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
-        name="test_chain:test_async_langchain_chain_error_in_lanchain.<locals>._test",
+        name="test_chain:test_async_langchain_chain_error_in_langchain.<locals>._test",
         scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[
@@ -1425,7 +1418,7 @@ def test_async_langchain_chain_error_in_lanchain(
         ),
     ),
 )
-def test_async_langchain_chain_error_in_lanchain_no_content(
+def test_async_langchain_chain_error_in_langchain_no_content(
     set_trace_info,
     chat_openai_client,
     json_schema,
@@ -1447,7 +1440,7 @@ def test_async_langchain_chain_error_in_lanchain_no_content(
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
-        name="test_chain:test_async_langchain_chain_error_in_lanchain_no_content.<locals>._test",
+        name="test_chain:test_async_langchain_chain_error_in_langchain_no_content.<locals>._test",
         scoped_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         rollup_metrics=[("Llm/chain/Langchain/%s" % call_function, 1)],
         custom_metrics=[

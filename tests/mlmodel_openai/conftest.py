@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import json
 import os
 
@@ -79,34 +78,6 @@ OPENAI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking
 RECORDED_HEADERS = set(["x-request-id", "content-type"])
 
-disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.enabled": False})
-disabled_ai_monitoring_streaming_settings = override_application_settings({"ai_monitoring.streaming.enabled": False})
-disabled_ai_monitoring_record_content_settings = override_application_settings(
-    {"ai_monitoring.record_content.enabled": False}
-)
-
-
-def llm_token_count_callback(model, content):
-    return 105
-
-
-def events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        if "input" in _event[1]:
-            del _event[1]["input"]
-        elif "content" in _event[1]:
-            del _event[1]["content"]
-    return new_event
-
-
-def add_token_count_to_event(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        if _event[0]["type"] != "LlmChatCompletionSummary":
-            _event[1]["token_count"] = 105
-    return new_event
-
 
 @pytest.fixture(scope="session")
 def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
@@ -162,17 +133,6 @@ def sync_openai_client(openai_clients):
 def async_openai_client(openai_clients):
     _, async_client = openai_clients
     return async_client
-
-
-@pytest.fixture
-def set_trace_info():
-    def set_info():
-        txn = current_transaction()
-        if txn:
-            txn.guid = "transaction-id"
-            txn._trace_id = "trace-id"
-
-    return set_info
 
 
 @pytest.fixture(autouse=True, scope="session")

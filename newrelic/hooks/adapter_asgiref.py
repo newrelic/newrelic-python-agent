@@ -14,8 +14,8 @@
 
 from newrelic.api.time_trace import current_trace
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.core.context import ContextOf, context_wrapper_async
 from newrelic.common.signature import bind_args
+from newrelic.core.context import ContextOf, context_wrapper_async
 
 
 async def wrap_SyncToAsync__call__(wrapped, instance, args, kwargs):

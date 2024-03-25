@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from asgiref.sync import async_to_sync, sync_to_async
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
+from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.api.background_task import background_task
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-
-from asgiref.sync import sync_to_async, async_to_sync
 
 
 @sync_to_async

@@ -36,7 +36,7 @@ def version2tuple(version_str):
 
 
 def instance_hostname(hostname):
-    if hostname == "localhost" or hostname == "127.0.0.1":
+    if hostname in ["localhost", "127.0.0.1"]:
         hostname = socket.gethostname()
     return hostname
 

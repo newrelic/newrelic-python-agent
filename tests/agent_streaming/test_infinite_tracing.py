@@ -281,9 +281,8 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
     _create_channel = StreamingRpc.create_channel
 
     def create_channel(self, *args, **kwargs):
-        ret = _create_channel(self, *args, **kwargs)
+        _create_channel(self, *args, **kwargs)
         connect_event.set()
-        return ret
 
     monkeypatch.setattr(StreamingRpc, "condition", condition)
     monkeypatch.setattr(StreamingRpc, "create_channel", create_channel)

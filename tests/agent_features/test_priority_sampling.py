@@ -26,11 +26,11 @@ from newrelic.api.background_task import BackgroundTask
 
 @override_application_settings({"event_harvest_config.harvest_limits.analytic_event_data": 1})
 @pytest.mark.parametrize("first_transaction_saved", [True, False])
-@retry(attempts=5, wait=2)  # This test is flakey so add a retry.
 def test_priority_used_in_transaction_events(first_transaction_saved):
     first_priority = 1 if first_transaction_saved else 0
     second_priority = 0 if first_transaction_saved else 1
 
+    @retry(attempts=5, wait=2)  # This test is flakey so add a retry.
     @reset_core_stats_engine()
     def _test():
         # Stats engine

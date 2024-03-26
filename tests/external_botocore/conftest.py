@@ -22,6 +22,7 @@ from _mock_external_bedrock_server import (
     MockExternalBedrockServer,
     extract_shortened_prompt,
 )
+from botocore.response import StreamingBody
 from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -160,7 +161,9 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
         BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, status_code, []  # Append response data to audit log
     else:
         # Clean up data
-        data = json.loads(response.content.decode("utf-8"))
+        response_content = response.content
+        data = json.loads(response_content.decode("utf-8"))
+        result[0][1]["body"] = StreamingBody(io.BytesIO(response_content), len(response_content))
         BEDROCK_AUDIT_LOG_CONTENTS[prompt] = headers, status_code, data  # Append response data to audit log
     return result
 

@@ -218,7 +218,24 @@ def extract_bedrock_titan_embedding_model_request(request_body, bedrock_attrs):
     return bedrock_attrs
 
 
-def extract_bedrock_titan_embedding_model_response(response_body, bedrock_attrs):
+def extract_bedrock_titan_embedding_model_response(bedrock_attrs):
+    return bedrock_attrs
+
+
+def extract_bedrock_cohere_embedding_model_request(request_body, bedrock_attrs):
+    request_body = json.loads(request_body)
+
+    try:
+        input_text = str(request_body.get("texts"))
+    except Exception:
+        input_text = request_body.get("texts")
+
+    bedrock_attrs["input"] = input_text
+
+    return bedrock_attrs
+
+
+def extract_bedrock_cohere_embedding_model_response(bedrock_attrs):
     return bedrock_attrs
 
 
@@ -367,7 +384,13 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
     (
         "amazon.titan-embed",
         extract_bedrock_titan_embedding_model_request,
-        extract_bedrock_titan_embedding_model_response,
+        NULL_EXTRACTOR,
+        NULL_EXTRACTOR,
+    ),
+    (
+        "cohere.embed",
+        extract_bedrock_cohere_embedding_model_request,
+        NULL_EXTRACTOR,
         NULL_EXTRACTOR,
     ),
     (
@@ -425,7 +448,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         if not model:
             return wrapped(*args, **kwargs)
 
-        is_embedding = model.startswith("amazon.titan-embed")
+        is_embedding = model.startswith("amazon.titan-embed") or model.startswith("cohere.embed")
 
         # Determine extractor by model type
         for extractor_name, request_extractor, response_extractor, stream_extractor in MODEL_EXTRACTORS:
@@ -445,7 +468,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             request_extractor = response_extractor = stream_extractor = NULL_EXTRACTOR
 
         function_name = wrapped.__name__
-        operation = "embedding" if model.startswith("amazon.titan-embed") else "completion"
+        operation = "embedding" if is_embedding else "completion"
 
         # Function trace may not be exited in this function in the case of streaming, so start manually
         ft = FunctionTrace(name=function_name, group="Llm/%s/Bedrock" % (operation))

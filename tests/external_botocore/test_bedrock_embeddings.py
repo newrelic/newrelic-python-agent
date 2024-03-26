@@ -63,6 +63,8 @@ def request_streaming(request):
     params=[
         "amazon.titan-embed-text-v1",
         "amazon.titan-embed-g1-text-02",
+        "cohere.embed-english-v3",
+        "cohere.embed-multilingual-v3",
     ],
 )
 def model_id(request):
@@ -75,6 +77,7 @@ def exercise_model(bedrock_server, model_id, request_streaming):
 
     def _exercise_model(prompt):
         body = (payload_template % prompt).encode("utf-8")
+
         if request_streaming:
             body = BytesIO(body)
 
@@ -157,11 +160,11 @@ def test_bedrock_embedding_no_content(set_trace_info, exercise_model, model_id):
 
 
 @reset_core_stats_engine()
-def test_bedrock_embedding_in_txn_no_llm_metadata(set_trace_info, exercise_model, expected_events):
+def test_bedrock_embedding_no_llm_metadata(set_trace_info, exercise_model, expected_events):
     @validate_custom_events(events_sans_llm_metadata(expected_events))
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
-        name="test_bedrock_embedding_in_txn_no_llm_metadata",
+        name="test_bedrock_embedding_no_llm_metadata",
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         custom_metrics=[
@@ -169,7 +172,7 @@ def test_bedrock_embedding_in_txn_no_llm_metadata(set_trace_info, exercise_model
         ],
         background_task=True,
     )
-    @background_task(name="test_bedrock_embedding_in_txn_no_llm_metadata")
+    @background_task(name="test_bedrock_embedding_no_llm_metadata")
     def _test():
         set_trace_info()
         exercise_model(prompt=_test_bedrock_embedding_prompt)

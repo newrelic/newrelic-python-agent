@@ -17,7 +17,7 @@ import time
 
 import pytest
 from testing_support.fixtures import override_generic_settings
-from testing_support.util import conditional_decorator
+from testing_support.util import conditional_decorator, retry
 from testing_support.validators.validate_metric_payload import validate_metric_payload
 
 from newrelic.common.streaming_utils import StreamBuffer
@@ -333,6 +333,7 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
 @conditional_decorator(
     condition=six.PY2, decorator=pytest.mark.xfail(reason="Test frequently times out on Py2.", strict=False)
 )
+@retry(attempts=5, wait=2)  # This test is flakey so add a retry.
 def test_no_data_loss_on_reconnect(mock_grpc_server, app, buffer_empty_event, batching, spans_processed_event):
     """
     Test for data loss when channel is closed by the server while waiting for more data in a request iterator.
@@ -349,10 +350,6 @@ def test_no_data_loss_on_reconnect(mock_grpc_server, app, buffer_empty_event, ba
 
     Relevant GitHub issue: https://github.com/grpc/grpc/issues/29110
     """
-
-    # The nonbatching test frequently fails on CI so skip it for now.
-    if batching == "nonbatching":
-        pytest.skip("Flakey test")
 
     terminating_span = Span(
         intrinsics={"wait_then_ok": AttributeValue(string_value="OK")}, agent_attributes={}, user_attributes={}

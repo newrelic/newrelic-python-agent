@@ -251,7 +251,13 @@ def extract_bedrock_ai21_j2_model_response(response_body, bedrock_attrs):
 def extract_bedrock_claude_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
 
-    input_message_list = [{"role": "user", "content": request_body.get("prompt")}]
+    if "messages" in request_body:
+        input_message_list = [
+            {"role": message.get("role", "user"), "content": message.get("content")}
+            for message in request_body.get("messages")
+        ]
+    else:
+        input_message_list = [{"role": "user", "content": request_body.get("prompt")}]
 
     bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens_to_sample")
     bedrock_attrs["request.temperature"] = request_body.get("temperature")
@@ -263,8 +269,9 @@ def extract_bedrock_claude_model_request(request_body, bedrock_attrs):
 def extract_bedrock_claude_model_response(response_body, bedrock_attrs):
     if response_body:
         response_body = json.loads(response_body)
-
-        output_message_list = [{"role": "assistant", "content": response_body.get("completion")}]
+        role = response_body.get("role", "assistant")
+        content = response_body.get("content") or response_body.get("completion")
+        output_message_list = [{"role": role, "content": content}]
 
         bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
         bedrock_attrs["output_message_list"] = output_message_list
@@ -274,19 +281,11 @@ def extract_bedrock_claude_model_response(response_body, bedrock_attrs):
 
 def extract_bedrock_claude_model_streaming_response(response_body, bedrock_attrs):
     if response_body:
-        bedrock_attrs["_output_message_stream"] = messages = bedrock_attrs.get("_output_message_stream", [])
-        messages.append(response_body.get("completion"))
-
-        stop_reason = response_body.get("stop_reason")
-        if stop_reason:
-            bedrock_attrs["response.choices.finish_reason"] = stop_reason
-
-            # Join all message fragments
-            bedrock_attrs["output_message_list"] = [
-                {"role": "assistant", "content": "".join(bedrock_attrs["_output_message_stream"])}
-            ]
-            bedrock_attrs.pop("_output_message_stream", None)
-
+        content = response_body.get("completion", "") or (response_body.get("delta") or {}).get("text", "")
+        if "output_message_list" not in bedrock_attrs:
+            bedrock_attrs["output_message_list"] = [{"role": "assistant", "content": ""}]
+        bedrock_attrs["output_message_list"][0]["content"] += content
+        bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
     return bedrock_attrs
 
 
@@ -315,19 +314,11 @@ def extract_bedrock_llama_model_response(response_body, bedrock_attrs):
 
 def extract_bedrock_llama_model_streaming_response(response_body, bedrock_attrs):
     if response_body:
-        bedrock_attrs["_output_message_stream"] = messages = bedrock_attrs.get("_output_message_stream", [])
-        messages.append(response_body.get("generation"))
-
-        stop_reason = response_body.get("stop_reason")
-        if stop_reason:
-            bedrock_attrs["response.choices.finish_reason"] = stop_reason
-
-            # Join all message fragments
-            bedrock_attrs["output_message_list"] = [
-                {"role": "assistant", "content": "".join(bedrock_attrs["_output_message_stream"])}
-            ]
-            bedrock_attrs.pop("_output_message_stream", None)
-
+        content = response_body.get("generation")
+        if "output_message_list" not in bedrock_attrs:
+            bedrock_attrs["output_message_list"] = [{"role": "assistant", "content": ""}]
+        bedrock_attrs["output_message_list"][0]["content"] += content
+        bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
     return bedrock_attrs
 
 
@@ -595,7 +586,7 @@ class GeneratorProxy(ObjectProxy):
         return_val = None
         try:
             return_val = self.__wrapped__.__next__()
-            record_stream_chunk(self, return_val)
+            record_stream_chunk(self, return_val, transaction)
         except StopIteration:
             record_events_on_stop_iteration(self, transaction)
             raise
@@ -608,11 +599,16 @@ class GeneratorProxy(ObjectProxy):
         return super(GeneratorProxy, self).close()
 
 
-def record_stream_chunk(self, return_val):
+def record_stream_chunk(self, return_val, transaction):
     if return_val:
         try:
             chunk = json.loads(return_val["chunk"]["bytes"].decode("utf-8"))
             self._nr_model_extractor(chunk, self._nr_bedrock_attrs)
+            # In Langchain, the bedrock iterator exits early if type is "content_block_stop".
+            # So we need to call the record events here since stop iteration will not be raised.
+            _type = chunk.get("type")
+            if _type == "content_block_stop":
+                record_events_on_stop_iteration(self, transaction)
         except Exception:
             _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 

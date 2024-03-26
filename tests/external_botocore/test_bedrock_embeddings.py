@@ -109,7 +109,7 @@ _test_bedrock_embedding_prompt = "This is an embedding test."
 
 
 @reset_core_stats_engine()
-def test_bedrock_embedding_in_txn_with_llm_metadata(set_trace_info, exercise_model, expected_events):
+def test_bedrock_embedding_with_llm_metadata(set_trace_info, exercise_model, expected_events):
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(

@@ -218,10 +218,6 @@ def extract_bedrock_titan_embedding_model_request(request_body, bedrock_attrs):
     return bedrock_attrs
 
 
-def extract_bedrock_titan_embedding_model_response(bedrock_attrs):
-    return bedrock_attrs
-
-
 def extract_bedrock_cohere_embedding_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
 
@@ -232,10 +228,6 @@ def extract_bedrock_cohere_embedding_model_request(request_body, bedrock_attrs):
 
     bedrock_attrs["input"] = input_text
 
-    return bedrock_attrs
-
-
-def extract_bedrock_cohere_embedding_model_response(bedrock_attrs):
     return bedrock_attrs
 
 

@@ -58,8 +58,8 @@ def record_llm_feedback_event(trace_id, rating, category=None, message=None, met
             "id": feedback_event_id,
             "trace_id": trace_id,
             "rating": rating,
-            "category": category or "",
-            "message": message or "",
+            "category": category,
+            "message": message,
             "ingest_source": "Python",
         }
     )

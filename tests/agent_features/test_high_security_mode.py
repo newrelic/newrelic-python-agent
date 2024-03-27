@@ -22,9 +22,11 @@ from testing_support.fixtures import (
     override_generic_settings,
     reset_core_stats_engine,
     validate_attributes_complete,
+    validate_request_params_omitted,
+)
+from testing_support.validators.validate_custom_event import (
     validate_custom_event_count,
     validate_custom_event_in_application_stats_engine,
-    validate_request_params_omitted,
 )
 from testing_support.validators.validate_custom_parameters import (
     validate_custom_parameters,

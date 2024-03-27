@@ -18,6 +18,8 @@ from testing_support.fixtures import (
     function_not_called,
     override_application_settings,
     reset_core_stats_engine,
+)
+from testing_support.validators.validate_custom_event import (
     validate_custom_event_count,
     validate_custom_event_in_application_stats_engine,
 )

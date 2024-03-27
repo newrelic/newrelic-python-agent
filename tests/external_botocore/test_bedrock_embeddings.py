@@ -11,10 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import json
+import os
 from io import BytesIO
 
+import boto3
 import botocore.exceptions
 import pytest
 from _test_bedrock_embeddings import (
@@ -51,6 +52,7 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
+from newrelic.hooks.external_botocore import MODEL_EXTRACTORS
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["RequestStandard", "RequestStreaming"])
@@ -458,3 +460,26 @@ def test_bedrock_embedding_error_malformed_response_body(
         assert response
 
     _test()
+
+
+def test_embedding_models_instrumented():
+    SUPPORTED_MODELS = [model for model, _, _, _ in MODEL_EXTRACTORS if "embed" in model]
+
+    _id = os.environ.get("AWS_ACCESS_KEY_ID")
+    key = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    if not _id or not key:
+        pytest.skip(reason="Credentials not available.")
+
+    client = boto3.client(
+        "bedrock",
+        "us-east-1",
+    )
+    response = client.list_foundation_models(byOutputModality="EMBEDDING")
+    models = [model["modelId"] for model in response["modelSummaries"]]
+    not_supported = []
+    for model in models:
+        is_supported = any([model.startswith(supported_model) for supported_model in SUPPORTED_MODELS])
+        if not is_supported:
+            not_supported.append(model)
+
+    assert not not_supported, "The following unsupported models were found: %s" % not_supported

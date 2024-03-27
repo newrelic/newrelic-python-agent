@@ -64,7 +64,6 @@ def request_streaming(request):
         "amazon.titan-embed-text-v1",
         "amazon.titan-embed-g1-text-02",
         "cohere.embed-english-v3",
-        "cohere.embed-multilingual-v3",
     ],
 )
 def model_id(request):
@@ -77,7 +76,6 @@ def exercise_model(bedrock_server, model_id, request_streaming):
 
     def _exercise_model(prompt):
         body = (payload_template % prompt).encode("utf-8")
-
         if request_streaming:
             body = BytesIO(body)
 

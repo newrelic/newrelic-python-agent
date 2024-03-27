@@ -221,12 +221,7 @@ def extract_bedrock_titan_embedding_model_request(request_body, bedrock_attrs):
 def extract_bedrock_cohere_embedding_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
 
-    try:
-        input_text = str(request_body.get("texts"))
-    except Exception:
-        input_text = request_body.get("texts")
-
-    bedrock_attrs["input"] = input_text
+    bedrock_attrs["input"] = request_body.get("texts")
 
     return bedrock_attrs
 
@@ -440,7 +435,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         if not model:
             return wrapped(*args, **kwargs)
 
-        is_embedding = model.startswith("amazon.titan-embed") or model.startswith("cohere.embed")
+        is_embedding = "embed" in model
 
         # Determine extractor by model type
         for extractor_name, request_extractor, response_extractor, stream_extractor in MODEL_EXTRACTORS:

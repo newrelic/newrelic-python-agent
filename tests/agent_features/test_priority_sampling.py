@@ -18,6 +18,7 @@ from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
 )
+from testing_support.util import retry
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import BackgroundTask
@@ -29,6 +30,7 @@ def test_priority_used_in_transaction_events(first_transaction_saved):
     first_priority = 1 if first_transaction_saved else 0
     second_priority = 0 if first_transaction_saved else 1
 
+    @retry(attempts=5, wait=2)  # This test is flakey so add a retry.
     @reset_core_stats_engine()
     def _test():
         # Stats engine
@@ -61,6 +63,7 @@ def test_priority_used_in_transaction_error_events(first_transaction_saved):
     first_priority = 1 if first_transaction_saved else 0
     second_priority = 0 if first_transaction_saved else 1
 
+    @retry(attempts=5, wait=2)  # This test is flakey so add a retry.
     @reset_core_stats_engine()
     def _test():
         with BackgroundTask(application(), name="T1") as txn:

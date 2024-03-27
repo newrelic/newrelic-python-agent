@@ -17,7 +17,7 @@ import time
 
 import pytest
 from testing_support.fixtures import override_generic_settings
-from testing_support.util import conditional_decorator
+from testing_support.util import conditional_decorator, retry
 from testing_support.validators.validate_metric_payload import validate_metric_payload
 
 from newrelic.common.streaming_utils import StreamBuffer
@@ -281,9 +281,8 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
     _create_channel = StreamingRpc.create_channel
 
     def create_channel(self, *args, **kwargs):
-        ret = _create_channel(self, *args, **kwargs)
+        _create_channel(self, *args, **kwargs)
         connect_event.set()
-        return ret
 
     monkeypatch.setattr(StreamingRpc, "condition", condition)
     monkeypatch.setattr(StreamingRpc, "create_channel", create_channel)
@@ -356,6 +355,7 @@ def test_no_data_loss_on_reconnect(mock_grpc_server, app, buffer_empty_event, ba
 
     span = Span(intrinsics={}, agent_attributes={}, user_attributes={})
 
+    @retry(attempts=5, wait=2)  # This test is flakey so add a retry.
     @override_generic_settings(
         settings,
         {

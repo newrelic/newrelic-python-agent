@@ -64,8 +64,9 @@ import struct
 import threading
 import weakref
 
-from .. import util
 from ..packages import six
+
+from .. import util
 from ..util.ssl_ import PROTOCOL_TLS_CLIENT
 from ._securetransport.bindings import CoreFoundation, Security, SecurityConst
 from ._securetransport.low_level import (
@@ -234,14 +235,16 @@ def _read_callback(connection_id, data_buffer, data_length_pointer):
                         raise socket.error(errno.EAGAIN, "timed out")
 
                 remaining = requested_length - read_count
-                buffer = (ctypes.c_char * remaining).from_address(data_buffer + read_count)
+                buffer = (ctypes.c_char * remaining).from_address(
+                    data_buffer + read_count
+                )
                 chunk_size = base_socket.recv_into(buffer, remaining)
                 read_count += chunk_size
                 if not chunk_size:
                     if not read_count:
                         return SecurityConst.errSSLClosedGraceful
                     break
-        except socket.error as e:
+        except (socket.error) as e:
             error = e.errno
 
             if error is not None and error != errno.EAGAIN:
@@ -292,7 +295,7 @@ def _write_callback(connection_id, data_buffer, data_length_pointer):
                 # This has some needless copying here, but I'm not sure there's
                 # much value in optimising this data path.
                 data = data[chunk_sent:]
-        except socket.error as e:
+        except (socket.error) as e:
             error = e.errno
 
             if error is not None and error != errno.EAGAIN:
@@ -375,7 +378,9 @@ class WrappedSocket(object):
         OpenSSL cipher strings is going to be a freaking nightmare.
         """
         ciphers = (Security.SSLCipherSuite * len(CIPHER_SUITES))(*CIPHER_SUITES)
-        result = Security.SSLSetEnabledCiphers(self.context, ciphers, len(CIPHER_SUITES))
+        result = Security.SSLSetEnabledCiphers(
+            self.context, ciphers, len(CIPHER_SUITES)
+        )
         _assert_no_error(result)
 
     def _set_alpn_protocols(self, protocols):
@@ -484,8 +489,12 @@ class WrappedSocket(object):
         """
         # First, we do the initial bits of connection setup. We need to create
         # a context, set its I/O funcs, and set the connection reference.
-        self.context = Security.SSLCreateContext(None, SecurityConst.kSSLClientSide, SecurityConst.kSSLStreamType)
-        result = Security.SSLSetIOFuncs(self.context, _read_callback_pointer, _write_callback_pointer)
+        self.context = Security.SSLCreateContext(
+            None, SecurityConst.kSSLClientSide, SecurityConst.kSSLStreamType
+        )
+        result = Security.SSLSetIOFuncs(
+            self.context, _read_callback_pointer, _write_callback_pointer
+        )
         _assert_no_error(result)
 
         # Here we need to compute the handle to use. We do this by taking the
@@ -505,7 +514,9 @@ class WrappedSocket(object):
             if not isinstance(server_hostname, bytes):
                 server_hostname = server_hostname.encode("utf-8")
 
-            result = Security.SSLSetPeerDomainName(self.context, server_hostname, len(server_hostname))
+            result = Security.SSLSetPeerDomainName(
+                self.context, server_hostname, len(server_hostname)
+            )
             _assert_no_error(result)
 
         # Setup the ciphers.
@@ -526,13 +537,17 @@ class WrappedSocket(object):
         # want to validate the certs at all: we just won't actually do any
         # authing in that case.
         if not verify or trust_bundle is not None:
-            result = Security.SSLSetSessionOption(self.context, SecurityConst.kSSLSessionOptionBreakOnServerAuth, True)
+            result = Security.SSLSetSessionOption(
+                self.context, SecurityConst.kSSLSessionOptionBreakOnServerAuth, True
+            )
             _assert_no_error(result)
 
         # If there's a client cert, we need to use it.
         if client_cert:
             self._keychain, self._keychain_dir = _temporary_keychain()
-            self._client_cert_chain = _load_client_cert_chain(self._keychain, client_cert, client_key)
+            self._client_cert_chain = _load_client_cert_chain(
+                self._keychain, client_cert, client_key
+            )
             result = Security.SSLSetCertificate(self.context, self._client_cert_chain)
             _assert_no_error(result)
 
@@ -577,7 +592,9 @@ class WrappedSocket(object):
         processed_bytes = ctypes.c_size_t(0)
 
         with self._raise_on_error():
-            result = Security.SSLRead(self.context, buffer, nbytes, ctypes.byref(processed_bytes))
+            result = Security.SSLRead(
+                self.context, buffer, nbytes, ctypes.byref(processed_bytes)
+            )
 
         # There are some result codes that we want to treat as "not always
         # errors". Specifically, those are errSSLWouldBlock,
@@ -616,7 +633,9 @@ class WrappedSocket(object):
         processed_bytes = ctypes.c_size_t(0)
 
         with self._raise_on_error():
-            result = Security.SSLWrite(self.context, data, len(data), ctypes.byref(processed_bytes))
+            result = Security.SSLWrite(
+                self.context, data, len(data), ctypes.byref(processed_bytes)
+            )
 
         if result == SecurityConst.errSSLWouldBlock and processed_bytes.value == 0:
             # Timed out
@@ -716,7 +735,9 @@ class WrappedSocket(object):
 
     def version(self):
         protocol = Security.SSLProtocol()
-        result = Security.SSLGetNegotiatedProtocolVersion(self.context, ctypes.byref(protocol))
+        result = Security.SSLGetNegotiatedProtocolVersion(
+            self.context, ctypes.byref(protocol)
+        )
         _assert_no_error(result)
         if protocol.value == SecurityConst.kTLSProtocol13:
             raise ssl.SSLError("SecureTransport does not support TLS 1.3")
@@ -861,7 +882,9 @@ class SecureTransportContext(object):
         Raises a NotImplementedError if ALPN is not supported.
         """
         if not hasattr(Security, "SSLSetALPNProtocols"):
-            raise NotImplementedError("SecureTransport supports ALPN only in macOS 10.12+")
+            raise NotImplementedError(
+                "SecureTransport supports ALPN only in macOS 10.12+"
+            )
         self._alpn_protocols = [six.ensure_binary(p) for p in protocols]
 
     def wrap_socket(

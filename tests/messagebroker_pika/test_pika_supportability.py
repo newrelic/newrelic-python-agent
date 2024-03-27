@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from compat import basic_consume
 import pika
-import six
+from compat import basic_consume
+from conftest import BODY, QUEUE
+from testing_support.db_settings import rabbitmq_settings
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.background_task import background_task
-
-from conftest import QUEUE, BODY
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.db_settings import rabbitmq_settings
+from newrelic.packages import six
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
@@ -31,10 +32,7 @@ class CustomPikaChannel(pika.channel.Channel):
             callback = self._on_getok_callback
             self._on_getok_callback = None
             # Use kwargs to pass values to callback
-            callback(channel=self,
-                    method_frame=method_frame.method,
-                    header_frame=header_frame.properties,
-                    body=body)
+            callback(channel=self, method_frame=method_frame.method, header_frame=header_frame.properties, body=body)
 
     def _on_deliver(self, method_frame, header_frame, body):
         consumer_tag = method_frame.method.consumer_tag
@@ -44,10 +42,9 @@ class CustomPikaChannel(pika.channel.Channel):
                 self.basic_reject(method_frame.method.delivery_tag)
             return
 
-        self._consumers[consumer_tag](channel=self,
-                method_frame=method_frame.method,
-                header_frame=header_frame.properties,
-                body=body)
+        self._consumers[consumer_tag](
+            channel=self, method_frame=method_frame.method, header_frame=header_frame.properties, body=body
+        )
 
 
 class CustomPikaConnection(pika.SelectConnection):
@@ -55,17 +52,15 @@ class CustomPikaConnection(pika.SelectConnection):
         return CustomPikaChannel(self, channel_number, on_open_callback)
 
 
-_test_select_connection_supportability_metrics = [
-    ('Supportability/hooks/pika/kwargs_error', 1)
-]
+_test_select_connection_supportability_metrics = [("Supportability/hooks/pika/kwargs_error", 1)]
 
 
 @validate_transaction_metrics(
-        ('test_pika_supportability:'
-                'test_select_connection_supportability_in_txn'),
-        scoped_metrics=(),
-        rollup_metrics=_test_select_connection_supportability_metrics,
-        background_task=True)
+    ("test_pika_supportability:" "test_select_connection_supportability_in_txn"),
+    scoped_metrics=(),
+    rollup_metrics=_test_select_connection_supportability_metrics,
+    background_task=True,
+)
 @background_task()
 def test_select_connection_supportability_in_txn(producer):
     def on_message(channel, method_frame, header_frame, body):
@@ -83,8 +78,8 @@ def test_select_connection_supportability_in_txn(producer):
         connection.channel(on_open_callback=on_open_channel)
 
     connection = CustomPikaConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host']),
-            on_open_callback=on_open_connection)
+        pika.ConnectionParameters(DB_SETTINGS["host"]), on_open_callback=on_open_connection
+    )
 
     try:
         connection.ioloop.start()
@@ -97,20 +92,18 @@ def test_select_connection_supportability_in_txn(producer):
 
 
 if six.PY3:
-    _txn_name = ('test_pika_supportability:'
-            'test_select_connection_supportability_outside_txn.'
-            '<locals>.on_message')
+    _txn_name = "test_pika_supportability:" "test_select_connection_supportability_outside_txn." "<locals>.on_message"
 else:
-    _txn_name = (
-        'test_pika_supportability:on_message')
+    _txn_name = "test_pika_supportability:on_message"
 
 
 @validate_transaction_metrics(
-        _txn_name,
-        scoped_metrics=(),
-        rollup_metrics=_test_select_connection_supportability_metrics,
-        background_task=True,
-        group='Message/RabbitMQ/Exchange/Unknown')
+    _txn_name,
+    scoped_metrics=(),
+    rollup_metrics=_test_select_connection_supportability_metrics,
+    background_task=True,
+    group="Message/RabbitMQ/Exchange/Unknown",
+)
 def test_select_connection_supportability_outside_txn(producer):
     def on_message(channel, method_frame, header_frame, body):
         assert method_frame
@@ -127,8 +120,8 @@ def test_select_connection_supportability_outside_txn(producer):
         connection.channel(on_open_callback=on_open_channel)
 
     connection = CustomPikaConnection(
-            pika.ConnectionParameters(DB_SETTINGS['host']),
-            on_open_callback=on_open_connection)
+        pika.ConnectionParameters(DB_SETTINGS["host"]), on_open_callback=on_open_connection
+    )
 
     try:
         connection.ioloop.start()

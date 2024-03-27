@@ -61,11 +61,9 @@ def test_record_llm_feedback_event_required_args_supplied():
             {"type": "LlmFeedbackMessage"},
             {
                 "id": None,
-                "category": "",
                 "rating": "Good",
                 "trace_id": "123456789abcdefgh",
                 "ingest_source": "Python",
-                "message": "",
             },
         ),
     ]

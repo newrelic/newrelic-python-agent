@@ -14,6 +14,7 @@
 
 import time
 
+import pytest
 from testing_support.fixtures import (
     function_not_called,
     override_application_settings,
@@ -21,10 +22,11 @@ from testing_support.fixtures import (
     validate_custom_event_count,
     validate_custom_event_in_application_stats_engine,
 )
+from testing_support.validators.validate_custom_events import validate_custom_events
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import record_custom_event
+from newrelic.api.transaction import current_transaction, record_custom_event
 from newrelic.core.custom_event import process_event_type
 
 
@@ -126,6 +128,36 @@ def test_custom_event_inside_transaction_mixed_params():
     record_custom_event("FooEvent", _mixed_params)
 
 
+@override_application_settings({"custom_insights_events.max_attribute_value": 4095})
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine([_intrinsics, {"foo": "bar", "bar": "a" * 4095}])
+@background_task()
+def test_custom_event_inside_transaction_max_attribute_value():
+    record_custom_event("FooEvent", {"foo": "bar", 123: "bad key", "bar": "a" * 5000})
+
+
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine([_intrinsics, {"foo": "bar", "bar": "a" * 255}])
+@background_task()
+def test_custom_event_inside_transaction_default_attribute_value():
+    record_custom_event("FooEvent", {"foo": "bar", 123: "bad key", "bar": "a" * 5000})
+
+
+@override_application_settings({"custom_insights_events.max_attribute_value": 4095})
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine([_intrinsics, {"foo": "bar", "bar": "a" * 4095}])
+def test_custom_event_outside_transaction_max_attribute_value():
+    app = application()
+    record_custom_event("FooEvent", {"foo": "bar", 123: "bad key", "bar": "a" * 5000}, application=app)
+
+
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine([_intrinsics, {"foo": "bar", "bar": "a" * 255}])
+def test_custom_event_outside_transaction_default_attribute_value():
+    app = application()
+    record_custom_event("FooEvent", {"foo": "bar", 123: "bad key", "bar": "a" * 5000}, application=app)
+
+
 @reset_core_stats_engine()
 @validate_custom_event_in_application_stats_engine(_event)
 @background_task()
@@ -199,3 +231,63 @@ def test_transaction_create_custom_event_not_called():
 def test_application_create_custom_event_not_called():
     app = application()
     record_custom_event("FooEvent", _user_params, application=app)
+
+
+# Test completness of LLM content/input despite attribute limits being set
+
+
+@pytest.mark.parametrize(
+    "event_type,event_data,expected_event_data",
+    (
+        [
+            "LlmChatCompletionMessage",
+            {
+                "content": "A" * 9001,
+                "input": "B" * 9001,
+                "foo": "b" + "a" * 9000 + "r",
+            },
+            {
+                "content": "A" * 9001,
+                "input": "B" * 300,
+                "foo": "b" + "a" * 299,
+            },
+        ],
+        [
+            "LlmEmbedding",
+            {
+                "content": "A" * 9001,
+                "input": "B" * 9001,
+                "foo": "b" + "a" * 9000 + "r",
+            },
+            {
+                "content": "A" * 300,
+                "input": "B" * 9001,
+                "foo": "b" + "a" * 299,
+            },
+        ],
+        [
+            "MyCustomEvent",
+            {
+                "content": "A" * 9001,
+                "input": "B" * 9001,
+                "foo": "b" + "a" * 9000 + "r",
+            },
+            {
+                "content": "A" * 300,
+                "input": "B" * 300,
+                "foo": "b" + "a" * 299,
+            },
+        ],
+    ),
+)
+def test_create_custom_event_no_limit(event_type, event_data, expected_event_data):
+    @reset_core_stats_engine()
+    @override_application_settings({"custom_insights_events.max_attribute_value": 300})
+    @validate_custom_event_count(1)
+    @validate_custom_events([({"type": event_type}, expected_event_data)])
+    @background_task()
+    def _test():
+        transaction = current_transaction()
+        transaction.record_custom_event(event_type, event_data)
+
+    _test()

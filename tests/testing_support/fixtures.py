@@ -33,6 +33,7 @@ from testing_support.sample_applications import (
     user_attributes_added,
 )
 
+from newrelic.api.ml_model import set_llm_token_count_callback
 from newrelic.admin.record_deploy import record_deploy
 from newrelic.api.application import (
     application_instance,
@@ -937,7 +938,7 @@ def validate_custom_event_count(count):
             raise
         else:
             stats = core_application_stats_engine(None)
-            assert stats.custom_events.num_samples == count
+            assert stats.custom_events.num_samples == count, "Expected %d, got %d" % (count, stats.custom_events.num_samples)
 
         return result
 
@@ -1072,6 +1073,27 @@ def override_application_settings(overrides):
             original_settings.__dict__.update(backup)
 
     return _override_application_settings
+
+
+def override_llm_token_callback_settings(callback):
+    @function_wrapper
+    def _override_llm_token_callback_settings(wrapped, instance, args, kwargs):
+        # The settings object has references from a number of
+        # different places. We have to create a copy, overlay
+        # the temporary settings and then when done clear the
+        # top level settings object and rebuild it when done.
+        original_settings = application_settings()
+        backup = copy.deepcopy(original_settings.__dict__)
+
+        try:
+            set_llm_token_count_callback(callback, application_instance())
+
+            return wrapped(*args, **kwargs)
+        finally:
+            original_settings.__dict__.clear()
+            original_settings.__dict__.update(backup)
+
+    return _override_llm_token_callback_settings
 
 
 def override_generic_settings(settings_object, overrides):

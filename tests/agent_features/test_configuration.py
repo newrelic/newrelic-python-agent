@@ -24,6 +24,8 @@ except ImportError:
 
 import logging
 
+from testing_support.fixtures import override_generic_settings
+
 from newrelic.api.exceptions import ConfigurationError
 from newrelic.common.object_names import callable_name
 from newrelic.config import (
@@ -44,7 +46,6 @@ from newrelic.core.config import (
     global_settings_dump,
 )
 
-from testing_support.fixtures import override_generic_settings
 
 def function_to_trace():
     pass

@@ -71,6 +71,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "host.displayName",
         "http.statusCode",
         "http.url",
+        "llm",
         "message.queueName",
         "message.routingKey",
         "peer.address",
@@ -90,6 +91,8 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
 
 MAX_NUM_USER_ATTRIBUTES = 128
 MAX_ATTRIBUTE_LENGTH = 255
+MAX_NUM_ML_USER_ATTRIBUTES = 64
+MAX_ML_ATTRIBUTE_LENGTH = 4095
 MAX_64_BIT_INT = 2**63 - 1
 MAX_LOG_MESSAGE_LENGTH = 32768
 

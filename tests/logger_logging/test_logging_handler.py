@@ -141,7 +141,7 @@ def test_handler_dict_message_with_formatter(formatting_logger):
                 "trace.id": "abcdefgh12345678",
             }
         ],
-        forgone_attrs=["message.attr"]  # Explicit formatters take precedence over dict message support
+        forgone_attrs=["message.attr"],  # Explicit formatters take precedence over dict message support
     )
     @validate_log_event_count(1)
     @validate_function_called("newrelic.api.log", "NewRelicLogForwardingHandler.emit")
@@ -155,7 +155,7 @@ def test_handler_dict_message_with_formatter(formatting_logger):
         # Grab the event directly off the transaction to compare message manually
         captured_events = list(current_transaction()._log_events)
         assert len(captured_events) == 1
-        
+
         # Accept anything that looks like the correct types.
         assert captured_events[0].message.startswith("WARNING - {")
 

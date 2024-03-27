@@ -65,7 +65,7 @@ def logger(request):
     _logger.setLevel(logging.WARNING)
 
     # Save instrumentation so we can disable it
-    instrumented = logging.Logger.callHandlers  
+    instrumented = logging.Logger.callHandlers
 
     forwarding_handler = None
     if request.param == "forwarding_handler":
@@ -77,11 +77,11 @@ def logger(request):
 
     yield _logger
     del caplog.records[:]
-    
+
     _logger.removeHandler(caplog)
     if forwarding_handler:
         _logger.removeHandler(forwarding_handler)
-    
+
     # Reinstrument logging in case it was uninstrumented
     logging.Logger.callHandlers = instrumented
 
@@ -96,5 +96,5 @@ def instrumented_logger():
 
     yield _logger
     del caplog.records[:]
-    
+
     _logger.removeHandler(caplog)

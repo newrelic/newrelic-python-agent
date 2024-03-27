@@ -18,6 +18,7 @@ from newrelic.common.object_wrapper import (
     transient_function_wrapper,
 )
 
+
 def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_exist=True):
     required_attrs = required_attrs or []
     forgone_attrs = forgone_attrs or []
@@ -68,4 +69,3 @@ def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_ex
         return result
 
     return wrapper
-

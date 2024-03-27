@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import pytest
-import six
 from testing_support.fixtures import (
     reset_core_stats_engine,
     set_default_encoding,
@@ -25,6 +24,7 @@ from testing_support.fixtures import (
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import notice_error
+from newrelic.packages import six
 
 # Turn off black formatting for this section of the code.
 # While Python 2 has been EOL'd since 2020, New Relic still

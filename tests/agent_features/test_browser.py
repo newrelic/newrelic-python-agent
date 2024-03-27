@@ -16,7 +16,6 @@ import json
 import re
 import sys
 
-import six
 import webtest
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_custom_parameters import (
@@ -35,6 +34,7 @@ from newrelic.api.transaction import (
 from newrelic.api.web_transaction import web_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import deobfuscate
+from newrelic.packages import six
 
 _runtime_error_name = RuntimeError.__module__ + ":" + RuntimeError.__name__
 

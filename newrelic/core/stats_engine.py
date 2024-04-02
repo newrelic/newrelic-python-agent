@@ -725,6 +725,11 @@ class StatsEngine(object):
         module, name, fullnames, message_raw = parse_exc_info(error)
         fullname = fullnames[0]
 
+        # In the case case of JSON formatting for OpenAI models
+        # this will result in a "cleaner" message format
+        if getattr(value, "_nr_message", None):
+            message_raw = value._nr_message
+
         # Check to see if we need to strip the message before recording it.
 
         if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:

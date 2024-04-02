@@ -552,6 +552,7 @@ class Application(object):
             application_logging_local_decorating = (
                 configuration.application_logging.enabled and configuration.application_logging.local_decorating.enabled
             )
+            ai_monitoring_streaming = configuration.ai_monitoring.streaming.enabled
             internal_metric(
                 "Supportability/Logging/Forwarding/Python/%s"
                 % ("enabled" if application_logging_forwarding else "disabled"),
@@ -566,6 +567,11 @@ class Application(object):
                 "Supportability/Logging/Metrics/Python/%s" % ("enabled" if application_logging_metrics else "disabled"),
                 1,
             )
+            if not ai_monitoring_streaming:
+                internal_metric(
+                    "Supportability/Python/ML/Streaming/Disabled",
+                    1,
+                )
 
             # Infinite tracing feature toggle metrics
             infinite_tracing = configuration.infinite_tracing.enabled  # Property that checks trace observer host
@@ -916,7 +922,7 @@ class Application(object):
         if settings is None or not settings.custom_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings)
 
         if event:
             with self._stats_custom_lock:
@@ -932,7 +938,7 @@ class Application(object):
         if settings is None or not settings.ml_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings, is_ml_event=True)
 
         if event:
             with self._stats_custom_lock:

@@ -58,10 +58,41 @@ def core_app(collector_agent_registration):
 
 
 @validate_ml_event_payload(
-    [{"foo": "bar", "real_agent_id": "1234567", "event.domain": "newrelic.ml_events", "event.name": "InferenceEvent"}]
+    {
+        "apm": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "MyCustomEvent",
+            }
+        ]
+    }
 )
 @reset_core_stats_engine()
-def test_ml_event_payload_inside_transaction(core_app):
+def test_ml_event_payload_noninference_event_inside_transaction(core_app):
+    @background_task(name="test_ml_event_payload_inside_transaction")
+    def _test():
+        record_ml_event("MyCustomEvent", {"foo": "bar"})
+
+    _test()
+    core_app.harvest()
+
+
+@validate_ml_event_payload(
+    {
+        "inference": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "InferenceEvent",
+            }
+        ]
+    }
+)
+@reset_core_stats_engine()
+def test_ml_event_payload_inference_event_inside_transaction(core_app):
     @background_task(name="test_ml_event_payload_inside_transaction")
     def _test():
         record_ml_event("InferenceEvent", {"foo": "bar"})
@@ -71,13 +102,106 @@ def test_ml_event_payload_inside_transaction(core_app):
 
 
 @validate_ml_event_payload(
-    [{"foo": "bar", "real_agent_id": "1234567", "event.domain": "newrelic.ml_events", "event.name": "InferenceEvent"}]
+    {
+        "apm": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "MyCustomEvent",
+            }
+        ],
+        "inference": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "InferenceEvent",
+            }
+        ],
+    }
 )
 @reset_core_stats_engine()
-def test_ml_event_payload_outside_transaction(core_app):
+def test_ml_event_payload_both_events_inside_transaction(core_app):
+    @background_task(name="test_ml_event_payload_inside_transaction")
+    def _test():
+        record_ml_event("InferenceEvent", {"foo": "bar"})
+        record_ml_event("MyCustomEvent", {"foo": "bar"})
+
+    _test()
+    core_app.harvest()
+
+
+@validate_ml_event_payload(
+    {
+        "inference": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "InferenceEvent",
+            }
+        ]
+    }
+)
+@reset_core_stats_engine()
+def test_ml_event_payload_inference_event_outside_transaction(core_app):
     def _test():
         app = application()
         record_ml_event("InferenceEvent", {"foo": "bar"}, application=app)
+
+    _test()
+    core_app.harvest()
+
+
+@validate_ml_event_payload(
+    {
+        "apm": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "MyCustomEvent",
+            }
+        ],
+        "inference": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "InferenceEvent",
+            }
+        ],
+    }
+)
+@reset_core_stats_engine()
+def test_ml_event_payload_both_events_outside_transaction(core_app):
+    def _test():
+        app = application()
+        record_ml_event("InferenceEvent", {"foo": "bar"}, application=app)
+        record_ml_event("MyCustomEvent", {"foo": "bar"}, application=app)
+
+    _test()
+    core_app.harvest()
+
+
+@validate_ml_event_payload(
+    {
+        "apm": [
+            {
+                "foo": "bar",
+                "real_agent_id": "1234567",
+                "event.domain": "newrelic.ml_events",
+                "event.name": "MyCustomEvent",
+            }
+        ]
+    }
+)
+@reset_core_stats_engine()
+def test_ml_event_payload_noninference_event_outside_transaction(core_app):
+    def _test():
+        app = application()
+        record_ml_event("MyCustomEvent", {"foo": "bar"}, application=app)
 
     _test()
     core_app.harvest()
@@ -98,6 +222,62 @@ def test_record_ml_event_inside_transaction(params, expected):
     @background_task()
     def _test():
         record_ml_event("LabelEvent", params)
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_record_ml_event_truncation_inside_transaction():
+    @validate_ml_events([(_intrinsics, {"a": "a" * 4095})])
+    @background_task()
+    def _test():
+        record_ml_event("LabelEvent", {"a": "a" * 4100})
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_record_ml_event_truncation_outside_transaction():
+    @validate_ml_events_outside_transaction([(_intrinsics, {"a": "a" * 4095})])
+    def _test():
+        app = application()
+        record_ml_event("LabelEvent", {"a": "a" * 4100}, application=app)
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_record_ml_event_max_num_attrs():
+    too_many_attrs_event = {}
+    for i in range(65):
+        too_many_attrs_event[str(i)] = str(i)
+
+    max_attrs_event = {}
+    for i in range(64):
+        max_attrs_event[str(i)] = str(i)
+
+    @validate_ml_events([(_intrinsics, max_attrs_event)])
+    @background_task()
+    def _test():
+        record_ml_event("LabelEvent", too_many_attrs_event)
+
+    _test()
+
+
+@reset_core_stats_engine()
+def test_record_ml_event_max_num_attrs_outside_transaction():
+    too_many_attrs_event = {}
+    for i in range(65):
+        too_many_attrs_event[str(i)] = str(i)
+
+    max_attrs_event = {}
+    for i in range(64):
+        max_attrs_event[str(i)] = str(i)
+
+    @validate_ml_events_outside_transaction([(_intrinsics, max_attrs_event)])
+    def _test():
+        app = application()
+        record_ml_event("LabelEvent", too_many_attrs_event, application=app)
 
     _test()
 

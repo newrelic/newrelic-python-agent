@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import uuid
 
 import botocore.session
@@ -31,7 +30,6 @@ MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 url = "sqs.us-east-1.amazonaws.com"
-
 if BOTOCORE_VERSION < (1, 29, 0):
     url = "queue.amazonaws.com"
 

@@ -25,12 +25,12 @@ import functools
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.message_trace import MessageTrace
 from newrelic.api.pre_function import wrap_pre_function
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper
-from newrelic.api.transaction import current_transaction
 from newrelic.core.agent import shutdown_agent
-from newrelic.api.message_trace import MessageTrace
 
 
 def CeleryTaskWrapper(wrapped, application=None, name=None):
@@ -63,7 +63,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
         # testing if need be.
 
         def _application():
-            if hasattr(application, 'activate'):
+            if hasattr(application, "activate"):
                 return application
             return application_instance(application)
 
@@ -88,8 +88,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
         #      running inside of an existing transaction, we want to create
         #      a new background transaction for it.
 
-        if transaction and (transaction.ignore_transaction or
-                transaction.stopped):
+        if transaction and (transaction.ignore_transaction or transaction.stopped):
             return wrapped(*args, **kwargs)
 
         elif transaction:
@@ -97,7 +96,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
                 return wrapped(*args, **kwargs)
 
         else:
-            with BackgroundTask(_application(), _name, 'Celery', source=instance) as transaction:
+            with BackgroundTask(_application(), _name, "Celery", source=instance) as transaction:
                 # Attempt to grab distributed tracing headers
                 try:
                     headers = wrapped.request.headers
@@ -107,7 +106,8 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
                             transaction.accept_distributed_trace_headers(headers, transport_type="AMQP")
                         elif transaction.settings.cross_application_tracer.enabled:
                             transaction._process_incoming_cat_headers(
-                                headers.pop(MessageTrace.cat_id_key, None), headers.pop(MessageTrace.cat_transaction_key, None)
+                                headers.get(MessageTrace.cat_id_key, None),
+                                headers.get(MessageTrace.cat_transaction_key, None),
                             )
                 except Exception:
                     pass
@@ -145,7 +145,7 @@ def instrument_celery_app_task(module):
 
     # Triggered for both 'celery.app.task' and 'celery.task.base'.
 
-    if hasattr(module, 'BaseTask'):
+    if hasattr(module, "BaseTask"):
 
         # Need to add a wrapper for background task entry point.
 
@@ -165,15 +165,14 @@ def instrument_celery_app_task(module):
             return task.name
 
         if module.BaseTask.__module__ == module.__name__:
-            module.BaseTask.__call__ = CeleryTaskWrapper(
-                    module.BaseTask.__call__, name=task_name)
+            module.BaseTask.__call__ = CeleryTaskWrapper(module.BaseTask.__call__, name=task_name)
 
 
 def wrap_Celery_send_task(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
-    
+
     # Merge distributed tracing headers into outgoing task headers
     dt_headers = MessageTrace.generate_request_headers(transaction)
     original_headers = kwargs.get("headers", None)
@@ -190,13 +189,13 @@ def wrap_Celery_send_task(wrapped, instance, args, kwargs):
 def instrument_celery_app_base(module):
     if hasattr(module, "Celery") and hasattr(module.Celery, "send_task"):
         wrap_function_wrapper(module, "Celery.send_task", wrap_Celery_send_task)
-    
+
 
 def instrument_celery_execute_trace(module):
 
     # Triggered for 'celery.execute_trace'.
 
-    if hasattr(module, 'build_tracer'):
+    if hasattr(module, "build_tracer"):
 
         # Need to add a wrapper for background task entry point.
 
@@ -220,7 +219,7 @@ def instrument_celery_worker(module):
 
     # Triggered for 'celery.worker' and 'celery.concurrency.processes'.
 
-    if hasattr(module, 'process_initializer'):
+    if hasattr(module, "process_initializer"):
 
         # We try and force registration of default application after
         # fork of worker process rather than lazily on first request.
@@ -244,8 +243,7 @@ def instrument_celery_loaders_base(module):
     def force_application_activation(*args, **kwargs):
         application_instance().activate()
 
-    wrap_pre_function(module, 'BaseLoader.init_worker',
-            force_application_activation)
+    wrap_pre_function(module, "BaseLoader.init_worker", force_application_activation)
 
 
 def instrument_billiard_pool(module):
@@ -253,5 +251,5 @@ def instrument_billiard_pool(module):
     def force_agent_shutdown(*args, **kwargs):
         shutdown_agent()
 
-    if hasattr(module, 'Worker'):
-        wrap_pre_function(module, 'Worker._do_exit', force_agent_shutdown)
+    if hasattr(module, "Worker"):
+        wrap_pre_function(module, "Worker._do_exit", force_agent_shutdown)

@@ -27,9 +27,10 @@ from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.pre_function import wrap_pre_function
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import FunctionWrapper
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.core.agent import shutdown_agent
+from newrelic.api.message_trace import MessageTrace
 
 
 def CeleryTaskWrapper(wrapped, application=None, name=None):
@@ -96,7 +97,21 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
                 return wrapped(*args, **kwargs)
 
         else:
-            with BackgroundTask(_application(), _name, 'Celery', source=instance):
+            with BackgroundTask(_application(), _name, 'Celery', source=instance) as transaction:
+                # Attempt to grab distributed tracing headers
+                try:
+                    headers = wrapped.request.headers
+                    settings = transaction.settings
+                    if headers is not None and settings is not None:
+                        if settings.distributed_tracing.enabled:
+                            transaction.accept_distributed_trace_headers(headers, transport_type="AMQP")
+                        elif transaction.settings.cross_application_tracer.enabled:
+                            transaction._process_incoming_cat_headers(
+                                headers.pop(MessageTrace.cat_id_key, None), headers.pop(MessageTrace.cat_transaction_key, None)
+                            )
+                except Exception:
+                    pass
+
                 return wrapped(*args, **kwargs)
 
     # Celery tasks that inherit from celery.app.task must implement a run()
@@ -153,6 +168,29 @@ def instrument_celery_app_task(module):
             module.BaseTask.__call__ = CeleryTaskWrapper(
                     module.BaseTask.__call__, name=task_name)
 
+
+def wrap_Celery_send_task(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+    
+    # Merge distributed tracing headers into outgoing task headers
+    dt_headers = MessageTrace.generate_request_headers(transaction)
+    original_headers = kwargs.get("headers", None)
+    if dt_headers:
+        if "headers" not in kwargs or not original_headers:
+            kwargs["headers"] = dict(dt_headers)
+        elif hasattr(original_headers, "items"):
+            kwargs["headers"] = dt_headers = dict(dt_headers)
+            dt_headers.update(dict(original_headers))
+
+    return wrapped(*args, **kwargs)
+
+
+def instrument_celery_app_base(module):
+    if hasattr(module, "Celery") and hasattr(module.Celery, "send_task"):
+        wrap_function_wrapper(module, "Celery.send_task", wrap_Celery_send_task)
+    
 
 def instrument_celery_execute_trace(module):
 

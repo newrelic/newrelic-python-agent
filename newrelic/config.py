@@ -4342,6 +4342,11 @@ def _process_module_builtin_defaults():
         "instrument_celery_execute_trace",
     )
     _process_module_definition(
+        "celery.app.base",
+        "newrelic.hooks.application_celery",
+        "instrument_celery_app_base",
+    )
+    _process_module_definition(
         "celery.app.trace",
         "newrelic.hooks.application_celery",
         "instrument_celery_execute_trace",

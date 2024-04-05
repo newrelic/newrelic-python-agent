@@ -17,14 +17,18 @@ from newrelic.api.transaction import ignore_transaction, end_of_transaction
 
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_count import (
+    validate_transaction_count,
+)
 
 from tasks import add, tsum
 
 
 @validate_transaction_metrics(
-        name='test_celery:test_celery_task_as_function_trace',
-        scoped_metrics=[('Function/tasks.add', 1)],
-        background_task=True)
+    name="test_celery:test_celery_task_as_function_trace",
+    scoped_metrics=[("Function/tasks.add", 1)],
+    background_task=True,
+)
 @validate_code_level_metrics("tasks", "add")
 @background_task()
 def test_celery_task_as_function_trace():
@@ -37,11 +41,7 @@ def test_celery_task_as_function_trace():
     assert result == 7
 
 
-@validate_transaction_metrics(
-        name='tasks.add',
-        group='Celery',
-        scoped_metrics=[],
-        background_task=True)
+@validate_transaction_metrics(name="tasks.add", group="Celery", scoped_metrics=[], background_task=True)
 @validate_code_level_metrics("tasks", "add")
 def test_celery_task_as_background_task():
     """
@@ -53,11 +53,12 @@ def test_celery_task_as_background_task():
     result = add(3, 4)
     assert result == 7
 
+
 @validate_transaction_metrics(
-        name='test_celery:test_celery_tasks_multiple_function_traces',
-        scoped_metrics=[('Function/tasks.add', 1),
-                        ('Function/tasks.tsum', 1)],
-        background_task=True)
+    name="test_celery:test_celery_tasks_multiple_function_traces",
+    scoped_metrics=[("Function/tasks.add", 1), ("Function/tasks.tsum", 1)],
+    background_task=True,
+)
 @validate_code_level_metrics("tasks", "tsum")
 @background_task()
 def test_celery_tasks_multiple_function_traces():
@@ -86,9 +87,10 @@ def test_celery_tasks_ignore_transaction():
 
 
 @validate_transaction_metrics(
-        name='test_celery:test_celery_tasks_end_transaction',
-        scoped_metrics=[('Function/tasks.add', 1)],
-        background_task=True)
+    name="test_celery:test_celery_tasks_end_transaction",
+    scoped_metrics=[("Function/tasks.add", 1)],
+    background_task=True,
+)
 @background_task()
 def test_celery_tasks_end_transaction():
     """

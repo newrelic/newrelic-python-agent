@@ -13,10 +13,8 @@
 # limitations under the License.
 
 import pytest
-
 from billiard import get_context
 from billiard.pool import Worker
-
 from testing_support.validators.validate_function_called import validate_function_called
 
 

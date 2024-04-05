@@ -13,9 +13,19 @@
 # limitations under the License.
 
 from celery import Celery
+from testing_support.validators.validate_distributed_trace_accepted import (
+    validate_distributed_trace_accepted,
+)
 
+from newrelic.api.transaction import current_transaction
 
-app = Celery("tasks")
+app = Celery(
+    "tasks",
+    broker_url="memory://",
+    result_backend="cache+memory://",
+    worker_hijack_root_logger=False,
+    pool="solo",
+)
 
 
 @app.task
@@ -31,3 +41,13 @@ def tsum(nums):
 @app.task
 def nested_add(x, y):
     return add(x, y)
+
+
+@app.task
+@validate_distributed_trace_accepted(transport_type="AMQP")
+def assert_dt():
+    # Basic checks for DT delegated to task
+    assert current_transaction().name == "_target_application.assert_dt", (
+        "Transaction name does not match: %s" % current_transaction().name
+    )
+    return 1

@@ -21,7 +21,7 @@ from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
 
-from tasks import add, tsum
+from tasks import add, tsum, nested_add
 
 
 @validate_transaction_metrics(
@@ -105,3 +105,15 @@ def test_celery_tasks_end_transaction():
 
     tsum_result = tsum([1, 2, 3])
     assert tsum_result == 6
+
+
+@validate_transaction_metrics(
+    name="tasks.nested_add", group="Celery", scoped_metrics=[("Function/tasks.add", 1)], background_task=True
+)
+@validate_transaction_count(1)
+@validate_code_level_metrics("tasks", "nested_add")
+def test_celery_nested_tasks():
+    """ """
+
+    add_result = nested_add(1, 2)
+    assert add_result == 3

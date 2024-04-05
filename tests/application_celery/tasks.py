@@ -26,3 +26,8 @@ def add(x, y):
 @app.task
 def tsum(nums):
     return sum(nums)
+
+
+@app.task
+def nested_add(x, y):
+    return add(x, y)

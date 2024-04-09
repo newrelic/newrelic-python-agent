@@ -27,7 +27,9 @@ from newrelic.api.background_task import background_task
 
 from newrelic.packages import six
 
-skip_if_py2 = pytest.mark.skip(six.PY2, reason="Celery has no pytest plugin for Python 2, making testing very difficult.")
+skip_if_py2 = pytest.mark.skipif(
+    six.PY2, reason="Celery has no pytest plugin for Python 2, making testing very difficult."
+)
 
 
 @pytest.fixture(scope="module")

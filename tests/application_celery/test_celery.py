@@ -78,8 +78,8 @@ def test_celery_tasks_ignore_transaction():
     No transaction is recorded, due to the call to ignore_transaction(),
     so no validation fixture is used. The purpose of this test is to make
     sure the agent doesn't throw an error.
-
     """
+
     add_result = add(1, 2)
     assert add_result == 3
 
@@ -99,8 +99,8 @@ def test_celery_tasks_end_transaction():
     """
     Only functions that run before the call to end_of_transaction() are
     included in the transaction.
-
     """
+
     add_result = add(1, 2)
     assert add_result == 3
 
@@ -119,7 +119,10 @@ def test_celery_tasks_end_transaction():
 @validate_transaction_count(1)
 @validate_code_level_metrics("_target_application", "nested_add")
 def test_celery_nested_tasks():
-    """ """
-
+    """
+    Celery tasks run inside other celery tasks should not start a new transactions,
+    and should create a function trace instead.
+    """
+    
     add_result = nested_add(1, 2)
     assert add_result == 3

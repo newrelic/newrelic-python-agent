@@ -99,7 +99,11 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
             with BackgroundTask(_application(), _name, "Celery", source=instance) as transaction:
                 # Attempt to grab distributed tracing headers
                 try:
-                    headers = wrapped.request.headers
+                    # Headers on earlier versions of Celery may end up as attributes
+                    # on the request context instead of as custom headers. Handler this
+                    # by defaulting to using vars() if headers is not available
+                    headers = getattr(wrapped.request, "headers", None) or vars(wrapped.request)
+                    
                     settings = transaction.settings
                     if headers is not None and settings is not None:
                         if settings.distributed_tracing.enabled:
@@ -179,7 +183,7 @@ def wrap_Celery_send_task(wrapped, instance, args, kwargs):
     if dt_headers:
         if "headers" not in kwargs or not original_headers:
             kwargs["headers"] = dict(dt_headers)
-        elif hasattr(original_headers, "items"):
+        else:
             kwargs["headers"] = dt_headers = dict(dt_headers)
             dt_headers.update(dict(original_headers))
 

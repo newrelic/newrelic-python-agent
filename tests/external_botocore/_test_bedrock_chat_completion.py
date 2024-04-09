@@ -595,7 +595,7 @@ chat_completion_langchain_expected_events = {
                 "request_id": "1a72a1f6-310f-469c-af1d-2c59eb600089",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "content": "[{'type': 'text', 'text': \"Hello! It's nice to meet you.\"}]",
+                "content": "{'type': 'text', 'text': \"Hello! It's nice to meet you.\"}",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,

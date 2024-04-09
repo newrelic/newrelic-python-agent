@@ -123,6 +123,6 @@ def test_celery_nested_tasks():
     Celery tasks run inside other celery tasks should not start a new transactions,
     and should create a function trace instead.
     """
-    
+
     add_result = nested_add(1, 2)
     assert add_result == 3

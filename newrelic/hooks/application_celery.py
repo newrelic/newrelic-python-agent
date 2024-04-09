@@ -103,7 +103,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
                     # on the request context instead of as custom headers. Handler this
                     # by defaulting to using vars() if headers is not available
                     headers = getattr(wrapped.request, "headers", None) or vars(wrapped.request)
-                    
+
                     settings = transaction.settings
                     if headers is not None and settings is not None:
                         if settings.distributed_tracing.enabled:

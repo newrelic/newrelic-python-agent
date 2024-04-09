@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 from _target_application import add, assert_dt
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_count import (
@@ -24,7 +23,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-
 from newrelic.packages import six
 
 skip_if_py2 = pytest.mark.skipif(

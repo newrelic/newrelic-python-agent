@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+
 from _target_application import add, assert_dt
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_count import (
@@ -23,6 +24,10 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+
+from newrelic.packages import six
+
+skip_if_py2 = pytest.mark.skip(six.PY2, reason="Celery has no pytest plugin for Python 2, making testing very difficult.")
 
 
 @pytest.fixture(scope="module")
@@ -40,6 +45,7 @@ def celery_worker_parameters():
     return {"shutdown_timeout": 120}
 
 
+@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.assert_dt",
     group="Celery",
@@ -64,6 +70,7 @@ def test_celery_task_distributed_tracing(celery_worker):
     assert result == 1
 
 
+@skip_if_py2
 @override_application_settings({"distributed_tracing.enabled": False})
 @validate_transaction_metrics(
     name="_target_application.add",

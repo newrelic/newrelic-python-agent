@@ -18,12 +18,17 @@ memory usage.
 """
 import os
 
+from newrelic.core.config import global_settings
 from newrelic.common.system_info import physical_memory_used, total_physical_memory
 from newrelic.samplers.decorators import data_source_generator
 
 
 @data_source_generator(name="Memory Usage")
 def memory_usage_data_source():
+    settings = global_settings()
+    if not settings.memory_runtime_metrics.enabled:
+        return
+
     memory = physical_memory_used()
     total_memory = total_physical_memory()
     pid = os.getpid()

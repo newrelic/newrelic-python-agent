@@ -158,8 +158,16 @@ EXPECTED_MEMORY_METRICS = (
 )
 
 
-def test_memory_metrics_collection(memory_data_source):
-    metrics_table = set(m[0] for m in (memory_data_source() or ()))
+@pytest.mark.parametrize("enabled", (True, False))
+def test_memory_metrics_collection(memory_data_source, enabled):
+    @override_generic_settings(settings, {"memory_runtime_metrics.enabled": enabled})
+    def _test():
+        metrics_table = set(m[0] for m in (memory_data_source() or ()))
+        if enabled:
+            for metric in EXPECTED_MEMORY_METRICS:
+                assert metric in metrics_table
+        else:
+            assert len(metrics_table) == 0
 
-    for metric in EXPECTED_MEMORY_METRICS:
-        assert metric in metrics_table
+    _test()
+

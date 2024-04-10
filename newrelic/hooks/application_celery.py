@@ -181,7 +181,7 @@ def wrap_Celery_send_task(wrapped, instance, args, kwargs):
     dt_headers = MessageTrace.generate_request_headers(transaction)
     original_headers = kwargs.get("headers", None)
     if dt_headers:
-        if "headers" not in kwargs or not original_headers:
+        if not original_headers:
             kwargs["headers"] = dict(dt_headers)
         else:
             kwargs["headers"] = dt_headers = dict(dt_headers)

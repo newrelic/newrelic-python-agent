@@ -178,14 +178,17 @@ def wrap_Celery_send_task(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     # Merge distributed tracing headers into outgoing task headers
-    dt_headers = MessageTrace.generate_request_headers(transaction)
-    original_headers = kwargs.get("headers", None)
-    if dt_headers:
-        if not original_headers:
-            kwargs["headers"] = dict(dt_headers)
-        else:
-            kwargs["headers"] = dt_headers = dict(dt_headers)
-            dt_headers.update(dict(original_headers))
+    try:
+        dt_headers = MessageTrace.generate_request_headers(transaction)
+        original_headers = kwargs.get("headers", None)
+        if dt_headers:
+            if not original_headers:
+                kwargs["headers"] = dict(dt_headers)
+            else:
+                kwargs["headers"] = dt_headers = dict(dt_headers)
+                dt_headers.update(dict(original_headers))
+    except Exception:
+        pass
 
     return wrapped(*args, **kwargs)
 

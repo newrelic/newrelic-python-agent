@@ -25,6 +25,7 @@ app = Celery(
     result_backend="cache+memory://",
     worker_hijack_root_logger=False,
     pool="solo",
+    broker_heartbeat=0,
 )
 
 
@@ -47,7 +48,9 @@ def nested_add(x, y):
 @validate_distributed_trace_accepted(transport_type="AMQP")
 def assert_dt():
     # Basic checks for DT delegated to task
-    assert current_transaction().name == "_target_application.assert_dt", (
-        "Transaction name does not match: %s" % current_transaction().name
+    txn = current_transaction()
+    assert txn, "No transaction active."
+    assert txn.name == "_target_application.assert_dt", (
+        "Transaction name does not match: %s" % txn.name
     )
     return 1

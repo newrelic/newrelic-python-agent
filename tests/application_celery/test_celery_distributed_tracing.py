@@ -57,12 +57,12 @@ def celery_worker_parameters():
     index=-2,
 )
 @validate_transaction_metrics(
-    name="test_celery_distributed_tracing:test_celery_task_distributed_tracing",
+    name="test_celery_distributed_tracing:test_celery_task_distributed_tracing_enabled",
     background_task=True,
 )
 @validate_transaction_count(2)
 @background_task()
-def test_celery_task_distributed_tracing(celery_worker):
+def test_celery_task_distributed_tracing_enabled(celery_worker):
     result = assert_dt.apply_async()
     while not result.ready():
         pass

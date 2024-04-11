@@ -14,9 +14,8 @@
 
 import time
 
-import six
-
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
+from newrelic.packages import six
 
 try:
     from newrelic.core.infinite_tracing_pb2 import AttributeValue, Span
@@ -38,7 +37,6 @@ def validate_span_events(
     unexpected_users=[],
     index=-1,
 ):
-
     # Used for validating a single span event.
     #
     # Since each transaction could produce multiple span events, assert that at
@@ -49,7 +47,6 @@ def validate_span_events(
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_transaction_called = []
         recorded_span_events = []
 

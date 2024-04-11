@@ -141,6 +141,10 @@ def create_chat_completion_message_event(
     for index, message in enumerate(output_message_list):
         index += len(input_message_list)
         content = message.get("content", "")
+        # For anthropic models run via langchain, a list is returned with a dictionary of content inside
+        # We only want to report the raw dictionary in the LLM message event
+        if isinstance(content, list) and len(content) == 1:
+            content = content[0]
 
         if response_id:
             id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
@@ -262,7 +266,6 @@ def extract_bedrock_claude_model_request(request_body, bedrock_attrs):
         ]
     else:
         input_message_list = [{"role": "user", "content": request_body.get("prompt")}]
-
     bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens_to_sample")
     bedrock_attrs["request.temperature"] = request_body.get("temperature")
     bedrock_attrs["input_message_list"] = input_message_list
@@ -276,7 +279,6 @@ def extract_bedrock_claude_model_response(response_body, bedrock_attrs):
         role = response_body.get("role", "assistant")
         content = response_body.get("content") or response_body.get("completion")
         output_message_list = [{"role": role, "content": content}]
-
         bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
         bedrock_attrs["output_message_list"] = output_message_list
 

@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import six
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
+
+from newrelic.packages import six
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,

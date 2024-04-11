@@ -171,4 +171,3 @@ def test_memory_metrics_collection(memory_data_source, enabled):
             assert EXPECTED_MEMORY_METRICS[1] in metrics_table
 
     _test()
-

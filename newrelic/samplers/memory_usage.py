@@ -18,12 +18,15 @@ memory usage.
 """
 import os
 
+from newrelic.core.config import global_settings
 from newrelic.common.system_info import physical_memory_used, total_physical_memory
 from newrelic.samplers.decorators import data_source_generator
 
 
 @data_source_generator(name="Memory Usage")
 def memory_usage_data_source():
+    settings = global_settings()
+
     memory = physical_memory_used()
     total_memory = total_physical_memory()
     pid = os.getpid()
@@ -32,7 +35,8 @@ def memory_usage_data_source():
     memory_utilization = (memory / total_memory) if total_memory != 0 else 0
 
     yield ("Memory/Physical", memory)
-    yield ("Memory/Physical/%d" % (pid), memory)
-
     yield ("Memory/Physical/Utilization", memory_utilization)
-    yield ("Memory/Physical/Utilization/%d" % (pid), memory_utilization)
+
+    if settings.memory_runtime_pid_metrics.enabled:
+        yield ("Memory/Physical/%d" % (pid), memory)
+        yield ("Memory/Physical/Utilization/%d" % (pid), memory_utilization)

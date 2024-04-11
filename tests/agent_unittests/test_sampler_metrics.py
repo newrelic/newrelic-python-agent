@@ -152,22 +152,23 @@ def test_cpu_metrics_collection(cpu_data_source):
 
 EXPECTED_MEMORY_METRICS = (
     "Memory/Physical",
-    "Memory/Physical/%d" % PID,
     "Memory/Physical/Utilization",
+    "Memory/Physical/%d" % PID,
     "Memory/Physical/Utilization/%d" % PID,
 )
 
 
 @pytest.mark.parametrize("enabled", (True, False))
 def test_memory_metrics_collection(memory_data_source, enabled):
-    @override_generic_settings(settings, {"memory_runtime_metrics.enabled": enabled})
+    @override_generic_settings(settings, {"memory_runtime_pid_metrics.enabled": enabled})
     def _test():
         metrics_table = set(m[0] for m in (memory_data_source() or ()))
         if enabled:
             for metric in EXPECTED_MEMORY_METRICS:
                 assert metric in metrics_table
         else:
-            assert len(metrics_table) == 0
+            assert EXPECTED_MEMORY_METRICS[0] in metrics_table
+            assert EXPECTED_MEMORY_METRICS[1] in metrics_table
 
     _test()
 

@@ -449,7 +449,7 @@ _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = EventHarvestConfigHarvestLimitSettings()
 _settings.event_loop_visibility = EventLoopVisibilitySettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
-_settings.memory_runtime_metrics = MemoryRuntimeMetricsSettings()
+_settings.memory_runtime_pid_metrics = MemoryRuntimeMetricsSettings()
 _settings.heroku = HerokuSettings()
 _settings.infinite_tracing = InfiniteTracingSettings()
 _settings.instrumentation = InstrumentationSettings()
@@ -744,7 +744,7 @@ _settings.cross_application_tracer.enabled = False
 _settings.gc_runtime_metrics.enabled = False
 _settings.gc_runtime_metrics.top_object_count_limit = 5
 
-_settings.memory_runtime_metrics.enabled = _environ_as_bool("NEW_RELIC_MEMORY_RUNTIME_METRICS_ENABLED", default=True)
+_settings.memory_runtime_pid_metrics.enabled = _environ_as_bool("NEW_RELIC_MEMORY_RUNTIME_METRICS_ENABLED", default=True)
 
 _settings.transaction_events.enabled = True
 _settings.transaction_events.attributes.enabled = True

@@ -354,7 +354,7 @@ def _process_configuration(section):
     _process_setting(section, "transaction_name.naming_scheme", "get", None)
     _process_setting(section, "gc_runtime_metrics.enabled", "getboolean", None)
     _process_setting(section, "gc_runtime_metrics.top_object_count_limit", "getint", None)
-    _process_setting(section, "memory_runtime_metrics.enabled", "getboolean", None)
+    _process_setting(section, "memory_runtime_pid_metrics.enabled", "getboolean", None)
     _process_setting(section, "thread_profiler.enabled", "getboolean", None)
     _process_setting(section, "transaction_tracer.enabled", "getboolean", None)
     _process_setting(

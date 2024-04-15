@@ -34,7 +34,6 @@ from newrelic.core.agent import shutdown_agent
 
 
 def CeleryTaskWrapper(wrapped, application=None, name=None):
-
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction(active_only=False)
 
@@ -146,11 +145,9 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
 
 
 def instrument_celery_app_task(module):
-
     # Triggered for both 'celery.app.task' and 'celery.task.base'.
 
     if hasattr(module, "BaseTask"):
-
         # Need to add a wrapper for background task entry point.
 
         # In Celery 2.2 the 'BaseTask' class actually resided in the
@@ -199,11 +196,9 @@ def instrument_celery_app_base(module):
 
 
 def instrument_celery_execute_trace(module):
-
     # Triggered for 'celery.execute_trace'.
 
     if hasattr(module, "build_tracer"):
-
         # Need to add a wrapper for background task entry point.
 
         # In Celery 2.5+ we need to wrap the task when tracer is being
@@ -223,11 +218,9 @@ def instrument_celery_execute_trace(module):
 
 
 def instrument_celery_worker(module):
-
     # Triggered for 'celery.worker' and 'celery.concurrency.processes'.
 
     if hasattr(module, "process_initializer"):
-
         # We try and force registration of default application after
         # fork of worker process rather than lazily on first request.
 
@@ -246,7 +239,6 @@ def instrument_celery_worker(module):
 
 
 def instrument_celery_loaders_base(module):
-
     def force_application_activation(*args, **kwargs):
         application_instance().activate()
 
@@ -254,7 +246,6 @@ def instrument_celery_loaders_base(module):
 
 
 def instrument_billiard_pool(module):
-
     def force_agent_shutdown(*args, **kwargs):
         shutdown_agent()
 

@@ -24,7 +24,6 @@ class OnExit(Exception):
 
 @validate_function_called("newrelic.core.agent", "Agent.shutdown_agent")
 def test_max_tasks_per_child():
-
     def on_exit(*args, **kwargs):
         raise OnExit()
 

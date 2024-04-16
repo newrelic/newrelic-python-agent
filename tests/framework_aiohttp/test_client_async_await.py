@@ -17,7 +17,9 @@ import asyncio
 import aiohttp
 import pytest
 from testing_support.fixtures import cat_enabled
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 from yarl import URL
 
 from newrelic.api.background_task import background_task
@@ -178,7 +180,6 @@ def test_ws_connect_async_await(event_loop, local_server_info, method, exc_expec
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
 def test_create_task_async_await(event_loop, local_server_info, method, exc_expected):
-
     # `loop.create_task` returns a Task object which uses the coroutine's
     # `send` method, not `__next__`
 

@@ -19,16 +19,13 @@ import langchain
 import pytest
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
-from testing_support.fixtures import (
-    reset_core_stats_engine,
-    validate_attributes,
-    validate_custom_event_count,
-)
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (  # noqa: F401
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     set_trace_info,
 )
+from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,

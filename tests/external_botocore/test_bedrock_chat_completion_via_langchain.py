@@ -18,12 +18,9 @@ from _test_bedrock_chat_completion import (
     chat_completion_langchain_expected_streaming_events,
 )
 from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
-from testing_support.fixtures import (
-    reset_core_stats_engine,
-    validate_attributes,
-    validate_custom_event_count,
-)
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import set_trace_info  # noqa: F401
+from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,

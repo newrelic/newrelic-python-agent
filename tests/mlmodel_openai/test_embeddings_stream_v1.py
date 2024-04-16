@@ -14,11 +14,9 @@
 
 import pytest
 from conftest import get_openai_version  # pylint: disable=E0611
-from testing_support.fixtures import (
-    reset_core_stats_engine,
-    validate_custom_event_count,
-)
+from testing_support.fixtures import reset_core_stats_engine
 from testing_support.ml_testing_utils import set_trace_info  # noqa: F401
+from testing_support.validators.validate_custom_event import validate_custom_event_count
 
 from newrelic.api.background_task import background_task
 

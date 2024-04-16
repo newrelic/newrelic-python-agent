@@ -46,7 +46,11 @@ run: run.local
 .PHONY: run.%
 run.%:
 # Build image if local was specified, else pull latest
-	@if [[ "$*" = "local" ]]; then cd ${MAKEFILE_DIR} && $(MAKE) build; else docker pull ${IMAGE_NAME}:$*; fi
+	@if [[ "$*" = "local" ]]; then \
+		cd ${MAKEFILE_DIR} && $(MAKE) build; \
+	else \
+		docker pull --platform=${PLATFORM} ${IMAGE_NAME}:$*; \
+	fi
 	@docker run --rm -it \
 		--platform=${PLATFORM} \
 		--mount type=bind,source="${REPO_ROOT}",target=/home/github/python-agent \

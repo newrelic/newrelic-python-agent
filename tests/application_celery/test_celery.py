@@ -12,20 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from _target_application import add, nested_add, tsum
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
+from testing_support.validators.validate_transaction_count import (
+    validate_transaction_count,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import ignore_transaction, end_of_transaction
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-
-from tasks import add, tsum
+from newrelic.api.transaction import end_of_transaction, ignore_transaction
 
 
 @validate_transaction_metrics(
-        name='test_celery:test_celery_task_as_function_trace',
-        scoped_metrics=[('Function/tasks.add', 1)],
-        background_task=True)
-@validate_code_level_metrics("tasks", "add")
+    name="test_celery:test_celery_task_as_function_trace",
+    scoped_metrics=[("Function/_target_application.add", 1)],
+    background_task=True,
+)
+@validate_code_level_metrics("_target_application", "add")
 @background_task()
 def test_celery_task_as_function_trace():
     """
@@ -37,12 +44,8 @@ def test_celery_task_as_function_trace():
     assert result == 7
 
 
-@validate_transaction_metrics(
-        name='tasks.add',
-        group='Celery',
-        scoped_metrics=[],
-        background_task=True)
-@validate_code_level_metrics("tasks", "add")
+@validate_transaction_metrics(name="_target_application.add", group="Celery", scoped_metrics=[], background_task=True)
+@validate_code_level_metrics("_target_application", "add")
 def test_celery_task_as_background_task():
     """
     Calling add() outside of a transaction means the agent will create
@@ -53,12 +56,13 @@ def test_celery_task_as_background_task():
     result = add(3, 4)
     assert result == 7
 
+
 @validate_transaction_metrics(
-        name='test_celery:test_celery_tasks_multiple_function_traces',
-        scoped_metrics=[('Function/tasks.add', 1),
-                        ('Function/tasks.tsum', 1)],
-        background_task=True)
-@validate_code_level_metrics("tasks", "tsum")
+    name="test_celery:test_celery_tasks_multiple_function_traces",
+    scoped_metrics=[("Function/_target_application.add", 1), ("Function/_target_application.tsum", 1)],
+    background_task=True,
+)
+@validate_code_level_metrics("_target_application", "tsum")
 @background_task()
 def test_celery_tasks_multiple_function_traces():
     add_result = add(5, 6)
@@ -74,8 +78,8 @@ def test_celery_tasks_ignore_transaction():
     No transaction is recorded, due to the call to ignore_transaction(),
     so no validation fixture is used. The purpose of this test is to make
     sure the agent doesn't throw an error.
-
     """
+
     add_result = add(1, 2)
     assert add_result == 3
 
@@ -86,16 +90,17 @@ def test_celery_tasks_ignore_transaction():
 
 
 @validate_transaction_metrics(
-        name='test_celery:test_celery_tasks_end_transaction',
-        scoped_metrics=[('Function/tasks.add', 1)],
-        background_task=True)
+    name="test_celery:test_celery_tasks_end_transaction",
+    scoped_metrics=[("Function/_target_application.add", 1)],
+    background_task=True,
+)
 @background_task()
 def test_celery_tasks_end_transaction():
     """
     Only functions that run before the call to end_of_transaction() are
     included in the transaction.
-
     """
+
     add_result = add(1, 2)
     assert add_result == 3
 
@@ -103,3 +108,21 @@ def test_celery_tasks_end_transaction():
 
     tsum_result = tsum([1, 2, 3])
     assert tsum_result == 6
+
+
+@validate_transaction_metrics(
+    name="_target_application.nested_add",
+    group="Celery",
+    scoped_metrics=[("Function/_target_application.add", 1)],
+    background_task=True,
+)
+@validate_transaction_count(1)
+@validate_code_level_metrics("_target_application", "nested_add")
+def test_celery_nested_tasks():
+    """
+    Celery tasks run inside other celery tasks should not start a new transactions,
+    and should create a function trace instead.
+    """
+
+    add_result = nested_add(1, 2)
+    assert add_result == 3

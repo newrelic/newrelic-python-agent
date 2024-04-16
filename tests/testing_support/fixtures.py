@@ -33,13 +33,13 @@ from testing_support.sample_applications import (
     user_attributes_added,
 )
 
-from newrelic.api.ml_model import set_llm_token_count_callback
 from newrelic.admin.record_deploy import record_deploy
 from newrelic.api.application import (
     application_instance,
     application_settings,
     register_application,
 )
+from newrelic.api.ml_model import set_llm_token_count_callback
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.common.object_names import callable_name
@@ -893,56 +893,6 @@ def validate_application_exception_message(expected_message):
         return result
 
     return _validate_application_exception_message
-
-
-def _validate_custom_event(recorded_event, required_event):
-    assert len(recorded_event) == 2  # [intrinsic, user attributes]
-
-    intrinsics = recorded_event[0]
-
-    assert intrinsics["type"] == required_event[0]["type"]
-
-    now = time.time()
-    assert isinstance(intrinsics["timestamp"], int)
-    assert intrinsics["timestamp"] <= 1000.0 * now
-    assert intrinsics["timestamp"] >= 1000.0 * required_event[0]["timestamp"]
-
-    assert recorded_event[1].items() == required_event[1].items()
-
-
-def validate_custom_event_in_application_stats_engine(required_event):
-    @function_wrapper
-    def _validate_custom_event_in_application_stats_engine(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            stats = core_application_stats_engine(None)
-            assert stats.custom_events.num_samples == 1
-
-            custom_event = next(iter(stats.custom_events))
-            _validate_custom_event(custom_event, required_event)
-
-        return result
-
-    return _validate_custom_event_in_application_stats_engine
-
-
-def validate_custom_event_count(count):
-    @function_wrapper
-    def _validate_custom_event_count(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            stats = core_application_stats_engine(None)
-            assert stats.custom_events.num_samples == count, "Expected %d, got %d" % (count, stats.custom_events.num_samples)
-
-        return result
-
-    return _validate_custom_event_count
 
 
 def _validate_node_parenting(node, expected_node):

@@ -40,16 +40,16 @@ jobs:
           - cp312-musllinux
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
         with:
           persist-credentials: false
           fetch-depth: 0
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # 3.0.0
 
       - name: Build Wheels
-        uses: pypa/cibuildwheel@v2.16.2
+        uses: pypa/cibuildwheel@8d945475ac4b1aac4ae08b2fd27db9917158b6ce # 2.17.0
         env:
           CIBW_PLATFORM: linux
           CIBW_BUILD: "${{ matrix.wheel }}*"
@@ -59,7 +59,7 @@ jobs:
           CIBW_TEST_COMMAND: "PYTHONPATH={project}/tests pytest {project}/tests/agent_unittests -vx"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4.0.0
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: ${{ github.job }}-${{ matrix.wheel }}
           path: ./wheelhouse/*.whl
@@ -69,16 +69,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
         with:
           persist-credentials: false
           fetch-depth: 0
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # 3.0.0
 
       - name: Build Wheels
-        uses: pypa/cibuildwheel@v1.12.0
+        uses: pypa/cibuildwheel@bf3a5590c9aeb9a7e4ff4025ef7400e0c6ad1248 # 1.12.0  (Last release to support Python 2)
         env:
           CIBW_PLATFORM: linux
           CIBW_BUILD: cp27-manylinux_x86_64
@@ -88,7 +88,7 @@ jobs:
           CIBW_TEST_COMMAND: "PYTHONPATH={project}/tests pytest {project}/tests/agent_unittests -vx"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4.0.0
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: ${{ github.job }}
           path: ./wheelhouse/*.whl
@@ -97,7 +97,7 @@ jobs:
   build-sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -118,7 +118,7 @@ jobs:
           openssl md5 -binary dist/${tarball} | xxd -p | tr -d '\n' > dist/${md5_file}
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4.0.0
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: ${{ github.job }}-sdist
           path: |
@@ -135,12 +135,12 @@ jobs:
       - build-sdist
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # 5.1.0
         with:
           python-version: "3.x"
           architecture: x64
@@ -151,7 +151,7 @@ jobs:
           pip install -U wheel setuptools twine
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v4.1.0
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # 4.1.4
         with:
           path: ./artifacts/
 

@@ -11,20 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import pytest
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
-
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 _default_settings = {
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.transaction_threshold': 0.0,
-    'transaction_tracer.stack_trace_threshold': 0.0,
-    'debug.log_data_collector_payloads': True,
-    'debug.record_transaction_failure': True,
+    "transaction_tracer.explain_threshold": 0.0,
+    "transaction_tracer.transaction_threshold": 0.0,
+    "transaction_tracer.stack_trace_threshold": 0.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (application_celery)',
-        default_settings=_default_settings)
+    app_name="Python Agent Test (application_celery)", default_settings=_default_settings
+)

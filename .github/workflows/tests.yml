@@ -36,6 +36,7 @@ jobs:
       - python
       - elasticsearchserver07
       - elasticsearchserver08
+      - firestore
       - grpc
       - kafka
       - memcached

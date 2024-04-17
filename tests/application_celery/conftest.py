@@ -11,10 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import pytest
+
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
+from newrelic.packages import six
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -27,3 +30,23 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (application_celery)", default_settings=_default_settings
 )
+
+
+skip_if_py2 = pytest.mark.skipif(
+    six.PY2, reason="Celery has no pytest plugin for Python 2, making testing very difficult."
+)
+
+
+@pytest.fixture(scope="module")
+def celery_config():
+    # Used by celery pytest plugin to configure Celery instance
+    return {
+        "broker_url": "memory://",
+        "result_backend": "cache+memory://",
+    }
+
+
+@pytest.fixture(scope="module")
+def celery_worker_parameters():
+    # Used by celery pytest plugin to configure worker instance
+    return {"shutdown_timeout": 120}

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from _target_application import add, assert_dt
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_count import (
@@ -23,27 +22,8 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
-skip_if_py2 = pytest.mark.skipif(
-    six.PY2, reason="Celery has no pytest plugin for Python 2, making testing very difficult."
-)
-
-
-@pytest.fixture(scope="module")
-def celery_config():
-    # Used by celery pytest plugin to configure Celery instance
-    return {
-        "broker_url": "memory://",
-        "result_backend": "cache+memory://",
-    }
-
-
-@pytest.fixture(scope="module")
-def celery_worker_parameters():
-    # Used by celery pytest plugin to configure worker instance
-    return {"shutdown_timeout": 120}
-
+from conftest import skip_if_py2
 
 @skip_if_py2
 @validate_transaction_metrics(

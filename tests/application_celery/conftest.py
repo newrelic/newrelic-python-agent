@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
+
 from newrelic.packages import six
 
 _default_settings = {
@@ -37,7 +37,7 @@ skip_if_py2 = pytest.mark.skipif(
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def celery_config():
     # Used by celery pytest plugin to configure Celery instance
     return {
@@ -46,7 +46,17 @@ def celery_config():
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def celery_worker_parameters():
     # Used by celery pytest plugin to configure worker instance
     return {"shutdown_timeout": 120}
+
+
+if six.PY3:
+    @pytest.fixture(scope="session", autouse=True)
+    def celery_worker_available(celery_session_worker):
+        yield celery_session_worker
+else:
+    @pytest.fixture(scope="session", autouse=True)
+    def celery_worker_available(celery_session_worker):
+        return False

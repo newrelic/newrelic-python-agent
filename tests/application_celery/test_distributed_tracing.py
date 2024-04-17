@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from _target_application import add, assert_dt
+from conftest import skip_if_py2
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
@@ -23,7 +24,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 
-from conftest import skip_if_py2
 
 @skip_if_py2
 @validate_transaction_metrics(
@@ -37,16 +37,14 @@ from conftest import skip_if_py2
     index=-2,
 )
 @validate_transaction_metrics(
-    name="test_celery_distributed_tracing:test_celery_task_distributed_tracing_enabled",
+    name="test_distributed_tracing:test_celery_task_distributed_tracing_enabled",
     background_task=True,
 )
 @validate_transaction_count(2)
 @background_task()
-def test_celery_task_distributed_tracing_enabled(celery_worker):
+def test_celery_task_distributed_tracing_enabled():
     result = assert_dt.apply_async()
-    while not result.ready():
-        pass
-    result = result.result
+    result = result.get()
     assert result == 1
 
 
@@ -63,14 +61,12 @@ def test_celery_task_distributed_tracing_enabled(celery_worker):
     index=-2,
 )
 @validate_transaction_metrics(
-    name="test_celery_distributed_tracing:test_celery_task_distributed_tracing_disabled",
+    name="test_distributed_tracing:test_celery_task_distributed_tracing_disabled",
     background_task=True,
 )
 @validate_transaction_count(2)
 @background_task()
-def test_celery_task_distributed_tracing_disabled(celery_worker):
+def test_celery_task_distributed_tracing_disabled():
     result = add.apply_async((1, 2))
-    while not result.ready():
-        pass
-    result = result.result
+    result = result.get()
     assert result == 3

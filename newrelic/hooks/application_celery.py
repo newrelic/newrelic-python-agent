@@ -33,6 +33,9 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrappe
 from newrelic.core.agent import shutdown_agent
 
 
+UNKNOWN_TASK_NAME = "<Unknown Task>"
+
+
 def CeleryTaskWrapper(wrapped, application=None, name=None):
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction(active_only=False)
@@ -143,7 +146,6 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
 
     return TaskWrapper(wrapped, wrapper)
 
-
 def instrument_celery_app_task(module):
     # Triggered for both 'celery.app.task' and 'celery.task.base'.
 
@@ -162,8 +164,18 @@ def instrument_celery_app_task(module):
         # the task doesn't pass through it. For Celery 2.5+ need to wrap
         # the tracer instead.
 
-        def task_name(task, *args, **kwargs):
-            return task.name
+        def task_name(*args, **kwargs):
+            if "task" in kwargs:
+                task = kwargs["task"]
+            elif args:
+                task = args[0]
+            else:
+                return UNKNOWN_TASK_NAME  # Failsafe
+
+            if isinstance(task, dict):
+                return task.get("task", UNKNOWN_TASK_NAME)
+            else:
+                return task.name
 
         if module.BaseTask.__module__ == module.__name__:
             module.BaseTask.__call__ = CeleryTaskWrapper(module.BaseTask.__call__, name=task_name)

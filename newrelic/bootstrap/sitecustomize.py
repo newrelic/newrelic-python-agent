@@ -121,8 +121,9 @@ python_version_matches = expected_python_version == actual_python_version
 
 log_message("python_prefix_matches = %r", python_prefix_matches)
 log_message("python_version_matches = %r", python_version_matches)
+k8s_operator_enabled = os.environ.get("NEW_RELIC_K8S_OPERATOR_ENABLED", False)
 
-if python_prefix_matches and python_version_matches:
+if k8s_operator_enabled or (python_prefix_matches and python_version_matches):
     # We also need to skip agent initialisation if neither the license
     # key or config file environment variables are set. We do this as
     # some people like to use a common startup script which always uses

@@ -53,10 +53,13 @@ def celery_worker_parameters():
 
 
 if six.PY3:
+
     @pytest.fixture(scope="session", autouse=True)
     def celery_worker_available(celery_session_worker):
         yield celery_session_worker
+
 else:
+
     @pytest.fixture(scope="session", autouse=True)
     def celery_worker_available(celery_session_worker):
         return False

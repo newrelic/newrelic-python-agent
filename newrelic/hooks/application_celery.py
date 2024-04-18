@@ -31,7 +31,6 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper
 from newrelic.core.agent import shutdown_agent
 
-
 UNKNOWN_TASK_NAME = "<Unknown Task>"
 MAPPING_TASK_NAMES = {"celery.starmap", "celery.map"}
 
@@ -46,7 +45,7 @@ def task_name(*args, **kwargs):
         return UNKNOWN_TASK_NAME  # Failsafe
 
     task_name = getattr(task, "name", None) or task.get("task", UNKNOWN_TASK_NAME)
-    
+
     # Under mapping tasks, the root task name isn't descriptive enough so we append the
     # subtask name to differentiate between different mapping tasks
     if task_name in MAPPING_TASK_NAMES:
@@ -131,11 +130,11 @@ def CeleryTaskWrapper(wrapped):
     # instrumentation via FunctionWrapper() relies on __call__ being called which
     # in turn executes the wrapper() function defined above. Since the micro
     # optimization bypasses __call__ method it breaks our instrumentation of
-    # celery. 
+    # celery.
     #
     # For versions of celery 2.5.3 to 2.5.5+
     # Celery has included a monkey-patching provision which did not perform this
-    # optimization on functions that were monkey-patched. Unfortunately, our 
+    # optimization on functions that were monkey-patched. Unfortunately, our
     # wrappers are too transparent for celery to detect that they've even been
     # monky-patched. To circumvent this, we set the __module__ of our wrapped task
     # to this file which causes celery to properly detect that it has been patched.
@@ -155,6 +154,7 @@ def CeleryTaskWrapper(wrapped):
     wrapped_task.__module__ = CeleryTaskWrapper.__module__
 
     return wrapped_task
+
 
 def instrument_celery_app_task(module):
     # Triggered for both 'celery.app.task' and 'celery.task.base'.

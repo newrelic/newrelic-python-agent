@@ -105,7 +105,8 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
                     # Headers on earlier versions of Celery may end up as attributes
                     # on the request context instead of as custom headers. Handler this
                     # by defaulting to using vars() if headers is not available
-                    headers = getattr(wrapped.request, "headers", None) or vars(wrapped.request)
+                    request = instance.request
+                    headers = getattr(request, "headers", None) or vars(request)
 
                     settings = transaction.settings
                     if headers is not None and settings is not None:

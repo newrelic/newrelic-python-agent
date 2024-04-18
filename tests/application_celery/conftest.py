@@ -17,8 +17,6 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_available_fixture,
 )
 
-from newrelic.packages import six
-
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
@@ -29,11 +27,6 @@ _default_settings = {
 
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (application_celery)", default_settings=_default_settings
-)
-
-
-skip_if_py2 = pytest.mark.skipif(
-    six.PY2, reason="Celery has no pytest plugin for Python 2, making testing very difficult."
 )
 
 
@@ -52,14 +45,6 @@ def celery_worker_parameters():
     return {"shutdown_timeout": 120}
 
 
-if six.PY3:
-
-    @pytest.fixture(scope="session", autouse=True)
-    def celery_worker_available(celery_session_worker):
-        yield celery_session_worker
-
-else:
-
-    @pytest.fixture(scope="session", autouse=True)
-    def celery_worker_available(celery_session_worker):
-        return False
+@pytest.fixture(scope="session", autouse=True)
+def celery_worker_available(celery_session_worker):
+    yield celery_session_worker

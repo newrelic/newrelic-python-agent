@@ -15,7 +15,6 @@
 
 from _target_application import add, tsum
 from celery import chain, chord, group
-from conftest import skip_if_py2
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
@@ -39,7 +38,6 @@ def test_task_wrapping_detection():
     assert task_has_custom(add, "__call__")
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
@@ -56,7 +54,6 @@ def test_celery_task_call():
     assert result == 7
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
@@ -74,7 +71,6 @@ def test_celery_task_apply():
     assert result == 7
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
@@ -92,7 +88,6 @@ def test_celery_task_delay():
     assert result == 7
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
@@ -110,7 +105,6 @@ def test_celery_task_apply_async():
     assert result == 7
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
@@ -128,7 +122,6 @@ def test_celery_app_send_task(celery_session_app):
     assert result == 7
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
@@ -146,7 +139,6 @@ def test_celery_task_signature():
     assert result == 7
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
@@ -172,7 +164,6 @@ def test_celery_task_link():
     assert result == 7  # Linked task result won't be returned
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
@@ -199,7 +190,6 @@ def test_celery_chain():
     assert result == 12
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
@@ -225,7 +215,6 @@ def test_celery_group():
     assert result == [7, 3]
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.tsum",
     group="Celery",
@@ -259,7 +248,6 @@ def test_celery_chord():
     assert result == 10
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="celery.map/_target_application.tsum",
     group="Celery",
@@ -277,7 +265,6 @@ def test_celery_task_map():
     assert result == [7, 3]
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="celery.starmap/_target_application.add",
     group="Celery",
@@ -295,7 +282,6 @@ def test_celery_task_starmap():
     assert result == [7, 3]
 
 
-@skip_if_py2
 @validate_transaction_metrics(
     name="celery.starmap/_target_application.add",
     group="Celery",

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from celery import Celery
+from celery import Celery, shared_task
 from testing_support.validators.validate_distributed_trace_accepted import (
     validate_distributed_trace_accepted,
 )
@@ -42,6 +42,11 @@ def tsum(nums):
 @app.task
 def nested_add(x, y):
     return add(x, y)
+
+
+@shared_task
+def shared_task_add(x, y):
+    return x + y
 
 
 @app.task

@@ -17,11 +17,20 @@ from billiard import get_context
 from billiard.pool import Worker
 from testing_support.validators.validate_function_called import validate_function_called
 
+from newrelic.common.object_wrapper import transient_function_wrapper
+
 
 class OnExit(Exception):
     pass
 
 
+@transient_function_wrapper("newrelic.core.agent", "Agent.shutdown_agent")
+def mock_agent_shutdown(wrapped, instance, args, kwargs):
+    # Prevent agent from actually shutting down and blocking further tests
+    pass
+
+
+@mock_agent_shutdown
 @validate_function_called("newrelic.core.agent", "Agent.shutdown_agent")
 def test_max_tasks_per_child():
     def on_exit(*args, **kwargs):

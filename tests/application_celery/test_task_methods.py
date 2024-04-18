@@ -23,15 +23,15 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-TASK_METRICS = [("Function/_target_application.add", 1)]
+FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_target_application.tsum", None)]
 
 
 @skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
-    # scoped_metrics=TASK_METRICS,
-    # rollup_metrics=TASK_METRICS,
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
 @validate_transaction_count(1)
@@ -47,8 +47,8 @@ def test_celery_task_call():
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
-    scoped_metrics=TASK_METRICS,
-    rollup_metrics=TASK_METRICS,
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
 @validate_transaction_count(1)
@@ -65,8 +65,8 @@ def test_celery_task_apply():
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
-    scoped_metrics=TASK_METRICS,
-    rollup_metrics=TASK_METRICS,
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
 @validate_transaction_count(1)
@@ -83,8 +83,8 @@ def test_celery_task_delay():
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
-    scoped_metrics=TASK_METRICS,
-    rollup_metrics=TASK_METRICS,
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
 @validate_transaction_count(1)
@@ -101,8 +101,8 @@ def test_celery_task_apply_async():
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
-    scoped_metrics=TASK_METRICS,
-    rollup_metrics=TASK_METRICS,
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
 @validate_transaction_count(1)
@@ -119,8 +119,8 @@ def test_celery_app_send_task(celery_session_app):
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
-    scoped_metrics=TASK_METRICS,
-    rollup_metrics=TASK_METRICS,
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
 @validate_transaction_count(1)
@@ -134,13 +134,21 @@ def test_celery_task_signature():
 
 
 @skip_if_py2
-# @validate_transaction_metrics(
-#     name="_target_application.add",
-#     group="Celery",
-#     # scoped_metrics=TASK_METRICS,
-#     # rollup_metrics=TASK_METRICS,
-#     background_task=True,
-# )
+@validate_transaction_metrics(
+    name="_target_application.add",
+    group="Celery",
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
+    background_task=True,
+)
+@validate_transaction_metrics(
+    name="_target_application.add",
+    group="Celery",
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
+    background_task=True,
+    index=-1,
+)
 @validate_transaction_count(2)
 def test_celery_task_link():
     """
@@ -155,9 +163,17 @@ def test_celery_task_link():
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",
-    # scoped_metrics=TASK_METRICS,
-    # rollup_metrics=TASK_METRICS,
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
+)
+@validate_transaction_metrics(
+    name="_target_application.add",
+    group="Celery",
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
+    background_task=True,
+    index=-1,
 )
 @validate_transaction_count(2)
 def test_celery_chain():
@@ -171,13 +187,21 @@ def test_celery_chain():
 
 
 @skip_if_py2
-# @validate_transaction_metrics(
-#     name="_target_application.add",
-#     group="Celery",
-#     # scoped_metrics=TASK_METRICS,
-#     # rollup_metrics=TASK_METRICS,
-#     background_task=True,
-# )
+@validate_transaction_metrics(
+    name="_target_application.add",
+    group="Celery",
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
+    background_task=True,
+)
+@validate_transaction_metrics(
+    name="_target_application.add",
+    group="Celery",
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
+    background_task=True,
+    index=-1,
+)
 @validate_transaction_count(2)
 def test_celery_group():
     """
@@ -189,13 +213,29 @@ def test_celery_group():
 
 
 @skip_if_py2
-# @validate_transaction_metrics(
-#     name="_target_application.add",
-#     group="Celery",
-#     # scoped_metrics=TASK_METRICS,
-#     # rollup_metrics=TASK_METRICS,
-#     background_task=True,
-# )
+@validate_transaction_metrics(
+    name="_target_application.tsum",
+    group="Celery",
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
+    background_task=True,
+)
+@validate_transaction_metrics(
+    name="_target_application.add",
+    group="Celery",
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
+    background_task=True,
+    index=-1,
+)
+@validate_transaction_metrics(
+    name="_target_application.add",
+    group="Celery",
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
+    background_task=True,
+    index=-2,
+)
 @validate_transaction_count(3)
 def test_celery_chord():
     """
@@ -207,17 +247,17 @@ def test_celery_chord():
 
 
 @skip_if_py2
-# @validate_transaction_metrics(
-#     name="_target_application.add",
-#     group="Celery",
-#     # scoped_metrics=TASK_METRICS,
-#     # rollup_metrics=TASK_METRICS,
-#     background_task=True,
-# )
+@validate_transaction_metrics(
+    name="celery.map",
+    group="Celery",
+    scoped_metrics=[("Function/_target_application.tsum", 2)],
+    rollup_metrics=[("Function/_target_application.tsum", 2)],
+    background_task=True,
+)
 @validate_transaction_count(1)
 def test_celery_task_map():
     """
-    Executes multiple tasks on worker process and returns an AsyncResult.
+    Executes one map task, with multiple subtasks called directly on worker process and returns an AsyncResult.
     """
     result = tsum.map([(3, 4), (1, 2)]).apply()
     result = result.get()
@@ -225,13 +265,13 @@ def test_celery_task_map():
 
 
 @skip_if_py2
-# @validate_transaction_metrics(
-#     name="_target_application.add",
-#     group="Celery",
-#     # scoped_metrics=TASK_METRICS,
-#     # rollup_metrics=TASK_METRICS,
-#     background_task=True,
-# )
+@validate_transaction_metrics(
+    name="celery.starmap",
+    group="Celery",
+    scoped_metrics=[("Function/_target_application.add", 2)],
+    rollup_metrics=[("Function/_target_application.add", 2)],
+    background_task=True,
+)
 @validate_transaction_count(1)
 def test_celery_task_starmap():
     """
@@ -243,13 +283,21 @@ def test_celery_task_starmap():
 
 
 @skip_if_py2
-# @validate_transaction_metrics(
-#     name="_target_application.add",
-#     group="Celery",
-#     # scoped_metrics=TASK_METRICS,
-#     # rollup_metrics=TASK_METRICS,
-#     background_task=True,
-# )
+@validate_transaction_metrics(
+    name="_target_application.add",
+    group="Celery",
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
+    background_task=True,
+)
+@validate_transaction_metrics(
+    name="_target_application.add",
+    group="Celery",
+    scoped_metrics=FORGONE_TASK_METRICS,
+    rollup_metrics=FORGONE_TASK_METRICS,
+    background_task=True,
+    index=-1,
+)
 @validate_transaction_count(2)
 def test_celery_task_chunks():
     """

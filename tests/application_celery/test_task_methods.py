@@ -248,7 +248,7 @@ def test_celery_chord():
 
 @skip_if_py2
 @validate_transaction_metrics(
-    name="celery.map",
+    name="_target_application.tsum",
     group="Celery",
     scoped_metrics=[("Function/_target_application.tsum", 2)],
     rollup_metrics=[("Function/_target_application.tsum", 2)],
@@ -258,6 +258,8 @@ def test_celery_chord():
 def test_celery_task_map():
     """
     Executes one map task, with multiple subtasks called directly on worker process and returns an AsyncResult.
+
+    Unlike some other grouping methods, map will set its own task name to the underlying task's name instead of celery.map.
     """
     result = tsum.map([(3, 4), (1, 2)]).apply()
     result = result.get()
@@ -266,7 +268,7 @@ def test_celery_task_map():
 
 @skip_if_py2
 @validate_transaction_metrics(
-    name="celery.starmap",
+    name="_target_application.add",
     group="Celery",
     scoped_metrics=[("Function/_target_application.add", 2)],
     rollup_metrics=[("Function/_target_application.add", 2)],
@@ -276,6 +278,8 @@ def test_celery_task_map():
 def test_celery_task_starmap():
     """
     Executes multiple tasks on worker process and returns an AsyncResult.
+
+    Unlike some other grouping methods, starmap will set its own task name to the underlying task's name instead of celery.starmap.
     """
     result = add.starmap([(3, 4), (1, 2)]).apply_async()
     result = result.get()

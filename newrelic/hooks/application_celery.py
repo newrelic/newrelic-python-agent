@@ -34,6 +34,7 @@ from newrelic.core.agent import shutdown_agent
 
 
 UNKNOWN_TASK_NAME = "<Unknown Task>"
+MAPPING_TASK_NAMES = {"celery.starmap", "celery.map"}
 
 
 def CeleryTaskWrapper(wrapped, application=None, name=None):
@@ -175,17 +176,22 @@ def instrument_celery_app_task(module):
         # the tracer instead.
 
         def task_name(*args, **kwargs):
-            if "task" in kwargs:
-                task = kwargs["task"]
-            elif args:
+            if args:
                 task = args[0]
+            elif "task" in kwargs:
+                task = kwargs["task"]
             else:
                 return UNKNOWN_TASK_NAME  # Failsafe
 
-            if isinstance(task, dict):
-                return task.get("task", UNKNOWN_TASK_NAME)
-            else:
-                return task.name
+            task_name = getattr(task, "name", None) or task.get("task", UNKNOWN_TASK_NAME)
+            if task_name in MAPPING_TASK_NAMES:
+                try:
+                    subtask = kwargs["task"]["task"]
+                    task_name = "/".join((task_name, subtask))
+                except Exception:
+                    pass
+
+            return task_name
 
         if module.BaseTask.__module__ == module.__name__:
             module.BaseTask.__call__ = CeleryTaskWrapper(module.BaseTask.__call__, name=task_name)

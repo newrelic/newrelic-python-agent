@@ -131,20 +131,30 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
     # instrumentation via FunctionWrapper() relies on __call__ being called which
     # in turn executes the wrapper() function defined above. Since the micro
     # optimization bypasses __call__ method it breaks our instrumentation of
-    # celery. To circumvent this problem, we added a run() attribute to our
+    # celery. 
+    #
+    # For versions of celery 2.5.3 to 2.5.5+
+    # Celery has included a monkey-patching provision which did not perform this
+    # optimization on functions that were monkey-patched. Unfortunately, our 
+    # wrappers are too transparent for celery to detect that they've even been
+    # monky-patched. To circumvent this, we set the __module__ of our wrapped task
+    # to this file which causes celery to properly detect that it has been patched.
+    #
+    # For versions of celery 2.5.3 to 2.5.5
+    # To circumvent this problem, we added a run() attribute to our
     # FunctionWrapper which points to our __call__ method. This causes Celery
     # to execute our __call__ method which in turn applies the wrapper
     # correctly before executing the task.
-    #
-    # This is only a problem in Celery versions 2.5.3 to 2.5.5. The later
-    # versions included a monkey-patching provision which did not perform this
-    # optimization on functions that were monkey-patched.
 
     class TaskWrapper(FunctionWrapper):
         def run(self, *args, **kwargs):
             return self.__call__(*args, **kwargs)
 
-    return TaskWrapper(wrapped, wrapper)
+    wrapped_task = TaskWrapper(wrapped, wrapper)
+    # Reset __module__ to be less transparent so celery detects our monkey-patching
+    wrapped_task.__module__ = CeleryTaskWrapper.__module__
+
+    return wrapped_task
 
 def instrument_celery_app_task(module):
     # Triggered for both 'celery.app.task' and 'celery.task.base'.

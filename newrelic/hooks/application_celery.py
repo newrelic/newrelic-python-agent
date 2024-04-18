@@ -28,7 +28,6 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.pre_function import wrap_pre_function
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper
 from newrelic.core.agent import shutdown_agent
 
@@ -37,38 +36,37 @@ UNKNOWN_TASK_NAME = "<Unknown Task>"
 MAPPING_TASK_NAMES = {"celery.starmap", "celery.map"}
 
 
-def CeleryTaskWrapper(wrapped, application=None, name=None):
+def task_name(*args, **kwargs):
+    # Grab the current task, which can be located in either place
+    if args:
+        task = args[0]
+    elif "task" in kwargs:
+        task = kwargs["task"]
+    else:
+        return UNKNOWN_TASK_NAME  # Failsafe
+
+    task_name = getattr(task, "name", None) or task.get("task", UNKNOWN_TASK_NAME)
+    
+    # Under mapping tasks, the root task name isn't descriptive enough so we append the
+    # subtask name to differentiate between different mapping tasks
+    if task_name in MAPPING_TASK_NAMES:
+        try:
+            subtask = kwargs["task"]["task"]
+            task_name = "/".join((task_name, subtask))
+        except Exception:
+            pass
+
+    return task_name
+
+
+def CeleryTaskWrapper(wrapped):
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction(active_only=False)
 
-        if callable(name):
-            # Start Hotfix v2.2.1.
-            # if instance and inspect.ismethod(wrapped):
-            #     _name = name(instance, *args, **kwargs)
-            # else:
-            #     _name = name(*args, **kwargs)
-
-            if instance is not None:
-                _name = name(instance, *args, **kwargs)
-            else:
-                _name = name(*args, **kwargs)
-            # End Hotfix v2.2.1.
-
-        elif name is None:
-            _name = callable_name(wrapped)
-
+        if instance is not None:
+            _name = task_name(instance, *args, **kwargs)
         else:
-            _name = name
-
-        # Helper for obtaining the appropriate application object. If
-        # has an activate() method assume it is a valid application
-        # object. Don't check by type so se can easily mock it for
-        # testing if need be.
-
-        def _application():
-            if hasattr(application, "activate"):
-                return application
-            return application_instance(application)
+            _name = task_name(*args, **kwargs)
 
         # A Celery Task can be called either outside of a transaction, or
         # within the context of an existing transaction. There are 3
@@ -99,7 +97,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
                 return wrapped(*args, **kwargs)
 
         else:
-            with BackgroundTask(_application(), _name, "Celery", source=instance) as transaction:
+            with BackgroundTask(application_instance(), _name, "Celery", source=instance) as transaction:
                 # Attempt to grab distributed tracing headers
                 try:
                     # Headers on earlier versions of Celery may end up as attributes
@@ -176,26 +174,8 @@ def instrument_celery_app_task(module):
         # the task doesn't pass through it. For Celery 2.5+ need to wrap
         # the tracer instead.
 
-        def task_name(*args, **kwargs):
-            if args:
-                task = args[0]
-            elif "task" in kwargs:
-                task = kwargs["task"]
-            else:
-                return UNKNOWN_TASK_NAME  # Failsafe
-
-            task_name = getattr(task, "name", None) or task.get("task", UNKNOWN_TASK_NAME)
-            if task_name in MAPPING_TASK_NAMES:
-                try:
-                    subtask = kwargs["task"]["task"]
-                    task_name = "/".join((task_name, subtask))
-                except Exception:
-                    pass
-
-            return task_name
-
         if module.BaseTask.__module__ == module.__name__:
-            module.BaseTask.__call__ = CeleryTaskWrapper(module.BaseTask.__call__, name=task_name)
+            module.BaseTask.__call__ = CeleryTaskWrapper(module.BaseTask.__call__)
 
 
 def wrap_Celery_send_task(wrapped, instance, args, kwargs):

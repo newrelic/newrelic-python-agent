@@ -745,7 +745,9 @@ _settings.cross_application_tracer.enabled = False
 _settings.gc_runtime_metrics.enabled = False
 _settings.gc_runtime_metrics.top_object_count_limit = 5
 
-_settings.memory_runtime_pid_metrics.enabled = _environ_as_bool("NEW_RELIC_MEMORY_RUNTIME_PID_METRICS_ENABLED", default=True)
+_settings.memory_runtime_pid_metrics.enabled = _environ_as_bool(
+    "NEW_RELIC_MEMORY_RUNTIME_PID_METRICS_ENABLED", default=True
+)
 
 _settings.transaction_events.enabled = True
 _settings.transaction_events.attributes.enabled = True

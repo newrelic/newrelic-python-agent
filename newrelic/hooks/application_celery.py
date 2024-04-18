@@ -207,28 +207,6 @@ def instrument_celery_app_base(module):
         wrap_function_wrapper(module, "Celery.send_task", wrap_Celery_send_task)
 
 
-def instrument_celery_execute_trace(module):
-    # Triggered for 'celery.execute_trace'.
-
-    if hasattr(module, "build_tracer"):
-        # Need to add a wrapper for background task entry point.
-
-        # In Celery 2.5+ we need to wrap the task when tracer is being
-        # created. Note that in Celery 2.5 the 'build_tracer' function
-        # actually resided in the module 'celery.execute.task'. In
-        # Celery 3.0 the 'build_tracer' function moved to
-        # 'celery.task.trace'.
-
-        _build_tracer = module.build_tracer
-
-        def build_tracer(name, task, *args, **kwargs):
-            task = task or module.tasks[name]
-            task = CeleryTaskWrapper(task, name=name)
-            return _build_tracer(name, task, *args, **kwargs)
-
-        module.build_tracer = build_tracer
-
-
 def instrument_celery_worker(module):
     # Triggered for 'celery.worker' and 'celery.concurrency.processes'.
 

@@ -44,6 +44,7 @@ def task_name(*args, **kwargs):
     else:
         return UNKNOWN_TASK_NAME  # Failsafe
 
+    # Task can be either a task instance or a signature, which subclasses dict, or an actual dict in some cases.
     task_name = getattr(task, "name", None) or task.get("task", UNKNOWN_TASK_NAME)
 
     # Under mapping tasks, the root task name isn't descriptive enough so we append the

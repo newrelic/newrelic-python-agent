@@ -26,6 +26,19 @@ from testing_support.validators.validate_transaction_metrics import (
 FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_target_application.tsum", None)]
 
 
+def test_task_wrapping_detection():
+    """
+    Ensure celery detects our monkeypatching properly and will run our instrumentation
+    on __call__ and runs that instead of micro-optimizing it away to a run() call.
+
+    If this is not working, most other tests in this file will fail as the different ways
+    of running celery tasks will not all run our instrumentation.
+    """
+    from celery.app.trace import task_has_custom
+
+    assert task_has_custom(add, "__call__")
+
+
 @skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.add",
@@ -147,7 +160,7 @@ def test_celery_task_signature():
     scoped_metrics=FORGONE_TASK_METRICS,
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
-    index=-1,
+    index=-2,
 )
 @validate_transaction_count(2)
 def test_celery_task_link():
@@ -173,7 +186,7 @@ def test_celery_task_link():
     scoped_metrics=FORGONE_TASK_METRICS,
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
-    index=-1,
+    index=-2,
 )
 @validate_transaction_count(2)
 def test_celery_chain():
@@ -200,7 +213,7 @@ def test_celery_chain():
     scoped_metrics=FORGONE_TASK_METRICS,
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
-    index=-1,
+    index=-2,
 )
 @validate_transaction_count(2)
 def test_celery_group():
@@ -226,7 +239,7 @@ def test_celery_group():
     scoped_metrics=FORGONE_TASK_METRICS,
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
-    index=-1,
+    index=-2,
 )
 @validate_transaction_metrics(
     name="_target_application.add",
@@ -234,12 +247,12 @@ def test_celery_group():
     scoped_metrics=FORGONE_TASK_METRICS,
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
-    index=-2,
+    index=-3,
 )
 @validate_transaction_count(3)
 def test_celery_chord():
     """
-    Executes multiple tasks on worker process and returns an AsyncResult.
+    Executes 2 add tasks, followed by a tsum task on the worker process and returns an AsyncResult.
     """
     result = chord([add.s(3, 4), add.s(1, 2)])(tsum.s())
     result = result.get()
@@ -248,7 +261,7 @@ def test_celery_chord():
 
 @skip_if_py2
 @validate_transaction_metrics(
-    name="_target_application.tsum",
+    name="celery.map/_target_application.tsum",
     group="Celery",
     scoped_metrics=[("Function/_target_application.tsum", 2)],
     rollup_metrics=[("Function/_target_application.tsum", 2)],
@@ -257,9 +270,7 @@ def test_celery_chord():
 @validate_transaction_count(1)
 def test_celery_task_map():
     """
-    Executes one map task, with multiple subtasks called directly on worker process and returns an AsyncResult.
-
-    Unlike some other grouping methods, map will set its own task name to the underlying task's name instead of celery.map.
+    Executes map task on worker process with original task as a subtask and returns an AsyncResult.
     """
     result = tsum.map([(3, 4), (1, 2)]).apply()
     result = result.get()
@@ -268,7 +279,7 @@ def test_celery_task_map():
 
 @skip_if_py2
 @validate_transaction_metrics(
-    name="_target_application.add",
+    name="celery.starmap/_target_application.add",
     group="Celery",
     scoped_metrics=[("Function/_target_application.add", 2)],
     rollup_metrics=[("Function/_target_application.add", 2)],
@@ -277,9 +288,7 @@ def test_celery_task_map():
 @validate_transaction_count(1)
 def test_celery_task_starmap():
     """
-    Executes multiple tasks on worker process and returns an AsyncResult.
-
-    Unlike some other grouping methods, starmap will set its own task name to the underlying task's name instead of celery.starmap.
+    Executes starmap task on worker process with original task as a subtask and returns an AsyncResult.
     """
     result = add.starmap([(3, 4), (1, 2)]).apply_async()
     result = result.get()
@@ -288,19 +297,19 @@ def test_celery_task_starmap():
 
 @skip_if_py2
 @validate_transaction_metrics(
-    name="_target_application.add",
+    name="celery.starmap/_target_application.add",
     group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
+    scoped_metrics=[("Function/_target_application.add", 1)],
+    rollup_metrics=[("Function/_target_application.add", 1)],
     background_task=True,
 )
 @validate_transaction_metrics(
-    name="_target_application.add",
+    name="celery.starmap/_target_application.add",
     group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
+    scoped_metrics=[("Function/_target_application.add", 1)],
+    rollup_metrics=[("Function/_target_application.add", 1)],
     background_task=True,
-    index=-1,
+    index=-2,
 )
 @validate_transaction_count(2)
 def test_celery_task_chunks():

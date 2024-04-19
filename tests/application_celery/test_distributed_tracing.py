@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from _target_application import add, assert_dt
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_count import (
@@ -23,29 +22,8 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
-
-skip_if_py2 = pytest.mark.skipif(
-    six.PY2, reason="Celery has no pytest plugin for Python 2, making testing very difficult."
-)
 
 
-@pytest.fixture(scope="module")
-def celery_config():
-    # Used by celery pytest plugin to configure Celery instance
-    return {
-        "broker_url": "memory://",
-        "result_backend": "cache+memory://",
-    }
-
-
-@pytest.fixture(scope="module")
-def celery_worker_parameters():
-    # Used by celery pytest plugin to configure worker instance
-    return {"shutdown_timeout": 120}
-
-
-@skip_if_py2
 @validate_transaction_metrics(
     name="_target_application.assert_dt",
     group="Celery",
@@ -57,20 +35,17 @@ def celery_worker_parameters():
     index=-2,
 )
 @validate_transaction_metrics(
-    name="test_celery_distributed_tracing:test_celery_task_distributed_tracing_enabled",
+    name="test_distributed_tracing:test_celery_task_distributed_tracing_enabled",
     background_task=True,
 )
 @validate_transaction_count(2)
 @background_task()
-def test_celery_task_distributed_tracing_enabled(celery_worker):
+def test_celery_task_distributed_tracing_enabled():
     result = assert_dt.apply_async()
-    while not result.ready():
-        pass
-    result = result.result
+    result = result.get()
     assert result == 1
 
 
-@skip_if_py2
 @override_application_settings({"distributed_tracing.enabled": False})
 @validate_transaction_metrics(
     name="_target_application.add",
@@ -83,14 +58,12 @@ def test_celery_task_distributed_tracing_enabled(celery_worker):
     index=-2,
 )
 @validate_transaction_metrics(
-    name="test_celery_distributed_tracing:test_celery_task_distributed_tracing_disabled",
+    name="test_distributed_tracing:test_celery_task_distributed_tracing_disabled",
     background_task=True,
 )
 @validate_transaction_count(2)
 @background_task()
-def test_celery_task_distributed_tracing_disabled(celery_worker):
+def test_celery_task_distributed_tracing_disabled():
     result = add.apply_async((1, 2))
-    while not result.ready():
-        pass
-    result = result.result
+    result = result.get()
     assert result == 3

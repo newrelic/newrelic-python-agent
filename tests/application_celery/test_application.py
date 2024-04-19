@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from _target_application import add, nested_add, tsum
+from _target_application import add, nested_add, shared_task_add, tsum
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
@@ -28,7 +28,7 @@ from newrelic.api.transaction import end_of_transaction, ignore_transaction
 
 
 @validate_transaction_metrics(
-    name="test_celery:test_celery_task_as_function_trace",
+    name="test_application:test_celery_task_as_function_trace",
     scoped_metrics=[("Function/_target_application.add", 1)],
     background_task=True,
 )
@@ -58,7 +58,7 @@ def test_celery_task_as_background_task():
 
 
 @validate_transaction_metrics(
-    name="test_celery:test_celery_tasks_multiple_function_traces",
+    name="test_application:test_celery_tasks_multiple_function_traces",
     scoped_metrics=[("Function/_target_application.add", 1), ("Function/_target_application.tsum", 1)],
     background_task=True,
 )
@@ -90,7 +90,7 @@ def test_celery_tasks_ignore_transaction():
 
 
 @validate_transaction_metrics(
-    name="test_celery:test_celery_tasks_end_transaction",
+    name="test_application:test_celery_tasks_end_transaction",
     scoped_metrics=[("Function/_target_application.add", 1)],
     background_task=True,
 )
@@ -126,3 +126,18 @@ def test_celery_nested_tasks():
 
     add_result = nested_add(1, 2)
     assert add_result == 3
+
+
+@validate_transaction_metrics(
+    name="_target_application.shared_task_add", group="Celery", scoped_metrics=[], background_task=True
+)
+@validate_code_level_metrics("_target_application", "shared_task_add")
+def test_celery_shared_task_as_background_task():
+    """
+    Calling shared_task_add() outside of a transaction means the agent will create
+    a background transaction (with a group of 'Celery') and record shared_task_add()
+    as a background task.
+
+    """
+    result = shared_task_add(3, 4)
+    assert result == 7

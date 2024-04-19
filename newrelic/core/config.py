@@ -162,6 +162,10 @@ class AIMonitoringRecordContentSettings(Settings):
     pass
 
 
+class K8sOperatorSettings(Settings):
+    pass
+
+
 class PackageReportingSettings(Settings):
     pass
 
@@ -430,6 +434,7 @@ _settings.machine_learning.inference_events_value = MachineLearningInferenceEven
 _settings.ai_monitoring = AIMonitoringSettings()
 _settings.ai_monitoring.streaming = AIMonitoringStreamingSettings()
 _settings.ai_monitoring.record_content = AIMonitoringRecordContentSettings()
+_settings.k8s_operator = K8sOperatorSettings()
 _settings.package_reporting = PackageReportingSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
@@ -745,7 +750,9 @@ _settings.cross_application_tracer.enabled = False
 _settings.gc_runtime_metrics.enabled = False
 _settings.gc_runtime_metrics.top_object_count_limit = 5
 
-_settings.memory_runtime_pid_metrics.enabled = _environ_as_bool("NEW_RELIC_MEMORY_RUNTIME_METRICS_ENABLED", default=True)
+_settings.memory_runtime_pid_metrics.enabled = _environ_as_bool(
+    "NEW_RELIC_MEMORY_RUNTIME_METRICS_ENABLED", default=True
+)
 
 _settings.transaction_events.enabled = True
 _settings.transaction_events.attributes.enabled = True
@@ -953,6 +960,7 @@ _settings.ai_monitoring.record_content.enabled = _environ_as_bool(
     "NEW_RELIC_AI_MONITORING_RECORD_CONTENT_ENABLED", default=True
 )
 _settings.ai_monitoring._llm_token_count_callback = None
+_settings.k8s_operator.enabled = _environ_as_bool("NEW_RELIC_K8S_OPERATOR_ENABLED", default=False)
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 

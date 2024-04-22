@@ -346,6 +346,7 @@ def _process_configuration(section):
     _process_setting(section, "security.detection.rci.enabled", "getboolean", None)
     _process_setting(section, "security.detection.rxss.enabled", "getboolean", None)
     _process_setting(section, "security.detection.deserialization.enabled", "getboolean", None)
+    _process_setting(section, "security.request.body_limit", "get", None)
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)

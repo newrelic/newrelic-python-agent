@@ -45,13 +45,13 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 
 @pytest.fixture(scope="session")
 def metrics(server):
-    scoped = [("External/localhost:%d/urllib3/" % server.port, 1)]
+    scoped = [("External/localhost:%d/urllib3/GET" % server.port, 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
         ("External/localhost:%d/all" % server.port, 1),
-        ("External/localhost:%d/urllib3/" % server.port, 1),
+        ("External/localhost:%d/urllib3/GET" % server.port, 1),
     ]
 
     return scoped, rollup
@@ -162,13 +162,13 @@ def test_https_request_connection_pool_request(server, metrics):
 
 
 def test_port_included(server):
-    scoped = [("External/localhost:%d/urllib3/" % server.port, 1)]
+    scoped = [("External/localhost:%d/urllib3/GET" % server.port, 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
         ("External/localhost:%d/all" % server.port, 1),
-        ("External/localhost:%d/urllib3/" % server.port, 1),
+        ("External/localhost:%d/urllib3/GET" % server.port, 1),
     ]
 
     @validate_transaction_errors(errors=[])

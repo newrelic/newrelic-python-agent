@@ -28,7 +28,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.pre_function import wrap_pre_function
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper, _NRBoundFunctionWrapper
 from newrelic.core.agent import shutdown_agent
 
 UNKNOWN_TASK_NAME = "<Unknown Task>"
@@ -160,7 +160,6 @@ def CeleryTaskWrapper(wrapped, name=None, source=None):
     wrapped_task = TaskWrapper(wrapped, wrapper)
     # Reset __module__ to be less transparent so celery detects our monkey-patching
     wrapped_task.__module__ = CeleryTaskWrapper.__module__
-    wrapped_task._nr_wrapped = True
 
     return wrapped_task
 
@@ -214,10 +213,7 @@ def instrument_celery_app_base(module):
 
 
 def instrument_celery_execute_trace(module):
-    # Triggered for 'celery.execute_trace'.
-
     if hasattr(module, "build_tracer"):
-        # Need to add a wrapper for background task entry point.
 
         _build_tracer = module.build_tracer
 
@@ -226,7 +222,7 @@ def instrument_celery_execute_trace(module):
                 task = task or module.tasks[name]
 
                 task_cls = type(task)
-                if not hasattr(task_cls.__call__, "_nr_wrapped"):
+                if not isinstance(task_cls.__call__, _NRBoundFunctionWrapper):
                     task_cls.__call__ = CeleryTaskWrapper(task_cls.__call__, name, source=task.__wrapped__)
             except Exception:
                 pass

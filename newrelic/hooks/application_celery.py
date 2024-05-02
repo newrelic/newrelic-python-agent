@@ -35,9 +35,14 @@ UNKNOWN_TASK_NAME = "<Unknown Task>"
 MAPPING_TASK_NAMES = {"celery.starmap", "celery.map"}
 
 
-def task_name(*args, **kwargs):
+def task_name(name, instance, *args, **kwargs):
+    if name:
+        return name
+
     # Grab the current task, which can be located in either place
-    if args:
+    if instance:
+        task = instance
+    elif args:
         task = args[0]
     elif "task" in kwargs:
         task = kwargs["task"]
@@ -59,14 +64,15 @@ def task_name(*args, **kwargs):
     return task_name
 
 
-def CeleryTaskWrapper(wrapped):
+def CeleryTaskWrapper(wrapped, name=None, source=None):
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction(active_only=False)
 
-        if instance is not None:
-            _name = task_name(instance, *args, **kwargs)
-        else:
-            _name = task_name(*args, **kwargs)
+        # Grab task name using careful naming logic
+        _name = task_name(name, instance, *args, **kwargs)
+
+        # Set code level metrics source function
+        _source = source or instance
 
         # A Celery Task can be called either outside of a transaction, or
         # within the context of an existing transaction. There are 3
@@ -93,17 +99,18 @@ def CeleryTaskWrapper(wrapped):
             return wrapped(*args, **kwargs)
 
         elif transaction:
-            with FunctionTrace(_name, source=instance):
+            with FunctionTrace(_name, source=_source):
                 return wrapped(*args, **kwargs)
 
         else:
-            with BackgroundTask(application_instance(), _name, "Celery", source=instance) as transaction:
+            with BackgroundTask(application_instance(), _name, "Celery", source=_source) as transaction:
                 # Attempt to grab distributed tracing headers
                 try:
                     # Headers on earlier versions of Celery may end up as attributes
                     # on the request context instead of as custom headers. Handler this
                     # by defaulting to using vars() if headers is not available
-                    request = instance.request
+                    task = instance or wrapped
+                    request = task.request
                     headers = getattr(request, "headers", None) or vars(request)
 
                     settings = transaction.settings
@@ -153,6 +160,7 @@ def CeleryTaskWrapper(wrapped):
     wrapped_task = TaskWrapper(wrapped, wrapper)
     # Reset __module__ to be less transparent so celery detects our monkey-patching
     wrapped_task.__module__ = CeleryTaskWrapper.__module__
+    wrapped_task._nr_wrapped = True
 
     return wrapped_task
 
@@ -203,6 +211,29 @@ def wrap_Celery_send_task(wrapped, instance, args, kwargs):
 def instrument_celery_app_base(module):
     if hasattr(module, "Celery") and hasattr(module.Celery, "send_task"):
         wrap_function_wrapper(module, "Celery.send_task", wrap_Celery_send_task)
+
+
+def instrument_celery_execute_trace(module):
+    # Triggered for 'celery.execute_trace'.
+
+    if hasattr(module, "build_tracer"):
+        # Need to add a wrapper for background task entry point.
+
+        _build_tracer = module.build_tracer
+
+        def build_tracer(name, task, *args, **kwargs):
+            try:
+                task = task or module.tasks[name]
+
+                task_cls = type(task)
+                if not hasattr(task_cls.__call__, "_nr_wrapped"):
+                    task_cls.__call__ = CeleryTaskWrapper(task_cls.__call__, name, source=task.__wrapped__)
+            except Exception:
+                pass
+
+            return _build_tracer(name, task, *args, **kwargs)
+
+        module.build_tracer = build_tracer
 
 
 def instrument_celery_worker(module):

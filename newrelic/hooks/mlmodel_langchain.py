@@ -111,6 +111,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.vearch": "Vearch",
     "langchain_community.vectorstores.vectara": "Vectara",
     "langchain_community.vectorstores.vespa": "VespaStore",
+    "langchain_community.vectorstores.vlite": "VLite",
     "langchain_community.vectorstores.weaviate": "Weaviate",
     "langchain_community.vectorstores.xata": "XataVectorStore",
     "langchain_community.vectorstores.yellowbrick": "Yellowbrick",

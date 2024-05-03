@@ -2583,6 +2583,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_community.vectorstores.vlite",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
         "langchain_community.vectorstores.weaviate",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",

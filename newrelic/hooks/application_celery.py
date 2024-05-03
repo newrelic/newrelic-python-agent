@@ -35,10 +35,7 @@ UNKNOWN_TASK_NAME = "<Unknown Task>"
 MAPPING_TASK_NAMES = {"celery.starmap", "celery.map"}
 
 
-def task_name(name, instance, *args, **kwargs):
-    if name:
-        return name
-
+def task_name(instance, *args, **kwargs):
     # Grab the current task, which can be located in either place
     if instance:
         task = instance
@@ -64,15 +61,12 @@ def task_name(name, instance, *args, **kwargs):
     return task_name
 
 
-def CeleryTaskWrapper(wrapped, name=None, source=None):
+def CeleryTaskWrapper(wrapped):
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction(active_only=False)
 
         # Grab task name using careful naming logic
-        _name = task_name(name, instance, *args, **kwargs)
-
-        # Set code level metrics source function
-        _source = source or instance
+        _name = task_name(instance, *args, **kwargs)
 
         # A Celery Task can be called either outside of a transaction, or
         # within the context of an existing transaction. There are 3
@@ -99,18 +93,17 @@ def CeleryTaskWrapper(wrapped, name=None, source=None):
             return wrapped(*args, **kwargs)
 
         elif transaction:
-            with FunctionTrace(_name, source=_source):
+            with FunctionTrace(_name, source=instance):
                 return wrapped(*args, **kwargs)
 
         else:
-            with BackgroundTask(application_instance(), _name, "Celery", source=_source) as transaction:
+            with BackgroundTask(application_instance(), _name, "Celery", source=instance) as transaction:
                 # Attempt to grab distributed tracing headers
                 try:
                     # Headers on earlier versions of Celery may end up as attributes
                     # on the request context instead of as custom headers. Handler this
                     # by defaulting to using vars() if headers is not available
-                    task = instance or wrapped
-                    request = task.request
+                    request = instance.request
                     headers = getattr(request, "headers", None) or vars(request)
 
                     settings = transaction.settings

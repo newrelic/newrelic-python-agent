@@ -14,6 +14,13 @@
 
 from _target_application import add
 
+import celery
+
+from newrelic.common.object_wrapper import _NRBoundFunctionWrapper
+
+
+FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_target_application.tsum", None)]
+
 
 def test_task_wrapping_detection():
     """
@@ -23,23 +30,17 @@ def test_task_wrapping_detection():
     If this is not working, most other tests in this file will fail as the different ways
     of running celery tasks will not all run our instrumentation.
     """
-    from celery.app.trace import task_has_custom
-
-    assert task_has_custom(add, "__call__")
+    assert celery.app.trace.task_has_custom(add, "__call__")
 
 
 def test_worker_optimizations_preserve_instrumentation(celery_worker_available):
+    is_instrumented = lambda: isinstance(celery.app.task.BaseTask.__call__, _NRBoundFunctionWrapper)
 
-    from celery.app.trace import setup_worker_optimizations, reset_worker_optimizations
-    from celery.app.task import BaseTask
-    from newrelic.common.object_wrapper import _NRBoundFunctionWrapper
-
-    is_instrumented = lambda: isinstance(BaseTask.__call__, _NRBoundFunctionWrapper)
-
+    celery.app.trace.reset_worker_optimizations()
     assert is_instrumented(), "Instrumentation not initially applied."
     
-    setup_worker_optimizations(celery_worker_available.app)
+    celery.app.trace.setup_worker_optimizations(celery_worker_available.app)
     assert is_instrumented(), "setup_worker_optimizations removed instrumentation."
     
-    reset_worker_optimizations()
+    celery.app.trace.reset_worker_optimizations()
     assert is_instrumented(), "reset_worker_optimizations removed instrumentation."

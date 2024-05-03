@@ -210,8 +210,6 @@ def wrap_worker_optimizations(wrapped, instance, args, kwargs):
     except Exception:
         BaseTask = None
 
-        # task = CeleryTaskWrapper(task, name, source=task.__wrapped__)
-
     # Allow metaprogramming to run
     result = wrapped(*args, **kwargs)
 

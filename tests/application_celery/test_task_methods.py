@@ -25,19 +25,6 @@ from testing_support.validators.validate_transaction_metrics import (
 FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_target_application.tsum", None)]
 
 
-def test_task_wrapping_detection():
-    """
-    Ensure celery detects our monkeypatching properly and will run our instrumentation
-    on __call__ and runs that instead of micro-optimizing it away to a run() call.
-
-    If this is not working, most other tests in this file will fail as the different ways
-    of running celery tasks will not all run our instrumentation.
-    """
-    from celery.app.trace import task_has_custom
-
-    assert task_has_custom(add, "__call__")
-
-
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",

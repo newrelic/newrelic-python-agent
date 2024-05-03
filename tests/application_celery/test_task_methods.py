@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 
 from _target_application import add, tsum
-from celery import chain, chord, group
+from testing_support.validators.validate_code_level_metrics import (
+    validate_code_level_metrics,
+)
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
@@ -22,7 +25,19 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
+import celery
+
+
 FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_target_application.tsum", None)]
+
+
+@pytest.fixture(scope="function", autouse=True, params=[False, True])
+def with_worker_optimizations(request, celery_worker_available):
+    if request.param:
+        celery.app.trace.setup_worker_optimizations(celery_worker_available.app)
+    
+    yield request.param
+    celery.app.trace.reset_worker_optimizations()
 
 
 @validate_transaction_metrics(
@@ -32,6 +47,7 @@ FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
+@validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_task_call():
     """
@@ -48,6 +64,7 @@ def test_celery_task_call():
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
+@validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_task_apply():
     """
@@ -65,6 +82,7 @@ def test_celery_task_apply():
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
+@validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_task_delay():
     """
@@ -82,6 +100,7 @@ def test_celery_task_delay():
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
+@validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_task_apply_async():
     """
@@ -99,6 +118,7 @@ def test_celery_task_apply_async():
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
+@validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_app_send_task(celery_session_app):
     """
@@ -116,6 +136,7 @@ def test_celery_app_send_task(celery_session_app):
     rollup_metrics=FORGONE_TASK_METRICS,
     background_task=True,
 )
+@validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_task_signature():
     """
@@ -141,6 +162,8 @@ def test_celery_task_signature():
     background_task=True,
     index=-2,
 )
+@validate_code_level_metrics("_target_application", "add")
+@validate_code_level_metrics("_target_application", "add", index=-2)
 @validate_transaction_count(2)
 def test_celery_task_link():
     """
@@ -166,12 +189,14 @@ def test_celery_task_link():
     background_task=True,
     index=-2,
 )
+@validate_code_level_metrics("_target_application", "add")
+@validate_code_level_metrics("_target_application", "add", index=-2)
 @validate_transaction_count(2)
 def test_celery_chain():
     """
     Executes multiple tasks on worker process and returns an AsyncResult.
     """
-    result = chain(add.s(3, 4), add.s(5))()
+    result = celery.chain(add.s(3, 4), add.s(5))()
 
     result = result.get()
     assert result == 12
@@ -192,12 +217,14 @@ def test_celery_chain():
     background_task=True,
     index=-2,
 )
+@validate_code_level_metrics("_target_application", "add")
+@validate_code_level_metrics("_target_application", "add", index=-2)
 @validate_transaction_count(2)
 def test_celery_group():
     """
     Executes multiple tasks on worker process and returns an AsyncResult.
     """
-    result = group(add.s(3, 4), add.s(1, 2))()
+    result = celery.group(add.s(3, 4), add.s(1, 2))()
     result = result.get()
     assert result == [7, 3]
 
@@ -225,12 +252,15 @@ def test_celery_group():
     background_task=True,
     index=-3,
 )
+@validate_code_level_metrics("_target_application", "tsum")
+@validate_code_level_metrics("_target_application", "add", index=-2)
+@validate_code_level_metrics("_target_application", "add", index=-3)
 @validate_transaction_count(3)
 def test_celery_chord():
     """
     Executes 2 add tasks, followed by a tsum task on the worker process and returns an AsyncResult.
     """
-    result = chord([add.s(3, 4), add.s(1, 2)])(tsum.s())
+    result = celery.chord([add.s(3, 4), add.s(1, 2)])(tsum.s())
     result = result.get()
     assert result == 10
 
@@ -242,6 +272,7 @@ def test_celery_chord():
     rollup_metrics=[("Function/_target_application.tsum", 2)],
     background_task=True,
 )
+@validate_code_level_metrics("_target_application", "tsum")
 @validate_transaction_count(1)
 def test_celery_task_map():
     """
@@ -259,6 +290,7 @@ def test_celery_task_map():
     rollup_metrics=[("Function/_target_application.add", 2)],
     background_task=True,
 )
+@validate_code_level_metrics("_target_application", "tsum")
 @validate_transaction_count(1)
 def test_celery_task_starmap():
     """
@@ -284,6 +316,8 @@ def test_celery_task_starmap():
     background_task=True,
     index=-2,
 )
+@validate_code_level_metrics("_target_application", "add")
+@validate_code_level_metrics("_target_application", "add", index=-2)
 @validate_transaction_count(2)
 def test_celery_task_chunks():
     """

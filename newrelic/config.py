@@ -4350,6 +4350,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.application_celery",
         "instrument_celery_app_task",
     )
+    _process_module_definition(
+        "celery.app.trace",
+        "newrelic.hooks.application_celery",
+        "instrument_celery_app_trace",
+    )
     _process_module_definition("celery.worker", "newrelic.hooks.application_celery", "instrument_celery_worker")
     _process_module_definition(
         "celery.concurrency.processes",

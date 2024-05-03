@@ -207,6 +207,28 @@ def wrap_Celery_send_task(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def wrap_worker_optimizations(wrapped, instance, args, kwargs):
+    # Attempt to uninstrument BaseTask before stack protection is installed or uninstalled
+    try:
+        from celery.app.task import BaseTask
+
+        if isinstance(BaseTask.__call__, _NRBoundFunctionWrapper):
+            BaseTask.__call__ = BaseTask.__call__.__wrapped__
+    except Exception:
+        BaseTask = None
+
+        # task = CeleryTaskWrapper(task, name, source=task.__wrapped__)
+
+    # Allow metaprogramming to run
+    result = wrapped(*args, **kwargs)
+
+    # Rewrap finalized BaseTask
+    if BaseTask:  # Ensure imports succeeded
+        BaseTask.__call__ = CeleryTaskWrapper(BaseTask.__call__)
+    
+    return result
+
+
 def instrument_celery_app_base(module):
     if hasattr(module, "Celery") and hasattr(module.Celery, "send_task"):
         wrap_function_wrapper(module, "Celery.send_task", wrap_Celery_send_task)
@@ -266,3 +288,12 @@ def instrument_billiard_pool(module):
 
     if hasattr(module, "Worker"):
         wrap_pre_function(module, "Worker._do_exit", force_agent_shutdown)
+
+
+def instrument_celery_app_trace(module):
+    # Uses same wrapper for setup and reset worker optimizations to prevent patching and unpatching from removing wrappers
+    if hasattr(module, "setup_worker_optimizations"):
+        wrap_function_wrapper(module, "setup_worker_optimizations", wrap_worker_optimizations)
+
+    if hasattr(module, "reset_worker_optimizations"):
+        wrap_function_wrapper(module, "reset_worker_optimizations", wrap_worker_optimizations)

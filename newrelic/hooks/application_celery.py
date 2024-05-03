@@ -35,7 +35,7 @@ UNKNOWN_TASK_NAME = "<Unknown Task>"
 MAPPING_TASK_NAMES = {"celery.starmap", "celery.map"}
 
 
-def task_name(instance, *args, **kwargs):
+def task_info(instance, *args, **kwargs):
     # Grab the current task, which can be located in either place
     if instance:
         task = instance
@@ -48,6 +48,7 @@ def task_name(instance, *args, **kwargs):
 
     # Task can be either a task instance or a signature, which subclasses dict, or an actual dict in some cases.
     task_name = getattr(task, "name", None) or task.get("task", UNKNOWN_TASK_NAME)
+    task_source = task
 
     # Under mapping tasks, the root task name isn't descriptive enough so we append the
     # subtask name to differentiate between different mapping tasks
@@ -55,18 +56,19 @@ def task_name(instance, *args, **kwargs):
         try:
             subtask = kwargs["task"]["task"]
             task_name = "/".join((task_name, subtask))
+            task_source = task.app._tasks[subtask]
         except Exception:
             pass
 
-    return task_name
+    return task_name, task_source
 
 
 def CeleryTaskWrapper(wrapped):
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction(active_only=False)
 
-        # Grab task name using careful naming logic
-        _name = task_name(instance, *args, **kwargs)
+        # Grab task name and source
+        _name, _source = task_info(instance, *args, **kwargs)
 
         # A Celery Task can be called either outside of a transaction, or
         # within the context of an existing transaction. There are 3
@@ -93,11 +95,11 @@ def CeleryTaskWrapper(wrapped):
             return wrapped(*args, **kwargs)
 
         elif transaction:
-            with FunctionTrace(_name, source=instance):
+            with FunctionTrace(_name, source=_source):
                 return wrapped(*args, **kwargs)
 
         else:
-            with BackgroundTask(application_instance(), _name, "Celery", source=instance) as transaction:
+            with BackgroundTask(application_instance(), _name, "Celery", source=_source) as transaction:
                 # Attempt to grab distributed tracing headers
                 try:
                     # Headers on earlier versions of Celery may end up as attributes

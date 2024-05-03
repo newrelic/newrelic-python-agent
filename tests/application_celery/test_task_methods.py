@@ -31,11 +31,11 @@ import celery
 FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_target_application.tsum", None)]
 
 
-@pytest.fixture(scope="function", autouse=True, params=[False, True])
+@pytest.fixture(scope="module", autouse=True, params=[False, True], ids=["unpatched", "patched"])
 def with_worker_optimizations(request, celery_worker_available):
     if request.param:
         celery.app.trace.setup_worker_optimizations(celery_worker_available.app)
-    
+
     yield request.param
     celery.app.trace.reset_worker_optimizations()
 
@@ -272,7 +272,7 @@ def test_celery_chord():
     rollup_metrics=[("Function/_target_application.tsum", 2)],
     background_task=True,
 )
-@validate_code_level_metrics("_target_application", "tsum")
+@validate_code_level_metrics("_target_application", "tsum", count=3)
 @validate_transaction_count(1)
 def test_celery_task_map():
     """
@@ -290,7 +290,7 @@ def test_celery_task_map():
     rollup_metrics=[("Function/_target_application.add", 2)],
     background_task=True,
 )
-@validate_code_level_metrics("_target_application", "tsum")
+@validate_code_level_metrics("_target_application", "add", count=3)
 @validate_transaction_count(1)
 def test_celery_task_starmap():
     """
@@ -316,8 +316,8 @@ def test_celery_task_starmap():
     background_task=True,
     index=-2,
 )
-@validate_code_level_metrics("_target_application", "add")
-@validate_code_level_metrics("_target_application", "add", index=-2)
+@validate_code_level_metrics("_target_application", "add", count=2)
+@validate_code_level_metrics("_target_application", "add", count=2, index=-2)
 @validate_transaction_count(2)
 def test_celery_task_chunks():
     """

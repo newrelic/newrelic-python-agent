@@ -234,26 +234,6 @@ def instrument_celery_app_base(module):
         wrap_function_wrapper(module, "Celery.send_task", wrap_Celery_send_task)
 
 
-def instrument_celery_execute_trace(module):
-    if hasattr(module, "build_tracer"):
-
-        _build_tracer = module.build_tracer
-
-        def build_tracer(name, task, *args, **kwargs):
-            try:
-                task = task or module.tasks[name]
-
-                task_cls = type(task)
-                if not isinstance(task_cls.__call__, _NRBoundFunctionWrapper):
-                    task_cls.__call__ = CeleryTaskWrapper(task_cls.__call__, name, source=task.__wrapped__)
-            except Exception:
-                pass
-
-            return _build_tracer(name, task, *args, **kwargs)
-
-        module.build_tracer = build_tracer
-
-
 def instrument_celery_worker(module):
     # Triggered for 'celery.worker' and 'celery.concurrency.processes'.
 

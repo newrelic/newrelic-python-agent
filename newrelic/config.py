@@ -4372,21 +4372,6 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.application_celery",
         "instrument_celery_app_base",
     )
-    _process_module_definition(
-        "celery.app.trace",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_execute_trace",
-    )
-    _process_module_definition(
-        "celery.execute.trace",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_execute_trace",
-    )
-    _process_module_definition(
-        "celery.task.trace",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_execute_trace",
-    )
     _process_module_definition("billiard.pool", "newrelic.hooks.application_celery", "instrument_billiard_pool")
 
     _process_module_definition("flup.server.cgi", "newrelic.hooks.adapter_flup", "instrument_flup_server_cgi")

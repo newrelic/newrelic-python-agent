@@ -31,7 +31,7 @@ def validate_transaction_count(count):
         result = _new_wrapped(*args, **kwargs)
 
         _transactions = list(transactions)
-        transactions.clear()
+        del transactions[:]  # Clear list for subsequent test runs
 
         assert count == len(_transactions), (count, len(_transactions), _transactions)
 

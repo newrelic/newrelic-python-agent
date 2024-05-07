@@ -1464,7 +1464,7 @@ def test_async_langchain_chain_error_in_langchain_no_content(
     "create_function,call_function,input_",
     (
         (create_structured_output_runnable, "ainvoke", {"input": "Sally is 13"}),
-        (create_structured_output_chain, "arun", "Sally is 13"),
+        (create_structured_output_chain, "arun", "Sally is 13"),  # Deprecated in 0.2.0
     ),
 )
 @reset_core_stats_engine()

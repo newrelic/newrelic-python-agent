@@ -24,7 +24,7 @@ from newrelic.common.object_names import callable_name
 
 
 def _get_uri_method(instance, *args, **kwargs):
-    target = instance._channel.target().decode('utf-8')
+    target = instance._channel.target().decode('utf-8').lstrip("dns:///")
     method = instance._method.decode('utf-8').lstrip('/')
     uri = 'grpc://%s/%s' % (target, method)
     return (uri, method)

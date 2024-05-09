@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import sys
 import traceback
@@ -251,7 +252,14 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         # object back to a dictionary for backwards compatibility.
         attribute_response = response
         if OPENAI_V1:
-            attribute_response = response.model_dump()
+            try:
+                attribute_response = response.model_dump()
+            except AttributeError:  # isinstance(response, openai._legacy_response.LegacyAPIResponse)
+                try:
+                    attribute_response = json.loads(response.http_response.text.strip())
+                except:
+                    # keep attribute_response = response
+                    pass
 
         request_id = response_headers.get("x-request-id")
         response_model = attribute_response.get("model")
@@ -436,8 +444,16 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
         # In v1, response objects are pydantic models so this function call converts the
         # object back to a dictionary for backwards compatibility.
         response = return_val
+
         if OPENAI_V1:
-            response = response.model_dump()
+            try:
+                response = response.model_dump()
+            except AttributeError:  # isinstance(response, openai._legacy_response.LegacyAPIResponse)
+                try:
+                    response = json.loads(response.http_response.text.strip())
+                except:
+                    # keep response = return_val
+                    pass
 
         _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)
     except Exception:
@@ -554,7 +570,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             body = getattr(exc, "body", None) or {}
             notice_error_attributes = {
                 "http.statusCode": getattr(exc, "status_code", None),
-                "error.message": body.get("message"),
+                "error.message": body.get("message"),  # or exc.args[0],
                 "error.code": body.get("code"),
                 "error.param": body.get("param"),
                 "completion_id": completion_id,

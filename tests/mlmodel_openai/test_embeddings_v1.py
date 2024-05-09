@@ -81,6 +81,27 @@ def test_openai_embedding_sync(set_trace_info, sync_openai_client):
 
 
 @reset_core_stats_engine()
+@validate_custom_events(embedding_recorded_events)
+@validate_custom_event_count(count=1)
+@validate_transaction_metrics(
+    name="test_embeddings_v1:test_openai_embedding_sync_with_raw_response",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_embedding_sync_with_raw_response(set_trace_info, sync_openai_client):
+    set_trace_info()
+    sync_openai_client.embeddings.with_raw_response.create(
+        input="This is an embedding test.", model="text-embedding-ada-002"
+    )
+
+
+@reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_custom_events(events_sans_content(embedding_recorded_events))
 @validate_custom_event_count(count=1)
@@ -153,6 +174,30 @@ def test_openai_embedding_async(loop, set_trace_info, async_openai_client):
 
     loop.run_until_complete(
         async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    )
+
+
+@reset_core_stats_engine()
+@validate_custom_events(embedding_recorded_events)
+@validate_custom_event_count(count=1)
+@validate_transaction_metrics(
+    name="test_embeddings_v1:test_openai_embedding_async_with_raw_response",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_embedding_async_with_raw_response(loop, set_trace_info, async_openai_client):
+    set_trace_info()
+
+    loop.run_until_complete(
+        async_openai_client.embeddings.with_raw_response.create(
+            input="This is an embedding test.", model="text-embedding-ada-002"
+        )
     )
 
 

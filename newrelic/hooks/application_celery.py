@@ -28,16 +28,18 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.pre_function import wrap_pre_function
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper, _NRBoundFunctionWrapper
 from newrelic.core.agent import shutdown_agent
 
 UNKNOWN_TASK_NAME = "<Unknown Task>"
 MAPPING_TASK_NAMES = {"celery.starmap", "celery.map"}
 
 
-def task_name(*args, **kwargs):
+def task_info(instance, *args, **kwargs):
     # Grab the current task, which can be located in either place
-    if args:
+    if instance:
+        task = instance
+    elif args:
         task = args[0]
     elif "task" in kwargs:
         task = kwargs["task"]
@@ -46,6 +48,7 @@ def task_name(*args, **kwargs):
 
     # Task can be either a task instance or a signature, which subclasses dict, or an actual dict in some cases.
     task_name = getattr(task, "name", None) or task.get("task", UNKNOWN_TASK_NAME)
+    task_source = task
 
     # Under mapping tasks, the root task name isn't descriptive enough so we append the
     # subtask name to differentiate between different mapping tasks
@@ -53,20 +56,19 @@ def task_name(*args, **kwargs):
         try:
             subtask = kwargs["task"]["task"]
             task_name = "/".join((task_name, subtask))
+            task_source = task.app._tasks[subtask]
         except Exception:
             pass
 
-    return task_name
+    return task_name, task_source
 
 
 def CeleryTaskWrapper(wrapped):
     def wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction(active_only=False)
 
-        if instance is not None:
-            _name = task_name(instance, *args, **kwargs)
-        else:
-            _name = task_name(*args, **kwargs)
+        # Grab task name and source
+        _name, _source = task_info(instance, *args, **kwargs)
 
         # A Celery Task can be called either outside of a transaction, or
         # within the context of an existing transaction. There are 3
@@ -93,11 +95,11 @@ def CeleryTaskWrapper(wrapped):
             return wrapped(*args, **kwargs)
 
         elif transaction:
-            with FunctionTrace(_name, source=instance):
+            with FunctionTrace(_name, source=_source):
                 return wrapped(*args, **kwargs)
 
         else:
-            with BackgroundTask(application_instance(), _name, "Celery", source=instance) as transaction:
+            with BackgroundTask(application_instance(), _name, "Celery", source=_source) as transaction:
                 # Attempt to grab distributed tracing headers
                 try:
                     # Headers on earlier versions of Celery may end up as attributes
@@ -200,6 +202,26 @@ def wrap_Celery_send_task(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def wrap_worker_optimizations(wrapped, instance, args, kwargs):
+    # Attempt to uninstrument BaseTask before stack protection is installed or uninstalled
+    try:
+        from celery.app.task import BaseTask
+
+        if isinstance(BaseTask.__call__, _NRBoundFunctionWrapper):
+            BaseTask.__call__ = BaseTask.__call__.__wrapped__
+    except Exception:
+        BaseTask = None
+
+    # Allow metaprogramming to run
+    result = wrapped(*args, **kwargs)
+
+    # Rewrap finalized BaseTask
+    if BaseTask:  # Ensure imports succeeded
+        BaseTask.__call__ = CeleryTaskWrapper(BaseTask.__call__)
+    
+    return result
+
+
 def instrument_celery_app_base(module):
     if hasattr(module, "Celery") and hasattr(module.Celery, "send_task"):
         wrap_function_wrapper(module, "Celery.send_task", wrap_Celery_send_task)
@@ -239,3 +261,12 @@ def instrument_billiard_pool(module):
 
     if hasattr(module, "Worker"):
         wrap_pre_function(module, "Worker._do_exit", force_agent_shutdown)
+
+
+def instrument_celery_app_trace(module):
+    # Uses same wrapper for setup and reset worker optimizations to prevent patching and unpatching from removing wrappers
+    if hasattr(module, "setup_worker_optimizations"):
+        wrap_function_wrapper(module, "setup_worker_optimizations", wrap_worker_optimizations)
+
+    if hasattr(module, "reset_worker_optimizations"):
+        wrap_function_wrapper(module, "reset_worker_optimizations", wrap_worker_optimizations)

@@ -282,7 +282,7 @@ expected_events_on_invalid_model_error = [
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -322,7 +322,7 @@ def test_chat_completion_invalid_request_error_invalid_model(set_trace_info, syn
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -361,7 +361,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -403,7 +403,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -704,7 +704,7 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content_with_ra
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -744,7 +744,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_raw_response(s
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -785,7 +785,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count_wi
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -829,7 +829,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async_with_raw_resp
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(

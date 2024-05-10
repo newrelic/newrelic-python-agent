@@ -570,7 +570,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             body = getattr(exc, "body", None) or {}
             notice_error_attributes = {
                 "http.statusCode": getattr(exc, "status_code", None),
-                "error.message": body.get("message"),  # or exc.args[0],
+                "error.message": body.get("message"),
                 "error.code": body.get("code"),
                 "error.param": body.get("param"),
                 "completion_id": completion_id,

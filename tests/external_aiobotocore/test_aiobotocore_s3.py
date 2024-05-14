@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import aiobotocore
-from conftest import (  # noqa: F401, pylint: disable=W061
+from conftest import (  # noqa: F401, pylint: disable=W0611
     AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY,
     PORT,

@@ -567,7 +567,7 @@ class WSGIHeaderProxy(object):
                 yield "content-length", self.environ["CONTENT_LENGTH"]
             elif key == "CONTENT_TYPE":
                 yield "content-type", self.environ["CONTENT_TYPE"]
-            elif key == "HTTP_CONTENT_LENGTH" or key == "HTTP_CONTENT_TYPE":
+            elif key in ("HTTP_CONTENT_LENGTH", "HTTP_CONTENT_TYPE"):
                 # These keys are illegal and should be ignored
                 continue
             elif key.startswith("HTTP_"):

@@ -19,7 +19,7 @@ import threading
 
 import moto.server
 import werkzeug.serving
-from testing_support.fixture.event_loop import (  # noqa: F401, pylint: disable=W061
+from testing_support.fixture.event_loop import (  # noqa: F401, pylint: disable=W0611
     event_loop as loop,
 )
 from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
@@ -63,7 +63,7 @@ class MotoService:
     Service is ref-counted so there will only be one per process. Real Service will
     be returned by `__aenter__`."""
 
-    _services = dict()  # {name: instance}
+    _services = {}  # {name: instance}
 
     def __init__(self, service_name: str, port: int = None, ssl: bool = False):
         self._service_name = service_name

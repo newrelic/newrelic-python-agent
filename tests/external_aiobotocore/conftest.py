@@ -39,7 +39,6 @@ _default_settings = {
     "transaction_tracer.stack_trace_threshold": 0.0,
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
-    "browser_monitoring.enabled": False,
 }
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (external_aiobotocore)",

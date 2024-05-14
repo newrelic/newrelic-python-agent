@@ -31,6 +31,12 @@ async def wrap_endpoint_make_request(wrapped, instance, args, kwargs):
 
     with ExternalTrace(library="aiobotocore", url=url, method=method, source=wrapped) as trace:
         try:
+            # Because AIOBotocore's proxy functionality uses aiohttp
+            # and urllib3 under the hood, New Relic has portions that
+            # are classified as Web Transactions.  This means that
+            # browser monitoring will now be true.  However, this will
+            # inject unwanted JS Agent Header Fragments into SQS responses.
+            trace.settings.browser_monitoring.enabled = False
             trace._add_agent_attribute("aws.operation", operation_model.name)
         except:
             pass

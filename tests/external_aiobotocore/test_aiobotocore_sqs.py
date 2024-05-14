@@ -32,23 +32,23 @@ TEST_QUEUE = "python-agent-test"
 
 _sqs_scoped_metrics = [
     ("MessageBroker/SQS/Queue/Produce/Named/%s" % TEST_QUEUE, 2),
-    ("External/%s/aiobotocore/POST" % URL, 6),
+    ("External/%s/aiobotocore/POST" % URL, 7),
 ]
 
 _sqs_rollup_metrics = [
     ("MessageBroker/SQS/Queue/Produce/Named/%s" % TEST_QUEUE, 2),
-    # ("MessageBroker/SQS/Queue/Consume/Named/%s" % TEST_QUEUE, 1),
-    ("External/all", 6),
-    ("External/allOther", 6),
-    ("External/%s/all" % URL, 6),
-    ("External/%s/aiobotocore/POST" % URL, 6),
+    ("MessageBroker/SQS/Queue/Consume/Named/%s" % TEST_QUEUE, 1),
+    ("External/all", 7),
+    ("External/allOther", 7),
+    ("External/%s/all" % URL, 7),
+    ("External/%s/aiobotocore/POST" % URL, 7),
 ]
 
 
 @validate_span_events(exact_agents={"aws.operation": "CreateQueue"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "ListQueues"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "SendMessage"}, count=1)
-# @validate_span_events(exact_agents={"aws.operation": "ReceiveMessage"}, count=1)
+@validate_span_events(exact_agents={"aws.operation": "ReceiveMessage"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "SendMessageBatch"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "PurgeQueue"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "DeleteQueue"}, count=1)
@@ -82,16 +82,17 @@ def test_aiobotocore_sqs(loop):
                     assert queue_name
 
                 # Send message
-                resp = await client.send_message(QueueUrl=queue_url, MessageBody="hello_world")
+                resp = await client.send_message(
+                    QueueUrl=queue_url,
+                    MessageBody="hello_world",
+                )
                 assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
                 # Receive message
-                # This works in an actual application, but not with the proxy set up
-                # for the test.  The aiobotocore's proxy requests redirect to aiohttp's
-                # request call which results in double instrumentation and invalid XML
-                # generation in response_dict["headers"]["body"]
-                # resp = await client.receive_message(QueueUrl=queue_url)
-                # assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
+                resp = await client.receive_message(
+                    QueueUrl=queue_url,
+                )
+                assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
                 # Send message batch
                 messages = [

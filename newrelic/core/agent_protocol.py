@@ -490,6 +490,7 @@ class ServerlessModeProtocol(AgentProtocol):
             "protocol_version": self.VERSION,
             "execution_environment": os.environ.get("AWS_EXECUTION_ENV", None),
             "agent_version": version,
+            "agent_language": "python",
         }
 
     def finalize(self):

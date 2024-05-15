@@ -189,6 +189,14 @@ def extract_bedrock_titan_text_model_request(request_body, bedrock_attrs):
     return bedrock_attrs
 
 
+def extract_bedrock_mistral_text_model_request(request_body, bedrock_attrs):
+    request_body = json.loads(request_body)
+    bedrock_attrs["input_message_list"] = [{"role": "user", "content": request_body.get("prompt")}]
+    bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens")
+    bedrock_attrs["request.temperature"] = request_body.get("temperature")
+    return bedrock_attrs
+
+
 def extract_bedrock_titan_text_model_response(response_body, bedrock_attrs):
     if response_body:
         response_body = json.loads(response_body)
@@ -203,6 +211,18 @@ def extract_bedrock_titan_text_model_response(response_body, bedrock_attrs):
     return bedrock_attrs
 
 
+def extract_bedrock_mistral_text_model_response(response_body, bedrock_attrs):
+    if response_body:
+        response_body = json.loads(response_body)
+        outputs = response_body.get("outputs")
+        if outputs:
+            bedrock_attrs["response.choices.finish_reason"] = outputs[0]["stop_reason"]
+            bedrock_attrs["output_message_list"] = [
+                {"role": "assistant", "content": result["text"]} for result in outputs
+            ]
+    return bedrock_attrs
+
+
 def extract_bedrock_titan_text_model_streaming_response(response_body, bedrock_attrs):
     if response_body:
         if "outputText" in response_body:
@@ -211,6 +231,18 @@ def extract_bedrock_titan_text_model_streaming_response(response_body, bedrock_a
 
         bedrock_attrs["response.choices.finish_reason"] = response_body.get("completionReason", None)
 
+    return bedrock_attrs
+
+
+def extract_bedrock_mistral_text_model_streaming_response(response_body, bedrock_attrs):
+    if response_body:
+        outputs = response_body.get("outputs")
+        if outputs:
+            bedrock_attrs["output_message_list"] = bedrock_attrs.get(
+                "output_message_list", [{"role": "assistant", "content": ""}]
+            )
+            bedrock_attrs["output_message_list"][0]["content"] += outputs[0].get("text", "")
+            bedrock_attrs["response.choices.finish_reason"] = outputs[0].get("stop_reason", None)
     return bedrock_attrs
 
 
@@ -406,6 +438,12 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
         extract_bedrock_llama_model_request,
         extract_bedrock_llama_model_response,
         extract_bedrock_llama_model_streaming_response,
+    ),
+    (
+        "mistral",
+        extract_bedrock_mistral_text_model_request,
+        extract_bedrock_mistral_text_model_response,
+        extract_bedrock_mistral_text_model_streaming_response,
     ),
 ]
 

@@ -537,6 +537,7 @@ def test_serverless_protocol_finalize(capsys):
 
     assert data["metadata"]["foo"] == "bar"
     assert data["metadata"]["agent_version"] != "x"
+    assert data["metadata"]["agent_language"] == "python"
 
 
 def test_audit_logging():

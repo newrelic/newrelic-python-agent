@@ -120,9 +120,11 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, content)
-            if settings.ai_monitoring.llm_token_count_callback
-            else None,
+            "token_count": (
+                settings.ai_monitoring.llm_token_count_callback(request_model, content)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None
+            ),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -156,9 +158,11 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, content)
-            if settings.ai_monitoring.llm_token_count_callback
-            else None,
+            "token_count": (
+                settings.ai_monitoring.llm_token_count_callback(request_model, content)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None
+            ),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -736,9 +740,11 @@ def handle_embedding_event(transaction, bedrock_attrs):
         "id": embedding_id,
         "span_id": span_id,
         "trace_id": trace_id,
-        "token_count": settings.ai_monitoring.llm_token_count_callback(model, input)
-        if settings.ai_monitoring.llm_token_count_callback
-        else None,
+        "token_count": (
+            settings.ai_monitoring.llm_token_count_callback(model, input)
+            if settings.ai_monitoring.llm_token_count_callback
+            else None
+        ),
         "request_id": request_id,
         "duration": bedrock_attrs.get("duration", None),
         "request.model": model,

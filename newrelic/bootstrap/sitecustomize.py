@@ -201,7 +201,7 @@ if k8s_operator_enabled or (python_prefix_matches and python_version_matches):
         import newrelic.config
         newrelic.config.initialize(config_file, environment)
     else:
-        log_message("New Relic could not start because due to missing configuration. Either NEW_RELIC_LICENSE_KEY or NEW_RELIC_CONFIG_FILE are required.")
+        log_message("New Relic could not start due to missing configuration. Either NEW_RELIC_LICENSE_KEY or NEW_RELIC_CONFIG_FILE are required.")
 else:
     log_message(
         """New Relic could not start because the newrelic-admin script was called from a Python installation that is different from the Python installation that is currently running. To fix this problem, call the newrelic-admin script from the Python installation that is currently running (details below).

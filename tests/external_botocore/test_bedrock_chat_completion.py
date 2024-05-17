@@ -81,6 +81,7 @@ def request_streaming(request):
         "anthropic.claude-instant-v1",
         "cohere.command-text-v14",
         "meta.llama2-13b-chat-v1",
+        "mistral.mistral-7b-instruct-v0:2",
     ],
 )
 def model_id(request, response_streaming):

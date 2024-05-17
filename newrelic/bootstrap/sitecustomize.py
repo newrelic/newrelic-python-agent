@@ -16,7 +16,6 @@ import os
 import sys
 import time
 
-
 # Avoiding additional imports by defining PY2 manually
 PY2 = sys.version_info[0] == 2
 
@@ -24,6 +23,7 @@ PY2 = sys.version_info[0] == 2
 # all doesn't work as expected.
 
 startup_debug = os.environ.get("NEW_RELIC_STARTUP_DEBUG", "off").lower() in ("on", "true", "1")
+
 
 def log_message(text, *args, **kwargs):
     critical = kwargs.get("critical", False)
@@ -141,7 +141,6 @@ if k8s_operator_enabled or (python_prefix_matches and python_version_matches):
     log_message("initialize_agent = %r", initialize_agent)
 
     if initialize_agent:
-
         if not k8s_operator_enabled:
             # When installed as an egg with buildout, the root directory for
             # packages is not listed in sys.path and scripts instead set it
@@ -175,7 +174,7 @@ if k8s_operator_enabled or (python_prefix_matches and python_version_matches):
             new_relic_path = find_supported_newrelic_distribution()
             do_insert_path = True
 
-        # Now that the appropriate location of the module has been identified, 
+        # Now that the appropriate location of the module has been identified,
         # either by the kubernetes operator or this script, we are ready to import
         # the 'newrelic' module to make it available in sys.modules. If the location
         # containing it was not found on sys.path, do_insert_path will be set and
@@ -199,9 +198,12 @@ if k8s_operator_enabled or (python_prefix_matches and python_version_matches):
 
         # Finally initialize the agent.
         import newrelic.config
+
         newrelic.config.initialize(config_file, environment)
     else:
-        log_message("New Relic could not start due to missing configuration. Either NEW_RELIC_LICENSE_KEY or NEW_RELIC_CONFIG_FILE are required.")
+        log_message(
+            "New Relic could not start due to missing configuration. Either NEW_RELIC_LICENSE_KEY or NEW_RELIC_CONFIG_FILE are required."
+        )
 else:
     log_message(
         """New Relic could not start because the newrelic-admin script was called from a Python installation that is different from the Python installation that is currently running. To fix this problem, call the newrelic-admin script from the Python installation that is currently running (details below).

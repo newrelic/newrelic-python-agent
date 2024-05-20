@@ -124,7 +124,7 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
     if not request:
         return wrapped(*args, **kwargs)
 
-    match = re.search(r"/model/([0-9a-zA-Z.-]+)/", request.url)
+    match = re.search(r"/model/([0-9a-zA-Z%.-]+)/", request.url)
     model = match.group(1)
 
     # Send request

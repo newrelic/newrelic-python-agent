@@ -341,7 +341,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
     except Exception:
         _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
-    message = notice_error_attributes.pop("error.message")
+    message = notice_error_attributes.pop("error.message", None)
     if message:
         exc._nr_message = message
     ft.notice_error(
@@ -571,7 +571,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
     except Exception:
         _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
     # Override the default message if it is not empty.
-    message = notice_error_attributes.pop("error.message")
+    message = notice_error_attributes.pop("error.message", None)
     if message:
         exc._nr_message = message
 

@@ -438,7 +438,7 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
         extract_bedrock_claude_model_streaming_response,
     ),
     (
-        "meta.llama2",
+        "meta.llama",
         extract_bedrock_llama_model_request,
         extract_bedrock_llama_model_response,
         extract_bedrock_llama_model_streaming_response,

@@ -18,9 +18,69 @@ chat_completion_payload_templates = {
     "anthropic.claude-instant-v1": '{"prompt": "Human: %s Assistant:", "temperature": %f, "max_tokens_to_sample": %d}',
     "cohere.command-text-v14": '{"prompt": "%s", "temperature": %f, "max_tokens": %d}',
     "meta.llama2-13b-chat-v1": '{"prompt": "%s", "temperature": %f, "max_gen_len": %d}',
+    "mistral.mistral-7b-instruct-v0:2": '{"prompt": "<s>[INST] %s [/INST]", "temperature": %f, "max_tokens": %d}',
 }
 
 chat_completion_expected_events = {
+    "mistral.mistral-7b-instruct-v0:2": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "duration": None,  # Response time varies each test run
+                "request.model": "mistral.mistral-7b-instruct-v0:2",
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "length",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "<s>[INST] What is 212 degrees Fahrenheit converted to Celsius? [/INST]",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": " To convert a temperature from Fahrenheit to Celsius, you can use the following formula:\n\nCelsius = (Fahrenheit - 32) \u00d7 5/9\n\nSo, to convert 212 degrees Fahrenheit to Celsius:\n\nCelsius = (212 - 32) \u00d7 5/9\nCelsius = 180.56 \u00d7 5/9\nCelsius",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
     "amazon.titan-text-express-v1": [
         (
             {"type": "LlmChatCompletionSummary"},
@@ -320,6 +380,65 @@ chat_completion_expected_events = {
     ],
 }
 chat_completion_langchain_expected_streaming_events = {
+    "mistral.mistral-7b-instruct-v0:2": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "duration": None,  # Response time varies each test run
+                "request.model": "mistral.mistral-7b-instruct-v0:2",
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "length",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "<s>[INST] What is 212 degrees Fahrenheit converted to Celsius? [/INST]",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": " To convert a temperature from Fahrenheit to Celsius, you can use the following formula: Celsius = (Fahrenheit - 32) × 5/9.\n\nSo, to convert 212 degrees Fahrenheit to Celsius, do the following calculation:\n\nCelsius = (212°F - 32) × 5/9\n\nCelsius = (212 - 32)",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
     "amazon.titan-text-express-v1": [
         (
             {"type": "LlmChatCompletionSummary"},
@@ -492,6 +611,65 @@ chat_completion_langchain_expected_streaming_events = {
     ],
 }
 chat_completion_langchain_expected_events = {
+    "mistral.mistral-7b-instruct-v0:2": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "duration": None,  # Response time varies each test run
+                "request.model": "mistral.mistral-7b-instruct-v0:2",
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "length",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "<s>[INST] What is 212 degrees Fahrenheit converted to Celsius? [/INST]",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": " To convert a temperature from Fahrenheit to Celsius, you can use the following formula:\n\nCelsius = (Fahrenheit - 32) \u00d7 5/9\n\nSo, to convert 212 degrees Fahrenheit to Celsius:\n\nCelsius = (212 - 32) \u00d7 5/9\nCelsius = 180.56 \u00d7 5/9\nCelsius",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
     "amazon.titan-text-express-v1": [
         (
             {"type": "LlmChatCompletionSummary"},
@@ -666,6 +844,65 @@ chat_completion_langchain_expected_events = {
 }
 
 chat_completion_streaming_expected_events = {
+    "mistral.mistral-7b-instruct-v0:2": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "duration": None,  # Response time varies each test run
+                "request.model": "mistral.mistral-7b-instruct-v0:2",
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "length",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "<s>[INST] What is 212 degrees Fahrenheit converted to Celsius? [/INST]",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": " To convert a temperature from Fahrenheit to Celsius, you can use the following formula: Celsius = (Fahrenheit - 32) × 5/9.\n\nSo, to convert 212 degrees Fahrenheit to Celsius, do the following calculation:\n\nCelsius = (212°F - 32) × 5/9\n\nCelsius = (212 - 32)",
+                "role": "assistant",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "is_response": True,
+            },
+        ),
+    ],
     "amazon.titan-text-express-v1": [
         (
             {"type": "LlmChatCompletionSummary"},
@@ -926,6 +1163,46 @@ chat_completion_invalid_model_error_events = [
 ]
 
 chat_completion_invalid_access_key_error_events = {
+    "mistral.mistral-7b-instruct-v0:2": [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "duration": None,  # Response time varies each test run
+                "request.model": "mistral.mistral-7b-instruct-v0:2",
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+                "response.number_of_messages": 1,
+                "error": True,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,  # UUID that varies with each run
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "<s>[INST] Invalid Token [/INST]",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "mistral.mistral-7b-instruct-v0:2",
+                "vendor": "bedrock",
+                "ingest_source": "Python",
+            },
+        ),
+    ],
     "amazon.titan-text-express-v1": [
         (
             {"type": "LlmChatCompletionSummary"},

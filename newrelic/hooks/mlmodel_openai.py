@@ -148,9 +148,11 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, message_content)
-            if settings.ai_monitoring.llm_token_count_callback
-            else None,
+            "token_count": (
+                settings.ai_monitoring.llm_token_count_callback(request_model, message_content)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None
+            ),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -186,9 +188,11 @@ def create_chat_completion_message_event(
                 "request_id": request_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
-                "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, message_content)
-                if settings.ai_monitoring.llm_token_count_callback
-                else None,
+                "token_count": (
+                    settings.ai_monitoring.llm_token_count_callback(response_model, message_content)
+                    if settings.ai_monitoring.llm_token_count_callback
+                    else None
+                ),
                 "role": message.get("role"),
                 "completion_id": chat_completion_id,
                 "sequence": index,
@@ -266,9 +270,11 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             "id": embedding_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, input)
-            if settings.ai_monitoring.llm_token_count_callback
-            else None,
+            "token_count": (
+                settings.ai_monitoring.llm_token_count_callback(response_model, input)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None
+            ),
             "request.model": kwargs.get("model") or kwargs.get("engine"),
             "request_id": request_id,
             "duration": ft.duration,
@@ -341,7 +347,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
     except Exception:
         _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
-    message = notice_error_attributes.pop("error.message")
+    message = notice_error_attributes.pop("error.message", None)
     if message:
         exc._nr_message = message
     ft.notice_error(
@@ -355,9 +361,11 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
             "id": embedding_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(model, input)
-            if settings.ai_monitoring.llm_token_count_callback
-            else None,
+            "token_count": (
+                settings.ai_monitoring.llm_token_count_callback(model, input)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None
+            ),
             "request.model": model,
             "vendor": "openai",
             "ingest_source": "Python",
@@ -571,7 +579,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
     except Exception:
         _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
     # Override the default message if it is not empty.
-    message = notice_error_attributes.pop("error.message")
+    message = notice_error_attributes.pop("error.message", None)
     if message:
         exc._nr_message = message
 

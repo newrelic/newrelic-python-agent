@@ -33,8 +33,7 @@ from newrelic.common.encoding_utils import (
 )
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.core.attribute import create_attributes, process_user_attribute
-from newrelic.core.attribute_filter import DST_BROWSER_MONITORING, DST_NONE
+from newrelic.core.attribute_filter import DST_BROWSER_MONITORING
 from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
@@ -457,15 +456,15 @@ class WebTransaction(Transaction):
 
             # create the data structure that pull all our data in
 
-            broswer_agent_configuration = self.browser_monitoring_intrinsics(obfuscation_key)
+            browser_agent_configuration = self.browser_monitoring_intrinsics(obfuscation_key)
 
             if attributes:
                 attributes = obfuscate(json_encode(attributes), obfuscation_key)
-                broswer_agent_configuration["atts"] = attributes
+                browser_agent_configuration["atts"] = attributes
 
             header = _js_agent_header_fragment % (
                 _encode_nonce(nonce),
-                json_encode(broswer_agent_configuration),
+                json_encode(browser_agent_configuration),
                 self._settings.js_agent_loader,
             )
 
@@ -568,7 +567,7 @@ class WSGIHeaderProxy(object):
                 yield "content-length", self.environ["CONTENT_LENGTH"]
             elif key == "CONTENT_TYPE":
                 yield "content-type", self.environ["CONTENT_TYPE"]
-            elif key == "HTTP_CONTENT_LENGTH" or key == "HTTP_CONTENT_TYPE":
+            elif key in ("HTTP_CONTENT_LENGTH", "HTTP_CONTENT_TYPE"):
                 # These keys are illegal and should be ignored
                 continue
             elif key.startswith("HTTP_"):

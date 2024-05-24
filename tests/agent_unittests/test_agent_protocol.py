@@ -170,7 +170,7 @@ def test_send(status_code):
     HttpClientRecorder.STATUS_CODE = status_code
     settings = finalize_application_settings(
         {
-            "request_headers_map": {"custom-header": "value"},
+            "request_headers_map": {"custom-header": u"value"},
             "agent_run_id": "RUN_TOKEN",
         }
     )
@@ -297,7 +297,7 @@ def connect_payload_asserts(
     with_kubernetes=True,
 ):
     payload_data = payload[0]
-    assert isinstance(payload_data["agent_version"], type(""))
+    assert isinstance(payload_data["agent_version"], type(u""))
     assert payload_data["app_name"] == PAYLOAD_APP_NAME
     assert payload_data["display_host"] == DISPLAY_NAME
     assert payload_data["environment"] == ENVIRONMENT

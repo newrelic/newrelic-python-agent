@@ -69,7 +69,7 @@ def _nr_log_forwarder(message_instance):
             try:
                 time = record.get("time", None)
                 if time:
-                    time = int(time.timestamp())
+                    time = int(time.timestamp()*1000)
                 record_log_event(message, level_name, time, attributes=attrs)
             except Exception:
                 pass

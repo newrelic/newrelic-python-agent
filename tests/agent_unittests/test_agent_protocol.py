@@ -170,7 +170,7 @@ def test_send(status_code):
     HttpClientRecorder.STATUS_CODE = status_code
     settings = finalize_application_settings(
         {
-            "request_headers_map": {"custom-header": u"value"}, # pylint: disable=W1406
+            "request_headers_map": {"custom-header": u"value"},  # pylint: disable=W1406
             "agent_run_id": "RUN_TOKEN",
         }
     )
@@ -196,7 +196,7 @@ def test_send(status_code):
 
     assert request.headers == {
         "Content-Type": "application/json",
-        "custom-header": "value",
+        "custom-header": u"value",
     }
 
     assert request.payload == b"[1,2,3]"

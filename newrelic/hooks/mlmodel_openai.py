@@ -277,7 +277,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             ),
             "request.model": kwargs.get("model") or kwargs.get("engine"),
             "request_id": request_id,
-            "duration": ft.duration,
+            "duration": ft.duration * 1000,
             "response.model": response_model,
             "response.organization": organization,
             "response.headers.llmVersion": response_headers.get("openai-version"),
@@ -370,7 +370,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
             "vendor": "openai",
             "ingest_source": "Python",
             "response.organization": exc_organization,
-            "duration": ft.duration,
+            "duration": ft.duration * 1000,
             "error": True,
         }
         if settings.ai_monitoring.record_content.enabled:
@@ -491,7 +491,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             "vendor": "openai",
             "ingest_source": "Python",
             "request_id": request_id,
-            "duration": ft.duration,
+            "duration": ft.duration * 1000,
             "response.model": response_model,
             "response.organization": organization,
             "response.choices.finish_reason": finish_reason,
@@ -607,7 +607,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             "vendor": "openai",
             "ingest_source": "Python",
             "response.organization": exc_organization,
-            "duration": ft.duration,
+            "duration": ft.duration * 1000,
             "error": True,
         }
         llm_metadata = _get_llm_attributes(transaction)

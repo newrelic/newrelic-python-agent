@@ -220,7 +220,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
 def _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     request_query, request_k = bind_similarity_search(*args, **kwargs)
-    duration = ft.duration
+    duration = ft.duration * 1000
     response_number_of_documents = len(response)
     llm_metadata_dict = _get_llm_metadata(transaction)
     span_id = linking_metadata.get("span.id")
@@ -424,7 +424,7 @@ def _record_tool_success(
             "trace_id": linking_metadata.get("trace.id"),
             "vendor": "langchain",
             "ingest_source": "Python",
-            "duration": ft.duration,
+            "duration": ft.duration * 1000,
             "tags": tags or None,
         }
     )
@@ -473,7 +473,7 @@ def _record_tool_error(
             "trace_id": linking_metadata.get("trace.id"),
             "vendor": "langchain",
             "ingest_source": "Python",
-            "duration": ft.duration,
+            "duration": ft.duration * 1000,
             "tags": tags or None,
             "error": True,
         }
@@ -559,7 +559,9 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
             }
         )
         ft.__exit__(*sys.exc_info())
-        _create_error_chain_run_events(transaction, instance, run_args, completion_id, linking_metadata, ft.duration)
+        _create_error_chain_run_events(
+            transaction, instance, run_args, completion_id, linking_metadata, ft.duration * 1000
+        )
         raise
     ft.__exit__(None, None, None)
 
@@ -567,7 +569,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
         return response
 
     _create_successful_chain_run_events(
-        transaction, instance, run_args, completion_id, response, linking_metadata, ft.duration
+        transaction, instance, run_args, completion_id, response, linking_metadata, ft.duration * 1000
     )
     return response
 
@@ -605,7 +607,9 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
             }
         )
         ft.__exit__(*sys.exc_info())
-        _create_error_chain_run_events(transaction, instance, run_args, completion_id, linking_metadata, ft.duration)
+        _create_error_chain_run_events(
+            transaction, instance, run_args, completion_id, linking_metadata, ft.duration * 1000
+        )
         raise
     ft.__exit__(None, None, None)
 
@@ -613,7 +617,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
         return response
 
     _create_successful_chain_run_events(
-        transaction, instance, run_args, completion_id, response, linking_metadata, ft.duration
+        transaction, instance, run_args, completion_id, response, linking_metadata, ft.duration * 1000
     )
     return response
 

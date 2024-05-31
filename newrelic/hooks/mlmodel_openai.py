@@ -92,7 +92,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     # If .with_streaming_response. wrapper used, switch to streaming
     # For now, we will exit and instrument this later
-    if "extra_headers" in kwargs and kwargs["extra_headers"]["X-Stainless-Raw-Response"] == "stream":
+    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return wrapped(*args, **kwargs)
 
     ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/OpenAI")
@@ -415,7 +415,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     # If .with_streaming_response. wrapper used, switch to streaming
     # For now, we will exit and instrument this later
-    if "extra_headers" in kwargs and kwargs["extra_headers"]["X-Stainless-Raw-Response"] == "stream":
+    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return await wrapped(*args, **kwargs)
 
     ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/OpenAI")

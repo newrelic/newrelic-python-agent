@@ -31,6 +31,7 @@ def postgresql_settings():
 
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 2
+    identifier = str(os.getpid())
     settings = [
         {
             "user": "postgres",
@@ -38,7 +39,8 @@ def postgresql_settings():
             "name": "postgres",
             "host": host,
             "port": 8080 + instance_num,
-            "table_name": "postgres_table_" + str(os.getpid()),
+            "procedure_name": "postgres_procedure_" + identifier,
+            "table_name": "postgres_table_" + identifier,
         }
         for instance_num in range(instances)
     ]

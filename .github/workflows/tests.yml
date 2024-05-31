@@ -224,7 +224,7 @@ jobs:
     timeout-minutes: 30
     services:
       postgres:
-        image: postgres:9
+        image: postgres:16
         env:
           POSTGRES_PASSWORD: postgres
         ports:

@@ -218,7 +218,11 @@ def create_chat_completion_message_event(
 
 async def wrap_embedding_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if not transaction or kwargs.get("stream", False):
+    if (
+        not transaction
+        or kwargs.get("stream", False)
+        or (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream"
+    ):
         return await wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()

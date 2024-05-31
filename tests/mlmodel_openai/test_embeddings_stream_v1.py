@@ -48,7 +48,7 @@ def test_openai_embedding_sync(set_trace_info, sync_openai_stream_client):
 @background_task()
 def test_openai_embedding_async(loop, set_trace_info, async_openai_stream_client):
     """
-    Does not instrumenting streamed embeddings.
+    Does not instrument streamed embeddings.
     """
     set_trace_info()
 

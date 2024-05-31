@@ -28,12 +28,9 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 
-
-def framework_details():
-    import flask
-
-    return ("Flask", getattr(flask, "__version__", None))
+FLASK_VERSION = ("Flask", get_package_version("flask"))
 
 
 def status_code(exc, value, tb):
@@ -276,7 +273,7 @@ def instrument_flask_views(module):
 
 
 def instrument_flask_app(module):
-    wrap_wsgi_application(module, "Flask.wsgi_app", framework=framework_details)
+    wrap_wsgi_application(module, "Flask.wsgi_app", framework=FLASK_VERSION)
 
     wrap_function_wrapper(module, "Flask.add_url_rule", _nr_wrapper_Flask_add_url_rule_input_)
 

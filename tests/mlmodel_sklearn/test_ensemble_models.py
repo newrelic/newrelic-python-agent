@@ -232,7 +232,6 @@ def test_above_v1_1_model_methods_wrapped_in_function_trace(ensemble_model_name,
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict", 2),
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict_proba", 3),
         ],
         "HistGradientBoostingRegressor": [
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.fit", 1),

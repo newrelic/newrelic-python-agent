@@ -543,7 +543,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 )
 
                 ft.__exit__(*sys.exc_info())
-                error_attributes["duration"] = ft.duration
+                error_attributes["duration"] = ft.duration * 1000
 
                 if operation == "embedding":
                     handle_embedding_event(transaction, error_attributes)
@@ -594,7 +594,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             # Read and replace response streaming bodies
             response_body = response["body"].read()
             ft.__exit__(None, None, None)
-            bedrock_attrs["duration"] = ft.duration
+            bedrock_attrs["duration"] = ft.duration * 1000
             response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
 
             # Run response extractor for non-streaming responses
@@ -677,7 +677,7 @@ def record_events_on_stop_iteration(self, transaction):
             return
 
         try:
-            bedrock_attrs["duration"] = self._nr_ft.duration
+            bedrock_attrs["duration"] = self._nr_ft.duration * 1000
             handle_chat_completion_event(transaction, bedrock_attrs)
         except Exception:
             _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
@@ -709,7 +709,7 @@ def record_error(self, transaction, exc):
             )
 
             ft.__exit__(*sys.exc_info())
-            error_attributes["duration"] = ft.duration
+            error_attributes["duration"] = ft.duration * 1000
 
             handle_chat_completion_event(transaction, error_attributes)
 

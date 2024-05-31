@@ -43,7 +43,8 @@ jobs:
       - mongodb
       - mssql
       - mysql
-      - postgres
+      - postgres16
+      - postgres9
       - rabbitmq
       - redis
       - rediscluster
@@ -207,7 +208,7 @@ jobs:
           path: ./**/.coverage.*
           retention-days: 1
 
-  postgres:
+  postgres16:
     env:
       TOTAL_GROUPS: 2
 
@@ -223,8 +224,72 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
-      postgres:
+      postgres16:
         image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 8080:5432
+          - 8081:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
+  postgres9:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      postgres9:
+        image: postgres:9
         env:
           POSTGRES_PASSWORD: postgres
         ports:

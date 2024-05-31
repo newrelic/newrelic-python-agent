@@ -90,7 +90,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     completion_id = str(uuid.uuid4())
     request_message_list = kwargs.get("messages", [])
 
-    # If .with_streaming_response. wrapper used, switch to streaming
+    # If `.with_streaming_response.` wrapper used, switch to streaming
     # For now, we will exit and instrument this later
     if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return wrapped(*args, **kwargs)
@@ -413,7 +413,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     completion_id = str(uuid.uuid4())
 
-    # If .with_streaming_response. wrapper used, switch to streaming
+    # If `.with_streaming_response.` wrapper used, switch to streaming
     # For now, we will exit and instrument this later
     if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return await wrapped(*args, **kwargs)

@@ -207,10 +207,7 @@ def firestore_settings():
 
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
-    settings = [
-        {"host": host, "port": 8080 + instance_num}
-        for instance_num in range(instances)
-    ]
+    settings = [{"host": host, "port": 8080 + instance_num} for instance_num in range(instances)]
     return settings
 
 

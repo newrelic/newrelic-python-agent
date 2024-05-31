@@ -15,13 +15,11 @@
 from newrelic.api.database_trace import DatabaseTrace, register_database_client
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_object, ObjectProxy
-
+from newrelic.common.object_wrapper import ObjectProxy, wrap_object
 from newrelic.hooks.database_dbapi2 import DEFAULT
 
 
 class AsyncCursorWrapper(ObjectProxy):
-
     def __init__(self, cursor, dbapi2_module, connect_params, cursor_params):
         super(AsyncCursorWrapper, self).__init__(cursor)
         self._nr_dbapi2_module = dbapi2_module
@@ -30,15 +28,25 @@ class AsyncCursorWrapper(ObjectProxy):
 
     async def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
         if parameters is not DEFAULT:
-            with DatabaseTrace(sql, self._nr_dbapi2_module,
-                    self._nr_connect_params, self._nr_cursor_params,
-                    parameters, (args, kwargs), source=self.__wrapped__.execute):
-                return await self.__wrapped__.execute(sql, parameters,
-                        *args, **kwargs)
+            with DatabaseTrace(
+                sql=sql,
+                dbapi2_module=self._nr_dbapi2_module,
+                connect_params=self._nr_connect_params,
+                cursor_params=self._nr_cursor_params,
+                sql_parameters=parameters,
+                execute_params=(args, kwargs),
+                source=self.__wrapped__.execute,
+            ):
+                return await self.__wrapped__.execute(sql, parameters, *args, **kwargs)
         else:
-            with DatabaseTrace(sql, self._nr_dbapi2_module,
-                    self._nr_connect_params, self._nr_cursor_params,
-                    None, (args, kwargs), source=self.__wrapped__.execute):
+            with DatabaseTrace(
+                sql=sql,
+                dbapi2_module=self._nr_dbapi2_module,
+                connect_params=self._nr_connect_params,
+                cursor_params=self._nr_cursor_params,
+                execute_params=(args, kwargs),
+                source=self.__wrapped__.execute,
+            ):
                 return await self.__wrapped__.execute(sql, **kwargs)
 
     async def executemany(self, sql, seq_of_parameters):
@@ -48,18 +56,32 @@ class AsyncCursorWrapper(ObjectProxy):
         except (TypeError, IndexError):
             parameters = DEFAULT
         if parameters is not DEFAULT:
-            with DatabaseTrace(sql, self._nr_dbapi2_module,
-                    self._nr_connect_params, self._nr_cursor_params,
-                    parameters, source=self.__wrapped__.executemany):
+            with DatabaseTrace(
+                sql=sql,
+                dbapi2_module=self._nr_dbapi2_module,
+                connect_params=self._nr_connect_params,
+                cursor_params=self._nr_cursor_params,
+                sql_parameters=parameters,
+                source=self.__wrapped__.executemany,
+            ):
                 return await self.__wrapped__.executemany(sql, seq_of_parameters)
         else:
-            with DatabaseTrace(sql, self._nr_dbapi2_module,
-                    self._nr_connect_params, self._nr_cursor_params, source=self.__wrapped__.executemany):
+            with DatabaseTrace(
+                sql=sql,
+                dbapi2_module=self._nr_dbapi2_module,
+                connect_params=self._nr_connect_params,
+                cursor_params=self._nr_cursor_params,
+                source=self.__wrapped__.executemany,
+            ):
                 return await self.__wrapped__.executemany(sql, seq_of_parameters)
 
     async def callproc(self, procname, parameters=DEFAULT):
-        with DatabaseTrace('CALL %s' % procname,
-                self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.callproc):
+        with DatabaseTrace(
+            sql="CALL %s" % procname,
+            dbapi2_module=self._nr_dbapi2_module,
+            connect_params=self._nr_connect_params,
+            source=self.__wrapped__.callproc,
+        ):
             if parameters is not DEFAULT:
                 return await self.__wrapped__.callproc(procname, parameters)
             else:
@@ -86,18 +108,26 @@ class AsyncConnectionWrapper(ObjectProxy):
         self._nr_connect_params = connect_params
 
     def cursor(self, *args, **kwargs):
-        return self.__cursor_wrapper__(self.__wrapped__.cursor(
-                *args, **kwargs), self._nr_dbapi2_module,
-                self._nr_connect_params, (args, kwargs))
+        return self.__cursor_wrapper__(
+            self.__wrapped__.cursor(*args, **kwargs), self._nr_dbapi2_module, self._nr_connect_params, (args, kwargs)
+        )
 
     async def commit(self):
-        with DatabaseTrace('COMMIT', self._nr_dbapi2_module,
-                self._nr_connect_params, source=self.__wrapped__.commit):
+        with DatabaseTrace(
+            sql="COMMIT",
+            dbapi2_module=self._nr_dbapi2_module,
+            connect_params=self._nr_connect_params,
+            source=self.__wrapped__.commit,
+        ):
             return await self.__wrapped__.commit()
 
     async def rollback(self):
-        with DatabaseTrace('ROLLBACK', self._nr_dbapi2_module,
-                self._nr_connect_params, source=self.__wrapped__.rollback):
+        with DatabaseTrace(
+            sql="ROLLBACK",
+            dbapi2_module=self._nr_dbapi2_module,
+            connect_params=self._nr_connect_params,
+            source=self.__wrapped__.rollback,
+        ):
             return await self.__wrapped__.rollback()
 
     async def __aenter__(self):
@@ -118,17 +148,15 @@ class AsyncConnectionFactory(ObjectProxy):
 
     async def __call__(self, *args, **kwargs):
         rollup = []
-        rollup.append('Datastore/all')
-        rollup.append('Datastore/%s/all' %
-                self._nr_dbapi2_module._nr_database_product)
+        rollup.append("Datastore/all")
+        rollup.append("Datastore/%s/all" % self._nr_dbapi2_module._nr_database_product)
 
-        with FunctionTrace(callable_name(self.__wrapped__),
-                terminal=True, rollup=rollup, source=self.__wrapped__):
+        with FunctionTrace(name=callable_name(self.__wrapped__), terminal=True, rollup=rollup, source=self.__wrapped__):
             connection = await self.__wrapped__(*args, **kwargs)
             return self.__connection_wrapper__(connection, self._nr_dbapi2_module, (args, kwargs))
 
 
 def instrument(module):
-    register_database_client(module, 'DBAPI2', 'single')
+    register_database_client(module, "DBAPI2", "single")
 
-    wrap_object(module, 'connect', AsyncConnectionFactory, (module,))
+    wrap_object(module, "connect", AsyncConnectionFactory, (module,))

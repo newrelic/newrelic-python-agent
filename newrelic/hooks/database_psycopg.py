@@ -23,15 +23,19 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
     wrap_object,
 )
-
 from newrelic.hooks.database_dbapi2 import DEFAULT
 from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
 from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
 from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
-
-from newrelic.hooks.database_dbapi2_async import AsyncConnectionFactory as DBAPI2AsyncConnectionFactory
-from newrelic.hooks.database_dbapi2_async import AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper
-from newrelic.hooks.database_dbapi2_async import AsyncCursorWrapper as DBAPI2AsyncCursorWrapper
+from newrelic.hooks.database_dbapi2_async import (
+    AsyncConnectionFactory as DBAPI2AsyncConnectionFactory,
+)
+from newrelic.hooks.database_dbapi2_async import (
+    AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper,
+)
+from newrelic.hooks.database_dbapi2_async import (
+    AsyncCursorWrapper as DBAPI2AsyncCursorWrapper,
+)
 
 try:
     from urllib import unquote
@@ -43,7 +47,6 @@ except ImportError:
     from urllib.parse import parse_qsl
 
 from newrelic.packages.urllib3 import util as ul3_util
-
 
 # These functions return True if a non-default connection or cursor class is
 # used. If the default connection and cursor are used without any unknown
@@ -66,7 +69,9 @@ def should_preserve_connection_args(self, conninfo="", cursor_factory=None, **kw
     return False
 
 
-def should_preserve_cursor_args(name=None, binary=False, row_factory=None, scrollable=None, withhold=False, *args, **kwargs):
+def should_preserve_cursor_args(
+    name=None, binary=False, row_factory=None, scrollable=None, withhold=False, *args, **kwargs
+):
     return bool(args or kwargs)
 
 
@@ -104,7 +109,7 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
                 cursor_params=None,
                 sql_parameters=parameters,
                 execute_params=(args, kwargs),
-                source=self.__wrapped__.execute
+                source=self.__wrapped__.execute,
             ):
                 cursor = self.__wrapped__.execute(sql, parameters, *args, **kwargs)
         else:
@@ -115,7 +120,7 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
                 cursor_params=None,
                 sql_parameters=None,
                 execute_params=(args, kwargs),
-                source=self.__wrapped__.execute
+                source=self.__wrapped__.execute,
             ):
                 cursor = self.__wrapped__.execute(sql, **kwargs)
 
@@ -142,7 +147,7 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
                     sql="COMMIT",
                     dbapi2_module=self._nr_dbapi2_module,
                     connect_params=self._nr_connect_params,
-                    source=self.__wrapped__.__exit__
+                    source=self.__wrapped__.__exit__,
                 ):
                     return self.__wrapped__.__exit__(exc, value, tb)
             else:
@@ -150,7 +155,7 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
                     sql="ROLLBACK",
                     dbapi2_module=self._nr_dbapi2_module,
                     connect_params=self._nr_connect_params,
-                    source=self.__wrapped__.__exit__
+                    source=self.__wrapped__.__exit__,
                 ):
                     return self.__wrapped__.__exit__(exc, value, tb)
 
@@ -190,7 +195,7 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 # function with our explain plan feature, we always attempt to use the DBAPI2 compliant method of instantiating a new
 # Connection, that being psycopg.connect(). That function is an alias of psycopg.Connection.connect(), and returns an
 # instance of psycopg.Connection.
-# 
+#
 # Additionally, care is taken to preserve the cursor_factory argument and to use custom cursor classes. However, with
 # AsyncConnection the compatible cursors will be async, which will not be compatible with the explain plan's
 # synchronous Connection instance. To avoid this issue, we refuse to preserve the cursor_factory arument for
@@ -199,6 +204,7 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 # This should allow the largest number of users to still have explain plans function for their applications, whether or
 # not they are using AsyncConnection or custom classes. The issue of using a synchronous Connection object in an async
 # application should be somewhat mitigated by the fact that our explain plan feature functions on the harvest thread.
+
 
 class AsyncCursorWrapper(DBAPI2AsyncCursorWrapper):
     def __init__(self, cursor, dbapi2_module, connect_params, cursor_params):
@@ -280,7 +286,7 @@ class AsyncConnectionSaveParamsWrapper(DBAPI2AsyncConnectionWrapper):
                     sql="COMMIT",
                     dbapi2_module=self._nr_dbapi2_module,
                     connect_params=self._nr_connect_params,
-                    source=self.__wrapped__.__aexit__
+                    source=self.__wrapped__.__aexit__,
                 ):
                     return await self.__wrapped__.__aexit__(exc, value, tb)
             else:
@@ -288,7 +294,7 @@ class AsyncConnectionSaveParamsWrapper(DBAPI2AsyncConnectionWrapper):
                     sql="ROLLBACK",
                     dbapi2_module=self._nr_dbapi2_module,
                     connect_params=self._nr_connect_params,
-                    source=self.__wrapped__.__aexit__
+                    source=self.__wrapped__.__aexit__,
                 ):
                     return await self.__wrapped__.__aexit__(exc, value, tb)
 

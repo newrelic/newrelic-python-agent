@@ -16,13 +16,12 @@ import threading
 
 import psycopg
 import pytest
-
+from conftest import DB_SETTINGS, maybe_await
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_database_node import validate_database_node
 from testing_support.validators.validate_transaction_slow_sql_count import (
     validate_transaction_slow_sql_count,
 )
-from conftest import DB_SETTINGS, maybe_await
 
 from newrelic.api.background_task import background_task
 from newrelic.core.database_utils import SQLConnections
@@ -30,9 +29,6 @@ from newrelic.core.database_utils import SQLConnections
 
 class CustomCursor(psycopg.Cursor):
     event = threading.Event()
-
-    def __init__(self, *args, **kwargs):
-        return super().__init__(*args, **kwargs)
 
     def execute(self, *args, **kwargs):
         self.event.set()
@@ -42,9 +38,6 @@ class CustomCursor(psycopg.Cursor):
 class CustomAsyncCursor(psycopg.AsyncCursor):
     event = threading.Event()
 
-    def __init__(self, *args, **kwargs):
-        return super().__init__(*args, **kwargs)
-
     async def execute(self, *args, **kwargs):
         self.event.set()
         return await super().execute(*args, **kwargs)
@@ -53,9 +46,6 @@ class CustomAsyncCursor(psycopg.AsyncCursor):
 class CustomConnection(psycopg.Connection):
     event = threading.Event()
 
-    def __init__(self, *args, **kwargs):
-        return super().__init__(*args, **kwargs)
-
     def cursor(self, *args, **kwargs):
         self.event.set()
         return super().cursor(*args, **kwargs)
@@ -63,9 +53,6 @@ class CustomConnection(psycopg.Connection):
 
 class CustomAsyncConnection(psycopg.AsyncConnection):
     event = threading.Event()
-
-    def __init__(self, *args, **kwargs):
-        return super().__init__(*args, **kwargs)
 
     def cursor(self, *args, **kwargs):
         self.event.set()
@@ -92,6 +79,7 @@ async def _exercise_db(connection, cursor_kwargs=None):
 
 
 # Tests
+
 
 def explain_plan_is_not_none(node):
     with SQLConnections() as connections:
@@ -155,16 +143,19 @@ def test_explain_plan_named_cursors(loop, connection, withhold, scrollable):
 # This test validates that any combination of sync or async, and default or custom connection and cursor classes will work with
 # the explain plan feature. The agent should always use psycopg.connect to open a new explain plan connection and only
 # use custom cursors from synchronous connections, as async cursors will not be compatible.
-@pytest.mark.parametrize("connection_cls,cursor_cls", [
-    (psycopg.Connection, psycopg.Cursor),
-    (psycopg.Connection, CustomCursor),
-    (CustomConnection, psycopg.Cursor),
-    (CustomConnection, CustomCursor),
-    (psycopg.AsyncConnection, psycopg.AsyncCursor),
-    (psycopg.AsyncConnection, CustomAsyncCursor),
-    (CustomAsyncConnection, psycopg.AsyncCursor),
-    (CustomAsyncConnection, CustomAsyncCursor),
-])
+@pytest.mark.parametrize(
+    "connection_cls,cursor_cls",
+    [
+        (psycopg.Connection, psycopg.Cursor),
+        (psycopg.Connection, CustomCursor),
+        (CustomConnection, psycopg.Cursor),
+        (CustomConnection, CustomCursor),
+        (psycopg.AsyncConnection, psycopg.AsyncCursor),
+        (psycopg.AsyncConnection, CustomAsyncCursor),
+        (CustomAsyncConnection, psycopg.AsyncCursor),
+        (CustomAsyncConnection, CustomAsyncCursor),
+    ],
+)
 @override_application_settings(
     {
         "transaction_tracer.explain_threshold": 0.0,
@@ -178,18 +169,21 @@ def test_explain_plan_on_custom_classes(loop, connection_cls, cursor_cls):
     def test():
         async def coro():
             # Connect using custom Connection classes, so connect here without the fixture.
-            connection = await maybe_await(connection_cls.connect(
-                dbname=DB_SETTINGS["name"],
-                user=DB_SETTINGS["user"],
-                password=DB_SETTINGS["password"],
-                host=DB_SETTINGS["host"],
-                port=DB_SETTINGS["port"],
-                cursor_factory=cursor_cls,
-            ))
+            connection = await maybe_await(
+                connection_cls.connect(
+                    dbname=DB_SETTINGS["name"],
+                    user=DB_SETTINGS["user"],
+                    password=DB_SETTINGS["password"],
+                    host=DB_SETTINGS["host"],
+                    port=DB_SETTINGS["port"],
+                    cursor_factory=cursor_cls,
+                )
+            )
             await _exercise_db(connection)
             reset_events()
 
         loop.run_until_complete(coro())
+
     test()
 
     # Check that the correct classes were used AFTER the explain plan validator has run

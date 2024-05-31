@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import openai
+import pytest
 from testing_support.fixtures import (
     override_llm_token_callback_settings,
     reset_core_stats_engine,
@@ -159,6 +160,129 @@ def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info, sync_open
 
     for resp in generator:
         assert resp
+
+
+@reset_core_stats_engine()
+@pytest.mark.parametrize(
+    "stream_set, stream_val",
+    [
+        (False, None),
+        (True, True),
+        (True, False),
+    ],
+)
+@validate_transaction_metrics(
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_lines",
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_lines(
+    set_trace_info, sync_openai_client, stream_set, stream_val
+):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+
+    create_dict = {
+        "model": "gpt-3.5-turbo",
+        "messages": _test_openai_chat_completion_messages,
+        "temperature": 0.7,
+        "max_tokens": 100,
+    }
+    if stream_set:
+        create_dict["stream"] = stream_val
+
+    with sync_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
+
+        for _ in generator.iter_lines():
+            pass
+
+
+@reset_core_stats_engine()
+@pytest.mark.parametrize(
+    "stream_set, stream_val",
+    [
+        (False, None),
+        (True, True),
+        (True, False),
+    ],
+)
+@validate_transaction_metrics(
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_bytes",
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_bytes(
+    set_trace_info, sync_openai_client, stream_set, stream_val
+):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+
+    create_dict = {
+        "model": "gpt-3.5-turbo",
+        "messages": _test_openai_chat_completion_messages,
+        "temperature": 0.7,
+        "max_tokens": 100,
+    }
+    if stream_set:
+        create_dict["stream"] = stream_val
+
+    with sync_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
+
+        for _ in generator.iter_bytes():
+            pass
+
+
+@reset_core_stats_engine()
+@pytest.mark.parametrize(
+    "stream_set, stream_val",
+    [
+        (False, None),
+        (True, True),
+        (True, False),
+    ],
+)
+@validate_transaction_metrics(
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_text",
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_text(
+    set_trace_info, sync_openai_client, stream_set, stream_val
+):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+
+    create_dict = {
+        "model": "gpt-3.5-turbo",
+        "messages": _test_openai_chat_completion_messages,
+        "temperature": 0.7,
+        "max_tokens": 100,
+    }
+    if stream_set:
+        create_dict["stream"] = stream_val
+
+    with sync_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
+
+        for _ in generator.iter_text():
+            pass
 
 
 @reset_core_stats_engine()
@@ -363,6 +487,147 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info, as
         )
         async for resp in generator:
             assert resp
+
+    loop.run_until_complete(consumer())
+
+
+@reset_core_stats_engine()
+@pytest.mark.parametrize(
+    "stream_set, stream_val",
+    [
+        (False, None),
+        (True, True),
+        (True, False),
+    ],
+)
+# @validate_custom_events(chat_completion_recorded_events)
+# @validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    "test_chat_completion_stream_v1:test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_lines",
+    # scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    # rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_lines(
+    loop, set_trace_info, async_openai_client, stream_set, stream_val
+):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+    create_dict = {
+        "model": "gpt-3.5-turbo",
+        "messages": _test_openai_chat_completion_messages,
+        "temperature": 0.7,
+        "max_tokens": 100,
+    }
+    if stream_set:
+        create_dict["stream"] = stream_val
+
+    async def consumer():
+        async with async_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
+
+            async for _ in generator.iter_lines():
+                pass
+
+    loop.run_until_complete(consumer())
+
+
+@reset_core_stats_engine()
+@pytest.mark.parametrize(
+    "stream_set, stream_val",
+    [
+        (False, None),
+        (True, True),
+        (True, False),
+    ],
+)
+# @validate_custom_events(chat_completion_recorded_events)
+# @validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    "test_chat_completion_stream_v1:test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_bytes",
+    # scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    # rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_bytes(
+    loop, set_trace_info, async_openai_client, stream_set, stream_val
+):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+    create_dict = {
+        "model": "gpt-3.5-turbo",
+        "messages": _test_openai_chat_completion_messages,
+        "temperature": 0.7,
+        "max_tokens": 100,
+    }
+    if stream_set:
+        create_dict["stream"] = stream_val
+
+    async def consumer():
+        async with async_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
+
+            async for _ in generator.iter_bytes():
+                pass
+
+    loop.run_until_complete(consumer())
+
+
+@reset_core_stats_engine()
+@pytest.mark.parametrize(
+    "stream_set, stream_val",
+    [
+        (False, None),
+        (True, True),
+        (True, False),
+    ],
+)
+# @validate_custom_events(chat_completion_recorded_events)
+# @validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    "test_chat_completion_stream_v1:test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_text",
+    # scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    # rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_text(
+    loop, set_trace_info, async_openai_client, stream_set, stream_val
+):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+    create_dict = {
+        "model": "gpt-3.5-turbo",
+        "messages": _test_openai_chat_completion_messages,
+        "temperature": 0.7,
+        "max_tokens": 100,
+    }
+    if stream_set:
+        create_dict["stream"] = stream_val
+
+    async def consumer():
+        async with async_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
+
+            async for _ in generator.iter_text():
+                pass
 
     loop.run_until_complete(consumer())
 

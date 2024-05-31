@@ -90,6 +90,11 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     completion_id = str(uuid.uuid4())
     request_message_list = kwargs.get("messages", [])
 
+    # If .with_streaming_response. wrapper used, switch to streaming
+    # For now, we will exit and instrument this later
+    if "extra_headers" in kwargs and kwargs["extra_headers"]["X-Stainless-Raw-Response"] == "stream":
+        return wrapped(*args, **kwargs)
+
     ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/OpenAI")
     ft.__enter__()
     linking_metadata = get_trace_linking_metadata()
@@ -404,6 +409,11 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     completion_id = str(uuid.uuid4())
 
+    # If .with_streaming_response. wrapper used, switch to streaming
+    # For now, we will exit and instrument this later
+    if "extra_headers" in kwargs and kwargs["extra_headers"]["X-Stainless-Raw-Response"] == "stream":
+        return await wrapped(*args, **kwargs)
+
     ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/OpenAI")
     ft.__enter__()
     linking_metadata = get_trace_linking_metadata()
@@ -452,7 +462,6 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
         # In v1, response objects are pydantic models so this function call converts the
         # object back to a dictionary for backwards compatibility.
         response = return_val
-
         if OPENAI_V1:
             try:
                 response = response.model_dump()

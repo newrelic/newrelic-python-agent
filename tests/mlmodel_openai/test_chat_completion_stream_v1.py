@@ -14,6 +14,7 @@
 
 import openai
 import pytest
+from conftest import get_openai_version  # pylint: disable=E0611
 from testing_support.fixtures import (
     override_llm_token_callback_settings,
     reset_core_stats_engine,
@@ -37,6 +38,12 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
+
+OPENAI_VERSION = get_openai_version()
+SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE = pytest.mark.skipif(
+    OPENAI_VERSION < (1, 8), reason="OpenAI does not support .with_streaming_response. until v1.8"
+)
+
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -162,6 +169,7 @@ def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info, sync_open
         assert resp
 
 
+@SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
 @pytest.mark.parametrize(
     "stream_set, stream_val",
@@ -203,6 +211,7 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_l
             pass
 
 
+@SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
 @pytest.mark.parametrize(
     "stream_set, stream_val",
@@ -244,6 +253,7 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_b
             pass
 
 
+@SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
 @pytest.mark.parametrize(
     "stream_set, stream_val",
@@ -491,6 +501,7 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info, as
     loop.run_until_complete(consumer())
 
 
+@SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
 @pytest.mark.parametrize(
     "stream_set, stream_val",
@@ -538,6 +549,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
     loop.run_until_complete(consumer())
 
 
+@SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
 @pytest.mark.parametrize(
     "stream_set, stream_val",
@@ -585,6 +597,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
     loop.run_until_complete(consumer())
 
 
+@SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
 @pytest.mark.parametrize(
     "stream_set, stream_val",

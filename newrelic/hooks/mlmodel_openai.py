@@ -256,14 +256,14 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         # object back to a dictionary for backwards compatibility.
         attribute_response = response
         if OPENAI_V1:
-            try:
+            if hasattr(response, "model_dump"):
                 attribute_response = response.model_dump()
-            except AttributeError:  # isinstance(response, openai._legacy_response.LegacyAPIResponse)
-                try:
-                    attribute_response = json.loads(response.http_response.text.strip())
-                except:
-                    # keep attribute_response = response
-                    pass
+            elif hasattr(response, "http_response") and hasattr(response.http_response, "text"):
+                # isinstance(response, openai._legacy_response.LegacyAPIResponse)
+                attribute_response = json.loads(response.http_response.text.strip())
+            else:
+                # keep attribute_response = response
+                pass
 
         request_id = response_headers.get("x-request-id")
         response_model = attribute_response.get("model")

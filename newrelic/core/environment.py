@@ -234,10 +234,12 @@ def environment_settings():
             if name in stdlib_builtin_module_names:
                 continue
 
-            try:
-                version = get_package_version(name)
-            except Exception:
-                version = None
+            # Don't attempt to look up version information for our hooks
+            if not nr_hook:
+                try:
+                    version = get_package_version(name)
+                except Exception:
+                    version = None
 
             # If it has no version it's likely not a real package so don't report it unless
             # it's a new relic hook.

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-from sklearn import __version__  # noqa: this is needed for get_package_version
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )

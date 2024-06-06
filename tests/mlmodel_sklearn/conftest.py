@@ -16,6 +16,7 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
+import sklearn  # noqa: needed for get_package_version
 
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
@@ -27,6 +28,7 @@ _default_settings = {
     "machine_learning.inference_events_value.enabled": True,
     "ml_insights_events.enabled": True
 }
+
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (mlmodel_sklearn)",
     default_settings=_default_settings,

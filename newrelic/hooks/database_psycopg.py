@@ -78,6 +78,13 @@ def should_preserve_cursor_args(
 class CursorWrapper(DBAPI2CursorWrapper):
     def __enter__(self):
         self.__wrapped__.__enter__()
+
+        # Must return a reference to self as otherwise will be
+        # returning the inner cursor object. If 'as' is used
+        # with the 'with' statement this will mean no longer
+        # using the wrapped cursor object and nothing will be
+        # tracked.
+
         return self
 
     def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
@@ -217,6 +224,13 @@ class AsyncCursorWrapper(DBAPI2AsyncCursorWrapper):
 
     async def __aenter__(self):
         await self.__wrapped__.__aenter__()
+
+        # Must return a reference to self as otherwise will be
+        # returning the inner cursor object. If 'as' is used
+        # with the 'with' statement this will mean no longer
+        # using the wrapped cursor object and nothing will be
+        # tracked.
+
         return self
 
     async def execute(self, sql, parameters=DEFAULT, *args, **kwargs):

@@ -261,7 +261,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             elif hasattr(response, "http_response") and hasattr(response.http_response, "text"):
                 # This is for the .with_raw_response. wrapper.  This is expected
                 # to change, but the return type for now is the following:
-                # isinstance(response, openai._legacy_response.LegacyAPIResponse)
+                # openai._legacy_response.LegacyAPIResponse
                 attribute_response = json.loads(response.http_response.text.strip())
 
         request_id = response_headers.get("x-request-id")
@@ -458,7 +458,7 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
             elif hasattr(response, "http_response") and hasattr(response.http_response, "text"):
                 # This is for the .with_raw_response. wrapper.  This is expected
                 # to change, but the return type for now is the following:
-                # isinstance(response, openai._legacy_response.LegacyAPIResponse))
+                # openai._legacy_response.LegacyAPIResponse
                 response = json.loads(response.http_response.text.strip())
 
         _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)

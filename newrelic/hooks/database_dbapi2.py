@@ -132,10 +132,7 @@ class ConnectionFactory(ObjectProxy):
         self._nr_dbapi2_module = dbapi2_module
 
     def __call__(self, *args, **kwargs):
-        rollup = [
-            "Datastore/all", 
-            "Datastore/%s/all" % self._nr_dbapi2_module._nr_database_product
-        ]
+        rollup = ["Datastore/all", "Datastore/%s/all" % self._nr_dbapi2_module._nr_database_product]
 
         with FunctionTrace(name=callable_name(self.__wrapped__), terminal=True, rollup=rollup, source=self.__wrapped__):
             return self.__connection_wrapper__(

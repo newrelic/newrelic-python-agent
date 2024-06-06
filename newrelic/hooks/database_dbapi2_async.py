@@ -147,9 +147,10 @@ class AsyncConnectionFactory(ObjectProxy):
         self._nr_dbapi2_module = dbapi2_module
 
     async def __call__(self, *args, **kwargs):
-        rollup = []
-        rollup.append("Datastore/all")
-        rollup.append("Datastore/%s/all" % self._nr_dbapi2_module._nr_database_product)
+        rollup = [
+            "Datastore/all", 
+            "Datastore/%s/all" % self._nr_dbapi2_module._nr_database_product
+        ]
 
         with FunctionTrace(name=callable_name(self.__wrapped__), terminal=True, rollup=rollup, source=self.__wrapped__):
             connection = await self.__wrapped__(*args, **kwargs)

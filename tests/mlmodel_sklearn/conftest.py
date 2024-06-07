@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from sklearn import __version__  # noqa: this is needed for get_package_version
+
 from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
-
 _default_settings = {
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,

@@ -175,7 +175,7 @@ class ASGIBrowserMiddleware(object):
 
                     try:
                         content_length = int(header_value)
-                    except ValueError:
+                    except (TypeError, ValueError):
                         # Invalid content length results in an abort
                         await self.send_buffered()
                         return

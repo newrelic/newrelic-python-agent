@@ -653,6 +653,19 @@ async def target_asgi_application_invalid_content_length(scope, receive, send):
 
 target_application_invalid_content_length = AsgiTest(target_asgi_application_invalid_content_length)
 
+
+@asgi_application()
+async def target_asgi_application_no_content_length(scope, receive, send):
+    output = b"<html><body><p>RESPONSE</p></body></html>"
+
+    response_headers = [(b"content-type", b"text/html; charset=utf-8")]
+
+    await send({"type": "http.response.start", "status": 200, "headers": response_headers})
+    await send({"type": "http.response.body", "body": output})
+
+
+target_application_no_content_length = AsgiTest(target_asgi_application_no_content_length)
+
 _test_html_insertion_invalid_content_length_settings = {
     "browser_monitoring.enabled": True,
     "browser_monitoring.auto_instrument": True,
@@ -669,6 +682,17 @@ def test_html_insertion_invalid_content_length():
     assert "content-length" in response.headers
 
     assert response.headers["content-length"] == "XXX"
+
+    assert b"NREUM HEADER" not in response.body
+    assert b"NREUM.info" not in response.body
+
+
+@override_application_settings(_test_html_insertion_invalid_content_length_settings)
+def test_html_insertion_invalid_content_length():
+    response = target_application_no_content_length.get("/")
+    assert response.status == 200
+
+    assert "content-type" in response.headers
 
     assert b"NREUM HEADER" not in response.body
     assert b"NREUM.info" not in response.body

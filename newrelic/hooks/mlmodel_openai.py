@@ -261,18 +261,17 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         response_headers = getattr(response, "_nr_response_headers", {})
         input = kwargs.get("input")
 
+        attribute_response = response
         # In v1, response objects are pydantic models so this function call converts the
         # object back to a dictionary for backwards compatibility.
-        attribute_response = response
         if OPENAI_V1:
-            try:
+            if hasattr(response, "model_dump"):
                 attribute_response = response.model_dump()
-            except AttributeError:  # isinstance(response, openai._legacy_response.LegacyAPIResponse)
-                try:
-                    attribute_response = json.loads(response.http_response.text.strip())
-                except:
-                    # keep attribute_response = response
-                    pass
+            elif hasattr(response, "http_response") and hasattr(response.http_response, "text"):
+                # This is for the .with_raw_response. wrapper.  This is expected
+                # to change, but the return type for now is the following:
+                # openai._legacy_response.LegacyAPIResponse
+                attribute_response = json.loads(response.http_response.text.strip())
 
         request_id = response_headers.get("x-request-id")
         response_model = attribute_response.get("model")
@@ -463,18 +462,18 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
         # If response is not a stream generator, record the event data.
         # At this point, we have a response so we can grab attributes only available on the response object
         response_headers = getattr(return_val, "_nr_response_headers", {})
+        response = return_val
+
         # In v1, response objects are pydantic models so this function call converts the
         # object back to a dictionary for backwards compatibility.
-        response = return_val
         if OPENAI_V1:
-            try:
+            if hasattr(response, "model_dump"):
                 response = response.model_dump()
-            except AttributeError:  # isinstance(response, openai._legacy_response.LegacyAPIResponse)
-                try:
-                    response = json.loads(response.http_response.text.strip())
-                except:
-                    # keep response = return_val
-                    pass
+            elif hasattr(response, "http_response") and hasattr(response.http_response, "text"):
+                # This is for the .with_raw_response. wrapper.  This is expected
+                # to change, but the return type for now is the following:
+                # openai._legacy_response.LegacyAPIResponse
+                response = json.loads(response.http_response.text.strip())
 
         _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)
     except Exception:

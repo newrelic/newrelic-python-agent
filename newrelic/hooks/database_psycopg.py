@@ -349,8 +349,8 @@ def instance_info(args, kwargs):
 
 
 def _parse_connect_params(args, kwargs):
-    def _bind_params(dsn=None, *args, **kwargs):
-        return dsn
+    def _bind_params(conninfo=None, *args, **kwargs):
+        return conninfo
 
     dsn = _bind_params(*args, **kwargs)
 

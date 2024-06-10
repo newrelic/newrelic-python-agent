@@ -33,14 +33,14 @@ def test_arg_str():
     assert output == ("foobar", None, "9876", None)
 
 
-def test_bind_dsn():
-    connect_params = ((), {"dsn": "host=foobar port=9876"})
+def test_bind_conninfo():
+    connect_params = ((), {"conninfo": "host=foobar port=9876"})
     output = _parse_connect_params(*connect_params)
     assert output == ("foobar", None, "9876", None)
 
 
-def test_bind_dsn_ignore_kwargs():
-    connect_params = ((), {"dsn": "host=foobar", "port": 1234})
+def test_bind_conninfo_ignore_kwargs():
+    connect_params = ((), {"conninfo": "host=foobar", "port": 1234})
     output = _parse_connect_params(*connect_params)
     assert output == ("foobar", None, None, None)
 

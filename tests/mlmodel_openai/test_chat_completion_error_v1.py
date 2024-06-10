@@ -282,7 +282,7 @@ expected_events_on_invalid_model_error = [
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -322,7 +322,7 @@ def test_chat_completion_invalid_request_error_invalid_model(set_trace_info, syn
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -361,7 +361,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -403,7 +403,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
     }
 )
 @validate_transaction_metrics(
@@ -537,6 +537,400 @@ def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch, set_trace_
         monkeypatch.setattr(async_openai_client, "api_key", "DEADBEEF")
         loop.run_until_complete(
             async_openai_client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=({"role": "user", "content": "Invalid API key."},),
+                temperature=0.7,
+                max_tokens=100,
+            )
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_no_model_with_raw_response",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(expected_events_on_no_model_error)
+@validate_custom_event_count(count=3)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_with_raw_response(set_trace_info, sync_openai_client):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        sync_openai_client.chat.completions.with_raw_response.create(
+            messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_no_model_no_content_with_raw_response",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(expected_events_on_no_model_error))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_no_content_with_raw_response(
+    set_trace_info, sync_openai_client
+):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        sync_openai_client.chat.completions.with_raw_response.create(
+            messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_no_model_async_with_raw_response",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(expected_events_on_no_model_error)
+@validate_custom_event_count(count=3)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_async_with_raw_response(
+    loop, set_trace_info, async_openai_client
+):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        loop.run_until_complete(
+            async_openai_client.chat.completions.with_raw_response.create(
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+            )
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_error_trace_attributes(
+    callable_name(TypeError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {},
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_no_model_async_no_content_with_raw_response",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_sans_content(expected_events_on_no_model_error))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_chat_completion_invalid_request_error_no_model_async_no_content_with_raw_response(
+    loop, set_trace_info, async_openai_client
+):
+    with pytest.raises(TypeError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        loop.run_until_complete(
+            async_openai_client.chat.completions.with_raw_response.create(
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+            )
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(openai.NotFoundError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "error.code": "model_not_found",
+            "http.statusCode": 404,
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_invalid_model_with_raw_response",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(expected_events_on_invalid_model_error)
+@validate_custom_event_count(count=2)
+@background_task()
+def test_chat_completion_invalid_request_error_invalid_model_with_raw_response(set_trace_info, sync_openai_client):
+    with pytest.raises(openai.NotFoundError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        sync_openai_client.chat.completions.with_raw_response.create(
+            model="does-not-exist",
+            messages=({"role": "user", "content": "Model does not exist."},),
+            temperature=0.7,
+            max_tokens=100,
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback)
+@validate_error_trace_attributes(
+    callable_name(openai.NotFoundError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "error.code": "model_not_found",
+            "http.statusCode": 404,
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_invalid_model_with_token_count_with_raw_response",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+@validate_custom_event_count(count=2)
+@background_task()
+def test_chat_completion_invalid_request_error_invalid_model_with_token_count_with_raw_response(
+    set_trace_info, sync_openai_client
+):
+    with pytest.raises(openai.NotFoundError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        sync_openai_client.chat.completions.with_raw_response.create(
+            model="does-not-exist",
+            messages=({"role": "user", "content": "Model does not exist."},),
+            temperature=0.7,
+            max_tokens=100,
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(openai.NotFoundError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "error.code": "model_not_found",
+            "http.statusCode": 404,
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_invalid_model_async_with_raw_response",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(expected_events_on_invalid_model_error)
+@validate_custom_event_count(count=2)
+@background_task()
+def test_chat_completion_invalid_request_error_invalid_model_async_with_raw_response(
+    loop, set_trace_info, async_openai_client
+):
+    with pytest.raises(openai.NotFoundError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        loop.run_until_complete(
+            async_openai_client.chat.completions.with_raw_response.create(
+                model="does-not-exist",
+                messages=({"role": "user", "content": "Model does not exist."},),
+                temperature=0.7,
+                max_tokens=100,
+            )
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback)
+@validate_error_trace_attributes(
+    callable_name(openai.NotFoundError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "error.code": "model_not_found",
+            "http.statusCode": 404,
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_invalid_model_with_token_count_async_with_raw_response",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+@validate_custom_event_count(count=2)
+@background_task()
+def test_chat_completion_invalid_request_error_invalid_model_with_token_count_async_with_raw_response(
+    loop, set_trace_info, async_openai_client
+):
+    with pytest.raises(openai.NotFoundError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        loop.run_until_complete(
+            async_openai_client.chat.completions.with_raw_response.create(
+                model="does-not-exist",
+                messages=({"role": "user", "content": "Model does not exist."},),
+                temperature=0.7,
+                max_tokens=100,
+            )
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(openai.AuthenticationError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "http.statusCode": 401,
+            "error.code": "invalid_api_key",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_wrong_api_key_error_with_raw_response",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(expected_events_on_wrong_api_key_error)
+@validate_custom_event_count(count=2)
+@background_task()
+def test_chat_completion_wrong_api_key_error_with_raw_response(monkeypatch, set_trace_info, sync_openai_client):
+    with pytest.raises(openai.AuthenticationError):
+        set_trace_info()
+        monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
+        sync_openai_client.chat.completions.with_raw_response.create(
+            model="gpt-3.5-turbo",
+            messages=({"role": "user", "content": "Invalid API key."},),
+            temperature=0.7,
+            max_tokens=100,
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(openai.AuthenticationError),
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "http.statusCode": 401,
+            "error.code": "invalid_api_key",
+        },
+    },
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+    }
+)
+@validate_transaction_metrics(
+    "test_chat_completion_error_v1:test_chat_completion_wrong_api_key_error_async_with_raw_response",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(expected_events_on_wrong_api_key_error)
+@validate_custom_event_count(count=2)
+@background_task()
+def test_chat_completion_wrong_api_key_error_async_with_raw_response(
+    loop, monkeypatch, set_trace_info, async_openai_client
+):
+    with pytest.raises(openai.AuthenticationError):
+        set_trace_info()
+        monkeypatch.setattr(async_openai_client, "api_key", "DEADBEEF")
+        loop.run_until_complete(
+            async_openai_client.chat.completions.with_raw_response.create(
                 model="gpt-3.5-turbo",
                 messages=({"role": "user", "content": "Invalid API key."},),
                 temperature=0.7,

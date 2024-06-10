@@ -79,6 +79,11 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
+    # If `.with_streaming_response.` wrapper used, switch to streaming
+    # For now, we will exit and instrument this later
+    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
+        return wrapped(*args, **kwargs)
+
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
@@ -213,7 +218,11 @@ def create_chat_completion_message_event(
 
 async def wrap_embedding_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if not transaction or kwargs.get("stream", False):
+    if (
+        not transaction
+        or kwargs.get("stream", False)
+        or (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream"
+    ):
         return await wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
@@ -391,6 +400,11 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
 async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    # If `.with_streaming_response.` wrapper used, switch to streaming
+    # For now, we will exit and instrument this later
+    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return await wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()

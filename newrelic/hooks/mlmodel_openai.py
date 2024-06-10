@@ -79,6 +79,11 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
+    # If `.with_streaming_response.` wrapper used, switch to streaming
+    # For now, we will exit and instrument this later
+    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
+        return wrapped(*args, **kwargs)
+
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
@@ -89,11 +94,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     completion_id = str(uuid.uuid4())
     request_message_list = kwargs.get("messages", [])
-
-    # If `.with_streaming_response.` wrapper used, switch to streaming
-    # For now, we will exit and instrument this later
-    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
-        return wrapped(*args, **kwargs)
 
     ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/OpenAI")
     ft.__enter__()
@@ -402,6 +402,11 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
+    # If `.with_streaming_response.` wrapper used, switch to streaming
+    # For now, we will exit and instrument this later
+    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
+        return await wrapped(*args, **kwargs)
+
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
@@ -411,11 +416,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     transaction._add_agent_attribute("llm", True)
 
     completion_id = str(uuid.uuid4())
-
-    # If `.with_streaming_response.` wrapper used, switch to streaming
-    # For now, we will exit and instrument this later
-    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
-        return await wrapped(*args, **kwargs)
 
     ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/OpenAI")
     ft.__enter__()

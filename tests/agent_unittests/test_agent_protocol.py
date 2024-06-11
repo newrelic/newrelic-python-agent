@@ -170,7 +170,7 @@ def test_send(status_code):
     HttpClientRecorder.STATUS_CODE = status_code
     settings = finalize_application_settings(
         {
-            "request_headers_map": {"custom-header": u"value"},
+            "request_headers_map": {"custom-header": u"value"}, # pylint: disable=W1406
             "agent_run_id": "RUN_TOKEN",
         }
     )
@@ -196,7 +196,7 @@ def test_send(status_code):
 
     assert request.headers == {
         "Content-Type": "application/json",
-        "custom-header": u"value",
+        "custom-header": "value",
     }
 
     assert request.payload == b"[1,2,3]"
@@ -297,7 +297,7 @@ def connect_payload_asserts(
     with_kubernetes=True,
 ):
     payload_data = payload[0]
-    assert isinstance(payload_data["agent_version"], type(u""))
+    assert isinstance(payload_data["agent_version"], type(u""))  # pylint: disable=W1406
     assert payload_data["app_name"] == PAYLOAD_APP_NAME
     assert payload_data["display_host"] == DISPLAY_NAME
     assert payload_data["environment"] == ENVIRONMENT
@@ -537,6 +537,7 @@ def test_serverless_protocol_finalize(capsys):
 
     assert data["metadata"]["foo"] == "bar"
     assert data["metadata"]["agent_version"] != "x"
+    assert data["metadata"]["agent_language"] == "python"
 
 
 def test_audit_logging():

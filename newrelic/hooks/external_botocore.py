@@ -120,9 +120,11 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, content)
-            if settings.ai_monitoring.llm_token_count_callback
-            else None,
+            "token_count": (
+                settings.ai_monitoring.llm_token_count_callback(request_model, content)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None
+            ),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -156,9 +158,11 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, content)
-            if settings.ai_monitoring.llm_token_count_callback
-            else None,
+            "token_count": (
+                settings.ai_monitoring.llm_token_count_callback(request_model, content)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None
+            ),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -189,6 +193,14 @@ def extract_bedrock_titan_text_model_request(request_body, bedrock_attrs):
     return bedrock_attrs
 
 
+def extract_bedrock_mistral_text_model_request(request_body, bedrock_attrs):
+    request_body = json.loads(request_body)
+    bedrock_attrs["input_message_list"] = [{"role": "user", "content": request_body.get("prompt")}]
+    bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens")
+    bedrock_attrs["request.temperature"] = request_body.get("temperature")
+    return bedrock_attrs
+
+
 def extract_bedrock_titan_text_model_response(response_body, bedrock_attrs):
     if response_body:
         response_body = json.loads(response_body)
@@ -203,6 +215,18 @@ def extract_bedrock_titan_text_model_response(response_body, bedrock_attrs):
     return bedrock_attrs
 
 
+def extract_bedrock_mistral_text_model_response(response_body, bedrock_attrs):
+    if response_body:
+        response_body = json.loads(response_body)
+        outputs = response_body.get("outputs")
+        if outputs:
+            bedrock_attrs["response.choices.finish_reason"] = outputs[0]["stop_reason"]
+            bedrock_attrs["output_message_list"] = [
+                {"role": "assistant", "content": result["text"]} for result in outputs
+            ]
+    return bedrock_attrs
+
+
 def extract_bedrock_titan_text_model_streaming_response(response_body, bedrock_attrs):
     if response_body:
         if "outputText" in response_body:
@@ -211,6 +235,18 @@ def extract_bedrock_titan_text_model_streaming_response(response_body, bedrock_a
 
         bedrock_attrs["response.choices.finish_reason"] = response_body.get("completionReason", None)
 
+    return bedrock_attrs
+
+
+def extract_bedrock_mistral_text_model_streaming_response(response_body, bedrock_attrs):
+    if response_body:
+        outputs = response_body.get("outputs")
+        if outputs:
+            bedrock_attrs["output_message_list"] = bedrock_attrs.get(
+                "output_message_list", [{"role": "assistant", "content": ""}]
+            )
+            bedrock_attrs["output_message_list"][0]["content"] += outputs[0].get("text", "")
+            bedrock_attrs["response.choices.finish_reason"] = outputs[0].get("stop_reason", None)
     return bedrock_attrs
 
 
@@ -402,10 +438,16 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
         extract_bedrock_claude_model_streaming_response,
     ),
     (
-        "meta.llama2",
+        "meta.llama",
         extract_bedrock_llama_model_request,
         extract_bedrock_llama_model_response,
         extract_bedrock_llama_model_streaming_response,
+    ),
+    (
+        "mistral",
+        extract_bedrock_mistral_text_model_request,
+        extract_bedrock_mistral_text_model_response,
+        extract_bedrock_mistral_text_model_streaming_response,
     ),
 ]
 
@@ -501,7 +543,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 )
 
                 ft.__exit__(*sys.exc_info())
-                error_attributes["duration"] = ft.duration
+                error_attributes["duration"] = ft.duration * 1000
 
                 if operation == "embedding":
                     handle_embedding_event(transaction, error_attributes)
@@ -552,7 +594,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             # Read and replace response streaming bodies
             response_body = response["body"].read()
             ft.__exit__(None, None, None)
-            bedrock_attrs["duration"] = ft.duration
+            bedrock_attrs["duration"] = ft.duration * 1000
             response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
 
             # Run response extractor for non-streaming responses
@@ -635,7 +677,7 @@ def record_events_on_stop_iteration(self, transaction):
             return
 
         try:
-            bedrock_attrs["duration"] = self._nr_ft.duration
+            bedrock_attrs["duration"] = self._nr_ft.duration * 1000
             handle_chat_completion_event(transaction, bedrock_attrs)
         except Exception:
             _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
@@ -667,7 +709,7 @@ def record_error(self, transaction, exc):
             )
 
             ft.__exit__(*sys.exc_info())
-            error_attributes["duration"] = ft.duration
+            error_attributes["duration"] = ft.duration * 1000
 
             handle_chat_completion_event(transaction, error_attributes)
 
@@ -698,9 +740,11 @@ def handle_embedding_event(transaction, bedrock_attrs):
         "id": embedding_id,
         "span_id": span_id,
         "trace_id": trace_id,
-        "token_count": settings.ai_monitoring.llm_token_count_callback(model, input)
-        if settings.ai_monitoring.llm_token_count_callback
-        else None,
+        "token_count": (
+            settings.ai_monitoring.llm_token_count_callback(model, input)
+            if settings.ai_monitoring.llm_token_count_callback
+            else None
+        ),
         "request_id": request_id,
         "duration": bedrock_attrs.get("duration", None),
         "request.model": model,

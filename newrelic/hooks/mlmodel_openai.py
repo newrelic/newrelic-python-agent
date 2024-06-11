@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import sys
 import traceback
@@ -76,6 +77,11 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return wrapped(*args, **kwargs)
+
+    # If `.with_streaming_response.` wrapper used, switch to streaming
+    # For now, we will exit and instrument this later
+    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
@@ -148,9 +154,11 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(request_model, message_content)
-            if settings.ai_monitoring.llm_token_count_callback
-            else None,
+            "token_count": (
+                settings.ai_monitoring.llm_token_count_callback(request_model, message_content)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None
+            ),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -186,9 +194,11 @@ def create_chat_completion_message_event(
                 "request_id": request_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
-                "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, message_content)
-                if settings.ai_monitoring.llm_token_count_callback
-                else None,
+                "token_count": (
+                    settings.ai_monitoring.llm_token_count_callback(response_model, message_content)
+                    if settings.ai_monitoring.llm_token_count_callback
+                    else None
+                ),
                 "role": message.get("role"),
                 "completion_id": chat_completion_id,
                 "sequence": index,
@@ -208,7 +218,11 @@ def create_chat_completion_message_event(
 
 async def wrap_embedding_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if not transaction or kwargs.get("stream", False):
+    if (
+        not transaction
+        or kwargs.get("stream", False)
+        or (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream"
+    ):
         return await wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
@@ -247,11 +261,17 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         response_headers = getattr(response, "_nr_response_headers", {})
         input = kwargs.get("input")
 
+        attribute_response = response
         # In v1, response objects are pydantic models so this function call converts the
         # object back to a dictionary for backwards compatibility.
-        attribute_response = response
         if OPENAI_V1:
-            attribute_response = response.model_dump()
+            if hasattr(response, "model_dump"):
+                attribute_response = response.model_dump()
+            elif hasattr(response, "http_response") and hasattr(response.http_response, "text"):
+                # This is for the .with_raw_response. wrapper.  This is expected
+                # to change, but the return type for now is the following:
+                # openai._legacy_response.LegacyAPIResponse
+                attribute_response = json.loads(response.http_response.text.strip())
 
         request_id = response_headers.get("x-request-id")
         response_model = attribute_response.get("model")
@@ -266,12 +286,14 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             "id": embedding_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(response_model, input)
-            if settings.ai_monitoring.llm_token_count_callback
-            else None,
+            "token_count": (
+                settings.ai_monitoring.llm_token_count_callback(response_model, input)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None
+            ),
             "request.model": kwargs.get("model") or kwargs.get("engine"),
             "request_id": request_id,
-            "duration": ft.duration,
+            "duration": ft.duration * 1000,
             "response.model": response_model,
             "response.organization": organization,
             "response.headers.llmVersion": response_headers.get("openai-version"),
@@ -341,7 +363,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
     except Exception:
         _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
-    message = notice_error_attributes.pop("error.message")
+    message = notice_error_attributes.pop("error.message", None)
     if message:
         exc._nr_message = message
     ft.notice_error(
@@ -355,14 +377,16 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
             "id": embedding_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": settings.ai_monitoring.llm_token_count_callback(model, input)
-            if settings.ai_monitoring.llm_token_count_callback
-            else None,
+            "token_count": (
+                settings.ai_monitoring.llm_token_count_callback(model, input)
+                if settings.ai_monitoring.llm_token_count_callback
+                else None
+            ),
             "request.model": model,
             "vendor": "openai",
             "ingest_source": "Python",
             "response.organization": exc_organization,
-            "duration": ft.duration,
+            "duration": ft.duration * 1000,
             "error": True,
         }
         if settings.ai_monitoring.record_content.enabled:
@@ -376,6 +400,11 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
 async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    # If `.with_streaming_response.` wrapper used, switch to streaming
+    # For now, we will exit and instrument this later
+    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return await wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
@@ -433,11 +462,18 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
         # If response is not a stream generator, record the event data.
         # At this point, we have a response so we can grab attributes only available on the response object
         response_headers = getattr(return_val, "_nr_response_headers", {})
+        response = return_val
+
         # In v1, response objects are pydantic models so this function call converts the
         # object back to a dictionary for backwards compatibility.
-        response = return_val
         if OPENAI_V1:
-            response = response.model_dump()
+            if hasattr(response, "model_dump"):
+                response = response.model_dump()
+            elif hasattr(response, "http_response") and hasattr(response.http_response, "text"):
+                # This is for the .with_raw_response. wrapper.  This is expected
+                # to change, but the return type for now is the following:
+                # openai._legacy_response.LegacyAPIResponse
+                response = json.loads(response.http_response.text.strip())
 
         _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)
     except Exception:
@@ -483,7 +519,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             "vendor": "openai",
             "ingest_source": "Python",
             "request_id": request_id,
-            "duration": ft.duration,
+            "duration": ft.duration * 1000,
             "response.model": response_model,
             "response.organization": organization,
             "response.choices.finish_reason": finish_reason,
@@ -571,7 +607,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
     except Exception:
         _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
     # Override the default message if it is not empty.
-    message = notice_error_attributes.pop("error.message")
+    message = notice_error_attributes.pop("error.message", None)
     if message:
         exc._nr_message = message
 
@@ -599,7 +635,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             "vendor": "openai",
             "ingest_source": "Python",
             "response.organization": exc_organization,
-            "duration": ft.duration,
+            "duration": ft.duration * 1000,
             "error": True,
         }
         llm_metadata = _get_llm_attributes(transaction)

@@ -3100,6 +3100,9 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("pymssql", "newrelic.hooks.database_pymssql", "instrument_pymssql")
 
+    _process_module_definition("psycopg", "newrelic.hooks.database_psycopg", "instrument_psycopg")
+    _process_module_definition("psycopg.sql", "newrelic.hooks.database_psycopg", "instrument_psycopg_sql")
+
     _process_module_definition("psycopg2", "newrelic.hooks.database_psycopg2", "instrument_psycopg2")
     _process_module_definition(
         "psycopg2._psycopg2",
@@ -4506,6 +4509,12 @@ def _process_module_builtin_defaults():
         "gearman.worker",
         "newrelic.hooks.application_gearman",
         "instrument_gearman_worker",
+    )
+
+    _process_module_definition(
+        "aiobotocore.endpoint",
+        "newrelic.hooks.external_aiobotocore",
+        "instrument_aiobotocore_endpoint",
     )
 
     _process_module_definition(

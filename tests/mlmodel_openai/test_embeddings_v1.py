@@ -43,17 +43,17 @@ embedding_recorded_events = [
             "trace_id": "trace-id",
             "input": "This is an embedding test.",
             "duration": None,  # Response time varies each test run
-            "response.model": "text-embedding-ada-002-v2",
+            "response.model": "text-embedding-ada-002",
             "request.model": "text-embedding-ada-002",
-            "request_id": "fef7adee5adcfb03c083961bdce4f6a4",
-            "response.organization": "foobar-jtbczk",
+            "request_id": "req_eb2b9f2d23a671ad0d69545044437d68",
+            "response.organization": "new-relic-nkmd8b",
             "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 200,
-            "response.headers.ratelimitLimitTokens": 150000,
-            "response.headers.ratelimitResetTokens": "2ms",
-            "response.headers.ratelimitResetRequests": "19m5.228s",
-            "response.headers.ratelimitRemainingTokens": 149993,
-            "response.headers.ratelimitRemainingRequests": 197,
+            "response.headers.ratelimitLimitRequests": 3000,
+            "response.headers.ratelimitLimitTokens": 1000000,
+            "response.headers.ratelimitResetTokens": "0s",
+            "response.headers.ratelimitResetRequests": "20ms",
+            "response.headers.ratelimitRemainingTokens": 999994,
+            "response.headers.ratelimitRemainingRequests": 2999,
             "vendor": "openai",
             "ingest_source": "Python",
         },
@@ -78,6 +78,27 @@ embedding_recorded_events = [
 def test_openai_embedding_sync(set_trace_info, sync_openai_client):
     set_trace_info()
     sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+
+
+@reset_core_stats_engine()
+@validate_custom_events(embedding_recorded_events)
+@validate_custom_event_count(count=1)
+@validate_transaction_metrics(
+    name="test_embeddings_v1:test_openai_embedding_sync_with_raw_response",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_embedding_sync_with_raw_response(set_trace_info, sync_openai_client):
+    set_trace_info()
+    sync_openai_client.embeddings.with_raw_response.create(
+        input="This is an embedding test.", model="text-embedding-ada-002"
+    )
 
 
 @reset_core_stats_engine()
@@ -153,6 +174,30 @@ def test_openai_embedding_async(loop, set_trace_info, async_openai_client):
 
     loop.run_until_complete(
         async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    )
+
+
+@reset_core_stats_engine()
+@validate_custom_events(embedding_recorded_events)
+@validate_custom_event_count(count=1)
+@validate_transaction_metrics(
+    name="test_embeddings_v1:test_openai_embedding_async_with_raw_response",
+    scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
+    custom_metrics=[
+        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_embedding_async_with_raw_response(loop, set_trace_info, async_openai_client):
+    set_trace_info()
+
+    loop.run_until_complete(
+        async_openai_client.embeddings.with_raw_response.create(
+            input="This is an embedding test.", model="text-embedding-ada-002"
+        )
     )
 
 

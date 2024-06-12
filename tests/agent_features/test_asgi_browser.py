@@ -688,7 +688,7 @@ def test_html_insertion_invalid_content_length():
 
 
 @override_application_settings(_test_html_insertion_invalid_content_length_settings)
-def test_html_insertion_invalid_content_length():
+def test_html_insertion_no_content_length():
     response = target_application_no_content_length.get("/")
     assert response.status == 200
 

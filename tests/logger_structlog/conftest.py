@@ -22,6 +22,7 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,

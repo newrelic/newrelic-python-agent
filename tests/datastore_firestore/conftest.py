@@ -15,12 +15,11 @@ import os
 import uuid
 
 import pytest
-
-from google.cloud.firestore import Client
-from google.cloud.firestore import Client, AsyncClient
-
+from google.cloud.firestore import AsyncClient, Client
 from testing_support.db_settings import firestore_settings
-from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401; pylint: disable=W0611
+from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
+    event_loop as loop,
+)
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -35,6 +34,7 @@ FIRESTORE_HOST = DB_SETTINGS["host"]
 FIRESTORE_PORT = DB_SETTINGS["port"]
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -53,7 +53,11 @@ collector_agent_registration = collector_agent_registration_fixture(
 @pytest.fixture()
 def instance_info():
     host = gethostname() if FIRESTORE_HOST in LOCALHOST_EQUIVALENTS else FIRESTORE_HOST
-    return {"host": host, "port_path_or_id": str(FIRESTORE_PORT), "db.instance": "projects/google-cloud-firestore-emulator/databases/(default)"}
+    return {
+        "host": host,
+        "port_path_or_id": str(FIRESTORE_PORT),
+        "db.instance": "projects/google-cloud-firestore-emulator/databases/(default)",
+    }
 
 
 @pytest.fixture(scope="session")
@@ -61,9 +65,7 @@ def client():
     os.environ["FIRESTORE_EMULATOR_HOST"] = "%s:%d" % (FIRESTORE_HOST, FIRESTORE_PORT)
     client = Client()
     # Ensure connection is available
-    client.collection("healthcheck").document("healthcheck").set(
-        {}, retry=None, timeout=5
-    )
+    client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5)
     return client
 
 
@@ -78,7 +80,9 @@ def collection(client):
 def async_client(loop):
     os.environ["FIRESTORE_EMULATOR_HOST"] = "%s:%d" % (FIRESTORE_HOST, FIRESTORE_PORT)
     client = AsyncClient()
-    loop.run_until_complete(client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5))  # Ensure connection is available
+    loop.run_until_complete(
+        client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5)
+    )  # Ensure connection is available
     return client
 
 
@@ -110,7 +114,7 @@ def assert_trace_for_async_generator(loop):
         _trace_check = []
         txn = current_trace()
         assert not isinstance(txn, DatastoreTrace)
-        
+
         async def coro():
             # Check for generator trace on collections
             async for _ in generator_func(*args, **kwargs):

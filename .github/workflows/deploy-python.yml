@@ -23,7 +23,6 @@ jobs:
   build-linux-py3:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
       matrix:
         wheel:
           - cp37-manylinux

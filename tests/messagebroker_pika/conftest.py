@@ -17,8 +17,10 @@ import uuid
 import pika
 import pytest
 from testing_support.db_settings import rabbitmq_settings
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 QUEUE = "test_pika-%s" % uuid.uuid4()
 QUEUE_2 = "test_pika-%s" % uuid.uuid4()
@@ -35,6 +37,7 @@ DB_SETTINGS = rabbitmq_settings()[0]
 
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,

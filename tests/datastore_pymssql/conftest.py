@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
-from testing_support.fixtures import (
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
-)  # noqa: F401; pylint: disable=W0611
-
+)
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,

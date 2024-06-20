@@ -15,7 +15,19 @@
 import platform
 
 import pytest
-from flask import __version__ as flask_version
+from flask import (
+    __version__ as flask_version,  # required for python 3.7 in lieu of get_package_version_tuple
+)
+
+from newrelic.common.package_version_utils import get_package_version_tuple
+
+try:
+    FLASK_VERSION = tuple(int(v) for v in flask_version.split("."))
+except:
+    # This does not work for Python 3.7 for v2.2.5
+    # This only works for flaskmaster
+    FLASK_VERSION = get_package_version_tuple("flask")
+
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -36,10 +48,11 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-is_flask_v2 = int(flask_version.split(".")[0]) >= 2
+is_flask_v2 = FLASK_VERSION[0] >= 2
+is_not_flask_v2_3 = FLASK_VERSION < (2, 3, 0)
 is_pypy = platform.python_implementation() == "PyPy"
 async_handler_support = is_flask_v2 and not is_pypy
 skip_if_not_async_handler_support = pytest.mark.skipif(
     not async_handler_support,
-    reason="Requires async handler support. (Flask >=v2.0.0)",
+    reason="Requires async handler support. (Flask >=v2.0.0, CPython)",
 )

@@ -178,7 +178,7 @@ def test_query_and_mutation(target_application):
     }
 
     @validate_code_level_metrics(
-        "framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add"  # "execute_field"
+        "framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add"
     )
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
@@ -422,8 +422,7 @@ def test_operation_metrics_and_attrs(target_application):
     # Span count 16: Transaction, Operation, and 7 Resolvers and Resolver functions
     # library, library.name, library.book
     # library.book.name and library.book.id for each book resolved (in this case 2)
-    # span_count = 16 + extra_spans  # WSGI may add 4 spans, other frameworks may add other amounts
-    span_count = 16 + extra_spans
+    span_count = 16 + extra_spans  # WSGI may add 4 spans, other frameworks may add other amounts
 
     @validate_transaction_metrics(
         "query/MyQuery/library",
@@ -455,8 +454,7 @@ def test_field_resolver_metrics_and_attrs(target_application):
     }
 
     # Span count 4: Transaction, Operation, and 1 Resolver and Resolver function
-    # span_count = 3 + extra_spans  # WSGI may add 4 spans, other frameworks may add other amounts
-    span_count = 4 + extra_spans
+    span_count = 4 + extra_spans  # WSGI may add 4 spans, other frameworks may add other amounts
 
     @validate_transaction_metrics(
         "query/<anonymous>/hello",

@@ -2887,6 +2887,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "graphql.type.schema",
+        "newrelic.hooks.framework_graphql",
+        "instrument_graphql_schema_get_field",
+    )
+
+    _process_module_definition(
         "google.cloud.firestore_v1.base_client",
         "newrelic.hooks.datastore_firestore",
         "instrument_google_cloud_firestore_v1_base_client",

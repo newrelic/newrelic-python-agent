@@ -267,6 +267,7 @@ def wrap_get_field_resolver(wrapped, instance, args, kwargs):
 
 
 def wrap_get_field_def(wrapped, instance, args, kwargs):
+    """In v3.3+ this is called `get_field` and it is called from schema itself"""
     result = wrapped(*args, **kwargs)
 
     if hasattr(result, "resolve"):
@@ -465,6 +466,11 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
             # Execution finished synchronously, exit immediately.
             trace.__exit__(None, None, None)
             return result
+
+
+def instrument_graphql_schema_get_field(module):
+    if hasattr(module, "GraphQLSchema") and hasattr(module.GraphQLSchema, "get_field"):
+        wrap_function_wrapper(module, "GraphQLSchema.get_field", wrap_get_field_def)
 
 
 def instrument_graphql_execute(module):

@@ -177,17 +177,8 @@ def test_query_and_mutation(target_application):
         "graphql.field.returnType": "[String%s]%s" % (type_annotation, type_annotation),
     }
 
-    @conditional_decorator(
-        validate_code_level_metrics(
-            "framework_%s.test_application.test_query_and_mutation.<locals>" % (framework.lower()), "_mutation"
-        ),
-        VERSION_3_3,
-    )
-    @conditional_decorator(
-        validate_code_level_metrics(
-            "framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add"
-        ),
-        not VERSION_3_3,
+    @validate_code_level_metrics(
+        "framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add"  # "execute_field"
     )
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
@@ -207,18 +198,7 @@ def test_query_and_mutation(target_application):
         response = target_application(query)
         assert response["storage_add"] == "abc" or response["storage_add"]["string"] == "abc"
 
-    @conditional_decorator(
-        validate_code_level_metrics(
-            "framework_%s.test_application.test_query_and_mutation.<locals>" % (framework.lower()), "_query"
-        ),
-        VERSION_3_3,
-    )
-    @conditional_decorator(
-        validate_code_level_metrics(
-            "framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage"
-        ),
-        not VERSION_3_3,
-    )
+    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage")
     @validate_span_events(exact_agents=_expected_query_operation_attributes)
     @validate_span_events(exact_agents=_expected_query_resolver_attributes)
     @validate_transaction_metrics(
@@ -334,11 +314,7 @@ def test_exception_in_resolver(target_application, field):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     query = "query MyQuery { %s }" % field
 
-    txn_name = (
-        "graphql.execution.execute:ExecutionContext.execute_operation"
-        if VERSION_3_3
-        else "framework_%s._target_schema_%s:resolve_error" % (framework.lower(), schema_type)
-    )
+    txn_name = "framework_%s._target_schema_%s:resolve_error" % (framework.lower(), schema_type)
 
     # Metrics
     _test_exception_scoped_metrics = [
@@ -443,12 +419,11 @@ def test_operation_metrics_and_attrs(target_application):
         "graphql.operation.name": "MyQuery",
     }
 
-    # Span count 16 for v3.2: Transaction, Operation, and 7 Resolvers and Resolver functions
-    # Span count 15 for v3.2: Transaction, Operation, and 6 Resolvers and Resolver functions
+    # Span count 16: Transaction, Operation, and 7 Resolvers and Resolver functions
     # library, library.name, library.book
     # library.book.name and library.book.id for each book resolved (in this case 2)
-    # span_count = [GraphQL span count] + extra_spans  # WSGI may add 4 spans, other frameworks may add other amounts
-    span_count = (15 + extra_spans) if VERSION_3_3 else (16 + extra_spans)
+    # span_count = 16 + extra_spans  # WSGI may add 4 spans, other frameworks may add other amounts
+    span_count = 16 + extra_spans
 
     @validate_transaction_metrics(
         "query/MyQuery/library",
@@ -479,10 +454,9 @@ def test_field_resolver_metrics_and_attrs(target_application):
         "graphql.field.returnType": "String" + type_annotation,
     }
 
-    # Span count 4 for v3.2: Transaction, Operation, and 1 Resolver and Resolver function
-    # Span count 3 for v3.3+: Transaction, Operation, and Resolver
-    # span_count = [GraphQL span count] + extra_spans  # WSGI may add 4 spans, other frameworks may add other amounts
-    span_count = (3 + extra_spans) if VERSION_3_3 else (4 + extra_spans)
+    # Span count 4: Transaction, Operation, and 1 Resolver and Resolver function
+    # span_count = 3 + extra_spans  # WSGI may add 4 spans, other frameworks may add other amounts
+    span_count = 4 + extra_spans
 
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
@@ -579,11 +553,7 @@ _test_queries = [
 def test_deepest_unique_path(target_application, query, expected_path):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     if expected_path == "/error":
-        txn_name = (
-            "graphql.execution.execute:ExecutionContext.execute_operation"
-            if VERSION_3_3
-            else "framework_%s._target_schema_%s:resolve_error" % (framework.lower(), schema_type)
-        )
+        txn_name = "framework_%s._target_schema_%s:resolve_error" % (framework.lower(), schema_type)
     else:
         txn_name = "query/<anonymous>%s" % expected_path
 

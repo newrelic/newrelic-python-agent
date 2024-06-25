@@ -16,6 +16,8 @@ import json
 import logging
 import re
 import warnings
+from traceback import format_tb
+from typing import Optional
 
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
@@ -26,22 +28,6 @@ from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error
 from newrelic.packages import six
-
-
-def format_exc_info(exc_info):
-    _, _, fullnames, message = parse_exc_info(exc_info)
-    fullname = fullnames[0]
-
-    formatted = {
-        "error.class": fullname,
-        "error.message": message,
-    }
-
-    expected = is_expected_error(exc_info)
-    if expected is not None:
-        formatted["error.expected"] = expected
-
-    return formatted
 
 
 def safe_json_encode(obj, ignore_string_types=False, **kwargs):
@@ -69,11 +55,46 @@ def safe_json_encode(obj, ignore_string_types=False, **kwargs):
 class NewRelicContextFormatter(logging.Formatter):
     DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(logging.LogRecord("", 0, "", 0, "", (), None))) | {"message"})
 
-    def __init__(self, *args, **kwargs):
-        super(NewRelicContextFormatter, self).__init__()
+    def __init__(self, *args, stack_trace_limit: Optional[int] = 0, **kwargs):
+        """
+        :param Optional[int] stack_trace_limit:
+            Specifies the maximum number of frames to include for stack traces.
+            Defaults to `0` to suppress stack traces.
+            Setting this to `None` will make it so all available frames are included.
+        """
+        super(NewRelicContextFormatter, self).__init__(*args, **kwargs)
 
-    @classmethod
-    def log_record_to_dict(cls, record):
+        if stack_trace_limit is not None:
+            if not isinstance(stack_trace_limit, int):
+                raise TypeError("stack_trace_limit must be None or a non-negative integer")
+            elif stack_trace_limit < 0:
+                raise ValueError("stack_trace_limit must be None or a non-negative integer")
+        self._stack_trace_limit = stack_trace_limit
+
+    def format_exc_info(self, exc_info):
+        _, _, fullnames, message = parse_exc_info(exc_info)
+        fullname = fullnames[0]
+
+        formatted = {
+            "error.class": fullname,
+            "error.message": message,
+        }
+
+        expected = is_expected_error(exc_info)
+        if expected is not None:
+            formatted["error.expected"] = expected
+
+        if self._stack_trace_limit is None or self._stack_trace_limit > 0:
+            stack_trace: Optional[str]
+            if exc_info[2] is not None:
+                stack_trace = "".join(format_tb(exc_info[2], limit=self._stack_trace_limit)) or None
+            else:
+                stack_trace = None
+            formatted["error.stack_trace"] = stack_trace
+
+        return formatted
+
+    def log_record_to_dict(self, record):
         output = {
             "timestamp": int(record.created * 1000),
             "message": record.getMessage(),
@@ -88,7 +109,7 @@ class NewRelicContextFormatter(logging.Formatter):
         }
         output.update(get_linking_metadata())
 
-        DEFAULT_LOG_RECORD_KEYS = cls.DEFAULT_LOG_RECORD_KEYS
+        DEFAULT_LOG_RECORD_KEYS = self.DEFAULT_LOG_RECORD_KEYS
         # If any keys are present in record that aren't in the default,
         # add them to the output record.
         keys_to_add = set(record.__dict__.keys()) - DEFAULT_LOG_RECORD_KEYS
@@ -96,7 +117,7 @@ class NewRelicContextFormatter(logging.Formatter):
             output["extra." + key] = getattr(record, key)
 
         if record.exc_info:
-            output.update(format_exc_info(record.exc_info))
+            output.update(self.format_exc_info(record.exc_info))
 
         return output
 

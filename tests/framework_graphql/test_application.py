@@ -34,13 +34,9 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-from newrelic.common.package_version_utils import (
-    get_package_version,
-    get_package_version_tuple,
-)
+from newrelic.common.package_version_utils import get_package_version
 
 graphql_version = get_package_version("graphql-core")
-VERSION_3_3 = get_package_version_tuple("graphql-core") >= (3, 3)
 
 
 def conditional_decorator(decorator, condition):
@@ -151,11 +147,9 @@ def test_query_and_mutation(target_application):
         ("GraphQL/operation/%s/mutation/<anonymous>/%s" % (framework, mutation_path), 1),
     ]
     _test_query_scoped_metrics = [
+        ("GraphQL/resolve/%s/storage" % framework, 1),
         ("GraphQL/operation/%s/query/<anonymous>/storage" % framework, 1),
     ]
-    if not VERSION_3_3:
-        _test_query_scoped_metrics.append(("GraphQL/resolve/%s/storage" % framework, 1))
-
     _expected_mutation_operation_attributes = {
         "graphql.operation.type": "mutation",
         "graphql.operation.name": "<anonymous>",

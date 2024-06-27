@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 # Install OS packages
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -45,7 +45,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         make \
         odbc-postgresql \
         openssl \
-        python2-dev \
         python3-dev \
         python3-pip \
         sudo \
@@ -96,7 +95,7 @@ RUN echo 'eval "$(pyenv init -)"' >>${HOME}/.bashrc && \
     pyenv update
 
 # Install Python
-ARG PYTHON_VERSIONS="3.11 3.10 3.9 3.8 3.7 3.12 2.7 pypy2.7-7.3.12 pypy3.10-7.3.15"
+ARG PYTHON_VERSIONS="3.12 3.11 3.10 3.9 3.8 3.7 2.7 pypy2.7-7.3.16 pypy3.10-7.3.16"
 COPY --chown=1000:1000 --chmod=+x ./install-python.sh /tmp/install-python.sh
 RUN /tmp/install-python.sh && \
     rm /tmp/install-python.sh

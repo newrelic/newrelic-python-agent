@@ -156,7 +156,7 @@ kwargs = dict(
         "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
     },
     extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
-    install_requires=["newrelic_security @ git+https://github.com/k2io/k2-python-agent.git@task/python_27_support"]
+    install_requires=["newrelic_security @ git+https://github.com/k2io/k2-python-agent.git@develop"]
 )
 
 if with_setuptools:

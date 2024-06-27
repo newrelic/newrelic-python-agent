@@ -14,6 +14,7 @@
 
 import json
 import logging
+import sys
 from traceback import format_tb
 
 import pytest
@@ -241,9 +242,9 @@ def test_newrelic_logger_error_inside_transaction_no_stack_trace(log_buffer):
 def test_newrelic_logger_error_inside_transaction_with_stack_trace(log_buffer_with_stack_trace):
     try:
         raise ExceptionForTest
-    except ExceptionForTest as e:
+    except ExceptionForTest:
         _logger.exception("oops")
-        expected_stack_trace = "".join(format_tb(e.__traceback__))
+        expected_stack_trace = "".join(format_tb(sys.exc_info()[2]))
 
     log_buffer_with_stack_trace.seek(0)
     message = json.load(log_buffer_with_stack_trace)
@@ -260,7 +261,7 @@ def test_newrelic_logger_error_inside_transaction_with_stack_trace(log_buffer_wi
     assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
     assert isinstance(line_number, int)
-    assert isinstance(stack_trace, str)
+    assert isinstance(stack_trace, six.string_types)
     assert stack_trace and stack_trace == expected_stack_trace
 
     expected = {
@@ -334,9 +335,9 @@ def test_newrelic_logger_error_outside_transaction_no_stack_trace(log_buffer):
 def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_with_stack_trace):
     try:
         raise ExceptionForTest
-    except ExceptionForTest as e:
+    except ExceptionForTest:
         _logger.exception("oops")
-        expected_stack_trace = "".join(format_tb(e.__traceback__))
+        expected_stack_trace = "".join(format_tb(sys.exc_info()[2]))
 
     log_buffer_with_stack_trace.seek(0)
     message = json.load(log_buffer_with_stack_trace)
@@ -353,7 +354,7 @@ def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_w
     assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
     assert isinstance(line_number, int)
-    assert isinstance(stack_trace, str)
+    assert isinstance(stack_trace, six.string_types)
     assert stack_trace and stack_trace == expected_stack_trace
 
     expected = {

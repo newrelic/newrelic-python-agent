@@ -54,14 +54,14 @@ def safe_json_encode(obj, ignore_string_types=False, **kwargs):
 class NewRelicContextFormatter(logging.Formatter):
     DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(logging.LogRecord("", 0, "", 0, "", (), None))) | {"message"})
 
-    def __init__(self, *args, stack_trace_limit=0, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         :param Optional[int] stack_trace_limit:
             Specifies the maximum number of frames to include for stack traces.
             Defaults to `0` to suppress stack traces.
             Setting this to `None` will make it so all available frames are included.
         """
-        super(NewRelicContextFormatter, self).__init__(*args, **kwargs)
+        stack_trace_limit = kwargs.pop("stack_trace_limit", 0)
 
         if stack_trace_limit is not None:
             if not isinstance(stack_trace_limit, int):
@@ -69,6 +69,8 @@ class NewRelicContextFormatter(logging.Formatter):
             elif stack_trace_limit < 0:
                 raise ValueError("stack_trace_limit must be None or a non-negative integer")
         self._stack_trace_limit = stack_trace_limit
+
+        super(NewRelicContextFormatter, self).__init__(*args, **kwargs)
 
     @classmethod
     def format_exc_info(cls, exc_info, stack_trace_limit=0):

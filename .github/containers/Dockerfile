@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
 # Install OS packages
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -45,7 +45,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         make \
         odbc-postgresql \
         openssl \
-        python2-dev \
         python3-dev \
         python3-pip \
         sudo \

@@ -36,8 +36,8 @@ from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version
 
-
 graphql_version = get_package_version("graphql-core")
+
 
 def conditional_decorator(decorator, condition):
     def _conditional_decorator(func):
@@ -150,7 +150,6 @@ def test_query_and_mutation(target_application):
         ("GraphQL/resolve/%s/storage" % framework, 1),
         ("GraphQL/operation/%s/query/<anonymous>/storage" % framework, 1),
     ]
-
     _expected_mutation_operation_attributes = {
         "graphql.operation.type": "mutation",
         "graphql.operation.name": "<anonymous>",

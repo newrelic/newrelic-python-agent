@@ -4075,10 +4075,10 @@ def _setup_security_module():
         if not _settings.security.agent.enabled or _settings.high_security:
             _logger.warning("New Relic Security is disabled by one of the user provided config `security.agent.enabled` or `high_security`.")
             return
-        from newrelic_security.api.agent import Agent as SecurityAgent
+        from newrelic_security.api.agent import get_agent
 
         # initialize security agent
-        security_agent = SecurityAgent()
+        security_agent = get_agent()
         # create a callback to reinitialise the security module
         newrelic.core.agent.Agent.run_on_startup(security_agent.refresh_agent)
     except Exception as csec_error:

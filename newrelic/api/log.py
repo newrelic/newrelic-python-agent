@@ -17,7 +17,6 @@ import logging
 import re
 import warnings
 from traceback import format_tb
-from typing import Optional
 
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
@@ -55,7 +54,7 @@ def safe_json_encode(obj, ignore_string_types=False, **kwargs):
 class NewRelicContextFormatter(logging.Formatter):
     DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(logging.LogRecord("", 0, "", 0, "", (), None))) | {"message"})
 
-    def __init__(self, *args, stack_trace_limit: Optional[int] = 0, **kwargs):
+    def __init__(self, *args, stack_trace_limit=0, **kwargs):
         """
         :param Optional[int] stack_trace_limit:
             Specifies the maximum number of frames to include for stack traces.
@@ -85,7 +84,6 @@ class NewRelicContextFormatter(logging.Formatter):
             formatted["error.expected"] = expected
 
         if self._stack_trace_limit is None or self._stack_trace_limit > 0:
-            stack_trace: Optional[str]
             if exc_info[2] is not None:
                 stack_trace = "".join(format_tb(exc_info[2], limit=self._stack_trace_limit)) or None
             else:

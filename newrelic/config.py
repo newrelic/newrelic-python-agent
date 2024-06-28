@@ -3201,6 +3201,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.datastore_pymemcache",
         "instrument_pymemcache_client",
     )
+    _process_module_definition(
+        "aiomcache.client",
+        "newrelic.hooks.datastore_aiomcache",
+        "instrument_aiomcache_client",
+    )
 
     _process_module_definition("jinja2.environment", "newrelic.hooks.template_jinja2")
 

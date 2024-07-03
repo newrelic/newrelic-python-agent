@@ -311,9 +311,11 @@ def connect_payload_asserts(
     assert len(payload_data["security_settings"]) == 2
     assert payload_data["security_settings"]["capture_params"] == CAPTURE_PARAMS
     assert payload_data["security_settings"]["transaction_tracer"] == {"record_sql": RECORD_SQL}
-    assert len(payload_data["settings"]) == 2
+    assert len(payload_data["settings"]) == 3
     assert payload_data["settings"]["browser_monitoring.loader"] == (BROWSER_MONITORING_LOADER)
     assert payload_data["settings"]["browser_monitoring.debug"] == (BROWSER_MONITORING_DEBUG)
+    assert payload_data["settings"]["ai_monitoring.enabled"] is False
+
 
     utilization_len = 5
 

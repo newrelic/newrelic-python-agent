@@ -66,7 +66,7 @@ class NewRelicContextFormatter(logging.Formatter):
         if stack_trace_limit is not None:
             if not isinstance(stack_trace_limit, int):
                 raise TypeError("stack_trace_limit must be None or a non-negative integer")
-            elif stack_trace_limit < 0:
+            if stack_trace_limit < 0:
                 raise ValueError("stack_trace_limit must be None or a non-negative integer")
         self._stack_trace_limit = stack_trace_limit
 

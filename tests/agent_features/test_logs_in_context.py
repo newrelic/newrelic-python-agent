@@ -240,6 +240,7 @@ def test_newrelic_logger_error_inside_transaction_no_stack_trace(log_buffer):
 
 @background_task()
 def test_newrelic_logger_error_inside_transaction_with_stack_trace(log_buffer_with_stack_trace):
+    expected_stack_trace = ""
     try:
         raise ExceptionForTest
     except ExceptionForTest:
@@ -333,6 +334,7 @@ def test_newrelic_logger_error_outside_transaction_no_stack_trace(log_buffer):
 
 
 def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_with_stack_trace):
+    expected_stack_trace = ""
     try:
         raise ExceptionForTest
     except ExceptionForTest:

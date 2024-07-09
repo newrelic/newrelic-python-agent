@@ -170,7 +170,7 @@ def test_send(status_code):
     HttpClientRecorder.STATUS_CODE = status_code
     settings = finalize_application_settings(
         {
-            "request_headers_map": {"custom-header": u"value"}, # pylint: disable=W1406
+            "request_headers_map": {"custom-header": "value"},  # pylint: disable=W1406
             "agent_run_id": "RUN_TOKEN",
         }
     )
@@ -297,7 +297,7 @@ def connect_payload_asserts(
     with_kubernetes=True,
 ):
     payload_data = payload[0]
-    assert isinstance(payload_data["agent_version"], type(u""))  # pylint: disable=W1406
+    assert isinstance(payload_data["agent_version"], type(""))  # pylint: disable=W1406
     assert payload_data["app_name"] == PAYLOAD_APP_NAME
     assert payload_data["display_host"] == DISPLAY_NAME
     assert payload_data["environment"] == ENVIRONMENT
@@ -315,7 +315,6 @@ def connect_payload_asserts(
     assert payload_data["settings"]["browser_monitoring.loader"] == (BROWSER_MONITORING_LOADER)
     assert payload_data["settings"]["browser_monitoring.debug"] == (BROWSER_MONITORING_DEBUG)
     assert payload_data["settings"]["ai_monitoring.enabled"] is False
-
 
     utilization_len = 5
 

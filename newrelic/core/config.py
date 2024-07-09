@@ -1228,9 +1228,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     # Check to see if collect_ai appears in the connect response to handle account-level AIM toggling
     collect_ai = server_side_config.get("collect_ai", None)
     if collect_ai is not None:
-        apply_config_setting(
-            settings_snapshot, "ai_monitoring.enabled", collect_ai
-        )
+        apply_config_setting(settings_snapshot, "ai_monitoring.enabled", collect_ai)
 
     # Since the server does not override this setting as it's an OTLP setting,
     # we must override it here manually by converting it into a per harvest cycle

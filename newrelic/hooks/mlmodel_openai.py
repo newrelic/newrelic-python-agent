@@ -972,7 +972,7 @@ def instrument_openai_resources_embeddings(module):
             wrap_function_wrapper(module, "Embeddings.create", wrap_embedding_sync)
 
     if hasattr(module, "AsyncEmbeddings"):
-        if hasattr(module.Embeddings, "create"):
+        if hasattr(module.AsyncEmbeddings, "create"):
             wrap_function_wrapper(module, "AsyncEmbeddings.create", wrap_embedding_async)
 
 

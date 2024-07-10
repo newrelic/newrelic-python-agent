@@ -130,10 +130,10 @@ def test_vectorstore_modules_instrumented():
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn",
-    scoped_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
-    rollup_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
+    scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -161,10 +161,10 @@ def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_cl
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn_no_content",
-    scoped_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
-    rollup_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
+    scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -221,10 +221,10 @@ def test_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(set_trace_info, emb
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_pdf_pagesplitter_vectorstore_in_txn",
-    scoped_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
-    rollup_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
+    scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -256,10 +256,10 @@ def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embeddi
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_pdf_pagesplitter_vectorstore_in_txn_no_content",
-    scoped_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
-    rollup_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
+    scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -346,10 +346,10 @@ vectorstore_error_events = [
 @validate_custom_events(vectorstore_error_events)
 @validate_transaction_metrics(
     name="test_vectorstore:test_vectorstore_error",
-    scoped_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
-    rollup_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
+    scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -374,10 +374,10 @@ def test_vectorstore_error(set_trace_info, embedding_openai_client, loop):
 @validate_custom_events(vectorstore_events_sans_content(vectorstore_error_events))
 @validate_transaction_metrics(
     name="test_vectorstore:test_vectorstore_error_no_content",
-    scoped_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
-    rollup_metrics=[("Llm/vectorstore/Langchain/similarity_search", 1)],
+    scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -401,10 +401,10 @@ def test_vectorstore_error_no_content(set_trace_info, embedding_openai_client):
 @validate_custom_events(vectorstore_error_events)
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_vectorstore_error",
-    scoped_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
-    rollup_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
+    scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -434,10 +434,10 @@ def test_async_vectorstore_error(loop, set_trace_info, embedding_openai_client):
 @validate_custom_events(vectorstore_events_sans_content(vectorstore_error_events))
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_vectorstore_error_no_content",
-    scoped_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
-    rollup_metrics=[("Llm/vectorstore/Langchain/asimilarity_search", 1)],
+    scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
+    rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )

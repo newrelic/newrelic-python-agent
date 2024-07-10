@@ -156,12 +156,12 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
-    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
     search_id = str(uuid.uuid4())
 
-    ft = FunctionTrace(name=wrapped.__name__, group="Llm/vectorstore/Langchain")
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/vectorstore/LangChain")
     ft.__enter__()
     linking_metadata = get_trace_linking_metadata()
     try:
@@ -193,12 +193,12 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
-    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
     search_id = str(uuid.uuid4())
 
-    ft = FunctionTrace(name=wrapped.__name__, group="Llm/vectorstore/Langchain")
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/vectorstore/LangChain")
     ft.__enter__()
     linking_metadata = get_trace_linking_metadata()
     try:
@@ -277,14 +277,14 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
-    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
     tool_id, metadata, tags, tool_input, tool_name, tool_description, run_args = _capture_tool_info(
         instance, wrapped, args, kwargs
     )
 
-    ft = FunctionTrace(name=wrapped.__name__, group="Llm/tool/Langchain")
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/tool/LangChain")
     ft.__enter__()
     linking_metadata = get_trace_linking_metadata()
     try:
@@ -334,14 +334,14 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
-    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
     tool_id, metadata, tags, tool_input, tool_name, tool_description, run_args = _capture_tool_info(
         instance, wrapped, args, kwargs
     )
 
-    ft = FunctionTrace(name=wrapped.__name__, group="Llm/tool/Langchain")
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/tool/LangChain")
     ft.__enter__()
     linking_metadata = get_trace_linking_metadata()
     try:
@@ -536,7 +536,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
-    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
     run_args = bind_args(wrapped, args, kwargs)
@@ -546,7 +546,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     # The trace group will reflect from where it has started.
     # The AgentExecutor class has an attribute "agent" that does
     # not exist within the Chain class
-    group_name = "Llm/agent/Langchain" if hasattr(instance, "agent") else "Llm/chain/Langchain"
+    group_name = "Llm/agent/LangChain" if hasattr(instance, "agent") else "Llm/chain/LangChain"
     ft = FunctionTrace(name=wrapped.__name__, group=group_name)
     ft.__enter__()
     linking_metadata = get_trace_linking_metadata()
@@ -584,7 +584,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
-    transaction.add_ml_model_info("Langchain", LANGCHAIN_VERSION)
+    transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
     run_args = bind_args(wrapped, args, kwargs)
@@ -594,7 +594,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     # The trace group will reflect from where it has started.
     # The AgentExecutor class has an attribute "agent" that does
     # not exist within the Chain class
-    group_name = "Llm/agent/Langchain" if hasattr(instance, "agent") else "Llm/chain/Langchain"
+    group_name = "Llm/agent/LangChain" if hasattr(instance, "agent") else "Llm/chain/LangChain"
     ft = FunctionTrace(name=wrapped.__name__, group=group_name)
     ft.__enter__()
     linking_metadata = get_trace_linking_metadata()

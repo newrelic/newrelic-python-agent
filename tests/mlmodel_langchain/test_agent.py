@@ -59,10 +59,10 @@ def prompt():
 @reset_core_stats_engine()
 @validate_transaction_metrics(
     name="test_agent:test_sync_agent",
-    scoped_metrics=[("Llm/agent/Langchain/invoke", 1)],
-    rollup_metrics=[("Llm/agent/Langchain/invoke", 1)],
+    scoped_metrics=[("Llm/agent/LangChain/invoke", 1)],
+    rollup_metrics=[("Llm/agent/LangChain/invoke", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )
@@ -78,10 +78,10 @@ def test_sync_agent(chat_openai_client, tools, prompt):
 @reset_core_stats_engine()
 @validate_transaction_metrics(
     name="test_agent:test_async_agent",
-    scoped_metrics=[("Llm/agent/Langchain/ainvoke", 1)],
-    rollup_metrics=[("Llm/agent/Langchain/ainvoke", 1)],
+    scoped_metrics=[("Llm/agent/LangChain/ainvoke", 1)],
+    rollup_metrics=[("Llm/agent/LangChain/ainvoke", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/Langchain/%s" % langchain.__version__, 1),
+        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
     ],
     background_task=True,
 )

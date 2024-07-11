@@ -14,6 +14,8 @@
 
 import json
 import logging
+import sys
+from traceback import format_tb
 
 import pytest
 
@@ -36,6 +38,22 @@ def log_buffer(caplog):
     buf = Buffer()
 
     _formatter = NewRelicContextFormatter("", datefmt="ISO8601")
+    _handler = logging.StreamHandler(buf)
+    _handler.setFormatter(_formatter)
+
+    _logger.addHandler(_handler)
+    caplog.set_level(logging.INFO, logger=__name__)
+
+    yield buf
+
+    _logger.removeHandler(_handler)
+
+
+@pytest.fixture
+def log_buffer_with_stack_trace(caplog):
+    buf = Buffer()
+
+    _formatter = NewRelicContextFormatter("", datefmt="ISO8601", stack_trace_limit=None)
     _handler = logging.StreamHandler(buf)
     _handler.setFormatter(_formatter)
 
@@ -174,7 +192,7 @@ class ExceptionForTest(ValueError):
 
 
 @background_task()
-def test_newrelic_logger_error_inside_transaction(log_buffer):
+def test_newrelic_logger_error_inside_transaction_no_stack_trace(log_buffer):
     try:
         raise ExceptionForTest
     except ExceptionForTest:
@@ -220,7 +238,59 @@ def test_newrelic_logger_error_inside_transaction(log_buffer):
     assert set(message.keys()) == set(expected_extra_txn_keys)
 
 
-def test_newrelic_logger_error_outside_transaction(log_buffer):
+@background_task()
+def test_newrelic_logger_error_inside_transaction_with_stack_trace(log_buffer_with_stack_trace):
+    expected_stack_trace = ""
+    try:
+        raise ExceptionForTest
+    except ExceptionForTest:
+        _logger.exception("oops")
+        expected_stack_trace = "".join(format_tb(sys.exc_info()[2]))
+
+    log_buffer_with_stack_trace.seek(0)
+    message = json.load(log_buffer_with_stack_trace)
+
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    process_id = message.pop("process.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+    stack_trace = message.pop("error.stack_trace")
+
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
+    assert filename.endswith("/test_logs_in_context.py")
+    assert isinstance(line_number, int)
+    assert isinstance(stack_trace, six.string_types)
+    assert stack_trace and stack_trace == expected_stack_trace
+
+    expected = {
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "oops",
+        "log.level": "ERROR",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "error.class": "test_logs_in_context:ExceptionForTest",
+        "error.message": "",
+        "error.expected": False
+    }
+    expected_extra_txn_keys = (
+        "trace.id",
+        "span.id",
+        "entity.guid",
+        "hostname"
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
+
+def test_newrelic_logger_error_outside_transaction_no_stack_trace(log_buffer):
     try:
         raise ExceptionForTest
     except ExceptionForTest:
@@ -240,6 +310,54 @@ def test_newrelic_logger_error_outside_transaction(log_buffer):
     assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
     assert isinstance(line_number, int)
+
+    expected = {
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "oops",
+        "log.level": "ERROR",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "error.class": "test_logs_in_context:ExceptionForTest",
+        "error.message": "",
+    }
+    expected_extra_txn_keys = (
+        "entity.guid",
+        "hostname",
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
+
+def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_with_stack_trace):
+    expected_stack_trace = ""
+    try:
+        raise ExceptionForTest
+    except ExceptionForTest:
+        _logger.exception("oops")
+        expected_stack_trace = "".join(format_tb(sys.exc_info()[2]))
+
+    log_buffer_with_stack_trace.seek(0)
+    message = json.load(log_buffer_with_stack_trace)
+
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    process_id = message.pop("process.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+    stack_trace = message.pop("error.stack_trace")
+
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
+    assert filename.endswith("/test_logs_in_context.py")
+    assert isinstance(line_number, int)
+    assert isinstance(stack_trace, six.string_types)
+    assert stack_trace and stack_trace == expected_stack_trace
 
     expected = {
         "entity.name": "Python Agent Test (agent_features)",

@@ -170,7 +170,7 @@ def test_send(status_code):
     HttpClientRecorder.STATUS_CODE = status_code
     settings = finalize_application_settings(
         {
-            "request_headers_map": {"custom-header": u"value"}, # pylint: disable=W1406
+            "request_headers_map": {"custom-header": "value"},  # pylint: disable=W1406
             "agent_run_id": "RUN_TOKEN",
         }
     )
@@ -297,7 +297,13 @@ def connect_payload_asserts(
     with_kubernetes=True,
 ):
     payload_data = payload[0]
+
+    # Turn off black formatting for this section of the code. While Python 2 has been
+    # EOL'd since 2020, New Relic still supports it and therefore this unicode assert
+    # needs the u"" still.
+    # fmt: off
     assert isinstance(payload_data["agent_version"], type(u""))  # pylint: disable=W1406
+    # fmt: on
     assert payload_data["app_name"] == PAYLOAD_APP_NAME
     assert payload_data["display_host"] == DISPLAY_NAME
     assert payload_data["environment"] == ENVIRONMENT
@@ -311,9 +317,10 @@ def connect_payload_asserts(
     assert len(payload_data["security_settings"]) == 2
     assert payload_data["security_settings"]["capture_params"] == CAPTURE_PARAMS
     assert payload_data["security_settings"]["transaction_tracer"] == {"record_sql": RECORD_SQL}
-    assert len(payload_data["settings"]) == 2
+    assert len(payload_data["settings"]) == 3
     assert payload_data["settings"]["browser_monitoring.loader"] == (BROWSER_MONITORING_LOADER)
     assert payload_data["settings"]["browser_monitoring.debug"] == (BROWSER_MONITORING_DEBUG)
+    assert payload_data["settings"]["ai_monitoring.enabled"] is False
 
     utilization_len = 5
 

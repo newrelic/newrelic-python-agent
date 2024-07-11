@@ -12,41 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import functools
 import time
 
+import pytest
 from testing_support.fixtures import override_generic_settings
-from newrelic.core.config import global_settings
-from newrelic.core.agent_protocol import AgentProtocol
+
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import json_encode
-
+from newrelic.core.agent_protocol import AgentProtocol
+from newrelic.core.config import global_settings
 
 DEFAULT = object()
 LINKED_APPLICATIONS = []
 ENVIRONMENT = []
 NOW = time.time()
 EMPTY_SAMPLES = {
-    'reservoir_size': 100,
-    'events_seen': 0,
+    "reservoir_size": 100,
+    "events_seen": 0,
 }
 
 
 _all_endpoints = (
-    ('send_metric_data', (NOW, NOW + 1, ())),
-    ('send_transaction_events', (EMPTY_SAMPLES, ())),
-    ('send_custom_events', (EMPTY_SAMPLES, ())),
-    ('send_error_events', (EMPTY_SAMPLES, ())),
-    ('send_transaction_traces', ([[]],)),
-    ('send_sql_traces', ([[]],)),
-    ('get_agent_commands', ()),
-    ('send_profile_data', ([[]],)),
-    ('send_errors', ([[]],)),
-    ('send_agent_command_results', ({0: {}},)),
-    ('agent_settings', ({},)),
-    ('send_span_events', (EMPTY_SAMPLES, ())),
-    ('shutdown_session', ()),
+    ("send_metric_data", (NOW, NOW + 1, ())),
+    ("send_transaction_events", (EMPTY_SAMPLES, ())),
+    ("send_custom_events", (EMPTY_SAMPLES, ())),
+    ("send_error_events", (EMPTY_SAMPLES, ())),
+    ("send_transaction_traces", ([[]],)),
+    ("send_sql_traces", ([[]],)),
+    ("get_agent_commands", ()),
+    ("send_profile_data", ([[]],)),
+    ("send_errors", ([[]],)),
+    ("send_agent_command_results", ({0: {}},)),
+    ("agent_settings", ({},)),
+    ("send_span_events", (EMPTY_SAMPLES, ())),
+    ("shutdown_session", ()),
 )
 
 
@@ -85,22 +85,17 @@ class CustomTestClient(DeveloperModeClient):
             )
 
 
-@pytest.mark.parametrize('headers_map_present', (True, False))
+@pytest.mark.parametrize("headers_map_present", (True, False))
 def test_no_blob_behavior(headers_map_present):
     if headers_map_present:
-        connect_response_fields = {u"request_headers_map": None}
-        client_cls = functools.partial(
-                CustomTestClient, connect_response_fields=connect_response_fields)
+        connect_response_fields = {"request_headers_map": None}
+        client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
     else:
-        client_cls = functools.partial(
-                CustomTestClient, connect_response_fields=DEFAULT)
+        client_cls = functools.partial(CustomTestClient, connect_response_fields=DEFAULT)
 
     protocol = AgentProtocol.connect(
-            'app_name',
-            LINKED_APPLICATIONS,
-            ENVIRONMENT,
-            global_settings(),
-            client_cls=client_cls)
+        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
+    )
 
     protocol.send("shutdown")
 
@@ -111,19 +106,14 @@ def test_no_blob_behavior(headers_map_present):
 
 
 def test_blob():
-    request_headers_map = {u'X-Foo': u'Bar'}
-    connect_response_fields = {u"request_headers_map": request_headers_map}
+    request_headers_map = {"X-Foo": "Bar"}
+    connect_response_fields = {"request_headers_map": request_headers_map}
 
-    client_cls = functools.partial(
-            CustomTestClient,
-            connect_response_fields=connect_response_fields)
+    client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
 
     protocol = AgentProtocol.connect(
-            'app_name',
-            LINKED_APPLICATIONS,
-            ENVIRONMENT,
-            global_settings(),
-            client_cls=client_cls)
+        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
+    )
 
     protocol.send("shutdown")
 
@@ -134,52 +124,71 @@ def test_blob():
     }
 
 
-@override_generic_settings(global_settings(), {
-    'developer_mode': True,
-})
+@override_generic_settings(
+    global_settings(),
+    {
+        "developer_mode": True,
+    },
+)
 def test_server_side_config_precedence():
     connect_response_fields = {
-        u'agent_config': {u'span_events.enabled': True},
-        u'span_events.enabled': False,
+        "agent_config": {"span_events.enabled": True},
+        "span_events.enabled": False,
     }
-    client_cls = functools.partial(
-            CustomTestClient,
-            connect_response_fields=connect_response_fields)
+    client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
 
     protocol = AgentProtocol.connect(
-            'app_name',
-            LINKED_APPLICATIONS,
-            ENVIRONMENT,
-            global_settings(),
-            client_cls=client_cls)
+        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
+    )
 
     assert protocol.configuration.span_events.enabled is False
 
 
-@override_generic_settings(global_settings(), {
-    'developer_mode': True,
-})
-@pytest.mark.parametrize("connect_response_fields",
-(
-    {}, 
-    {"span_event_harvest_config": {"report_period_ms": 60000, "harvest_limit": 123}}, 
-    {"span_event_harvest_config": {}})
+@override_generic_settings(
+    global_settings(),
+    {
+        "developer_mode": True,
+    },
+)
+@pytest.mark.parametrize(
+    "connect_response_fields",
+    (
+        {},
+        {"span_event_harvest_config": {"report_period_ms": 60000, "harvest_limit": 123}},
+        {"span_event_harvest_config": {}},
+    ),
 )
 def test_span_event_harvest_config(connect_response_fields):
-    client_cls = functools.partial(
-            CustomTestClient,
-            connect_response_fields=connect_response_fields)
+    client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
 
     protocol = AgentProtocol.connect(
-            'app_name',
-            LINKED_APPLICATIONS,
-            ENVIRONMENT,
-            global_settings(),
-            client_cls=client_cls)
+        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
+    )
 
     if connect_response_fields and connect_response_fields["span_event_harvest_config"]:
         expected = 123
     else:
         from newrelic.core.config import SPAN_EVENT_RESERVOIR_SIZE
+
         expected = SPAN_EVENT_RESERVOIR_SIZE
     assert protocol.configuration.event_harvest_config.harvest_limits.span_event_data == expected
+
+
+@override_generic_settings(
+    global_settings(),
+    {
+        "developer_mode": True,
+    },
+)
+@pytest.mark.parametrize("connect_response_fields", ({}, {"collect_ai": True}, {"collect_ai": False}))
+def test_account_level_aim(connect_response_fields):
+    client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
+
+    protocol = AgentProtocol.connect(
+        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
+    )
+
+    if connect_response_fields and connect_response_fields["collect_ai"]:
+        assert protocol.configuration.ai_monitoring.enabled == connect_response_fields["collect_ai"]
+    else:
+        assert protocol.configuration.ai_monitoring.enabled is False

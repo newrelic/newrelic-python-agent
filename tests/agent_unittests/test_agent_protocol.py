@@ -297,7 +297,13 @@ def connect_payload_asserts(
     with_kubernetes=True,
 ):
     payload_data = payload[0]
-    assert isinstance(payload_data["agent_version"], type(""))  # pylint: disable=W1406
+
+    # Turn off black formatting for this section of the code. While Python 2 has been
+    # EOL'd since 2020, New Relic still supports it and therefore this unicode assert
+    # needs the u"" still.
+    # fmt: off
+    assert isinstance(payload_data["agent_version"], type(u""))  # pylint: disable=W1406
+    # fmt: on
     assert payload_data["app_name"] == PAYLOAD_APP_NAME
     assert payload_data["display_host"] == DISPLAY_NAME
     assert payload_data["environment"] == ENVIRONMENT

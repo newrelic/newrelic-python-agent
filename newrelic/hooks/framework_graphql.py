@@ -89,10 +89,6 @@ def wrap_executor_context_init(wrapped, instance, args, kwargs):
     return result
 
 
-def bind_operation_v3(operation, root_value):
-    return operation
-
-
 def wrap_execute_operation(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     trace = current_trace()
@@ -106,12 +102,13 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
         )
         return wrapped(*args, **kwargs)
 
-    try:
-        operation = bind_operation_v3(*args, **kwargs)
-    except TypeError:
-        return wrapped(*args, **kwargs)
-
     execution_context = instance
+
+    try:
+        # Works for both v3.2 and v3.3+
+        operation = execution_context.operation
+    except (TypeError, AttributeError):
+        return wrapped(*args, **kwargs)
 
     trace.operation_name = get_node_value(operation, "name") or "<anonymous>"
 
@@ -270,6 +267,7 @@ def wrap_get_field_resolver(wrapped, instance, args, kwargs):
 
 
 def wrap_get_field_def(wrapped, instance, args, kwargs):
+    """In v3.3+ this is called `get_field` and it is called from schema itself"""
     result = wrapped(*args, **kwargs)
 
     if hasattr(result, "resolve"):
@@ -353,16 +351,16 @@ def wrap_parse(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
 
-def bind_resolve_field_v3(parent_type, source, field_nodes, path):
+def bind_resolve_field(parent_type, source, field_nodes, path, *args, **kwargs):
+    """This is called execute_field in GraphQL-core v3.3+"""
     return parent_type, field_nodes, path
 
 
 def wrap_resolve_field(wrapped, instance, args, kwargs):
+    """This is called execute_field in GraphQL-core v3.3+"""
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
-
-    bind_resolve_field = bind_resolve_field_v3
 
     try:
         parent_type, field_asts, field_path = bind_resolve_field(*args, **kwargs)
@@ -370,7 +368,7 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     field_name = field_asts[0].name.value
-    field_def = parent_type.fields.get(field_name)
+    field_def = parent_type.fields.get(field_name, None)
     field_return_type = str(field_def.type) if field_def else "<unknown>"
     if isinstance(field_path, list):
         field_path = field_path[0]
@@ -468,6 +466,11 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
             # Execution finished synchronously, exit immediately.
             trace.__exit__(None, None, None)
             return result
+
+
+def instrument_graphql_schema_get_field(module):
+    if hasattr(module, "GraphQLSchema") and hasattr(module.GraphQLSchema, "get_field"):
+        wrap_function_wrapper(module, "GraphQLSchema.get_field", wrap_get_field_def)
 
 
 def instrument_graphql_execute(module):

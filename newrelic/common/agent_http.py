@@ -23,7 +23,11 @@ from pprint import pprint
 import newrelic.packages.urllib3 as urllib3
 from newrelic import version
 from newrelic.common import certs
-from newrelic.common.encoding_utils import json_decode, json_encode
+from newrelic.common.encoding_utils import (
+    json_decode,
+    json_encode,
+    obfuscate_license_key,
+)
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import patch_function_wrapper
 from newrelic.core.internal_metrics import internal_count_metric, internal_metric
@@ -39,6 +43,9 @@ except ImportError:
 
     def get_default_verify_paths():
         return _DEFAULT_CERT_PATH
+
+
+HEADER_AUDIT_LOGGING_DENYLIST = frozenset(("x-api-key", "api-key"))
 
 
 # User agent string that must be used in all requests. The data collector
@@ -92,6 +99,7 @@ class BaseClient(object):
         compression_method="gzip",
         max_payload_size_in_bytes=1000000,
         audit_log_fp=None,
+        default_content_encoding_header="Identity",
     ):
         self._audit_log_fp = audit_log_fp
 
@@ -112,13 +120,19 @@ class BaseClient(object):
         pass
 
     @classmethod
-    def log_request(
-        cls, fp, method, url, params, payload, headers, body=None, compression_time=None
-    ):
+    def log_request(cls, fp, method, url, params, payload, headers, body=None, compression_time=None):
         cls._supportability_request(params, payload, body, compression_time)
 
         if not fp:
             return
+
+        # Obfuscate license key from headers and URL params
+        if headers:
+            headers = {k: obfuscate_license_key(v) if k.lower() in HEADER_AUDIT_LOGGING_DENYLIST else v for k, v in headers.items()}
+
+        if params and "license_key" in params:
+            params = params.copy()
+            params["license_key"] = obfuscate_license_key(params["license_key"])
 
         # Maintain a global AUDIT_LOG_ID attached to all class instances
         # NOTE: this is not thread safe so this class cannot be used
@@ -126,7 +140,8 @@ class BaseClient(object):
         cls.AUDIT_LOG_ID += 1
 
         print(
-            "TIME: %r" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), file=fp,
+            "TIME: %r" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            file=fp,
         )
         print(file=fp)
         print("ID: %r" % cls.AUDIT_LOG_ID, file=fp)
@@ -178,9 +193,7 @@ class BaseClient(object):
         except Exception:
             result = data
 
-        print(
-            "TIME: %r" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), file=fp
-        )
+        print("TIME: %r" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), file=fp)
         print(file=fp)
         print("ID: %r" % log_id, file=fp)
         print(file=fp)
@@ -219,9 +232,7 @@ class BaseClient(object):
 class HttpClient(BaseClient):
     CONNECTION_CLS = urllib3.HTTPSConnectionPool
     PREFIX_SCHEME = "https://"
-    BASE_HEADERS = urllib3.make_headers(
-        keep_alive=True, accept_encoding=True, user_agent=USER_AGENT
-    )
+    BASE_HEADERS = urllib3.make_headers(keep_alive=True, accept_encoding=True, user_agent=USER_AGENT)
 
     def __init__(
         self,
@@ -240,6 +251,7 @@ class HttpClient(BaseClient):
         compression_method="gzip",
         max_payload_size_in_bytes=1000000,
         audit_log_fp=None,
+        default_content_encoding_header="Identity",
     ):
         self._host = host
         port = self._port = port
@@ -248,6 +260,7 @@ class HttpClient(BaseClient):
         self._compression_method = compression_method
         self._max_payload_size_in_bytes = max_payload_size_in_bytes
         self._audit_log_fp = audit_log_fp
+        self._default_content_encoding_header = default_content_encoding_header
 
         self._prefix = ""
 
@@ -263,11 +276,9 @@ class HttpClient(BaseClient):
 
                 # If there is no resolved cafile, assume the bundled certs are
                 # required and report this condition as a supportability metric.
-                if not verify_path.cafile:
+                if not verify_path.cafile and not verify_path.capath:
                     ca_bundle_path = certs.where()
-                    internal_metric(
-                        "Supportability/Python/Certificate/BundleRequired", 1
-                    )
+                    internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
 
             if ca_bundle_path:
                 if os.path.isdir(ca_bundle_path):
@@ -279,11 +290,13 @@ class HttpClient(BaseClient):
                 connection_kwargs["cert_reqs"] = "NONE"
 
         proxy = self._parse_proxy(
-            proxy_scheme, proxy_host, proxy_port, proxy_user, proxy_pass,
+            proxy_scheme,
+            proxy_host,
+            proxy_port,
+            proxy_user,
+            proxy_pass,
         )
-        proxy_headers = (
-            proxy and proxy.auth and urllib3.make_headers(proxy_basic_auth=proxy.auth)
-        )
+        proxy_headers = proxy and proxy.auth and urllib3.make_headers(proxy_basic_auth=proxy.auth)
 
         if proxy:
             if self.CONNECTION_CLS.scheme == "https" and proxy.scheme != "https":
@@ -343,15 +356,9 @@ class HttpClient(BaseClient):
         if self._connection_attr:
             return self._connection_attr
 
-        retries = urllib3.Retry(
-            total=False, connect=None, read=None, redirect=0, status=None
-        )
+        retries = urllib3.Retry(total=False, connect=None, read=None, redirect=0, status=None)
         self._connection_attr = self.CONNECTION_CLS(
-            self._host,
-            self._port,
-            strict=True,
-            retries=retries,
-            **self._connection_kwargs
+            self._host, self._port, strict=True, retries=retries, **self._connection_kwargs
         )
         return self._connection_attr
 
@@ -374,9 +381,7 @@ class HttpClient(BaseClient):
         if not self._prefix:
             url = self.CONNECTION_CLS.scheme + "://" + self._host + url
 
-        return super(HttpClient, self).log_request(
-            fp, method, url, params, payload, headers, body, compression_time
-        )
+        return super(HttpClient, self).log_request(fp, method, url, params, payload, headers, body, compression_time)
 
     @staticmethod
     def _compress(data, method="gzip", level=None):
@@ -419,11 +424,9 @@ class HttpClient(BaseClient):
                     method=self._compression_method,
                     level=self._compression_level,
                 )
-                content_encoding = self._compression_method
-            else:
-                content_encoding = "Identity"
-
-            merged_headers["Content-Encoding"] = content_encoding
+                merged_headers["Content-Encoding"] = self._compression_method
+            elif self._default_content_encoding_header:
+                merged_headers["Content-Encoding"] = self._default_content_encoding_header
 
         request_id = self.log_request(
             self._audit_log_fp,
@@ -441,16 +444,16 @@ class HttpClient(BaseClient):
 
         try:
             response = self._connection.request_encode_url(
-                method,
-                path,
-                fields=params,
-                body=body,
-                headers=merged_headers,
-                **self._urlopen_kwargs
+                method, path, fields=params, body=body, headers=merged_headers, **self._urlopen_kwargs
             )
         except urllib3.exceptions.HTTPError as e:
             self.log_response(
-                self._audit_log_fp, request_id, 0, None, None, connection,
+                self._audit_log_fp,
+                request_id,
+                0,
+                None,
+                None,
+                connection,
             )
             # All urllib3 HTTP errors should be treated as a network
             # interface exception.
@@ -489,6 +492,7 @@ class InsecureHttpClient(HttpClient):
         compression_method="gzip",
         max_payload_size_in_bytes=1000000,
         audit_log_fp=None,
+        default_content_encoding_header="Identity",
     ):
         proxy = self._parse_proxy(proxy_scheme, proxy_host, None, None, None)
         if proxy and proxy.scheme == "https":
@@ -515,6 +519,7 @@ class InsecureHttpClient(HttpClient):
             compression_method,
             max_payload_size_in_bytes,
             audit_log_fp,
+            default_content_encoding_header,
         )
 
 
@@ -536,9 +541,7 @@ class SupportabilityMixin(object):
                     "Supportability/Python/Collector/%s/ZLIB/Bytes" % agent_method,
                     len(body),
                 )
-                internal_metric(
-                    "Supportability/Python/Collector/ZLIB/Bytes", len(body)
-                )
+                internal_metric("Supportability/Python/Collector/ZLIB/Bytes", len(body))
                 internal_metric(
                     "Supportability/Python/Collector/%s/ZLIB/Compress" % agent_method,
                     compression_time,
@@ -548,28 +551,21 @@ class SupportabilityMixin(object):
                 len(payload),
             )
             # Top level metric to aggregate overall bytes being sent
-            internal_metric(
-                "Supportability/Python/Collector/Output/Bytes", len(payload)
-            )
+            internal_metric("Supportability/Python/Collector/Output/Bytes", len(payload))
 
     @staticmethod
     def _supportability_response(status, exc, connection="direct"):
         if exc or not 200 <= status < 300:
             internal_count_metric("Supportability/Python/Collector/Failures", 1)
-            internal_count_metric(
-                "Supportability/Python/Collector/Failures/%s" % connection, 1
-            )
+            internal_count_metric("Supportability/Python/Collector/Failures/%s" % connection, 1)
 
             if exc:
                 internal_count_metric(
-                    "Supportability/Python/Collector/Exception/"
-                    "%s" % callable_name(exc),
+                    "Supportability/Python/Collector/Exception/" "%s" % callable_name(exc),
                     1,
                 )
             else:
-                internal_count_metric(
-                    "Supportability/Python/Collector/HTTPError/%d" % status, 1
-                )
+                internal_count_metric("Supportability/Python/Collector/HTTPError/%d" % status, 1)
 
 
 class ApplicationModeClient(SupportabilityMixin, HttpClient):
@@ -578,33 +574,31 @@ class ApplicationModeClient(SupportabilityMixin, HttpClient):
 
 class DeveloperModeClient(SupportabilityMixin, BaseClient):
     RESPONSES = {
-        "preconnect": {u"redirect_host": u"fake-collector.newrelic.com"},
+        "preconnect": {"redirect_host": "fake-collector.newrelic.com"},
         "agent_settings": [],
         "connect": {
-            u"js_agent_loader": u"<!-- NREUM -->",
-            u"js_agent_file": u"fake-js-agent.newrelic.com/nr-0.min.js",
-            u"browser_key": u"1234567890",
-            u"browser_monitoring.loader_version": u"0",
-            u"beacon": u"fake-beacon.newrelic.com",
-            u"error_beacon": u"fake-jserror.newrelic.com",
-            u"apdex_t": 0.5,
-            u"encoding_key": u"1111111111111111111111111111111111111111",
-            u"entity_guid": u"DEVELOPERMODEENTITYGUID",
-            u"agent_run_id": u"1234567",
-            u"product_level": 50,
-            u"trusted_account_ids": [12345],
-            u"trusted_account_key": u"12345",
-            u"url_rules": [],
-            u"collect_errors": True,
-            u"account_id": u"12345",
-            u"cross_process_id": u"12345#67890",
-            u"messages": [
-                {u"message": u"Reporting to fake collector", u"level": u"INFO"}
-            ],
-            u"sampling_rate": 0,
-            u"collect_traces": True,
-            u"collect_span_events": True,
-            u"data_report_period": 60,
+            "js_agent_loader": "<!-- NREUM -->",
+            "js_agent_file": "fake-js-agent.newrelic.com/nr-0.min.js",
+            "browser_key": "1234567890",
+            "browser_monitoring.loader_version": "0",
+            "beacon": "fake-beacon.newrelic.com",
+            "error_beacon": "fake-jserror.newrelic.com",
+            "apdex_t": 0.5,
+            "encoding_key": "1111111111111111111111111111111111111111",
+            "entity_guid": "DEVELOPERMODEENTITYGUID",
+            "agent_run_id": "1234567",
+            "product_level": 50,
+            "trusted_account_ids": [12345],
+            "trusted_account_key": "12345",
+            "url_rules": [],
+            "collect_errors": True,
+            "account_id": "12345",
+            "cross_process_id": "12345#67890",
+            "messages": [{"message": "Reporting to fake collector", "level": "INFO"}],
+            "sampling_rate": 0,
+            "collect_traces": True,
+            "collect_span_events": True,
+            "data_report_period": 60,
         },
         "metric_data": None,
         "get_agent_commands": [],
@@ -648,7 +642,11 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
         payload = {"return_value": result}
         response_data = json_encode(payload).encode("utf-8")
         self.log_response(
-            self._audit_log_fp, request_id, 200, {}, response_data,
+            self._audit_log_fp,
+            request_id,
+            200,
+            {},
+            response_data,
         )
         return 200, response_data
 

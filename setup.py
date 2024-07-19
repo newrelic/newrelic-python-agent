@@ -102,6 +102,8 @@ packages = [
     "newrelic.hooks",
     "newrelic.network",
     "newrelic/packages",
+    "newrelic/packages/isort",
+    "newrelic/packages/isort/stdlibs",
     "newrelic/packages/urllib3",
     "newrelic/packages/urllib3/util",
     "newrelic/packages/urllib3/contrib",
@@ -109,6 +111,7 @@ packages = [
     "newrelic/packages/urllib3/packages",
     "newrelic/packages/urllib3/packages/backports",
     "newrelic/packages/wrapt",
+    "newrelic/packages/opentelemetry_proto",
     "newrelic.samplers",
 ]
 
@@ -121,6 +124,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Monitoring",

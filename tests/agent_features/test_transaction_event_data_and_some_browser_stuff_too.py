@@ -29,6 +29,7 @@ from testing_support.validators.validate_transaction_event_attributes import (
 
 from newrelic.api.application import application_settings
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 from newrelic.common.encoding_utils import deobfuscate
 from newrelic.common.object_wrapper import transient_function_wrapper
 
@@ -59,7 +60,6 @@ def test_capture_attributes_enabled():
 
     header = response.html.html.head.script.string
     content = response.html.html.body.p.string
-    footer = response.html.html.body.script.string
 
     # Validate actual body content.
 
@@ -71,10 +71,10 @@ def test_capture_attributes_enabled():
 
     assert header.find("NREUM") != -1
 
-    # Now validate the various fields of the footer related to analytics.
+    # Now validate the various fields of the header related to analytics.
     # The fields are held by a JSON dictionary.
 
-    data = json.loads(footer.split("NREUM.info=")[1])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     obfuscation_key = settings.license_key[:13]
 
@@ -116,7 +116,6 @@ def test_no_attributes_recorded():
 
     header = response.html.html.head.script.string
     content = response.html.html.body.p.string
-    footer = response.html.html.body.script.string
 
     # Validate actual body content.
 
@@ -128,13 +127,13 @@ def test_no_attributes_recorded():
 
     assert header.find("NREUM") != -1
 
-    # Now validate the various fields of the footer related to analytics.
+    # Now validate the various fields of the header related to analytics.
     # The fields are held by a JSON dictionary.
 
-    data = json.loads(footer.split("NREUM.info=")[1])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     # As we are not recording any user or agent attributes, we should not
-    # actually have an entry at all in the footer.
+    # actually have an entry at all in the header.
 
     assert "atts" not in data
 
@@ -163,7 +162,6 @@ def test_analytic_events_capture_attributes_disabled():
 
     header = response.html.html.head.script.string
     content = response.html.html.body.p.string
-    footer = response.html.html.body.script.string
 
     # Validate actual body content.
 
@@ -178,7 +176,7 @@ def test_analytic_events_capture_attributes_disabled():
     # Now validate that attributes are present, since browser monitoring should
     # be enabled.
 
-    data = json.loads(footer.split("NREUM.info=")[1])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "atts" in data
 
@@ -196,7 +194,6 @@ def test_capture_attributes_default():
 
     header = response.html.html.head.script.string
     content = response.html.html.body.p.string
-    footer = response.html.html.body.script.string
 
     # Validate actual body content.
 
@@ -211,7 +208,7 @@ def test_capture_attributes_default():
     # Now validate that attributes are not present, since should
     # be disabled.
 
-    data = json.loads(footer.split("NREUM.info=")[1])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "atts" not in data
 
@@ -258,7 +255,6 @@ def test_capture_attributes_disabled():
 
     header = response.html.html.head.script.string
     content = response.html.html.body.p.string
-    footer = response.html.html.body.script.string
 
     # Validate actual body content.
 
@@ -273,7 +269,7 @@ def test_capture_attributes_disabled():
     # Now validate that attributes are not present, since should
     # be disabled.
 
-    data = json.loads(footer.split("NREUM.info=")[1])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "atts" not in data
 
@@ -307,7 +303,6 @@ def test_collect_analytic_events_disabled():
 
     header = response.html.html.head.script.string
     content = response.html.html.body.p.string
-    footer = response.html.html.body.script.string
 
     # Validate actual body content.
 
@@ -322,7 +317,7 @@ def test_collect_analytic_events_disabled():
     # Now validate that attributes are present, since should
     # be enabled.
 
-    data = json.loads(footer.split("NREUM.info=")[1])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "atts" in data
 
@@ -351,7 +346,6 @@ def test_analytic_events_disabled():
 
     header = response.html.html.head.script.string
     content = response.html.html.body.p.string
-    footer = response.html.html.body.script.string
 
     # Validate actual body content.
 
@@ -366,7 +360,7 @@ def test_analytic_events_disabled():
     # Now validate that attributes are present, since should
     # be enabled.
 
-    data = json.loads(footer.split("NREUM.info=")[1])
+    data = json.loads(header.split("NREUM.info=")[1].split(";\n")[0])
 
     assert "atts" in data
 
@@ -498,7 +492,7 @@ _expected_attributes = {
 }
 
 _expected_absent_attributes = {
-    "user": ("foo"),
+    "user": ("foo", "drop-me"),
     "agent": ("response.status", "request.method"),
     "intrinsic": ("port"),
 }
@@ -507,4 +501,6 @@ _expected_absent_attributes = {
 @validate_transaction_event_attributes(_expected_attributes, _expected_absent_attributes)
 @background_task()
 def test_background_task_intrinsics_has_no_port():
+    transaction = current_transaction()
+    transaction.add_custom_attribute("drop-me", None)
     pass

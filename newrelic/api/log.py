@@ -16,40 +16,87 @@ import json
 import logging
 import re
 import warnings
-from logging import Formatter, LogRecord
+from traceback import format_tb
 
+from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common import agent_http
+from newrelic.common.encoding_utils import json_encode
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error
+from newrelic.packages import six
 
 
-def format_exc_info(exc_info):
-    _, _, fullnames, message = parse_exc_info(exc_info)
-    fullname = fullnames[0]
+def safe_json_encode(obj, ignore_string_types=False, **kwargs):
+    # Performs the same operation as json_encode but replaces unserializable objects with a string containing their class name.
+    # If ignore_string_types is True, do not encode string types further.
+    # Currently used for safely encoding logging attributes.
 
-    formatted = {
-        "error.class": fullname,
-        "error.message": message,
-    }
+    if ignore_string_types and isinstance(obj, (six.string_types, six.binary_type)):
+        return obj
 
-    expected = is_expected_error(exc_info)
-    if expected is not None:
-        formatted["error.expected"] = expected
+    # Attempt to run through JSON serialization
+    try:
+        return json_encode(obj, **kwargs)
+    except Exception:
+        pass
 
-    return formatted
+    # If JSON serialization fails then return a repr
+    try:
+        return repr(obj)
+    except Exception:
+        # If repr fails then default to an unprinatable object name
+        return "<unprintable %s object>" % type(obj).__name__
 
 
-class NewRelicContextFormatter(Formatter):
-    DEFAULT_LOG_RECORD_KEYS = frozenset(vars(LogRecord("", 0, "", 0, "", (), None)))
+class NewRelicContextFormatter(logging.Formatter):
+    DEFAULT_LOG_RECORD_KEYS = frozenset(set(vars(logging.LogRecord("", 0, "", 0, "", (), None))) | {"message"})
 
     def __init__(self, *args, **kwargs):
-        super(NewRelicContextFormatter, self).__init__()
+        """
+        :param Optional[int] stack_trace_limit:
+            Specifies the maximum number of frames to include for stack traces.
+            Defaults to `0` to suppress stack traces.
+            Setting this to `None` will make it so all available frames are included.
+        """
+        stack_trace_limit = kwargs.pop("stack_trace_limit", 0)
+
+        if stack_trace_limit is not None:
+            if not isinstance(stack_trace_limit, int):
+                raise TypeError("stack_trace_limit must be None or a non-negative integer")
+            if stack_trace_limit < 0:
+                raise ValueError("stack_trace_limit must be None or a non-negative integer")
+        self._stack_trace_limit = stack_trace_limit
+
+        super(NewRelicContextFormatter, self).__init__(*args, **kwargs)
 
     @classmethod
-    def log_record_to_dict(cls, record):
+    def format_exc_info(cls, exc_info, stack_trace_limit=0):
+        _, _, fullnames, message = parse_exc_info(exc_info)
+        fullname = fullnames[0]
+
+        formatted = {
+            "error.class": fullname,
+            "error.message": message,
+        }
+
+        expected = is_expected_error(exc_info)
+        if expected is not None:
+            formatted["error.expected"] = expected
+
+        if stack_trace_limit is None or stack_trace_limit > 0:
+            if exc_info[2] is not None:
+                stack_trace = "".join(format_tb(exc_info[2], limit=stack_trace_limit)) or None
+            else:
+                stack_trace = None
+            formatted["error.stack_trace"] = stack_trace
+
+        return formatted
+
+    @classmethod
+    def log_record_to_dict(cls, record, stack_trace_limit=0):
         output = {
             "timestamp": int(record.created * 1000),
             "message": record.getMessage(),
@@ -65,39 +112,82 @@ class NewRelicContextFormatter(Formatter):
         output.update(get_linking_metadata())
 
         DEFAULT_LOG_RECORD_KEYS = cls.DEFAULT_LOG_RECORD_KEYS
-        if len(record.__dict__) > len(DEFAULT_LOG_RECORD_KEYS):
-            for key in record.__dict__:
-                if key not in DEFAULT_LOG_RECORD_KEYS:
-                    output["extra." + key] = getattr(record, key)
+        # If any keys are present in record that aren't in the default,
+        # add them to the output record.
+        keys_to_add = set(record.__dict__.keys()) - DEFAULT_LOG_RECORD_KEYS
+        for key in keys_to_add:
+            output["extra." + key] = getattr(record, key)
 
         if record.exc_info:
-            output.update(format_exc_info(record.exc_info))
+            output.update(cls.format_exc_info(record.exc_info, stack_trace_limit))
 
         return output
 
     def format(self, record):
-        def safe_str(object, *args, **kwargs):
-            """Convert object to str, catching any errors raised."""
-            try:
-                return str(object, *args, **kwargs)
-            except:
-                return "<unprintable %s object>" % type(object).__name__
+        return json.dumps(self.log_record_to_dict(record, self._stack_trace_limit), default=safe_json_encode, separators=(",", ":"))
 
-        return json.dumps(self.log_record_to_dict(record), default=safe_str, separators=(",", ":"))
+
+# Export class methods as top level functions for compatibility
+log_record_to_dict = NewRelicContextFormatter.log_record_to_dict
+format_exc_info = NewRelicContextFormatter.format_exc_info
 
 
 class NewRelicLogForwardingHandler(logging.Handler):
+    IGNORED_LOG_RECORD_KEYS = set(["message", "msg"])
+
     def emit(self, record):
         try:
-            # Avoid getting local log decorated message
-            if hasattr(record, "_nr_original_message"):
-                message = record._nr_original_message()
+            nr = None
+            transaction = current_transaction()
+            # Retrieve settings
+            if transaction:
+                settings = transaction.settings
+                nr = transaction
             else:
-                message = record.getMessage()
+                application = application_instance(activate=False)
+                if application and application.enabled:
+                    nr = application
+                    settings = application.settings
+                else:
+                    # If no settings have been found, fallback to global settings
+                    settings = global_settings()
 
-            record_log_event(message, record.levelname, int(record.created * 1000))
+            # If logging is enabled and the application or transaction is not None.
+            if settings and settings.application_logging.enabled and nr:
+                level_name = str(getattr(record, "levelname", "UNKNOWN"))
+                if settings.application_logging.metrics.enabled:
+                    nr.record_custom_metric("Logging/lines", {"count": 1})
+                    nr.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+
+                if settings.application_logging.forwarding.enabled:
+                    if self.formatter:
+                        # Formatter supplied, allow log records to be formatted into a string
+                        message = self.format(record)
+                    else:
+                        # No formatter supplied, attempt to handle dict log records
+                        message = record.msg
+                        if not isinstance(message, dict):
+                            # Allow python to convert the message to a string and template it with args.
+                            message = record.getMessage()
+
+                    # Grab and filter context attributes from log record
+                    context_attrs = self.filter_record_attributes(record)
+
+                    record_log_event(
+                        message=message,
+                        level=level_name,
+                        timestamp=int(record.created * 1000),
+                        attributes=context_attrs,
+                    )
+        except RecursionError:  # Emulates behavior of CPython.
+            raise
         except Exception:
             self.handleError(record)
+
+    @classmethod
+    def filter_record_attributes(cls, record):
+        record_attrs = vars(record)
+        return {k: record_attrs[k] for k in record_attrs if k not in cls.IGNORED_LOG_RECORD_KEYS}
 
 
 class NewRelicLogHandler(logging.Handler):
@@ -126,8 +216,8 @@ class NewRelicLogHandler(logging.Handler):
             "The contributed NewRelicLogHandler has been superseded by automatic instrumentation for "
             "logging in the standard lib. If for some reason you need to manually configure a handler, "
             "please use newrelic.api.log.NewRelicLogForwardingHandler to take advantage of all the "
-            "features included in application log forwarding such as proper batching.", 
-            DeprecationWarning
+            "features included in application log forwarding such as proper batching.",
+            DeprecationWarning,
         )
         super(NewRelicLogHandler, self).__init__(level=level)
         self.license_key = license_key or self.settings.license_key

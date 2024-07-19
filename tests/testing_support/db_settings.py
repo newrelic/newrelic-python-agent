@@ -29,26 +29,18 @@ def postgresql_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-
-        user = password = db = "postgres"
-        base_port = 8080
-    else:
-        instances = 1
-
-        user = db = USER
-        password = ""
-        base_port = 5432
-
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 2
+    identifier = str(os.getpid())
     settings = [
         {
-            "user": user,
-            "password": password,
-            "name": db,
-            "host": "localhost",
-            "port": base_port + instance_num,
-            "table_name": "postgres_table_" + str(os.getpid()),
+            "user": "postgres",
+            "password": "postgres",
+            "name": "postgres",
+            "host": host,
+            "port": 8080 + instance_num,
+            "procedure_name": "postgres_procedure_" + identifier,
+            "table_name": "postgres_table_" + identifier,
         }
         for instance_num in range(instances)
     ]
@@ -56,7 +48,7 @@ def postgresql_settings():
 
 
 def mysql_settings():
-    """Return a list of dict of settings for connecting to postgresql.
+    """Return a list of dict of settings for connecting to MySQL.
 
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
@@ -66,25 +58,41 @@ def mysql_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-
-        user = password = db = "python_agent"
-        base_port = 8080
-    else:
-        instances = 1
-
-        user = db = USER
-        password = ""
-        base_port = 3306
-
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 1
     settings = [
         {
-            "user": user,
-            "password": password,
-            "name": db,
-            "host": "127.0.0.1",
-            "port": base_port + instance_num,
+            "user": "python_agent",
+            "password": "python_agent",
+            "name": "python_agent",
+            "host": host,
+            "port": 8080 + instance_num,
+            "namespace": str(os.getpid()),
+        }
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
+def mssql_settings():
+    """Return a list of dict of settings for connecting to MS SQL.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 1
+    settings = [
+        {
+            "user": "SA",
+            "password": "python_agent#1234",
+            "host": host,
+            "port": 8080 + instance_num,
             "namespace": str(os.getpid()),
         }
         for instance_num in range(instances)
@@ -103,16 +111,36 @@ def redis_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 6379
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 2
+    settings = [
+        {
+            "host": host,
+            "port": 8080 + instance_num,
+        }
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
+def redis_cluster_settings():
+    """Return a list of dict of settings for connecting to redis cluster.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 1
+    base_port = 6379
 
     settings = [
         {
-            "host": "localhost",
+            "host": host,
             "port": base_port + instance_num,
         }
         for instance_num in range(instances)
@@ -131,17 +159,12 @@ def memcached_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 11211
-
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 2
     settings = [
         {
-            "host": "127.0.0.1",
-            "port": base_port + instance_num,
+            "host": host,
+            "port": 8080 + instance_num,
             "namespace": str(os.getpid()),
         }
         for instance_num in range(instances)
@@ -160,17 +183,31 @@ def mongodb_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 27017
-
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 2
     settings = [
-        {"host": "127.0.0.1", "port": base_port + instance_num, "collection": "mongodb_collection_" + str(os.getpid())}
+        {"host": host, "port": 8080 + instance_num, "collection": "mongodb_collection_" + str(os.getpid())}
         for instance_num in range(instances)
     ]
+    return settings
+
+
+def firestore_settings():
+    """Return a list of dict of settings for connecting to firestore.
+
+    This only includes the host and port as the collection name is defined in
+    the firestore conftest file.
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 2
+    settings = [{"host": host, "port": 8080 + instance_num} for instance_num in range(instances)]
     return settings
 
 
@@ -185,17 +222,12 @@ def elasticsearch_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 9200
-
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 2
     settings = [
         {
-            "host": "localhost",
-            "port": str(base_port + instance_num),
+            "host": host,
+            "port": str(8080 + instance_num),
             "namespace": str(os.getpid()),
         }
         for instance_num in range(instances)
@@ -214,17 +246,12 @@ def solr_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 8983
-
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    instances = 2
     settings = [
         {
-            "host": "127.0.0.1",
-            "port": base_port + instance_num,
+            "host": host,
+            "port": 8080 + instance_num,
             "namespace": str(os.getpid()),
         }
         for instance_num in range(instances)
@@ -243,13 +270,12 @@ def rabbitmq_settings():
         2. Github Actions
     """
 
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 1
-    base_port = 5672
-
     settings = [
         {
-            "host": "localhost",
-            "port": base_port + instance_num,
+            "host": host,
+            "port": 5672 + instance_num,
         }
         for instance_num in range(instances)
     ]
@@ -267,17 +293,36 @@ def kafka_settings():
         2. Github Actions
     """
 
-    if "GITHUB_ACTIONS" in os.environ:
-        instances = 2
-        base_port = 8080
-    else:
-        instances = 1
-        base_port = 9092
-
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    base_port = 8082 if "GITHUB_ACTIONS" in os.environ else 8080
+    instances = 2
     settings = [
         {
-            "host": "localhost",
+            "host": host,
             "port": base_port + instance_num,
+        }
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
+def gearman_settings():
+    """Return a list of dict of settings for connecting to kafka.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 1
+    settings = [
+        {
+            "host": host,
+            "port": 8080 + instance_num,
         }
         for instance_num in range(instances)
     ]

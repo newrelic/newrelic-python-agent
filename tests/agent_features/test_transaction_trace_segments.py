@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (
-    override_application_settings,
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_tt_segment_params import (
     validate_tt_segment_params,
 )
 

@@ -22,10 +22,11 @@ from testing_support.fixtures import (
     override_generic_settings,
     reset_core_stats_engine,
     validate_attributes_complete,
+    validate_request_params_omitted,
+)
+from testing_support.validators.validate_custom_event import (
     validate_custom_event_count,
     validate_custom_event_in_application_stats_engine,
-    validate_request_params_omitted,
-    validate_tt_segment_params,
 )
 from testing_support.validators.validate_custom_parameters import (
     validate_custom_parameters,
@@ -35,6 +36,9 @@ from testing_support.validators.validate_non_transaction_error_event import (
 )
 from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
+)
+from testing_support.validators.validate_tt_segment_params import (
+    validate_tt_segment_params,
 )
 
 from newrelic.api.application import application_instance as application
@@ -77,8 +81,11 @@ _hsm_local_config_file_settings_disabled = [
         "transaction_tracer.record_sql": "raw",
         "strip_exception_messages.enabled": False,
         "custom_insights_events.enabled": True,
+        "ml_insights_events.enabled": True,
         "message_tracer.segment_parameters_enabled": True,
         "application_logging.forwarding.enabled": True,
+        "machine_learning.inference_events_value.enabled": True,
+        "ai_monitoring.enabled": True,
     },
     {
         "high_security": False,
@@ -86,8 +93,11 @@ _hsm_local_config_file_settings_disabled = [
         "transaction_tracer.record_sql": "raw",
         "strip_exception_messages.enabled": False,
         "custom_insights_events.enabled": False,
+        "ml_insights_events.enabled": False,
         "message_tracer.segment_parameters_enabled": True,
         "application_logging.forwarding.enabled": True,
+        "machine_learning.inference_events_value.enabled": True,
+        "ai_monitoring.enabled": True,
     },
     {
         "high_security": False,
@@ -95,8 +105,11 @@ _hsm_local_config_file_settings_disabled = [
         "transaction_tracer.record_sql": "obfuscated",
         "strip_exception_messages.enabled": True,
         "custom_insights_events.enabled": True,
+        "ml_insights_events.enabled": True,
         "message_tracer.segment_parameters_enabled": False,
         "application_logging.forwarding.enabled": False,
+        "machine_learning.inference_events_value.enabled": False,
+        "ai_monitoring.enabled": False,
     },
     {
         "high_security": False,
@@ -104,8 +117,11 @@ _hsm_local_config_file_settings_disabled = [
         "transaction_tracer.record_sql": "off",
         "strip_exception_messages.enabled": True,
         "custom_insights_events.enabled": False,
+        "ml_insights_events.enabled": False,
         "message_tracer.segment_parameters_enabled": False,
         "application_logging.forwarding.enabled": False,
+        "machine_learning.inference_events_value.enabled": False,
+        "ai_monitoring.enabled": False,
     },
 ]
 
@@ -116,8 +132,11 @@ _hsm_local_config_file_settings_enabled = [
         "transaction_tracer.record_sql": "raw",
         "strip_exception_messages.enabled": True,
         "custom_insights_events.enabled": True,
+        "ml_insights_events.enabled": True,
         "message_tracer.segment_parameters_enabled": True,
         "application_logging.forwarding.enabled": False,
+        "machine_learning.inference_events_value.enabled": False,
+        "ai_monitoring.enabled": False,
     },
     {
         "high_security": True,
@@ -125,8 +144,11 @@ _hsm_local_config_file_settings_enabled = [
         "transaction_tracer.record_sql": "raw",
         "strip_exception_messages.enabled": True,
         "custom_insights_events.enabled": True,
+        "ml_insights_events.enabled": True,
         "message_tracer.segment_parameters_enabled": True,
         "application_logging.forwarding.enabled": False,
+        "machine_learning.inference_events_value.enabled": False,
+        "ai_monitoring.enabled": False,
     },
     {
         "high_security": True,
@@ -134,8 +156,11 @@ _hsm_local_config_file_settings_enabled = [
         "transaction_tracer.record_sql": "raw",
         "strip_exception_messages.enabled": True,
         "custom_insights_events.enabled": True,
+        "ml_insights_events.enabled": True,
         "message_tracer.segment_parameters_enabled": True,
         "application_logging.forwarding.enabled": False,
+        "machine_learning.inference_events_value.enabled": False,
+        "ai_monitoring.enabled": False,
     },
     {
         "high_security": True,
@@ -143,8 +168,11 @@ _hsm_local_config_file_settings_enabled = [
         "transaction_tracer.record_sql": "raw",
         "strip_exception_messages.enabled": True,
         "custom_insights_events.enabled": True,
+        "ml_insights_events.enabled": True,
         "message_tracer.segment_parameters_enabled": True,
         "application_logging.forwarding.enabled": True,
+        "machine_learning.inference_events_value.enabled": True,
+        "ai_monitoring.enabled": True,
     },
     {
         "high_security": True,
@@ -152,8 +180,11 @@ _hsm_local_config_file_settings_enabled = [
         "transaction_tracer.record_sql": "obfuscated",
         "strip_exception_messages.enabled": True,
         "custom_insights_events.enabled": True,
+        "ml_insights_events.enabled": True,
         "message_tracer.segment_parameters_enabled": True,
         "application_logging.forwarding.enabled": True,
+        "machine_learning.inference_events_value.enabled": True,
+        "ai_monitoring.enabled": True,
     },
     {
         "high_security": True,
@@ -161,8 +192,11 @@ _hsm_local_config_file_settings_enabled = [
         "transaction_tracer.record_sql": "off",
         "strip_exception_messages.enabled": True,
         "custom_insights_events.enabled": True,
+        "ml_insights_events.enabled": True,
         "message_tracer.segment_parameters_enabled": False,
         "application_logging.forwarding.enabled": True,
+        "machine_learning.inference_events_value.enabled": True,
+        "ai_monitoring.enabled": True,
     },
     {
         "high_security": True,
@@ -170,8 +204,11 @@ _hsm_local_config_file_settings_enabled = [
         "transaction_tracer.record_sql": "raw",
         "strip_exception_messages.enabled": False,
         "custom_insights_events.enabled": False,
+        "ml_insights_events.enabled": False,
         "message_tracer.segment_parameters_enabled": False,
         "application_logging.forwarding.enabled": True,
+        "machine_learning.inference_events_value.enabled": True,
+        "ai_monitoring.enabled": True,
     },
 ]
 
@@ -194,17 +231,25 @@ def test_local_config_file_override_hsm_disabled(settings):
     original_record_sql = settings.transaction_tracer.record_sql
     original_strip_messages = settings.strip_exception_messages.enabled
     original_custom_events = settings.custom_insights_events.enabled
+    original_ml_events = settings.ml_insights_events.enabled
     original_message_segment_params_enabled = settings.message_tracer.segment_parameters_enabled
     original_application_logging_forwarding_enabled = settings.application_logging.forwarding.enabled
-
+    original_machine_learning_inference_event_value_enabled = settings.machine_learning.inference_events_value.enabled
+    original_ai_monitoring_enabled = settings.ai_monitoring.enabled
     apply_local_high_security_mode_setting(settings)
 
     assert settings.capture_params == original_capture_params
     assert settings.transaction_tracer.record_sql == original_record_sql
     assert settings.strip_exception_messages.enabled == original_strip_messages
     assert settings.custom_insights_events.enabled == original_custom_events
+    assert settings.ml_insights_events.enabled == original_ml_events
     assert settings.message_tracer.segment_parameters_enabled == original_message_segment_params_enabled
     assert settings.application_logging.forwarding.enabled == original_application_logging_forwarding_enabled
+    assert (
+        settings.machine_learning.inference_events_value.enabled
+        == original_machine_learning_inference_event_value_enabled
+    )
+    assert settings.ai_monitoring.enabled == original_ai_monitoring_enabled
 
 
 @parameterize_hsm_local_config(_hsm_local_config_file_settings_enabled)
@@ -215,8 +260,11 @@ def test_local_config_file_override_hsm_enabled(settings):
     assert settings.transaction_tracer.record_sql in ("off", "obfuscated")
     assert settings.strip_exception_messages.enabled
     assert settings.custom_insights_events.enabled is False
+    assert settings.ml_insights_events.enabled is False
     assert settings.message_tracer.segment_parameters_enabled is False
     assert settings.application_logging.forwarding.enabled is False
+    assert settings.machine_learning.inference_events_value.enabled is False
+    assert settings.ai_monitoring.enabled is False
 
 
 _server_side_config_settings_hsm_disabled = [
@@ -227,7 +275,10 @@ _server_side_config_settings_hsm_disabled = [
             "transaction_tracer.record_sql": "obfuscated",
             "strip_exception_messages.enabled": True,
             "custom_insights_events.enabled": False,
+            "ml_insights_events.enabled": False,
             "application_logging.forwarding.enabled": False,
+            "machine_learning.inference_events_value.enabled": False,
+            "ai_monitoring.enabled": False,
         },
         {
             "agent_config": {
@@ -235,7 +286,10 @@ _server_side_config_settings_hsm_disabled = [
                 "transaction_tracer.record_sql": "raw",
                 "strip_exception_messages.enabled": False,
                 "custom_insights_events.enabled": True,
+                "ml_insights_events.enabled": True,
                 "application_logging.forwarding.enabled": True,
+                "machine_learning.inference_events_value.enabled": True,
+                "ai_monitoring.enabled": True,
             },
         },
     ),
@@ -246,7 +300,10 @@ _server_side_config_settings_hsm_disabled = [
             "transaction_tracer.record_sql": "raw",
             "strip_exception_messages.enabled": False,
             "custom_insights_events.enabled": True,
+            "ml_insights_events.enabled": True,
             "application_logging.forwarding.enabled": True,
+            "machine_learning.inference_events_value.enabled": True,
+            "ai_monitoring.enabled": True,
         },
         {
             "agent_config": {
@@ -254,7 +311,10 @@ _server_side_config_settings_hsm_disabled = [
                 "transaction_tracer.record_sql": "off",
                 "strip_exception_messages.enabled": True,
                 "custom_insights_events.enabled": False,
+                "ml_insights_events.enabled": False,
                 "application_logging.forwarding.enabled": False,
+                "machine_learning.inference_events_value.enabled": False,
+                "ai_monitoring.enabled": False,
             },
         },
     ),
@@ -268,7 +328,10 @@ _server_side_config_settings_hsm_enabled = [
             "transaction_tracer.record_sql": "obfuscated",
             "strip_exception_messages.enabled": True,
             "custom_insights_events.enabled": False,
+            "ml_insights_events.enabled": False,
             "application_logging.forwarding.enabled": False,
+            "machine_learning.inference_events_value.enabled": False,
+            "ai_monitoring.enabled": False,
         },
         {
             "high_security": True,
@@ -276,13 +339,19 @@ _server_side_config_settings_hsm_enabled = [
             "transaction_tracer.record_sql": "obfuscated",
             "strip_exception_messages.enabled": True,
             "custom_insights_events.enabled": False,
+            "ml_insights_events.enabled": False,
             "application_logging.forwarding.enabled": False,
+            "machine_learning.inference_events_value.enabled": False,
+            "ai_monitoring.enabled": False,
             "agent_config": {
                 "capture_params": False,
                 "transaction_tracer.record_sql": "obfuscated",
                 "strip_exception_messages.enabled": True,
                 "custom_insights_events.enabled": False,
+                "ml_insights_events.enabled": False,
                 "application_logging.forwarding.enabled": False,
+                "machine_learning.inference_events_value.enabled": False,
+                "ai_monitoring.enabled": False,
             },
         },
     ),
@@ -293,7 +362,10 @@ _server_side_config_settings_hsm_enabled = [
             "transaction_tracer.record_sql": "obfuscated",
             "strip_exception_messages.enabled": True,
             "custom_insights_events.enabled": False,
+            "ml_insights_events.enabled": False,
             "application_logging.forwarding.enabled": False,
+            "machine_learning.inference_events_value.enabled": False,
+            "ai_monitoring.enabled": False,
         },
         {
             "high_security": True,
@@ -301,13 +373,19 @@ _server_side_config_settings_hsm_enabled = [
             "transaction_tracer.record_sql": "obfuscated",
             "strip_exception_messages.enabled": True,
             "custom_insights_events.enabled": False,
+            "ml_insights_events.enabled": False,
             "application_logging.forwarding.enabled": False,
+            "machine_learning.inference_events_value.enabled": False,
+            "ai_monitoring.enabled": False,
             "agent_config": {
                 "capture_params": True,
                 "transaction_tracer.record_sql": "raw",
                 "strip_exception_messages.enabled": False,
                 "custom_insights_events.enabled": True,
+                "ml_insights_events.enabled": True,
                 "application_logging.forwarding.enabled": True,
+                "machine_learning.inference_events_value.enabled": True,
+                "ai_monitoring.enabled": True,
             },
         },
     ),
@@ -327,7 +405,10 @@ def test_remote_config_fixups_hsm_disabled(local_settings, server_settings):
     original_record_sql = agent_config["transaction_tracer.record_sql"]
     original_strip_messages = agent_config["strip_exception_messages.enabled"]
     original_custom_events = agent_config["custom_insights_events.enabled"]
+    original_ml_events = agent_config["ml_insights_events.enabled"]
     original_log_forwarding = agent_config["application_logging.forwarding.enabled"]
+    original_machine_learning_events = agent_config["machine_learning.inference_events_value.enabled"]
+    original_ai_monitoring = agent_config["ai_monitoring.enabled"]
 
     _settings = global_settings()
     settings = override_generic_settings(_settings, local_settings)(AgentProtocol._apply_high_security_mode_fixups)(
@@ -342,7 +423,10 @@ def test_remote_config_fixups_hsm_disabled(local_settings, server_settings):
     assert agent_config["transaction_tracer.record_sql"] == original_record_sql
     assert agent_config["strip_exception_messages.enabled"] == original_strip_messages
     assert agent_config["custom_insights_events.enabled"] == original_custom_events
+    assert agent_config["ml_insights_events.enabled"] == original_ml_events
     assert agent_config["application_logging.forwarding.enabled"] == original_log_forwarding
+    assert agent_config["machine_learning.inference_events_value.enabled"] == original_machine_learning_events
+    assert agent_config["ai_monitoring.enabled"] == original_ai_monitoring
 
 
 @pytest.mark.parametrize("local_settings,server_settings", _server_side_config_settings_hsm_enabled)
@@ -364,13 +448,19 @@ def test_remote_config_fixups_hsm_enabled(local_settings, server_settings):
     assert "transaction_tracer.record_sql" not in settings
     assert "strip_exception_messages.enabled" not in settings
     assert "custom_insights_events.enabled" not in settings
+    assert "ml_insights_events.enabled" not in settings
     assert "application_logging.forwarding.enabled" not in settings
+    assert "machine_learning.inference_events_value.enabled" not in settings
+    assert "ai_monitoring.enabled" not in settings
 
     assert "capture_params" not in agent_config
     assert "transaction_tracer.record_sql" not in agent_config
     assert "strip_exception_messages.enabled" not in agent_config
     assert "custom_insights_events.enabled" not in agent_config
+    assert "ml_insights_events.enabled" not in agent_config
     assert "application_logging.forwarding.enabled" not in agent_config
+    assert "machine_learning.inference_events_value.enabled" not in agent_config
+    assert "ai_monitoring.enabled" not in agent_config
 
 
 def test_remote_config_hsm_fixups_server_side_disabled():
@@ -395,6 +485,7 @@ _test_transaction_settings_hsm_enabled = {
     "high_security": True,
     "strip_exception_messages.enabled": True,
     "custom_insights_events.enabled": False,
+    "ml_insights_events.enabled": False,
 }
 
 

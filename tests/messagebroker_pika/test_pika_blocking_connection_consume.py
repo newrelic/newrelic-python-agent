@@ -17,7 +17,6 @@ import os
 
 import pika
 import pytest
-import six
 from compat import basic_consume
 from conftest import BODY, CORRELATION_ID, EXCHANGE, HEADERS, QUEUE, REPLY_TO
 from testing_support.db_settings import rabbitmq_settings
@@ -34,6 +33,7 @@ from testing_support.validators.validate_tt_collector_json import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
+from newrelic.packages import six
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
@@ -145,9 +145,9 @@ else:
 
 @pytest.mark.parametrize("as_partial", [True, False])
 @validate_code_level_metrics(
-    "test_pika_blocking_connection_consume"
-    + (".test_blocking_connection_basic_consume_outside_transaction.<locals>" if six.PY3 else ""),
+    "test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_outside_transaction.<locals>",
     "on_message",
+    py2_namespace="test_pika_blocking_connection_consume",
 )
 @validate_transaction_metrics(
     _txn_name,
@@ -201,9 +201,9 @@ else:
 
 @pytest.mark.parametrize("as_partial", [True, False])
 @validate_code_level_metrics(
-    "test_pika_blocking_connection_consume"
-    + (".test_blocking_connection_basic_consume_inside_txn.<locals>" if six.PY3 else ""),
+    "test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_inside_txn.<locals>",
     "on_message",
+    py2_namespace="test_pika_blocking_connection_consume",
 )
 @validate_transaction_metrics(
     ("test_pika_blocking_connection_consume:" "test_blocking_connection_basic_consume_inside_txn"),

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import collections
+import tempfile
 
 import pytest
 
@@ -21,8 +22,20 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+import logging
+
+from testing_support.fixtures import override_generic_settings
+
+from newrelic.api.exceptions import ConfigurationError
 from newrelic.common.object_names import callable_name
-from newrelic.config import delete_setting, translate_deprecated_settings
+from newrelic.config import (
+    _reset_config_parser,
+    _reset_configuration_done,
+    _reset_instrumentation_done,
+    delete_setting,
+    initialize,
+    translate_deprecated_settings,
+)
 from newrelic.core.config import (
     Settings,
     apply_config_setting,
@@ -32,6 +45,10 @@ from newrelic.core.config import (
     global_settings,
     global_settings_dump,
 )
+
+
+def function_to_trace():
+    pass
 
 
 def parameterize_local_config(settings_list):
@@ -262,7 +279,6 @@ _test_strip_proxy_details_local_configs = [
 
 @parameterize_local_config(_test_dictionary_local_config)
 def test_dict_parse(settings):
-
     assert "NR-SESSION" in settings.request_headers_map
 
     config = settings.event_harvest_config
@@ -577,9 +593,389 @@ def test_translate_deprecated_ignored_params_with_new_setting():
         ("agent_run_id", None),
         ("entity_guid", None),
         ("distributed_tracing.exclude_newrelic_header", False),
+        ("otlp_host", "otlp.nr-data.net"),
+        ("otlp_port", 0),
     ),
 )
+@override_generic_settings(global_settings(), {"host": "collector.newrelic.com"})
 def test_default_values(name, expected_value):
     settings = global_settings()
     value = fetch_config_setting(settings, name)
     assert value == expected_value
+
+
+def test_initialize():
+    initialize()
+
+
+newrelic_ini_contents = b"""
+[newrelic]
+app_name = Python Agent Test (agent_features)
+"""
+
+
+def test_initialize_raises_if_config_does_not_match_previous():
+    error_message = "Configuration has already been done against " "differing configuration file or environment.*"
+    with pytest.raises(ConfigurationError, match=error_message):
+        with tempfile.NamedTemporaryFile() as f:
+            f.write(newrelic_ini_contents)
+            f.seek(0)
+
+            initialize(config_file=f.name)
+
+
+def test_initialize_via_config_file():
+    _reset_configuration_done()
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(newrelic_ini_contents)
+        f.seek(0)
+
+        initialize(config_file=f.name)
+
+
+def test_initialize_no_config_file():
+    _reset_configuration_done()
+    initialize()
+
+
+def test_initialize_config_file_does_not_exist():
+    _reset_configuration_done()
+    error_message = "Unable to open configuration file does-not-exist."
+    with pytest.raises(ConfigurationError, match=error_message):
+        initialize(config_file="does-not-exist")
+
+
+def test_initialize_environment():
+    _reset_configuration_done()
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(newrelic_ini_contents)
+        f.seek(0)
+
+        initialize(config_file=f.name, environment="developement")
+
+
+def test_initialize_log_level():
+    _reset_configuration_done()
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(newrelic_ini_contents)
+        f.seek(0)
+
+        initialize(config_file=f.name, log_level="debug")
+
+
+def test_initialize_log_file():
+    _reset_configuration_done()
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(newrelic_ini_contents)
+        f.seek(0)
+
+        initialize(config_file=f.name, log_file="stdout")
+
+
+@pytest.mark.parametrize(
+    "feature_flag,expect_warning",
+    (
+        (["django.instrumentation.inclusion-tags.r1"], False),
+        (["noexist"], True),
+    ),
+)
+def test_initialize_config_file_feature_flag(feature_flag, expect_warning, logger):
+    settings = global_settings()
+    apply_config_setting(settings, "feature_flag", feature_flag)
+    _reset_configuration_done()
+
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(newrelic_ini_contents)
+        f.seek(0)
+
+        initialize(config_file=f.name)
+
+    message = (
+        "Unknown agent feature flag 'noexist' provided. "
+        "Check agent documentation or release notes, or "
+        "contact New Relic support for clarification of "
+        "validity of the specific feature flag."
+    )
+    if expect_warning:
+        assert message in logger.caplog.records
+    else:
+        assert message not in logger.caplog.records
+
+    apply_config_setting(settings, "feature_flag", [])
+
+
+@pytest.mark.parametrize(
+    "feature_flag,expect_warning",
+    (
+        (["django.instrumentation.inclusion-tags.r1"], False),
+        (["noexist"], True),
+    ),
+)
+def test_initialize_no_config_file_feature_flag(feature_flag, expect_warning, logger):
+    settings = global_settings()
+    apply_config_setting(settings, "feature_flag", feature_flag)
+    _reset_configuration_done()
+
+    initialize()
+
+    message = (
+        "Unknown agent feature flag 'noexist' provided. "
+        "Check agent documentation or release notes, or "
+        "contact New Relic support for clarification of "
+        "validity of the specific feature flag."
+    )
+
+    if expect_warning:
+        assert message in logger.caplog.records
+    else:
+        assert message not in logger.caplog.records
+
+    apply_config_setting(settings, "feature_flag", [])
+
+
+@pytest.mark.parametrize(
+    "setting_name,setting_value,expect_error",
+    (
+        ("transaction_tracer.function_trace", [callable_name(function_to_trace)], False),
+        ("transaction_tracer.generator_trace", [callable_name(function_to_trace)], False),
+        ("transaction_tracer.function_trace", ["no_exist"], True),
+        ("transaction_tracer.generator_trace", ["no_exist"], True),
+    ),
+)
+def test_initialize_config_file_with_traces(setting_name, setting_value, expect_error, logger):
+    settings = global_settings()
+    apply_config_setting(settings, setting_name, setting_value)
+    _reset_configuration_done()
+
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(newrelic_ini_contents)
+        f.seek(0)
+
+        initialize(config_file=f.name)
+
+    if expect_error:
+        assert "CONFIGURATION ERROR" in logger.caplog.records
+    else:
+        assert "CONFIGURATION ERROR" not in logger.caplog.records
+
+    apply_config_setting(settings, setting_name, [])
+
+
+func_newrelic_ini = b"""
+[function-trace:]
+enabled = True
+function = test_configuration:function_to_trace
+name = function_to_trace
+group = group
+label = label
+terminal = False
+rollup = foo/all
+"""
+
+bad_func_newrelic_ini = b"""
+[function-trace:]
+enabled = True
+function = function_to_trace
+"""
+
+func_missing_enabled_newrelic_ini = b"""
+[function-trace:]
+function = function_to_trace
+"""
+
+external_newrelic_ini = b"""
+[external-trace:]
+enabled = True
+function = test_configuration:function_to_trace
+library = "foo"
+url = localhost:80/foo
+method = GET
+"""
+
+bad_external_newrelic_ini = b"""
+[external-trace:]
+enabled = True
+function = function_to_trace
+"""
+
+external_missing_enabled_newrelic_ini = b"""
+[external-trace:]
+function = function_to_trace
+"""
+
+generator_newrelic_ini = b"""
+[generator-trace:]
+enabled = True
+function = test_configuration:function_to_trace
+name = function_to_trace
+group = group
+"""
+
+bad_generator_newrelic_ini = b"""
+[generator-trace:]
+enabled = True
+function = function_to_trace
+"""
+
+generator_missing_enabled_newrelic_ini = b"""
+[generator-trace:]
+function = function_to_trace
+"""
+
+bg_task_newrelic_ini = b"""
+[background-task:]
+enabled = True
+function = test_configuration:function_to_trace
+lambda = test_configuration:function_to_trace
+"""
+
+bad_bg_task_newrelic_ini = b"""
+[background-task:]
+enabled = True
+function = function_to_trace
+"""
+
+bg_task_missing_enabled_newrelic_ini = b"""
+[background-task:]
+function = function_to_trace
+"""
+
+db_trace_newrelic_ini = b"""
+[database-trace:]
+enabled = True
+function = test_configuration:function_to_trace
+sql = test_configuration:function_to_trace
+"""
+
+bad_db_trace_newrelic_ini = b"""
+[database-trace:]
+enabled = True
+function = function_to_trace
+"""
+
+db_trace_missing_enabled_newrelic_ini = b"""
+[database-trace:]
+function = function_to_trace
+"""
+
+wsgi_newrelic_ini = b"""
+[wsgi-application:]
+enabled = True
+function = test_configuration:function_to_trace
+application = app
+"""
+
+bad_wsgi_newrelic_ini = b"""
+[wsgi-application:]
+enabled = True
+function = function_to_trace
+application = app
+"""
+
+wsgi_missing_enabled_newrelic_ini = b"""
+[wsgi-application:]
+function = function_to_trace
+application = app
+"""
+
+wsgi_unparseable_enabled_newrelic_ini = b"""
+[wsgi-application:]
+enabled = not-a-bool
+function = function_to_trace
+application = app
+"""
+
+
+@pytest.mark.parametrize(
+    "section,expect_error",
+    (
+        (func_newrelic_ini, False),
+        (bad_func_newrelic_ini, True),
+        (func_missing_enabled_newrelic_ini, False),
+        (external_newrelic_ini, False),
+        (bad_external_newrelic_ini, True),
+        (external_missing_enabled_newrelic_ini, False),
+        (generator_newrelic_ini, False),
+        (bad_generator_newrelic_ini, True),
+        (generator_missing_enabled_newrelic_ini, False),
+        (bg_task_newrelic_ini, False),
+        (bad_bg_task_newrelic_ini, True),
+        (bg_task_missing_enabled_newrelic_ini, False),
+        (db_trace_newrelic_ini, False),
+        (bad_db_trace_newrelic_ini, True),
+        (db_trace_missing_enabled_newrelic_ini, False),
+        (wsgi_newrelic_ini, False),
+        (bad_wsgi_newrelic_ini, True),
+        (wsgi_missing_enabled_newrelic_ini, False),
+        (wsgi_unparseable_enabled_newrelic_ini, True),
+    ),
+    ids=(
+        "func_newrelic_ini",
+        "bad_func_newrelic_ini",
+        "func_missing_enabled_newrelic_ini",
+        "external_newrelic_ini",
+        "bad_external_newrelic_ini",
+        "external_missing_enabled_newrelic_ini",
+        "generator_newrelic_ini",
+        "bad_generator_newrelic_ini",
+        "generator_missing_enabled_newrelic_ini",
+        "bg_task_newrelic_ini",
+        "bad_bg_task_newrelic_ini",
+        "bg_task_missing_enabled_newrelic_ini",
+        "db_trace_newrelic_ini",
+        "bad_db_trace_newrelic_ini",
+        "db_trace_missing_enabled_newrelic_ini",
+        "wsgi_newrelic_ini",
+        "bad_wsgi_newrelic_ini",
+        "wsgi_missing_enabled_newrelic_ini",
+        "wsgi_unparseable_enabled_newrelic_ini",
+    ),
+)
+def test_initialize_developer_mode(section, expect_error, logger):
+    settings = global_settings()
+    apply_config_setting(settings, "monitor_mode", False)
+    apply_config_setting(settings, "developer_mode", True)
+    _reset_configuration_done()
+    _reset_instrumentation_done()
+    _reset_config_parser()
+
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(newrelic_ini_contents)
+        f.write(section)
+        f.seek(0)
+
+        initialize(config_file=f.name)
+
+    if expect_error:
+        assert "CONFIGURATION ERROR" in logger.caplog.records
+    else:
+        assert "CONFIGURATION ERROR" not in logger.caplog.records
+
+
+@pytest.fixture
+def caplog_handler():
+    class CaplogHandler(logging.StreamHandler):
+        """
+        To prevent possible issues with pytest's monkey patching
+        use a custom Caplog handler to capture all records
+        """
+
+        def __init__(self, *args, **kwargs):
+            self.records = []
+            super(CaplogHandler, self).__init__(*args, **kwargs)
+
+        def emit(self, record):
+            self.records.append(self.format(record))
+
+    return CaplogHandler()
+
+
+@pytest.fixture
+def logger(caplog_handler):
+    _logger = logging.getLogger("newrelic.config")
+    _logger.addHandler(caplog_handler)
+    _logger.caplog = caplog_handler
+    _logger.setLevel(logging.WARNING)
+    yield _logger
+    del caplog_handler.records[:]
+    _logger.removeHandler(caplog_handler)

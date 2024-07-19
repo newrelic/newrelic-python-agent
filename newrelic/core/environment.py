@@ -17,10 +17,10 @@ system, Python and hosting environment.
 
 """
 
+import logging
 import os
 import platform
 import sys
-import sysconfig
 
 import newrelic
 from newrelic.common.package_version_utils import get_package_version
@@ -29,11 +29,15 @@ from newrelic.common.system_info import (
     physical_processor_count,
     total_physical_memory,
 )
+from newrelic.core.config import global_settings
+from newrelic.packages.isort import stdlibs as isort_stdlibs
 
 try:
     import newrelic.core._thread_utilization
 except ImportError:
     pass
+
+_logger = logging.getLogger(__name__)
 
 
 def environment_settings():
@@ -195,42 +199,75 @@ def environment_settings():
     env.extend(dispatcher)
 
     # Module information.
-    purelib = sysconfig.get_path("purelib")
-    platlib = sysconfig.get_path("platlib")
+    stdlib_builtin_module_names = _get_stdlib_builtin_module_names()
 
     plugins = []
 
-    # Using any iterable to create a snapshot of sys.modules can occassionally
-    # fail in a rare case when modules are imported in parallel by different
-    # threads.
-    #
-    # TL;DR: Do NOT use an iterable on the original sys.modules to generate the
-    # list
-    for name, module in sys.modules.copy().items():
-        # Exclude lib.sub_paths as independent modules except for newrelic.hooks.
-        if "." in name and not name.startswith("newrelic.hooks."):
-            continue
-        # If the module isn't actually loaded (such as failed relative imports
-        # in Python 2.7), the module will be None and should not be reported.
-        if not module:
-            continue
-        # Exclude standard library/built-in modules.
-        # Third-party modules can be installed in either purelib or platlib directories.
-        # See https://docs.python.org/3/library/sysconfig.html#installation-paths.
-        if (
-            not hasattr(module, "__file__")
-            or not module.__file__
-            or not module.__file__.startswith(purelib)
-            or not module.__file__.startswith(platlib)
-        ):
-            continue
+    settings = global_settings()
+    if settings and settings.package_reporting.enabled:
+        # Using any iterable to create a snapshot of sys.modules can occassionally
+        # fail in a rare case when modules are imported in parallel by different
+        # threads.
+        #
+        # TL;DR: Do NOT use an iterable on the original sys.modules to generate the
+        # list
+        for name, module in sys.modules.copy().items():
+            # Exclude lib.sub_paths as independent modules except for newrelic.hooks.
+            nr_hook = name.startswith("newrelic.hooks.")
+            if "." in name and not nr_hook or name.startswith("_"):
+                continue
 
-        try:
-            version = get_package_version(name)
-            plugins.append("%s (%s)" % (name, version))
-        except Exception:
-            plugins.append(name)
+            # If the module isn't actually loaded (such as failed relative imports
+            # in Python 2.7), the module will be None and should not be reported.
+            try:
+                if not module:
+                    continue
+            except Exception:
+                # if the application uses generalimport to manage optional depedencies,
+                # it's possible that generalimport.MissingOptionalDependency is raised.
+                # In this case, we should not report the module as it is not actually loaded and
+                # is not a runtime dependency of the application.
+                #
+                continue
+
+            # Exclude standard library/built-in modules.
+            if name in stdlib_builtin_module_names:
+                continue
+
+            # Don't attempt to look up version information for our hooks
+            version = None
+            if not nr_hook:
+                try:
+                    version = get_package_version(name)
+                except Exception:
+                    pass
+
+            # If it has no version it's likely not a real package so don't report it unless
+            # it's a new relic hook.
+            if nr_hook or version:
+                plugins.append("%s (%s)" % (name, version))
 
     env.append(("Plugin List", plugins))
 
     return env
+
+
+def _get_stdlib_builtin_module_names():
+    builtins = set(sys.builtin_module_names)
+    # Since sys.stdlib_module_names is not available in versions of python below 3.10,
+    # use isort's hardcoded stdlibs instead.
+    python_version = sys.version_info[0:2]
+    if python_version < (3,):
+        stdlibs = isort_stdlibs.py27.stdlib
+    elif (3, 7) <= python_version < (3, 8):
+        stdlibs = isort_stdlibs.py37.stdlib
+    elif python_version < (3, 9):
+        stdlibs = isort_stdlibs.py38.stdlib
+    elif python_version < (3, 10):
+        stdlibs = isort_stdlibs.py39.stdlib
+    elif python_version >= (3, 10):
+        stdlibs = sys.stdlib_module_names
+    else:
+        _logger.warn("Unsupported Python version. Unable to determine stdlibs.")
+        return builtins
+    return builtins | stdlibs

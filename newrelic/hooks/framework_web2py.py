@@ -22,6 +22,7 @@ import newrelic.api.external_trace
 import newrelic.api.function_trace
 import newrelic.api.transaction_name
 import newrelic.api.object_wrapper
+import newrelic.common.object_wrapper
 import newrelic.api.pre_function
 
 from newrelic.api.time_trace import notice_error
@@ -132,7 +133,7 @@ def instrument_gluon_main(module):
         def __getattr__(self, name):
             return getattr(self._nr_next_object, name)
 
-    newrelic.api.object_wrapper.wrap_object(
+    newrelic.common.object_wrapper.wrap_object(
             module, 'serve_controller', error_serve_controller)
 
 def instrument_gluon_template(module):

@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.database_trace import (
-    DatabaseTrace,
-    enable_datastore_instance_feature,
-    register_database_client,
-)
+from newrelic.api.database_trace import DatabaseTrace, register_database_client
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 
@@ -43,7 +39,6 @@ register_database_client(
     quoting_style="single+dollar",
     instance_info=PostgresApi.instance_info,
 )
-enable_datastore_instance_feature(PostgresApi)
 
 
 class ProtocolProxy(ObjectProxy):
@@ -94,9 +89,7 @@ class ProtocolProxy(ObjectProxy):
 
     async def prepare(self, stmt_name, query, *args, **kwargs):
         with DatabaseTrace(
-            "PREPARE {stmt_name} FROM '{query}'".format(
-                stmt_name=stmt_name, query=query
-            ),
+            "PREPARE {stmt_name} FROM '{query}'".format(stmt_name=stmt_name, query=query),
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
             source=self.__wrapped__.prepare,
@@ -131,9 +124,7 @@ def proxy_protocol(wrapped, instance, args, kwargs):
 def wrap_connect(wrapped, instance, args, kwargs):
     host = port = database_name = None
     if "addr" in kwargs:
-        host, port, database_name = PostgresApi._instance_info(
-            kwargs["addr"], None, kwargs.get("params")
-        )
+        host, port, database_name = PostgresApi._instance_info(kwargs["addr"], None, kwargs.get("params"))
 
     with DatastoreTrace(
         PostgresApi._nr_database_product,

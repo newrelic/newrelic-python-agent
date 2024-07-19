@@ -31,6 +31,7 @@ from newrelic.api.database_trace import database_trace
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import external_trace
 from newrelic.api.function_trace import function_trace
+from newrelic.api.graphql_trace import graphql_operation_trace, graphql_resolver_trace
 from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
 
@@ -47,6 +48,8 @@ asyncio = pytest.importorskip("asyncio")
         (functools.partial(datastore_trace, "lib", "foo", "bar"), "Datastore/statement/lib/foo/bar"),
         (functools.partial(message_trace, "lib", "op", "typ", "name"), "MessageBroker/lib/typ/op/Named/name"),
         (functools.partial(memcache_trace, "cmd"), "Memcache/cmd"),
+        (functools.partial(graphql_operation_trace), "GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>"),
+        (functools.partial(graphql_resolver_trace), "GraphQL/resolve/GraphQL/<unknown>"),
     ],
 )
 def test_coroutine_timing(trace, metric):
@@ -331,6 +334,37 @@ def test_throw_yields_a_value():
     next(c)
 
     assert c.throw(MyException) == "foobar"
+
+    # finish consumption of the coroutine if necessary
+    for _ in c:
+        pass
+
+
+@validate_transaction_metrics(
+    "test_multiple_throws_yield_a_value",
+    background_task=True,
+    scoped_metrics=[("Function/coro", 1)],
+    rollup_metrics=[("Function/coro", 1)],
+)
+@background_task(name="test_multiple_throws_yield_a_value")
+def test_multiple_throws_yield_a_value():
+    @function_trace(name="coro")
+    def coro():
+        value = None
+        for _ in range(4):
+            try:
+                yield value
+                value = "bar"
+            except MyException:
+                value = "foo"
+
+    c = coro()
+
+    # kickstart the coroutine
+    assert next(c) is None
+    assert c.throw(MyException) == "foo"
+    assert c.throw(MyException) == "foo"
+    assert next(c) == "bar"
 
     # finish consumption of the coroutine if necessary
     for _ in c:

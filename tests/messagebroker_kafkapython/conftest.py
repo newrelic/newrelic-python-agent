@@ -18,8 +18,10 @@ import uuid
 import kafka
 import pytest
 from testing_support.db_settings import kafka_settings
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
@@ -31,6 +33,7 @@ BROKER = [BOOTSTRAP_SERVER]
 
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -86,7 +89,7 @@ def producer(client_type, json_serializer, json_callable_serializer):
 
 
 @pytest.fixture(scope="function")
-def consumer(topic, producer, client_type, json_deserializer, json_callable_deserializer):
+def consumer(group_id, topic, producer, client_type, json_deserializer, json_callable_deserializer):
     if client_type == "no_serializer":
         consumer = kafka.KafkaConsumer(
             topic,
@@ -94,7 +97,7 @@ def consumer(topic, producer, client_type, json_deserializer, json_callable_dese
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
     elif client_type == "serializer_function":
         consumer = kafka.KafkaConsumer(
@@ -105,7 +108,7 @@ def consumer(topic, producer, client_type, json_deserializer, json_callable_dese
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
     elif client_type == "callable_object":
         consumer = kafka.KafkaConsumer(
@@ -116,7 +119,7 @@ def consumer(topic, producer, client_type, json_deserializer, json_callable_dese
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
     elif client_type == "serializer_object":
         consumer = kafka.KafkaConsumer(
@@ -127,7 +130,7 @@ def consumer(topic, producer, client_type, json_deserializer, json_callable_dese
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
 
     yield consumer
@@ -200,6 +203,11 @@ def topic():
     yield topic
 
     admin.delete_topics([topic])
+
+
+@pytest.fixture(scope="session")
+def group_id():
+    return str(uuid.uuid4())
 
 
 @pytest.fixture()

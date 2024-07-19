@@ -16,8 +16,12 @@ import pytest
 from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
-    validate_error_event_attributes_outside_transaction,
     validate_error_event_sample_data,
+)
+from testing_support.validators.validate_error_event_attributes_outside_transaction import (
+    validate_error_event_attributes_outside_transaction,
+)
+from testing_support.validators.validate_error_trace_attributes_outside_transaction import (
     validate_error_trace_attributes_outside_transaction,
 )
 from testing_support.validators.validate_time_metrics_outside_transaction import (

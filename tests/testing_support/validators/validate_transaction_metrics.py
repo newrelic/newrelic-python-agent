@@ -27,11 +27,13 @@ def validate_transaction_metrics(
     scoped_metrics=None,
     rollup_metrics=None,
     custom_metrics=None,
+    dimensional_metrics=None,
     index=-1,
 ):
     scoped_metrics = scoped_metrics or []
     rollup_metrics = rollup_metrics or []
     custom_metrics = custom_metrics or []
+    dimensional_metrics = dimensional_metrics or []
 
     if background_task:
         unscoped_metrics = [
@@ -56,6 +58,7 @@ def validate_transaction_metrics(
 
         record_transaction_called = []
         recorded_metrics = []
+        recorded_dimensional_metrics = []
 
         @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
         @catch_background_exceptions
@@ -74,17 +77,36 @@ def validate_transaction_metrics(
                     _metrics[k] = copy.copy(v)
                 recorded_metrics.append(_metrics)
 
+                metrics = instance.dimensional_stats_table.metrics()
+                # Record a copy of the metric value so that the values aren't
+                # merged in the future
+                _metrics = {}
+                for k, v in metrics:
+                    _metrics[k] = copy.copy(v)
+                recorded_dimensional_metrics.append(_metrics)
+
             return result
 
         def _validate(metrics, name, scope, count):
             key = (name, scope)
-            metric = metrics.get(key)
+
+            if isinstance(scope, str):
+                # Normal metric lookup
+                metric = metrics.get(key)
+            else:
+                # Dimensional metric lookup
+                metric_container = metrics.get(name, {})
+                metric = metric_container.get(scope)
 
             def _metrics_table():
                 out = [""]
                 out.append("Expected: {0}: {1}".format(key, count))
-                for metric_key, metric_value in metrics.items():
-                    out.append("{0}: {1}".format(metric_key, metric_value[0]))
+                for metric_key, metric_container in metrics.items():
+                    if isinstance(metric_container, dict):
+                        for metric_tags, metric_value in metric_container.items():
+                            out.append("{0}: {1}".format((metric_key, metric_tags), metric_value[0]))
+                    else:
+                        out.append("{0}: {1}".format(metric_key, metric_container[0]))
                 return "\n".join(out)
 
             def _metric_details():
@@ -109,9 +131,11 @@ def validate_transaction_metrics(
         val = _new_wrapper(*args, **kwargs)
         assert record_transaction_called
         metrics = recorded_metrics[index]
+        captured_dimensional_metrics = recorded_dimensional_metrics[index]
 
         record_transaction_called[:] = []
         recorded_metrics[:] = []
+        recorded_dimensional_metrics[:] = []
 
         for unscoped_metric in unscoped_metrics:
             _validate(metrics, unscoped_metric, "", 1)
@@ -124,6 +148,11 @@ def validate_transaction_metrics(
 
         for custom_name, custom_count in custom_metrics:
             _validate(metrics, custom_name, "", custom_count)
+
+        for dimensional_name, dimensional_tags, dimensional_count in dimensional_metrics:
+            if isinstance(dimensional_tags, dict):
+                dimensional_tags = frozenset(dimensional_tags.items())
+            _validate(captured_dimensional_metrics, dimensional_name, dimensional_tags, dimensional_count)
 
         custom_metric_names = {name for name, _ in custom_metrics}
         for name, _ in metrics:

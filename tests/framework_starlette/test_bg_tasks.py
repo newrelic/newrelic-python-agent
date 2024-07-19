@@ -15,7 +15,6 @@
 import sys
 
 import pytest
-from starlette import __version__
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,
 )
@@ -23,7 +22,9 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-starlette_version = tuple(int(x) for x in __version__.split("."))
+from newrelic.common.package_version_utils import get_package_version_tuple
+
+starlette_version = get_package_version_tuple("starlette")[:3]
 
 try:
     from starlette.middleware import Middleware  # noqa: F401
@@ -89,11 +90,20 @@ def test_basehttp_style_middleware(target_application, route):
 
     # The bug was fixed in version 0.21.0 but re-occured in 0.23.1.
     # The bug was also not present on 0.20.1 to 0.23.1 if using Python3.7.
-    BUG_COMPLETELY_FIXED = (0, 21, 0) <= starlette_version < (0, 23, 1) or (
-        (0, 20, 1) <= starlette_version < (0, 23, 1) and sys.version_info[:2] > (3, 7)
+    # The bug was fixed again in version 0.29.0
+    BUG_COMPLETELY_FIXED = any(
+        (
+            (0, 21, 0) <= starlette_version < (0, 23, 1),
+            (0, 20, 1) <= starlette_version < (0, 23, 1) and sys.version_info[:2] > (3, 7),
+            starlette_version >= (0, 29, 0),
+        )
     )
-    BUG_PARTIALLY_FIXED = (0, 20, 1) <= starlette_version < (0, 21, 0) or starlette_version >= (0, 23, 1)
-
+    BUG_PARTIALLY_FIXED = any(
+        (
+            (0, 20, 1) <= starlette_version < (0, 21, 0),
+            (0, 23, 1) <= starlette_version < (0, 29, 0),
+        )
+    )
     if BUG_COMPLETELY_FIXED:
         # Assert both web transaction and background task transactions are present.
         _test = validate_transaction_metrics(

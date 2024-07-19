@@ -14,16 +14,19 @@
 
 import copy
 
-from newrelic.packages import six
-
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
 from testing_support.fixtures import catch_background_exceptions
 
-def validate_log_events_outside_transaction(events):
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
+from newrelic.packages import six
+
+
+def validate_log_events_outside_transaction(events=None, required_attrs=None, forgone_attrs=None):
+    events = events or [{}]  # Empty event allows assertions based on only forgone attrs to still run and validate
+    required_attrs = required_attrs or []
+    forgone_attrs = forgone_attrs or []
+
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_called = []
         recorded_logs = []
 
@@ -35,18 +38,16 @@ def validate_log_events_outside_transaction(events):
                 result = wrapped(*args, **kwargs)
             except:
                 raise
-            else:
-                recorded_logs[:] = []
-                recorded_logs.extend(list(instance._log_events))
+            recorded_logs[:] = []
+            recorded_logs.extend(list(instance._log_events))
 
             return result
-
 
         _new_wrapper = _validate_log_events_outside_transaction(wrapped)
         val = _new_wrapper(*args, **kwargs)
         assert record_called
         logs = copy.copy(recorded_logs)
-        
+
         record_called[:] = []
         recorded_logs[:] = []
 
@@ -54,14 +55,13 @@ def validate_log_events_outside_transaction(events):
             matching_log_events = 0
             mismatches = []
             for captured in logs:
-                if _check_log_attributes(expected, captured, mismatches):
+                if _check_log_attributes(expected, required_attrs, forgone_attrs, captured, mismatches):
                     matching_log_events += 1
             assert matching_log_events == 1, _log_details(matching_log_events, logs, mismatches)
 
         return val
 
-
-    def _check_log_attributes(expected, captured, mismatches):
+    def _check_log_attributes(expected, required_attrs, forgone_attrs, captured, mismatches):
         for key, value in six.iteritems(expected):
             if hasattr(captured, key):
                 captured_value = getattr(captured, key, None)
@@ -75,6 +75,21 @@ def validate_log_events_outside_transaction(events):
                 if value != captured_value:
                     mismatches.append("key: %s, value:<%s><%s>" % (key, value, captured_value))
                     return False
+
+        for key in required_attrs:
+            if not hasattr(captured, key) and key not in captured.attributes:
+                mismatches.append("required_key: %s" % key)
+                return False
+
+        for key in forgone_attrs:
+            if hasattr(captured, key) or key in captured.attributes:
+                if hasattr(captured, key):
+                    captured_value = getattr(captured, key, None)
+                elif key in captured.attributes:
+                    captured_value = captured.attributes[key]
+
+                mismatches.append("forgone_key: %s, value:<%s>" % (key, captured_value))
+                return False
 
         return True
 

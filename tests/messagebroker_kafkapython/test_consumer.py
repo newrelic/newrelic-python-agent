@@ -14,13 +14,12 @@
 
 import pytest
 from conftest import cache_kafka_consumer_headers
-from testing_support.fixtures import (
-    reset_core_stats_engine,
-    validate_attributes,
-    validate_error_event_attributes_outside_transaction,
-)
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_distributed_trace_accepted import (
     validate_distributed_trace_accepted,
+)
+from testing_support.validators.validate_error_event_attributes_outside_transaction import (
+    validate_error_event_attributes_outside_transaction,
 )
 from testing_support.validators.validate_transaction_count import (
     validate_transaction_count,

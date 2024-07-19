@@ -22,7 +22,6 @@ import newrelic.packages.six as six
 
 
 class Application(object):
-
     _lock = threading.Lock()
     _instances = {}
 
@@ -142,17 +141,31 @@ class Application(object):
         if self.active and metrics:
             self._agent.record_custom_metrics(self._name, metrics)
 
+    def record_dimensional_metric(self, name, value, tags=None):
+        if self.active:
+            self._agent.record_dimensional_metric(self._name, name, value, tags)
+
+    def record_dimensional_metrics(self, metrics):
+        if self.active and metrics:
+            self._agent.record_dimensional_metrics(self._name, metrics)
+
     def record_custom_event(self, event_type, params):
         if self.active:
             self._agent.record_custom_event(self._name, event_type, params)
+
+    def record_ml_event(self, event_type, params):
+        if self.active:
+            self._agent.record_ml_event(self._name, event_type, params)
 
     def record_transaction(self, data):
         if self.active:
             self._agent.record_transaction(self._name, data)
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         if self.active:
-            self._agent.record_log_event(self._name, message, level, timestamp, priority=priority)
+            self._agent.record_log_event(
+                self._name, message, level, timestamp, attributes=attributes, priority=priority
+            )
 
     def normalize_name(self, name, rule_type="url"):
         if self.active:

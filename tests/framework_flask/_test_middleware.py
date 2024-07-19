@@ -13,33 +13,48 @@
 # limitations under the License.
 
 import webtest
-
+from conftest import is_not_flask_v2_3 as before_first_request_support
 from flask import Flask
 
 application = Flask(__name__)
 
-@application.before_first_request
-def before_first_request():
-    pass
+# < Flask v2.3.0
+if before_first_request_support:
+
+    @application.before_first_request
+    def before_first_request():
+        pass
+
+
+# >= Flask v2.3.0
+def application_app_context():
+    with application.app_context():
+        pass
+
 
 @application.before_request
 def before_request():
     pass
 
+
 @application.after_request
 def after_request(response):
     return response
+
 
 @application.teardown_request
 def teardown_request(exc):
     pass
 
+
 @application.teardown_appcontext
 def teardown_appcontext(exc):
     pass
 
-@application.route('/middleware')
+
+@application.route("/middleware")
 def index_page():
-    return 'INDEX RESPONSE'
+    return "INDEX RESPONSE"
+
 
 _test_application = webtest.TestApp(application)

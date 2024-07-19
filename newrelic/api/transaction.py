@@ -44,6 +44,7 @@ from newrelic.common.encoding_utils import (
     json_decode,
     json_encode,
     obfuscate,
+    snake_case,
 )
 from newrelic.core.attribute import (
     MAX_ATTRIBUTE_LENGTH,
@@ -51,20 +52,25 @@ from newrelic.core.attribute import (
     MAX_NUM_USER_ATTRIBUTES,
     create_agent_attributes,
     create_attributes,
-    create_user_attributes,
     process_user_attribute,
+    resolve_logging_context_attributes,
     truncate,
 )
 from newrelic.core.attribute_filter import (
+    DST_ALL,
     DST_ERROR_COLLECTOR,
     DST_NONE,
     DST_TRANSACTION_TRACER,
 )
-from newrelic.core.config import CUSTOM_EVENT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE
+from newrelic.core.config import (
+    CUSTOM_EVENT_RESERVOIR_SIZE,
+    LOG_EVENT_RESERVOIR_SIZE,
+    ML_EVENT_RESERVOIR_SIZE,
+)
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.stack_trace import exception_stack
-from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
+from newrelic.core.stats_engine import CustomMetrics, DimensionalMetrics, SampledDataSet
 from newrelic.core.thread_utilization import utilization_tracker
 from newrelic.core.trace_cache import (
     TraceCacheActiveTraceError,
@@ -159,20 +165,18 @@ class CachedPath(object):
 
 
 class Transaction(object):
-
     STATE_PENDING = 0
     STATE_RUNNING = 1
     STATE_STOPPED = 2
 
     def __init__(self, application, enabled=None, source=None):
-
         self._application = application
 
         self._source = source
 
         self.thread_id = None
 
-        self._transaction_id = id(self)
+        self._identity = id(self)
         self._transaction_lock = threading.Lock()
 
         self._dead = False
@@ -189,6 +193,7 @@ class Transaction(object):
         self._frameworks = set()
         self._message_brokers = set()
         self._dispatchers = set()
+        self._ml_models = set()
 
         self._frozen_path = None
 
@@ -270,6 +275,7 @@ class Transaction(object):
         trace_id = "%032x" % random.getrandbits(128)
 
         # 16-digit random hex. Padded with zeros in the front.
+        # This is the official transactionId in the UI.
         self.guid = trace_id[:16]
 
         # 32-digit random hex. Padded with zeros in the front.
@@ -301,12 +307,20 @@ class Transaction(object):
         self._alternate_path_hashes = {}
         self.is_part_of_cat = False
 
+        # Synthetics Header
         self.synthetics_resource_id = None
         self.synthetics_job_id = None
         self.synthetics_monitor_id = None
         self.synthetics_header = None
 
+        # Synthetics Info Header
+        self.synthetics_type = None
+        self.synthetics_initiator = None
+        self.synthetics_attributes = None
+        self.synthetics_info_header = None
+
         self._custom_metrics = CustomMetrics()
+        self._dimensional_metrics = DimensionalMetrics()
 
         global_settings = application.global_settings
 
@@ -330,12 +344,14 @@ class Transaction(object):
             self._custom_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data
             )
+            self._ml_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.ml_event_data)
             self._log_events = SampledDataSet(
                 capacity=self._settings.event_harvest_config.harvest_limits.log_event_data
             )
         else:
             self._custom_events = SampledDataSet(capacity=CUSTOM_EVENT_RESERVOIR_SIZE)
             self._log_events = SampledDataSet(capacity=LOG_EVENT_RESERVOIR_SIZE)
+            self._ml_events = SampledDataSet(capacity=ML_EVENT_RESERVOIR_SIZE)
 
     def __del__(self):
         self._dead = True
@@ -343,7 +359,6 @@ class Transaction(object):
             self.__exit__(None, None, None)
 
     def __enter__(self):
-
         assert self._state == self.STATE_PENDING
 
         # Bail out if the transaction is not enabled.
@@ -403,13 +418,12 @@ class Transaction(object):
         return self
 
     def __exit__(self, exc, value, tb):
-
         # Bail out if the transaction is not enabled.
 
         if not self.enabled:
             return
 
-        if self._transaction_id != id(self):
+        if self._identity != id(self):
             return
 
         if not self._settings:
@@ -556,6 +570,10 @@ class Transaction(object):
             for dispatcher, version in self._dispatchers:
                 self.record_custom_metric("Python/Dispatcher/%s/%s" % (dispatcher, version), 1)
 
+        if self._ml_models:
+            for ml_model, version in self._ml_models:
+                self.record_custom_metric("Supportability/Python/ML/%s/%s" % (ml_model, version), 1)
+
         if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the
             # transaction when distributed tracing or span events are enabled.
@@ -584,10 +602,12 @@ class Transaction(object):
             errors=tuple(self._errors),
             slow_sql=tuple(self._slow_sql),
             custom_events=self._custom_events,
+            ml_events=self._ml_events,
             log_events=self._log_events,
             apdex_t=self.apdex,
             suppress_apdex=self.suppress_apdex,
             custom_metrics=self._custom_metrics,
+            dimensional_metrics=self._dimensional_metrics,
             guid=self.guid,
             cpu_time=self._cpu_user_time_value,
             suppress_transaction_trace=self.suppress_transaction_trace,
@@ -598,6 +618,10 @@ class Transaction(object):
             synthetics_job_id=self.synthetics_job_id,
             synthetics_monitor_id=self.synthetics_monitor_id,
             synthetics_header=self.synthetics_header,
+            synthetics_type=self.synthetics_type,
+            synthetics_initiator=self.synthetics_initiator,
+            synthetics_attributes=self.synthetics_attributes,
+            synthetics_info_header=self.synthetics_info_header,
             is_part_of_cat=self.is_part_of_cat,
             trip_id=self.trip_id,
             path_hash=self.path_hash,
@@ -636,7 +660,6 @@ class Transaction(object):
         # new samples can cause an error.
 
         if not self.ignore_transaction:
-
             self._application.record_transaction(node)
 
     @property
@@ -836,10 +859,25 @@ class Transaction(object):
             i_attrs["synthetics_job_id"] = self.synthetics_job_id
         if self.synthetics_monitor_id:
             i_attrs["synthetics_monitor_id"] = self.synthetics_monitor_id
+        if self.synthetics_type:
+            i_attrs["synthetics_type"] = self.synthetics_type
+        if self.synthetics_initiator:
+            i_attrs["synthetics_initiator"] = self.synthetics_initiator
+        if self.synthetics_attributes:
+            # Add all synthetics attributes
+            for k, v in self.synthetics_attributes.items():
+                if k:
+                    i_attrs["synthetics_%s" % snake_case(k)] = v
+
         if self.total_time:
             i_attrs["totalTime"] = self.total_time
         if self._loop_time:
             i_attrs["eventLoopTime"] = self._loop_time
+
+        # `guid` is added here to make it an intrinsic
+        # that is agnostic to distributed tracing.
+        if self.guid:
+            i_attrs["guid"] = self.guid
 
         # Add in special CPU time value for UI to display CPU burn.
 
@@ -859,10 +897,18 @@ class Transaction(object):
     def distributed_trace_intrinsics(self):
         i_attrs = {}
 
+        # Include this here since guid is now an intrinsic attribute,
+        # whether or not DT is enabled.  In most cases, trace_intrinsics
+        # is called and, within that, this function is called.  However,
+        # there are cases, such as slow SQL calls in database_node that
+        # call this function directly, so we want to make sure this is
+        # included here as well.  (as of now, the guid is thought to be
+        # a distributed tracing intrinsic that should be included elsewhere)
+        i_attrs["guid"] = self.guid
+
         if not self._settings.distributed_tracing.enabled:
             return i_attrs
 
-        i_attrs["guid"] = self.guid
         i_attrs["sampled"] = self.sampled
         i_attrs["priority"] = self.priority
         i_attrs["traceId"] = self.trace_id
@@ -929,9 +975,7 @@ class Transaction(object):
     @property
     def request_parameters(self):
         if (self.capture_params is None) or self.capture_params:
-
             if self._request_params:
-
                 r_attrs = {}
 
                 for k, v in self._request_params.items():
@@ -966,7 +1010,7 @@ class Transaction(object):
 
     @property
     def user_attributes(self):
-        return create_user_attributes(self._custom_params, self.attribute_filter)
+        return create_attributes(self._custom_params, DST_ALL, self.attribute_filter)
 
     def _compute_sampled_and_priority(self):
         if self._priority is None:
@@ -1037,7 +1081,9 @@ class Transaction(object):
 
         settings = self._settings
         account_id = settings.account_id
-        trusted_account_key = settings.trusted_account_key
+        trusted_account_key = settings.trusted_account_key or (
+            self._settings.serverless_mode.enabled and self._settings.account_id
+        )
         application_id = settings.primary_application_id
 
         if not (account_id and application_id and trusted_account_key and settings.distributed_tracing.enabled):
@@ -1095,7 +1141,6 @@ class Transaction(object):
         try:
             data = data or self._create_distributed_trace_data()
             if data:
-
                 traceparent = W3CTraceParent(data).text()
                 yield ("traceparent", traceparent)
 
@@ -1129,7 +1174,10 @@ class Transaction(object):
             return False
 
         settings = self._settings
-        if not (settings.distributed_tracing.enabled and settings.trusted_account_key):
+        trusted_account_key = settings.trusted_account_key or (
+            self._settings.serverless_mode.enabled and self._settings.account_id
+        )
+        if not (settings.distributed_tracing.enabled and trusted_account_key):
             return False
 
         if self._distributed_trace_state:
@@ -1175,10 +1223,13 @@ class Transaction(object):
 
             settings = self._settings
             account_id = data.get("ac")
+            trusted_account_key = settings.trusted_account_key or (
+                self._settings.serverless_mode.enabled and self._settings.account_id
+            )
 
             # If trust key doesn't exist in the payload, use account_id
             received_trust_key = data.get("tk", account_id)
-            if settings.trusted_account_key != received_trust_key:
+            if trusted_account_key != received_trust_key:
                 self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount")
                 if settings.debug.log_untrusted_distributed_trace_keys:
                     _logger.debug(
@@ -1192,11 +1243,10 @@ class Transaction(object):
             except:
                 return False
 
-            if "pr" in data:
-                try:
-                    data["pr"] = float(data["pr"])
-                except:
-                    data["pr"] = None
+            try:
+                data["pr"] = float(data["pr"])
+            except Exception:
+                data["pr"] = None
 
             self._accept_distributed_trace_data(data, transport_type)
             self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Success")
@@ -1288,8 +1338,10 @@ class Transaction(object):
                 tracestate = ensure_str(tracestate)
                 try:
                     vendors = W3CTraceState.decode(tracestate)
-                    tk = self._settings.trusted_account_key
-                    payload = vendors.pop(tk + "@nr", "")
+                    trusted_account_key = self._settings.trusted_account_key or (
+                        self._settings.serverless_mode.enabled and self._settings.account_id
+                    )
+                    payload = vendors.pop(trusted_account_key + "@nr", "")
                     self.tracing_vendors = ",".join(vendors.keys())
                     self.tracestate = vendors.text(limit=31)
                 except:
@@ -1298,7 +1350,7 @@ class Transaction(object):
                     # Remove trusted new relic header if available and parse
                     if payload:
                         try:
-                            tracestate_data = NrTraceState.decode(payload, tk)
+                            tracestate_data = NrTraceState.decode(payload, trusted_account_key)
                         except:
                             tracestate_data = None
                         if tracestate_data:
@@ -1382,7 +1434,6 @@ class Transaction(object):
         # process web external calls.
 
         if self.client_cross_process_id is not None:
-
             # Need to work out queueing time and duration up to this
             # point for inclusion in metrics and response header. If the
             # recording of the transaction had been prematurely stopped
@@ -1426,11 +1477,17 @@ class Transaction(object):
 
         return nr_headers
 
-    def get_response_metadata(self):
+    # This function is CAT related and has been deprecated.
+    # Eventually, this will be removed.  Until then, coverage
+    # does not need to factor this function into its analysis.
+    def get_response_metadata(self):  # pragma: no cover
         nr_headers = dict(self._generate_response_headers())
         return convert_to_cat_metadata_value(nr_headers)
 
-    def process_request_metadata(self, cat_linking_value):
+    # This function is CAT related and has been deprecated.
+    # Eventually, this will be removed.  Until then, coverage
+    # does not need to factor this function into its analysis.
+    def process_request_metadata(self, cat_linking_value):  # pragma: no cover
         try:
             payload = base64_decode(cat_linking_value)
         except:
@@ -1447,7 +1504,6 @@ class Transaction(object):
         return self._process_incoming_cat_headers(encoded_cross_process_id, encoded_txn_header)
 
     def set_transaction_name(self, name, group=None, priority=None):
-
         # Always perform this operation even if the transaction
         # is not active at the time as will be called from
         # constructor. If path has been frozen do not allow
@@ -1488,7 +1544,7 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         settings = self.settings
         if not (
             settings
@@ -1501,23 +1557,69 @@ class Transaction(object):
 
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
+        context_attributes = attributes  # Name reassigned for clarity
 
-        if not message or message.isspace():
-            _logger.debug("record_log_event called where message was missing. No log event will be sent.")
-            return
+        # Unpack message and attributes from dict inputs
+        if isinstance(message, dict):
+            message_attributes = {k: v for k, v in message.items() if k != "message"}
+            message = message.get("message", "")
+        else:
+            message_attributes = None
 
-        message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+        if message is not None:
+            # Coerce message into a string type
+            if not isinstance(message, six.string_types):
+                try:
+                    message = str(message)
+                except Exception:
+                    # Exit early for invalid message type after unpacking
+                    _logger.debug(
+                        "record_log_event called where message could not be converted to a string type. No log event will be sent."
+                    )
+                    return
+
+            # Truncate the now unpacked and string converted message
+            message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+
+        # Collect attributes from linking metadata, context data, and message attributes
+        collected_attributes = {}
+        if settings and settings.application_logging.forwarding.context_data.enabled:
+            if context_attributes:
+                context_attributes = resolve_logging_context_attributes(
+                    context_attributes, settings.attribute_filter, "context."
+                )
+                if context_attributes:
+                    collected_attributes.update(context_attributes)
+
+            if message_attributes:
+                message_attributes = resolve_logging_context_attributes(
+                    message_attributes, settings.attribute_filter, "message."
+                )
+                if message_attributes:
+                    collected_attributes.update(message_attributes)
+
+            # Exit early if no message or attributes found after filtering
+            if (not message or message.isspace()) and not context_attributes and not message_attributes:
+                _logger.debug(
+                    "record_log_event called where no message and no attributes were found. No log event will be sent."
+                )
+                return
+
+        # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute
+        collected_attributes.update(get_linking_metadata())
 
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=get_linking_metadata(),
+            attributes=collected_attributes,
         )
 
         self._log_events.add(event, priority=priority)
 
-    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
+    # This function has been deprecated (and will be removed eventually)
+    # and therefore does not need to be included in coverage analysis
+    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):  # pragma: no cover
         # Deprecation Warning
         warnings.warn(
             ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
@@ -1600,6 +1702,16 @@ class Transaction(object):
         for name, value in metrics:
             self._custom_metrics.record_custom_metric(name, value)
 
+    def record_dimensional_metric(self, name, value, tags=None):
+        self._dimensional_metrics.record_dimensional_metric(name, value, tags)
+
+    def record_dimensional_metrics(self, metrics):
+        for metric in metrics:
+            name, value = metric[:2]
+            tags = metric[2] if len(metric) >= 3 else None
+
+            self._dimensional_metrics.record_dimensional_metric(name, value, tags)
+
     def record_custom_event(self, event_type, params):
         settings = self._settings
 
@@ -1609,9 +1721,22 @@ class Transaction(object):
         if not settings.custom_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings)
         if event:
             self._custom_events.add(event, priority=self.priority)
+
+    def record_ml_event(self, event_type, params):
+        settings = self._settings
+
+        if not settings:
+            return
+
+        if not settings.ml_insights_events.enabled:
+            return
+
+        event = create_custom_event(event_type, params, settings=settings, is_ml_event=True)
+        if event:
+            self._ml_events.add(event, priority=self.priority)
 
     def _intern_string(self, value):
         return self._string_cache.setdefault(value, value)
@@ -1684,7 +1809,9 @@ class Transaction(object):
 
         return result
 
-    def add_custom_parameter(self, name, value):
+    # This function has been deprecated (and will be removed eventually)
+    # and therefore does not need to be included in coverage analysis
+    def add_custom_parameter(self, name, value):  # pragma: no cover
         # Deprecation warning
         warnings.warn(
             ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
@@ -1692,7 +1819,9 @@ class Transaction(object):
         )
         return self.add_custom_attribute(name, value)
 
-    def add_custom_parameters(self, items):
+    # This function has been deprecated (and will be removed eventually)
+    # and therefore does not need to be included in coverage analysis
+    def add_custom_parameters(self, items):  # pragma: no cover
         # Deprecation warning
         warnings.warn(
             ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
@@ -1711,6 +1840,10 @@ class Transaction(object):
     def add_dispatcher_info(self, name, version=None):
         if name:
             self._dispatchers.add((name, version))
+
+    def add_ml_model_info(self, name, version=None):
+        if name:
+            self._ml_models.add((name, version))
 
     def dump(self, file):
         """Dumps details about the transaction to the file object."""
@@ -1796,19 +1929,23 @@ def add_custom_attributes(items):
         return False
 
 
-def add_custom_parameter(key, value):
+# This function has been deprecated (and will be removed eventually)
+# and therefore does not need to be included in coverage analysis
+def add_custom_parameter(key, value):  # pragma: no cover
     # Deprecation warning
     warnings.warn(
-        ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
+        ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
         DeprecationWarning,
     )
     return add_custom_attribute(key, value)
 
 
-def add_custom_parameters(items):
+# This function has been deprecated (and will be removed eventually)
+# and therefore does not need to be included in coverage analysis
+def add_custom_parameters(items):  # pragma: no cover
     # Deprecation warning
     warnings.warn(
-        ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
+        ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
         DeprecationWarning,
     )
     return add_custom_attributes(items)
@@ -1835,17 +1972,18 @@ def add_framework_info(name, version=None):
         transaction.add_framework_info(name, version)
 
 
-def get_browser_timing_header():
+def get_browser_timing_header(nonce=None):
     transaction = current_transaction()
     if transaction and hasattr(transaction, "browser_timing_header"):
-        return transaction.browser_timing_header()
+        return transaction.browser_timing_header(nonce)
     return ""
 
 
-def get_browser_timing_footer():
-    transaction = current_transaction()
-    if transaction and hasattr(transaction, "browser_timing_footer"):
-        return transaction.browser_timing_footer()
+def get_browser_timing_footer(nonce=None):
+    warnings.warn(
+        "The get_browser_timing_footer function is deprecated. Please migrate to only using the get_browser_timing_header API instead.",
+        DeprecationWarning,
+    )
     return ""
 
 
@@ -1898,6 +2036,44 @@ def record_custom_metrics(metrics, application=None):
         application.record_custom_metrics(metrics)
 
 
+def record_dimensional_metric(name, value, tags=None, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_dimensional_metric(name, value, tags)
+        else:
+            _logger.debug(
+                "record_dimensional_metric has been called but no "
+                "transaction was running. As a result, the following metric "
+                "has not been recorded. Name: %r Value: %r Tags: %r. To correct this "
+                "problem, supply an application object as a parameter to this "
+                "record_dimensional_metrics call.",
+                name,
+                value,
+                tags,
+            )
+    elif application.enabled:
+        application.record_dimensional_metric(name, value, tags)
+
+
+def record_dimensional_metrics(metrics, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_dimensional_metrics(metrics)
+        else:
+            _logger.debug(
+                "record_dimensional_metrics has been called but no "
+                "transaction was running. As a result, the following metrics "
+                "have not been recorded: %r. To correct this problem, "
+                "supply an application object as a parameter to this "
+                "record_dimensional_metric call.",
+                list(metrics),
+            )
+    elif application.enabled:
+        application.record_dimensional_metrics(metrics)
+
+
 def record_custom_event(event_type, params, application=None):
     """Record a custom event.
 
@@ -1926,7 +2102,35 @@ def record_custom_event(event_type, params, application=None):
         application.record_custom_event(event_type, params)
 
 
-def record_log_event(message, level=None, timestamp=None, application=None, priority=None):
+def record_ml_event(event_type, params, application=None):
+    """Record a machine learning custom event.
+
+    Args:
+        event_type (str): The type (name) of the ml event.
+        params (dict): Attributes to add to the event.
+        application (newrelic.api.Application): Application instance.
+
+    """
+
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_ml_event(event_type, params)
+        else:
+            _logger.debug(
+                "record_ml_event has been called but no "
+                "transaction was running. As a result, the following event "
+                "has not been recorded. event_type: %r params: %r. To correct "
+                "this problem, supply an application object as a parameter to "
+                "this record_ml_event call.",
+                event_type,
+                params,
+            )
+    elif application.enabled:
+        application.record_ml_event(event_type, params)
+
+
+def record_log_event(message, level=None, timestamp=None, attributes=None, application=None, priority=None):
     """Record a log event.
 
     Args:
@@ -1937,12 +2141,12 @@ def record_log_event(message, level=None, timestamp=None, application=None, prio
     if application is None:
         transaction = current_transaction()
         if transaction:
-            transaction.record_log_event(message, level, timestamp)
+            transaction.record_log_event(message, level, timestamp, attributes=attributes)
         else:
             application = application_instance(activate=False)
 
             if application and application.enabled:
-                application.record_log_event(message, level, timestamp, priority=priority)
+                application.record_log_event(message, level, timestamp, attributes=attributes, priority=priority)
             else:
                 _logger.debug(
                     "record_log_event has been called but no transaction or application was running. As a result, "
@@ -1953,7 +2157,7 @@ def record_log_event(message, level=None, timestamp=None, application=None, prio
                     timestamp,
                 )
     elif application.enabled:
-        application.record_log_event(message, level, timestamp, priority=priority)
+        application.record_log_event(message, level, timestamp, attributes=attributes, priority=priority)
 
 
 def accept_distributed_trace_payload(payload, transport_type="HTTP"):

@@ -31,6 +31,7 @@ import threading
 
 import newrelic.packages.six as six
 from newrelic.common.object_names import parse_exc_info
+from newrelic.core.attribute import MAX_ATTRIBUTE_LENGTH
 from newrelic.core.attribute_filter import AttributeFilter
 
 try:
@@ -135,11 +136,33 @@ class GCRuntimeMetricsSettings(Settings):
     enabled = False
 
 
+class MemoryRuntimeMetricsSettings(Settings):
+    pass
+
+
 class MachineLearningSettings(Settings):
     pass
 
 
 class MachineLearningInferenceEventsValueSettings(Settings):
+    pass
+
+
+class AIMonitoringSettings(Settings):
+    @property
+    def llm_token_count_callback(self):
+        return self._llm_token_count_callback
+
+
+class AIMonitoringStreamingSettings(Settings):
+    pass
+
+
+class AIMonitoringRecordContentSettings(Settings):
+    pass
+
+
+class K8sOperatorSettings(Settings):
     pass
 
 
@@ -301,6 +324,10 @@ class ApplicationLoggingForwardingSettings(Settings):
     pass
 
 
+class ApplicationLoggingForwardingContextDataSettings(Settings):
+    pass
+
+
 class ApplicationLoggingMetricsSettings(Settings):
     pass
 
@@ -424,10 +451,16 @@ _settings = TopLevelSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
+_settings.application_logging.forwarding.context_data = ApplicationLoggingForwardingContextDataSettings()
+_settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.machine_learning = MachineLearningSettings()
 _settings.machine_learning.inference_events_value = MachineLearningInferenceEventsValueSettings()
+_settings.ai_monitoring = AIMonitoringSettings()
+_settings.ai_monitoring.streaming = AIMonitoringStreamingSettings()
+_settings.ai_monitoring.record_content = AIMonitoringRecordContentSettings()
+_settings.k8s_operator = K8sOperatorSettings()
 _settings.package_reporting = PackageReportingSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
@@ -448,6 +481,7 @@ _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = EventHarvestConfigHarvestLimitSettings()
 _settings.event_loop_visibility = EventLoopVisibilitySettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
+_settings.memory_runtime_pid_metrics = MemoryRuntimeMetricsSettings()
 _settings.heroku = HerokuSettings()
 _settings.infinite_tracing = InfiniteTracingSettings()
 _settings.instrumentation = InstrumentationSettings()
@@ -748,12 +782,20 @@ _settings.cross_application_tracer.enabled = False
 _settings.gc_runtime_metrics.enabled = False
 _settings.gc_runtime_metrics.top_object_count_limit = 5
 
+_settings.memory_runtime_pid_metrics.enabled = _environ_as_bool(
+    "NEW_RELIC_MEMORY_RUNTIME_PID_METRICS_ENABLED", default=True
+)
+
 _settings.transaction_events.enabled = True
 _settings.transaction_events.attributes.enabled = True
 _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
+_settings.custom_insights_events.max_attribute_value = _environ_as_int(
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_ATTRIBUTE_VALUE", default=MAX_ATTRIBUTE_LENGTH
+)
+
 _settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
@@ -925,6 +967,15 @@ _settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_
 _settings.application_logging.forwarding.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=True
 )
+_settings.application_logging.forwarding.context_data.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED", default=False
+)
+_settings.application_logging.forwarding.context_data.include = _environ_as_set(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_INCLUDE", default=""
+)
+_settings.application_logging.forwarding.context_data.exclude = _environ_as_set(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_EXCLUDE", default=""
+)
 _settings.application_logging.metrics.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED", default=True
 )
@@ -935,7 +986,15 @@ _settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNIN
 _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
 )
+_settings.ai_monitoring.enabled = _environ_as_bool("NEW_RELIC_AI_MONITORING_ENABLED", default=False)
+_settings.ai_monitoring.streaming.enabled = _environ_as_bool("NEW_RELIC_AI_MONITORING_STREAMING_ENABLED", default=True)
+_settings.ai_monitoring.record_content.enabled = _environ_as_bool(
+    "NEW_RELIC_AI_MONITORING_RECORD_CONTENT_ENABLED", default=True
+)
+_settings.ai_monitoring._llm_token_count_callback = None
+_settings.k8s_operator.enabled = _environ_as_bool("NEW_RELIC_K8S_OPERATOR_ENABLED", default=False)
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
+_settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 
 _settings.security.agent.enabled = _environ_as_bool("NEW_RELIC_SECURITY_AGENT_ENABLED", False)
 _settings.security.enabled = _environ_as_bool("NEW_RELIC_SECURITY_ENABLED", False)
@@ -1209,6 +1268,12 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
             settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
         )
 
+    # Check to see if collect_ai appears in the connect response to handle account-level AIM toggling
+    collect_ai = server_side_config.get("collect_ai", None)
+    if collect_ai is not None:
+        apply_config_setting(settings_snapshot, "ai_monitoring.enabled", collect_ai)
+        _logger.debug("Setting ai_monitoring.enabled to value of collect_ai=%s", collect_ai)
+
     # Since the server does not override this setting as it's an OTLP setting,
     # we must override it here manually by converting it into a per harvest cycle
     # value.
@@ -1217,6 +1282,14 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         "event_harvest_config.harvest_limits.ml_event_data",
         # override ml_events / (60s/5s) harvest
         settings_snapshot.event_harvest_config.harvest_limits.ml_event_data / 12,
+    )
+
+    # Since the server does not override this setting we must override it here manually
+    # by caping it at the max value of 4095.
+    apply_config_setting(
+        settings_snapshot,
+        "custom_insights_events.max_attribute_value",
+        min(settings_snapshot.custom_insights_events.max_attribute_value, 4095),
     )
 
     # This will be removed at some future point

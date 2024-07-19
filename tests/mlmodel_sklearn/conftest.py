@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from sklearn import __version__  # noqa: this is needed for get_package_version
 from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -25,8 +27,9 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "machine_learning.enabled": True,
     "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": True
+    "ml_insights_events.enabled": True,
 }
+
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (mlmodel_sklearn)",
     default_settings=_default_settings,

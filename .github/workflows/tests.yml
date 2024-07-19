@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+---
 name: Tests
 
 on:
@@ -36,13 +36,15 @@ jobs:
       - python
       - elasticsearchserver07
       - elasticsearchserver08
+      - firestore
       - grpc
       - kafka
       - memcached
       - mongodb
       - mssql
       - mysql
-      - postgres
+      - postgres16
+      - postgres9
       - rabbitmq
       - redis
       - rediscluster
@@ -60,14 +62,14 @@ jobs:
       - tests
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
+      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # 5.1.0
         with:
           python-version: "3.10"
           architecture: x64
 
       - name: Download Coverage Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427 # 4.1.4
         with:
           path: ./
 
@@ -79,10 +81,11 @@ jobs:
           coverage xml
 
       - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # 4.3.0
         with:
           files: coverage.xml
           fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # Tests
   python:
@@ -122,14 +125,18 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -146,7 +153,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -167,14 +174,18 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -191,13 +202,13 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           retention-days: 1
 
-  postgres:
+  postgres16:
     env:
       TOTAL_GROUPS: 2
 
@@ -212,10 +223,9 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
-      postgres:
-        image: postgres:9
+      postgres16:
+        image: postgres:16
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -229,12 +239,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -251,7 +266,71 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
+  postgres9:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-20.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      postgres9:
+        image: postgres:9
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 8080:5432
+          - 8081:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -272,7 +351,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       mssql:
         image: mcr.microsoft.com/azure-sql-edge:latest
@@ -292,12 +370,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -314,7 +397,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -335,7 +418,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       mysql:
         image: mysql:5.6
@@ -355,12 +437,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -377,7 +464,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -398,7 +485,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       redis1:
         image: hmstepanek/redis-cluster-node:1.0.0
@@ -449,17 +535,22 @@ jobs:
           --add-host=host.docker.internal:host-gateway
 
       cluster-setup:
-        image: hmstepanek/redis-cluster:1.0.0    
+        image: hmstepanek/redis-cluster:1.0.0
         options: >-
           --add-host=host.docker.internal:host-gateway
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -476,7 +567,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -497,7 +588,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       redis:
         image: redis
@@ -512,12 +602,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -534,7 +629,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -555,7 +650,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       solr:
         image: bitnami/solr:8.8.2
@@ -572,12 +666,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -594,7 +693,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -615,7 +714,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       memcached:
         image: memcached
@@ -630,12 +728,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -652,7 +755,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -673,7 +776,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       rabbitmq:
         image: rabbitmq
@@ -689,12 +791,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -711,7 +818,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -732,10 +839,9 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       zookeeper:
-        image: bitnami/zookeeper:3.7
+        image: bitnami/zookeeper:3.9.1
         env:
           ALLOW_ANONYMOUS_LOGIN: yes
 
@@ -743,7 +849,7 @@ jobs:
           - 2181:2181
 
       kafka:
-        image: bitnami/kafka:3.2
+        image: bitnami/kafka:3.6.1
         ports:
           - 8080:8080
           - 8082:8082
@@ -759,12 +865,17 @@ jobs:
           KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L3
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -781,7 +892,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -802,7 +913,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       mongodb:
         image: mongo:3.6.4
@@ -817,12 +927,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -839,7 +954,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -860,7 +975,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       elasticsearch:
         image: elasticsearch:7.17.8
@@ -877,12 +991,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -899,7 +1018,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -920,7 +1039,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       elasticsearch:
         image: elasticsearch:8.6.0
@@ -938,12 +1056,17 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -960,7 +1083,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
@@ -981,7 +1104,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     services:
       firestore:
         # Image set here MUST be repeated down below in options. See comment below.
@@ -1003,12 +1125,17 @@ jobs:
         # from every being executed as bash commands.
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
 
       - name: Get Environments
         id: get-envs
@@ -1025,7 +1152,7 @@ jobs:
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*

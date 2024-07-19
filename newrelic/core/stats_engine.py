@@ -41,11 +41,12 @@ from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.attribute import (
     MAX_LOG_MESSAGE_LENGTH,
     create_agent_attributes,
-    create_user_attributes,
+    create_attributes,
     process_user_attribute,
+    resolve_logging_context_attributes,
     truncate,
 )
-from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
+from newrelic.core.attribute_filter import DST_ALL, DST_ERROR_COLLECTOR
 from newrelic.core.code_level_metrics import extract_code_from_traceback
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.database_utils import explain_plan
@@ -724,6 +725,11 @@ class StatsEngine(object):
         module, name, fullnames, message_raw = parse_exc_info(error)
         fullname = fullnames[0]
 
+        # In the case case of JSON formatting for OpenAI models
+        # this will result in a "cleaner" message format
+        if getattr(value, "_nr_message", None):
+            message_raw = value._nr_message
+
         # Check to see if we need to strip the message before recording it.
 
         if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
@@ -823,7 +829,7 @@ class StatsEngine(object):
                 )
                 custom_attributes = {}
 
-            user_attributes = create_user_attributes(custom_attributes, settings.attribute_filter)
+            user_attributes = create_attributes(custom_attributes, DST_ALL, settings.attribute_filter)
 
         # Extract additional details about the exception as agent attributes
         agent_attributes = {}
@@ -893,7 +899,11 @@ class StatsEngine(object):
                 attributes["agentAttributes"][attr.name] = attr.value
 
         error_details = TracedError(
-            start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
+            start_time=time.time(),
+            path="Exception",
+            message=message,
+            type=fullname,
+            parameters=attributes,
         )
 
         # Save this error as a trace and an event.
@@ -1218,7 +1228,7 @@ class StatsEngine(object):
         ):
             self._log_events.merge(transaction.log_events, priority=transaction.priority)
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         settings = self.__settings
         if not (
             settings
@@ -1231,18 +1241,62 @@ class StatsEngine(object):
 
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
+        context_attributes = attributes  # Name reassigned for clarity
 
-        if not message or message.isspace():
-            _logger.debug("record_log_event called where message was missing. No log event will be sent.")
-            return
+        # Unpack message and attributes from dict inputs
+        if isinstance(message, dict):
+            message_attributes = {k: v for k, v in message.items() if k != "message"}
+            message = message.get("message", "")
+        else:
+            message_attributes = None
 
-        message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+        if message is not None:
+            # Coerce message into a string type
+            if not isinstance(message, six.string_types):
+                try:
+                    message = str(message)
+                except Exception:
+                    # Exit early for invalid message type after unpacking
+                    _logger.debug(
+                        "record_log_event called where message could not be converted to a string type. No log event will be sent."
+                    )
+                    return
+
+            # Truncate the now unpacked and string converted message
+            message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+
+        # Collect attributes from linking metadata, context data, and message attributes
+        collected_attributes = {}
+        if settings and settings.application_logging.forwarding.context_data.enabled:
+            if context_attributes:
+                context_attributes = resolve_logging_context_attributes(
+                    context_attributes, settings.attribute_filter, "context."
+                )
+                if context_attributes:
+                    collected_attributes.update(context_attributes)
+
+            if message_attributes:
+                message_attributes = resolve_logging_context_attributes(
+                    message_attributes, settings.attribute_filter, "message."
+                )
+                if message_attributes:
+                    collected_attributes.update(message_attributes)
+
+            # Exit early if no message or attributes found after filtering
+            if (not message or message.isspace()) and not context_attributes and not message_attributes:
+                _logger.debug(
+                    "record_log_event called where no message and no attributes were found. No log event will be sent."
+                )
+                return
+
+        # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute
+        collected_attributes.update(get_linking_metadata())
 
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=get_linking_metadata(),
+            attributes=collected_attributes,
         )
 
         if priority is None:

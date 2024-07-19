@@ -13,13 +13,18 @@
 # limitations under the License.
 
 import os
+
 import pytest
+from testing_support.db_settings import redis_settings
+from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
+    event_loop as loop,
+)
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 from newrelic.common.package_version_utils import get_package_version_tuple
-from testing_support.db_settings import redis_settings
-
-from testing_support.fixture.event_loop import event_loop as loop
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
 
 try:
     import aioredis
@@ -38,6 +43,7 @@ DB_SETTINGS = redis_settings()[0]
 
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -63,11 +69,14 @@ def client(request, loop):
             raise NotImplementedError()
     else:
         if request.param == "Redis":
-            return loop.run_until_complete(aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], DB_SETTINGS["port"]), db=0))
+            return loop.run_until_complete(
+                aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], DB_SETTINGS["port"]), db=0)
+            )
         elif request.param == "StrictRedis":
             pytest.skip("StrictRedis not implemented.")
         else:
             raise NotImplementedError()
+
 
 @pytest.fixture(scope="session")
 def key():

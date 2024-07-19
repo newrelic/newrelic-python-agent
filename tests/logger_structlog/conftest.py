@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import pytest
-from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction
-from testing_support.fixtures import (
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
 
+from newrelic.api.time_trace import current_trace
+from newrelic.api.transaction import current_transaction
+
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -31,6 +32,7 @@ _default_settings = {
     "application_logging.forwarding.enabled": True,
     "application_logging.metrics.enabled": True,
     "application_logging.local_decorating.enabled": True,
+    "application_logging.forwarding.context_data.enabled": True,
     "event_harvest_config.harvest_limits.log_event_data": 100000,
 }
 
@@ -103,33 +105,9 @@ def logger(structlog_caplog):
 def filtering_logger(structlog_caplog):
     import structlog
 
-    structlog.configure(
-        processors=[drop_event_processor], logger_factory=lambda *args, **kwargs: structlog_caplog
-    )
+    structlog.configure(processors=[drop_event_processor], logger_factory=lambda *args, **kwargs: structlog_caplog)
     _filtering_logger = structlog.get_logger()
     return _filtering_logger
-
-
-@pytest.fixture(scope="function")
-def callsite_parameter_logger(structlog_caplog):
-    import structlog
-
-    structlog.configure(
-        processors=[
-            structlog.processors.CallsiteParameterAdder(
-                [
-                    structlog.processors.CallsiteParameter.FILENAME,
-                    structlog.processors.CallsiteParameter.FUNC_NAME,
-                    structlog.processors.CallsiteParameter.LINENO,
-                ],
-            ),
-            structlog.processors.KeyValueRenderer(),
-        ],
-        logger_factory=lambda *args, **kwargs: structlog_caplog,
-    )
-
-    _callsite_logger = structlog.get_logger()
-    return _callsite_logger
 
 
 @pytest.fixture

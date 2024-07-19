@@ -21,6 +21,7 @@ back to JSON when encoutering exceptions unless the content type is explicitly s
 
 import logging
 
+from newrelic.api.time_trace import get_service_linking_metadata
 from newrelic.common.encoding_utils import json_encode
 from newrelic.core.config import global_settings
 from newrelic.core.stats_engine import CountStats, TimeStats
@@ -124,8 +125,11 @@ def create_key_values_from_iterable(iterable):
     )
 
 
-def create_resource(attributes=None):
+def create_resource(attributes=None, attach_apm_entity=True):
     attributes = attributes or {"instrumentation.provider": "newrelic-opentelemetry-python-ml"}
+    if attach_apm_entity:
+        metadata = get_service_linking_metadata()
+        attributes.update(metadata)
     return Resource(attributes=create_key_values_from_iterable(attributes))
 
 
@@ -203,7 +207,7 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
 
 
 def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=None):
-    resource = resource or create_resource()
+    resource = resource or create_resource(attach_apm_entity=False)
     return MetricsData(
         resource_metrics=[
             ResourceMetrics(
@@ -220,24 +224,45 @@ def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=N
 
 
 def encode_ml_event_data(custom_event_data, agent_run_id):
-    resource = create_resource()
-    ml_events = []
+    # An InferenceEvent is attached to a separate ML Model entity instead
+    # of the APM entity.
+    ml_inference_events = []
+    ml_apm_events = []
     for event in custom_event_data:
         event_info, event_attrs = event
+        event_type = event_info["type"]
         event_attrs.update(
             {
                 "real_agent_id": agent_run_id,
                 "event.domain": "newrelic.ml_events",
-                "event.name": event_info["type"],
+                "event.name": event_type,
             }
         )
         ml_attrs = create_key_values_from_iterable(event_attrs)
         unix_nano_timestamp = event_info["timestamp"] * 1e6
-        ml_events.append(
-            {
-                "time_unix_nano": int(unix_nano_timestamp),
-                "attributes": ml_attrs,
-            }
-        )
+        if event_type == "InferenceEvent":
+            ml_inference_events.append(
+                {
+                    "time_unix_nano": int(unix_nano_timestamp),
+                    "attributes": ml_attrs,
+                }
+            )
+        else:
+            ml_apm_events.append(
+                {
+                    "time_unix_nano": int(unix_nano_timestamp),
+                    "attributes": ml_attrs,
+                }
+            )
 
-    return LogsData(resource_logs=[ResourceLogs(resource=resource, scope_logs=[ScopeLogs(log_records=ml_events)])])
+    resource_logs = []
+    if ml_inference_events:
+        inference_resource = create_resource(attach_apm_entity=False)
+        resource_logs.append(
+            ResourceLogs(resource=inference_resource, scope_logs=[ScopeLogs(log_records=ml_inference_events)])
+        )
+    if ml_apm_events:
+        apm_resource = create_resource()
+        resource_logs.append(ResourceLogs(resource=apm_resource, scope_logs=[ScopeLogs(log_records=ml_apm_events)]))
+
+    return LogsData(resource_logs=resource_logs)

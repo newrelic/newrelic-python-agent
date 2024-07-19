@@ -19,10 +19,10 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.packages import six
 
-SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
+SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
 @pytest.mark.parametrize(
@@ -197,7 +197,6 @@ def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(ensemble_
     _test()
 
 
-
 @pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn >= 1.1")
 @pytest.mark.parametrize(
     "ensemble_model_name",
@@ -233,7 +232,6 @@ def test_above_v1_1_model_methods_wrapped_in_function_trace(ensemble_model_name,
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict", 2),
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict_proba", 3),
         ],
         "HistGradientBoostingRegressor": [
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.fit", 1),

@@ -14,6 +14,8 @@
 
 import json
 import logging
+import sys
+from traceback import format_tb
 
 import pytest
 
@@ -47,30 +49,41 @@ def log_buffer(caplog):
     _logger.removeHandler(_handler)
 
 
+@pytest.fixture
+def log_buffer_with_stack_trace(caplog):
+    buf = Buffer()
+
+    _formatter = NewRelicContextFormatter("", datefmt="ISO8601", stack_trace_limit=None)
+    _handler = logging.StreamHandler(buf)
+    _handler.setFormatter(_formatter)
+
+    _logger.addHandler(_handler)
+    caplog.set_level(logging.INFO, logger=__name__)
+
+    yield buf
+
+    _logger.removeHandler(_handler)
+
+
 class NonPrintableObject(object):
     def __str__(self):
         raise RuntimeError("Unable to print object.")
 
-    def __repr__(self):
-        raise RuntimeError("Unable to print object.")
+    __repr__ = __str__
 
 
-def test_newrelic_logger_no_error(log_buffer):
+class NonSerializableObject(object):
+    def __str__(self):
+        return "<%s object>" % self.__class__.__name__
+
+    __repr__ = __str__
+
+
+def test_newrelic_logger_min_extra_keys_no_error(log_buffer):
     extra = {
         "string": "foo",
-        "integer": 1,
-        "float": 1.23,
-        "null": None,
-        "array": [1, 2, 3],
-        "bool": True,
-        "non_serializable": {"set"},
-        "non_printable": NonPrintableObject(),
-        "object": {
-            "first": "bar",
-            "second": "baz",
-        },
     }
-    _logger.info(u"Hello %s", u"World", extra=extra)
+    _logger.info("Hello %s", "World", extra=extra)
 
     log_buffer.seek(0)
     message = json.load(log_buffer)
@@ -88,24 +101,79 @@ def test_newrelic_logger_no_error(log_buffer):
     assert isinstance(line_number, int)
 
     expected = {
-        u"entity.name": u"Python Agent Test (agent_features)",
-        u"entity.type": u"SERVICE",
-        u"message": u"Hello World",
-        u"log.level": u"INFO",
-        u"logger.name": u"test_logs_in_context",
-        u"thread.name": u"MainThread",
-        u"process.name": u"MainProcess",
-        u"extra.string": u"foo",
-        u"extra.integer": 1,
-        u"extra.float": 1.23,
-        u"extra.null": None,
-        u"extra.array": [1, 2, 3],
-        u"extra.bool": True,
-        u"extra.non_serializable": u"set(['set'])" if six.PY2 else u"{'set'}",
-        u"extra.non_printable": u"<unprintable NonPrintableObject object>",
-        u"extra.object": {
-            u"first": u"bar",
-            u"second": u"baz",
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "Hello World",
+        "log.level": "INFO",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "extra.string": "foo",
+    }
+    expected_extra_txn_keys = (
+        "entity.guid",
+        "hostname",
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
+
+def test_newrelic_logger_no_error(log_buffer):
+    extra = {
+        "string": "foo",
+        "integer": 1,
+        "float": 1.23,
+        "null": None,
+        "array": [1, 2, 3],
+        "bool": True,
+        "set": {"set"},
+        "non_serializable": NonSerializableObject(),
+        "non_printable": NonPrintableObject(),
+        "object": {
+            "first": "bar",
+            "second": "baz",
+        },
+    }
+    _logger.info("Hello %s", "World", extra=extra)
+
+    log_buffer.seek(0)
+    message = json.load(log_buffer)
+
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    process_id = message.pop("process.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
+    assert filename.endswith("/test_logs_in_context.py")
+    assert isinstance(line_number, int)
+
+    expected = {
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "Hello World",
+        "log.level": "INFO",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "extra.string": "foo",
+        "extra.integer": 1,
+        "extra.float": 1.23,
+        "extra.null": None,
+        "extra.array": [1, 2, 3],
+        "extra.bool": True,
+        "extra.set": '["set"]',
+        "extra.non_serializable": "<NonSerializableObject object>",
+        "extra.non_printable": "<unprintable NonPrintableObject object>",
+        "extra.object": {
+            "first": "bar",
+            "second": "baz",
         },
     }
     expected_extra_txn_keys = (
@@ -119,17 +187,16 @@ def test_newrelic_logger_no_error(log_buffer):
     assert set(message.keys()) == set(expected_extra_txn_keys)
 
 
-
 class ExceptionForTest(ValueError):
     pass
 
 
 @background_task()
-def test_newrelic_logger_error_inside_transaction(log_buffer):
+def test_newrelic_logger_error_inside_transaction_no_stack_trace(log_buffer):
     try:
         raise ExceptionForTest
     except ExceptionForTest:
-        _logger.exception(u"oops")
+        _logger.exception("oops")
 
     log_buffer.seek(0)
     message = json.load(log_buffer)
@@ -147,16 +214,16 @@ def test_newrelic_logger_error_inside_transaction(log_buffer):
     assert isinstance(line_number, int)
 
     expected = {
-        u"entity.name": u"Python Agent Test (agent_features)",
-        u"entity.type": u"SERVICE",
-        u"message": u"oops",
-        u"log.level": u"ERROR",
-        u"logger.name": u"test_logs_in_context",
-        u"thread.name": u"MainThread",
-        u"process.name": u"MainProcess",
-        u"error.class": u"test_logs_in_context:ExceptionForTest",
-        u"error.message": u"",
-        u"error.expected": False,
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "oops",
+        "log.level": "ERROR",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "error.class": "test_logs_in_context:ExceptionForTest",
+        "error.message": "",
+        "error.expected": False,
     }
     expected_extra_txn_keys = (
         "trace.id",
@@ -171,11 +238,63 @@ def test_newrelic_logger_error_inside_transaction(log_buffer):
     assert set(message.keys()) == set(expected_extra_txn_keys)
 
 
-def test_newrelic_logger_error_outside_transaction(log_buffer):
+@background_task()
+def test_newrelic_logger_error_inside_transaction_with_stack_trace(log_buffer_with_stack_trace):
+    expected_stack_trace = ""
     try:
         raise ExceptionForTest
     except ExceptionForTest:
-        _logger.exception(u"oops")
+        _logger.exception("oops")
+        expected_stack_trace = "".join(format_tb(sys.exc_info()[2]))
+
+    log_buffer_with_stack_trace.seek(0)
+    message = json.load(log_buffer_with_stack_trace)
+
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    process_id = message.pop("process.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+    stack_trace = message.pop("error.stack_trace")
+
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
+    assert filename.endswith("/test_logs_in_context.py")
+    assert isinstance(line_number, int)
+    assert isinstance(stack_trace, six.string_types)
+    assert stack_trace and stack_trace == expected_stack_trace
+
+    expected = {
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "oops",
+        "log.level": "ERROR",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "error.class": "test_logs_in_context:ExceptionForTest",
+        "error.message": "",
+        "error.expected": False
+    }
+    expected_extra_txn_keys = (
+        "trace.id",
+        "span.id",
+        "entity.guid",
+        "hostname"
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
+
+def test_newrelic_logger_error_outside_transaction_no_stack_trace(log_buffer):
+    try:
+        raise ExceptionForTest
+    except ExceptionForTest:
+        _logger.exception("oops")
 
     log_buffer.seek(0)
     message = json.load(log_buffer)
@@ -193,15 +312,15 @@ def test_newrelic_logger_error_outside_transaction(log_buffer):
     assert isinstance(line_number, int)
 
     expected = {
-        u"entity.name": u"Python Agent Test (agent_features)",
-        u"entity.type": u"SERVICE",
-        u"message": u"oops",
-        u"log.level": u"ERROR",
-        u"logger.name": u"test_logs_in_context",
-        u"thread.name": u"MainThread",
-        u"process.name": u"MainProcess",
-        u"error.class": u"test_logs_in_context:ExceptionForTest",
-        u"error.message": u"",
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "oops",
+        "log.level": "ERROR",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "error.class": "test_logs_in_context:ExceptionForTest",
+        "error.message": "",
     }
     expected_extra_txn_keys = (
         "entity.guid",
@@ -214,6 +333,53 @@ def test_newrelic_logger_error_outside_transaction(log_buffer):
     assert set(message.keys()) == set(expected_extra_txn_keys)
 
 
+def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_with_stack_trace):
+    expected_stack_trace = ""
+    try:
+        raise ExceptionForTest
+    except ExceptionForTest:
+        _logger.exception("oops")
+        expected_stack_trace = "".join(format_tb(sys.exc_info()[2]))
+
+    log_buffer_with_stack_trace.seek(0)
+    message = json.load(log_buffer_with_stack_trace)
+
+    timestamp = message.pop("timestamp")
+    thread_id = message.pop("thread.id")
+    process_id = message.pop("process.id")
+    filename = message.pop("file.name")
+    line_number = message.pop("line.number")
+    stack_trace = message.pop("error.stack_trace")
+
+    assert isinstance(timestamp, int)
+    assert isinstance(thread_id, int)
+    assert isinstance(process_id, int)
+    assert filename.endswith("/test_logs_in_context.py")
+    assert isinstance(line_number, int)
+    assert isinstance(stack_trace, six.string_types)
+    assert stack_trace and stack_trace == expected_stack_trace
+
+    expected = {
+        "entity.name": "Python Agent Test (agent_features)",
+        "entity.type": "SERVICE",
+        "message": "oops",
+        "log.level": "ERROR",
+        "logger.name": "test_logs_in_context",
+        "thread.name": "MainThread",
+        "process.name": "MainProcess",
+        "error.class": "test_logs_in_context:ExceptionForTest",
+        "error.message": "",
+    }
+    expected_extra_txn_keys = (
+        "entity.guid",
+        "hostname",
+    )
+
+    for k, v in expected.items():
+        assert message.pop(k) == v
+
+    assert set(message.keys()) == set(expected_extra_txn_keys)
+
 
 EXPECTED_KEYS_TXN = (
     "trace.id",
@@ -221,7 +387,7 @@ EXPECTED_KEYS_TXN = (
     "entity.name",
     "entity.type",
     "entity.guid",
-        "hostname",
+    "hostname",
 )
 
 EXPECTED_KEYS_NO_TXN = EXPECTED_KEYS_TRACE_ENDED = (

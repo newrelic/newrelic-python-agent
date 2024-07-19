@@ -16,7 +16,6 @@ import sys
 import time
 
 import webtest
-
 from testing_support.fixtures import (
     cat_enabled,
     make_cross_agent_headers,
@@ -24,14 +23,13 @@ from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
     validate_error_event_sample_data,
-    validate_transaction_error_event_count,
 )
 from testing_support.sample_applications import fully_featured_app
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
 from testing_support.validators.validate_non_transaction_error_event import (
     validate_non_transaction_error_event,
+)
+from testing_support.validators.validate_transaction_error_event_count import (
+    validate_transaction_error_event_count,
 )
 
 from newrelic.api.application import application_instance as application
@@ -249,11 +247,14 @@ _err_params = {"key": "value"}
 @reset_core_stats_engine()
 @validate_non_transaction_error_event(_intrinsic_attributes, required_user=_err_params)
 def test_error_event_with_params_outside_transaction():
+    attrs = {"drop-me": None}
+    attrs.update(_err_params)
+
     try:
         raise outside_error
     except ErrorEventOutsideTransactionError:
         app = application()
-        notice_error(sys.exc_info(), attributes=_err_params, application=app)
+        notice_error(sys.exc_info(), attributes=attrs, application=app)
 
 
 @reset_core_stats_engine()

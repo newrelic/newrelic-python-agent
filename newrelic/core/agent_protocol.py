@@ -147,6 +147,7 @@ class AgentProtocol(object):
         "ml_insights_events.enabled",
         "application_logging.forwarding.enabled",
         "machine_learning.inference_events_value.enabled",
+        "ai_monitoring.enabled",
     )
 
     LOGGER_FUNC_MAPPING = {
@@ -286,6 +287,7 @@ class AgentProtocol(object):
         connect_settings = {}
         connect_settings["browser_monitoring.loader"] = settings["browser_monitoring.loader"]
         connect_settings["browser_monitoring.debug"] = settings["browser_monitoring.debug"]
+        connect_settings["ai_monitoring.enabled"] = settings["ai_monitoring.enabled"]
 
         security_settings = {}
         security_settings["capture_params"] = settings["capture_params"]
@@ -489,6 +491,7 @@ class ServerlessModeProtocol(AgentProtocol):
             "protocol_version": self.VERSION,
             "execution_environment": os.environ.get("AWS_EXECUTION_ENV", None),
             "agent_version": version,
+            "agent_language": "python",
         }
 
     def finalize(self):

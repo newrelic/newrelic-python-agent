@@ -39,6 +39,7 @@ from newrelic.api.application import (
     application_settings,
     register_application,
 )
+from newrelic.api.ml_model import set_llm_token_count_callback
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.common.object_names import callable_name
@@ -363,9 +364,22 @@ def make_cross_agent_headers(payload, encoding_key, cat_id):
     return {"X-NewRelic-Transaction": value, "X-NewRelic-ID": id_value}
 
 
-def make_synthetics_headers(encoding_key, account_id, resource_id, job_id, monitor_id, type_, initiator, attributes, synthetics_version=1, synthetics_info_version=1):
+def make_synthetics_headers(
+    encoding_key,
+    account_id,
+    resource_id,
+    job_id,
+    monitor_id,
+    type_,
+    initiator,
+    attributes,
+    synthetics_version=1,
+    synthetics_info_version=1,
+):
     headers = {}
-    headers.update(make_synthetics_header(account_id, resource_id, job_id, monitor_id, encoding_key, synthetics_version))
+    headers.update(
+        make_synthetics_header(account_id, resource_id, job_id, monitor_id, encoding_key, synthetics_version)
+    )
     if type_:
         headers.update(make_synthetics_info_header(type_, initiator, attributes, encoding_key, synthetics_info_version))
     return headers
@@ -645,26 +659,6 @@ def validate_transaction_event_sample_data(required_attrs, required_user_attrs=T
     return _validate_wrapper
 
 
-def validate_transaction_error_event_count(num_errors=1):
-    """Validate that the correct number of error events are saved to StatsEngine
-    after a transaction
-    """
-
-    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
-    def _validate_error_event_on_stats_engine(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            error_events = list(instance.error_events)
-            assert len(error_events) == num_errors
-
-        return result
-
-    return _validate_error_event_on_stats_engine
-
-
 def validate_transaction_error_trace_count(num_errors):
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_transaction_error_trace_count(wrapped, instance, args, kwargs):
@@ -758,7 +752,15 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
     return _validate_error_event_sample_data
 
 
-SYNTHETICS_INTRINSIC_ATTR_NAMES = set(["nr.syntheticsResourceId", "nr.syntheticsJobId", "nr.syntheticsMonitorId", "nr.syntheticsType", "nr.syntheticsInitiator"])
+SYNTHETICS_INTRINSIC_ATTR_NAMES = set(
+    [
+        "nr.syntheticsResourceId",
+        "nr.syntheticsJobId",
+        "nr.syntheticsMonitorId",
+        "nr.syntheticsType",
+        "nr.syntheticsInitiator",
+    ]
+)
 
 
 def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics, required_user):
@@ -810,7 +812,7 @@ def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics,
         assert intrinsics["nr.syntheticsResourceId"] == res_id
         assert intrinsics["nr.syntheticsJobId"] == job_id
         assert intrinsics["nr.syntheticsMonitorId"] == monitor_id
-    
+
     if "nr.syntheticsType" in required_intrinsics:
         type_ = required_intrinsics["nr.syntheticsType"]
         initiator = required_intrinsics["nr.syntheticsInitiator"]
@@ -891,56 +893,6 @@ def validate_application_exception_message(expected_message):
         return result
 
     return _validate_application_exception_message
-
-
-def _validate_custom_event(recorded_event, required_event):
-    assert len(recorded_event) == 2  # [intrinsic, user attributes]
-
-    intrinsics = recorded_event[0]
-
-    assert intrinsics["type"] == required_event[0]["type"]
-
-    now = time.time()
-    assert isinstance(intrinsics["timestamp"], int)
-    assert intrinsics["timestamp"] <= 1000.0 * now
-    assert intrinsics["timestamp"] >= 1000.0 * required_event[0]["timestamp"]
-
-    assert recorded_event[1].items() == required_event[1].items()
-
-
-def validate_custom_event_in_application_stats_engine(required_event):
-    @function_wrapper
-    def _validate_custom_event_in_application_stats_engine(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            stats = core_application_stats_engine(None)
-            assert stats.custom_events.num_samples == 1
-
-            custom_event = next(iter(stats.custom_events))
-            _validate_custom_event(custom_event, required_event)
-
-        return result
-
-    return _validate_custom_event_in_application_stats_engine
-
-
-def validate_custom_event_count(count):
-    @function_wrapper
-    def _validate_custom_event_count(wrapped, instance, args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            stats = core_application_stats_engine(None)
-            assert stats.custom_events.num_samples == count
-
-        return result
-
-    return _validate_custom_event_count
 
 
 def _validate_node_parenting(node, expected_node):
@@ -1071,6 +1023,27 @@ def override_application_settings(overrides):
             original_settings.__dict__.update(backup)
 
     return _override_application_settings
+
+
+def override_llm_token_callback_settings(callback):
+    @function_wrapper
+    def _override_llm_token_callback_settings(wrapped, instance, args, kwargs):
+        # The settings object has references from a number of
+        # different places. We have to create a copy, overlay
+        # the temporary settings and then when done clear the
+        # top level settings object and rebuild it when done.
+        original_settings = application_settings()
+        backup = copy.deepcopy(original_settings.__dict__)
+
+        try:
+            set_llm_token_count_callback(callback, application_instance())
+
+            return wrapped(*args, **kwargs)
+        finally:
+            original_settings.__dict__.clear()
+            original_settings.__dict__.update(backup)
+
+    return _override_llm_token_callback_settings
 
 
 def override_generic_settings(settings_object, overrides):

@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 import boto3
-import moto
 import pytest
+from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -30,13 +28,6 @@ from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 MOTO_VERSION = get_package_version_tuple("moto")
-
-# patch earlier versions of moto to support py37
-if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
-    import re
-
-    moto.packages.responses.responses.re._pattern_type = re.Pattern
-
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec (This is fine for testing purposes)
 AWS_REGION_NAME = "us-east-1"
@@ -59,7 +50,7 @@ sns_metrics_phone = [("MessageBroker/SNS/Topic" "/Produce/Named/PhoneNumber", 1)
     background_task=True,
 )
 @background_task()
-@moto.mock_sns
+@mock_aws
 def test_publish_to_sns_topic(topic_argument):
     conn = boto3.client(
         "sns",
@@ -88,7 +79,7 @@ def test_publish_to_sns_topic(topic_argument):
     background_task=True,
 )
 @background_task()
-@moto.mock_sns
+@mock_aws
 def test_publish_to_sns_phone():
     conn = boto3.client(
         "sns",

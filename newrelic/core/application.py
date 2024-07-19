@@ -552,6 +552,7 @@ class Application(object):
             application_logging_local_decorating = (
                 configuration.application_logging.enabled and configuration.application_logging.local_decorating.enabled
             )
+            ai_monitoring_streaming = configuration.ai_monitoring.streaming.enabled
             internal_metric(
                 "Supportability/Logging/Forwarding/Python/%s"
                 % ("enabled" if application_logging_forwarding else "disabled"),
@@ -566,6 +567,11 @@ class Application(object):
                 "Supportability/Logging/Metrics/Python/%s" % ("enabled" if application_logging_metrics else "disabled"),
                 1,
             )
+            if not ai_monitoring_streaming:
+                internal_metric(
+                    "Supportability/Python/ML/Streaming/Disabled",
+                    1,
+                )
 
             # Infinite tracing feature toggle metrics
             infinite_tracing = configuration.infinite_tracing.enabled  # Property that checks trace observer host
@@ -916,7 +922,7 @@ class Application(object):
         if settings is None or not settings.custom_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings)
 
         if event:
             with self._stats_custom_lock:
@@ -932,22 +938,23 @@ class Application(object):
         if settings is None or not settings.ml_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings, is_ml_event=True)
 
         if event:
             with self._stats_custom_lock:
                 self._global_events_account += 1
                 self._stats_engine.record_ml_event(event)
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         if not self._active_session:
             return
 
-        if message:
-            with self._stats_custom_lock:
-                event = self._stats_engine.record_log_event(message, level, timestamp, priority=priority)
-                if event:
-                    self._global_events_account += 1
+        with self._stats_custom_lock:
+            event = self._stats_engine.record_log_event(
+                message, level, timestamp, attributes=attributes, priority=priority
+            )
+            if event:
+                self._global_events_account += 1
 
     def record_transaction(self, data):
         """Record a single transaction against this application."""
@@ -1506,7 +1513,9 @@ class Application(object):
                         # Send metrics
                         self._active_session.send_metric_data(self._period_start, period_end, metric_data)
                         if dimensional_metric_data:
-                            self._active_session.send_dimensional_metric_data(self._period_start, period_end, dimensional_metric_data)
+                            self._active_session.send_dimensional_metric_data(
+                                self._period_start, period_end, dimensional_metric_data
+                            )
 
                         _logger.debug("Done sending data for harvest of %r.", self._app_name)
 

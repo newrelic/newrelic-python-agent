@@ -13,16 +13,15 @@
 # limitations under the License.
 
 import pytest
-from sklearn import __init__  # noqa: needed for get_package_version
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.packages import six
 
-SKLEARN_VERSION = tuple(map(int, get_package_version("sklearn").split(".")))
+SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
 @pytest.mark.parametrize(

@@ -24,8 +24,9 @@ import newrelic.core.error_collector
 import newrelic.core.trace_node
 from newrelic.common.encoding_utils import camel_case
 from newrelic.common.streaming_utils import SpanProtoAttrs
-from newrelic.core.attribute import create_agent_attributes, create_user_attributes
+from newrelic.core.attribute import create_agent_attributes, create_attributes
 from newrelic.core.attribute_filter import (
+    DST_ALL,
     DST_ERROR_COLLECTOR,
     DST_TRANSACTION_EVENTS,
     DST_TRANSACTION_TRACER,
@@ -174,8 +175,7 @@ class TransactionNode(_TransactionNode):
 
             if self.queue_start != 0:
                 queue_wait = self.start_time - self.queue_start
-                if queue_wait < 0:
-                    queue_wait = 0
+                queue_wait = max(queue_wait, 0)
 
                 yield TimeMetric(name="WebFrontend/QueueTime", scope="", duration=queue_wait, exclusive=None)
 
@@ -368,17 +368,20 @@ class TransactionNode(_TransactionNode):
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params["agentAttributes"][attr.name] = attr.value
 
-            err_attrs = create_user_attributes(error.custom_params, self.settings.attribute_filter)
+            err_attrs = create_attributes(error.custom_params, DST_ALL, self.settings.attribute_filter)
             for attr in err_attrs:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params["userAttributes"][attr.name] = attr.value
 
             yield newrelic.core.error_collector.TracedError(
-                start_time=error.timestamp, path=self.path, message=error.message, type=error.type, parameters=params
+                start_time=error.timestamp,
+                path=self.path,
+                message=error.message,
+                type=error.type,
+                parameters=params,
             )
 
     def transaction_trace(self, stats, limit, connections):
-
         self.trace_node_count = 0
         self.trace_node_limit = limit
 
@@ -505,10 +508,8 @@ class TransactionNode(_TransactionNode):
         return intrinsics
 
     def error_events(self, stats_table):
-
         errors = []
         for error in self.errors:
-
             intrinsics = self.error_event_intrinsics(error, stats_table)
 
             # Add user and agent attributes to event
@@ -537,7 +538,7 @@ class TransactionNode(_TransactionNode):
 
             # add error specific custom params to this error's userAttributes
 
-            err_attrs = create_user_attributes(error.custom_params, self.settings.attribute_filter)
+            err_attrs = create_attributes(error.custom_params, DST_ALL, self.settings.attribute_filter)
             for attr in err_attrs:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     user_attributes[attr.name] = attr.value
@@ -548,7 +549,6 @@ class TransactionNode(_TransactionNode):
         return errors
 
     def error_event_intrinsics(self, error, stats_table):
-
         intrinsics = self._event_intrinsics(stats_table)
 
         intrinsics["type"] = "TransactionError"
@@ -570,7 +570,6 @@ class TransactionNode(_TransactionNode):
 
         cache = getattr(self, "_event_intrinsics_cache", None)
         if cache is not None:
-
             # We don't want to execute this function more than once, since
             # it should always yield the same data per transaction
 
@@ -578,6 +577,7 @@ class TransactionNode(_TransactionNode):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
+        intrinsics["guid"] = self.guid
         intrinsics["timestamp"] = int(1000.0 * self.start_time)
         intrinsics["duration"] = self.response_time
 

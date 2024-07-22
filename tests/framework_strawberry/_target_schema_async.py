@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from typing import List, Optional
+
 try:
     import strawberry.mutation
 except ImportError:
@@ -20,6 +21,7 @@ except ImportError:
 try:
     import strawberry.type
 except ImportError:
+    # Only import the full package if strawberry.type is not available (strawberry>=0.236.0)
     import strawberry
 from framework_strawberry._target_schema_sync import (
     Item,

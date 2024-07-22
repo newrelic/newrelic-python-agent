@@ -21,6 +21,7 @@ except ImportError:
 try:
     import strawberry.type
 except ImportError:
+    # Only import the full package if strawberry.type is not available (strawberry>=0.236.0)
     import strawberry
 
 from strawberry import Schema, field

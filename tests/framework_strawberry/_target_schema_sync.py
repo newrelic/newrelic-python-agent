@@ -13,17 +13,11 @@
 # limitations under the License.
 
 from typing import List, Union, Optional
-
+import strawberry
 try:
     import strawberry.mutation
 except ImportError:
     import strawberry.types.mutation
-try:
-    import strawberry.type
-except ImportError:
-    # Only import the full package if strawberry.type is not available (strawberry>=0.236.0)
-    import strawberry
-
 from strawberry import Schema, field
 from strawberry.asgi import GraphQL
 from strawberry.schema.config import StrawberryConfig

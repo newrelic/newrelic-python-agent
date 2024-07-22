@@ -12,14 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Union
+from typing import List, Union, Optional
 
-import strawberry.mutation
-import strawberry.type
+try:
+    import strawberry.mutation
+except ImportError:
+    import strawberry.types.mutation
+try:
+    import strawberry.type
+except ImportError:
+    import strawberry
+
 from strawberry import Schema, field
 from strawberry.asgi import GraphQL
 from strawberry.schema.config import StrawberryConfig
-from strawberry.types.types import Optional
 from testing_support.asgi_testing import AsgiTest
 
 

@@ -30,8 +30,51 @@ MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 url = "sqs.us-east-1.amazonaws.com"
+EXPECTED_SEND_MESSAGE_AGENT_ATTRS = {
+    "expected_agents": ["messaging.destination.name"],
+    "exact_agents": {
+        "aws.operation": "SendMessage",
+        "cloud.account.id": "123456789012",
+        "cloud.region": "us-east-1",
+        "messaging.system": "aws_sqs",
+    },
+}
+EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS = {
+    "expected_agents": ["messaging.destination.name"],
+    "exact_agents": {
+        "aws.operation": "ReceiveMessage",
+        "cloud.account.id": "123456789012",
+        "cloud.region": "us-east-1",
+        "messaging.system": "aws_sqs",
+    },
+}
+EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS = required = {
+    "expected_agents": ["messaging.destination.name"],
+    "exact_agents": {
+        "aws.operation": "SendMessageBatch",
+        "cloud.account.id": "123456789012",
+        "cloud.region": "us-east-1",
+        "messaging.system": "aws_sqs",
+    },
+}
 if BOTOCORE_VERSION < (1, 29, 0):
     url = "queue.amazonaws.com"
+    # The old style url does not contain the necessary AWS info.
+    EXPECTED_SEND_MESSAGE_AGENT_ATTRS = {
+        "exact_agents": {
+            "aws.operation": "SendMessage",
+        },
+    }
+    EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS = {
+        "exact_agents": {
+            "aws.operation": "ReceiveMessage",
+        },
+    }
+    EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS = {
+        "exact_agents": {
+            "aws.operation": "SendMessageBatch",
+        },
+    }
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
@@ -65,9 +108,18 @@ _sqs_rollup_metrics_malformed = [
 
 @dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateQueue"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "SendMessage"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "ReceiveMessage"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "SendMessageBatch"}, count=1)
+@validate_span_events(
+    **EXPECTED_SEND_MESSAGE_AGENT_ATTRS,
+    count=1,
+)
+@validate_span_events(
+    **EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS,
+    count=1,
+)
+@validate_span_events(
+    **EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS,
+    count=1,
+)
 @validate_span_events(exact_agents={"aws.operation": "PurgeQueue"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "DeleteQueue"}, count=1)
 @validate_transaction_metrics(

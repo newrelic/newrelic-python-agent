@@ -86,6 +86,10 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "response.headers.contentLength",
         "response.headers.contentType",
         "response.status",
+        "messaging.system",
+        "cloud.region",
+        "cloud.account.id",
+        "messaging.destination.name",
     )
 )
 

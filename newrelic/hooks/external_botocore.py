@@ -14,6 +14,7 @@
 
 import json
 import logging
+import re
 import sys
 import traceback
 import uuid
@@ -35,6 +36,7 @@ from newrelic.common.object_wrapper import (
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
 
+QUEUE_URL_PATTERN = re.compile(r"https://sqs.([\w\d-]+).amazonaws.com/(\d+)/([^/]+)")
 BOTOCORE_VERSION = get_package_version("botocore")
 
 
@@ -52,6 +54,23 @@ UNSUPPORTED_MODEL_WARNING_SENT = False
 def extract_sqs(*args, **kwargs):
     queue_value = kwargs.get("QueueUrl", "Unknown")
     return queue_value.rsplit("/", 1)[-1]
+
+
+def extract_agent_attrs(*args, **kwargs):
+    # Try to capture AWS SQS info as agent attributes. Log any exception to debug.
+    agent_attrs = {}
+    try:
+        queue_url = kwargs.get("QueueUrl")
+        if queue_url:
+            m = QUEUE_URL_PATTERN.match(queue_url)
+            if m:
+                agent_attrs["messaging.system"] = "aws_sqs"
+                agent_attrs["cloud.region"] = m.group(1)
+                agent_attrs["cloud.account.id"] = m.group(2)
+                agent_attrs["messaging.destination.name"] = m.group(3)
+    except Exception as e:
+        _logger.debug("Failed to capture AWS SQS info.", exc_info=True)
+    return agent_attrs
 
 
 def extract(argument_names, default=None):
@@ -827,9 +846,15 @@ CUSTOM_TRACE_POINTS = {
     ("dynamodb", "delete_table"): datastore_trace("DynamoDB", extract("TableName"), "delete_table"),
     ("dynamodb", "query"): datastore_trace("DynamoDB", extract("TableName"), "query"),
     ("dynamodb", "scan"): datastore_trace("DynamoDB", extract("TableName"), "scan"),
-    ("sqs", "send_message"): message_trace("SQS", "Produce", "Queue", extract_sqs),
-    ("sqs", "send_message_batch"): message_trace("SQS", "Produce", "Queue", extract_sqs),
-    ("sqs", "receive_message"): message_trace("SQS", "Consume", "Queue", extract_sqs),
+    ("sqs", "send_message"): message_trace(
+        "SQS", "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_agent_attrs
+    ),
+    ("sqs", "send_message_batch"): message_trace(
+        "SQS", "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_agent_attrs
+    ),
+    ("sqs", "receive_message"): message_trace(
+        "SQS", "Consume", "Queue", extract_sqs, extract_agent_attrs=extract_agent_attrs
+    ),
     ("bedrock-runtime", "invoke_model"): wrap_bedrock_runtime_invoke_model(response_streaming=False),
     ("bedrock-runtime", "invoke_model_with_response_stream"): wrap_bedrock_runtime_invoke_model(
         response_streaming=True

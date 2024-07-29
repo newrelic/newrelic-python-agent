@@ -4541,6 +4541,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "s3transfer.futures",
+        "newrelic.hooks.external_s3transfer",
+        "instrument_s3transfer_futures",
+    )
+
+    _process_module_definition(
         "tornado.httpserver",
         "newrelic.hooks.framework_tornado",
         "instrument_tornado_httpserver",

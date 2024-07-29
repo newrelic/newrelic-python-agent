@@ -35,6 +35,7 @@ from newrelic.common.object_wrapper import (
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
 
+
 BOTOCORE_VERSION = get_package_version("botocore")
 
 
@@ -845,6 +846,7 @@ def _nr_clientcreator__create_api_method_(wrapped, instance, args, kwargs):
     (py_operation_name, service_model) = bind__create_api_method(*args, **kwargs)
 
     service_name = service_model.service_name.lower()
+
     tracer = CUSTOM_TRACE_POINTS.get((service_name, py_operation_name))
 
     wrapped = wrapped(*args, **kwargs)

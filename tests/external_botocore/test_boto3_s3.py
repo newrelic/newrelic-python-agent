@@ -27,14 +27,13 @@ from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 MOTO_VERSION = get_package_version_tuple("moto")
+BOTOCORE_VERSION = get_package_version_tuple("botocore")
+
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION_NAME = "us-west-2"
 
 TEST_BUCKET = "python-agent-test-%s" % uuid.uuid4()
-
-BOTOCORE_VERSION = tuple(map(int, botocore.__version__.split(".")))
-
 
 if BOTOCORE_VERSION < (1, 7, 41):
     S3_URL = "s3-us-west-2.amazonaws.com"

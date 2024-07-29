@@ -702,6 +702,8 @@ def get_service_linking_metadata(application=None, settings=None):
         if entity_guid:
             metadata["entity.guid"] = entity_guid
         metadata["hostname"] = platform.uname()[1]
+        for label in settings.labels:
+            metadata["tags." + label["label_type"]] = label["label_value"]
 
     return metadata
 

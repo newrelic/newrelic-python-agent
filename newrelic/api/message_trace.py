@@ -92,15 +92,7 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
 
 
 def MessageTraceWrapper(
-    wrapped,
-    library,
-    operation,
-    destination_type,
-    destination_name,
-    params={},
-    terminal=True,
-    async_wrapper=None,
-    extract_agent_attrs=None,
+    wrapped, library, operation, destination_type, destination_name, params={}, terminal=True, async_wrapper=None
 ):
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
@@ -143,15 +135,6 @@ def MessageTraceWrapper(
         else:
             _destination_name = destination_name
 
-        _agent_attrs = {}
-        if callable(extract_agent_attrs):
-            if instance is not None:
-                _agent_attrs = extract_agent_attrs(instance, *args, **kwargs)
-            else:
-                _agent_attrs = extract_agent_attrs(*args, **kwargs)
-        else:
-            _agent_attrs = extract_agent_attrs
-
         trace = MessageTrace(
             _library,
             _operation,
@@ -163,9 +146,6 @@ def MessageTraceWrapper(
             source=wrapped,
         )
 
-        # Attach extracted agent attributes.
-        trace.agent_attributes.update(_agent_attrs)
-
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
 
@@ -175,16 +155,7 @@ def MessageTraceWrapper(
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
 
 
-def message_trace(
-    library,
-    operation,
-    destination_type,
-    destination_name,
-    params={},
-    terminal=True,
-    async_wrapper=None,
-    extract_agent_attrs=None,
-):
+def message_trace(library, operation, destination_type, destination_name, params={}, terminal=True, async_wrapper=None):
     return functools.partial(
         MessageTraceWrapper,
         library=library,
@@ -194,7 +165,6 @@ def message_trace(
         params=params,
         terminal=terminal,
         async_wrapper=async_wrapper,
-        extract_agent_attrs=extract_agent_attrs,
     )
 
 
@@ -208,11 +178,10 @@ def wrap_message_trace(
     params={},
     terminal=True,
     async_wrapper=None,
-    extract_agent_attrs=None,
 ):
     wrap_object(
         module,
         object_path,
         MessageTraceWrapper,
-        (library, operation, destination_type, destination_name, params, terminal, async_wrapper, extract_agent_attrs),
+        (library, operation, destination_type, destination_name, params, terminal, async_wrapper),
     )

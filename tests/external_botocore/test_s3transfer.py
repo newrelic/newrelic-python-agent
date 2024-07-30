@@ -54,7 +54,7 @@ else:
 @validate_span_events(exact_agents={"aws.operation": "PutObject"}, count=1)
 @validate_transaction_metrics(
     "test_s3transfer:test_s3_context_propagation",
-    scoped_metrics=[       
+    scoped_metrics=[
         ("External/%s/botocore/PUT" % S3_URL, 2),
     ],
     rollup_metrics=[

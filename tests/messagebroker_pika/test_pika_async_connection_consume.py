@@ -35,10 +35,12 @@ from testing_support.fixtures import (
     capture_transaction_metrics,
     function_not_called,
     override_application_settings,
+    dt_enabled,
 )
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -98,10 +100,16 @@ else:
 
 @parametrized_connection
 @pytest.mark.parametrize("callback_as_partial", [True, False])
+@dt_enabled
 @validate_code_level_metrics(
     "test_pika_async_connection_consume.test_async_connection_basic_get_inside_txn.<locals>",
     "on_message",
     py2_namespace="test_pika_async_connection_consume",
+)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={"name": "MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE},
+    exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @validate_transaction_metrics(
     ("test_pika_async_connection_consume:" "test_async_connection_basic_get_inside_txn"),

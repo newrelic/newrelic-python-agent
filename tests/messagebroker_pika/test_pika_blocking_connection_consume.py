@@ -20,10 +20,11 @@ import pytest
 from compat import basic_consume
 from conftest import BODY, CORRELATION_ID, EXCHANGE, HEADERS, QUEUE, REPLY_TO
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import capture_transaction_metrics
+from testing_support.fixtures import capture_transaction_metrics, dt_enabled
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -52,6 +53,7 @@ _test_blocking_connection_basic_get_metrics = [
 ]
 
 
+@dt_enabled
 @validate_transaction_metrics(
     ("test_pika_blocking_connection_consume:" "test_blocking_connection_basic_get"),
     scoped_metrics=_test_blocking_connection_basic_get_metrics,
@@ -59,6 +61,11 @@ _test_blocking_connection_basic_get_metrics = [
     background_task=True,
 )
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={"name": "MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE},
+    exact_agents={"server.address": DB_SETTINGS["host"]},
+)
 @background_task()
 def test_blocking_connection_basic_get(producer):
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
@@ -144,6 +151,7 @@ else:
 
 
 @pytest.mark.parametrize("as_partial", [True, False])
+@dt_enabled
 @validate_code_level_metrics(
     "test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_outside_transaction.<locals>",
     "on_message",
@@ -157,6 +165,11 @@ else:
     group="Message/RabbitMQ/Exchange/%s" % EXCHANGE,
 )
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={"name": "Message/RabbitMQ/Exchange/%s/%s" % (EXCHANGE, _txn_name)},
+    exact_agents={"server.address": DB_SETTINGS["host"]},
+)
 def test_blocking_connection_basic_consume_outside_transaction(producer, as_partial):
     def on_message(channel, method_frame, header_frame, body):
         assert hasattr(method_frame, "_nr_start_time")
@@ -200,13 +213,14 @@ else:
 
 
 @pytest.mark.parametrize("as_partial", [True, False])
+@dt_enabled
 @validate_code_level_metrics(
     "test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_inside_txn.<locals>",
     "on_message",
     py2_namespace="test_pika_blocking_connection_consume",
 )
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume:" "test_blocking_connection_basic_consume_inside_txn"),
+    "test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_inside_txn",
     scoped_metrics=_test_blocking_conn_basic_consume_in_txn_metrics,
     rollup_metrics=_test_blocking_conn_basic_consume_in_txn_metrics,
     background_task=True,

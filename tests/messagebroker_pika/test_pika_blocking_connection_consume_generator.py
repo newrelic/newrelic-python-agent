@@ -122,7 +122,7 @@ def test_blocking_connection_consume_exception_in_for_loop(producer):
             # We should still create the metric in this case even if there is
             # an exception
             for result in channel.consume(QUEUE):
-                1 / 0
+                1 / 0  # noqa
         except ZeroDivisionError:
             # Expected error
             pass

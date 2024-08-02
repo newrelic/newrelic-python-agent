@@ -144,7 +144,7 @@ if six.PY3:
         )
     )
 else:
-    _txn_name = "test_pika_blocking_connection_consume:" "on_message"
+    _txn_name = "test_pika_blocking_connection_consume:on_message"
     _test_blocking_conn_basic_consume_no_txn_metrics.append(
         ("Function/test_pika_blocking_connection_consume:on_message", None)
     )

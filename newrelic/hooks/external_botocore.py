@@ -848,29 +848,8 @@ def sqs_message_trace(
     async_wrapper=None,
     extract_agent_attrs=None,
 ):
-    return functools.partial(
-        SQSMessageTraceWrapper,
-        operation=operation,
-        destination_type=destination_type,
-        destination_name=destination_name,
-        params=params,
-        terminal=terminal,
-        async_wrapper=async_wrapper,
-        extract_agent_attrs=extract_agent_attrs,
-    )
-
-
-def SQSMessageTraceWrapper(
-    wrapped,
-    operation,
-    destination_type,
-    destination_name,
-    params={},
-    terminal=True,
-    async_wrapper=None,
-    extract_agent_attrs=None,
-):
-    def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
+    @function_wrapper
+    def _nr_sqs_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
@@ -905,7 +884,7 @@ def SQSMessageTraceWrapper(
         with trace:
             return wrapped(*args, **kwargs)
 
-    return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
+    return _nr_sqs_message_trace_wrapper_
 
 
 CUSTOM_TRACE_POINTS = {

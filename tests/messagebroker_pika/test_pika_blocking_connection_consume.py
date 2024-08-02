@@ -49,13 +49,13 @@ _message_broker_tt_params = {
 _test_blocking_connection_basic_get_metrics = [
     ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, 1),
-    (("Function/pika.adapters.blocking_connection:" "_CallbackResult.set_value_once"), 1),
+    ("Function/pika.adapters.blocking_connection:_CallbackResult.set_value_once", 1),
 ]
 
 
 @dt_enabled
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume:" "test_blocking_connection_basic_get"),
+    "test_pika_blocking_connection_consume:test_blocking_connection_basic_get",
     scoped_metrics=_test_blocking_connection_basic_get_metrics,
     rollup_metrics=_test_blocking_connection_basic_get_metrics,
     background_task=True,
@@ -82,7 +82,7 @@ _test_blocking_connection_basic_get_empty_metrics = [
 
 
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume:" "test_blocking_connection_basic_get_empty"),
+    "test_pika_blocking_connection_consume:test_blocking_connection_basic_get_empty",
     scoped_metrics=_test_blocking_connection_basic_get_empty_metrics,
     rollup_metrics=_test_blocking_connection_basic_get_empty_metrics,
     background_task=True,
@@ -271,7 +271,7 @@ else:
 
 @pytest.mark.parametrize("as_partial", [True, False])
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume:" "test_blocking_connection_basic_consume_stopped_txn"),
+    "test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_stopped_txn",
     scoped_metrics=_test_blocking_conn_basic_consume_stopped_txn_metrics,
     rollup_metrics=_test_blocking_conn_basic_consume_stopped_txn_metrics,
     background_task=True,

@@ -112,7 +112,7 @@ else:
     exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @validate_transaction_metrics(
-    ("test_pika_async_connection_consume:" "test_async_connection_basic_get_inside_txn"),
+    "test_pika_async_connection_consume:test_async_connection_basic_get_inside_txn",
     scoped_metrics=_test_select_conn_basic_get_inside_txn_metrics,
     rollup_metrics=_test_select_conn_basic_get_inside_txn_metrics,
     background_task=True,
@@ -200,7 +200,7 @@ _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
 )
 @parametrized_connection
 @validate_transaction_metrics(
-    ("test_pika_async_connection_consume:" "test_async_connection_basic_get_inside_txn_no_callback"),
+    "test_pika_async_connection_consume:test_async_connection_basic_get_inside_txn_no_callback",
     scoped_metrics=_test_select_conn_basic_get_inside_txn_no_callback_metrics,
     rollup_metrics=_test_select_conn_basic_get_inside_txn_no_callback_metrics,
     background_task=True,
@@ -236,7 +236,7 @@ _test_async_connection_basic_get_empty_metrics = [
 @parametrized_connection
 @pytest.mark.parametrize("callback_as_partial", [True, False])
 @validate_transaction_metrics(
-    ("test_pika_async_connection_consume:" "test_async_connection_basic_get_empty"),
+    "test_pika_async_connection_consume:test_async_connection_basic_get_empty",
     scoped_metrics=_test_async_connection_basic_get_empty_metrics,
     rollup_metrics=_test_async_connection_basic_get_empty_metrics,
     background_task=True,
@@ -293,7 +293,7 @@ else:
 
 @parametrized_connection
 @validate_transaction_metrics(
-    ("test_pika_async_connection_consume:" "test_async_connection_basic_consume_inside_txn"),
+    "test_pika_async_connection_consume:test_async_connection_basic_consume_inside_txn",
     scoped_metrics=_test_select_conn_basic_consume_in_txn_metrics,
     rollup_metrics=_test_select_conn_basic_consume_in_txn_metrics,
     background_task=True,
@@ -369,7 +369,7 @@ else:
 
 @parametrized_connection
 @validate_transaction_metrics(
-    ("test_pika_async_connection_consume:" "test_async_connection_basic_consume_two_exchanges"),
+    "test_pika_async_connection_consume:test_async_connection_basic_consume_two_exchanges",
     scoped_metrics=_test_select_conn_basic_consume_two_exchanges,
     rollup_metrics=_test_select_conn_basic_consume_two_exchanges,
     background_task=True,

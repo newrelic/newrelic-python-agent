@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
 import json
 import logging
 import re
@@ -31,7 +30,6 @@ from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import (
-    FunctionWrapper,
     ObjectProxy,
     function_wrapper,
     wrap_function_wrapper,

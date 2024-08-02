@@ -33,9 +33,9 @@ from pika.adapters.tornado_connection import TornadoConnection
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (
     capture_transaction_metrics,
+    dt_enabled,
     function_not_called,
     override_application_settings,
-    dt_enabled,
 )
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,

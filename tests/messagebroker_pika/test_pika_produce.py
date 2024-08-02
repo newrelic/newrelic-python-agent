@@ -15,7 +15,7 @@
 import pika
 import pytest
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import override_application_settings, dt_enabled
+from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_messagebroker_headers import (
     validate_messagebroker_headers,
 )

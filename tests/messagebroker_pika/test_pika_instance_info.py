@@ -15,13 +15,10 @@
 import pika
 import pika.adapters
 import pika.adapters.tornado_connection
-
 import pytest
-
 from testing_support.db_settings import rabbitmq_settings
 
 from newrelic.hooks.messagebroker_pika import instance_info
-
 
 DB_SETTINGS = rabbitmq_settings()[0]
 EXPECTED_HOST = DB_SETTINGS["host"]

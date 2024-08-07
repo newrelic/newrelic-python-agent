@@ -14,11 +14,19 @@
 
 import re
 
-from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper, wrap_datastore_trace
+from newrelic.api.datastore_trace import (
+    DatastoreTrace,
+    DatastoreTraceWrapper,
+    wrap_datastore_trace,
+)
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
+from newrelic.common.async_wrapper import (
+    async_generator_wrapper,
+    coroutine_wrapper,
+    generator_wrapper,
+)
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.async_wrapper import coroutine_wrapper, async_generator_wrapper, generator_wrapper
 
 _redis_client_sync_methods = {
     "acl_dryrun",
@@ -36,6 +44,15 @@ _redis_client_sync_methods = {
     "expiretime",
     "failover",
     "hello",
+    "hexpire",
+    "hexpireat",
+    "hexpiretime",
+    "hpersist",
+    "hpexpire",
+    "hpexpireat",
+    "hpexpiretime",
+    "hpttl",
+    "httl",
     "latency_doctor",
     "latency_graph",
     "latency_histogram",
@@ -523,7 +540,9 @@ def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, operation):
             return wrapped(*args, **kwargs)
 
         # Method should be run when awaited or iterated, therefore we wrap in an async wrapper.
-        return DatastoreTraceWrapper(wrapped, product="Redis", target=None, operation=operation, async_wrapper=async_wrapper)(*args, **kwargs)
+        return DatastoreTraceWrapper(
+            wrapped, product="Redis", target=None, operation=operation, async_wrapper=async_wrapper
+        )(*args, **kwargs)
 
     name = "%s.%s" % (instance_class_name, operation)
     if operation in _redis_client_gen_methods:
@@ -662,6 +681,7 @@ def instrument_asyncio_redis_client(module):
         for operation in _redis_client_async_methods:
             if hasattr(class_, operation):
                 _wrap_asyncio_Redis_method_wrapper(module, "Redis", operation)
+
 
 def instrument_redis_commands_core(module):
     _instrument_redis_commands_module(module, "CoreCommands")

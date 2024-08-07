@@ -683,17 +683,6 @@ def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
     return returned_response
 
 
-def bind_base_client_process_response(
-    cast_to,
-    options,
-    response,
-    stream,
-    stream_cls,
-):
-    nr_response_headers = getattr(response, "headers", None) or {}
-    return nr_response_headers
-
-
 def wrap_base_client_process_response_sync(wrapped, instance, args, kwargs):
     """Obtain response headers for v1."""
     transaction = current_transaction()
@@ -704,7 +693,9 @@ def wrap_base_client_process_response_sync(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
-    nr_response_headers = bind_base_client_process_response(*args, **kwargs)
+    bound_args = bind_args(wrapped, args, kwargs)
+    nr_response_headers = getattr(bound_args["response"], "headers", None) or {}
+
     return_val = wrapped(*args, **kwargs)
     return_val._nr_response_headers = nr_response_headers
     return return_val
@@ -720,7 +711,8 @@ async def wrap_base_client_process_response_async(wrapped, instance, args, kwarg
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
-    nr_response_headers = bind_base_client_process_response(*args, **kwargs)
+    bound_args = bind_args(wrapped, args, kwargs)
+    nr_response_headers = getattr(bound_args["response"], "headers", None) or {}
     return_val = await wrapped(*args, **kwargs)
     return_val._nr_response_headers = nr_response_headers
     return return_val

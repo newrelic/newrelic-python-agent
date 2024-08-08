@@ -140,7 +140,7 @@ def MessageTraceWrapper(
             _operation,
             _destination_type,
             _destination_name,
-            params={},
+            params=params,
             terminal=terminal,
             parent=parent,
             source=wrapped,

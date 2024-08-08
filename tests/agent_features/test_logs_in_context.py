@@ -25,12 +25,18 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.log import NewRelicContextFormatter
 from newrelic.packages import six
 
+from testing_support.fixtures import override_application_settings
+
 if six.PY2:
     from io import BytesIO as Buffer
 else:
     from io import StringIO as Buffer
 
 _logger = logging.getLogger(__name__)
+LABELS = (
+    ("one_label", "test"),
+    ("another_label", "label"),
+)
 
 
 @pytest.fixture
@@ -418,3 +424,12 @@ def test_get_linking_metadata_api_inside_transaction():
 def test_get_linking_metadata_api_outside_transaction():
     metadata = get_linking_metadata()
     validate_metadata(metadata, EXPECTED_KEYS_NO_TXN)
+
+
+@override_application_settings({"labels": [{"label_type": k, "label_value": v} for k, v in LABELS]})
+def test_get_linking_metadata_contains_labels():
+    expected_attributes = {"tags." + k: v for k, v in LABELS}
+    metadata = get_linking_metadata()
+    validate_metadata(metadata, EXPECTED_KEYS_NO_TXN + tuple(expected_attributes.keys()))
+    for key, value in expected_attributes.items():
+        assert metadata[key] == value, metadata[key]

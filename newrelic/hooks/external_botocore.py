@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
 import json
 import logging
 import re
@@ -31,7 +30,6 @@ from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import (
-    FunctionWrapper,
     ObjectProxy,
     function_wrapper,
     wrap_function_wrapper,
@@ -59,7 +57,7 @@ def extract_sqs(*args, **kwargs):
     return queue_value.rsplit("/", 1)[-1]
 
 
-def extract_agent_attrs(*args, **kwargs):
+def extract_sqs_agent_attrs(*args, **kwargs):
     # Try to capture AWS SQS info as agent attributes. Log any exception to debug.
     agent_attrs = {}
     try:
@@ -848,29 +846,8 @@ def sqs_message_trace(
     async_wrapper=None,
     extract_agent_attrs=None,
 ):
-    return functools.partial(
-        SQSMessageTraceWrapper,
-        operation=operation,
-        destination_type=destination_type,
-        destination_name=destination_name,
-        params=params,
-        terminal=terminal,
-        async_wrapper=async_wrapper,
-        extract_agent_attrs=extract_agent_attrs,
-    )
-
-
-def SQSMessageTraceWrapper(
-    wrapped,
-    operation,
-    destination_type,
-    destination_name,
-    params={},
-    terminal=True,
-    async_wrapper=None,
-    extract_agent_attrs=None,
-):
-    def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
+    @function_wrapper
+    def _nr_sqs_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
@@ -889,7 +866,7 @@ def SQSMessageTraceWrapper(
             _operation,
             _destination_type,
             _destination_name,
-            params={},
+            params=params,
             terminal=terminal,
             parent=parent,
             source=wrapped,
@@ -905,7 +882,7 @@ def SQSMessageTraceWrapper(
         with trace:
             return wrapped(*args, **kwargs)
 
-    return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
+    return _nr_sqs_message_trace_wrapper_
 
 
 CUSTOM_TRACE_POINTS = {
@@ -919,13 +896,13 @@ CUSTOM_TRACE_POINTS = {
     ("dynamodb", "query"): datastore_trace("DynamoDB", extract("TableName"), "query"),
     ("dynamodb", "scan"): datastore_trace("DynamoDB", extract("TableName"), "scan"),
     ("sqs", "send_message"): sqs_message_trace(
-        "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_agent_attrs
+        "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
     ),
     ("sqs", "send_message_batch"): sqs_message_trace(
-        "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_agent_attrs
+        "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
     ),
     ("sqs", "receive_message"): sqs_message_trace(
-        "Consume", "Queue", extract_sqs, extract_agent_attrs=extract_agent_attrs
+        "Consume", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
     ),
     ("bedrock-runtime", "invoke_model"): wrap_bedrock_runtime_invoke_model(response_streaming=False),
     ("bedrock-runtime", "invoke_model_with_response_stream"): wrap_bedrock_runtime_invoke_model(

@@ -56,7 +56,7 @@ _test_select_connection_supportability_metrics = [("Supportability/hooks/pika/kw
 
 
 @validate_transaction_metrics(
-    ("test_pika_supportability:" "test_select_connection_supportability_in_txn"),
+    "test_pika_supportability:test_select_connection_supportability_in_txn",
     scoped_metrics=(),
     rollup_metrics=_test_select_connection_supportability_metrics,
     background_task=True,

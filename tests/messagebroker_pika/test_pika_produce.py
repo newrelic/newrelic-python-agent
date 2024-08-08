@@ -15,10 +15,11 @@
 import pika
 import pytest
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_messagebroker_headers import (
     validate_messagebroker_headers,
 )
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -62,6 +63,7 @@ _test_blocking_connection_metrics = [
 ]
 
 
+@dt_enabled
 @validate_transaction_metrics(
     "test_pika_produce:test_blocking_connection",
     scoped_metrics=_test_blocking_connection_metrics,
@@ -71,6 +73,11 @@ _test_blocking_connection_metrics = [
 @validate_tt_collector_json(
     message_broker_params=_message_broker_tt_included_params,
     message_broker_forgone_params=_message_broker_tt_forgone_params,
+)
+@validate_span_events(
+    count=2,
+    exact_intrinsics={"name": "MessageBroker/RabbitMQ/Exchange/Produce/Named/Default"},
+    exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @background_task()
 @validate_messagebroker_headers
@@ -334,6 +341,7 @@ _test_select_connection_metrics = [
 ]
 
 
+@dt_enabled
 @validate_transaction_metrics(
     "test_pika_produce:test_select_connection",
     scoped_metrics=_test_select_connection_metrics,
@@ -343,6 +351,11 @@ _test_select_connection_metrics = [
 @validate_tt_collector_json(
     message_broker_params=_message_broker_tt_included_params,
     message_broker_forgone_params=_message_broker_tt_forgone_params,
+)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={"name": "MessageBroker/RabbitMQ/Exchange/Produce/Named/Default"},
+    exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @background_task()
 @validate_messagebroker_headers
@@ -379,6 +392,7 @@ _test_tornado_connection_metrics = [
 ]
 
 
+@dt_enabled
 @validate_transaction_metrics(
     "test_pika_produce:test_tornado_connection",
     scoped_metrics=_test_tornado_connection_metrics,
@@ -388,6 +402,11 @@ _test_tornado_connection_metrics = [
 @validate_tt_collector_json(
     message_broker_params=_message_broker_tt_included_params,
     message_broker_forgone_params=_message_broker_tt_forgone_params,
+)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={"name": "MessageBroker/RabbitMQ/Exchange/Produce/Named/Default"},
+    exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @background_task()
 @validate_messagebroker_headers

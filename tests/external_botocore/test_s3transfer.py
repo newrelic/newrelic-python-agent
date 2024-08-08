@@ -49,37 +49,25 @@ else:
     EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "hello_world"
 
 
-_s3_scoped_metrics = [
-    ("External/%s/botocore/GET" % S3_URL, 2),
-    ("External/%s/botocore/PUT" % S3_URL, 2),
-    ("External/%s/botocore/DELETE" % S3_URL, 2),
-]
-
-_s3_rollup_metrics = [
-    ("External/all", 6),
-    ("External/allOther", 6),
-    ("External/%s/all" % S3_URL, 6),
-    ("External/%s/botocore/GET" % S3_URL, 2),
-    ("External/%s/botocore/PUT" % S3_URL, 2),
-    ("External/%s/botocore/DELETE" % S3_URL, 2),
-]
-
-
 @dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateBucket"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "PutObject"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "ListObjects"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "GetObject"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "DeleteObject"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "DeleteBucket"}, count=1)
-@validate_span_events(exact_agents={"http.url": EXPECTED_BUCKET_URL}, count=3)
-@validate_span_events(exact_agents={"http.url": EXPECTED_KEY_URL}, count=3)
 @validate_transaction_metrics(
-    "test_boto3_s3:test_s3", scoped_metrics=_s3_scoped_metrics, rollup_metrics=_s3_rollup_metrics, background_task=True
+    "test_s3transfer:test_s3_context_propagation",
+    scoped_metrics=[
+        ("External/%s/botocore/PUT" % S3_URL, 2),
+    ],
+    rollup_metrics=[
+        ("External/all", 2),
+        ("External/allOther", 2),
+        ("External/%s/all" % S3_URL, 2),
+        ("External/%s/botocore/PUT" % S3_URL, 2),
+    ],
+    background_task=True,
 )
 @background_task()
 @mock_aws
-def test_s3():
+def test_s3_context_propagation():
     client = boto3.client(
         "s3",
         aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -91,25 +79,6 @@ def test_s3():
     resp = client.create_bucket(Bucket=TEST_BUCKET, CreateBucketConfiguration={"LocationConstraint": AWS_REGION_NAME})
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
-    # Put object
-    resp = client.put_object(Bucket=TEST_BUCKET, Key="hello_world", Body=b"hello_world_content")
-    assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
-
-    # List bucket
-    resp = client.list_objects(Bucket=TEST_BUCKET)
-    assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
-    assert len(resp["Contents"]) == 1
-    assert resp["Contents"][0]["Key"] == "hello_world"
-
-    # Get object
-    resp = client.get_object(Bucket=TEST_BUCKET, Key="hello_world")
-    assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
-    assert resp["Body"].read() == b"hello_world_content"
-
-    # Delete object
-    resp = client.delete_object(Bucket=TEST_BUCKET, Key="hello_world")
-    assert resp["ResponseMetadata"]["HTTPStatusCode"] == 204
-
-    # Delete bucket
-    resp = client.delete_bucket(Bucket=TEST_BUCKET)
-    assert resp["ResponseMetadata"]["HTTPStatusCode"] == 204
+    # Upload file
+    client.upload_file(Filename="_test_file.txt", Bucket=TEST_BUCKET, Key="_test_file.txt")
+    # No return value to check for this function currently

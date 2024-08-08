@@ -41,7 +41,6 @@ else:
 
 
 async def fetch(url, headers=None, raise_for_status=False, connector=None):
-
     kwargs = {}
     if version_info >= (2, 0):
         kwargs = {"raise_for_status": raise_for_status}
@@ -122,7 +121,6 @@ _customer_headers_tests = [
 
 @pytest.mark.parametrize("customer_headers", _customer_headers_tests)
 def test_outbound_cross_process_headers_custom_headers(event_loop, customer_headers, mock_header_server):
-
     headers = event_loop.run_until_complete(
         background_task()(fetch)("http://127.0.0.1:%d" % mock_header_server.port, customer_headers.copy())
     )
@@ -174,7 +172,6 @@ class PoorResolvingConnector(aiohttp.TCPConnector):
 def test_process_incoming_headers(
     event_loop, cat_enabled, response_code, raise_for_status, connector_class, mock_external_http_server
 ):
-
     # It was discovered via packnsend that the `throw` method of the `_request`
     # coroutine is used in the case of poorly resolved hosts. An older version
     # of the instrumentation ended the ExternalTrace anytime `throw` was called
@@ -208,14 +205,14 @@ def test_process_incoming_headers(
         k for k, v in _test_cross_process_response_external_node_params
     ]
 
-    connector = connector_class() if connector_class else None
-
     @background_task(name="test_process_incoming_headers")
     async def _test():
         transaction = current_transaction()
         headers = create_incoming_headers(transaction)
 
         response_values.append((headers, response_code))
+
+        connector = connector_class() if connector_class else None
 
         await fetch(address, raise_for_status=raise_for_status, connector=connector)
 

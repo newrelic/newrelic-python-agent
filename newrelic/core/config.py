@@ -362,6 +362,15 @@ class SecurityDetectionDeserializationSettings(Settings):
 class SecurityRequestSettings(Settings):
     pass
 
+class SecuritySkipIASTScanSettings(Settings):
+    pass
+
+class SecuritySkipIASTScanParametersSettings(Settings):
+    pass
+
+class SecuritySkipIASTScanIASTDetectionCategorySettings(Settings):
+    pass
+
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
 
@@ -496,6 +505,10 @@ _settings.security.detection.deserialization = SecurityDetectionDeserializationS
 _settings.security.detection.rci = SecurityDetectionRCISettings()
 _settings.security.detection.rxss = SecurityDetectionRXSSSettings()
 _settings.security.request = SecurityRequestSettings()
+_settings.security.skip_iast_scan = SecuritySkipIASTScanSettings()
+_settings.security.skip_iast_scan = SecuritySkipIASTScanAPISettings()
+_settings.security.skip_iast_scan.parameters = SecuritySkipIASTScanParametersSettings()
+_settings.security.skip_iast_scan.iast_detection_category = SecuritySkipIASTScanIASTDetectionCategorySettings()
 _settings.serverless_mode = ServerlessModeSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.span_events = SpanEventSettings()
@@ -1006,8 +1019,48 @@ _settings.security.detection.deserialization.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_DETECTION_DESERIALIZATION_ENABLED", True
 )
 _settings.security.request.body_limit = os.environ.get("NEW_RELIC_SECURITY_REQUEST_BODY_LIMIT", None)
-
-
+_settings.security.skip_iast_scan.api = _environ_as_set(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_API", default=""
+)
+_settings.security.skip_iast_scan.parameters.header = _environ_as_set(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_PARAMETERS_HEADER", default=""
+)
+_settings.security.skip_iast_scan.parameters.query = _environ_as_set(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_PARAMETERS_QUERY", default=""
+)
+_settings.security.skip_iast_scan.parameters.body = _environ_as_set(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_PARAMETERS_BODY", default=""
+)
+_settings.security.skip_iast_scan.iast_detection_category.insecure_settings = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_INSECURE_SETTINGS", False
+)
+_settings.security.skip_iast_scan.iast_detection_category.invalid_file_access = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_INVALID_FILE_ACCESS", False
+)
+_settings.security.skip_iast_scan.iast_detection_category.sql_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_SQL_INJECTION", False
+)
+_settings.security.skip_iast_scan.iast_detection_category.nosql_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_NOSQL_INJECTION", False
+)
+_settings.security.skip_iast_scan.iast_detection_category.ldap_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_LDAP_INJECTION", False
+)
+_settings.security.skip_iast_scan.iast_detection_category.javascript_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_JAVASCRIPT_INJECTION", False
+)
+_settings.security.skip_iast_scan.iast_detection_category.command_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_COMMAND_INJECTION", False
+)
+_settings.security.skip_iast_scan.iast_detection_category.xpath_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_XPATH_INJECTION", False
+)
+_settings.security.skip_iast_scan.iast_detection_category.ssrf = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_SSRF", False
+)
+_settings.security.skip_iast_scan.iast_detection_category.rxss = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_RXSS", False
+)
 def global_settings():
     """This returns the default global settings. Generally only used
     directly in test scripts and test harnesses or when applying global

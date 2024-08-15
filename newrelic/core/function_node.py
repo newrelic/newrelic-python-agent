@@ -60,7 +60,7 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
         # own rollup categories.
 
         if self.rollup:
-            if isinstance(self.rollup, six.string_types):
+            if isinstance(self.rollup, str):
                 rollups = [self.rollup]
             else:
                 rollups = self.rollup

@@ -27,7 +27,7 @@ from newrelic.packages import six
 def _index_name(index):
     if not index or index == "*":
         return "_all"
-    if not isinstance(index, six.string_types) or "," in index:
+    if not isinstance(index, str) or "," in index:
         return "other"
     return index
 

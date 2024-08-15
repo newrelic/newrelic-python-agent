@@ -423,7 +423,7 @@ def parse_exc_info(exc_info):
 
         # Favor unicode in exception messages.
 
-        message = six.text_type(value)
+        message = str(value)
 
     except Exception:
         try:

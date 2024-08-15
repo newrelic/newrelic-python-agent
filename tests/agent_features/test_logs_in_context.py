@@ -262,7 +262,7 @@ def test_newrelic_logger_error_inside_transaction_with_stack_trace(log_buffer_wi
     assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
     assert isinstance(line_number, int)
-    assert isinstance(stack_trace, six.string_types)
+    assert isinstance(stack_trace, str)
     assert stack_trace and stack_trace == expected_stack_trace
 
     expected = {
@@ -356,7 +356,7 @@ def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_w
     assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
     assert isinstance(line_number, int)
-    assert isinstance(stack_trace, six.string_types)
+    assert isinstance(stack_trace, str)
     assert stack_trace and stack_trace == expected_stack_trace
 
     expected = {

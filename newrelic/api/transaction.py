@@ -1420,9 +1420,9 @@ class Transaction(object):
 
                 self.record_tt = self.record_tt or txn_header[1]
 
-                if isinstance(txn_header[2], six.string_types):
+                if isinstance(txn_header[2], str):
                     self._trip_id = txn_header[2]
-                if isinstance(txn_header[3], six.string_types):
+                if isinstance(txn_header[3], str):
                     self._referring_path_hash = txn_header[3]
         except Exception:
             pass
@@ -1568,7 +1568,7 @@ class Transaction(object):
 
         if message is not None:
             # Coerce message into a string type
-            if not isinstance(message, six.string_types):
+            if not isinstance(message, str):
                 try:
                     message = str(message)
                 except Exception:
@@ -1957,7 +1957,7 @@ def set_user_id(user_id):
     if not user_id or not transaction:
         return
 
-    if not isinstance(user_id, six.string_types):
+    if not isinstance(user_id, str):
         _logger.warning("The set_user_id API requires a string-based user ID.")
         return
 

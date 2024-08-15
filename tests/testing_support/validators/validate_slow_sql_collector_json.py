@@ -52,16 +52,16 @@ def validate_slow_sql_collector_json(required_params=set(),
             slow_sql_list = instance.slow_sql_data(connections)
 
             for slow_sql in slow_sql_list:
-                assert isinstance(slow_sql[0], six.string_types)  # txn_name
-                assert isinstance(slow_sql[1], six.string_types)  # txn_url
+                assert isinstance(slow_sql[0], str)  # txn_name
+                assert isinstance(slow_sql[1], str)  # txn_url
                 assert isinstance(slow_sql[2], int)               # sql_id
-                assert isinstance(slow_sql[3], six.string_types)  # sql
-                assert isinstance(slow_sql[4], six.string_types)  # metric_name
+                assert isinstance(slow_sql[3], str)  # sql
+                assert isinstance(slow_sql[4], str)  # metric_name
                 assert isinstance(slow_sql[5], int)               # count
                 assert isinstance(slow_sql[6], float)             # total
                 assert isinstance(slow_sql[7], float)             # min
                 assert isinstance(slow_sql[8], float)             # max
-                assert isinstance(slow_sql[9], six.string_types)  # params
+                assert isinstance(slow_sql[9], str)  # params
 
                 params = slow_sql[9]
                 data = unpack_field(params)

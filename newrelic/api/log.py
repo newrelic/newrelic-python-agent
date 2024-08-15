@@ -34,7 +34,7 @@ def safe_json_encode(obj, ignore_string_types=False, **kwargs):
     # If ignore_string_types is True, do not encode string types further.
     # Currently used for safely encoding logging attributes.
 
-    if ignore_string_types and isinstance(obj, (six.string_types, six.binary_type)):
+    if ignore_string_types and isinstance(obj, (str, bytes)):
         return obj
 
     # Attempt to run through JSON serialization

@@ -41,9 +41,9 @@ def validate_error_trace_collector_json():
         err = decoded_json[1][0]
         assert len(err) == 5
         assert isinstance(err[0], (int, float))
-        assert isinstance(err[1], six.string_types)  # path
-        assert isinstance(err[2], six.string_types)  # error message
-        assert isinstance(err[3], six.string_types)  # exception name
+        assert isinstance(err[1], str)  # path
+        assert isinstance(err[2], str)  # error message
+        assert isinstance(err[3], str)  # exception name
         parameters = err[4]
 
         parameter_fields = ["userAttributes", "stack_trace", "agentAttributes", "intrinsics"]

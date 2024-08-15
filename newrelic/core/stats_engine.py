@@ -859,7 +859,7 @@ class StatsEngine(object):
                     )
                     if error_group_name_raw:
                         _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
-                        if error_group_name is None or not isinstance(error_group_name, six.string_types):
+                        if error_group_name is None or not isinstance(error_group_name, str):
                             raise ValueError(
                                 "Invalid attribute value for error.group.name. Expected string, got: %s"
                                 % repr(error_group_name_raw)
@@ -1252,7 +1252,7 @@ class StatsEngine(object):
 
         if message is not None:
             # Coerce message into a string type
-            if not isinstance(message, six.string_types):
+            if not isinstance(message, str):
                 try:
                     message = str(message)
                 except Exception:

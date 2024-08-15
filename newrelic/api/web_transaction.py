@@ -88,7 +88,7 @@ def _lookup_environ_setting(environ, name, default=False):
 
     flag = environ[name]
 
-    if isinstance(flag, six.string_types):
+    if isinstance(flag, str):
         flag = flag.lower()
 
         if flag in TRUE_VALUES:

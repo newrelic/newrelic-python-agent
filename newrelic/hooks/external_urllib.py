@@ -56,7 +56,7 @@ def bind_params_urlretrieve(url, *args, **kwargs):
 
 def bind_params_open(fullurl, *args, **kwargs):
 
-    if isinstance(fullurl, six.string_types):
+    if isinstance(fullurl, str):
         return fullurl
     else:
         return fullurl.get_full_url()

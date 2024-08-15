@@ -230,7 +230,7 @@ def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding="utf-8", ending=None):
     # If text is unicode (Python 2 or 3), return unicode.
     # If text is a Python 2 string, return str.
 
-    if isinstance(text, six.text_type):
+    if isinstance(text, str):
         truncated = _truncate_unicode(text, maxsize, encoding)
     else:
         truncated = _truncate_bytes(text, maxsize)
@@ -258,12 +258,12 @@ def check_name_length(name, max_length=MAX_ATTRIBUTE_LENGTH, encoding="utf-8"):
 
 
 def check_name_is_string(name):
-    if not isinstance(name, (six.text_type, six.binary_type)):
+    if not isinstance(name, (str, bytes)):
         raise NameIsNotStringException()
 
 
 def check_max_int(value, max_int=MAX_64_BIT_INT):
-    if isinstance(value, six.integer_types) and value > max_int:
+    if isinstance(value, int) and value > max_int:
         raise IntTooLargeException()
 
 
@@ -314,7 +314,7 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
     else:
         # Check length after casting
 
-        valid_types_text = (six.text_type, six.binary_type)
+        valid_types_text = (str, bytes)
 
         if isinstance(value, valid_types_text):
             trunc_value = truncate(value, maxsize=max_length, ending=ending)
@@ -340,7 +340,7 @@ def sanitize(value):
     Raise NullValueException, if value is None (null values SHOULD NOT be reported).
     """
 
-    valid_value_types = (six.text_type, six.binary_type, bool, float, six.integer_types)
+    valid_value_types = (str, bytes, bool, float, int)
     # According to the agent spec, agents should not report None attribute values.
     # There is no difference between omitting the key and sending a None, so we can
     # reduce the payload size by not sending None values.

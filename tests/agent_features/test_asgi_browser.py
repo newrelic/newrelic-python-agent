@@ -71,7 +71,7 @@ def test_header_attributes():
     assert settings.browser_key
     assert settings.browser_monitoring.loader_version
     assert settings.js_agent_loader
-    assert isinstance(settings.js_agent_file, six.string_types)
+    assert isinstance(settings.js_agent_file, str)
     assert settings.beacon
     assert settings.error_beacon
 

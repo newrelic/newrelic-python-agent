@@ -30,7 +30,7 @@ def _nr_wrapper_opener_director_open_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     def _bind_params(fullurl, *args, **kwargs):
-        if isinstance(fullurl, six.string_types):
+        if isinstance(fullurl, str):
             return fullurl
         else:
             return fullurl.get_full_url()

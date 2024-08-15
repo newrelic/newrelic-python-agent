@@ -358,7 +358,7 @@ def serverless_payload_encode(payload):
 
 
 def ensure_str(s):
-    if not isinstance(s, six.string_types):
+    if not isinstance(s, str):
         try:
             s = s.decode("utf-8")
         except Exception:
@@ -621,7 +621,7 @@ _obfuscate_license_key_ending = "*" * 32
 def obfuscate_license_key(license_key):
     """Obfuscate license key to allow it to be printed out."""
 
-    if not isinstance(license_key, six.string_types):
+    if not isinstance(license_key, str):
         # For non-string values passed in such as None, return the original.
         return license_key
     elif len(license_key) == 40:

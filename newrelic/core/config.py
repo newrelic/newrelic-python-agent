@@ -1092,13 +1092,13 @@ def global_settings_dump(settings_object=None, serializable=False):
 
     if serializable:
         for key, value in list(settings.items()):
-            if not isinstance(key, six.string_types):
+            if not isinstance(key, str):
                 del settings[key]
 
             if (
-                not isinstance(value, six.string_types)
+                not isinstance(value, str)
                 and not isinstance(value, float)
-                and not isinstance(value, six.integer_types)
+                and not isinstance(value, int)
             ):
                 settings[key] = repr(value)
 

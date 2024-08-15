@@ -131,7 +131,7 @@ def check_value_equals(dictionary, key, expected_value):
 
 def assert_isinstance(value, expected_type):
     if AttributeValue and isinstance(value, AttributeValue):
-        if expected_type is six.string_types:
+        if expected_type is str:
             assert value.HasField("string_value")
         elif expected_type is float:
             assert value.HasField("double_value")
@@ -164,11 +164,11 @@ def _check_span_attributes(attrs, exact, expected, unexpected, mismatches):
 
 def _check_span_intrinsics(intrinsics):
     assert check_value_equals(intrinsics, "type", "Span")
-    assert_isinstance(intrinsics["traceId"], six.string_types)
-    assert_isinstance(intrinsics["guid"], six.string_types)
+    assert_isinstance(intrinsics["traceId"], str)
+    assert_isinstance(intrinsics["guid"], str)
     if "parentId" in intrinsics:
-        assert_isinstance(intrinsics["parentId"], six.string_types)
-    assert_isinstance(intrinsics["transactionId"], six.string_types)
+        assert_isinstance(intrinsics["parentId"], str)
+    assert_isinstance(intrinsics["transactionId"], str)
     intrinsics["sampled"] is True
     assert_isinstance(intrinsics["priority"], float)
     assert_isinstance(intrinsics["timestamp"], int)
@@ -177,7 +177,7 @@ def _check_span_intrinsics(intrinsics):
         ts = ts.double_value
     assert ts <= int(time.time() * 1000)
     assert_isinstance(intrinsics["duration"], float)
-    assert_isinstance(intrinsics["name"], six.string_types)
-    assert_isinstance(intrinsics["category"], six.string_types)
+    assert_isinstance(intrinsics["name"], str)
+    assert_isinstance(intrinsics["category"], str)
     if "nr.entryPoint" in intrinsics:
         assert check_value_equals(intrinsics, "nr.entryPoint", True)

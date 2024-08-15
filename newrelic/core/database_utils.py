@@ -822,7 +822,7 @@ class SQLStatement(object):
         self._normalized = None
         self._identifier = None
 
-        if isinstance(sql, six.binary_type):
+        if isinstance(sql, bytes):
             try:
                 sql = sql.decode('utf-8')
             except UnicodeError as e:

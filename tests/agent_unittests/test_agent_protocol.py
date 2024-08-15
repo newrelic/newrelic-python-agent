@@ -486,7 +486,7 @@ def test_connect(with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kub
     assert agent_settings_payload["proxy_host"] == "None"
     assert agent_settings_payload["attributes.include"] == "[]"
     assert agent_settings_payload["feature_flag"] == str(set())
-    assert isinstance(agent_settings_payload["attribute_filter"], six.string_types)
+    assert isinstance(agent_settings_payload["attribute_filter"], str)
 
     # Verify that the connection is closed
     assert HttpClientRecorder.STATE == 0

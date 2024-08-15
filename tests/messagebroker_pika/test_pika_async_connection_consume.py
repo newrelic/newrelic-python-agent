@@ -91,7 +91,6 @@ _test_select_conn_basic_get_inside_txn_metrics = [
 @validate_code_level_metrics(
     "test_pika_async_connection_consume.test_async_connection_basic_get_inside_txn.<locals>",
     "on_message",
-    py2_namespace="test_pika_async_connection_consume",
 )
 @validate_span_events(
     count=1,
@@ -278,7 +277,6 @@ _test_select_conn_basic_consume_in_txn_metrics = [
 @validate_code_level_metrics(
     "test_pika_async_connection_consume.test_async_connection_basic_consume_inside_txn.<locals>",
     "on_message",
-    py2_namespace="test_pika_async_connection_consume",
 )
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
@@ -333,12 +331,10 @@ _test_select_conn_basic_consume_two_exchanges = [
 @validate_code_level_metrics(
     "test_pika_async_connection_consume.test_async_connection_basic_consume_two_exchanges.<locals>",
     "on_message_1",
-    py2_namespace="test_pika_async_connection_consume",
 )
 @validate_code_level_metrics(
     "test_pika_async_connection_consume.test_async_connection_basic_consume_two_exchanges.<locals>",
     "on_message_2",
-    py2_namespace="test_pika_async_connection_consume",
 )
 @background_task()
 def test_async_connection_basic_consume_two_exchanges(producer, producer_2, ConnectionClass):
@@ -435,7 +431,6 @@ _test_select_connection_consume_outside_txn_metrics = [
 @validate_code_level_metrics(
     "test_pika_async_connection_consume.test_select_connection_basic_consume_outside_transaction.<locals>",
     "on_message",
-    py2_namespace="test_pika_async_connection_consume",
 )
 def test_select_connection_basic_consume_outside_transaction(producer):
     def on_message(channel, method_frame, header_frame, body):

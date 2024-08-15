@@ -149,7 +149,7 @@ _test_api_view_scoped_metrics_get.append(("Function/%s" % _test_api_view_view_na
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(_test_api_view_view_name_get, scoped_metrics=_test_api_view_scoped_metrics_get)
-@validate_code_level_metrics("urls.WrappedAPIView", "wrapped_view", py2_namespace="urls")
+@validate_code_level_metrics("urls.WrappedAPIView", "wrapped_view")
 def test_api_view_get(target_application):
     response = target_application.get("/api_view/")
     response.mustcontain("wrapped_view response")

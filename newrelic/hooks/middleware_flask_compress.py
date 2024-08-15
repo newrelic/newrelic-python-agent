@@ -137,7 +137,7 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     # multiple copies of the string in memory at the same time
     # as we progress through steps below.
 
-    result = insert_html_snippet(response.get_data(), lambda: six.b(transaction.browser_timing_header()))
+    result = insert_html_snippet(response.get_data(), lambda: transaction.browser_timing_header().encode("latin-1"))
 
     if result is not None:
         if transaction.settings.debug.log_autorum_middleware:

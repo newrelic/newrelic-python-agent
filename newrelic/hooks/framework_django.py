@@ -166,7 +166,7 @@ def browser_timing_insertion(response, transaction):
     # assign it back to the response object to avoid having multiple copies of the string in memory at the same time
     # as we progress through steps below.
 
-    result = insert_html_snippet(response.content, lambda: six.b(transaction.browser_timing_header()))
+    result = insert_html_snippet(response.content, lambda: transaction.browser_timing_header().encode("latin-1"))
 
     if result is not None:
         if transaction.settings.debug.log_autorum_middleware:

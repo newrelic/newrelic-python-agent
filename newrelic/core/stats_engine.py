@@ -1498,7 +1498,7 @@ class StatsEngine(object):
             level = self.__settings.agent_limits.data_compression_level
             level = level or zlib.Z_DEFAULT_COMPRESSION
 
-            params_data = base64.standard_b64encode(zlib.compress(six.b(json_data), level))
+            params_data = base64.standard_b64encode(zlib.compress(json_data.encode("latin-1"), level))
 
             if six.PY3:
                 params_data = params_data.decode("Latin-1")
@@ -1612,7 +1612,7 @@ class StatsEngine(object):
             level = self.__settings.agent_limits.data_compression_level
             level = level or zlib.Z_DEFAULT_COMPRESSION
 
-            zlib_data = zlib.compress(six.b(json_data), level)
+            zlib_data = zlib.compress(json_data.encode("latin-1"), level)
 
             pack_data = base64.standard_b64encode(zlib_data)
 
@@ -1677,7 +1677,7 @@ class StatsEngine(object):
         level = self.__settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
 
-        zlib_data = zlib.compress(six.b(json_data), level)
+        zlib_data = zlib.compress(json_data.encode("latin-1"), level)
 
         pack_data = base64.standard_b64encode(zlib_data)
 

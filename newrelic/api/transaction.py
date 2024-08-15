@@ -77,7 +77,6 @@ from newrelic.core.trace_cache import (
     TraceCacheNoActiveTraceError,
     trace_cache,
 )
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 

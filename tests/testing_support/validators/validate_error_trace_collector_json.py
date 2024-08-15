@@ -16,7 +16,6 @@ import json
 
 from newrelic.common.encoding_utils import json_encode
 from newrelic.common.object_wrapper import transient_function_wrapper
-from newrelic.packages import six
 
 
 def validate_error_trace_collector_json():

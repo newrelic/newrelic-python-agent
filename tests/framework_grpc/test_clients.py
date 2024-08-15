@@ -23,7 +23,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
 _test_matrix = [
     ("service_method_type,service_method_method_name,raises_exception," "message_count,cancel"),

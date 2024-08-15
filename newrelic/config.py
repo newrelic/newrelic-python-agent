@@ -50,7 +50,6 @@ from newrelic.core.config import (
     default_host,
     fetch_config_setting,
 )
-from newrelic.packages import six
 
 __all__ = ["initialize", "filter_app_factory"]
 

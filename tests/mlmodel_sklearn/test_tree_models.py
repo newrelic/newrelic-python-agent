@@ -18,7 +18,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
 
 def test_model_methods_wrapped_in_function_trace(tree_model_name, run_tree_model):

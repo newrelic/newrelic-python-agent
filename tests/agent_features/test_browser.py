@@ -34,7 +34,6 @@ from newrelic.api.transaction import (
 from newrelic.api.web_transaction import web_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import deobfuscate
-from newrelic.packages import six
 
 _runtime_error_name = RuntimeError.__module__ + ":" + RuntimeError.__name__
 

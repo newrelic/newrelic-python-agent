@@ -29,7 +29,6 @@ from wsgi import application
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
-from newrelic.packages import six
 
 test_application = webtest.TestApp(application)
 

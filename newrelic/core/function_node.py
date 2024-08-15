@@ -19,7 +19,6 @@ import newrelic.core.trace_node
 from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
-from newrelic.packages import six
 
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',

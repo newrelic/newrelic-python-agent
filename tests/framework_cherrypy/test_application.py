@@ -26,7 +26,6 @@ from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
 )
 
-from newrelic.packages import six
 
 CHERRYPY_VERSION = tuple(int(v) for v in cherrypy.__version__.split("."))
 

@@ -33,7 +33,6 @@ from newrelic.api.transaction import (
 )
 from newrelic.common.metric_utils import create_metric_identity
 from newrelic.core.config import global_settings
-from newrelic.packages import six
 
 try:
     # python 2.x

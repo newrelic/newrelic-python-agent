@@ -22,7 +22,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
-from newrelic.packages import six
 
 SKLEARN_VERSION = get_package_version_tuple("sklearn")
 

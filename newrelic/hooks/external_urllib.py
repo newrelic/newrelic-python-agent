@@ -17,7 +17,6 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-import newrelic.packages.six as six
 
 from newrelic.api.external_trace import ExternalTraceWrapper
 from newrelic.api.transaction import current_transaction

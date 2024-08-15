@@ -34,7 +34,6 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 from newrelic.common.object_names import callable_name
-from newrelic.packages import six
 
 
 def test_custom_metrics(get_consumer_record, topic):

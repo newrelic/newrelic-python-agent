@@ -31,7 +31,6 @@ import warnings
 import zlib
 from heapq import heapify, heapreplace
 
-import newrelic.packages.six as six
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.common.encoding_utils import json_encode

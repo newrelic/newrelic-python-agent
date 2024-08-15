@@ -22,7 +22,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-from newrelic.packages import six
 
 
 def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_message):

@@ -14,7 +14,6 @@
 
 import functools
 
-from newrelic.packages import six
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction

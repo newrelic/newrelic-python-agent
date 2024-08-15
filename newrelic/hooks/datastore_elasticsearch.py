@@ -16,7 +16,6 @@ from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version_tuple
-from newrelic.packages import six
 
 # An index name can be a string, None or a sequence. In the case of None
 # an empty string or '*', it is the same as using '_all'. When a string

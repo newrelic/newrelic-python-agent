@@ -33,7 +33,6 @@ from newrelic.api.transaction import (
     get_browser_timing_header,
 )
 from newrelic.common.encoding_utils import deobfuscate
-from newrelic.packages import six
 
 _runtime_error_name = RuntimeError.__module__ + ":" + RuntimeError.__name__
 

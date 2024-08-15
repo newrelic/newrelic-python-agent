@@ -15,7 +15,6 @@
 import pytest
 import webtest
 
-from newrelic.packages import six
 
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 

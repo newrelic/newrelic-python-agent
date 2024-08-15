@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 import newrelic.api.import_hook as import_hook
-import newrelic.packages.six as six
 import pytest
 
 from newrelic.config import _module_function_glob

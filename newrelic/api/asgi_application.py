@@ -26,7 +26,7 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_object,
 )
-from newrelic.packages import asgiref_compatibility, six
+from newrelic.packages import asgiref_compatibility
 
 
 def _bind_scope(scope, *args, **kwargs):

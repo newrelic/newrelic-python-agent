@@ -21,7 +21,6 @@ import logging
 import re
 import weakref
 
-import newrelic.packages.six as six
 
 from newrelic.core.internal_metrics import internal_metric
 from newrelic.core.config import global_settings

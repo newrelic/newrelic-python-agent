@@ -18,7 +18,6 @@ import time
 from testing_support.fixtures import catch_background_exceptions
 
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
-from newrelic.packages import six
 
 
 def validate_ml_events(events):

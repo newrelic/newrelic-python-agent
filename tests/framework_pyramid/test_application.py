@@ -24,7 +24,6 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-from newrelic.packages import six
 
 
 def target_application(with_tweens=False, tweens_explicit=False):

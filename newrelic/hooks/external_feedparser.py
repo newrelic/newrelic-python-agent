@@ -15,7 +15,6 @@
 import sys
 import types
 
-import newrelic.packages.six as six
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper

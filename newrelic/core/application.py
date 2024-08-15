@@ -50,7 +50,6 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.packages import six
 from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)

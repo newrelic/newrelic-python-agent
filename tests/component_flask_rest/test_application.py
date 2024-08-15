@@ -29,7 +29,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.common.object_names import callable_name
 from newrelic.core.config import global_settings
-from newrelic.packages import six
 
 
 @pytest.fixture(params=["flask_restful", "flask_restx"])

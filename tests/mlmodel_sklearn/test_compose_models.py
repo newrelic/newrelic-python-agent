@@ -20,7 +20,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
 
 @pytest.mark.parametrize(

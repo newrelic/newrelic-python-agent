@@ -27,7 +27,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.core.config import global_settings
-from newrelic.packages import six
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 

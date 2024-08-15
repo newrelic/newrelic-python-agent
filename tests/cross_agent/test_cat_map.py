@@ -49,7 +49,6 @@ from newrelic.api.transaction import (
 )
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import json_encode, obfuscate
-from newrelic.packages import six
 
 ENCODING_KEY = "1234567890123456789012345678901234567890"
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))

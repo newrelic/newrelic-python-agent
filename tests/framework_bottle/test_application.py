@@ -32,7 +32,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.common.package_version_utils import get_package_version_tuple
-from newrelic.packages import six
 
 version = list(get_package_version_tuple("bottle"))
 

@@ -22,7 +22,6 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
 )
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
-import newrelic.packages.six as six
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.

@@ -20,7 +20,6 @@ from testing_support.fixtures import (
 )
 
 from newrelic.api.wsgi_application import wsgi_application
-from newrelic.packages import six
 
 PAGE_CONTENTS = b"Hello World"
 

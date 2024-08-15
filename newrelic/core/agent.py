@@ -32,7 +32,6 @@ import warnings
 import newrelic
 import newrelic.core.application
 import newrelic.core.config
-import newrelic.packages.six as six
 from newrelic.common.log_file import initialize_logging
 from newrelic.core.thread_utilization import thread_utilization_data_source
 from newrelic.samplers.cpu_usage import cpu_usage_data_source

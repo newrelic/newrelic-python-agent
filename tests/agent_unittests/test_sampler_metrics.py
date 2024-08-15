@@ -20,7 +20,6 @@ import pytest
 from testing_support.fixtures import override_generic_settings
 
 from newrelic.core.config import global_settings
-from newrelic.packages import six
 from newrelic.samplers.cpu_usage import cpu_usage_data_source
 from newrelic.samplers.gc_data import garbage_collector_data_source
 from newrelic.samplers.memory_usage import memory_usage_data_source

@@ -29,7 +29,6 @@ from newrelic.core.code_level_metrics import (
 )
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 

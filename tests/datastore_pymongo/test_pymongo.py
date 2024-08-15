@@ -22,7 +22,6 @@ from testing_support.validators.validate_database_duration import (
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
 DB_SETTINGS = mongodb_settings()[0]
 MONGODB_HOST = DB_SETTINGS["host"]

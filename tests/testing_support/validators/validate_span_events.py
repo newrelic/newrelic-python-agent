@@ -15,7 +15,6 @@
 import time
 
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
-from newrelic.packages import six
 
 try:
     from newrelic.core.infinite_tracing_pb2 import AttributeValue, Span

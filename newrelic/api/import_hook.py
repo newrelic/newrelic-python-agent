@@ -15,7 +15,6 @@
 import logging
 import sys
 
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 

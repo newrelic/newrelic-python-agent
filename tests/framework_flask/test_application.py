@@ -28,7 +28,6 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-from newrelic.packages import six
 
 try:
     # The __version__ attribute was only added in 0.7.0.

@@ -22,7 +22,6 @@ import types
 import inspect
 import functools
 
-from newrelic.packages import six
 
 
 # Object model terminology for quick reference.

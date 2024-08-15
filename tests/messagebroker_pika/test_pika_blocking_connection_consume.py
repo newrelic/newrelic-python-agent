@@ -34,7 +34,6 @@ from testing_support.validators.validate_tt_collector_json import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
-from newrelic.packages import six
 
 DB_SETTINGS = rabbitmq_settings()[0]
 

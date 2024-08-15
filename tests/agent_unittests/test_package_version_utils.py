@@ -25,7 +25,6 @@ from newrelic.common.package_version_utils import (
     get_package_version,
     get_package_version_tuple,
 )
-from newrelic.packages import six
 
 # Notes:
 # importlib.metadata was a provisional addition to the std library in PY38 and PY39

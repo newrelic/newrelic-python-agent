@@ -38,7 +38,6 @@ from newrelic.core.attribute import (
     sanitize,
     truncate,
 )
-from newrelic.packages import six
 
 # Python 3 lacks longs
 

@@ -29,7 +29,6 @@ import types
 import zlib
 from collections import OrderedDict
 
-from newrelic.packages import six
 
 HEXDIGLC_RE = re.compile("^[0-9a-f]+$")
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")

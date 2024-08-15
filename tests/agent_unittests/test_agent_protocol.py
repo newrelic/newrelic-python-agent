@@ -35,7 +35,6 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.packages import six
 
 Request = namedtuple("Request", ("method", "path", "params", "headers", "payload"))
 

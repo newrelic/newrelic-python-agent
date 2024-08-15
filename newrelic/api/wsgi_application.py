@@ -25,7 +25,6 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 

@@ -26,7 +26,6 @@ from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.encoding_utils import DistributedTracePayload
-from newrelic.packages import six
 
 DB_SETTINGS = rabbitmq_settings()[0]
 

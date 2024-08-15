@@ -14,7 +14,6 @@
 
 import logging
 import time
-import newrelic.packages.six as six
 
 from newrelic.common.coroutine import (is_coroutine_callable,
         is_asyncio_coroutine, is_generator_function)

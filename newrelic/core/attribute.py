@@ -24,7 +24,6 @@ from newrelic.core.attribute_filter import (
     DST_TRANSACTION_SEGMENTS,
     DST_TRANSACTION_TRACER,
 )
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 

@@ -91,14 +91,8 @@ def test_select_connection_supportability_in_txn(producer):
         raise
 
 
-if six.PY3:
-    _txn_name = "test_pika_supportability:" "test_select_connection_supportability_outside_txn." "<locals>.on_message"
-else:
-    _txn_name = "test_pika_supportability:on_message"
-
-
 @validate_transaction_metrics(
-    _txn_name,
+    "test_pika_supportability:test_select_connection_supportability_outside_txn.<locals>.on_message",
     scoped_metrics=(),
     rollup_metrics=_test_select_connection_supportability_metrics,
     background_task=True,

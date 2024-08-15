@@ -81,21 +81,8 @@ parametrized_connection = pytest.mark.parametrize("ConnectionClass", connection_
 _test_select_conn_basic_get_inside_txn_metrics = [
     ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, 1),
+    ("Function/test_pika_async_connection_consume:test_async_connection_basic_get_inside_txn.<locals>.on_message", 1),
 ]
-
-if six.PY3:
-    _test_select_conn_basic_get_inside_txn_metrics.append(
-        (
-            (
-                "Function/test_pika_async_connection_consume:"
-                "test_async_connection_basic_get_inside_txn."
-                "<locals>.on_message"
-            ),
-            1,
-        )
-    )
-else:
-    _test_select_conn_basic_get_inside_txn_metrics.append(("Function/test_pika_async_connection_consume:on_message", 1))
 
 
 @parametrized_connection
@@ -274,21 +261,11 @@ def test_async_connection_basic_get_empty(ConnectionClass, callback_as_partial):
 _test_select_conn_basic_consume_in_txn_metrics = [
     ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    (
+        "Function/test_pika_async_connection_consume:test_async_connection_basic_consume_inside_txn.<locals>.on_message",
+        1,
+    ),
 ]
-
-if six.PY3:
-    _test_select_conn_basic_consume_in_txn_metrics.append(
-        (
-            (
-                "Function/test_pika_async_connection_consume:"
-                "test_async_connection_basic_consume_inside_txn."
-                "<locals>.on_message"
-            ),
-            1,
-        )
-    )
-else:
-    _test_select_conn_basic_consume_in_txn_metrics.append(("Function/test_pika_async_connection_consume:on_message", 1))
 
 
 @parametrized_connection
@@ -335,36 +312,15 @@ _test_select_conn_basic_consume_two_exchanges = [
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
     ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE_2, None),
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE_2, None),
+    (
+        "Function/test_pika_async_connection_consume:test_async_connection_basic_consume_two_exchanges.<locals>.on_message_1",
+        1,
+    ),
+    (
+        "Function/test_pika_async_connection_consume:test_async_connection_basic_consume_two_exchanges.<locals>.on_message_2",
+        1,
+    ),
 ]
-
-if six.PY3:
-    _test_select_conn_basic_consume_two_exchanges.append(
-        (
-            (
-                "Function/test_pika_async_connection_consume:"
-                "test_async_connection_basic_consume_two_exchanges."
-                "<locals>.on_message_1"
-            ),
-            1,
-        )
-    )
-    _test_select_conn_basic_consume_two_exchanges.append(
-        (
-            (
-                "Function/test_pika_async_connection_consume:"
-                "test_async_connection_basic_consume_two_exchanges."
-                "<locals>.on_message_2"
-            ),
-            1,
-        )
-    )
-else:
-    _test_select_conn_basic_consume_two_exchanges.append(
-        ("Function/test_pika_async_connection_consume:on_message_1", 1)
-    )
-    _test_select_conn_basic_consume_two_exchanges.append(
-        ("Function/test_pika_async_connection_consume:on_message_2", 1)
-    )
 
 
 @parametrized_connection
@@ -460,32 +416,17 @@ def test_tornado_connection_basic_consume_outside_transaction(producer):
         raise
 
 
-if six.PY3:
-    _txn_name = (
-        "test_pika_async_connection_consume:"
-        "test_select_connection_basic_consume_outside_transaction."
-        "<locals>.on_message"
-    )
-    _test_select_connection_consume_outside_txn_metrics = [
-        (
-            (
-                "Function/test_pika_async_connection_consume:"
-                "test_select_connection_basic_consume_outside_transaction."
-                "<locals>.on_message"
-            ),
-            None,
-        )
-    ]
-else:
-    _txn_name = "test_pika_async_connection_consume:on_message"
-    _test_select_connection_consume_outside_txn_metrics = [
-        ("Function/test_pika_async_connection_consume:on_message", None)
-    ]
+_test_select_connection_consume_outside_txn_metrics = [
+    (
+        "Function/test_pika_async_connection_consume:test_select_connection_basic_consume_outside_transaction.<locals>.on_message",
+        1,
+    ),
+]
 
 
 # This should create a transaction
 @validate_transaction_metrics(
-    _txn_name,
+    "test_pika_async_connection_consume:test_select_connection_basic_consume_outside_transaction.<locals>.on_message",
     scoped_metrics=_test_select_connection_consume_outside_txn_metrics,
     rollup_metrics=_test_select_connection_consume_outside_txn_metrics,
     background_task=True,

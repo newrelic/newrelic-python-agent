@@ -162,9 +162,7 @@ _test_matrix = ['wrapper,use_cur_context', [(str, False)]]
 _test_matrix[1].append((str, True))
 
 # Composable SQL is expected to be available in versions 2.7 and up
-assert sql, (
-        "Composable sql (from psycopg2 import sql) is expected to load"
-        "but is not loading")
+assert sql, "Composable sql (from psycopg2 import sql) is expected to load but is not loading"
 
 # exercise with regular SQL wrapper
 _test_matrix[1].append((sql.SQL, True))

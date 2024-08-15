@@ -17,7 +17,6 @@ system or for the specific process the code is running in.
 
 """
 
-import logging
 import multiprocessing
 import os
 import re
@@ -25,36 +24,15 @@ import socket
 import subprocess
 import sys
 import threading
+from subprocess import check_output as _execute_program
 
 from newrelic.common.utilization import CommonUtilization
-
-try:
-    from subprocess import check_output as _execute_program
-except ImportError:
-
-    def _execute_program(*popenargs, **kwargs):
-        # Replicates check_output() implementation from Python 2.7+.
-        # Should only be used for Python 2.6.
-
-        if "stdout" in kwargs:
-            raise ValueError("stdout argument not allowed, it will be overridden.")
-        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)  # nosec
-        output, unused_err = process.communicate()
-        retcode = process.poll()
-        if retcode:
-            cmd = kwargs.get("args")
-            if cmd is None:
-                cmd = popenargs[0]
-            raise subprocess.CalledProcessError(retcode, cmd, output=output)
-        return output
-
 
 try:
     import resource
 except ImportError:
     pass
 
-_logger = logging.getLogger(__name__)
 
 LOCALHOST_EQUIVALENTS = set(
     [

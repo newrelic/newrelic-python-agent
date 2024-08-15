@@ -268,11 +268,9 @@ def test_mongodb_client_operation():
         _test_pymongo_client_scoped_metrics = _test_pymongo_scoped_metrics_v4
         _test_pymongo_client_rollup_metrics = _test_pymongo_rollup_metrics_v4
 
-    txn_name = "test_pymongo:test_mongodb_client_operation.<locals>._test" if six.PY3 else "test_pymongo:_test"
-
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        txn_name,
+        "test_pymongo:test_mongodb_client_operation.<locals>._test",
         scoped_metrics=_test_pymongo_client_scoped_metrics,
         rollup_metrics=_test_pymongo_client_rollup_metrics,
         background_task=True,

@@ -38,14 +38,9 @@ def test_model_methods_wrapped_in_function_trace(cross_decomposition_model_name,
             ("Function/MLModel/Sklearn/Named/PLSSVD.transform", 1),
         ],
     }
-    expected_transaction_name = (
-        "test_cross_decomposition_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_cross_decomposition_models:_test"
-    )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_cross_decomposition_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[cross_decomposition_model_name],
         rollup_metrics=expected_scoped_metrics[cross_decomposition_model_name],
         background_task=True,

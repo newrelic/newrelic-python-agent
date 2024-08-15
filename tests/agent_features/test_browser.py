@@ -108,8 +108,7 @@ def test_header_attributes():
 
     obfuscation_key = settings.license_key[:13]
 
-    type_transaction_data = unicode if six.PY2 else str  # noqa: F821
-    assert isinstance(data["transactionName"], type_transaction_data)
+    assert isinstance(data["transactionName"], str)
 
     txn_name = deobfuscate(data["transactionName"], obfuscation_key)
 

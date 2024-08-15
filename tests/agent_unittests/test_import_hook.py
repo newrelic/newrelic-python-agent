@@ -41,18 +41,12 @@ def test_import_hook_finder(monkeypatch):
     }
     monkeypatch.setattr(import_hook, "_import_hooks", registered_hooks)
 
-    # Finding a module that does not exist and is not registered returns None.
+    # Finding a module that does not exist returns None, whether or not it is registered.
     module = finder.find_module("module_does_not_exist")
     assert module is None
 
-    # Finding a module that does not exist and is registered behaves
-    # differently on python 2 vs python 3.
-    if six.PY2:
-        with pytest.raises(ImportError):
-            module = finder.find_module("registered_but_does_not_exist")
-    else:
-        module = finder.find_module("registered_but_does_not_exist")
-        assert module is None
+    module = finder.find_module("registered_but_does_not_exist")
+    assert module is None
 
     # Finding a module that exists, but is not registered returns None.
     module = finder.find_module("newrelic")

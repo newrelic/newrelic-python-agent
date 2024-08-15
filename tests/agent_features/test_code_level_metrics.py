@@ -46,7 +46,6 @@ CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClass"))
 CALLABLE_CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClassCallable"))
 TYPE_CONSTRUCTOR_NAMESPACE = ".".join((NAMESPACE, "ExerciseTypeConstructor"))
 TYPE_CONSTRUCTOR_CALLABLE_NAMESPACE = ".".join((NAMESPACE, "ExerciseTypeConstructorCallable"))
-FUZZY_NAMESPACE = CLASS_NAMESPACE if six.PY3 else NAMESPACE
 if FILE_PATH.endswith(".pyc"):
     FILE_PATH = FILE_PATH[:-1]
 
@@ -108,7 +107,7 @@ _TEST_BASIC_CALLABLES = {
         merge_dicts(
             {
                 "code.function": "max",
-                "code.namespace": "builtins" if six.PY3 else "__builtin__",
+                "code.namespace": "builtins",
             },
             BUILTIN_ATTRS,
         ),
@@ -167,7 +166,7 @@ _TEST_METHODS = {
             "code.filepath": FILE_PATH,
             "code.function": "exercise_static_method",
             "code.lineno": 25,
-            "code.namespace": FUZZY_NAMESPACE,
+            "code.namespace": CLASS_NAMESPACE,
         },
     ),
     "class_method": (
@@ -264,8 +263,7 @@ _TEST_TYPE_CONSTRUCTOR_METHODS = {
             "code.filepath": FILE_PATH,
             "code.function": "<lambda>",
             "code.lineno": 61,
-            # Lambdas behave strangely in type constructors on Python 2 and use the class namespace.
-            "code.namespace": NAMESPACE if six.PY3 else TYPE_CONSTRUCTOR_NAMESPACE,
+            "code.namespace": NAMESPACE,
         },
     ),
     "call_method": (

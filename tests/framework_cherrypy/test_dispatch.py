@@ -40,12 +40,8 @@ if is_ge_cherrypy32:
     application = cherrypy.Application(Resource(), '/', conf)
     test_application = webtest.TestApp(application)
 
-if six.PY3:
-    _test_dispatch_exception_errors = ['builtins:RuntimeError']
-else:
-    _test_dispatch_exception_errors = ['exceptions:RuntimeError']
 
 @requires_cherrypy32
-@validate_transaction_errors(errors=_test_dispatch_exception_errors)
+@validate_transaction_errors(errors=['builtins:RuntimeError'])
 def test_dispatch_exception():
     response = test_application.get('/sub/a/b', status=500)

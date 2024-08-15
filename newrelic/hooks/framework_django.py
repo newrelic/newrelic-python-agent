@@ -44,11 +44,10 @@ from newrelic.config import extra_settings
 from newrelic.core.config import global_settings
 from newrelic.packages import six
 
-if six.PY3:
-    from newrelic.hooks.framework_django_py3 import (
-        _nr_wrap_converted_middleware_async_,
-        _nr_wrapper_BaseHandler_get_response_async_,
-    )
+from newrelic.hooks.framework_django_py3 import (
+    _nr_wrap_converted_middleware_async_,
+    _nr_wrapper_BaseHandler_get_response_async_,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -436,7 +435,7 @@ def instrument_django_core_handlers_base(module):
 
     wrap_post_function(module, "BaseHandler.load_middleware", insert_and_wrap_middleware)
 
-    if six.PY3 and hasattr(module.BaseHandler, "get_response_async"):
+    if hasattr(module.BaseHandler, "get_response_async"):
         wrap_function_wrapper(module, "BaseHandler.get_response_async", _nr_wrapper_BaseHandler_get_response_async_)
 
     wrap_function_wrapper(module, "BaseHandler.get_response", _nr_wrapper_BaseHandler_get_response_)

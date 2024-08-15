@@ -54,14 +54,8 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(feature_selection_mo
         ],
     }
 
-    expected_transaction_name = (
-        "test_feature_selection_models:test_below_v1_0_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_feature_selection_models:_test"
-    )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_feature_selection_models:test_below_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[feature_selection_model_name],
         rollup_metrics=expected_scoped_metrics[feature_selection_model_name],
         background_task=True,
@@ -86,14 +80,9 @@ def test_above_v1_0_model_methods_wrapped_in_function_trace(feature_selection_mo
             ("Function/MLModel/Sklearn/Named/SequentialFeatureSelector.fit", 1),
         ],
     }
-    expected_transaction_name = (
-        "test_feature_selection_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_feature_selection_models:_test"
-    )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_feature_selection_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[feature_selection_model_name],
         rollup_metrics=expected_scoped_metrics[feature_selection_model_name],
         background_task=True,

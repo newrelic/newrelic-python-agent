@@ -94,10 +94,7 @@ _parameters = ",".join(_parameters_list)
 def target_wsgi_application(environ, start_response):
     status = "200 OK"
 
-    txn_name = environ.get("txn")
-    if six.PY2:
-        txn_name = txn_name.decode("UTF-8")
-    txn_name = txn_name.split("/", 3)
+    txn_name = environ.get("txn").split("/", 3)
 
     guid = environ.get("guid")
     old_cat = environ.get("old_cat") == "True"
@@ -192,12 +189,8 @@ def test_cat_map(
     @override_application_settings(_custom_settings)
     @override_application_name(appName)
     def run_cat_test():
-        if six.PY2:
-            txn_name = transactionName.encode("UTF-8")
-            guid = transactionGuid.encode("UTF-8")
-        else:
-            txn_name = transactionName
-            guid = transactionGuid
+        txn_name = transactionName
+        guid = transactionGuid
 
         # Only generate old cat style headers. This will test to make sure we
         # are properly ignoring these headers when the agent is using better

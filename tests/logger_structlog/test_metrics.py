@@ -29,9 +29,8 @@ _test_logging_unscoped_metrics = [
 
 @reset_core_stats_engine()
 def test_logging_metrics_inside_transaction(exercise_logging_multiple_lines):
-    txn_name = "test_metrics:test_logging_metrics_inside_transaction.<locals>.test" if six.PY3 else "test_metrics:test"
     @validate_transaction_metrics(
-        txn_name,
+        "test_metrics:test_logging_metrics_inside_transaction.<locals>.test",
         custom_metrics=_test_logging_unscoped_metrics,
         background_task=True,
     )
@@ -60,9 +59,8 @@ _test_logging_unscoped_filtering_metrics = [
 
 @reset_core_stats_engine()
 def test_filtering_logging_metrics_inside_transaction(exercise_filtering_logging_multiple_lines):
-    txn_name = "test_metrics:test_filtering_logging_metrics_inside_transaction.<locals>.test" if six.PY3 else "test_metrics:test"
     @validate_transaction_metrics(
-        txn_name,
+        "test_metrics:test_filtering_logging_metrics_inside_transaction.<locals>.test",
         custom_metrics=_test_logging_unscoped_filtering_metrics,
         background_task=True,
     )

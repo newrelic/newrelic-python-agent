@@ -116,10 +116,6 @@ target_application_iter_exc_2 = webtest.TestApp(_app_iter_exc_2)
 _target_applications = [
     target_application_list,
     target_application_iter,
-    pytest.param(
-        target_application_str,
-        marks=pytest.mark.skipif(six.PY3, reason="PY3 webtest expects type(byte) " "so this test doesnt apply"),
-    ),
     target_application_list_exc_1,
     target_application_list_exc_2,
     target_application_iter_exc_1,

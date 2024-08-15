@@ -32,7 +32,3 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (framework_ariadne)",
     default_settings=_default_settings,
 )
-
-
-if six.PY2:
-    collect_ignore = ["test_application_async.py"]

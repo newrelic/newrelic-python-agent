@@ -62,71 +62,61 @@ _uninstrumented_modules = set()
 
 
 def register_import_hook(name, callable):  # pylint: disable=redefined-builtin
-    if six.PY2:
-        import imp
+    hooks = _import_hooks.get(name, None)
 
-        imp.acquire_lock()
+    if name not in _import_hooks or hooks is None:
 
-    try:
-        hooks = _import_hooks.get(name, None)
+        # If no entry in registry or entry already flagged with
+        # None then module may have been loaded, in which case
+        # need to check and fire hook immediately.
 
-        if name not in _import_hooks or hooks is None:
+        hooks = _import_hooks.get(name)
 
-            # If no entry in registry or entry already flagged with
-            # None then module may have been loaded, in which case
-            # need to check and fire hook immediately.
+        module = sys.modules.get(name, None)
 
-            hooks = _import_hooks.get(name)
+        if module is not None:
 
-            module = sys.modules.get(name, None)
+            # The module has already been loaded so fire hook
+            # immediately.
 
-            if module is not None:
+            if module.__name__ not in _ok_modules:
+                _logger.debug(
+                    "Module %s has been imported before the "
+                    "newrelic.agent.initialize call. Import and "
+                    "initialize the New Relic agent before all "
+                    "other modules for best monitoring "
+                    "results.",
+                    module,
+                )
 
-                # The module has already been loaded so fire hook
-                # immediately.
+                # Add the module name to the set of uninstrumented modules.
+                # During harvest, this set will be used to produce metrics.
+                # The adding of names here and the reading of them during
+                # harvest should be thread safe. This is because the code
+                # here is only run during `initialize` which will no-op if
+                # run multiple times (even if in a thread). The set is read
+                # from the harvest thread which will run one minute after
+                # `initialize` is called.
 
-                if module.__name__ not in _ok_modules:
-                    _logger.debug(
-                        "Module %s has been imported before the "
-                        "newrelic.agent.initialize call. Import and "
-                        "initialize the New Relic agent before all "
-                        "other modules for best monitoring "
-                        "results.",
-                        module,
-                    )
+                _uninstrumented_modules.add(module.__name__)
 
-                    # Add the module name to the set of uninstrumented modules.
-                    # During harvest, this set will be used to produce metrics.
-                    # The adding of names here and the reading of them during
-                    # harvest should be thread safe. This is because the code
-                    # here is only run during `initialize` which will no-op if
-                    # run multiple times (even if in a thread). The set is read
-                    # from the harvest thread which will run one minute after
-                    # `initialize` is called.
+            _import_hooks[name] = None
 
-                    _uninstrumented_modules.add(module.__name__)
-
-                _import_hooks[name] = None
-
-                callable(module)
-
-            else:
-
-                # No hook has been registered so far so create list
-                # and add current hook.
-
-                _import_hooks[name] = [callable]
+            callable(module)
 
         else:
 
-            # Hook has already been registered, so append current
-            # hook.
+            # No hook has been registered so far so create list
+            # and add current hook.
 
-            _import_hooks[name].append(callable)
+            _import_hooks[name] = [callable]
 
-    finally:
-        if six.PY2:
-            imp.release_lock()
+    else:
+
+        # Hook has already been registered, so append current
+        # hook.
+
+        _import_hooks[name].append(callable)
 
 
 def _notify_import_hooks(name, module):

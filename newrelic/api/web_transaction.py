@@ -474,10 +474,7 @@ class WebTransaction(Transaction):
             # string.
 
             try:
-                if six.PY2:
-                    header = header.encode("ascii")
-                else:
-                    header.encode("ascii")
+                header.encode("ascii")
 
             except UnicodeError:
                 if not WebTransaction.unicode_error_reported:

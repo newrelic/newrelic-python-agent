@@ -51,14 +51,9 @@ def test_model_methods_wrapped_in_function_trace(tree_model_name, run_tree_model
             ("Function/MLModel/Sklearn/Named/DecisionTreeRegressor.score", 1),
         ],
     }
-    expected_transaction_name = (
-        "test_tree_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_tree_models:_test"
-    )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_tree_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[tree_model_name],
         rollup_metrics=expected_scoped_metrics[tree_model_name],
         background_task=True,
@@ -100,12 +95,9 @@ def test_multiple_calls_to_model_methods(tree_model_name, run_tree_model):
             ("Function/MLModel/Sklearn/Named/DecisionTreeRegressor.score", 2),
         ],
     }
-    expected_transaction_name = (
-        "test_tree_models:test_multiple_calls_to_model_methods.<locals>._test" if six.PY3 else "test_tree_models:_test"
-    )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_tree_models:test_multiple_calls_to_model_methods.<locals>._test",
         scoped_metrics=expected_scoped_metrics[tree_model_name],
         rollup_metrics=expected_scoped_metrics[tree_model_name],
         background_task=True,

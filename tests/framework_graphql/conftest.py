@@ -45,7 +45,3 @@ def target_application(request):
         return
 
     return "GraphQL", None, app, True, request.param.split("-")[1], 0
-
-
-if six.PY2:
-    collect_ignore = ["test_application_async.py"]

@@ -203,10 +203,7 @@ def xor_cipher_encrypt_base64(text, key):
     # use ASCII when decoding the byte string as base64 encoding only
     # produces characters within that codeset.
 
-    if six.PY3:
-        return result.decode("ascii")
-
-    return result
+    return result.decode("ascii")
 
 
 def xor_cipher_decrypt_base64(text, key):
@@ -305,10 +302,7 @@ def base64_encode(text):
     # use ASCII when decoding the byte string as base64 encoding only
     # produces characters within that codeset.
 
-    if six.PY3:
-        return result.decode("ascii")
-
-    return result
+    return result.decode("ascii")
 
 
 def base64_decode(text):
@@ -326,7 +320,7 @@ def gzip_compress(text):
     """
     compressed_data = io.BytesIO()
 
-    if six.PY3 and isinstance(text, str):
+    if isinstance(text, str):
         text = text.encode("utf-8")
 
     with gzip.GzipFile(fileobj=compressed_data, mode="wb") as f:

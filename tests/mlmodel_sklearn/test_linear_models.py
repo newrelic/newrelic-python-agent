@@ -213,12 +213,9 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
             ("Function/MLModel/Sklearn/Named/RANSACRegressor.score", 1),
         ],
     }
-    expected_transaction_name = "test_linear_models:_test"
-    if six.PY3:
-        expected_transaction_name = "test_linear_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_linear_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[linear_model_name],
         rollup_metrics=expected_scoped_metrics[linear_model_name],
         background_task=True,
@@ -280,14 +277,9 @@ def test_above_v1_1_model_methods_wrapped_in_function_trace(linear_model_name, r
             ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.predict", 1),
         ],
     }
-    expected_transaction_name = "test_linear_models:_test"
-    if six.PY3:
-        expected_transaction_name = (
-            "test_linear_models:test_above_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
-        )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_linear_models:test_above_v1_1_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[linear_model_name],
         rollup_metrics=expected_scoped_metrics[linear_model_name],
         background_task=True,

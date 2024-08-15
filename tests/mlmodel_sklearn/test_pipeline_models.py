@@ -47,14 +47,8 @@ def test_model_methods_wrapped_in_function_trace(pipeline_model_name, run_pipeli
         ],
     }
 
-    expected_transaction_name = (
-        "test_pipeline_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_pipeline_models:_test"
-    )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_pipeline_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[pipeline_model_name],
         rollup_metrics=expected_scoped_metrics[pipeline_model_name],
         background_task=True,

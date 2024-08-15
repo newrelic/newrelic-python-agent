@@ -15,6 +15,8 @@
 import json
 import logging
 import sys
+
+from io import StringIO as Buffer
 from traceback import format_tb
 
 import pytest
@@ -23,12 +25,7 @@ from newrelic.agent import get_linking_metadata
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.log import NewRelicContextFormatter
-from newrelic.packages import six
 
-if six.PY2:
-    from io import BytesIO as Buffer
-else:
-    from io import StringIO as Buffer
 
 _logger = logging.getLogger(__name__)
 

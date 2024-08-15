@@ -41,14 +41,8 @@ def test_model_methods_wrapped_in_function_trace(gaussian_process_model_name, ru
         ],
     }
 
-    expected_transaction_name = (
-        "test_gaussian_process_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_gaussian_process_models:_test"
-    )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_gaussian_process_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[gaussian_process_model_name],
         rollup_metrics=expected_scoped_metrics[gaussian_process_model_name],
         background_task=True,

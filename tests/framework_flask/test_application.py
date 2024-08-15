@@ -176,13 +176,7 @@ _test_application_error_scoped_metrics = [
 ]
 
 
-if six.PY3:
-    _test_application_error_errors = ["builtins:RuntimeError"]
-else:
-    _test_application_error_errors = ["exceptions:RuntimeError"]
-
-
-@validate_transaction_errors(errors=_test_application_error_errors)
+@validate_transaction_errors(errors=["builtins:RuntimeError"])
 @validate_transaction_metrics("_test_application:error_page", scoped_metrics=_test_application_error_scoped_metrics)
 @validate_code_level_metrics("_test_application", "error_page")
 def test_application_error():

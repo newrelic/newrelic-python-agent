@@ -119,13 +119,7 @@ def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument(module):
-
-    if six.PY2:
-        library = 'httplib'
-    else:
-        library = 'http'
-
-    wrap_function_wrapper(module, "HTTPConnection.endheaders", functools.partial(httplib_endheaders_wrapper, scheme='http', library=library))
-    wrap_function_wrapper(module, "HTTPSConnection.endheaders", functools.partial(httplib_endheaders_wrapper, scheme='https', library=library))
+    wrap_function_wrapper(module, "HTTPConnection.endheaders", functools.partial(httplib_endheaders_wrapper, scheme='http', library='http'))
+    wrap_function_wrapper(module, "HTTPSConnection.endheaders", functools.partial(httplib_endheaders_wrapper, scheme='https', library='http'))
     wrap_function_wrapper(module, "HTTPConnection.getresponse", httplib_getresponse_wrapper)
     wrap_function_wrapper(module, "HTTPConnection.putheader", httplib_putheader_wrapper)

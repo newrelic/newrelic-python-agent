@@ -42,14 +42,8 @@ def test_model_methods_wrapped_in_function_trace(compose_model_name, run_compose
         ],
     }
 
-    expected_transaction_name = (
-        "test_compose_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_compose_models:_test"
-    )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_compose_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[compose_model_name],
         rollup_metrics=expected_scoped_metrics[compose_model_name],
         background_task=True,

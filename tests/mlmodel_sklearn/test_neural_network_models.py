@@ -50,14 +50,8 @@ def test_model_methods_wrapped_in_function_trace(neural_network_model_name, run_
         ],
     }
 
-    expected_transaction_name = (
-        "test_neural_network_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_neural_network_models:_test"
-    )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_neural_network_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[neural_network_model_name],
         rollup_metrics=expected_scoped_metrics[neural_network_model_name],
         background_task=True,

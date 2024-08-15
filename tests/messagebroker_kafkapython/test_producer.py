@@ -35,10 +35,9 @@ def test_trace_metrics(topic, send_producer_message):
 
     scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
     unscoped_metrics = scoped_metrics
-    txn_name = "test_producer:test_trace_metrics.<locals>.test" if six.PY3 else "test_producer:test"
 
     @validate_transaction_metrics(
-        txn_name,
+        "test_producer:test_trace_metrics.<locals>.test",
         scoped_metrics=scoped_metrics,
         rollup_metrics=unscoped_metrics,
         custom_metrics=[("Python/MessageBroker/Kafka-Python/%s" % version, 1)],
@@ -52,10 +51,8 @@ def test_trace_metrics(topic, send_producer_message):
 
 
 def test_distributed_tracing_headers(topic, send_producer_message):
-    txn_name = "test_producer:test_distributed_tracing_headers.<locals>.test" if six.PY3 else "test_producer:test"
-
     @validate_transaction_metrics(
-        txn_name,
+        "test_producer:test_distributed_tracing_headers.<locals>.test",
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1),
             ("Supportability/DistributedTrace/CreatePayload/Success", 1),

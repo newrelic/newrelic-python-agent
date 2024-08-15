@@ -1498,10 +1498,7 @@ class StatsEngine(object):
             level = self.__settings.agent_limits.data_compression_level
             level = level or zlib.Z_DEFAULT_COMPRESSION
 
-            params_data = base64.standard_b64encode(zlib.compress(json_data.encode("latin-1"), level))
-
-            if six.PY3:
-                params_data = params_data.decode("Latin-1")
+            params_data = base64.standard_b64encode(zlib.compress(json_data.encode("latin-1"), level)).decode("Latin-1")
 
             # Limit the length of any SQL that is reported back.
 
@@ -1614,10 +1611,7 @@ class StatsEngine(object):
 
             zlib_data = zlib.compress(json_data.encode("latin-1"), level)
 
-            pack_data = base64.standard_b64encode(zlib_data)
-
-            if six.PY3:
-                pack_data = pack_data.decode("Latin-1")
+            pack_data = base64.standard_b64encode(zlib_data).decode("Latin-1")
 
             root = transaction_trace.root
 
@@ -1679,10 +1673,7 @@ class StatsEngine(object):
 
         zlib_data = zlib.compress(json_data.encode("latin-1"), level)
 
-        pack_data = base64.standard_b64encode(zlib_data)
-
-        if six.PY3:
-            pack_data = pack_data.decode("Latin-1")
+        pack_data = base64.standard_b64encode(zlib_data).decode("Latin-1")
 
         root = transaction_trace.root
 

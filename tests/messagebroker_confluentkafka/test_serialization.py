@@ -26,15 +26,13 @@ from newrelic.packages import six
 
 
 def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_message):
-    txn_name = "test_serialization:test_serialization_metrics.<locals>.test" if six.PY3 else "test_serialization:test"
-
     _metrics = [
         ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Value" % topic, 1),
         ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Key" % topic, 1),
     ]
 
     @validate_transaction_metrics(
-        txn_name,
+        "test_serialization:test_serialization_metrics.<locals>.test",
         scoped_metrics=_metrics,
         rollup_metrics=_metrics,
         background_task=True,

@@ -74,14 +74,8 @@ def test_model_methods_wrapped_in_function_trace(neighbors_model_name, run_neigh
         ],
     }
 
-    expected_transaction_name = (
-        "test_neighbors_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_neighbors_models:_test"
-    )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_neighbors_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[neighbors_model_name],
         rollup_metrics=expected_scoped_metrics[neighbors_model_name],
         background_task=True,
@@ -123,14 +117,9 @@ def test_above_v1_0_model_methods_wrapped_in_function_trace(neighbors_model_name
             ("Function/MLModel/Sklearn/Named/RadiusNeighborsClassifier.predict_proba", 3),  # Added in v1.0
         ],
     }
-    expected_transaction_name = (
-        "test_neighbors_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_neighbors_models:_test"
-    )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_neighbors_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[neighbors_model_name],
         rollup_metrics=expected_scoped_metrics[neighbors_model_name],
         background_task=True,

@@ -74,19 +74,9 @@ _test_api_base_scoped_metrics = [
     ("Python/WSGI/Application", 1),
     ("Python/WSGI/Response", 1),
     ("Python/WSGI/Finalize", 1),
+    ("Function/tastypie.resources:Resource.wrap_view.<locals>.wrapper", 1),
+    ("Function/django.urls.resolvers:URLResolver.resolve", 1),
 ]
-
-if six.PY3:
-    _test_api_base_scoped_metrics.append(("Function/tastypie.resources:Resource.wrap_view.<locals>.wrapper", 1))
-else:
-    _test_api_base_scoped_metrics.append(("Function/tastypie.resources:wrapper", 1))
-
-# django < 1.12 used the RegexURLResolver class and this was updated to URLResolver in later versions
-if VERSION <= (0, 14, 3) and not six.PY3:
-    _test_api_base_scoped_metrics.append(("Function/django.urls.resolvers:RegexURLResolver.resolve", 1))
-else:
-    _test_api_base_scoped_metrics.append(("Function/django.urls.resolvers:URLResolver.resolve", 1))
-
 
 _test_application_not_found_scoped_metrics = list(_test_api_base_scoped_metrics)
 
@@ -136,20 +126,13 @@ def test_object_does_not_exist(api_version, tastypie_full_debug):
 
 
 _test_application_raises_zerodivision = list(_test_api_base_scoped_metrics)
-_test_application_raises_zerodivision_exceptions = []
-
-if six.PY3:
-    _test_application_raises_zerodivision_exceptions.append("builtins:ZeroDivisionError")
-else:
-    _test_application_raises_zerodivision_exceptions.append("exceptions:ZeroDivisionError")
+_test_application_raises_zerodivision_exceptions = ["builtins:ZeroDivisionError"]
 
 
 @pytest.mark.parametrize("api_version", ["v1", "v2"])
 @pytest.mark.parametrize("tastypie_full_debug", [True, False])
 @validate_transaction_errors(errors=_test_application_raises_zerodivision_exceptions)
 def test_raises_zerodivision(api_version, tastypie_full_debug):
-    _test_application_raises_zerodivision = list(_test_api_base_scoped_metrics)
-
     if tastypie_full_debug:
         _test_application_raises_zerodivision.append(
             (("Function/django.core.handlers.exception:" "handle_uncaught_exception"), 1)

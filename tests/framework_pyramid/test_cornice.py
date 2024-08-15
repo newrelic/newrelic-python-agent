@@ -89,13 +89,8 @@ _test_cornice_error_scoped_metrics = [
         ('Function/cornice.pyramidhook:handle_exceptions', 1),
         ('Function/_test_application:cornice_error_get_info', 1)]
 
-if six.PY3:
-    _test_cornice_error_errors = ['builtins:RuntimeError']
-else:
-    _test_cornice_error_errors = ['exceptions:RuntimeError']
-
 @validate_code_level_metrics("_test_application", "cornice_error_get_info")
-@validate_transaction_errors(errors=_test_cornice_error_errors)
+@validate_transaction_errors(errors=['builtins:RuntimeError'])
 @validate_transaction_metrics('_test_application:cornice_error_get_info',
         scoped_metrics=_test_cornice_error_scoped_metrics)
 def test_cornice_error():

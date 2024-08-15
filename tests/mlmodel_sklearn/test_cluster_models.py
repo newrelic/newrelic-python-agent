@@ -95,14 +95,9 @@ def test_below_v1_1_model_methods_wrapped_in_function_trace(cluster_model_name, 
             ("Function/MLModel/Sklearn/Named/SpectralClustering.fit_predict", 1),
         ],
     }
-    expected_transaction_name = "test_cluster_models:_test"
-    if six.PY3:
-        expected_transaction_name = (
-            "test_cluster_models:test_below_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
-        )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_cluster_models:test_below_v1_1_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[cluster_model_name],
         rollup_metrics=expected_scoped_metrics[cluster_model_name],
         background_task=True,
@@ -134,14 +129,9 @@ def test_above_v1_1_model_methods_wrapped_in_function_trace(cluster_model_name, 
             ("Function/MLModel/Sklearn/Named/OPTICS.fit_predict", 1),
         ],
     }
-    expected_transaction_name = "test_cluster_models:_test"
-    if six.PY3:
-        expected_transaction_name = (
-            "test_cluster_models:test_above_v1_1_model_methods_wrapped_in_function_trace.<locals>._test"
-        )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_cluster_models:test_above_v1_1_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[cluster_model_name],
         rollup_metrics=expected_scoped_metrics[cluster_model_name],
         background_task=True,

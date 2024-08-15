@@ -52,36 +52,28 @@ def memory_data_source():
 
 PID = os.getpid()
 
-if six.PY2:
-    EXPECTED_GC_METRICS = (
-        "GC/objects/%d/all" % PID,
-        "GC/objects/%d/generation/0" % PID,
-        "GC/objects/%d/generation/1" % PID,
-        "GC/objects/%d/generation/2" % PID,
-    )
-else:
-    EXPECTED_GC_METRICS = (
-        "GC/objects/%d/all" % PID,
-        "GC/objects/%d/generation/0" % PID,
-        "GC/objects/%d/generation/1" % PID,
-        "GC/objects/%d/generation/2" % PID,
-        "GC/collections/%d/all" % PID,
-        "GC/collections/%d/0" % PID,
-        "GC/collections/%d/1" % PID,
-        "GC/collections/%d/2" % PID,
-        "GC/collected/%d/all" % PID,
-        "GC/collected/%d/0" % PID,
-        "GC/collected/%d/1" % PID,
-        "GC/collected/%d/2" % PID,
-        "GC/uncollectable/%d/all" % PID,
-        "GC/uncollectable/%d/0" % PID,
-        "GC/uncollectable/%d/1" % PID,
-        "GC/uncollectable/%d/2" % PID,
-        "GC/time/%d/all" % PID,
-        "GC/time/%d/0" % PID,
-        "GC/time/%d/1" % PID,
-        "GC/time/%d/2" % PID,
-    )
+EXPECTED_GC_METRICS = (
+    "GC/objects/%d/all" % PID,
+    "GC/objects/%d/generation/0" % PID,
+    "GC/objects/%d/generation/1" % PID,
+    "GC/objects/%d/generation/2" % PID,
+    "GC/collections/%d/all" % PID,
+    "GC/collections/%d/0" % PID,
+    "GC/collections/%d/1" % PID,
+    "GC/collections/%d/2" % PID,
+    "GC/collected/%d/all" % PID,
+    "GC/collected/%d/0" % PID,
+    "GC/collected/%d/1" % PID,
+    "GC/collected/%d/2" % PID,
+    "GC/uncollectable/%d/all" % PID,
+    "GC/uncollectable/%d/0" % PID,
+    "GC/uncollectable/%d/1" % PID,
+    "GC/uncollectable/%d/2" % PID,
+    "GC/time/%d/all" % PID,
+    "GC/time/%d/0" % PID,
+    "GC/time/%d/1" % PID,
+    "GC/time/%d/2" % PID,
+)
 
 
 @pytest.mark.xfail(

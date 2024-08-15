@@ -414,10 +414,7 @@ class ProfileSession(object):
         level = settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
 
-        encoded_tree = base64.standard_b64encode(zlib.compress(json_call_tree.encode("latin-1"), level))
-
-        if six.PY3:
-            encoded_tree = encoded_tree.decode("Latin-1")
+        encoded_tree = base64.standard_b64encode(zlib.compress(json_call_tree.encode("latin-1"), level)).decode("Latin-1")
 
         profile = [
             [

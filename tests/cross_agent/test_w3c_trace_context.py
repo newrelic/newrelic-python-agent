@@ -231,8 +231,6 @@ def test_trace_context(
     if transport_type != "HTTP":
         extra_environ[".inbound_headers"] = inbound_headers
         inbound_headers = None
-    elif six.PY2 and inbound_headers:
-        inbound_headers = {k.encode("utf-8"): v.encode("utf-8") for k, v in inbound_headers.items()}
 
     @validate_transaction_metrics(
         test_name, group="Uri", rollup_metrics=expected_metrics, background_task=not web_transaction

@@ -44,14 +44,8 @@ def test_model_methods_wrapped_in_function_trace(discriminant_analysis_model_nam
         ],
     }
 
-    expected_transaction_name = (
-        "test_discriminant_analysis_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_discriminant_analysis_models:_test"
-    )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_discriminant_analysis_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[discriminant_analysis_model_name],
         rollup_metrics=expected_scoped_metrics[discriminant_analysis_model_name],
         background_task=True,

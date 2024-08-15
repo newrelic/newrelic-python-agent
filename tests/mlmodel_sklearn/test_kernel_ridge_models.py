@@ -35,14 +35,8 @@ def test_model_methods_wrapped_in_function_trace(kernel_ridge_model_name, run_ke
         ],
     }
 
-    expected_transaction_name = (
-        "test_kernel_ridge_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_kernel_ridge_models:_test"
-    )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_kernel_ridge_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[kernel_ridge_model_name],
         rollup_metrics=expected_scoped_metrics[kernel_ridge_model_name],
         background_task=True,

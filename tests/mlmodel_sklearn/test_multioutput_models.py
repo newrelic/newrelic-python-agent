@@ -26,9 +26,7 @@ from newrelic.packages import six
 SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
-# Python 2 will not allow instantiation of abstract class
-# (abstract method is __init__ here)
-@pytest.mark.skipif(SKLEARN_VERSION >= (1, 0, 0) or six.PY2, reason="Requires sklearn < 1.0 and Python3")
+@pytest.mark.skipif(SKLEARN_VERSION >= (1, 0, 0), reason="Requires sklearn < 1.0")
 @pytest.mark.parametrize(
     "multioutput_model_name",
     [
@@ -42,14 +40,9 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(multioutput_model_na
             ("Function/MLModel/Sklearn/Named/MultiOutputEstimator.predict", 2),
         ],
     }
-    expected_transaction_name = (
-        "test_multioutput_models:test_below_v1_0_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_multioutput_models:_test"
-    )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_multioutput_models:test_below_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[multioutput_model_name],
         rollup_metrics=expected_scoped_metrics[multioutput_model_name],
         background_task=True,
@@ -84,14 +77,9 @@ def test_above_v1_0_model_methods_wrapped_in_function_trace(multioutput_model_na
             ("Function/MLModel/Sklearn/Named/RegressorChain.fit", 1),
         ],
     }
-    expected_transaction_name = (
-        "test_multioutput_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_multioutput_models:_test"
-    )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_multioutput_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[multioutput_model_name],
         rollup_metrics=expected_scoped_metrics[multioutput_model_name],
         background_task=True,

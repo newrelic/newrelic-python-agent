@@ -40,7 +40,3 @@ def app():
     from _target_application import _target_application
 
     return _target_application
-
-
-if six.PY2:
-    collect_ignore = ["test_application_async.py"]

@@ -24,13 +24,9 @@ else:
         return False
 
 
-if six.PY3:
-    def is_asyncio_coroutine(wrapped):
-        """Return True if func is a decorated coroutine function."""
-        return getattr(wrapped, '_is_coroutine', None) is not None
-else:
-    def is_asyncio_coroutine(wrapped):
-        return False
+def is_asyncio_coroutine(wrapped):
+    """Return True if func is a decorated coroutine function."""
+    return getattr(wrapped, '_is_coroutine', None) is not None
 
 
 def is_generator_function(wrapped):

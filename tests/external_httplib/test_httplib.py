@@ -40,29 +40,18 @@ from testing_support.validators.validate_tt_segment_params import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.encoding_utils import DistributedTracePayload
-from newrelic.packages import six
-
-
-def select_python_version(py2, py3):
-    return six.PY3 and py3 or py2
 
 
 def test_httplib_http_request(server):
     scoped = [
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        )
+        ("External/localhost:%d/http/" % server.port, 1),
     ]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
         ("External/localhost:%d/all" % server.port, 1),
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        ),
+        ("External/localhost:%d/http/" % server.port, 1),
     ]
 
     @validate_transaction_metrics(
@@ -81,20 +70,14 @@ def test_httplib_http_request(server):
 
 def test_httplib_https_request(server):
     _test_httplib_https_request_scoped_metrics = [
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        )
+        ("External/localhost:%d/http/" % server.port, 1),
     ]
 
     _test_httplib_https_request_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
         ("External/localhost:%d/all" % server.port, 1),
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        ),
+        ("External/localhost:%d/http/" % server.port, 1),
     ]
 
     @validate_transaction_metrics(
@@ -121,20 +104,14 @@ def test_httplib_https_request(server):
 def test_httplib_http_with_port_request(server):
 
     scoped = [
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        )
+        ("External/localhost:%d/http/" % server.port, 1),
     ]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
         ("External/localhost:%d/all" % server.port, 1),
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        ),
+        ("External/localhost:%d/http/" % server.port, 1),
     ]
 
     @validate_transaction_metrics(
@@ -329,14 +306,12 @@ def test_span_events(server):
     uri = "http://localhost:%d" % server.port
 
     exact_intrinsics = {
-        "name": select_python_version(
-            py2="External/localhost:%d/httplib/" % server.port, py3="External/localhost:%d/http/" % server.port
-        ),
+        "name": "External/localhost:%d/http/" % server.port,
         "type": "Span",
         "sampled": True,
         "category": "http",
         "span.kind": "client",
-        "component": select_python_version(py2="httplib", py3="http"),
+        "component": "http",
     }
     exact_agents = {
         "http.url": uri,

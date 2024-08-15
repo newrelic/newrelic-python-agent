@@ -319,14 +319,7 @@ class Application(object):
         # code run from this thread performs a deferred module import.
 
         if self._detect_deadlock:
-            if six.PY2:
-                import imp
-
-                imp.acquire_lock()
-                self._deadlock_event.set()
-                imp.release_lock()
-            else:
-                self._deadlock_event.set()
+            self._deadlock_event.set()
 
         # Register the application with the data collector. Any errors
         # that occur will be dealt with by create_session(). The result

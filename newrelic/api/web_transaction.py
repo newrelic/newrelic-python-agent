@@ -377,10 +377,7 @@ class WebTransaction(Transaction):
     def browser_timing_header(self, nonce=None):
         """Returns the JavaScript header to be included in any HTML
         response to perform real user monitoring. This function returns
-        the header as a native Python string. In Python 2 native strings
-        are stored as bytes. In Python 3 native strings are stored as
-        unicode.
-
+        the header as a native Python string.
         """
 
         if not self.enabled:
@@ -473,9 +470,7 @@ class WebTransaction(Transaction):
             # encodable. Since we obfuscate all agent and user attributes, and
             # the transaction name with base 64 encoding, this will preserve
             # those strings, if they have values outside of the ASCII character
-            # set. In the case of Python 2, we actually then use the encoded
-            # value as we need a native string, which for Python 2 is a byte
-            # string. If encoding as ASCII fails we will return an empty
+            # set. If encoding as ASCII fails we will return an empty
             # string.
 
             try:

@@ -1091,7 +1091,7 @@ def global_settings_dump(settings_object=None, serializable=False):
             settings["proxy_host"] = uri
 
     if serializable:
-        for key, value in list(six.iteritems(settings)):
+        for key, value in list(settings.items()):
             if not isinstance(key, six.string_types):
                 del settings[key]
 

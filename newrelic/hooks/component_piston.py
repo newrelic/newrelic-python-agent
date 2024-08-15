@@ -69,7 +69,7 @@ class ResourceInitWrapper(object):
     def __call__(self, *args, **kwargs):
         self._nr_wrapped(*args, **kwargs)
         handler = self.__instance.handler
-        for name in six.itervalues(self.__instance.callmap):
+        for name in self.__instance.callmap.values():
             if hasattr(handler, name):
                 setattr(handler, name, MethodWrapper(
                         getattr(handler, name), priority=6))

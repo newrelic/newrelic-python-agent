@@ -232,7 +232,7 @@ class CustomMetrics(object):
 
         """
 
-        return six.iteritems(self.__stats_table)
+        return self.__stats_table.items()
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -301,7 +301,7 @@ class DimensionalMetrics(object):
         stats for the metric.
         """
 
-        return six.iteritems(self.__stats_table)
+        return self.__stats_table.items()
 
     def metrics_count(self):
         """Returns a count of the number of unique metrics currently
@@ -1333,11 +1333,11 @@ class StatsEngine(object):
             _logger.info(
                 "Raw metric data for harvest of %r is %r.",
                 self.__settings.app_name,
-                list(six.iteritems(self.__stats_table)),
+                list(self.__stats_table.items()),
             )
 
         if normalizer is not None:
-            for key, value in six.iteritems(self.__stats_table):
+            for key, value in self.__stats_table.items():
                 normalized_name, ignored = normalizer(key[0])
                 if ignored:
                     continue
@@ -1355,10 +1355,10 @@ class StatsEngine(object):
             _logger.info(
                 "Normalized metric data for harvest of %r is %r.",
                 self.__settings.app_name,
-                list(six.iteritems(normalized_stats)),
+                list(normalized_stats.items()),
             )
 
-        for key, value in six.iteritems(normalized_stats):
+        for key, value in normalized_stats.items():
             key = dict(name=key[0], scope=key[1])
             result.append((key, value))
 
@@ -1457,7 +1457,7 @@ class StatsEngine(object):
 
         maximum = self.__settings.agent_limits.slow_sql_data
 
-        slow_sql_nodes = sorted(six.itervalues(self.__sql_stats_table), key=lambda x: x.max_call_time)[-maximum:]
+        slow_sql_nodes = sorted(self.__sql_stats_table.values(), key=lambda x: x.max_call_time)[-maximum:]
 
         result = []
 
@@ -1943,7 +1943,7 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-        for key, other in six.iteritems(snapshot.__stats_table):
+        for key, other in snapshot.__stats_table.items():
             stats = self.__stats_table.get(key)
             if not stats:
                 self.__stats_table[key] = other
@@ -2031,7 +2031,7 @@ class StatsEngine(object):
         # the limit of how many to collect, only merge in if already
         # seen the specific SQL.
 
-        for key, slow_sql_stats in six.iteritems(snapshot.__sql_stats_table):
+        for key, slow_sql_stats in snapshot.__sql_stats_table.items():
             stats = self.__sql_stats_table.get(key)
             if not stats:
                 maximum = self.__settings.agent_limits.slow_sql_data

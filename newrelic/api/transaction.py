@@ -555,7 +555,7 @@ class Transaction(object):
 
         # Record supportability metrics for api calls
 
-        for key, value in six.iteritems(self._transaction_metrics):
+        for key, value in self._transaction_metrics.items():
             self.record_custom_metric(key, {"count": value})
 
         if self._frameworks:

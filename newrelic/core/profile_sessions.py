@@ -393,7 +393,7 @@ class ProfileSession(object):
         flat_tree = {}
         thread_count = 0
 
-        for category, bucket in six.iteritems(self.call_buckets):
+        for category, bucket in self.call_buckets.items():
 
             # Only flatten buckets that have data in them. No need to send
             # empty buckets.

@@ -76,15 +76,15 @@ def _check_event_attributes(expected, captured, mismatches):
         mismatches.append("key: timestamp, value:<%s>" % intrinsics["timestamp"])
         return False
 
-    captured_keys = set(six.iterkeys(captured[1]))
-    expected_keys = set(six.iterkeys(expected[1]))
+    captured_keys = set(captured[1].keys())
+    expected_keys = set(expected[1].keys())
     extra_keys = captured_keys - expected_keys
 
     if extra_keys:
         mismatches.append("extra_keys: %s" % str(tuple(extra_keys)))
         return False
 
-    for key, value in six.iteritems(expected[1]):
+    for key, value in expected[1].items():
         if key in captured[1]:
             captured_value = captured[1].get(key, None)
         else:

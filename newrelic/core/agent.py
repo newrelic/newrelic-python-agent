@@ -436,7 +436,7 @@ class Agent(object):
             if application is None:
                 # Bind to any applications that already exist.
 
-                for application in list(six.itervalues(self._applications)):
+                for application in list(self._applications.values()):
                     application.register_data_source(source, name, settings, **properties)
 
             else:
@@ -619,7 +619,7 @@ class Agent(object):
         self._flexible_harvest_count += 1
         self._last_flexible_harvest = time.time()
 
-        for application in list(six.itervalues(self._applications)):
+        for application in list(self._applications.values()):
             try:
                 application.harvest(shutdown=False, flexible=True)
             except Exception:
@@ -643,7 +643,7 @@ class Agent(object):
         self._default_harvest_count += 1
         self._last_default_harvest = time.time()
 
-        for application in list(six.itervalues(self._applications)):
+        for application in list(self._applications.values()):
             try:
                 application.harvest(shutdown, flexible=False)
             except Exception:

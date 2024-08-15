@@ -3214,20 +3214,11 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("genshi.template.base", "newrelic.hooks.template_genshi")
 
-    if six.PY2:
-        _process_module_definition("httplib", "newrelic.hooks.external_httplib")
-    else:
-        _process_module_definition("http.client", "newrelic.hooks.external_httplib")
+    _process_module_definition("http.client", "newrelic.hooks.external_httplib")
 
     _process_module_definition("httplib2", "newrelic.hooks.external_httplib2")
 
-    if six.PY2:
-        _process_module_definition("urllib", "newrelic.hooks.external_urllib")
-    else:
-        _process_module_definition("urllib.request", "newrelic.hooks.external_urllib")
-
-    if six.PY2:
-        _process_module_definition("urllib2", "newrelic.hooks.external_urllib2")
+    _process_module_definition("urllib.request", "newrelic.hooks.external_urllib")
 
     _process_module_definition(
         "urllib3.connectionpool",

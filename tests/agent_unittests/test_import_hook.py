@@ -39,18 +39,18 @@ def test_import_hook_finder(monkeypatch):
     monkeypatch.setattr(import_hook, "_import_hooks", registered_hooks)
 
     # Finding a module that does not exist returns None, whether or not it is registered.
-    module = finder.find_module("module_does_not_exist")
+    module = finder.find_spec("module_does_not_exist")
     assert module is None
 
-    module = finder.find_module("registered_but_does_not_exist")
+    module = finder.find_spec("registered_but_does_not_exist")
     assert module is None
 
     # Finding a module that exists, but is not registered returns None.
-    module = finder.find_module("newrelic")
+    module = finder.find_spec("newrelic")
     assert module is None
 
     # Finding a module that exists, and is registered, finds that module.
-    module = finder.find_module("newrelic.api")
+    module = finder.find_spec("newrelic.api")
     assert module is not None
 
 

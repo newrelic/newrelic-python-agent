@@ -495,23 +495,20 @@ class _WSGIApplicationMiddleware(object):
 
 
 def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None, dispatcher=None):
-    # Python 2 does not allow rebinding nonlocal variables, so to fix this
-    # framework must be stored in list so it can be edited by closure.
-    _framework = [framework]
-
     def get_framework():
         """Used to delay imports by passing framework as a callable."""
-        framework = _framework[0]
+
+        # Use same framework variable as closure
+        nonlocal framework
+
         if isinstance(framework, tuple) or framework is None:
             return framework
 
         if callable(framework):
             framework = framework()
-            _framework[0] = framework
 
         if framework is not None and not isinstance(framework, tuple):
             framework = (framework, None)
-            _framework[0] = framework
 
         return framework
 

@@ -16,8 +16,6 @@
 
 """
 
-from __future__ import print_function
-
 import logging
 
 from newrelic.common.agent_http import (

@@ -17,8 +17,6 @@ interacting with the agent core.
 
 """
 
-from __future__ import print_function
-
 import atexit
 import logging
 import os

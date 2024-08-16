@@ -124,7 +124,6 @@ def test_object_does_not_exist(api_version, tastypie_full_debug):
         test_application.get("/api/%s/simple/ObjectDoesNotExist/" % api_version, status=404)
 
 
-_test_application_raises_zerodivision = list(_test_api_base_scoped_metrics)
 _test_application_raises_zerodivision_exceptions = ["builtins:ZeroDivisionError"]
 
 
@@ -132,9 +131,10 @@ _test_application_raises_zerodivision_exceptions = ["builtins:ZeroDivisionError"
 @pytest.mark.parametrize("tastypie_full_debug", [True, False])
 @validate_transaction_errors(errors=_test_application_raises_zerodivision_exceptions)
 def test_raises_zerodivision(api_version, tastypie_full_debug):
+    _test_application_raises_zerodivision = list(_test_api_base_scoped_metrics)
     if tastypie_full_debug:
         _test_application_raises_zerodivision.append(
-            (("Function/django.core.handlers.exception:" "handle_uncaught_exception"), 1)
+            (("Function/django.core.handlers.exception:handle_uncaught_exception"), 1)
         )
     else:
         _test_application_raises_zerodivision.append(("Function/tastypie.http:HttpApplicationError.close", 1))

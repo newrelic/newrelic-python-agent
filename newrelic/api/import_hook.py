@@ -15,13 +15,11 @@
 import logging
 import sys
 
+from importlib.util import find_spec
+
 
 _logger = logging.getLogger(__name__)
 
-try:
-    from importlib.util import find_spec
-except ImportError:
-    find_spec = None
 
 _import_hooks = {}
 

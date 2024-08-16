@@ -17,10 +17,7 @@ import logging
 import time
 import warnings
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
+import urllib.parse as urlparse
 
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction

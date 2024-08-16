@@ -18,6 +18,8 @@ import os.path
 import ssl
 import zlib
 
+from io import StringIO
+
 import pytest
 from testing_support.mock_external_http_server import (
     BaseHTTPServer,
@@ -38,11 +40,6 @@ from newrelic.core.internal_metrics import InternalTraceContext
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import NetworkInterfaceException
 from newrelic.packages.urllib3.util import Url
-
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 
 
 SERVER_CERT = os.path.join(os.path.dirname(__file__), "cert.pem")

@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    import http.client as httplib
-except ImportError:
-    import httplib
-
+import http.client as httplib
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction

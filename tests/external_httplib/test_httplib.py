@@ -14,10 +14,7 @@
 
 import pytest
 
-try:
-    import http.client as httplib
-except ImportError:
-    import httplib
+import http.client as httplib
 
 from testing_support.external_fixtures import (
     cache_outgoing_headers,

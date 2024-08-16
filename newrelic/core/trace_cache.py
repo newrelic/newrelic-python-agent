@@ -22,16 +22,13 @@ import sys
 import threading
 import traceback
 import weakref
+    
+from collections.abc import MutableMapping
 
 try:
     import thread
 except ImportError:
     import _thread as thread
-
-try:
-    from collections.abc import MutableMapping
-except ImportError:
-    from collections import MutableMapping
 
 from newrelic.core.config import global_settings
 from newrelic.core.loop_node import LoopNode

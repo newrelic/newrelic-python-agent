@@ -15,6 +15,8 @@
 import inspect
 import os
 
+from urllib.parse import unquote, parse_qsl
+
 from newrelic.api.database_trace import DatabaseTrace, register_database_client
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
@@ -28,15 +30,6 @@ from newrelic.hooks.database_dbapi2 import DEFAULT
 from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
 from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
 from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
-
-try:
-    from urllib import unquote
-except ImportError:
-    from urllib.parse import unquote
-try:
-    from urlparse import parse_qsl
-except ImportError:
-    from urllib.parse import parse_qsl
 
 from newrelic.packages.urllib3 import util as ul3_util
 

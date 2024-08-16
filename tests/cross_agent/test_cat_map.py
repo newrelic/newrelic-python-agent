@@ -24,10 +24,7 @@ import os
 import pytest
 import webtest
 
-try:
-    from urllib2 import urlopen  # Py2.X
-except ImportError:
-    from urllib.request import urlopen  # Py3.X
+from urllib.request import urlopen
 
 from testing_support.fixtures import (
     make_cross_agent_headers,

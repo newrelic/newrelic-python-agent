@@ -15,6 +15,8 @@
 import inspect
 import os
 
+from urllib.parse import unquote, parse_qsl
+
 from newrelic.api.database_trace import DatabaseTrace, register_database_client
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
@@ -36,15 +38,6 @@ from newrelic.hooks.database_dbapi2_async import (
 from newrelic.hooks.database_dbapi2_async import (
     AsyncCursorWrapper as DBAPI2AsyncCursorWrapper,
 )
-
-try:
-    from urllib import unquote
-except ImportError:
-    from urllib.parse import unquote
-try:
-    from urlparse import parse_qsl
-except ImportError:
-    from urllib.parse import parse_qsl
 
 from newrelic.packages.urllib3 import util as ul3_util
 

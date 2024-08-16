@@ -21,12 +21,9 @@ import sys
 import threading
 import time
 
-import pytest
+from queue import Queue
 
-try:
-    from Queue import Queue
-except ImportError:
-    from queue import Queue
+import pytest
 
 from testing_support.sample_applications import (
     error_user_params_added,

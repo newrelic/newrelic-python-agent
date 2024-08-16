@@ -16,8 +16,7 @@ import os
 import sys
 import time
 
-# Avoiding additional imports by defining PY2 manually
-PY2 = sys.version_info[0] == 2
+from importlib.machinery import PathFinder
 
 # Define some debug logging routines to help sort out things when this
 # all doesn't work as expected.
@@ -82,25 +81,14 @@ log_message("boot_directory = %r", boot_directory)
 del_sys_path_entry(boot_directory)
 
 try:
-    if PY2:
-        import imp
-
-        module_spec = imp.find_module("sitecustomize", sys.path)
-    else:
-        from importlib.machinery import PathFinder
-
-        module_spec = PathFinder.find_spec("sitecustomize", path=sys.path)
-
+    module_spec = PathFinder.find_spec("sitecustomize", path=sys.path)
 except ImportError:
     pass
 else:
     if module_spec is not None:  # Import error not raised in importlib
         log_message("sitecustomize = %r", module_spec)
 
-        if PY2:
-            imp.load_module("sitecustomize", *module_spec)
-        else:
-            module_spec.loader.load_module("sitecustomize")
+        module_spec.loader.load_module("sitecustomize")
 
 # Because the PYTHONPATH environment variable has been amended and the
 # bootstrap directory added, if a Python application creates a sub

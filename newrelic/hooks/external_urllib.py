@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-
+import urllib.parse as urlparse
 
 from newrelic.api.external_trace import ExternalTraceWrapper
 from newrelic.api.transaction import current_transaction

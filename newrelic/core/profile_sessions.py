@@ -19,16 +19,13 @@ import threading
 import time
 import zlib
 from collections import defaultdict, deque
+from sys import intern
 
 import newrelic
 from newrelic.common.encoding_utils import json_encode
 from newrelic.core.config import global_settings
 from newrelic.core.trace_cache import trace_cache
 
-try:
-    from sys import intern
-except ImportError:
-    pass
 
 _logger = logging.getLogger(__name__)
 

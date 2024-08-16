@@ -15,6 +15,7 @@
 from __future__ import print_function
 
 import atexit
+import builtins
 import cmd
 import code
 import configparser
@@ -29,11 +30,6 @@ import sys
 import threading
 import time
 import traceback
-
-try:
-    import __builtin__
-except ImportError:
-    import builtins as __builtin__
 
 
 def _argspec_py2(func):
@@ -152,8 +148,8 @@ def setquit():
                 pass
             raise SystemExit(code)
 
-    __builtin__.quit = Quitter("quit")
-    __builtin__.exit = Quitter("exit")
+    builtins.quit = Quitter("quit")
+    builtins.exit = Quitter("exit")
 
 
 class OutputWrapper(ObjectProxy):

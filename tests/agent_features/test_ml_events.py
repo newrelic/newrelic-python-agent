@@ -14,6 +14,8 @@
 
 import time
 
+from importlib import reload
+
 import pytest
 from testing_support.fixtures import (
     function_not_called,
@@ -35,12 +37,6 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import record_ml_event
 from newrelic.core.config import global_settings
 
-try:
-    # python 2.x
-    reload
-except NameError:
-    # python 3.x
-    from importlib import reload
 
 _now = time.time()
 

@@ -15,7 +15,7 @@
 import sys
 import warnings
 
-from functools import cache
+from functools import lru_cache
 
 
 # Need to account for 4 possible variations of version declaration specified in (rejected) PEP 396
@@ -71,7 +71,7 @@ def get_package_version_tuple(name):
     return version
 
 
-@cache
+@lru_cache()
 def _get_package_version(name):
     module = sys.modules.get(name, None)
     version = None

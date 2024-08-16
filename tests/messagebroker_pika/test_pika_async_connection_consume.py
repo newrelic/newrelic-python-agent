@@ -414,7 +414,7 @@ def test_tornado_connection_basic_consume_outside_transaction(producer):
 _test_select_connection_consume_outside_txn_metrics = [
     (
         "Function/test_pika_async_connection_consume:test_select_connection_basic_consume_outside_transaction.<locals>.on_message",
-        1,
+        None,
     ),
 ]
 

@@ -126,16 +126,16 @@ _test_blocking_conn_basic_consume_no_txn_metrics = [
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
     ("Function/test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_outside_transaction.<locals>.on_message", None),
 ]
-_txn_name = "test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_outside_transaction.<locals>"
+_txn_name = "test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_outside_transaction.<locals>.on_message"
 
 @pytest.mark.parametrize("as_partial", [True, False])
 @dt_enabled
 @validate_code_level_metrics(
-    _txn_name,
+    "test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_outside_transaction.<locals>",
     "on_message",
 )
 @validate_transaction_metrics(
-    "test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_outside_transaction.<locals>.on_message",
+    _txn_name,
     scoped_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
     rollup_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
     background_task=True,

@@ -27,7 +27,6 @@ _ok_modules = (
     # These modules are imported by the newrelic package and/or do not do
     # nested imports, so they're ok to import before newrelic.
     "urllib",
-    "urllib2",
     "httplib",
     "http.client",
     "urllib.request",

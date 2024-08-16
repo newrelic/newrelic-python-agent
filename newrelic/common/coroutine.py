@@ -15,12 +15,8 @@
 import inspect
 
 
-if hasattr(inspect, 'iscoroutinefunction'):
-    def is_coroutine_function(wrapped):
-        return inspect.iscoroutinefunction(wrapped)
-else:
-    def is_coroutine_function(wrapped):
-        return False
+def is_coroutine_function(wrapped):
+    return inspect.iscoroutinefunction(wrapped)
 
 
 def is_asyncio_coroutine(wrapped):

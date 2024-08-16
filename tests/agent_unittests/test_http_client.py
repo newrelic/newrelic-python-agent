@@ -21,10 +21,9 @@ import zlib
 from io import StringIO
 
 import pytest
-from testing_support.mock_external_http_server import (
-    BaseHTTPServer,
-    MockExternalHTTPServer,
-)
+
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.common import certs
 from newrelic.common.agent_http import (
@@ -78,12 +77,12 @@ class InsecureServer(MockExternalHTTPServer):
         handler = type(
             "ResponseHandler",
             (
-                BaseHTTPServer.BaseHTTPRequestHandler,
+                BaseHTTPRequestHandler,
                 object,
             ),
             {"do_GET": handler, "do_POST": handler, "do_CONNECT": do_CONNECT},
         )
-        self.httpd = BaseHTTPServer.HTTPServer(("localhost", self.port), handler)
+        self.httpd = HTTPServer(("localhost", self.port), handler)
         self.httpd.connections = []
         self.httpd.connect_host = None
         self.httpd.connect_port = None

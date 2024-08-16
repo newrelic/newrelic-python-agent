@@ -32,7 +32,7 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + "/"
+AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + os.sep
 
 
 class SessionState(object):

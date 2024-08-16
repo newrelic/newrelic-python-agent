@@ -17,6 +17,7 @@ from __future__ import print_function
 import atexit
 import cmd
 import code
+import configparser
 import functools
 import glob
 import inspect
@@ -28,11 +29,6 @@ import sys
 import threading
 import time
 import traceback
-
-try:
-    import ConfigParser
-except ImportError:
-    import configparser as ConfigParser
 
 try:
     import __builtin__
@@ -540,7 +536,7 @@ class ClientShell(cmd.Cmd):
         cmd.Cmd.__init__(self, stdin=stdin, stdout=stdout)
 
         self.__config_file = config_file
-        self.__config_object = ConfigParser.RawConfigParser()
+        self.__config_object = configparser.RawConfigParser()
         self.__log_object = log
 
         if not self.__config_object.read([config_file]):

@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 import pytest
 import webtest
 from testing_support.fixtures import (
@@ -39,10 +37,6 @@ from newrelic.core.attribute import (
     truncate,
 )
 
-# Python 3 lacks longs
-
-if sys.version_info >= (3, 0):
-    long = int
 try:
     from newrelic.core._thread_utilization import ThreadUtilization
 except ImportError:
@@ -468,11 +462,6 @@ def test_sanitize_float():
 
 def test_sanitize_int():
     assert sanitize(9876) == 9876
-
-
-def test_sanitize_long():
-    long_int = long(123456)
-    assert sanitize(long_int) == long_int
 
 
 def test_sanitize_dict():

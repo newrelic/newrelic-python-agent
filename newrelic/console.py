@@ -29,37 +29,8 @@ import threading
 import time
 import traceback
 
-
-def _argspec_py2(func):
-    return inspect.getargspec(func)
-
-
-def _argspec_py3(func):
-    a = inspect.getfullargspec(func)
-    return (a.args, a.varargs, a.varkw, a.defaults)
-
-
-if hasattr(inspect, "getfullargspec"):
-    _argspec = _argspec_py3
-else:
-    _argspec = _argspec_py2
-
-try:
-    from collections import OrderedDict
-    from inspect import signature
-
-    def doc_signature(func):
-        sig = signature(func)
-        sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
-        return str(sig)
-
-
-except ImportError:
-    from inspect import formatargspec
-
-    def doc_signature(func):
-        args, varargs, keywords, defaults = _argspec(func)
-        return formatargspec(args[1:], varargs, keywords, defaults)
+from collections import OrderedDict
+from inspect import signature
 
 
 from newrelic.common.object_wrapper import ObjectProxy
@@ -67,11 +38,18 @@ from newrelic.core.agent import agent_instance
 from newrelic.core.config import flatten_settings, global_settings
 from newrelic.core.trace_cache import trace_cache
 
+
+def doc_signature(func):
+    sig = signature(func)
+    sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
+    return str(sig)
+
+
 _trace_cache = trace_cache()
 
 
 def shell_command(wrapped):
-    args, varargs, keywords, defaults = _argspec(wrapped)
+    args = inspect.getfullargspec(wrapped).args
 
     parser = optparse.OptionParser()
     for name in args[1:]:

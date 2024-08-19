@@ -99,9 +99,17 @@ async def _execute(connection, cursor, row_type, wrapper):
     sql = "create table %s (a integer, b real, c text)" % DB_SETTINGS["table_name"]
     await maybe_await(cursor.execute(wrapper(sql)))
 
-    sql = "insert into %s " % DB_SETTINGS["table_name"] + "values (%s, %s, %s)"
+    sql = "insert into %s " % DB_SETTINGS["table_name"] + "values (%s, %s, %s) returning a, b, c"
     params = [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")]
-    await maybe_await(cursor.executemany(wrapper(sql), params))
+    await maybe_await(cursor.executemany(wrapper(sql), params, returning=True))
+
+    # Consume inserted records to check that returning param functions
+    records = []
+    while True:
+        records.append(cursor.fetchone())
+        if not cursor.nextset():
+            break
+    assert len(records) == len(params)
 
     sql = "select * from %s" % DB_SETTINGS["table_name"]
     await maybe_await(cursor.execute(wrapper(sql)))

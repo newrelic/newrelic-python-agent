@@ -97,7 +97,7 @@ class CursorWrapper(DBAPI2CursorWrapper):
         if hasattr(sql, "as_string"):
             sql = sql.as_string(self)
 
-        return super(CursorWrapper, self).executemany(sql, seq_of_parameters)
+        return super(CursorWrapper, self).executemany(sql, seq_of_parameters, *args, **kwargs)
 
 
 class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
@@ -243,7 +243,7 @@ class AsyncCursorWrapper(DBAPI2AsyncCursorWrapper):
         if hasattr(sql, "as_string"):
             sql = sql.as_string(self)
 
-        return await super(AsyncCursorWrapper, self).executemany(sql, seq_of_parameters)
+        return await super(AsyncCursorWrapper, self).executemany(sql, seq_of_parameters, *args, **kwargs)
 
 
 class AsyncConnectionSaveParamsWrapper(DBAPI2AsyncConnectionWrapper):

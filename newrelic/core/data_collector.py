@@ -211,6 +211,12 @@ class Session(object):
         payload = (self.agent_run_id, profile_data)
         return self._protocol.send("profile_data", payload)
 
+    def send_loaded_modules(self, environment_info):
+        """Called to submit loaded modules."""
+
+        payload = ("Jars", environment_info)
+        return self._protocol.send("update_loaded_modules", payload)
+
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
         the data collector, rather than simply dropping the connection and

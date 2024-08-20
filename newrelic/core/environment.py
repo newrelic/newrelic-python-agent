@@ -198,10 +198,12 @@ def environment_settings():
 
     env.extend(dispatcher)
 
+    return env
+
+
+def plugins():
     # Module information.
     stdlib_builtin_module_names = _get_stdlib_builtin_module_names()
-
-    plugins = []
 
     settings = global_settings()
     if settings and settings.package_reporting.enabled:
@@ -245,11 +247,7 @@ def environment_settings():
             # If it has no version it's likely not a real package so don't report it unless
             # it's a new relic hook.
             if nr_hook or version:
-                plugins.append("%s (%s)" % (name, version))
-
-    env.append(("Plugin List", plugins))
-
-    return env
+                yield [name, version, {}] if version else [name, " ", {}]
 
 
 def _get_stdlib_builtin_module_names():

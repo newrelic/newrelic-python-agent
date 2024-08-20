@@ -28,12 +28,14 @@ import warnings
 from functools import partial
 
 from newrelic.common.object_names import callable_name
+
+# from newrelic.common.encoding_utils import json_encode
 from newrelic.core.adaptive_sampler import AdaptiveSampler
 from newrelic.core.config import global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.data_collector import create_session
 from newrelic.core.database_utils import SQLConnections
-from newrelic.core.environment import environment_settings
+from newrelic.core.environment import environment_settings, plugins
 from newrelic.core.internal_metrics import (
     InternalTrace,
     InternalTraceContext,
@@ -110,6 +112,8 @@ class Application(object):
         self._data_samplers_lock = threading.Lock()
         self._data_samplers_started = False
 
+        self._env_sent = False
+
         # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
         # avoid a race condition in setting it later. Otherwise we have
@@ -123,6 +127,7 @@ class Application(object):
         }
 
         self._data_samplers = []
+        self.modules = []
 
         # Thread profiler and state of whether active or not.
 
@@ -131,6 +136,8 @@ class Application(object):
         # self._send_profile_data = False
 
         self.profile_manager = profile_session_manager()
+
+        self.plugins = plugins()  # initialize the generator
 
         self._uninstrumented = []
 
@@ -1452,6 +1459,16 @@ class Application(object):
 
                             stats.reset_log_events()
 
+                    # Send environment plugin list
+
+                    if not self._env_sent and configuration and configuration.package_reporting.enabled:
+                        try:
+                            module_info = next(self.plugins)
+                            self.modules.append(module_info)
+                        except StopIteration:
+                            self._active_session.send_loaded_modules(self.modules)
+                            self._env_sent = True
+
                     # Send the accumulated error data.
 
                     if configuration.collect_errors:
@@ -1684,6 +1701,17 @@ class Application(object):
         # data samplers or user provided custom metric data sources.
 
         self.stop_data_samplers()
+
+        # Finishes collecting environment plugin information
+        # if this has not been completed during harvest
+        # lifetime of the application
+        while not self._env_sent:
+            try:
+                module_info = next(self.plugins)
+                self.modules.append(module_info)
+            except StopIteration:
+                self._active_session.send_loaded_modules(self.modules)
+                self._env_sent = True
 
         # Now shutdown the actual agent session.
 

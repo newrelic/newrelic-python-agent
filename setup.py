@@ -17,7 +17,30 @@ import sys
 
 python_version = sys.version_info[:2]
 
-assert python_version >= (3, 7), "The New Relic Python agent only supports Python 3.7+."
+if python_version >= (3, 7):
+    pass
+else:
+    error_msg = "The New Relic Python agent only supports Python 3.7+. We recommend upgrading to a newer version of Python."
+    
+    try:
+        # Lookup table for the last agent versions to support each Python version.
+        last_supported_version_lookup = {
+            (2, 6): "3.4.0.95",
+            (2, 7): "9.13.0",
+            (3, 3): "3.4.0.95",
+            (3, 4): "4.20.0.120",
+            (3, 5): "5.24.0.153",
+            (3, 6): "7.16.0.178",
+        }
+        last_supported_version = last_supported_version_lookup.get(python_version, None)
+
+        if last_supported_version:
+            python_version_str = "%s.%s" % (python_version[0], python_version[1])
+            error_msg += " The last agent version to support Python %s was v%s." % (python_version_str, last_supported_version)
+    except Exception:
+        pass
+
+    raise RuntimeError(error_msg)
 
 with_setuptools = False
 

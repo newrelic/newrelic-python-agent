@@ -18,12 +18,13 @@ import traceback
 import uuid
 
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.time_trace import get_trace_linking_metadata
+from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
+from newrelic.core.context import context_wrapper
 
 _logger = logging.getLogger(__name__)
 LANGCHAIN_VERSION = get_package_version("langchain")
@@ -124,11 +125,28 @@ VECTORSTORE_CLASSES = {
 }
 
 
-def _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata):
+def bind_submit(func, *args, **kwargs):
+    return {"func": func, "args": args, "kwargs": kwargs}
+
+
+def wrap_ContextThreadPoolExecutor_submit(wrapped, instance, args, kwargs):
+    trace = current_trace()
+    if not trace:
+        return wrapped(*args, **kwargs)
+
+    # Use hardened function signature bind so we have safety net catchall of args and kwargs.
+    bound_args = bind_submit(*args, **kwargs)
+    bound_args["func"] = context_wrapper(bound_args["func"], trace=trace, strict=True)
+    return wrapped(bound_args["func"], *bound_args["args"], **bound_args["kwargs"])
+
+
+def _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
-    request_query, request_k = bind_similarity_search(*args, **kwargs)
+    bound_args = bind_args(wrapped, args, kwargs)
+    request_query = bound_args["query"]
+    request_k = bound_args["k"]
     llm_metadata_dict = _get_llm_metadata(transaction)
     vectorstore_error_dict = {
         "request.k": request_k,
@@ -169,19 +187,15 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     except Exception as exc:
         ft.notice_error(attributes={"vector_store_id": search_id})
         ft.__exit__(*sys.exc_info())
-        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata)
+        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped)
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response)
+    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped)
     return response
-
-
-def bind_similarity_search(query, k, *args, **kwargs):
-    return query, k
 
 
 def wrap_similarity_search(wrapped, instance, args, kwargs):
@@ -206,20 +220,22 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     except Exception as exc:
         ft.notice_error(attributes={"vector_store_id": search_id})
         ft.__exit__(*sys.exc_info())
-        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata)
+        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped)
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response)
+    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped)
     return response
 
 
-def _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response):
+def _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped):
     settings = transaction.settings if transaction.settings is not None else global_settings()
-    request_query, request_k = bind_similarity_search(*args, **kwargs)
+    bound_args = bind_args(wrapped, args, kwargs)
+    request_query = bound_args["query"]
+    request_k = bound_args["k"]
     duration = ft.duration * 1000
     response_number_of_documents = len(response)
     llm_metadata_dict = _get_llm_metadata(transaction)
@@ -879,3 +895,8 @@ def instrument_langchain_callbacks_manager(module):
         wrap_function_wrapper(module, "CallbackManager.on_chain_start", wrap_on_chain_start)
     if hasattr(getattr(module, "AsyncCallbackManager"), "on_chain_start"):
         wrap_function_wrapper(module, "AsyncCallbackManager.on_chain_start", wrap_async_on_chain_start)
+
+
+def instrument_langchain_core_runnables_config(module):
+    if hasattr(module, "ContextThreadPoolExecutor"):
+        wrap_function_wrapper(module, "ContextThreadPoolExecutor.submit", wrap_ContextThreadPoolExecutor_submit)

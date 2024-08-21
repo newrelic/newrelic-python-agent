@@ -2086,6 +2086,12 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_resources_chat_completions",
     )
+
+    _process_module_definition(
+        "openai.resources.completions",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_resources_chat_completions",
+    )
     _process_module_definition(
         "openai._base_client",
         "newrelic.hooks.mlmodel_openai",
@@ -2102,6 +2108,11 @@ def _process_module_builtin_defaults():
         "langchain_core.runnables.base",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_runnables_chains_base",
+    )
+    _process_module_definition(
+        "langchain_core.runnables.config",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_core_runnables_config",
     )
     _process_module_definition(
         "langchain.chains.base",

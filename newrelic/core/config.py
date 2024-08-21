@@ -362,6 +362,9 @@ class SecurityDetectionDeserializationSettings(Settings):
 class SecurityRequestSettings(Settings):
     pass
 
+class SecurityScanScheduleSettings(Settings):
+    pass
+
 class SecuritySkipIASTScanSettings(Settings):
     pass
 
@@ -505,6 +508,7 @@ _settings.security.detection.deserialization = SecurityDetectionDeserializationS
 _settings.security.detection.rci = SecurityDetectionRCISettings()
 _settings.security.detection.rxss = SecurityDetectionRXSSSettings()
 _settings.security.request = SecurityRequestSettings()
+_settings.security.scan_schedule = SecurityScanScheduleSettings()
 _settings.security.skip_iast_scan = SecuritySkipIASTScanSettings()
 _settings.security.skip_iast_scan.parameters = SecuritySkipIASTScanParametersSettings()
 _settings.security.skip_iast_scan.iast_detection_category = SecuritySkipIASTScanIASTDetectionCategorySettings()
@@ -1018,6 +1022,12 @@ _settings.security.detection.deserialization.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_DETECTION_DESERIALIZATION_ENABLED", True
 )
 _settings.security.request.body_limit = os.environ.get("NEW_RELIC_SECURITY_REQUEST_BODY_LIMIT", None)
+_settings.security.scan_schedule.schedule = os.environ.get("NEW_RELIC_SECURITY_SCAN_SCHEDULE_SCHEDULE", None)
+_settings.security.scan_schedule.duration = _environ_as_int("NEW_RELIC_SECURITY_SCAN_SCHEDULE_DURATION", -1)
+_settings.security.scan_schedule.delay = _environ_as_int("NEW_RELIC_SECURITY_SCAN_SCHEDULE_DELAY", 0)
+_settings.security.scan_schedule.always_sample_traces = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SCAN_SCHEDULE_ALWAYS_SAMPLE_TRACES", False
+    )
 _settings.security.skip_iast_scan.api = _environ_as_set(
     "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_API", default=""
 )

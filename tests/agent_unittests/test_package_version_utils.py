@@ -32,12 +32,7 @@ from newrelic.common.package_version_utils import (
 # importlib.metadata is no longer provisional in PY310+.  It added some attributes
 # such as distribution_packages and removed pkg_resources.
 
-IS_PY38_PLUS = sys.version_info[:2] >= (3, 8)
 IS_PY310_PLUS = sys.version_info[:2] >= (3, 10)
-SKIP_IF_NOT_IMPORTLIB_METADATA = pytest.mark.skipif(not IS_PY38_PLUS, reason="importlib.metadata is not supported.")
-SKIP_IF_IMPORTLIB_METADATA = pytest.mark.skipif(
-    IS_PY38_PLUS, reason="importlib.metadata is preferred over pkg_resources."
-)
 SKIP_IF_NOT_PY310_PLUS = pytest.mark.skipif(not IS_PY310_PLUS, reason="These features were added in 3.10+")
 
 
@@ -56,8 +51,6 @@ def cleared_package_version_cache():
     _get_package_version.cache_clear()
 
 
-# This test only works on Python 3.7
-@SKIP_IF_IMPORTLIB_METADATA
 @pytest.mark.parametrize(
     "attr,value,expected_value",
     (
@@ -75,8 +68,6 @@ def test_get_package_version(monkeypatch, attr, value, expected_value):
     assert version == expected_value
 
 
-# This test only works on Python 3.7
-@SKIP_IF_IMPORTLIB_METADATA
 def test_skips_version_callables(monkeypatch):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
@@ -88,8 +79,6 @@ def test_skips_version_callables(monkeypatch):
     assert version == "3.1.0b2"
 
 
-# This test only works on Python 3.7
-@SKIP_IF_IMPORTLIB_METADATA
 @pytest.mark.parametrize(
     "attr,value,expected_value",
     (
@@ -107,7 +96,6 @@ def test_get_package_version_tuple(monkeypatch, attr, value, expected_value):
     assert version == expected_value
 
 
-@SKIP_IF_NOT_IMPORTLIB_METADATA
 @validate_function_called("importlib.metadata", "version")
 def test_importlib_metadata():
     version = get_package_version("pytest")
@@ -121,7 +109,6 @@ def test_mapping_import_to_distribution_packages():
     assert version not in NULL_VERSIONS, version
 
 
-@SKIP_IF_IMPORTLIB_METADATA
 @validate_function_called("pkg_resources", "get_distribution")
 def test_pkg_resources_metadata():
     version = get_package_version("pytest")

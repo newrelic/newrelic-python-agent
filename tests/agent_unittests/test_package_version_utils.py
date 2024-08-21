@@ -56,8 +56,6 @@ def cleared_package_version_cache():
     _get_package_version.cache_clear()
 
 
-# This test only works on Python 3.7
-@SKIP_IF_IMPORTLIB_METADATA
 @pytest.mark.parametrize(
     "attr,value,expected_value",
     (
@@ -75,8 +73,6 @@ def test_get_package_version(monkeypatch, attr, value, expected_value):
     assert version == expected_value
 
 
-# This test only works on Python 3.7
-@SKIP_IF_IMPORTLIB_METADATA
 def test_skips_version_callables(monkeypatch):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
@@ -88,8 +84,6 @@ def test_skips_version_callables(monkeypatch):
     assert version == "3.1.0b2"
 
 
-# This test only works on Python 3.7
-@SKIP_IF_IMPORTLIB_METADATA
 @pytest.mark.parametrize(
     "attr,value,expected_value",
     (

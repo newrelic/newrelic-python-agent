@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 import pytest
 import webtest
 from testing_support.fixtures import (
@@ -38,12 +36,7 @@ from newrelic.core.attribute import (
     sanitize,
     truncate,
 )
-from newrelic.packages import six
 
-# Python 3 lacks longs
-
-if sys.version_info >= (3, 0):
-    long = int
 try:
     from newrelic.core._thread_utilization import ThreadUtilization
 except ImportError:
@@ -192,60 +185,57 @@ def test_display_host_custom():
 def test_truncate_string():
     s = "blahblah"
     result = truncate(s, maxsize=4)
-    assert isinstance(result, six.string_types)
+    assert isinstance(result, str)
     assert result == "blah"
 
 
 def test_truncate_bytes():
     b = b"foobar"
     result = truncate(b, maxsize=3)
-    assert isinstance(result, six.binary_type)
+    assert isinstance(result, bytes)
     assert result == b"foo"
 
 
 def test_truncate_unicode_snowman():
     # '\u2603' is 'SNOWMAN'
-    # decode("unicode-escape") is used to get Py2 unicode
-    u = "snow\u2603".decode("unicode-escape") if six.PY2 else "snow\u2603"
+    u = "snow\u2603"
     assert u.encode("utf-8") == b"snow\xe2\x98\x83"
     result = truncate(u, maxsize=5)
-    assert isinstance(result, six.text_type)
+    assert isinstance(result, str)
     assert result == "snow"
 
 
 def test_truncate_combining_characters():
     # '\u0308' is 'COMBINING DIAERESIS' (AKA 'umlaut')
-    # decode("unicode-escape") is used to get Py2 unicode
-    u = "Zoe\u0308".decode("unicode-escape") if six.PY2 else "Zoe\u0308"
+    u = "Zoe\u0308"
     assert u.encode("utf-8") == b"Zoe\xcc\x88"
 
     # truncate will chop off 'COMBINING DIAERESIS', which leaves
     # 'LATIN SMALL LETTER E' by itself.
 
     result = truncate(u, maxsize=3)
-    assert isinstance(result, six.text_type)
+    assert isinstance(result, str)
     assert result == "Zoe"
 
 
 def test_truncate_empty_string():
     s = ""
     result = truncate(s, maxsize=4)
-    assert isinstance(result, six.string_types)
+    assert isinstance(result, str)
     assert result == ""
 
 
 def test_truncate_empty_bytes():
     b = b""
     result = truncate(b, maxsize=3)
-    assert isinstance(result, six.binary_type)
+    assert isinstance(result, bytes)
     assert result == b""
 
 
 def test_truncate_empty_unicode():
-    # decode("unicode-escape") is used to get Py2 unicode
-    u = "".decode("unicode-escape") if six.PY2 else ""
+    u = ""
     result = truncate(u, maxsize=5)
-    assert isinstance(result, six.text_type)
+    assert isinstance(result, str)
     assert result == ""
 
 
@@ -418,17 +408,17 @@ fully_featured_application = webtest.TestApp(fully_featured_app)
 # Types are only defined in the spec for agent attributes, not intrinsics.
 
 agent_attributes = {
-    "request.headers.accept": six.string_types,
+    "request.headers.accept": str,
     "request.headers.contentLength": int,
-    "request.headers.contentType": six.string_types,
-    "request.headers.host": six.string_types,
-    "request.headers.referer": six.string_types,
-    "request.headers.userAgent": six.string_types,
-    "request.method": six.string_types,
-    "request.parameters.test": six.string_types,
+    "request.headers.contentType": str,
+    "request.headers.host": str,
+    "request.headers.referer": str,
+    "request.headers.userAgent": str,
+    "request.method": str,
+    "request.parameters.test": str,
     "response.headers.contentLength": int,
-    "response.headers.contentType": six.string_types,
-    "response.status": six.string_types,
+    "response.headers.contentType": str,
+    "response.status": str,
 }
 
 
@@ -472,11 +462,6 @@ def test_sanitize_float():
 
 def test_sanitize_int():
     assert sanitize(9876) == 9876
-
-
-def test_sanitize_long():
-    long_int = long(123456)
-    assert sanitize(long_int) == long_int
 
 
 def test_sanitize_dict():

@@ -18,7 +18,6 @@ from newrelic.api.html_insertion import insert_html_snippet
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.config import extra_settings
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -137,7 +136,7 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     # multiple copies of the string in memory at the same time
     # as we progress through steps below.
 
-    result = insert_html_snippet(response.get_data(), lambda: six.b(transaction.browser_timing_header()))
+    result = insert_html_snippet(response.get_data(), lambda: transaction.browser_timing_header().encode("latin-1"))
 
     if result is not None:
         if transaction.settings.debug.log_autorum_middleware:

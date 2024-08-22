@@ -16,10 +16,7 @@
 
 """
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
+import urllib.parse as urlparse
 
 
 def proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user,

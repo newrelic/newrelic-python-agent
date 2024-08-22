@@ -12,16 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import configparser
 import fnmatch
 import logging
 import os
 import sys
 import traceback
-
-try:
-    import ConfigParser
-except ImportError:
-    import configparser as ConfigParser
 
 import newrelic.api.application
 import newrelic.api.background_task
@@ -50,7 +46,6 @@ from newrelic.core.config import (
     default_host,
     fetch_config_setting,
 )
-from newrelic.packages import six
 
 __all__ = ["initialize", "filter_app_factory"]
 
@@ -93,7 +88,7 @@ _settings = newrelic.api.settings.settings()
 # modules to look up customised settings defined in the loaded
 # configuration file.
 
-_config_object = ConfigParser.RawConfigParser()
+_config_object = configparser.RawConfigParser()
 
 # Cache of the parsed global settings found in the configuration
 # file. We cache these so can dump them out to the log file once
@@ -105,7 +100,7 @@ _cache_object = []
 def _reset_config_parser():
     global _config_object
     global _cache_object
-    _config_object = ConfigParser.RawConfigParser()
+    _config_object = configparser.RawConfigParser()
     _cache_object = []
 
 
@@ -304,10 +299,10 @@ def _process_setting(section, option, getter, mapper):
 
         _cache_object.append((option, value))
 
-    except ConfigParser.NoSectionError:
+    except configparser.NoSectionError:
         pass
 
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         pass
 
     except Exception:
@@ -1192,7 +1187,7 @@ def _process_module_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1284,7 +1279,7 @@ def _process_wsgi_application_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1333,7 +1328,7 @@ def _process_background_task_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1392,7 +1387,7 @@ def _process_database_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1442,7 +1437,7 @@ def _process_external_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1503,7 +1498,7 @@ def _process_function_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1571,7 +1566,7 @@ def _process_generator_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1627,7 +1622,7 @@ def _process_profile_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1686,7 +1681,7 @@ def _process_memcache_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1737,7 +1732,7 @@ def _process_transaction_name_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1796,7 +1791,7 @@ def _process_error_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1846,7 +1841,7 @@ def _process_data_source_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1957,7 +1952,7 @@ def _process_function_profile_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -2003,7 +1998,7 @@ def _process_module_definition(target, module, function="instrument"):
         section = "import-hook:%s" % target
         if _config_object.has_section(section):
             enabled = _config_object.getboolean(section, "enabled")
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         pass
     except Exception:
         _raise_configuration_error(section)
@@ -3214,20 +3209,11 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("genshi.template.base", "newrelic.hooks.template_genshi")
 
-    if six.PY2:
-        _process_module_definition("httplib", "newrelic.hooks.external_httplib")
-    else:
-        _process_module_definition("http.client", "newrelic.hooks.external_httplib")
+    _process_module_definition("http.client", "newrelic.hooks.external_httplib")
 
     _process_module_definition("httplib2", "newrelic.hooks.external_httplib2")
 
-    if six.PY2:
-        _process_module_definition("urllib", "newrelic.hooks.external_urllib")
-    else:
-        _process_module_definition("urllib.request", "newrelic.hooks.external_urllib")
-
-    if six.PY2:
-        _process_module_definition("urllib2", "newrelic.hooks.external_urllib2")
+    _process_module_definition("urllib.request", "newrelic.hooks.external_urllib")
 
     _process_module_definition(
         "urllib3.connectionpool",

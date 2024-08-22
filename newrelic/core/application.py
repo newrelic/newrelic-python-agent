@@ -16,8 +16,6 @@
 
 """
 
-from __future__ import print_function
-
 import logging
 import os
 import sys
@@ -50,7 +48,6 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.packages import six
 from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
@@ -319,14 +316,7 @@ class Application(object):
         # code run from this thread performs a deferred module import.
 
         if self._detect_deadlock:
-            if six.PY2:
-                import imp
-
-                imp.acquire_lock()
-                self._deadlock_event.set()
-                imp.release_lock()
-            else:
-                self._deadlock_event.set()
+            self._deadlock_event.set()
 
         # Register the application with the data collector. Any errors
         # that occur will be dealt with by create_session(). The result

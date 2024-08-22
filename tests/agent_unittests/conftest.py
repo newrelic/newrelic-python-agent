@@ -15,6 +15,8 @@
 import sys
 import tempfile
 
+from importlib import reload
+
 import pytest
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
@@ -37,14 +39,6 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (agent_unittests)", default_settings=_default_settings
 )
-
-
-try:
-    # python 2.x
-    reload
-except NameError:
-    # python 3.x
-    from importlib import reload
 
 
 class FakeProtos(object):

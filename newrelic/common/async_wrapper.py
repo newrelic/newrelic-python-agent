@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import textwrap
 import functools
 from newrelic.common.coroutine import (
     is_coroutine_callable,
@@ -20,32 +19,18 @@ from newrelic.common.coroutine import (
     is_generator_function,
     is_async_generator_function,
 )
-from newrelic.packages import six
-
-
-def evaluate_wrapper(wrapper_string, wrapped, trace):
-    values = {'wrapper': None, 'wrapped': wrapped,
-            'trace': trace, 'functools': functools}
-    exec(wrapper_string, values)
-    return values['wrapper']
 
 
 def coroutine_wrapper(wrapped, trace):
-    WRAPPER = textwrap.dedent("""
     @functools.wraps(wrapped)
     async def wrapper(*args, **kwargs):
         with trace:
             return await wrapped(*args, **kwargs)
-    """)
-
-    try:
-        return evaluate_wrapper(WRAPPER, wrapped, trace)
-    except Exception:
-        return wrapped
+    
+    return wrapper
 
 
 def awaitable_generator_wrapper(wrapped, trace):
-    WRAPPER = textwrap.dedent("""
     import asyncio
 
     @functools.wraps(wrapped)
@@ -54,53 +39,21 @@ def awaitable_generator_wrapper(wrapped, trace):
         with trace:
             result = yield from wrapped(*args, **kwargs)
             return result
-    """)
 
-    try:
-        return evaluate_wrapper(WRAPPER, wrapped, trace)
-    except:
-        return wrapped
+    return wrapper
 
 
-if six.PY3:
-    def generator_wrapper(wrapped, trace):
-        WRAPPER = textwrap.dedent("""
-        @functools.wraps(wrapped)
-        def wrapper(*args, **kwargs):
-            with trace:
-                result = yield from wrapped(*args, **kwargs)
-                return result
-        """)
+def generator_wrapper(wrapped, trace):
+    @functools.wraps(wrapped)
+    def wrapper(*args, **kwargs):
+        with trace:
+            result = yield from wrapped(*args, **kwargs)
+            return result
 
-        try:
-            return evaluate_wrapper(WRAPPER, wrapped, trace)
-        except:
-            return wrapped
-else:
-    def generator_wrapper(wrapped, trace):
-        @functools.wraps(wrapped)
-        def wrapper(*args, **kwargs):
-            g = wrapped(*args, **kwargs)
-            with trace:
-                try:
-                    yielded = g.send(None)
-                    while True:
-                        try:
-                            sent = yield yielded
-                        except GeneratorExit as e:
-                            g.close()
-                            raise
-                        except BaseException as e:
-                            yielded = g.throw(e)
-                        else:
-                            yielded = g.send(sent)
-                except StopIteration:
-                    return
-        return wrapper
+    return wrapper
 
 
 def async_generator_wrapper(wrapped, trace):
-    WRAPPER = textwrap.dedent("""
     @functools.wraps(wrapped)
     async def wrapper(*args, **kwargs):
         g = wrapped(*args, **kwargs)
@@ -119,12 +72,8 @@ def async_generator_wrapper(wrapped, trace):
                         yielded = await g.asend(sent)
             except StopAsyncIteration:
                 return
-    """)
 
-    try:
-        return evaluate_wrapper(WRAPPER, wrapped, trace)
-    except:
-        return wrapped
+    return wrapper
 
 
 def async_wrapper(wrapped):

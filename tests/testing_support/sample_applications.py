@@ -14,10 +14,7 @@
 
 import logging
 
-try:
-    from urllib2 import urlopen  # Py2.X
-except ImportError:
-    from urllib.request import urlopen  # Py3.X
+from urllib.request import urlopen
 
 import sqlite3 as db
 

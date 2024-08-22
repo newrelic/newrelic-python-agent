@@ -15,12 +15,9 @@
 import collections
 import tempfile
 
-import pytest
+import urllib.parse as urlparse
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
+import pytest
 
 import logging
 

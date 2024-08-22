@@ -15,7 +15,6 @@
 import sys
 import types
 
-import newrelic.packages.six as six
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -35,7 +34,7 @@ class capture_external_trace(object):
         # The URL be a string or a file like object. Pass call
         # through if not a string.
 
-        if not isinstance(url, six.string_types):
+        if not isinstance(url, str):
             return self._nr_next_object(url, *args, **kwargs)
 
         # Only then wrap the call if it looks like a URL. To

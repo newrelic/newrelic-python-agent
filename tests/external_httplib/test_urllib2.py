@@ -16,10 +16,7 @@ import os
 
 import pytest
 
-try:
-    import urllib.request as urllib2
-except:
-    import urllib2
+import urllib.request as urllib2
 
 from testing_support.external_fixtures import (
     cache_outgoing_headers,

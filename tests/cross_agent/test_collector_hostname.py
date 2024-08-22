@@ -18,14 +18,9 @@ import os
 import sys
 import tempfile
 
-import pytest
+from importlib import reload
 
-try:
-    # python 2.x
-    reload
-except NameError:
-    # python 3.x
-    from importlib import reload
+import pytest
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))

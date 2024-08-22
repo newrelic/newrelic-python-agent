@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 import atexit
+import builtins
 import cmd
 import code
+import configparser
 import functools
 import glob
 import inspect
@@ -29,47 +29,8 @@ import threading
 import time
 import traceback
 
-try:
-    import ConfigParser
-except ImportError:
-    import configparser as ConfigParser
-
-try:
-    import __builtin__
-except ImportError:
-    import builtins as __builtin__
-
-
-def _argspec_py2(func):
-    return inspect.getargspec(func)
-
-
-def _argspec_py3(func):
-    a = inspect.getfullargspec(func)
-    return (a.args, a.varargs, a.varkw, a.defaults)
-
-
-if hasattr(inspect, "getfullargspec"):
-    _argspec = _argspec_py3
-else:
-    _argspec = _argspec_py2
-
-try:
-    from collections import OrderedDict
-    from inspect import signature
-
-    def doc_signature(func):
-        sig = signature(func)
-        sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
-        return str(sig)
-
-
-except ImportError:
-    from inspect import formatargspec
-
-    def doc_signature(func):
-        args, varargs, keywords, defaults = _argspec(func)
-        return formatargspec(args[1:], varargs, keywords, defaults)
+from collections import OrderedDict
+from inspect import signature
 
 
 from newrelic.common.object_wrapper import ObjectProxy
@@ -77,11 +38,18 @@ from newrelic.core.agent import agent_instance
 from newrelic.core.config import flatten_settings, global_settings
 from newrelic.core.trace_cache import trace_cache
 
+
+def doc_signature(func):
+    sig = signature(func)
+    sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
+    return str(sig)
+
+
 _trace_cache = trace_cache()
 
 
 def shell_command(wrapped):
-    args, varargs, keywords, defaults = _argspec(wrapped)
+    args = inspect.getfullargspec(wrapped).args
 
     parser = optparse.OptionParser()
     for name in args[1:]:
@@ -156,8 +124,8 @@ def setquit():
                 pass
             raise SystemExit(code)
 
-    __builtin__.quit = Quitter("quit")
-    __builtin__.exit = Quitter("exit")
+    builtins.quit = Quitter("quit")
+    builtins.exit = Quitter("exit")
 
 
 class OutputWrapper(ObjectProxy):
@@ -540,7 +508,7 @@ class ClientShell(cmd.Cmd):
         cmd.Cmd.__init__(self, stdin=stdin, stdout=stdout)
 
         self.__config_file = config_file
-        self.__config_object = ConfigParser.RawConfigParser()
+        self.__config_object = configparser.RawConfigParser()
         self.__log_object = log
 
         if not self.__config_object.read([config_file]):

@@ -23,7 +23,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
 _test_matrix = [
     ("service_method_type,service_method_method_name,raises_exception," "message_count,cancel"),
@@ -81,11 +80,6 @@ def test_client(
         ("External/all", 1),
     ]
 
-    if six.PY2:
-        _test_transaction_name = "test_clients:_test_client"
-    else:
-        _test_transaction_name = "test_clients:test_client.<locals>._test_client"
-
     _errors = []
     if not streaming_response and cancel:
         _errors.append("grpc:FutureCancelledError")
@@ -94,7 +88,7 @@ def test_client(
 
     @validate_transaction_errors(errors=_errors)
     @validate_transaction_metrics(
-        _test_transaction_name,
+        "test_clients:test_client.<locals>._test_client",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_rollup_metrics,
         background_task=True,
@@ -178,14 +172,9 @@ def test_future_timeout_error(service_method_type, service_method_method_name, f
         ("External/all", 1),
     ]
 
-    if six.PY2:
-        _test_transaction_name = "test_clients:_test_future_timeout_error"
-    else:
-        _test_transaction_name = "test_clients:test_future_timeout_error.<locals>." "_test_future_timeout_error"
-
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        _test_transaction_name,
+        "test_clients:test_future_timeout_error.<locals>." "_test_future_timeout_error",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_rollup_metrics,
         background_task=True,
@@ -231,14 +220,9 @@ def test_repeated_result(service_method_type, service_method_method_name, mock_g
         ("External/all", 1),
     ]
 
-    if six.PY2:
-        _test_transaction_name = "test_clients:_test_repeated_result"
-    else:
-        _test_transaction_name = "test_clients:" "test_repeated_result.<locals>._test_repeated_result"
-
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        _test_transaction_name,
+        "test_clients:" "test_repeated_result.<locals>._test_repeated_result",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_rollup_metrics,
         background_task=True,
@@ -286,14 +270,9 @@ def test_future_cancel(service_method_type, service_method_method_name, future_r
         ("External/all", 1),
     ]
 
-    if six.PY2:
-        _test_transaction_name = "test_clients:_test_future_cancel"
-    else:
-        _test_transaction_name = "test_clients:test_future_cancel.<locals>." "_test_future_cancel"
-
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        _test_transaction_name,
+        "test_clients:test_future_cancel.<locals>." "_test_future_cancel",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_rollup_metrics,
         background_task=True,

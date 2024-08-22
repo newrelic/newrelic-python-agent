@@ -15,6 +15,8 @@
 import os
 import tempfile
 
+from importlib import reload
+
 import pytest
 
 # these will be reloaded for each test
@@ -34,12 +36,6 @@ from newrelic.core.config import (
     global_settings,
 )
 
-try:
-    # python 2.x
-    reload
-except NameError:
-    # python 3.x
-    from importlib import reload
 
 INI_FILE_WITHOUT_UTIL_CONF = b"""
 [newrelic]

@@ -28,19 +28,16 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
-from newrelic.packages import six
 
 
 def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_message):
-    txn_name = "test_serialization:test_serialization_metrics.<locals>.test" if six.PY3 else "test_serialization:test"
-
     _metrics = [
         ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Value" % topic, 1),
         ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Key" % topic, 1),
     ]
 
     @validate_transaction_metrics(
-        txn_name,
+        "test_serialization:test_serialization_metrics.<locals>.test",
         scoped_metrics=_metrics,
         rollup_metrics=_metrics,
         background_task=True,
@@ -79,7 +76,7 @@ def test_serialization_errors(skip_if_not_serializing, topic, producer, key, val
     ),
 )
 def test_deserialization_errors(skip_if_not_serializing, monkeypatch, topic, producer, consumer, key, value):
-    error_cls = json.decoder.JSONDecodeError if six.PY3 else ValueError
+    error_cls = json.decoder.JSONDecodeError
 
     # Remove serializers to cause intentional issues
     monkeypatch.setitem(producer.config, "value_serializer", None)

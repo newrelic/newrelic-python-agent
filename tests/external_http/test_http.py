@@ -29,20 +29,13 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
-if six.PY2:
-    import httplib
-else:
-    import http.client as httplib
+import http.client
 
 
 @pytest.fixture(scope="session")
 def metrics(server):
-    if six.PY2:
-        _external_metric = "External/localhost:%s/httplib/" % server.port
-    else:
-        _external_metric = "External/localhost:%s/http/" % server.port
+    _external_metric = "External/localhost:%s/http/" % server.port
 
     scoped = [(_external_metric, 1)]
 
@@ -62,7 +55,7 @@ def test_http_http_request(server, metrics):
     )
     @background_task(name="test_http:test_http_http_request")
     def _test():
-        connection = httplib.HTTPConnection("localhost", server.port)
+        connection = http.client.HTTPConnection("localhost", server.port)
         connection.request("GET", "/")
         response = connection.getresponse()
         response.read()
@@ -77,7 +70,7 @@ def test_http_https_request(server, metrics):
     )
     @background_task(name="test_http:test_http_https_request")
     def _test():
-        connection = httplib.HTTPSConnection("localhost", server.port)
+        connection = http.client.HTTPSConnection("localhost", server.port)
         try:
             connection.request("GET", "/")
         except Exception:
@@ -100,7 +93,7 @@ def test_http_cross_process_request(distributed_tracing, span_events, server):
     @cache_outgoing_headers
     @validate_cross_process_headers
     def _test():
-        connection = httplib.HTTPConnection("localhost", server.port)
+        connection = http.client.HTTPConnection("localhost", server.port)
         connection.request("GET", "/")
         response = connection.getresponse()
         response.read()
@@ -145,7 +138,7 @@ def test_http_cross_process_response(server):
     @validate_external_node_params(params=_test_http_cross_process_response_external_node_params)
     @background_task(name="test_http:test_http_cross_process_response")
     def _test():
-        connection = httplib.HTTPConnection("localhost", server.port)
+        connection = http.client.HTTPConnection("localhost", server.port)
         connection.request("GET", "/")
         response = connection.getresponse()
         response.read()

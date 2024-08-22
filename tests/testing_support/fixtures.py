@@ -21,12 +21,9 @@ import sys
 import threading
 import time
 
-import pytest
+from queue import Queue
 
-try:
-    from Queue import Queue
-except ImportError:
-    from queue import Queue
+import pytest
 
 from testing_support.sample_applications import (
     error_user_params_added,
@@ -59,7 +56,6 @@ from newrelic.core.attribute_filter import (
 )
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
 from newrelic.network.exceptions import RetryDataForRequest
-from newrelic.packages import six
 
 _logger = logging.getLogger("newrelic.tests")
 
@@ -322,7 +318,11 @@ def raise_background_exceptions(timeout=5.0):
             assert done, "Timeout waiting for background task to finish."
 
             if exc_info is not None:
-                six.reraise(*exc_info)
+                # Reraise exception
+                if exc_info[1] is not None:
+                    raise exc_info[1]
+                else:
+                    raise exc_info[0]()
 
         return result
 
@@ -1200,38 +1200,6 @@ def error_is_saved(error, app_name=None):
     stats = core_application_stats_engine(app_name)
     errors = stats.error_data()
     return error_name in [e.type for e in errors if e.type == error_name]
-
-
-def set_default_encoding(encoding):
-    """Changes the default encoding of the global environment. Only works in
-    Python 2, will cause an error in Python 3
-    """
-
-    # If using this with other decorators/fixtures that depend on the system
-    # default encoding, this decorator must be on wrapped on top of them.
-
-    @function_wrapper
-    def _set_default_encoding(wrapped, instance, args, kwargs):
-        # This technique of reloading the sys module is necessary because the
-        # method is removed during initialization of Python. Doing this is
-        # highly frowned upon, but it is the only way to test how our agent
-        # behaves when different sys encodings are used. For more information,
-        # see this Stack Overflow post: http://bit.ly/1xBNxRc
-
-        six.moves.reload_module(sys)  # pylint: disable=E1101
-        original_encoding = sys.getdefaultencoding()
-        sys.setdefaultencoding(encoding)  # pylint: disable=E1101
-
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        finally:
-            sys.setdefaultencoding(original_encoding)  # pylint: disable=E1101
-
-        return result
-
-    return _set_default_encoding
 
 
 def function_not_called(module, name):

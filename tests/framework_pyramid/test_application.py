@@ -24,7 +24,6 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-from newrelic.packages import six
 
 
 def target_application(with_tweens=False, tweens_explicit=False):
@@ -39,12 +38,6 @@ def target_application(with_tweens=False, tweens_explicit=False):
     from _test_application import target_application as _app
 
     return _app(with_tweens, tweens_explicit)
-
-
-if six.PY3:
-    tween_name = "Function/_test_application:" "simple_tween_factory.<locals>.simple_tween"
-else:
-    tween_name = "Function/_test_application:simple_tween"
 
 _test_application_index_scoped_metrics = [
     ("Python/WSGI/Application", 1),
@@ -68,7 +61,7 @@ def test_application_index(with_tweens, tweens_explicit):
 
     metrics = list(_test_application_index_scoped_metrics)
     if with_tweens:
-        metrics.append((tween_name, 1))
+        metrics.append(("Function/_test_application:" "simple_tween_factory.<locals>.simple_tween", 1))
 
     @validate_code_level_metrics("_test_application", "home_view")
     @validate_transaction_errors(errors=[])
@@ -143,13 +136,8 @@ _test_unexpected_exception_scoped_metrics = [
     ("Function/_test_application:error", 1),
 ]
 
-if six.PY3:
-    _test_unexpected_exception_errors = ["builtins:RuntimeError"]
-else:
-    _test_unexpected_exception_errors = ["exceptions:RuntimeError"]
 
-
-@validate_transaction_errors(errors=_test_unexpected_exception_errors)
+@validate_transaction_errors(errors=["builtins:RuntimeError"])
 @validate_transaction_metrics("_test_application:error", scoped_metrics=_test_unexpected_exception_scoped_metrics)
 def test_application_unexpected_exception():
     application = target_application()

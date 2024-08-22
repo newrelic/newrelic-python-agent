@@ -15,7 +15,6 @@
 from newrelic.api.datastore_trace import DatastoreTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.packages import six
 
 # An index name can be a string, None or a sequence. In the case of None
 # an empty string or '*', it is the same as using '_all'. When a string
@@ -27,7 +26,7 @@ from newrelic.packages import six
 def _index_name(index):
     if not index or index == "*":
         return "_all"
-    if not isinstance(index, six.string_types) or "," in index:
+    if not isinstance(index, str) or "," in index:
         return "other"
     return index
 

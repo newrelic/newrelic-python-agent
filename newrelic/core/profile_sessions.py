@@ -19,21 +19,17 @@ import threading
 import time
 import zlib
 from collections import defaultdict, deque
+from sys import intern
 
 import newrelic
-import newrelic.packages.six as six
 from newrelic.common.encoding_utils import json_encode
 from newrelic.core.config import global_settings
 from newrelic.core.trace_cache import trace_cache
 
-try:
-    from sys import intern
-except ImportError:
-    pass
 
 _logger = logging.getLogger(__name__)
 
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + "/"
+AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + os.sep
 
 
 class SessionState(object):
@@ -393,7 +389,7 @@ class ProfileSession(object):
         flat_tree = {}
         thread_count = 0
 
-        for category, bucket in six.iteritems(self.call_buckets):
+        for category, bucket in self.call_buckets.items():
 
             # Only flatten buckets that have data in them. No need to send
             # empty buckets.
@@ -414,10 +410,7 @@ class ProfileSession(object):
         level = settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
 
-        encoded_tree = base64.standard_b64encode(zlib.compress(six.b(json_call_tree), level))
-
-        if six.PY3:
-            encoded_tree = encoded_tree.decode("Latin-1")
+        encoded_tree = base64.standard_b64encode(zlib.compress(json_call_tree.encode("latin-1"), level)).decode("Latin-1")
 
         profile = [
             [

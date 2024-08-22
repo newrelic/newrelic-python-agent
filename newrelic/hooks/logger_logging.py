@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from urllib.parse import quote
+
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.config import global_settings
-
-try:
-    from urllib import quote
-except ImportError:
-    from urllib.parse import quote
 
 
 IGNORED_LOG_RECORD_KEYS = set(["message", "msg"])

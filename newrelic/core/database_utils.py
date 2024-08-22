@@ -21,7 +21,6 @@ import logging
 import re
 import weakref
 
-import newrelic.packages.six as six
 
 from newrelic.core.internal_metrics import internal_metric
 from newrelic.core.config import global_settings
@@ -822,7 +821,7 @@ class SQLStatement(object):
         self._normalized = None
         self._identifier = None
 
-        if isinstance(sql, six.binary_type):
+        if isinstance(sql, bytes):
             try:
                 sql = sql.decode('utf-8')
             except UnicodeError as e:

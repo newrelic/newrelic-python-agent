@@ -34,7 +34,6 @@ from newrelic.api.transaction import (
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import W3CTraceState
 from newrelic.common.object_wrapper import transient_function_wrapper
-from newrelic.packages import six
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "distributed_tracing"))
@@ -231,8 +230,6 @@ def test_trace_context(
     if transport_type != "HTTP":
         extra_environ[".inbound_headers"] = inbound_headers
         inbound_headers = None
-    elif six.PY2 and inbound_headers:
-        inbound_headers = {k.encode("utf-8"): v.encode("utf-8") for k, v in inbound_headers.items()}
 
     @validate_transaction_metrics(
         test_name, group="Uri", rollup_metrics=expected_metrics, background_task=not web_transaction

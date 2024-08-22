@@ -17,8 +17,6 @@ interacting with the agent core.
 
 """
 
-from __future__ import print_function
-
 import atexit
 import logging
 import os
@@ -32,7 +30,6 @@ import warnings
 import newrelic
 import newrelic.core.application
 import newrelic.core.config
-import newrelic.packages.six as six
 from newrelic.common.log_file import initialize_logging
 from newrelic.core.thread_utilization import thread_utilization_data_source
 from newrelic.samplers.cpu_usage import cpu_usage_data_source
@@ -436,7 +433,7 @@ class Agent(object):
             if application is None:
                 # Bind to any applications that already exist.
 
-                for application in list(six.itervalues(self._applications)):
+                for application in list(self._applications.values()):
                     application.register_data_source(source, name, settings, **properties)
 
             else:
@@ -619,7 +616,7 @@ class Agent(object):
         self._flexible_harvest_count += 1
         self._last_flexible_harvest = time.time()
 
-        for application in list(six.itervalues(self._applications)):
+        for application in list(self._applications.values()):
             try:
                 application.harvest(shutdown=False, flexible=True)
             except Exception:
@@ -643,7 +640,7 @@ class Agent(object):
         self._default_harvest_count += 1
         self._last_default_harvest = time.time()
 
-        for application in list(six.itervalues(self._applications)):
+        for application in list(self._applications.values()):
             try:
                 application.harvest(shutdown, flexible=False)
             except Exception:

@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    from io import BytesIO as IO
-except ImportError:
-    import StringIO as IO
+from io import BytesIO
 
 import webtest
 from flask import Flask, Response, send_file
@@ -81,7 +78,7 @@ def html_insertion_named_attachment_header():
 
 @application.route("/html_served_from_file")
 def html_served_from_file():
-    file = IO()
+    file = BytesIO()
     contents = b"""
     <!DOCTYPE html><html><head>Some header</head>
     <body><h1>My First Heading</h1><p>My first paragraph.</p>
@@ -94,7 +91,7 @@ def html_served_from_file():
 
 @application.route("/text_served_from_file")
 def text_served_from_file():
-    file = IO()
+    file = BytesIO()
     contents = b"""
     <!DOCTYPE html><html><head>Some header</head>
     <body><h1>My First Heading</h1><p>My first paragraph.</p>

@@ -15,6 +15,8 @@
 import json
 import logging
 import sys
+
+from io import StringIO as Buffer
 from traceback import format_tb
 
 import pytest
@@ -23,12 +25,7 @@ from newrelic.agent import get_linking_metadata
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.log import NewRelicContextFormatter
-from newrelic.packages import six
 
-if six.PY2:
-    from io import BytesIO as Buffer
-else:
-    from io import StringIO as Buffer
 
 _logger = logging.getLogger(__name__)
 
@@ -262,7 +259,7 @@ def test_newrelic_logger_error_inside_transaction_with_stack_trace(log_buffer_wi
     assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
     assert isinstance(line_number, int)
-    assert isinstance(stack_trace, six.string_types)
+    assert isinstance(stack_trace, str)
     assert stack_trace and stack_trace == expected_stack_trace
 
     expected = {
@@ -356,7 +353,7 @@ def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_w
     assert isinstance(process_id, int)
     assert filename.endswith("/test_logs_in_context.py")
     assert isinstance(line_number, int)
-    assert isinstance(stack_trace, six.string_types)
+    assert isinstance(stack_trace, str)
     assert stack_trace and stack_trace == expected_stack_trace
 
     expected = {

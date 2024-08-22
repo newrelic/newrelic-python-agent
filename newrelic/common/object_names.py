@@ -16,21 +16,13 @@
 
 """
 
+import builtins
 import sys
 import types
 import inspect
 import functools
 
-from newrelic.packages import six
 
-if six.PY2:
-    import exceptions
-    _exceptions_module = exceptions
-elif six.PY3:
-    import builtins
-    _exceptions_module = builtins
-else:
-    _exceptions_module = None
 
 # Object model terminology for quick reference.
 #
@@ -120,116 +112,7 @@ def _module_name(object):
 
     return mname
 
-def _object_context_py2(object):
-
-    cname = None
-    fname = None
-
-    if inspect.isclass(object) or isinstance(object, type):
-        # Old and new style class types.
-
-        cname = object.__name__
-
-    elif inspect.ismethod(object):
-        # Bound and unbound class methods. In the case of an
-        # unbound method the im_self attribute will be None. The
-        # rules around whether im_self is an instance or a class
-        # type are strange so need to cope with both.
-
-        if object.im_self is not None:
-            cname = getattr(object.im_self, '__name__', None)
-            if cname is None:
-                cname = getattr(object.im_self.__class__, '__name__')
-
-        else:
-            cname = object.im_class.__name__
-
-        fname = object.__name__
-
-    elif inspect.isfunction(object):
-        # Normal functions and static methods. For a static we
-        # method don't know of any way of being able to work out
-        # the name of the class the static method is against.
-
-        fname = object.__name__
-
-    elif inspect.isbuiltin(object):
-        # Builtin function. Can also be be bound to class to
-        # create a method. Uses __self__ instead of im_self. The
-        # rules around whether __self__ is an instance or a class
-        # type are strange so need to cope with both.
-
-        if object.__self__ is not None:
-            cname = getattr(object.__self__, '__name__', None)
-            if cname is None:
-                cname = getattr(object.__self__.__class__, '__name__')
-
-        fname = object.__name__
-
-    elif isinstance(object, types.InstanceType):
-        # Instances of old style classes. Instances of a class
-        # don't normally have __name__. Where the object has a
-        # __name__, assume it is likely going to be a decorator
-        # implemented as a class and don't use the class name
-        # else it mucks things up.
-
-        fname = getattr(object, '__name__', None)
-
-        if fname is None:
-            cname = object.__class__.__name__
-
-    elif hasattr(object, '__class__'):
-        # Instances of new style classes. Instances of a class
-        # don't normally have __name__. Where the object has a
-        # __name__, assume it is likely going to be a decorator
-        # implemented as a class and don't use the class name
-        # else it mucks things up. The exception to this is when
-        # it is a descriptor and has __objclass__, in which case
-        # the class name from __objclass__ is used.
-
-        fname = getattr(object, '__name__', None)
-
-        if fname is not None:
-            if hasattr(object, '__objclass__'):
-                cname = object.__objclass__.__name__
-            elif not hasattr(object, '__get__'):
-                cname = object.__class__.__name__
-        else:
-            cname = object.__class__.__name__
-
-    # Calculate the qualified path from the class name and the
-    # function name.
-
-    path = ''
-
-    if cname:
-        path = cname
-
-    if fname:
-        if path:
-            path += '.'
-        path += fname
-
-    # Now calculate the name of the module object is defined in.
-
-    owner = None
-
-    if inspect.ismethod(object):
-        if object.__self__ is not None:
-            cname = getattr(object.__self__, '__name__', None)
-            if cname is None:
-                owner = object.__self__.__class__   # bound method
-            else:
-                owner = object.__self__             # class method
-
-        else:
-            owner = getattr(object, 'im_class', None)   # unbound method
-
-    mname = _module_name(owner or object)
-
-    return (mname, path)
-
-def _object_context_py3(object):
+def _object_context(object):
 
     if inspect.ismethod(object):
 
@@ -297,11 +180,11 @@ def object_context(target):
 
     details = getattr(target, '_nr_object_path', None)
 
-    # Disallow cache lookup for python 3 methods. In the case where the method
+    # Disallow cache lookup for methods. In the case where the method
     # is defined on a parent class, the name of the parent class is incorrectly
     # returned. Avoid this by recalculating the details each time.
 
-    if details and not _is_py3_method(target):
+    if details and not inspect.ismethod(target):
         return details
 
     # Check whether the object is actually one of our own
@@ -319,7 +202,7 @@ def object_context(target):
     if source:
         details = getattr(source, '_nr_object_path', None)
 
-        if details and not _is_py3_method(source):
+        if details and not inspect.ismethod(source):
             return details
 
     else:
@@ -327,11 +210,7 @@ def object_context(target):
 
     # If it wasn't cached we generate the name details and then
     # attempt to cache them against the object.
-
-    if six.PY3:
-        details = _object_context_py3(source)
-    else:
-        details = _object_context_py2(source)
+    details = _object_context(source)
 
     try:
         # If the original target is not the same as the source we
@@ -395,7 +274,7 @@ def expand_builtin_exception_name(name):
     # Otherwise, return it unchanged.
 
     try:
-        exception = getattr(_exceptions_module, name)
+        exception = getattr(builtins, name)
     except AttributeError:
         pass
     else:
@@ -403,9 +282,6 @@ def expand_builtin_exception_name(name):
             return callable_name(exception)
 
     return name
-
-def _is_py3_method(target):
-    return six.PY3 and inspect.ismethod(target)
 
 def parse_exc_info(exc_info):
     """Parse exc_info and return commonly used strings."""
@@ -423,7 +299,7 @@ def parse_exc_info(exc_info):
 
         # Favor unicode in exception messages.
 
-        message = six.text_type(value)
+        message = str(value)
 
     except Exception:
         try:

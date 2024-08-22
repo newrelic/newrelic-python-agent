@@ -19,7 +19,6 @@ import newrelic.core.trace_node
 from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
-from newrelic.packages import six
 
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
@@ -60,7 +59,7 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
         # own rollup categories.
 
         if self.rollup:
-            if isinstance(self.rollup, six.string_types):
+            if isinstance(self.rollup, str):
                 rollups = [self.rollup]
             else:
                 rollups = self.rollup

@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
+# =============================================================================================================
+# This framework has not had recent releases and falls outside our support window, so these tests are disabled.
+# =============================================================================================================
 
 import os
 import threading

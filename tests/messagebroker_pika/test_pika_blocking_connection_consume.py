@@ -34,7 +34,6 @@ from testing_support.validators.validate_tt_collector_json import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
-from newrelic.packages import six
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
@@ -125,37 +124,15 @@ def test_blocking_connection_basic_get_outside_transaction(producer):
 _test_blocking_conn_basic_consume_no_txn_metrics = [
     ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    ("Function/test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_outside_transaction.<locals>.on_message", None),
 ]
-
-if six.PY3:
-    _txn_name = (
-        "test_pika_blocking_connection_consume:"
-        "test_blocking_connection_basic_consume_outside_transaction."
-        "<locals>.on_message"
-    )
-    _test_blocking_conn_basic_consume_no_txn_metrics.append(
-        (
-            (
-                "Function/test_pika_blocking_connection_consume:"
-                "test_blocking_connection_basic_consume_outside_transaction."
-                "<locals>.on_message"
-            ),
-            None,
-        )
-    )
-else:
-    _txn_name = "test_pika_blocking_connection_consume:on_message"
-    _test_blocking_conn_basic_consume_no_txn_metrics.append(
-        ("Function/test_pika_blocking_connection_consume:on_message", None)
-    )
-
+_txn_name = "test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_outside_transaction.<locals>.on_message"
 
 @pytest.mark.parametrize("as_partial", [True, False])
 @dt_enabled
 @validate_code_level_metrics(
     "test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_outside_transaction.<locals>",
     "on_message",
-    py2_namespace="test_pika_blocking_connection_consume",
 )
 @validate_transaction_metrics(
     _txn_name,
@@ -193,31 +170,14 @@ def test_blocking_connection_basic_consume_outside_transaction(producer, as_part
 _test_blocking_conn_basic_consume_in_txn_metrics = [
     ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    ("Function/test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_inside_txn.<locals>.on_message", 1),
 ]
-
-if six.PY3:
-    _test_blocking_conn_basic_consume_in_txn_metrics.append(
-        (
-            (
-                "Function/test_pika_blocking_connection_consume:"
-                "test_blocking_connection_basic_consume_inside_txn."
-                "<locals>.on_message"
-            ),
-            1,
-        )
-    )
-else:
-    _test_blocking_conn_basic_consume_in_txn_metrics.append(
-        ("Function/test_pika_blocking_connection_consume:on_message", 1)
-    )
-
 
 @pytest.mark.parametrize("as_partial", [True, False])
 @dt_enabled
 @validate_code_level_metrics(
     "test_pika_blocking_connection_consume.test_blocking_connection_basic_consume_inside_txn.<locals>",
     "on_message",
-    py2_namespace="test_pika_blocking_connection_consume",
 )
 @validate_transaction_metrics(
     "test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_inside_txn",
@@ -250,24 +210,8 @@ _test_blocking_conn_basic_consume_stopped_txn_metrics = [
     ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
     ("OtherTransaction/Message/RabbitMQ/Exchange/Named/%s" % EXCHANGE, None),
+    ("Function/test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_stopped_txn.<locals>.on_message", None),
 ]
-
-if six.PY3:
-    _test_blocking_conn_basic_consume_stopped_txn_metrics.append(
-        (
-            (
-                "Function/test_pika_blocking_connection_consume:"
-                "test_blocking_connection_basic_consume_stopped_txn."
-                "<locals>.on_message"
-            ),
-            None,
-        )
-    )
-else:
-    _test_blocking_conn_basic_consume_stopped_txn_metrics.append(
-        ("Function/test_pika_blocking_connection_consume:on_message", None)
-    )
-
 
 @pytest.mark.parametrize("as_partial", [True, False])
 @validate_transaction_metrics(

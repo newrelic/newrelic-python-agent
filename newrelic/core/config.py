@@ -28,16 +28,12 @@ import logging
 import os
 import re
 import threading
+import urllib.parse as urlparse
 
-import newrelic.packages.six as six
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_ATTRIBUTE_LENGTH
 from newrelic.core.attribute_filter import AttributeFilter
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
 
 try:
     import grpc
@@ -1091,14 +1087,14 @@ def global_settings_dump(settings_object=None, serializable=False):
             settings["proxy_host"] = uri
 
     if serializable:
-        for key, value in list(six.iteritems(settings)):
-            if not isinstance(key, six.string_types):
+        for key, value in list(settings.items()):
+            if not isinstance(key, str):
                 del settings[key]
 
             if (
-                not isinstance(value, six.string_types)
+                not isinstance(value, str)
                 and not isinstance(value, float)
-                and not isinstance(value, six.integer_types)
+                and not isinstance(value, int)
             ):
                 settings[key] = repr(value)
 

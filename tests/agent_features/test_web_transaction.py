@@ -27,7 +27,6 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.application import application_instance
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.wsgi_application import wsgi_application
-from newrelic.packages import six
 
 application = webtest.TestApp(simple_app)
 
@@ -118,10 +117,7 @@ def test_base_web_transaction(use_bytes):
 
         for name, value in request_headers.items():
             name = name.encode("utf-8")
-            try:
-                value = value.encode("utf-8")
-            except UnicodeDecodeError:
-                assert six.PY2
+            value = value.encode("utf-8")
             byte_headers[name] = value
 
         request_headers = byte_headers

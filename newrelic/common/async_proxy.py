@@ -14,7 +14,6 @@
 
 import logging
 import time
-import newrelic.packages.six as six
 
 from newrelic.common.coroutine import (is_coroutine_callable,
         is_asyncio_coroutine, is_generator_function)
@@ -140,12 +139,8 @@ class GeneratorProxy(Coroutine):
     def __iter__(self):
         return self
 
-    if six.PY2:
-        def next(self):
-            return self.send(None)
-    else:
-        def __next__(self):
-            return self.send(None)
+    def __next__(self):
+        return self.send(None)
 
 
 class AwaitableGeneratorProxy(GeneratorProxy):

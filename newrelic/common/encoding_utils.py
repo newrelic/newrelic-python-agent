@@ -29,7 +29,6 @@ import types
 import zlib
 from collections import OrderedDict
 
-from newrelic.packages import six
 
 HEXDIGLC_RE = re.compile("^[0-9a-f]+$")
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
@@ -55,22 +54,11 @@ def json_encode(obj, **kwargs):
     # This wrapper function needs to deal with a few issues.
     #
     # The first is that when a byte string is provided, we need to
-    # ensure that it is interpreted as being Latin-1. This is necessary
-    # as by default JSON will treat it as UTF-8, which means if an
-    # invalid UTF-8 byte string is provided, a failure will occur when
-    # encoding the value.
-    #
-    # The json.dumps() function in Python 2 had an encoding argument
-    # which needs to be used to dictate what encoding a byte string
-    # should be interpreted as being. We need to supply this and set it
-    # to Latin-1 to avoid the failures if the byte string is not valid
-    # UTF-8.
-    #
-    # For Python 3, it will simply fail if provided any byte string. To
-    # be compatible with Python 2, we still want to accept them, but as
-    # before interpret it as being Latin-1. For Python 3 we can only do
-    # this by overriding the fallback encoder used when a type is
-    # encountered that the JSON encoder doesn't know what to do with.
+    # ensure that it is accepted as a string, and interpreted as
+    # being Latin-1. The default JSON encoder will not accept byte
+    # strings, so a we can do this by overriding the fallback encoder
+    # used when a type is encountered that the JSON encoder doesn't
+    # know what to do with.
     #
     # The second issue we want to deal with is allowing generators or
     # iterables to be supplied and for them to be automatically expanded
@@ -79,9 +67,6 @@ def json_encode(obj, **kwargs):
     #
     # The third is eliminate white space after separators to trim the
     # size of the data being sent.
-
-    if type(b"") is type(""):  # noqa, pylint: disable=C0123
-        _kwargs["encoding"] = "latin-1"
 
     def _encode(o):
         if isinstance(o, bytes):
@@ -166,12 +151,9 @@ def xor_cipher_encrypt_base64(text, key):
     array using xor_cipher_genkey(). The key cannot be an empty byte
     array or string. Where the key is shorter than the text to be
     encrypted, the same key will continually be reapplied in succession.
-    In Python 2 either a byte string or Unicode string can be provided
-    for the text input. In the case of a byte string, it will be
-    interpreted as having Latin-1 encoding. In Python 3 only a Unicode
-    string can be provided for the text input. Having being encrypted,
-    the result will then be base64 encoded with the result being a
-    Unicode string.
+    In Python 3 only a Unicode string can be provided for the text input.
+    Having being encrypted, the result will then be base64 encoded with
+    the result being a Unicode string.
 
     """
 
@@ -203,10 +185,7 @@ def xor_cipher_encrypt_base64(text, key):
     # use ASCII when decoding the byte string as base64 encoding only
     # produces characters within that codeset.
 
-    if six.PY3:
-        return result.decode("ascii")
-
-    return result
+    return result.decode("ascii")
 
 
 def xor_cipher_decrypt_base64(text, key):
@@ -305,10 +284,7 @@ def base64_encode(text):
     # use ASCII when decoding the byte string as base64 encoding only
     # produces characters within that codeset.
 
-    if six.PY3:
-        return result.decode("ascii")
-
-    return result
+    return result.decode("ascii")
 
 
 def base64_decode(text):
@@ -326,7 +302,7 @@ def gzip_compress(text):
     """
     compressed_data = io.BytesIO()
 
-    if six.PY3 and isinstance(text, str):
+    if isinstance(text, str):
         text = text.encode("utf-8")
 
     with gzip.GzipFile(fileobj=compressed_data, mode="wb") as f:
@@ -358,7 +334,7 @@ def serverless_payload_encode(payload):
 
 
 def ensure_str(s):
-    if not isinstance(s, six.string_types):
+    if not isinstance(s, str):
         try:
             s = s.decode("utf-8")
         except Exception:
@@ -621,7 +597,7 @@ _obfuscate_license_key_ending = "*" * 32
 def obfuscate_license_key(license_key):
     """Obfuscate license key to allow it to be printed out."""
 
-    if not isinstance(license_key, six.string_types):
+    if not isinstance(license_key, str):
         # For non-string values passed in such as None, return the original.
         return license_key
     elif len(license_key) == 40:

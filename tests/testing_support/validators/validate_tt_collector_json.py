@@ -16,7 +16,6 @@ from newrelic.common.encoding_utils import unpack_field
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
 from newrelic.core.database_utils import SQLConnections
-from newrelic.packages import six
 
 
 def _lookup_string_table(name, string_table, default=None):
@@ -68,12 +67,12 @@ def validate_tt_collector_json(
             assert isinstance(trace[0], float)  # absolute start time (ms)
             assert isinstance(trace[1], float)  # duration (ms)
             assert trace[0] > 0  # absolute time (ms)
-            assert isinstance(trace[2], six.string_types)  # transaction name
+            assert isinstance(trace[2], str)  # transaction name
             if trace[2].startswith("WebTransaction"):
                 if exclude_request_uri:
                     assert trace[3] is None  # request url
                 else:
-                    assert isinstance(trace[3], six.string_types)
+                    assert isinstance(trace[3], str)
                     # query parameters should not be captured
                     assert "?" not in trace[3]
 
@@ -110,7 +109,7 @@ def validate_tt_collector_json(
             trace_segment = children[0]
             assert isinstance(trace_segment[0], float)  # entry timestamp
             assert isinstance(trace_segment[1], float)  # exit timestamp
-            assert isinstance(trace_segment[2], six.string_types)  # scope
+            assert isinstance(trace_segment[2], str)  # scope
             assert isinstance(trace_segment[3], dict)  # request params
             assert isinstance(trace_segment[4], list)  # children
 
@@ -158,7 +157,7 @@ def validate_tt_collector_json(
             assert "userAttributes" in attributes
             assert "agentAttributes" in attributes
 
-            assert isinstance(trace[5], six.string_types)  # GUID
+            assert isinstance(trace[5], str)  # GUID
             assert trace[6] is None  # reserved for future use
             assert trace[7] is False  # deprecated force persist flag
 
@@ -168,11 +167,11 @@ def validate_tt_collector_json(
 
             # Synthetics ID
 
-            assert trace[9] is None or isinstance(trace[9], six.string_types)
+            assert trace[9] is None or isinstance(trace[9], str)
 
             assert isinstance(string_table, list)
             for name in string_table:
-                assert isinstance(name, six.string_types)  # metric name
+                assert isinstance(name, str)  # metric name
 
         _new_wrapper = _validate_tt_collector_json(wrapped)
         val = _new_wrapper(*args, **kwargs)

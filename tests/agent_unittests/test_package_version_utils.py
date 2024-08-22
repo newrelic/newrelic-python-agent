@@ -25,7 +25,6 @@ from newrelic.common.package_version_utils import (
     get_package_version,
     get_package_version_tuple,
 )
-from newrelic.packages import six
 
 # Notes:
 # importlib.metadata was a provisional addition to the std library in PY38 and PY39
@@ -137,7 +136,6 @@ def _getattr_deprecation_warning(attr):
         raise NotImplementedError()
 
 
-@pytest.mark.skipif(six.PY2, reason="Can't add Deprecation in __version__ in Python 2.")
 def test_deprecation_warning_suppression(monkeypatch, recwarn):
     # Add fake module to be deleted later
     monkeypatch.setattr(pytest, "__getattr__", _getattr_deprecation_warning, raising=False)

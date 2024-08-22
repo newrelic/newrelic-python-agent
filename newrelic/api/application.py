@@ -18,7 +18,6 @@ import warnings
 import newrelic.api.import_hook
 import newrelic.core.agent
 import newrelic.core.config
-import newrelic.packages.six as six
 
 
 class Application(object):
@@ -106,7 +105,7 @@ class Application(object):
 
     @property
     def linked_applications(self):
-        return list(six.iterkeys(self._linked))
+        return list(self._linked.keys())
 
     def link_to_application(self, name):
         self._linked[name] = True

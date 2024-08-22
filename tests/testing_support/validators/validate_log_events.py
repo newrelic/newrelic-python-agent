@@ -17,7 +17,6 @@ import copy
 from testing_support.fixtures import catch_background_exceptions
 
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
-from newrelic.packages import six
 
 
 def validate_log_events(events=None, required_attrs=None, forgone_attrs=None):
@@ -65,7 +64,7 @@ def validate_log_events(events=None, required_attrs=None, forgone_attrs=None):
         return val
 
     def _check_log_attributes(expected, required_attrs, forgone_attrs, captured, mismatches):
-        for key, value in six.iteritems(expected):
+        for key, value in expected.items():
             if hasattr(captured, key):
                 captured_value = getattr(captured, key, None)
             elif key in captured.attributes:

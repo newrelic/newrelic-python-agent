@@ -32,7 +32,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.common.package_version_utils import get_package_version_tuple
-from newrelic.packages import six
 
 version = list(get_package_version_tuple("bottle"))
 
@@ -85,11 +84,7 @@ else:
     _test_application_error_scoped_metrics.extend([("Function/bottle:Bottle.__call__", 1)])
 
 _test_application_error_custom_metrics = [("Python/Framework/Bottle/%s.%s.%s" % version, 1)]
-
-if six.PY3:
-    _test_application_error_errors = ["builtins:RuntimeError"]
-else:
-    _test_application_error_errors = ["exceptions:RuntimeError"]
+_test_application_error_errors = ["builtins:RuntimeError"]
 
 
 @validate_code_level_metrics("_target_application", "error_page")
@@ -181,9 +176,7 @@ _test_application_auth_basic_okay_custom_metrics = [("Python/Framework/Bottle/%s
     custom_metrics=_test_application_auth_basic_okay_custom_metrics,
 )
 def test_application_auth_basic_okay(target_application):
-    authorization_value = base64.b64encode(b"user:password")
-    if six.PY3:
-        authorization_value = authorization_value.decode("Latin-1")
+    authorization_value = base64.b64encode(b"user:password").decode("Latin-1")
     environ = {"HTTP_AUTHORIZATION": "Basic " + authorization_value}
     response = target_application.get("/auth", extra_environ=environ)
     response.mustcontain("AUTH OKAY")

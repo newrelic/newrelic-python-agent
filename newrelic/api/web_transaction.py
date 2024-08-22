@@ -17,10 +17,7 @@ import logging
 import time
 import warnings
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
+import urllib.parse as urlparse
 
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction
@@ -34,7 +31,6 @@ from newrelic.common.encoding_utils import (
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.attribute_filter import DST_BROWSER_MONITORING
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -88,7 +84,7 @@ def _lookup_environ_setting(environ, name, default=False):
 
     flag = environ[name]
 
-    if isinstance(flag, six.string_types):
+    if isinstance(flag, str):
         flag = flag.lower()
 
         if flag in TRUE_VALUES:
@@ -377,10 +373,7 @@ class WebTransaction(Transaction):
     def browser_timing_header(self, nonce=None):
         """Returns the JavaScript header to be included in any HTML
         response to perform real user monitoring. This function returns
-        the header as a native Python string. In Python 2 native strings
-        are stored as bytes. In Python 3 native strings are stored as
-        unicode.
-
+        the header as a native Python string.
         """
 
         if not self.enabled:
@@ -473,16 +466,11 @@ class WebTransaction(Transaction):
             # encodable. Since we obfuscate all agent and user attributes, and
             # the transaction name with base 64 encoding, this will preserve
             # those strings, if they have values outside of the ASCII character
-            # set. In the case of Python 2, we actually then use the encoded
-            # value as we need a native string, which for Python 2 is a byte
-            # string. If encoding as ASCII fails we will return an empty
+            # set. If encoding as ASCII fails we will return an empty
             # string.
 
             try:
-                if six.PY2:
-                    header = header.encode("ascii")
-                else:
-                    header.encode("ascii")
+                header.encode("ascii")
 
             except UnicodeError:
                 if not WebTransaction.unicode_error_reported:

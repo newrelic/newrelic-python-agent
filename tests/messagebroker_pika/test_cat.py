@@ -26,7 +26,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
-from newrelic.packages import six
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
@@ -55,14 +54,10 @@ _test_cat_basic_consume_scoped_metrics = [
 ]
 _test_cat_basic_consume_rollup_metrics = list(_test_cat_basic_consume_scoped_metrics)
 _test_cat_basic_consume_rollup_metrics.append(("ClientApplication/1#1/all", 1))
-if six.PY3:
-    _txn_name = "test_cat:test_basic_consume_cat_headers.<locals>.on_receive"
-else:
-    _txn_name = "test_cat:on_receive"
 
 
 @validate_transaction_metrics(
-    _txn_name,
+    "test_cat:test_basic_consume_cat_headers.<locals>.on_receive",
     scoped_metrics=_test_cat_basic_consume_scoped_metrics,
     rollup_metrics=_test_cat_basic_consume_rollup_metrics,
     background_task=True,

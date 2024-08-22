@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 import logging
 import os
 import random
@@ -77,7 +75,6 @@ from newrelic.core.trace_cache import (
     TraceCacheNoActiveTraceError,
     trace_cache,
 )
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -555,7 +552,7 @@ class Transaction(object):
 
         # Record supportability metrics for api calls
 
-        for key, value in six.iteritems(self._transaction_metrics):
+        for key, value in self._transaction_metrics.items():
             self.record_custom_metric(key, {"count": value})
 
         if self._frameworks:
@@ -1420,9 +1417,9 @@ class Transaction(object):
 
                 self.record_tt = self.record_tt or txn_header[1]
 
-                if isinstance(txn_header[2], six.string_types):
+                if isinstance(txn_header[2], str):
                     self._trip_id = txn_header[2]
-                if isinstance(txn_header[3], six.string_types):
+                if isinstance(txn_header[3], str):
                     self._referring_path_hash = txn_header[3]
         except Exception:
             pass
@@ -1568,7 +1565,7 @@ class Transaction(object):
 
         if message is not None:
             # Coerce message into a string type
-            if not isinstance(message, six.string_types):
+            if not isinstance(message, str):
                 try:
                     message = str(message)
                 except Exception:
@@ -1957,7 +1954,7 @@ def set_user_id(user_id):
     if not user_id or not transaction:
         return
 
-    if not isinstance(user_id, six.string_types):
+    if not isinstance(user_id, str):
         _logger.warning("The set_user_id API requires a string-based user ID.")
         return
 

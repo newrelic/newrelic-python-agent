@@ -25,7 +25,6 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -202,7 +201,7 @@ class _WSGIApplicationMiddleware(object):
         # works then we are done, else we move to next phase of
         # buffering up content until we find the body element.
 
-        html_to_be_inserted = lambda: six.b(self.transaction.browser_timing_header())
+        html_to_be_inserted = lambda: self.transaction.browser_timing_header().encode("latin-1")
         if not self.response_data:
             modified = insert_html_snippet(data, html_to_be_inserted)
 
@@ -496,23 +495,20 @@ class _WSGIApplicationMiddleware(object):
 
 
 def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None, dispatcher=None):
-    # Python 2 does not allow rebinding nonlocal variables, so to fix this
-    # framework must be stored in list so it can be edited by closure.
-    _framework = [framework]
-
     def get_framework():
         """Used to delay imports by passing framework as a callable."""
-        framework = _framework[0]
+
+        # Use same framework variable as closure
+        nonlocal framework
+
         if isinstance(framework, tuple) or framework is None:
             return framework
 
         if callable(framework):
             framework = framework()
-            _framework[0] = framework
 
         if framework is not None and not isinstance(framework, tuple):
             framework = (framework, None)
-            _framework[0] = framework
 
         return framework
 

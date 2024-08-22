@@ -104,8 +104,8 @@ def validate_span_events(
             details = [
                 "matching_span_events=%d" % matching_span_events,
                 "count=%d" % count,
-                "mismatches=%s" % mismatches,
-                "captured_events=%s" % captured_events,
+                f"mismatches={mismatches}",
+                f"captured_events={captured_events}",
             ]
 
             return "\n".join(details)
@@ -153,7 +153,7 @@ def _check_span_attributes(attrs, exact, expected, unexpected, mismatches):
         else:
             for key, value in exact.items():
                 if not check_value_equals(attrs, key, value):
-                    mismatches.append("key: %s, value:<%s><%s>" % (key, value, attrs.get(key)))
+                    mismatches.append(f"key: {key}, value:<{value}><{attrs.get(key)}>")
                     break
             else:
                 return True

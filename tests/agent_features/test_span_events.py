@@ -156,9 +156,9 @@ def test_each_span_type(trace_type, args):
         pytest.param("a" * 2001, "raw", "".join(["a"] * 1997 + ["..."]), id="truncate"),
         pytest.param("a" * 2000, "raw", "".join(["a"] * 2000), id="no_truncate"),
         pytest.param(
-            "select * from %s" % "".join(["?"] * 2000),
+            f"select * from {''.join(['?'] * 2000)}",
             "obfuscated",
-            "select * from %s..." % ("".join(["?"] * (2000 - len("select * from ") - 3))),
+            f"select * from {''.join(['?'] * (2000 - len('select * from ') - 3))}...",
             id="truncate_obfuscated",
         ),
         pytest.param("select 1", "off", ""),

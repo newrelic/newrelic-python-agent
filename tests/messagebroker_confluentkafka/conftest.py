@@ -27,7 +27,7 @@ from newrelic.common.object_wrapper import transient_function_wrapper
 
 DB_SETTINGS = kafka_settings()[0]
 
-BROKER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
+BROKER = f"{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"
 
 
 _default_settings = {
@@ -171,7 +171,7 @@ def json_deserializer():
 def topic():
     from confluent_kafka.admin import AdminClient, NewTopic
 
-    topic = "test-topic-%s" % str(uuid.uuid4())
+    topic = f"test-topic-{str(uuid.uuid4())}"
 
     admin = AdminClient({"bootstrap.servers": BROKER})
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]

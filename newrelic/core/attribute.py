@@ -123,7 +123,7 @@ class NullValueException(ValueError):
 
 class Attribute(_Attribute):
     def __repr__(self):
-        return "Attribute(name=%r, value=%r, destinations=%r)" % (self.name, self.value, bin(self.destinations))
+        return f"Attribute(name={self.name!r}, value={self.value!r}, destinations={bin(self.destinations)!r})"
 
 
 def create_attributes(attr_dict, destinations, attribute_filter):

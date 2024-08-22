@@ -53,7 +53,7 @@ def shell_command(wrapped):
 
     parser = optparse.OptionParser()
     for name in args[1:]:
-        parser.add_option("--%s" % name, dest=name)
+        parser.add_option(f"--{name}", dest=name)
 
     @functools.wraps(wrapped)
     def wrapper(self, line):
@@ -105,7 +105,7 @@ def setquit():
             self.name = name
 
         def __repr__(self):
-            return "Use %s() or %s to exit" % (self.name, eof)
+            return f"Use {self.name}() or {eof} to exit"
 
         def __call__(self, code=None):
             # If executed with our interactive console, only raise the
@@ -235,7 +235,7 @@ class ConsoleShell(cmd.Cmd):
         for name, module in sorted(sys.modules.items()):
             if module is not None:
                 file = getattr(module, "__file__", None)
-                print("%s - %s" % (name, file), file=self.stdout)
+                print(f"{name} - {file}", file=self.stdout)
 
     @shell_command
     def do_sys_meta_path(self):
@@ -250,7 +250,7 @@ class ConsoleShell(cmd.Cmd):
         Displays the set of user environment variables."""
 
         for key, name in os.environ.items():
-            print("%s = %r" % (key, name), file=self.stdout)
+            print(f"{key} = {name!r}", file=self.stdout)
 
     @shell_command
     def do_current_time(self):
@@ -294,7 +294,7 @@ class ConsoleShell(cmd.Cmd):
             config = flatten_settings(config)
             keys = sorted(config.keys())
             for key in keys:
-                print("%s = %r" % (key, config[key]), file=self.stdout)
+                print(f"{key} = {config[key]!r}", file=self.stdout)
 
     @shell_command
     def do_agent_status(self):
@@ -344,13 +344,13 @@ class ConsoleShell(cmd.Cmd):
             result = results[key]
             if result is None:
                 if key[0] not in sys.modules:
-                    print("%s: PENDING" % (key,), file=self.stdout)
+                    print(f"{key}: PENDING", file=self.stdout)
                 else:
-                    print("%s: IMPORTED" % (key,), file=self.stdout)
+                    print(f"{key}: IMPORTED", file=self.stdout)
             elif not result:
-                print("%s: INSTRUMENTED" % (key,), file=self.stdout)
+                print(f"{key}: INSTRUMENTED", file=self.stdout)
             else:
-                print("%s: FAILED" % (key,), file=self.stdout)
+                print(f"{key}: FAILED", file=self.stdout)
                 for line in result:
                     print(line, end="", file=self.stdout)
 
@@ -412,15 +412,15 @@ class ConsoleShell(cmd.Cmd):
         all = []
         for threadId, stack in sys._current_frames().items():
             block = []
-            block.append("# ThreadID: %s" % threadId)
+            block.append(f"# ThreadID: {threadId}")
             thr = threading._active.get(threadId)
             if thr:
-                block.append("# Type: %s" % type(thr).__name__)
-                block.append("# Name: %s" % thr.name)
+                block.append(f"# Type: {type(thr).__name__}")
+                block.append(f"# Name: {thr.name}")
             for filename, lineno, name, line in traceback.extract_stack(stack):
                 block.append("File: '%s', line %d, in %s" % (filename, lineno, name))
                 if line:
-                    block.append("  %s" % (line.strip()))
+                    block.append(f"  {line.strip()}")
             all.append("\n".join(block))
 
         print("\n\n".join(all), file=self.stdout)
@@ -512,7 +512,7 @@ class ClientShell(cmd.Cmd):
         self.__log_object = log
 
         if not self.__config_object.read([config_file]):
-            raise RuntimeError("Unable to open configuration file %s." % config_file)
+            raise RuntimeError(f"Unable to open configuration file {config_file}.")
 
         listener_socket = self.__config_object.get("newrelic", "console.listener_socket") % {"pid": "*"}
 
@@ -545,7 +545,7 @@ class ClientShell(cmd.Cmd):
         Display a list of the servers which can be connected to."""
 
         for i in range(len(self.__servers)):
-            print("%s: %s" % (i + 1, self.__servers[i]), file=self.stdout)
+            print(f"{i + 1}: {self.__servers[i]}", file=self.stdout)
 
     def do_connect(self, line):
         """connect [index]

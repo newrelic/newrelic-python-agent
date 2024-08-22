@@ -46,8 +46,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
 
     @property
     def name(self):
-        return 'External/%s/%s/%s' % (
-                self.netloc, self.library, self.method or '')
+        return f"External/{self.netloc}/{self.library}/{self.method or ''}"
 
     @property
     def url_with_path(self):
@@ -81,7 +80,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         if (scheme, port) in (('http', 80), ('https', 443)):
             port = None
 
-        netloc = port and ('%s:%s' % (hostname, port)) or hostname
+        netloc = port and (f'{hostname}:{port}') or hostname
         return netloc
 
     def time_metrics(self, stats, root, parent):
@@ -113,7 +112,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
             self.cross_process_id = None
             self.external_txn_name = None
 
-        name = 'External/%s/all' % netloc
+        name = f'External/{netloc}/all'
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                   exclusive=self.exclusive)
@@ -121,7 +120,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         if self.cross_process_id is None:
             method = self.method or ''
 
-            name = 'External/%s/%s/%s' % (netloc, self.library, method)
+            name = f'External/{netloc}/{self.library}/{method}'
 
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
@@ -139,7 +138,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
             yield TimeMetric(name=name, scope=root.path,
                     duration=self.duration, exclusive=self.exclusive)
 
-            name = 'ExternalApp/%s/%s/all' % (netloc, self.cross_process_id)
+            name = f'ExternalApp/{netloc}/{self.cross_process_id}/all'
 
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
@@ -151,7 +150,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         method = self.method or ''
 
         if self.cross_process_id is None:
-            name = 'External/%s/%s/%s' % (netloc, self.library, method)
+            name = f'External/{netloc}/{self.library}/{method}'
         else:
             name = 'ExternalTransaction/%s/%s/%s' % (netloc,
                                                      self.cross_process_id,

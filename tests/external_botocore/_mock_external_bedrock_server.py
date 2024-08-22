@@ -6689,7 +6689,7 @@ def simple_get(self):
         # If no matches found
         self.send_response(500)
         self.end_headers()
-        self.wfile.write(("Unknown Prompt:\n%s" % prompt).encode("utf-8"))
+        self.wfile.write(f"Unknown Prompt:\n{prompt}".encode("utf-8"))
         return
 
     if stream:
@@ -6748,9 +6748,9 @@ class MockExternalBedrockServer(MockExternalHTTPServer):
 
 if __name__ == "__main__":
     # Use this to sort dict for easier future incremental updates
-    print("RESPONSES = %s" % dict(sorted(RESPONSES.items(), key=lambda i: (i[1][1], i[0]))))
+    print(f"RESPONSES = {dict(sorted(RESPONSES.items(), key=lambda i: (i[1][1], i[0])))}")
 
     with MockExternalBedrockServer() as server:
-        print("MockExternalBedrockServer serving on port %s" % str(server.port))
+        print(f"MockExternalBedrockServer serving on port {str(server.port)}")
         while True:
             pass  # Serve forever

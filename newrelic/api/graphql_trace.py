@@ -102,9 +102,9 @@ class GraphQLOperationTrace(TimeTrace):
         transaction = current_transaction()
         if transaction:
             name = (
-                "%s/%s/%s" % (self.operation_type, self.operation_name, self.deepest_path)
+                f"{self.operation_type}/{self.operation_name}/{self.deepest_path}"
                 if self.deepest_path
-                else "%s/%s" % (self.operation_type, self.operation_name)
+                else f"{self.operation_type}/{self.operation_name}"
             )
             transaction.set_transaction_name(name, "GraphQL", priority=priority)
 
@@ -154,7 +154,7 @@ class GraphQLResolverTrace(TimeTrace):
         self._product = None
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), dict(field_name=self.field_name))
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(field_name=self.field_name)}>"
 
     def __enter__(self):
         super(GraphQLResolverTrace, self).__enter__()

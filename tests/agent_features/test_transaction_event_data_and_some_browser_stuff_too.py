@@ -96,7 +96,7 @@ def test_capture_attributes_enabled():
     browser_attributes["multibyte-utf8"] = _user_attributes["multibyte-utf8"].decode("latin-1")
 
     for attr, value in browser_attributes.items():
-        assert user_attrs[attr] == value, "attribute %r expected %r, found %r" % (attr, value, user_attrs[attr])
+        assert user_attrs[attr] == value, f"attribute {attr!r} expected {value!r}, found {user_attrs[attr]!r}"
 
 
 _test_no_attributes_recorded_settings = {"browser_monitoring.attributes.enabled": True}

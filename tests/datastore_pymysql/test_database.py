@@ -33,30 +33,29 @@ PORT = DB_SETTINGS["port"]
 
 
 def execute_db_calls_with_cursor(cursor):
-    cursor.execute("""drop table if exists %s""" % TABLE_NAME)
+    cursor.execute(f"""drop table if exists {TABLE_NAME}""")
 
-    cursor.execute("""create table %s """ % TABLE_NAME + """(a integer, b real, c text)""")
+    cursor.execute(f"""create table {TABLE_NAME} """ + """(a integer, b real, c text)""")
 
     cursor.executemany(
-        """insert into %s """ % TABLE_NAME + """values (%s, %s, %s)""",
+        f"""insert into {TABLE_NAME} """ + """values (%s, %s, %s)""",
         [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
     )
 
-    cursor.execute("""select * from %s""" % TABLE_NAME)
+    cursor.execute(f"""select * from {TABLE_NAME}""")
 
     for row in cursor:
         pass
 
-    cursor.execute("""update %s""" % TABLE_NAME + """ set a=%s, b=%s, """ """c=%s where a=%s""", (4, 4.0, "4.0", 1))
+    cursor.execute(f"""update {TABLE_NAME}""" + """ set a=%s, b=%s, """ """c=%s where a=%s""", (4, 4.0, "4.0", 1))
 
-    cursor.execute("""delete from %s where a=2""" % TABLE_NAME)
-    cursor.execute("""drop procedure if exists %s""" % PROCEDURE_NAME)
+    cursor.execute(f"""delete from {TABLE_NAME} where a=2""")
+    cursor.execute(f"""drop procedure if exists {PROCEDURE_NAME}""")
     cursor.execute(
-        """CREATE PROCEDURE %s()
+        f"""CREATE PROCEDURE {PROCEDURE_NAME}()
                       BEGIN
                         SELECT 'Hello World!';
                       END"""
-        % PROCEDURE_NAME
     )
 
     cursor.callproc(PROCEDURE_NAME)
@@ -64,13 +63,13 @@ def execute_db_calls_with_cursor(cursor):
 
 _test_execute_via_cursor_scoped_metrics = [
     ("Function/pymysql:Connect", 1),
-    ("Datastore/statement/MySQL/%s/select" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/insert" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/update" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/delete" % TABLE_NAME, 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/select", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/insert", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/update", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/delete", 1),
     ("Datastore/operation/MySQL/drop", 2),
     ("Datastore/operation/MySQL/create", 2),
-    ("Datastore/statement/MySQL/%s/call" % PROCEDURE_NAME, 1),
+    (f"Datastore/statement/MySQL/{PROCEDURE_NAME}/call", 1),
     ("Datastore/operation/MySQL/commit", 2),
     ("Datastore/operation/MySQL/rollback", 1),
 ]
@@ -80,21 +79,21 @@ _test_execute_via_cursor_rollup_metrics = [
     ("Datastore/allOther", 13),
     ("Datastore/MySQL/all", 13),
     ("Datastore/MySQL/allOther", 13),
-    ("Datastore/statement/MySQL/%s/select" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/insert" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/update" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/delete" % TABLE_NAME, 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/select", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/insert", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/update", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/delete", 1),
     ("Datastore/operation/MySQL/select", 1),
     ("Datastore/operation/MySQL/insert", 1),
     ("Datastore/operation/MySQL/update", 1),
     ("Datastore/operation/MySQL/delete", 1),
-    ("Datastore/statement/MySQL/%s/call" % PROCEDURE_NAME, 1),
+    (f"Datastore/statement/MySQL/{PROCEDURE_NAME}/call", 1),
     ("Datastore/operation/MySQL/call", 1),
     ("Datastore/operation/MySQL/drop", 2),
     ("Datastore/operation/MySQL/create", 2),
     ("Datastore/operation/MySQL/commit", 2),
     ("Datastore/operation/MySQL/rollback", 1),
-    ("Datastore/instance/MySQL/%s/%s" % (HOST, PORT), 12),
+    (f"Datastore/instance/MySQL/{HOST}/{PORT}", 12),
 ]
 
 
@@ -125,13 +124,13 @@ def test_execute_via_cursor():
 
 _test_execute_via_cursor_context_mangaer_scoped_metrics = [
     ("Function/pymysql:Connect", 1),
-    ("Datastore/statement/MySQL/%s/select" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/insert" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/update" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/delete" % TABLE_NAME, 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/select", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/insert", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/update", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/delete", 1),
     ("Datastore/operation/MySQL/drop", 2),
     ("Datastore/operation/MySQL/create", 2),
-    ("Datastore/statement/MySQL/%s/call" % PROCEDURE_NAME, 1),
+    (f"Datastore/statement/MySQL/{PROCEDURE_NAME}/call", 1),
     ("Datastore/operation/MySQL/commit", 2),
     ("Datastore/operation/MySQL/rollback", 1),
 ]
@@ -141,21 +140,21 @@ _test_execute_via_cursor_context_mangaer_rollup_metrics = [
     ("Datastore/allOther", 13),
     ("Datastore/MySQL/all", 13),
     ("Datastore/MySQL/allOther", 13),
-    ("Datastore/statement/MySQL/%s/select" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/insert" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/update" % TABLE_NAME, 1),
-    ("Datastore/statement/MySQL/%s/delete" % TABLE_NAME, 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/select", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/insert", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/update", 1),
+    (f"Datastore/statement/MySQL/{TABLE_NAME}/delete", 1),
     ("Datastore/operation/MySQL/select", 1),
     ("Datastore/operation/MySQL/insert", 1),
     ("Datastore/operation/MySQL/update", 1),
     ("Datastore/operation/MySQL/delete", 1),
-    ("Datastore/statement/MySQL/%s/call" % PROCEDURE_NAME, 1),
+    (f"Datastore/statement/MySQL/{PROCEDURE_NAME}/call", 1),
     ("Datastore/operation/MySQL/call", 1),
     ("Datastore/operation/MySQL/drop", 2),
     ("Datastore/operation/MySQL/create", 2),
     ("Datastore/operation/MySQL/commit", 2),
     ("Datastore/operation/MySQL/rollback", 1),
-    ("Datastore/instance/MySQL/%s/%s" % (HOST, PORT), 12),
+    (f"Datastore/instance/MySQL/{HOST}/{PORT}", 12),
 ]
 
 

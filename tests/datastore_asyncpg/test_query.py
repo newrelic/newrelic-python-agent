@@ -104,7 +104,7 @@ def test_prepare(event_loop, conn):
 def table(event_loop, conn):
     table_name = "table_%d" % os.getpid()
 
-    event_loop.run_until_complete(conn.execute("""create table %s (a integer, b real, c text)""" % table_name))
+    event_loop.run_until_complete(conn.execute(f"""create table {table_name} (a integer, b real, c text)"""))
 
     return table_name
 

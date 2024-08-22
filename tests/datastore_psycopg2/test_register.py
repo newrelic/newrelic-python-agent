@@ -50,22 +50,22 @@ def test_register_range():
 
         type_name = "floatrange_" + str(os.getpid())
 
-        create_sql = ('CREATE TYPE %s AS RANGE (' % type_name +
+        create_sql = (f'CREATE TYPE {type_name} AS RANGE (' +
                       'subtype = float8,'
                       'subtype_diff = float8mi)')
 
         cursor = connection.cursor()
 
-        cursor.execute("DROP TYPE if exists %s" % type_name)
+        cursor.execute(f"DROP TYPE if exists {type_name}")
         cursor.execute(create_sql)
 
         psycopg2.extras.register_range(type_name,
                 psycopg2.extras.NumericRange, connection)
 
-        cursor.execute("DROP TYPE if exists %s" % type_name)
+        cursor.execute(f"DROP TYPE if exists {type_name}")
         cursor.execute(create_sql)
 
         psycopg2.extras.register_range(type_name,
                 psycopg2.extras.NumericRange, cursor)
 
-        cursor.execute("DROP TYPE if exists %s" % type_name)
+        cursor.execute(f"DROP TYPE if exists {type_name}")

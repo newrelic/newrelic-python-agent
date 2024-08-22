@@ -71,8 +71,7 @@ def run_python(args):
     if 'PYTHONPATH' in os.environ:
         path = os.environ['PYTHONPATH'].split(os.path.pathsep)
         if not boot_directory in path:
-            python_path = "%s%s%s" % (boot_directory, os.path.pathsep,
-                    os.environ['PYTHONPATH'])
+            python_path = f"{boot_directory}{os.path.pathsep}{os.environ['PYTHONPATH']}"
 
     os.environ['PYTHONPATH'] = python_path
 

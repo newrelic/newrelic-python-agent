@@ -24,7 +24,7 @@ from newrelic.api.time_trace import notice_error
 
 def name_controller(self, environ, start_response):
     action = environ['pylons.routes_dict']['action']
-    return "%s.%s" % (callable_name(self), action)
+    return f"{callable_name(self)}.{action}"
 
 class capture_error(object):
     def __init__(self, wrapped):

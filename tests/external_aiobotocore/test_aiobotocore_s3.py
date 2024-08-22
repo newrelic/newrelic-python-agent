@@ -30,25 +30,25 @@ from newrelic.api.background_task import background_task
 TEST_BUCKET = "python-agent-test"
 FILENAME = "dummy.bin"
 FOLDER = "aiobotocore"
-ENDPOINT = "localhost:%s" % PORT
+ENDPOINT = f"localhost:{PORT}"
 KEY = "{}/{}".format(FOLDER, FILENAME)
-EXPECTED_BUCKET_URL = "http://%s/%s" % (ENDPOINT, TEST_BUCKET)
+EXPECTED_BUCKET_URL = f"http://{ENDPOINT}/{TEST_BUCKET}"
 EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/" + KEY
 
 
 _s3_scoped_metrics = [
-    ("External/%s/aiobotocore/GET" % ENDPOINT, 5),
-    ("External/%s/aiobotocore/PUT" % ENDPOINT, 2),
-    ("External/%s/aiobotocore/DELETE" % ENDPOINT, 2),
+    (f"External/{ENDPOINT}/aiobotocore/GET", 5),
+    (f"External/{ENDPOINT}/aiobotocore/PUT", 2),
+    (f"External/{ENDPOINT}/aiobotocore/DELETE", 2),
 ]
 
 _s3_rollup_metrics = [
     ("External/all", 9),
     ("External/allOther", 9),
-    ("External/%s/all" % ENDPOINT, 9),
-    ("External/%s/aiobotocore/GET" % ENDPOINT, 5),
-    ("External/%s/aiobotocore/PUT" % ENDPOINT, 2),
-    ("External/%s/aiobotocore/DELETE" % ENDPOINT, 2),
+    (f"External/{ENDPOINT}/all", 9),
+    (f"External/{ENDPOINT}/aiobotocore/GET", 5),
+    (f"External/{ENDPOINT}/aiobotocore/PUT", 2),
+    (f"External/{ENDPOINT}/aiobotocore/DELETE", 2),
 ]
 
 

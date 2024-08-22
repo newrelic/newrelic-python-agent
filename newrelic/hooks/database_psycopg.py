@@ -430,7 +430,7 @@ def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
         port = "default"
     elif parsed_host.startswith("/"):
         host = "localhost"
-        port = "%s/.s.PGSQL.%s" % (parsed_host, parsed_port or "5432")
+        port = f"{parsed_host}/.s.PGSQL.{parsed_port or '5432'}"
     else:
         host = parsed_host
         port = parsed_port or "5432"

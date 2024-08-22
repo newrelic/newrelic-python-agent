@@ -21,4 +21,4 @@ _memcache_client_methods = (
 def instrument_aiomcache_client(module):
     for name in _memcache_client_methods:
         if hasattr(module.Client, name):
-            wrap_datastore_trace(module, "Client.%s" % name, product="Memcached", target=None, operation=name)
+            wrap_datastore_trace(module, f"Client.{name}", product="Memcached", target=None, operation=name)

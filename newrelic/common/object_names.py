@@ -103,7 +103,7 @@ def _module_name(object):
     # happens for example with namedtuple classes in Python 3.
 
     if mname and mname not in sys.modules:
-        mname = '<%s>' % mname
+        mname = f'<{mname}>'
 
     # If unable to derive the module name, fallback to unknown.
 
@@ -128,7 +128,7 @@ def _object_context(object):
         if cname is None:
             cname = getattr(object.__self__.__class__, '__qualname__')
 
-        path = '%s.%s' % (cname, object.__name__)
+        path = f'{cname}.{object.__name__}'
 
     else:
         # For functions, the __qualname__ attribute gives us the name.
@@ -291,7 +291,7 @@ def parse_exc_info(exc_info):
     name = value.__class__.__name__
 
     if module:
-        fullnames = ("%s:%s" % (module, name), "%s.%s" % (module, name))
+        fullnames = (f"{module}:{name}", f"{module}.{name}")
     else:
         fullnames = (name,)
 
@@ -312,6 +312,6 @@ def parse_exc_info(exc_info):
             message = str(value)
 
         except Exception:
-            message = "<unprintable %s object>" % type(value).__name__
+            message = f"<unprintable {type(value).__name__} object>"
 
     return (module, name, fullnames, message)

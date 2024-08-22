@@ -46,8 +46,8 @@ _message_broker_tt_params = {
 }
 
 _test_blocking_connection_basic_get_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, 1),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", 1),
     ("Function/pika.adapters.blocking_connection:_CallbackResult.set_value_once", 1),
 ]
 
@@ -62,7 +62,7 @@ _test_blocking_connection_basic_get_metrics = [
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @validate_span_events(
     count=1,
-    exact_intrinsics={"name": "MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE},
+    exact_intrinsics={"name": f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}"},
     exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @background_task()
@@ -75,8 +75,8 @@ def test_blocking_connection_basic_get(producer):
 
 
 _test_blocking_connection_basic_get_empty_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
 ]
 
 
@@ -89,7 +89,7 @@ _test_blocking_connection_basic_get_empty_metrics = [
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
 def test_blocking_connection_basic_get_empty():
-    QUEUE = "test_blocking_empty-%s" % os.getpid()
+    QUEUE = f"test_blocking_empty-{os.getpid()}"
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
         channel.queue_declare(queue=QUEUE)
@@ -122,8 +122,8 @@ def test_blocking_connection_basic_get_outside_transaction(producer):
 
 
 _test_blocking_conn_basic_consume_no_txn_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
     ("Function/test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_outside_transaction.<locals>.on_message", None),
 ]
 _txn_name = "test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_outside_transaction.<locals>.on_message"
@@ -139,12 +139,12 @@ _txn_name = "test_pika_blocking_connection_consume:test_blocking_connection_basi
     scoped_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
     rollup_metrics=_test_blocking_conn_basic_consume_no_txn_metrics,
     background_task=True,
-    group="Message/RabbitMQ/Exchange/%s" % EXCHANGE,
+    group=f"Message/RabbitMQ/Exchange/{EXCHANGE}",
 )
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @validate_span_events(
     count=1,
-    exact_intrinsics={"name": "Message/RabbitMQ/Exchange/%s/%s" % (EXCHANGE, _txn_name)},
+    exact_intrinsics={"name": f"Message/RabbitMQ/Exchange/{EXCHANGE}/{_txn_name}"},
     exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 def test_blocking_connection_basic_consume_outside_transaction(producer, as_partial):
@@ -168,8 +168,8 @@ def test_blocking_connection_basic_consume_outside_transaction(producer, as_part
 
 
 _test_blocking_conn_basic_consume_in_txn_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
     ("Function/test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_inside_txn.<locals>.on_message", 1),
 ]
 
@@ -207,9 +207,9 @@ def test_blocking_connection_basic_consume_inside_txn(producer, as_partial):
 
 
 _test_blocking_conn_basic_consume_stopped_txn_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
-    ("OtherTransaction/Message/RabbitMQ/Exchange/Named/%s" % EXCHANGE, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
+    (f"OtherTransaction/Message/RabbitMQ/Exchange/Named/{EXCHANGE}", None),
     ("Function/test_pika_blocking_connection_consume:test_blocking_connection_basic_consume_stopped_txn.<locals>.on_message", None),
 ]
 

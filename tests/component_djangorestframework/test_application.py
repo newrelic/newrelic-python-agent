@@ -63,16 +63,16 @@ _scoped_metrics = [
     ("Python/WSGI/Application", 1),
     ("Python/WSGI/Response", 1),
     ("Python/WSGI/Finalize", 1),
-    (("Function/django.middleware.common:CommonMiddleware%s" % process_request_method), 1),
-    (("Function/django.contrib.sessions.middleware:SessionMiddleware%s" % process_request_method), 1),
-    (("Function/django.contrib.auth.middleware:AuthenticationMiddleware%s" % process_request_method), 1),
-    (("Function/django.contrib.messages.middleware:MessageMiddleware%s" % process_request_method), 1),
-    (("Function/%s:%s.resolve" % (url_module_path, url_resolver_cls)), 1),
-    (("Function/django.middleware.csrf:CsrfViewMiddleware%s" % process_view_method), 1),
-    (("Function/django.contrib.messages.middleware:MessageMiddleware%s" % process_response_method), 1),
-    (("Function/django.middleware.csrf:CsrfViewMiddleware%s" % process_response_method), 1),
-    (("Function/django.contrib.sessions.middleware:SessionMiddleware%s" % process_response_method), 1),
-    (("Function/django.middleware.common:CommonMiddleware%s" % process_response_method), 1),
+    (f"Function/django.middleware.common:CommonMiddleware{process_request_method}", 1),
+    (f"Function/django.contrib.sessions.middleware:SessionMiddleware{process_request_method}", 1),
+    (f"Function/django.contrib.auth.middleware:AuthenticationMiddleware{process_request_method}", 1),
+    (f"Function/django.contrib.messages.middleware:MessageMiddleware{process_request_method}", 1),
+    (f"Function/{url_module_path}:{url_resolver_cls}.resolve", 1),
+    (f"Function/django.middleware.csrf:CsrfViewMiddleware{process_view_method}", 1),
+    (f"Function/django.contrib.messages.middleware:MessageMiddleware{process_response_method}", 1),
+    (f"Function/django.middleware.csrf:CsrfViewMiddleware{process_response_method}", 1),
+    (f"Function/django.contrib.sessions.middleware:SessionMiddleware{process_response_method}", 1),
+    (f"Function/django.middleware.common:CommonMiddleware{process_response_method}", 1),
 ]
 
 _test_application_index_scoped_metrics = list(_scoped_metrics)
@@ -132,7 +132,7 @@ def test_application_view_handle_error(status, should_record, use_global_exc_han
         "urls:ViewHandleError.get", scoped_metrics=_test_application_view_handle_error_scoped_metrics
     )
     def _test():
-        response = target_application.get("/view_handle_error/%s/%s/" % (status, use_global_exc_handler), status=status)
+        response = target_application.get(f"/view_handle_error/{status}/{use_global_exc_handler}/", status=status)
         if use_global_exc_handler:
             response.mustcontain("exception was handled global")
         else:
@@ -143,7 +143,7 @@ def test_application_view_handle_error(status, should_record, use_global_exc_han
 
 _test_api_view_view_name_get = "urls:wrapped_view.get"
 _test_api_view_scoped_metrics_get = list(_scoped_metrics)
-_test_api_view_scoped_metrics_get.append(("Function/%s" % _test_api_view_view_name_get, 1))
+_test_api_view_scoped_metrics_get.append((f"Function/{_test_api_view_view_name_get}", 1))
 
 
 @validate_transaction_errors(errors=[])
@@ -156,7 +156,7 @@ def test_api_view_get(target_application):
 
 _test_api_view_view_name_post = "urls:wrapped_view.http_method_not_allowed"
 _test_api_view_scoped_metrics_post = list(_scoped_metrics)
-_test_api_view_scoped_metrics_post.append(("Function/%s" % _test_api_view_view_name_post, 1))
+_test_api_view_scoped_metrics_post.append((f"Function/{_test_api_view_view_name_post}", 1))
 
 
 @validate_transaction_errors(errors=["rest_framework.exceptions:MethodNotAllowed"])

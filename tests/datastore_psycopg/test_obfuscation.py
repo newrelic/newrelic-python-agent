@@ -26,9 +26,9 @@ def cursor(loop, connection):
     try:
         cursor = connection.cursor()
 
-        loop.run_until_complete(maybe_await(cursor.execute("drop table if exists %s" % DB_SETTINGS["table_name"])))
+        loop.run_until_complete(maybe_await(cursor.execute(f"drop table if exists {DB_SETTINGS['table_name']}")))
         loop.run_until_complete(
-            maybe_await(cursor.execute("create table %s (b text, c text)" % DB_SETTINGS["table_name"]))
+            maybe_await(cursor.execute(f"create table {DB_SETTINGS['table_name']} (b text, c text)"))
         )
 
         yield cursor
@@ -39,16 +39,16 @@ def cursor(loop, connection):
 
 _quoting_style_tests = [
     (
-        "SELECT * FROM %s WHERE b='2'" % DB_SETTINGS["table_name"],
-        "SELECT * FROM %s WHERE b=?" % DB_SETTINGS["table_name"],
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b='2'",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=?",
     ),
     (
-        "SELECT * FROM %s WHERE b=$func$2$func$" % DB_SETTINGS["table_name"],
-        "SELECT * FROM %s WHERE b=?" % DB_SETTINGS["table_name"],
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=$func$2$func$",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=?",
     ),
     (
-        "SELECT * FROM %s WHERE b=U&'2'" % DB_SETTINGS["table_name"],
-        "SELECT * FROM %s WHERE b=U&?" % DB_SETTINGS["table_name"],
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=U&'2'",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=U&?",
     ),
 ]
 
@@ -98,23 +98,23 @@ def any_length_explain_plan(node):
 
 _test_explain_plans = [
     (
-        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s" % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
+        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']} ; SELECT (b, c) FROM {DB_SETTINGS['table_name']}",
         no_explain_plan,
     ),
     (
-        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s;" % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
+        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']} ; SELECT (b, c) FROM {DB_SETTINGS['table_name']};",
         no_explain_plan,
     ),
-    ("SELECT (b, c) FROM  %s WHERE b=';'" % DB_SETTINGS["table_name"], no_explain_plan),
-    (";SELECT (b, c) FROM %s" % DB_SETTINGS["table_name"], no_explain_plan),
-    ("SELECT (b, c) FROM  %s" % DB_SETTINGS["table_name"], any_length_explain_plan),
-    ("SELECT (b, c) FROM  %s;" % DB_SETTINGS["table_name"], any_length_explain_plan),
+    (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']} WHERE b=';'", no_explain_plan),
+    (f";SELECT (b, c) FROM {DB_SETTINGS['table_name']}", no_explain_plan),
+    (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']}", any_length_explain_plan),
+    (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};", any_length_explain_plan),
     (
-        "SELECT (b, c) FROM  %s;;;;;;" % DB_SETTINGS["table_name"],
+        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};;;;;;",
         any_length_explain_plan,
     ),
     (
-        "SELECT (b, c) FROM  %s;\n\n" % DB_SETTINGS["table_name"],
+        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};\n\n",
         any_length_explain_plan,
     ),
 ]
@@ -127,8 +127,8 @@ def test_obfuscation_explain_plans(loop, connection, sql, validator):
     async def test():
         try:
             cursor = connection.cursor()
-            await maybe_await(cursor.execute("drop table if exists %s" % DB_SETTINGS["table_name"]))
-            await maybe_await(cursor.execute("create table %s (b text, c text)" % DB_SETTINGS["table_name"]))
+            await maybe_await(cursor.execute(f"drop table if exists {DB_SETTINGS['table_name']}"))
+            await maybe_await(cursor.execute(f"create table {DB_SETTINGS['table_name']} (b text, c text)"))
 
             await maybe_await(cursor.execute(sql))
 

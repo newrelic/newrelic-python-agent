@@ -64,7 +64,7 @@ def validate_dimensional_metrics_outside_transaction(dimensional_metrics=None):
                 return "\n".join(out)
 
             def _metric_details():
-                return "metric=%r, count=%r" % (key, metric.call_count)
+                return f"metric={key!r}, count={metric.call_count!r}"
 
             if count is not None:
                 assert metric is not None, _metrics_table()

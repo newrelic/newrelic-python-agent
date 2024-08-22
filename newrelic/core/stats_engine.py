@@ -328,7 +328,7 @@ class DimensionalMetrics(object):
         return str(self.__stats_table)
 
     def __repr__(self):
-        return "%s(%s)" % (__class__.__name__, repr(self.__stats_table))
+        return f"{__class__.__name__}({repr(self.__stats_table)})"
 
     def items(self):
         return self.metrics()

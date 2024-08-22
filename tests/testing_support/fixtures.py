@@ -501,10 +501,10 @@ def validate_attributes(attr_type, required_attr_names=None, forgone_attr_names=
             for name in attribute_names:
                 assert name in root_attribute_names, name
         for name in required_attr_names:
-            assert name in attribute_names, "name=%r, attributes=%r" % (name, attributes)
+            assert name in attribute_names, f"name={name!r}, attributes={attributes!r}"
 
         for name in forgone_attr_names:
-            assert name not in attribute_names, "name=%r, attributes=%r" % (name, attributes)
+            assert name not in attribute_names, f"name={name!r}, attributes={attributes!r}"
 
         return wrapped(*args, **kwargs)
 
@@ -564,10 +564,10 @@ def validate_attributes_complete(attr_type, required_attrs=None, forgone_attrs=N
 
         for required in required_attrs:
             match = _find_match(required, attributes)
-            assert match, "required=%r, attributes=%r" % (required, attributes)
+            assert match, f"required={required!r}, attributes={attributes!r}"
 
             result_dest = required.destinations & match.destinations
-            assert result_dest == required.destinations, "required=%r, attributes=%r" % (required, attributes)
+            assert result_dest == required.destinations, f"required={required!r}, attributes={attributes!r}"
 
         # Check that the name and value are NOT going to ANY of the
         # destinations provided as forgone, either because there is no
@@ -579,7 +579,7 @@ def validate_attributes_complete(attr_type, required_attrs=None, forgone_attrs=N
 
             if match:
                 result_dest = forgone.destinations & match.destinations
-                assert result_dest == 0, "forgone=%r, attributes=%r" % (forgone, attributes)
+                assert result_dest == 0, f"forgone={forgone!r}, attributes={attributes!r}"
 
         return wrapped(*args, **kwargs)
 
@@ -896,7 +896,7 @@ def validate_application_exception_message(expected_message):
 
 
 def _validate_node_parenting(node, expected_node):
-    assert node.exclusive >= 0, "node.exclusive = %s" % node.exclusive
+    assert node.exclusive >= 0, f"node.exclusive = {node.exclusive}"
 
     expected_children = expected_node[1]
 

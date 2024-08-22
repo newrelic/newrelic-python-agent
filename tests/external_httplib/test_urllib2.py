@@ -120,7 +120,7 @@ _test_urlopen_file_request_rollup_metrics = [
 @background_task()
 def test_urlopen_file_request():
     path = os.path.abspath(__file__)
-    file_uri = "file://%s" % path
+    file_uri = f"file://{path}"
     urllib2.urlopen(file_uri)
 
 

@@ -30,10 +30,10 @@ _test_execute_via_cursor_scoped_metrics = [
     ("Function/postgresql.driver.dbapi20:connect", 1),
     ("Function/postgresql.driver.dbapi20:Connection.__enter__", 1),
     ("Function/postgresql.driver.dbapi20:Connection.__exit__", 1),
-    ("Datastore/statement/Postgres/%s/select" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/insert" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/update" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/delete" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
     ("Datastore/statement/Postgres/now/call", 1),
     ("Datastore/statement/Postgres/pg_sleep/call", 1),
     ("Datastore/operation/Postgres/drop", 1),
@@ -49,13 +49,13 @@ _test_execute_via_cursor_rollup_metrics = [
     ("Datastore/Postgres/all", 14),
     ("Datastore/Postgres/allOther", 14),
     ("Datastore/operation/Postgres/select", 1),
-    ("Datastore/statement/Postgres/%s/select" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
     ("Datastore/operation/Postgres/insert", 1),
-    ("Datastore/statement/Postgres/%s/insert" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
     ("Datastore/operation/Postgres/update", 1),
-    ("Datastore/statement/Postgres/%s/update" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
     ("Datastore/operation/Postgres/delete", 1),
-    ("Datastore/statement/Postgres/%s/delete" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
     ("Datastore/operation/Postgres/drop", 1),
     ("Datastore/operation/Postgres/create", 1),
     ("Datastore/statement/Postgres/now/call", 1),
@@ -64,7 +64,7 @@ _test_execute_via_cursor_rollup_metrics = [
     ("Datastore/operation/Postgres/commit", 3),
     ("Datastore/operation/Postgres/rollback", 1),
     ("Datastore/operation/Postgres/other", 1),
-    ("Datastore/instance/Postgres/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 13),
+    (f"Datastore/instance/Postgres/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 13),
     ("Function/postgresql.driver.dbapi20:connect", 1),
     ("Function/postgresql.driver.dbapi20:Connection.__enter__", 1),
     ("Function/postgresql.driver.dbapi20:Connection.__exit__", 1),
@@ -89,29 +89,29 @@ def test_execute_via_cursor():
     ) as connection:
         cursor = connection.cursor()
 
-        cursor.execute("""drop table if exists %s""" % DB_SETTINGS["table_name"])
+        cursor.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
 
-        cursor.execute("""create table %s """ % DB_SETTINGS["table_name"] + """(a integer, b real, c text)""")
+        cursor.execute(f"""create table {DB_SETTINGS['table_name']} """ + """(a integer, b real, c text)""")
 
         cursor.executemany(
-            """insert into %s """ % DB_SETTINGS["table_name"] + """values (%s, %s, %s)""",
+            f"""insert into {DB_SETTINGS['table_name']} """ + """values (%s, %s, %s)""",
             [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
         )
 
-        cursor.execute("""select * from %s""" % DB_SETTINGS["table_name"])
+        cursor.execute(f"""select * from {DB_SETTINGS['table_name']}""")
 
         cursor.execute(
-            """with temporaryTable (averageValue) as (select avg(b) from %s) """ % DB_SETTINGS["table_name"]
-            + """select * from %s,temporaryTable """ % DB_SETTINGS["table_name"]
-            + """where %s.b > temporaryTable.averageValue""" % DB_SETTINGS["table_name"]
+            f"""with temporaryTable (averageValue) as (select avg(b) from {DB_SETTINGS['table_name']}) """
+            + f"""select * from {DB_SETTINGS['table_name']},temporaryTable """
+            + f"""where {DB_SETTINGS['table_name']}.b > temporaryTable.averageValue"""
         )
 
         cursor.execute(
-            """update %s """ % DB_SETTINGS["table_name"] + """set a=%s, b=%s, c=%s where a=%s""",
+            f"""update {DB_SETTINGS['table_name']} """ + """set a=%s, b=%s, c=%s where a=%s""",
             (4, 4.0, "4.0", 1),
         )
 
-        cursor.execute("""delete from %s where a=2""" % DB_SETTINGS["table_name"])
+        cursor.execute(f"""delete from {DB_SETTINGS['table_name']} where a=2""")
 
         connection.commit()
 

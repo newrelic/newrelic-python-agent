@@ -60,7 +60,7 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
         field_name = self.field_name or "<unknown>"
         product = self.product
 
-        name = 'GraphQL/resolve/%s/%s' % (product, field_name)
+        name = f'GraphQL/resolve/{product}/{field_name}'
 
         return name
 
@@ -74,7 +74,7 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
 
         # Determine the scoped metric
 
-        field_resolver_metric_name = 'GraphQL/resolve/%s/%s' % (product, field_name)
+        field_resolver_metric_name = f'GraphQL/resolve/{product}/{field_name}'
 
         yield TimeMetric(name=field_resolver_metric_name, scope=root.path, duration=self.duration,
                          exclusive=self.exclusive)
@@ -128,20 +128,20 @@ class GraphQLOperationNode(_GraphQLOperationNode, GraphQLNodeMixin):
         yield TimeMetric(name='GraphQL/all', scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
-        yield TimeMetric(name='GraphQL/%s/all' % product, scope='',
+        yield TimeMetric(name=f'GraphQL/{product}/all', scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
             yield TimeMetric(name='GraphQL/allWeb', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name='GraphQL/%s/allWeb' % product, scope='',
+            yield TimeMetric(name=f'GraphQL/{product}/allWeb', scope='',
                     duration=self.duration, exclusive=self.exclusive)
         else:
             yield TimeMetric(name='GraphQL/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name='GraphQL/%s/allOther' % product, scope='',
+            yield TimeMetric(name=f'GraphQL/{product}/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
         # Unscoped operation metric

@@ -32,8 +32,8 @@ from newrelic.common.object_names import callable_name
 
 def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_message):
     _metrics = [
-        ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Value" % topic, 1),
-        ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Key" % topic, 1),
+        (f"MessageBroker/Kafka/Topic/Named/{topic}/Serialization/Value", 1),
+        (f"MessageBroker/Kafka/Topic/Named/{topic}/Serialization/Key", 1),
     ]
 
     @validate_transaction_metrics(

@@ -80,8 +80,8 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     host_2 = instance_hostname(redis_2["host"])
     port_2 = redis_2["port"]
 
-    instance_metric_name_1 = "Datastore/instance/Redis/%s/%s" % (host_1, port_1)
-    instance_metric_name_2 = "Datastore/instance/Redis/%s/%s" % (host_2, port_2)
+    instance_metric_name_1 = f"Datastore/instance/Redis/{host_1}/{port_1}"
+    instance_metric_name_2 = f"Datastore/instance/Redis/{host_2}/{port_2}"
 
     _enable_rollup_metrics.extend(
         [

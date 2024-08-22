@@ -58,12 +58,12 @@ def validate_transaction_errors(
         else:
             compare_to = sorted([e.type for e in captured])
 
-        assert expected == compare_to, "expected=%r, captured=%r, errors=%r" % (expected, compare_to, captured)
+        assert expected == compare_to, f"expected={expected!r}, captured={compare_to!r}, errors={captured!r}"
 
         for e in captured:
             assert e.span_id
             for name, value in required_params:
-                assert name in e.custom_params, "name=%r, params=%r" % (name, e.custom_params)
+                assert name in e.custom_params, f"name={name!r}, params={e.custom_params!r}"
                 assert e.custom_params[name] == value, "name=%r, value=%r, params=%r" % (
                     name,
                     value,
@@ -71,7 +71,7 @@ def validate_transaction_errors(
                 )
 
             for name, value in forgone_params:
-                assert name not in e.custom_params, "name=%r, params=%r" % (name, e.custom_params)
+                assert name not in e.custom_params, f"name={name!r}, params={e.custom_params!r}"
 
             if e.type in expected_errors:
                 assert e.expected is True

@@ -124,7 +124,7 @@ def test_daphne_200(port, app):
     @validate_transaction_metrics(
         callable_name(app),
         custom_metrics=[
-            ("Python/Dispatcher/Daphne/%s" % daphne.__version__, 1),
+            (f"Python/Dispatcher/Daphne/{daphne.__version__}", 1),
         ],
     )
     @raise_background_exceptions()

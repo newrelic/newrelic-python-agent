@@ -152,7 +152,7 @@ class Agent(object):
 
         initialize_logging(settings.log_file, settings.log_level)
 
-        _logger.info("New Relic Python Agent (%s)" % newrelic.version)
+        _logger.info(f"New Relic Python Agent ({newrelic.version})")
 
         check_environment()
 
@@ -250,16 +250,16 @@ class Agent(object):
     def dump(self, file):
         """Dumps details about the agent to the file object."""
 
-        print("Time Created: %s" % (time.asctime(time.localtime(self._creation_time))), file=file)
-        print("Initialization PID: %s" % (self._process_id), file=file)
+        print(f"Time Created: {time.asctime(time.localtime(self._creation_time))}", file=file)
+        print(f"Initialization PID: {self._process_id}", file=file)
         print("Default Harvest Count: %d" % (self._default_harvest_count), file=file)
         print("Flexible Harvest Count: %d" % (self._flexible_harvest_count), file=file)
-        print("Last Default Harvest: %s" % (time.asctime(time.localtime(self._last_default_harvest))), file=file)
-        print("Last Flexible Harvest: %s" % (time.asctime(time.localtime(self._last_flexible_harvest))), file=file)
-        print("Default Harvest Duration: %.2f" % (self._default_harvest_duration), file=file)
-        print("Flexible Harvest Duration: %.2f" % (self._flexible_harvest_duration), file=file)
-        print("Agent Shutdown: %s" % (self._harvest_shutdown.isSet()), file=file)
-        print("Applications: %r" % (sorted(self._applications.keys())), file=file)
+        print(f"Last Default Harvest: {time.asctime(time.localtime(self._last_default_harvest))}", file=file)
+        print(f"Last Flexible Harvest: {time.asctime(time.localtime(self._last_flexible_harvest))}", file=file)
+        print(f"Default Harvest Duration: {self._default_harvest_duration:.2f}", file=file)
+        print(f"Flexible Harvest Duration: {self._flexible_harvest_duration:.2f}", file=file)
+        print(f"Agent Shutdown: {self._harvest_shutdown.isSet()}", file=file)
+        print(f"Applications: {sorted(self._applications.keys())!r}", file=file)
 
     def global_settings(self):
         """Returns the global default settings object. If access is
@@ -620,7 +620,7 @@ class Agent(object):
             try:
                 application.harvest(shutdown=False, flexible=True)
             except Exception:
-                _logger.exception("Failed to harvest data for %s." % application.name)
+                _logger.exception(f"Failed to harvest data for {application.name}.")
 
         self._flexible_harvest_duration = time.time() - self._last_flexible_harvest
 
@@ -644,7 +644,7 @@ class Agent(object):
             try:
                 application.harvest(shutdown, flexible=False)
             except Exception:
-                _logger.exception("Failed to harvest data for %s." % application.name)
+                _logger.exception(f"Failed to harvest data for {application.name}.")
 
         self._default_harvest_duration = time.time() - self._last_default_harvest
 

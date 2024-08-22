@@ -37,7 +37,7 @@ def validate_tt_parameters(required_params=None, forgone_params=None):
         tt_intrinsics = pack_data[0][4]["intrinsics"]
 
         for name in required_params:
-            assert name in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
+            assert name in tt_intrinsics, f"name={name!r}, intrinsics={tt_intrinsics!r}"
             assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
                 name,
                 required_params[name],
@@ -45,7 +45,7 @@ def validate_tt_parameters(required_params=None, forgone_params=None):
             )
 
         for name in forgone_params:
-            assert name not in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
+            assert name not in tt_intrinsics, f"name={name!r}, intrinsics={tt_intrinsics!r}"
 
         return result
 

@@ -93,8 +93,7 @@ def test_cat_headers_not_inserted(app):
     client_cross_process_id = headers['X-NewRelic-ID']
     txn_header = headers['X-NewRelic-Transaction']
 
-    response = app.fetch('/304-cat-response/%s/%s' %
-            (client_cross_process_id, txn_header))
+    response = app.fetch(f'/304-cat-response/{client_cross_process_id}/{txn_header}')
     assert response.code == 304
     assert 'X-NewRelic-App-Data' not in list(response.headers.keys())
 

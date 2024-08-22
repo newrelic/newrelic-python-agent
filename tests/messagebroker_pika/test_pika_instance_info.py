@@ -24,7 +24,7 @@ DB_SETTINGS = rabbitmq_settings()[0]
 EXPECTED_HOST = DB_SETTINGS["host"]
 CONNECTION_PARAMS = [
     pika.ConnectionParameters(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"]),
-    pika.URLParameters("amqp://%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])),
+    pika.URLParameters(f"amqp://{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"),
 ]
 
 

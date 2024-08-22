@@ -60,7 +60,7 @@ def validate_time_metrics_outside_transaction(time_metrics=None, index=-1):
                 return "\n".join(out)
 
             def _metric_details():
-                return "metric=%r, count=%r" % (key, metric.call_count)
+                return f"metric={key!r}, count={metric.call_count!r}"
 
             if count is not None:
                 assert metric is not None, _metrics_table()

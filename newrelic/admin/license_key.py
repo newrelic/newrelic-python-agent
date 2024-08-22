@@ -56,4 +56,4 @@ def license_key(args):
 
     _settings = global_settings()
 
-    print("license_key = %r" % obfuscate_license_key(_settings.license_key))
+    print(f"license_key = {obfuscate_license_key(_settings.license_key)!r}")

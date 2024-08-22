@@ -88,8 +88,8 @@ def populate_metrics(server, request):
 def exercise_sync_client(server, client, method):
     with client as client:
         resolved_method = getattr(client, method)
-        resolved_method("http://localhost:%s" % server.port)
-        response = resolved_method("http://localhost:%s" % server.port)
+        resolved_method(f"http://localhost:{server.port}")
+        response = resolved_method(f"http://localhost:{server.port}")
 
     return response
 
@@ -124,8 +124,8 @@ async def exercise_async_client(server, client, method):
     async with client as client:
         resolved_method = getattr(client, method)
         responses = await asyncio.gather(
-            resolved_method("http://localhost:%s" % server.port),
-            resolved_method("http://localhost:%s" % server.port),
+            resolved_method(f"http://localhost:{server.port}"),
+            resolved_method(f"http://localhost:{server.port}"),
         )
 
     return responses
@@ -184,7 +184,7 @@ def test_sync_cross_process_request(httpx, server, distributed_tracing, span_eve
         transaction = current_transaction()
 
         with httpx.Client() as client:
-            response = client.get("http://localhost:%s" % server.port)
+            response = client.get(f"http://localhost:{server.port}")
 
         transaction._test_request_headers = response.request.headers
 
@@ -216,7 +216,7 @@ def test_async_cross_process_request(httpx, server, loop, distributed_tracing, s
     )
     async def _test():
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:%s" % server.port)
+            response = await client.get(f"http://localhost:{server.port}")
 
         return response
 
@@ -243,7 +243,7 @@ def test_sync_cross_process_override_headers(httpx, server, loop):
     transaction = current_transaction()
 
     with httpx.Client() as client:
-        response = client.get("http://localhost:%s" % server.port, headers={"newrelic": "1234"})
+        response = client.get(f"http://localhost:{server.port}", headers={"newrelic": "1234"})
 
     transaction._test_request_headers = response.request.headers
 
@@ -265,7 +265,7 @@ def test_async_cross_process_override_headers(httpx, server, loop):
 
     async def _test():
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:%s" % server.port, headers={"newrelic": "1234"})
+            response = await client.get(f"http://localhost:{server.port}", headers={"newrelic": "1234"})
 
         return response
 
@@ -292,7 +292,7 @@ def test_sync_client_cat_response_processing(cat_enabled, response_code, server,
 
     expected_metrics = [
         (
-            "ExternalTransaction/localhost:%s/1#1/WebTransaction/Function/app:beep" % server.port,
+            f"ExternalTransaction/localhost:{server.port}/1#1/WebTransaction/Function/app:beep",
             1 if cat_enabled else None,
         ),
     ]
@@ -308,7 +308,7 @@ def test_sync_client_cat_response_processing(cat_enabled, response_code, server,
     @background_task(name="test_sync_client_cat_response_processing")
     def _test():
         with httpx.Client() as client:
-            response = client.get("http://localhost:%s" % server.port)
+            response = client.get(f"http://localhost:{server.port}")
 
     _test()
 
@@ -330,7 +330,7 @@ def test_async_client_cat_response_processing(cat_enabled, response_code, httpx,
 
     expected_metrics = [
         (
-            "ExternalTransaction/localhost:%s/1#1/WebTransaction/Function/app:beep" % server.port,
+            f"ExternalTransaction/localhost:{server.port}/1#1/WebTransaction/Function/app:beep",
             1 if cat_enabled else None,
         ),
     ]
@@ -347,7 +347,7 @@ def test_async_client_cat_response_processing(cat_enabled, response_code, httpx,
     def _test():
         async def coro():
             async with httpx.AsyncClient() as client:
-                response = await client.get("http://localhost:%s" % server.port)
+                response = await client.get(f"http://localhost:{server.port}")
 
             return response
 
@@ -377,9 +377,9 @@ def test_sync_client_event_hook_exception(httpx, server):
     def make_request(client, exc_expected=True):
         if exc_expected:
             with pytest.raises(RuntimeError):
-                client.get("http://localhost:%s" % server.port)
+                client.get(f"http://localhost:{server.port}")
         else:
-            client.get("http://localhost:%s" % server.port)
+            client.get(f"http://localhost:{server.port}")
 
     with httpx.Client(event_hooks={"response": [exception_event_hook]}) as client:
         # Test client init
@@ -424,9 +424,9 @@ def test_async_client_event_hook_exception(httpx, server, loop):
         async def coro():
             if exc_expected:
                 with pytest.raises(RuntimeError):
-                    await client.get("http://localhost:%s" % server.port)
+                    await client.get(f"http://localhost:{server.port}")
             else:
-                await client.get("http://localhost:%s" % server.port)
+                await client.get(f"http://localhost:{server.port}")
 
         loop.run_until_complete(coro())
 
@@ -464,7 +464,7 @@ def test_sync_nr_disabled(httpx, server):
 
     with httpx.Client() as client:
         trace = current_trace()
-        response = client.get("http://localhost:%s" % server.port)
+        response = client.get(f"http://localhost:{server.port}")
 
         assert response.status_code == 200
         assert trace is None
@@ -482,7 +482,7 @@ def test_async_nr_disabled(httpx, server, loop):
 
     async def _test():
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://localhost:%s" % server.port)
+            response = await client.get(f"http://localhost:{server.port}")
 
         return response
 

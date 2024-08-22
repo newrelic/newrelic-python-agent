@@ -71,11 +71,11 @@ def test_client(
     streaming_response = service_method_type.split("_")[1] == "stream"
 
     _test_scoped_metrics = [
-        ("External/localhost:%s/gRPC/SampleApplication/%s" % (port, service_method_class_name), 1),
+        (f"External/localhost:{port}/gRPC/SampleApplication/{service_method_class_name}", 1),
     ]
     _test_rollup_metrics = [
-        ("External/localhost:%s/gRPC/SampleApplication/%s" % (port, service_method_class_name), 1),
-        ("External/localhost:%s/all" % port, 1),
+        (f"External/localhost:{port}/gRPC/SampleApplication/{service_method_class_name}", 1),
+        (f"External/localhost:{port}/all", 1),
         ("External/allOther", 1),
         ("External/all", 1),
     ]
@@ -122,7 +122,7 @@ def test_client(
         except (AttributeError, TypeError):
             reply = [reply]
 
-        expected_text = "%s: Hello World" % service_method_type
+        expected_text = f"{service_method_type}: Hello World"
         response_texts_correct = [r.text == expected_text for r in reply]
         assert len(response_texts_correct) == message_count
         assert response_texts_correct and all(response_texts_correct)
@@ -131,7 +131,7 @@ def test_client(
         _test_client()
     except grpc.RpcError as e:
         if raises_exception:
-            assert "%s: Hello World" % service_method_type in e.details()
+            assert f"{service_method_type}: Hello World" in e.details()
         elif cancel:
             assert e.code() == grpc.StatusCode.CANCELLED
         else:
@@ -159,15 +159,15 @@ _test_matrix = [
 def test_future_timeout_error(service_method_type, service_method_method_name, future_response, mock_grpc_server, stub):
     port = mock_grpc_server
 
-    service_method_class_name = "NoTxn%s" % (service_method_type.title().replace("_", ""))
+    service_method_class_name = f"NoTxn{service_method_type.title().replace('_', '')}"
     streaming_request = service_method_type.split("_")[0] == "stream"
 
     _test_scoped_metrics = [
-        ("External/localhost:%s/gRPC/SampleApplication/%s" % (port, service_method_class_name), 1),
+        (f"External/localhost:{port}/gRPC/SampleApplication/{service_method_class_name}", 1),
     ]
     _test_rollup_metrics = [
-        ("External/localhost:%s/gRPC/SampleApplication/%s" % (port, service_method_class_name), 1),
-        ("External/localhost:%s/all" % port, 1),
+        (f"External/localhost:{port}/gRPC/SampleApplication/{service_method_class_name}", 1),
+        (f"External/localhost:{port}/all", 1),
         ("External/allOther", 1),
         ("External/all", 1),
     ]
@@ -207,15 +207,15 @@ _test_matrix = [
 def test_repeated_result(service_method_type, service_method_method_name, mock_grpc_server, stub):
     port = mock_grpc_server
 
-    service_method_class_name = "NoTxn%s" % (service_method_type.title().replace("_", ""))
+    service_method_class_name = f"NoTxn{service_method_type.title().replace('_', '')}"
     streaming_request = service_method_type.split("_")[0] == "stream"
 
     _test_scoped_metrics = [
-        ("External/localhost:%s/gRPC/SampleApplication/%s" % (port, service_method_class_name), 1),
+        (f"External/localhost:{port}/gRPC/SampleApplication/{service_method_class_name}", 1),
     ]
     _test_rollup_metrics = [
-        ("External/localhost:%s/gRPC/SampleApplication/%s" % (port, service_method_class_name), 1),
-        ("External/localhost:%s/all" % port, 1),
+        (f"External/localhost:{port}/gRPC/SampleApplication/{service_method_class_name}", 1),
+        (f"External/localhost:{port}/all", 1),
         ("External/allOther", 1),
         ("External/all", 1),
     ]
@@ -257,15 +257,15 @@ _test_matrix = [
 def test_future_cancel(service_method_type, service_method_method_name, future_response, mock_grpc_server, stub):
     port = mock_grpc_server
 
-    service_method_class_name = "NoTxn%s" % (service_method_type.title().replace("_", ""))
+    service_method_class_name = f"NoTxn{service_method_type.title().replace('_', '')}"
     streaming_request = service_method_type.split("_")[0] == "stream"
 
     _test_scoped_metrics = [
-        ("External/localhost:%s/gRPC/SampleApplication/%s" % (port, service_method_class_name), 1),
+        (f"External/localhost:{port}/gRPC/SampleApplication/{service_method_class_name}", 1),
     ]
     _test_rollup_metrics = [
-        ("External/localhost:%s/gRPC/SampleApplication/%s" % (port, service_method_class_name), 1),
-        ("External/localhost:%s/all" % port, 1),
+        (f"External/localhost:{port}/gRPC/SampleApplication/{service_method_class_name}", 1),
+        (f"External/localhost:{port}/all", 1),
         ("External/allOther", 1),
         ("External/all", 1),
     ]

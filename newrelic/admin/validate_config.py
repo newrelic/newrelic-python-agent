@@ -223,7 +223,7 @@ def validate_config(args):
                 url = parts[1].strip()
                 print("Registration successful. Reporting to:")
                 print()
-                print("  %s" % url)
+                print(f"  {url}")
                 print()
                 break
 

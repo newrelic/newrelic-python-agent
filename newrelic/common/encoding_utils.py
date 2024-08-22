@@ -247,7 +247,7 @@ def generate_path_hash(name, seed):
         name = name.encode("UTF-8")
 
     path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)  # nosec
-    return "%08x" % path_hash
+    return f"{path_hash:08x}"
 
 
 def base64_encode(text):
@@ -490,7 +490,7 @@ class NrTraceState(dict):
     def text(self):
         pr = self.get("pr", "")
         if pr:
-            pr = ("%.6f" % pr).rstrip("0").rstrip(".")
+            pr = f"{pr:.6f}".rstrip("0").rstrip(".")
 
         payload = "-".join(
             (

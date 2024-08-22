@@ -57,7 +57,7 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True, as_kwarg
         def fetch_impl(self, request, callback):
             out = []
             for k, v in request.headers.items():
-                out.append("%s: %s" % (k, v))
+                out.append(f"{k}: {v}")
             body = "\n".join(out).encode("utf-8")
             response = tornado.httpclient.HTTPResponse(request=request, code=200, buffer=io.BytesIO(body))
             callback(response)
@@ -76,19 +76,19 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True, as_kwarg
     elif client_cls == "CustomAsyncHTTPClient":
         cls.configure(CustomAsyncHTTPClient)
     else:
-        raise ValueError("Received unknown client type: %s" % client_cls)
+        raise ValueError(f"Received unknown client type: {client_cls}")
 
     client = cls(force_instance=True)
     callback = None
 
-    uri = "http://localhost:%s" % port
+    uri = f"http://localhost:{port}"
     if req_type == "class":
         req = tornado.httpclient.HTTPRequest(uri, **kwargs)
         kwargs = {}
     elif req_type == "uri":
         req = uri
     else:
-        raise ValueError("Received unknown request type: %s" % req_type)
+        raise ValueError(f"Received unknown request type: {req_type}")
 
     @tornado.gen.coroutine
     def _make_request():
@@ -163,7 +163,7 @@ def test_httpclient(
 
     port = external.port
 
-    expected_metrics = [("External/localhost:%s/tornado/GET" % port, num_requests)]
+    expected_metrics = [(f"External/localhost:{port}/tornado/GET", num_requests)]
 
     @override_application_settings(
         {
@@ -280,7 +280,7 @@ def test_client_cat_response_processing(
 
     port = cat_response_server.port
     expected_metrics = [
-        ("ExternalTransaction/localhost:%s/1#1/WebTransaction/Function/app:beep" % port, 1 if cat_enabled else None),
+        (f"ExternalTransaction/localhost:{port}/1#1/WebTransaction/Function/app:beep", 1 if cat_enabled else None),
     ]
 
     @validate_transaction_metrics(
@@ -337,7 +337,7 @@ def test_httpclient_fetch_crashes(external):
 
         port = external.port
         with pytest.raises(ValueError):
-            tornado.ioloop.IOLoop.current().run_sync(lambda: client.fetch("http://localhost:%s" % port))
+            tornado.ioloop.IOLoop.current().run_sync(lambda: client.fetch(f"http://localhost:{port}"))
 
     _test()
 
@@ -366,7 +366,7 @@ def test_httpclient_fetch_inside_terminal_node(external):
         @tornado.gen.coroutine
         def _make_request():
             with FunctionTrace(name="parent", terminal=True):
-                response = yield client.fetch("http://localhost:%s" % port)
+                response = yield client.fetch(f"http://localhost:{port}")
             return response
 
         response = tornado.ioloop.IOLoop.current().run_sync(_make_request)

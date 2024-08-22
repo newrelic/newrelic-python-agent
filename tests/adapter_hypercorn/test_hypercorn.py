@@ -141,7 +141,7 @@ def test_hypercorn_200(port, app):
     @validate_transaction_metrics(
         callable_name(app),
         custom_metrics=[
-            ("Python/Dispatcher/Hypercorn/%s" % hypercorn_version, 1),
+            (f"Python/Dispatcher/Hypercorn/{hypercorn_version}", 1),
         ],
     )
     @raise_background_exceptions()

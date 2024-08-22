@@ -522,7 +522,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         operation = "embedding" if is_embedding else "completion"
 
         # Function trace may not be exited in this function in the case of streaming, so start manually
-        ft = FunctionTrace(name=function_name, group="Llm/%s/Bedrock" % (operation))
+        ft = FunctionTrace(name=function_name, group=f"Llm/{operation}/Bedrock")
         ft.__enter__()
 
         # Get trace information

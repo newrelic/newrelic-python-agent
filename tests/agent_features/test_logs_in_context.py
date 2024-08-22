@@ -71,7 +71,7 @@ class NonPrintableObject(object):
 
 class NonSerializableObject(object):
     def __str__(self):
-        return "<%s object>" % self.__class__.__name__
+        return f"<{self.__class__.__name__} object>"
 
     __repr__ = __str__
 

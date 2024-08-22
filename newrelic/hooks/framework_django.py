@@ -64,7 +64,7 @@ _boolean_states = {
 
 def _setting_boolean(value):
     if value.lower() not in _boolean_states:
-        raise ValueError("Not a boolean: %s" % value)
+        raise ValueError(f"Not a boolean: {value}")
     return _boolean_states[value.lower()]
 
 

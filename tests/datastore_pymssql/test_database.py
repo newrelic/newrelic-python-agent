@@ -27,30 +27,29 @@ PROCEDURE_NAME = "hello_" + DB_SETTINGS["namespace"]
 
 
 def execute_db_calls_with_cursor(cursor):
-    cursor.execute("""drop table if exists %s""" % TABLE_NAME)
+    cursor.execute(f"""drop table if exists {TABLE_NAME}""")
 
-    cursor.execute("""create table %s """ % TABLE_NAME + """(a integer, b real, c text)""")
+    cursor.execute(f"""create table {TABLE_NAME} """ + """(a integer, b real, c text)""")
 
     cursor.executemany(
-        """insert into %s """ % TABLE_NAME + """values (%s, %s, %s)""",
+        f"""insert into {TABLE_NAME} """ + """values (%s, %s, %s)""",
         [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
     )
 
-    cursor.execute("""select * from %s""" % TABLE_NAME)
+    cursor.execute(f"""select * from {TABLE_NAME}""")
 
     for row in cursor:
         pass
 
-    cursor.execute("""update %s""" % TABLE_NAME + """ set a=%s, b=%s, """ """c=%s where a=%s""", (4, 4.0, "4.0", 1))
+    cursor.execute(f"""update {TABLE_NAME}""" + """ set a=%s, b=%s, """ """c=%s where a=%s""", (4, 4.0, "4.0", 1))
 
-    cursor.execute("""delete from %s where a=2""" % TABLE_NAME)
-    cursor.execute("""drop procedure if exists %s""" % PROCEDURE_NAME)
+    cursor.execute(f"""delete from {TABLE_NAME} where a=2""")
+    cursor.execute(f"""drop procedure if exists {PROCEDURE_NAME}""")
     cursor.execute(
-        """CREATE PROCEDURE %s AS
+        f"""CREATE PROCEDURE {PROCEDURE_NAME} AS
                       BEGIN
                         SELECT 'Hello World!';
                       END"""
-        % PROCEDURE_NAME
     )
 
     cursor.callproc(PROCEDURE_NAME)
@@ -58,13 +57,13 @@ def execute_db_calls_with_cursor(cursor):
 
 _test_scoped_metrics = [
     ("Function/pymssql._pymssql:connect", 1),
-    ("Datastore/statement/MSSQL/%s/select" % TABLE_NAME, 1),
-    ("Datastore/statement/MSSQL/%s/insert" % TABLE_NAME, 1),
-    ("Datastore/statement/MSSQL/%s/update" % TABLE_NAME, 1),
-    ("Datastore/statement/MSSQL/%s/delete" % TABLE_NAME, 1),
+    (f"Datastore/statement/MSSQL/{TABLE_NAME}/select", 1),
+    (f"Datastore/statement/MSSQL/{TABLE_NAME}/insert", 1),
+    (f"Datastore/statement/MSSQL/{TABLE_NAME}/update", 1),
+    (f"Datastore/statement/MSSQL/{TABLE_NAME}/delete", 1),
     ("Datastore/operation/MSSQL/drop", 2),
     ("Datastore/operation/MSSQL/create", 2),
-    ("Datastore/statement/MSSQL/%s/call" % PROCEDURE_NAME, 1),
+    (f"Datastore/statement/MSSQL/{PROCEDURE_NAME}/call", 1),
     ("Datastore/operation/MSSQL/commit", 2),
     ("Datastore/operation/MSSQL/rollback", 1),
 ]
@@ -74,15 +73,15 @@ _test_rollup_metrics = [
     ("Datastore/allOther", 13),
     ("Datastore/MSSQL/all", 13),
     ("Datastore/MSSQL/allOther", 13),
-    ("Datastore/statement/MSSQL/%s/select" % TABLE_NAME, 1),
-    ("Datastore/statement/MSSQL/%s/insert" % TABLE_NAME, 1),
-    ("Datastore/statement/MSSQL/%s/update" % TABLE_NAME, 1),
-    ("Datastore/statement/MSSQL/%s/delete" % TABLE_NAME, 1),
+    (f"Datastore/statement/MSSQL/{TABLE_NAME}/select", 1),
+    (f"Datastore/statement/MSSQL/{TABLE_NAME}/insert", 1),
+    (f"Datastore/statement/MSSQL/{TABLE_NAME}/update", 1),
+    (f"Datastore/statement/MSSQL/{TABLE_NAME}/delete", 1),
     ("Datastore/operation/MSSQL/select", 1),
     ("Datastore/operation/MSSQL/insert", 1),
     ("Datastore/operation/MSSQL/update", 1),
     ("Datastore/operation/MSSQL/delete", 1),
-    ("Datastore/statement/MSSQL/%s/call" % PROCEDURE_NAME, 1),
+    (f"Datastore/statement/MSSQL/{PROCEDURE_NAME}/call", 1),
     ("Datastore/operation/MSSQL/call", 1),
     ("Datastore/operation/MSSQL/drop", 2),
     ("Datastore/operation/MSSQL/create", 2),

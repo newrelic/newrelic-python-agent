@@ -101,7 +101,7 @@ def wrap_elasticsearch_client_method(module, name, arg_extractor):
         return DatastoreTraceWrapper(wrapped, product="Elasticsearch", target=index, operation=name)(*args, **kwargs)
 
     if hasattr(module.ElasticSearch, name):
-        wrap_function_wrapper(module, "ElasticSearch.%s" % name, _nr_wrapper_ElasticSearch_method_)
+        wrap_function_wrapper(module, f"ElasticSearch.{name}", _nr_wrapper_ElasticSearch_method_)
 
 
 def instrument_pyelasticsearch_client(module):

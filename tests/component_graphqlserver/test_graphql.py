@@ -78,9 +78,9 @@ def test_basic(target_application):
     from graphql_server import __version__ as graphql_server_version
 
     FRAMEWORK_METRICS = [
-        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
-        ("Python/Framework/GraphQLServer/%s" % graphql_server_version, 1),
-        ("Python/Framework/%s/%s" % (framework, version), 1),
+        (f"Python/Framework/GraphQL/{graphql_version}", 1),
+        (f"Python/Framework/GraphQLServer/{graphql_server_version}", 1),
+        (f"Python/Framework/{framework}/{version}", 1),
     ]
 
     @validate_transaction_metrics(
@@ -101,9 +101,9 @@ def test_query_and_mutation(target_application):
     from graphql_server import __version__ as graphql_server_version
 
     FRAMEWORK_METRICS = [
-        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
-        ("Python/Framework/GraphQLServer/%s" % graphql_server_version, 1),
-        ("Python/Framework/%s/%s" % (framework, version), 1),
+        (f"Python/Framework/GraphQL/{graphql_version}", 1),
+        (f"Python/Framework/GraphQLServer/{graphql_server_version}", 1),
+        (f"Python/Framework/{framework}/{version}", 1),
     ]
     _test_query_scoped_metrics = [
         ("GraphQL/resolve/GraphQLServer/storage", 1),
@@ -219,8 +219,8 @@ def test_exception_in_middleware(target_application):
 
     # Metrics
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/GraphQLServer/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/GraphQLServer/%s" % field, 1),
+        (f"GraphQL/operation/GraphQLServer/query/MyQuery/{field}", 1),
+        (f"GraphQL/resolve/GraphQLServer/{field}", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
@@ -266,13 +266,13 @@ def test_exception_in_resolver(target_application, field):
 
     # Metrics
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/GraphQLServer/query/MyQuery/%s" % field, 1),
-        ("GraphQL/resolve/GraphQLServer/%s" % field, 1),
+        (f"GraphQL/operation/GraphQLServer/query/MyQuery/{field}", 1),
+        (f"GraphQL/resolve/GraphQLServer/{field}", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
         ("Errors/allWeb", 1),
-        ("Errors/WebTransaction/GraphQL/%s" % txn_name, 1),
+        (f"Errors/WebTransaction/GraphQL/{txn_name}", 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -333,7 +333,7 @@ def test_exception_in_validation(target_application, is_graphql_2, query, exc_cl
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
         ("Errors/allWeb", 1),
-        ("Errors/WebTransaction/GraphQL/%s" % txn_name, 1),
+        (f"Errors/WebTransaction/GraphQL/{txn_name}", 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -495,7 +495,7 @@ def test_deepest_unique_path(target_application, query, expected_path):
     if expected_path == "/error":
         txn_name = "framework_graphql._target_schema_sync:resolve_error"
     else:
-        txn_name = "query/<anonymous>%s" % expected_path
+        txn_name = f"query/<anonymous>{expected_path}"
 
     @validate_transaction_metrics(
         txn_name,

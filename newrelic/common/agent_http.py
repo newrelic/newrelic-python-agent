@@ -138,19 +138,19 @@ class BaseClient(object):
         cls.AUDIT_LOG_ID += 1
 
         print(
-            "TIME: %r" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            f"TIME: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())!r}",
             file=fp,
         )
         print(file=fp)
-        print("ID: %r" % cls.AUDIT_LOG_ID, file=fp)
+        print(f"ID: {cls.AUDIT_LOG_ID!r}", file=fp)
         print(file=fp)
-        print("PID: %r" % os.getpid(), file=fp)
+        print(f"PID: {os.getpid()!r}", file=fp)
         print(file=fp)
-        print("URL: %r" % url, file=fp)
+        print(f"URL: {url!r}", file=fp)
         print(file=fp)
-        print("PARAMS: %r" % params, file=fp)
+        print(f"PARAMS: {params!r}", file=fp)
         print(file=fp)
-        print("HEADERS: %r" % headers, file=fp)
+        print(f"HEADERS: {headers!r}", file=fp)
         print(file=fp)
         print("DATA:", end=" ", file=fp)
 
@@ -191,18 +191,18 @@ class BaseClient(object):
         except Exception:
             result = data
 
-        print("TIME: %r" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), file=fp)
+        print(f"TIME: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())!r}", file=fp)
         print(file=fp)
-        print("ID: %r" % log_id, file=fp)
+        print(f"ID: {log_id!r}", file=fp)
         print(file=fp)
-        print("PID: %r" % os.getpid(), file=fp)
+        print(f"PID: {os.getpid()!r}", file=fp)
         print(file=fp)
 
         if exc_info:
-            print("Exception: %r" % exc_info[1], file=fp)
+            print(f"Exception: {exc_info[1]!r}", file=fp)
             print(file=fp)
         else:
-            print("STATUS: %r" % status, file=fp)
+            print(f"STATUS: {status!r}", file=fp)
             print(file=fp)
             print("HEADERS:", end=" ", file=fp)
             pprint(dict(headers), stream=fp)
@@ -536,16 +536,16 @@ class SupportabilityMixin(object):
             # Compression was applied
             if compression_time is not None:
                 internal_metric(
-                    "Supportability/Python/Collector/%s/ZLIB/Bytes" % agent_method,
+                    f"Supportability/Python/Collector/{agent_method}/ZLIB/Bytes",
                     len(body),
                 )
                 internal_metric("Supportability/Python/Collector/ZLIB/Bytes", len(body))
                 internal_metric(
-                    "Supportability/Python/Collector/%s/ZLIB/Compress" % agent_method,
+                    f"Supportability/Python/Collector/{agent_method}/ZLIB/Compress",
                     compression_time,
                 )
             internal_metric(
-                "Supportability/Python/Collector/%s/Output/Bytes" % agent_method,
+                f"Supportability/Python/Collector/{agent_method}/Output/Bytes",
                 len(payload),
             )
             # Top level metric to aggregate overall bytes being sent
@@ -555,11 +555,11 @@ class SupportabilityMixin(object):
     def _supportability_response(status, exc, connection="direct"):
         if exc or not 200 <= status < 300:
             internal_count_metric("Supportability/Python/Collector/Failures", 1)
-            internal_count_metric("Supportability/Python/Collector/Failures/%s" % connection, 1)
+            internal_count_metric(f"Supportability/Python/Collector/Failures/{connection}", 1)
 
             if exc:
                 internal_count_metric(
-                    "Supportability/Python/Collector/Exception/" "%s" % callable_name(exc),
+                    f"Supportability/Python/Collector/Exception/{callable_name(exc)}",
                     1,
                 )
             else:

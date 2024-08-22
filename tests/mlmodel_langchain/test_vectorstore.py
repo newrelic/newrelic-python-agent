@@ -118,7 +118,7 @@ def test_vectorstore_modules_instrumented():
         if not hasattr(getattr(class_, "asimilarity_search"), "__wrapped__"):
             uninstrumented_async_classes.append(class_name)
 
-    assert not uninstrumented_sync_classes, "Uninstrumented sync classes found: %s" % str(uninstrumented_sync_classes)
+    assert not uninstrumented_sync_classes, f"Uninstrumented sync classes found: {str(uninstrumented_sync_classes)}"
     assert not uninstrumented_async_classes, "Uninstrumented async classes found: %s" % str(
         uninstrumented_async_classes
     )
@@ -133,7 +133,7 @@ def test_vectorstore_modules_instrumented():
     scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -164,7 +164,7 @@ def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_cl
     scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -224,7 +224,7 @@ def test_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(set_trace_info, emb
     scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -259,7 +259,7 @@ def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embeddi
     scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -349,7 +349,7 @@ vectorstore_error_events = [
     scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -377,7 +377,7 @@ def test_vectorstore_error(set_trace_info, embedding_openai_client, loop):
     scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -404,7 +404,7 @@ def test_vectorstore_error_no_content(set_trace_info, embedding_openai_client):
     scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -437,7 +437,7 @@ def test_async_vectorstore_error(loop, set_trace_info, embedding_openai_client):
     scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )

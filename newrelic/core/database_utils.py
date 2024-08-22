@@ -670,7 +670,7 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params,
                     'semicolons in the query string.', database.client)
         return None
 
-    query = '%s %s' % (database.explain_query, sql)
+    query = f'{database.explain_query} {sql}'
 
     if settings.debug.log_explain_plan_queries:
         _logger.debug('Executing explain plan for %r on %r.', query,

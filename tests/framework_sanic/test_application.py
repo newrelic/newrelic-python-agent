@@ -51,7 +51,7 @@ BASE_METRICS = [
     ("Function/_target_application:request_middleware", 1 if sanic_v19_to_v22_12 else 2),
 ]
 FRAMEWORK_METRICS = [
-    ("Python/Framework/Sanic/%s" % sanic.__version__, 1),
+    (f"Python/Framework/Sanic/{sanic.__version__}", 1),
 ]
 BASE_ATTRS = ["response.status", "response.headers.contentType", "response.headers.contentLength"]
 
@@ -137,13 +137,13 @@ def test_recorded_error(app, endpoint, sanic_version):
         pytest.skip()
 
     ERROR_METRICS = [
-        ("Function/_target_application:%s" % endpoint, 1),
+        (f"Function/_target_application:{endpoint}", 1),
     ]
 
     @validate_transaction_errors(errors=["builtins:ValueError"])
     @validate_base_transaction_event_attr
     @validate_transaction_metrics(
-        "_target_application:%s" % endpoint,
+        f"_target_application:{endpoint}",
         scoped_metrics=ERROR_METRICS,
         rollup_metrics=ERROR_METRICS + FRAMEWORK_METRICS,
     )
@@ -327,7 +327,7 @@ def sync_failing_middleware(*args, **kwargs):
 def test_returning_middleware(app, middleware, attach_to, metric_name, transaction_name):
 
     metrics = [
-        ("Function/%s" % metric_name, 1),
+        (f"Function/{metric_name}", 1),
     ]
 
     @validate_code_level_metrics(*metric_name.split(":"))

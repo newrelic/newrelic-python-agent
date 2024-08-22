@@ -29,7 +29,7 @@ from newrelic.api.background_task import background_task
 
 TOPIC = "arn:aws:sns:us-east-1:123456789012:some-topic"
 sns_metrics = [
-    ("MessageBroker/SNS/Topic/Produce/Named/%s" % TOPIC, 1),
+    (f"MessageBroker/SNS/Topic/Produce/Named/{TOPIC}", 1),
     ("MessageBroker/SNS/Topic/Produce/Named/PhoneNumber", 1),
 ]
 

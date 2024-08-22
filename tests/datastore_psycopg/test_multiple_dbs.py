@@ -68,8 +68,8 @@ _postgresql_2 = DB_MULTIPLE_SETTINGS[1]
 _host_2 = instance_hostname(_postgresql_2["host"])
 _port_2 = _postgresql_2["port"]
 
-_instance_metric_name_1 = "Datastore/instance/Postgres/%s/%s" % (_host_1, _port_1)
-_instance_metric_name_2 = "Datastore/instance/Postgres/%s/%s" % (_host_2, _port_2)
+_instance_metric_name_1 = f"Datastore/instance/Postgres/{_host_1}/{_port_1}"
+_instance_metric_name_2 = f"Datastore/instance/Postgres/{_host_2}/{_port_2}"
 
 _enable_rollup_metrics.extend(
     [
@@ -100,9 +100,9 @@ async def _exercise_db(multiple_connections):
     connection = multiple_connections[1]
     try:
         cursor = connection.cursor()
-        await maybe_await(cursor.execute("drop table if exists %s" % DB_SETTINGS["table_name"]))
+        await maybe_await(cursor.execute(f"drop table if exists {DB_SETTINGS['table_name']}"))
         await maybe_await(
-            cursor.execute("create table %s " % DB_SETTINGS["table_name"] + "(a integer, b real, c text)")
+            cursor.execute(f"create table {DB_SETTINGS['table_name']} " + "(a integer, b real, c text)")
         )
         await maybe_await(connection.commit())
     finally:

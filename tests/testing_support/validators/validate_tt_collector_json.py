@@ -134,7 +134,7 @@ def validate_tt_collector_json(
                 if segment_name.startswith("Datastore"):
                     for key in datastore_params:
                         assert key in params, key
-                        assert params[key] == datastore_params[key], "Expected %s. Got %s." % (datastore_params[key], params[key])
+                        assert params[key] == datastore_params[key], f"Expected {datastore_params[key]}. Got {params[key]}."
                     for key in datastore_forgone_params:
                         assert key not in params, key
 

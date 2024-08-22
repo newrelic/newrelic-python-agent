@@ -55,23 +55,23 @@ def test_register_range(loop, connection):
     async def test():
         type_name = "floatrange_" + str(os.getpid())
 
-        create_sql = "CREATE TYPE %s AS RANGE (" % type_name + "subtype = float8," "subtype_diff = float8mi)"
+        create_sql = f"CREATE TYPE {type_name} AS RANGE (" + "subtype = float8," "subtype_diff = float8mi)"
 
         cursor = connection.cursor()
 
-        await maybe_await(cursor.execute("DROP TYPE if exists %s" % type_name))
+        await maybe_await(cursor.execute(f"DROP TYPE if exists {type_name}"))
         await maybe_await(cursor.execute(create_sql))
 
         range_type_info = await maybe_await(psycopg.types.range.RangeInfo.fetch(connection, type_name))
         range_type_info.register(connection)
 
-        await maybe_await(cursor.execute("DROP TYPE if exists %s" % type_name))
+        await maybe_await(cursor.execute(f"DROP TYPE if exists {type_name}"))
         await maybe_await(cursor.execute(create_sql))
 
         range_type_info = await maybe_await(psycopg.types.range.RangeInfo.fetch(connection, type_name))
         range_type_info.register(cursor)
 
-        await maybe_await(cursor.execute("DROP TYPE if exists %s" % type_name))
+        await maybe_await(cursor.execute(f"DROP TYPE if exists {type_name}"))
 
     if hasattr(connection, "__aenter__"):
 

@@ -48,11 +48,9 @@ class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
 
         # Determine the scoped metric
 
-        statement_metric_name = 'Datastore/statement/%s/%s/%s' % (product,
-                target, operation)
+        statement_metric_name = f'Datastore/statement/{product}/{target}/{operation}'
 
-        operation_metric_name = 'Datastore/operation/%s/%s' % (product,
-                operation)
+        operation_metric_name = f'Datastore/operation/{product}/{operation}'
 
         if target:
             scoped_metric_name = statement_metric_name
@@ -67,20 +65,20 @@ class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
         yield TimeMetric(name='Datastore/all', scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
-        yield TimeMetric(name='Datastore/%s/all' % product, scope='',
+        yield TimeMetric(name=f'Datastore/{product}/all', scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
             yield TimeMetric(name='Datastore/allWeb', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name='Datastore/%s/allWeb' % product, scope='',
+            yield TimeMetric(name=f'Datastore/{product}/allWeb', scope='',
                     duration=self.duration, exclusive=self.exclusive)
         else:
             yield TimeMetric(name='Datastore/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name='Datastore/%s/allOther' % product, scope='',
+            yield TimeMetric(name=f'Datastore/{product}/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
         # Unscoped operation metric

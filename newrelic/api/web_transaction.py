@@ -153,7 +153,7 @@ def _encode_nonce(nonce):
     if not nonce:
         return ""
     else:
-        return ' nonce="%s"' % ensure_str(nonce)  # Extra space intentional
+        return f' nonce="{ensure_str(nonce)}"'  # Extra space intentional
 
 
 class WebTransaction(Transaction):

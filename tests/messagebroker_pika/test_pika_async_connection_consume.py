@@ -78,8 +78,8 @@ parametrized_connection = pytest.mark.parametrize("ConnectionClass", connection_
 
 
 _test_select_conn_basic_get_inside_txn_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, 1),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", 1),
     ("Function/test_pika_async_connection_consume:test_async_connection_basic_get_inside_txn.<locals>.on_message", 1),
 ]
 
@@ -93,7 +93,7 @@ _test_select_conn_basic_get_inside_txn_metrics = [
 )
 @validate_span_events(
     count=1,
-    exact_intrinsics={"name": "MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE},
+    exact_intrinsics={"name": f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}"},
     exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @validate_transaction_metrics(
@@ -175,8 +175,8 @@ def test_select_connection_basic_get_outside_txn(producer, ConnectionClass, call
 
 
 _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
 ]
 
 
@@ -213,8 +213,8 @@ def test_async_connection_basic_get_inside_txn_no_callback(producer, ConnectionC
 
 
 _test_async_connection_basic_get_empty_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
 ]
 
 
@@ -257,8 +257,8 @@ def test_async_connection_basic_get_empty(ConnectionClass, callback_as_partial):
 
 
 _test_select_conn_basic_consume_in_txn_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
     (
         "Function/test_pika_async_connection_consume:test_async_connection_basic_consume_inside_txn.<locals>.on_message",
         1,
@@ -305,10 +305,10 @@ def test_async_connection_basic_consume_inside_txn(producer, ConnectionClass):
 
 
 _test_select_conn_basic_consume_two_exchanges = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE_2, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE_2, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE_2}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE_2}", None),
     (
         "Function/test_pika_async_connection_consume:test_async_connection_basic_consume_two_exchanges.<locals>.on_message_1",
         1,
@@ -425,7 +425,7 @@ _test_select_connection_consume_outside_txn_metrics = [
     scoped_metrics=_test_select_connection_consume_outside_txn_metrics,
     rollup_metrics=_test_select_connection_consume_outside_txn_metrics,
     background_task=True,
-    group="Message/RabbitMQ/Exchange/%s" % EXCHANGE,
+    group=f"Message/RabbitMQ/Exchange/{EXCHANGE}",
 )
 @validate_code_level_metrics(
     "test_pika_async_connection_consume.test_select_connection_basic_consume_outside_transaction.<locals>",

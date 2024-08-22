@@ -65,10 +65,8 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     host_2 = instance_hostname(memcached_2['host'])
     port_2 = memcached_2['port']
 
-    instance_metric_name_1 = 'Datastore/instance/Memcached/%s/%s' % (host_1,
-            port_1)
-    instance_metric_name_2 = 'Datastore/instance/Memcached/%s/%s' % (host_2,
-            port_2)
+    instance_metric_name_1 = f'Datastore/instance/Memcached/{host_1}/{port_1}'
+    instance_metric_name_2 = f'Datastore/instance/Memcached/{host_2}/{port_2}'
 
     _enable_rollup_metrics.extend([
             (instance_metric_name_1, None),
@@ -98,7 +96,7 @@ def test_multiple_datastores_enabled(memcached_multi):
     memcached1 = DB_MULTIPLE_SETTINGS[0]
     memcached2 = DB_MULTIPLE_SETTINGS[1]
     settings = [memcached1, memcached2]
-    servers = ["%s:%s" % (x['host'], x['port']) for x in settings]
+    servers = [f"{x['host']}:{x['port']}" for x in settings]
 
     client = memcache.Client(servers=servers)
 
@@ -116,7 +114,7 @@ def test_multiple_datastores_disabled(memcached_multi):
     memcached1 = DB_MULTIPLE_SETTINGS[0]
     memcached2 = DB_MULTIPLE_SETTINGS[1]
     settings = [memcached1, memcached2]
-    servers = ["%s:%s" % (x['host'], x['port']) for x in settings]
+    servers = [f"{x['host']}:{x['port']}" for x in settings]
 
     client = memcache.Client(servers=servers)
 

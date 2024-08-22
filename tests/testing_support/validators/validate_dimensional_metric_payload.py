@@ -42,7 +42,7 @@ def attribute_to_value(attribute):
     elif attribute_type == "string_value":
         return str(attribute_value)
     else:
-        raise TypeError("Invalid attribute type: %s" % attribute_type)
+        raise TypeError(f"Invalid attribute type: {attribute_type}")
 
 
 def payload_to_metrics(payload):
@@ -77,7 +77,7 @@ def payload_to_metrics(payload):
         elif metric.get("summary"):
             sent_summary_metrics[metric_name] = metric
         else:
-            raise TypeError("Unknown metrics type for metric: %s" % metric)
+            raise TypeError(f"Unknown metrics type for metric: {metric}")
 
     return sent_summary_metrics, sent_count_metrics
 
@@ -117,7 +117,7 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
                 if not count:
                     if metric in sent_summary_metrics:
                         data_points = data_points_to_dict(sent_summary_metrics[metric]["summary"]["data_points"])
-                        assert tags not in data_points, "(%s, %s) Unexpected but found." % (metric, tags and dict(tags))
+                        assert tags not in data_points, f"({metric}, {tags and dict(tags)}) Unexpected but found."
                 else:
                     assert metric in sent_summary_metrics, "%s Not Found. Got: %s" % (
                         metric,
@@ -133,7 +133,7 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
                     # Validate metric format
                     metric_container = data_points[tags]
                     for key in ("start_time_unix_nano", "time_unix_nano", "count", "sum", "quantile_values"):
-                        assert key in metric_container, "Invalid metric format. Missing key: %s" % key
+                        assert key in metric_container, f"Invalid metric format. Missing key: {key}"
                     quantile_values = metric_container["quantile_values"]
                     assert len(quantile_values) == 2  # Min and Max
 
@@ -153,7 +153,7 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
                 if not count:
                     if metric in sent_count_metrics:
                         data_points = data_points_to_dict(sent_count_metrics[metric]["sum"]["data_points"])
-                        assert tags not in data_points, "(%s, %s) Unexpected but found." % (metric, tags and dict(tags))
+                        assert tags not in data_points, f"({metric}, {tags and dict(tags)}) Unexpected but found."
                 else:
                     assert metric in sent_count_metrics, "%s Not Found. Got: %s" % (
                         metric,
@@ -171,7 +171,7 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
                     assert sent_count_metrics[metric]["sum"].get("aggregation_temporality") == 1
                     metric_container = data_points[tags]
                     for key in ("start_time_unix_nano", "time_unix_nano", "as_int"):
-                        assert key in metric_container, "Invalid metric format. Missing key: %s" % key
+                        assert key in metric_container, f"Invalid metric format. Missing key: {key}"
 
                     # Validate metric count
                     if count != "present":

@@ -32,7 +32,7 @@ def encode_headers(headers):
     new_headers = []
     for h, v in headers.items():
         if not h.startswith(":"):
-            h = ":%s" % h
+            h = f":{h}"
         h = h.encode("utf-8")
         v = v.encode("utf-8")
         new_headers.append(b"".join((int_to_escaped_bytes(len(h)), h, b"\x07\x00", int_to_escaped_bytes(len(v)), v)))

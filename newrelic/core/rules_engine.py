@@ -174,7 +174,7 @@ class SegmentCollapseEngine(object):
         # should always return prefixes and term strings as Unicode.
 
         choices = "|".join([re.escape(x) for x in prefixes])
-        pattern = "^(%s)/(.+)$" % choices
+        pattern = f"^({choices})/(.+)$"
 
         self.prefixes = re.compile(pattern)
 

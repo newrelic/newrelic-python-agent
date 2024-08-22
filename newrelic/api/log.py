@@ -47,7 +47,7 @@ def safe_json_encode(obj, ignore_string_types=False, **kwargs):
         return repr(obj)
     except Exception:
         # If repr fails then default to an unprinatable object name
-        return "<unprintable %s object>" % type(obj).__name__
+        return f"<unprintable {type(obj).__name__} object>"
 
 
 class NewRelicContextFormatter(logging.Formatter):
@@ -156,7 +156,7 @@ class NewRelicLogForwardingHandler(logging.Handler):
                 level_name = str(getattr(record, "levelname", "UNKNOWN"))
                 if settings.application_logging.metrics.enabled:
                     nr.record_custom_metric("Logging/lines", {"count": 1})
-                    nr.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                    nr.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
 
                 if settings.application_logging.forwarding.enabled:
                     if self.formatter:

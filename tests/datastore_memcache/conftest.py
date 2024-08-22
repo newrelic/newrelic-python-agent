@@ -43,7 +43,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 def memcached_multi():
     """Generate keys that will go onto different servers"""
     DB_SETTINGS = memcached_settings()
-    db_servers = ["%s:%s" % (s["host"], s["port"]) for s in DB_SETTINGS]
+    db_servers = [f"{s['host']}:{s['port']}" for s in DB_SETTINGS]
 
     clients = [memcache.Client([s]) for s in db_servers]
     client_all = memcache.Client(db_servers)

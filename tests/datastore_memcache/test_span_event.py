@@ -25,7 +25,7 @@ from testing_support.util import instance_hostname
 from newrelic.api.background_task import background_task
 
 DB_SETTINGS = memcached_settings()[0]
-MEMCACHED_ADDR = '%s:%s' % (DB_SETTINGS['host'], DB_SETTINGS['port'])
+MEMCACHED_ADDR = f"{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"
 
 # Settings
 
@@ -73,7 +73,7 @@ def test_span_events(instance_enabled):
         settings = _enable_instance_settings
         hostname = instance_hostname(DB_SETTINGS['host'])
         exact_agents.update({
-            'peer.address': '%s:%s' % (hostname, DB_SETTINGS['port']),
+            'peer.address': f"{hostname}:{DB_SETTINGS['port']}",
             'peer.hostname': hostname,
         })
     else:

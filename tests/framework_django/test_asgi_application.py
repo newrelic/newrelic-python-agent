@@ -45,7 +45,7 @@ scoped_metrics = [
 ]
 
 rollup_metrics = scoped_metrics + [
-    ('Python/Framework/Django/%s' % django.get_version(), 1),
+    (f'Python/Framework/Django/{django.get_version()}', 1),
 ]
 
 

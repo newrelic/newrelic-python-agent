@@ -58,7 +58,7 @@ class CommonUtilization(object):
     @classmethod
     def record_error(cls, resource, data):
         # As per spec
-        internal_count_metric("Supportability/utilization/%s/error" % cls.VENDOR_NAME, 1)
+        internal_count_metric(f"Supportability/utilization/{cls.VENDOR_NAME}/error", 1)
         _logger.warning("Invalid %r data (%r): %r", cls.VENDOR_NAME, resource, data)
 
     @classmethod

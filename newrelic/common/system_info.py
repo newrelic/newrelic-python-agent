@@ -329,7 +329,7 @@ def _resolve_hostname(use_dyno_names, dyno_shorten_prefixes):
 
     for prefix in dyno_shorten_prefixes:
         if prefix and dyno_name.startswith(prefix):
-            return "%s.*" % prefix
+            return f"{prefix}.*"
 
     return dyno_name
 

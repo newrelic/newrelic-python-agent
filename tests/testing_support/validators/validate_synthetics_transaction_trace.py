@@ -42,7 +42,7 @@ def validate_synthetics_transaction_trace(required_params=None, forgone_params=N
 
             if should_exist:
                 assert header_key in required_params
-                assert header[9] == required_params[header_key], "name=%r, header=%r" % (header_key, header)
+                assert header[9] == required_params[header_key], f"name={header_key!r}, header={header!r}"
             else:
                 assert header[9] is None
 
@@ -52,7 +52,7 @@ def validate_synthetics_transaction_trace(required_params=None, forgone_params=N
             tt_intrinsics = pack_data[0][4]["intrinsics"]
 
             for name in required_params:
-                assert name in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
+                assert name in tt_intrinsics, f"name={name!r}, intrinsics={tt_intrinsics!r}"
                 assert tt_intrinsics[name] == required_params[name], "name=%r, value=%r, intrinsics=%r" % (
                     name,
                     required_params[name],
@@ -60,7 +60,7 @@ def validate_synthetics_transaction_trace(required_params=None, forgone_params=N
                 )
 
             for name in forgone_params:
-                assert name not in tt_intrinsics, "name=%r, intrinsics=%r" % (name, tt_intrinsics)
+                assert name not in tt_intrinsics, f"name={name!r}, intrinsics={tt_intrinsics!r}"
 
         return result
 

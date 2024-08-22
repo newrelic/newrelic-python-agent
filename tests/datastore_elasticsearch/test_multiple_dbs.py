@@ -61,8 +61,8 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
     host_2 = instance_hostname(es_2["host"])
     port_2 = es_2["port"]
 
-    instance_metric_name_1 = "Datastore/instance/Elasticsearch/%s/%s" % (host_1, port_1)
-    instance_metric_name_2 = "Datastore/instance/Elasticsearch/%s/%s" % (host_2, port_2)
+    instance_metric_name_1 = f"Datastore/instance/Elasticsearch/{host_1}/{port_1}"
+    instance_metric_name_2 = f"Datastore/instance/Elasticsearch/{host_2}/{port_2}"
 
     _enable_rollup_metrics.extend(
         [
@@ -104,7 +104,7 @@ def _exercise_es(es):
 @background_task()
 def test_multiple_dbs_enabled():
     for db in ES_MULTIPLE_SETTINGS:
-        es_url = "http://%s:%s" % (db["host"], db["port"])
+        es_url = f"http://{db['host']}:{db['port']}"
         client = Elasticsearch(es_url)
         _exercise_es(client)
 
@@ -120,6 +120,6 @@ def test_multiple_dbs_enabled():
 @background_task()
 def test_multiple_dbs_disabled():
     for db in ES_MULTIPLE_SETTINGS:
-        es_url = "http://%s:%s" % (db["host"], db["port"])
+        es_url = f"http://{db['host']}:{db['port']}"
         client = Elasticsearch(es_url)
         _exercise_es(client)

@@ -90,9 +90,9 @@ class DatastoreNodeMixin(GenericNodeMixin):
         operation = self.operation or "other"
 
         if target:
-            name = "Datastore/statement/%s/%s/%s" % (product, target, operation)
+            name = f"Datastore/statement/{product}/{target}/{operation}"
         else:
-            name = "Datastore/operation/%s/%s" % (product, operation)
+            name = f"Datastore/operation/{product}/{operation}"
 
         return name
 
@@ -123,7 +123,7 @@ class DatastoreNodeMixin(GenericNodeMixin):
         else:
             a_attrs["peer.hostname"] = "Unknown"
 
-        peer_address = "%s:%s" % (self.instance_hostname or "Unknown", self.port_path_or_id or "Unknown")
+        peer_address = f"{self.instance_hostname or 'Unknown'}:{self.port_path_or_id or 'Unknown'}"
 
         _, a_attrs["peer.address"] = attribute.process_user_attribute("peer.address", peer_address)
 

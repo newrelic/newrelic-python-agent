@@ -544,13 +544,11 @@ class Application(object):
             )
             ai_monitoring_streaming = configuration.ai_monitoring.streaming.enabled
             internal_metric(
-                "Supportability/Logging/Forwarding/Python/%s"
-                % ("enabled" if application_logging_forwarding else "disabled"),
+                f"Supportability/Logging/Forwarding/Python/{'enabled' if application_logging_forwarding else 'disabled'}",
                 1,
             )
             internal_metric(
-                "Supportability/Logging/LocalDecorating/Python/%s"
-                % ("enabled" if application_logging_local_decorating else "disabled"),
+                f"Supportability/Logging/LocalDecorating/Python/{'enabled' if application_logging_local_decorating else 'disabled'}",
                 1,
             )
             internal_metric(
@@ -569,13 +567,11 @@ class Application(object):
                 infinite_tracing_batching = configuration.infinite_tracing.batching
                 infinite_tracing_compression = configuration.infinite_tracing.compression
                 internal_metric(
-                    "Supportability/InfiniteTracing/gRPC/Batching/%s"
-                    % ("enabled" if infinite_tracing_batching else "disabled"),
+                    f"Supportability/InfiniteTracing/gRPC/Batching/{'enabled' if infinite_tracing_batching else 'disabled'}",
                     1,
                 )
                 internal_metric(
-                    "Supportability/InfiniteTracing/gRPC/Compression/%s"
-                    % ("enabled" if infinite_tracing_compression else "disabled"),
+                    f"Supportability/InfiniteTracing/gRPC/Compression/{'enabled' if infinite_tracing_compression else 'disabled'}",
                     1,
                 )
 

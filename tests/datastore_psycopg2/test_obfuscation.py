@@ -107,13 +107,11 @@ def any_length_explain_plan(node):
 
 _test_explain_plans = [
     (
-        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s"
-        % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
+        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']} ; SELECT (b, c) FROM {DB_SETTINGS['table_name']}",
         no_explain_plan,
     ),
     (
-        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s;"
-        % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
+        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']} ; SELECT (b, c) FROM {DB_SETTINGS['table_name']};",
         no_explain_plan,
     ),
     (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']} WHERE b=';'", no_explain_plan),

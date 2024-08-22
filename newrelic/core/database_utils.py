@@ -278,10 +278,7 @@ _parse_identifier_5_p = r'\(\s*(\S+)\s*\)'
 _parse_identifier_6_p = r'\{\s*(\S+)\s*\}'
 _parse_identifier_7_p = r'([^\s\(\)\[\],]+)'
 
-_parse_identifier_p = ''.join(('(', _parse_identifier_1_p, '|',
-        _parse_identifier_2_p, '|', _parse_identifier_3_p, '|',
-        _parse_identifier_4_p, '|', _parse_identifier_5_p, '|',
-        _parse_identifier_6_p, '|', _parse_identifier_7_p, ')'))
+_parse_identifier_p = f"({_parse_identifier_1_p}|{_parse_identifier_2_p}|{_parse_identifier_3_p}|{_parse_identifier_4_p}|{_parse_identifier_5_p}|{_parse_identifier_6_p}|{_parse_identifier_7_p})"
 
 _parse_from_p = r'\s+FROM\s+' + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
@@ -827,8 +824,7 @@ class SQLStatement(object):
             except UnicodeError as e:
                 settings = global_settings()
                 if settings.debug.log_explain_plan_queries:
-                    _logger.debug('An error occurred while decoding sql '
-                            'statement: %s' % e.reason)
+                    _logger.debug(f'An error occurred while decoding sql statement: {e.reason}')
 
                 self._operation = ''
                 self._target = ''

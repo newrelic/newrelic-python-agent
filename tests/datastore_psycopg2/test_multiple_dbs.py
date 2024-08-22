@@ -110,8 +110,7 @@ def _exercise_db():
     try:
         cursor = connection.cursor()
         cursor.execute(f"""drop table if exists {postgresql2['table_name']}""")
-        cursor.execute(f"""create table {postgresql2['table_name']} """ +
-                """(a integer, b real, c text)""")
+        cursor.execute(f"create table {postgresql2['table_name']} (a integer, b real, c text)")
         connection.commit()
     finally:
         connection.close()

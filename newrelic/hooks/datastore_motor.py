@@ -28,9 +28,7 @@ def _nr_wrapper_Motor_getattr_(wrapped, instance, args, kwargs):
     name = _bind_params(*args, **kwargs)
 
     if name.startswith('__') or name.startswith('_nr_'):
-        raise AttributeError('%s class has no attribute %s. To access '
-                'use object[%r].' % (instance.__class__.__name__,
-                name, name))
+        raise AttributeError(f'{instance.__class__.__name__} class has no attribute {name}. To access use object[{name!r}].')
 
     return wrapped(*args, **kwargs)
 

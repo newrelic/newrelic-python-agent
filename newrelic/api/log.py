@@ -251,16 +251,7 @@ class NewRelicLogHandler(logging.Handler):
                 status_code, response = self.client.send_request(path=self.PATH, headers=headers, payload=payload)
                 if status_code < 200 or status_code >= 300:
                     raise RuntimeError(
-                        "An unexpected HTTP response of %r was received for request made to https://%s:%d%s."
-                        "The response payload for the request was %r. If this issue persists then please "
-                        "report this problem to New Relic support for further investigation."
-                        % (
-                            status_code,
-                            self.client._host,
-                            self.client._port,
-                            self.PATH,
-                            truncate(response.decode("utf-8"), 1024),
-                        )
+                        f"An unexpected HTTP response of {status_code!r} was received for request made to https://{self.client._host}:{int(self.client._port)}{self.PATH}.The response payload for the request was {truncate(response.decode('utf-8'), 1024)!r}. If this issue persists then please report this problem to New Relic support for further investigation."
                     )
 
         except Exception:

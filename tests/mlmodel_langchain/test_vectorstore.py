@@ -119,9 +119,7 @@ def test_vectorstore_modules_instrumented():
             uninstrumented_async_classes.append(class_name)
 
     assert not uninstrumented_sync_classes, f"Uninstrumented sync classes found: {str(uninstrumented_sync_classes)}"
-    assert not uninstrumented_async_classes, "Uninstrumented async classes found: %s" % str(
-        uninstrumented_async_classes
-    )
+    assert not uninstrumented_async_classes, f"Uninstrumented async classes found: {str(uninstrumented_async_classes)}"
 
 
 @reset_core_stats_engine()

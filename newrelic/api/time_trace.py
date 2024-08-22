@@ -214,8 +214,7 @@ class TimeTrace(object):
                 node.add_attrs(self._add_agent_attribute)
             except Exception as exc:
                 _logger.debug(
-                    "Failed to extract source code context from callable %s. Report this issue to newrelic support. Exception: %s"
-                    % (source, exc)
+                    f"Failed to extract source code context from callable {source}. Report this issue to newrelic support. Exception: {exc}"
                 )
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
@@ -443,8 +442,7 @@ class TimeTrace(object):
                             _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
                             if error_group_name is None or not isinstance(error_group_name, str):
                                 raise ValueError(
-                                    "Invalid attribute value for error.group.name. Expected string, got: %s"
-                                    % repr(error_group_name_raw)
+                                    f"Invalid attribute value for error.group.name. Expected string, got: {repr(error_group_name_raw)}"
                                 )
                     except Exception:
                         _logger.error(

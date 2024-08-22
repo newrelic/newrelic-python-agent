@@ -63,10 +63,7 @@ def test_client(
 ):
     port = mock_grpc_server
 
-    service_method_class_name = "NoTxn%s%s" % (
-        service_method_type.title().replace("_", ""),
-        "Raises" if raises_exception else "",
-    )
+    service_method_class_name = f"NoTxn{service_method_type.title().replace('_', '')}{'Raises' if raises_exception else ''}"
     streaming_request = service_method_type.split("_")[0] == "stream"
     streaming_response = service_method_type.split("_")[1] == "stream"
 

@@ -125,8 +125,7 @@ async def _execute(connection, cursor, row_type, wrapper):
 
     await maybe_await(
         cursor.execute(
-            "create or replace procedure %s() \nlanguage plpgsql as $$ begin perform now(); end; $$"
-            % DB_SETTINGS["procedure_name"]
+            f"create or replace procedure {DB_SETTINGS['procedure_name']}() \nlanguage plpgsql as $$ begin perform now(); end; $$"
         )
     )
     await maybe_await(cursor.execute(f"call {DB_SETTINGS['procedure_name']}()"))

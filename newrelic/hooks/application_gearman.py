@@ -104,8 +104,7 @@ def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
 
     current_connection = _bind_params(*args, **kwargs)
 
-    tracer.url = 'gearman://%s:%s' % (current_connection.gearman_host,
-            current_connection.gearman_port)
+    tracer.url = f'gearman://{current_connection.gearman_host}:{current_connection.gearman_port}'
 
     return wrapped(*args, **kwargs)
 

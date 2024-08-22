@@ -39,16 +39,7 @@ class GraphQLOperationTrace(TimeTrace):
         self.product = "GraphQL"
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (
-            self.__class__.__name__,
-            id(self),
-            dict(
-                operation_name=self.operation_name,
-                operation_type=self.operation_type,
-                deepest_path=self.deepest_path,
-                graphql=self.graphql,
-            ),
-        )
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(operation_name=self.operation_name, operation_type=self.operation_type, deepest_path=self.deepest_path, graphql=self.graphql)}>"
 
     @property
     def formatted(self):

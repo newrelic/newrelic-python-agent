@@ -100,8 +100,7 @@ class DatastoreNode(_DatastoreNode, DatastoreNodeMixin):
                 self.port_path_or_id and
                 ds_tracer_settings.instance_reporting.enabled):
 
-            instance_metric_name = 'Datastore/instance/%s/%s/%s' % (product,
-                    self.instance_hostname, self.port_path_or_id)
+            instance_metric_name = f'Datastore/instance/{product}/{self.instance_hostname}/{self.port_path_or_id}'
 
             yield TimeMetric(name=instance_metric_name, scope='',
                     duration=self.duration, exclusive=self.exclusive)

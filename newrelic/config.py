@@ -236,9 +236,7 @@ def _raise_configuration_error(section, option=None):
         if not _ignore_errors:
             if section:
                 raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for section "%s". '
-                    "Check New Relic agent log file for further "
-                    "details." % section
+                    f'Invalid configuration for section "{section}". Check New Relic agent log file for further details.'
                 )
             raise newrelic.api.exceptions.ConfigurationError(
                 "Invalid configuration. Check New Relic agent log file for further details."
@@ -251,14 +249,10 @@ def _raise_configuration_error(section, option=None):
         if not _ignore_errors:
             if section:
                 raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for option "%s" in '
-                    'section "%s". Check New Relic agent log '
-                    "file for further details." % (option, section)
+                    f'Invalid configuration for option "{option}" in section "{section}". Check New Relic agent log file for further details.'
                 )
             raise newrelic.api.exceptions.ConfigurationError(
-                'Invalid configuration for option "%s". '
-                "Check New Relic agent log file for further "
-                "details." % option
+                f'Invalid configuration for option "{option}". Check New Relic agent log file for further details.'
             )
 
 
@@ -940,10 +934,7 @@ def _load_configuration(
     if _configuration_done:
         if _config_file != config_file or _environment != environment:
             raise newrelic.api.exceptions.ConfigurationError(
-                "Configuration has already been done against "
-                "differing configuration file or environment. "
-                'Prior configuration file used was "%s" and '
-                'environment "%s".' % (_config_file, _environment)
+                f"Configuration has already been done against differing configuration file or environment. Prior configuration file used was \"{_config_file}\" and environment \"{_environment}\"."
             )
         return
 

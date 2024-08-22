@@ -129,8 +129,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
                     duration=self.duration, exclusive=self.exclusive)
 
         else:
-            name = 'ExternalTransaction/%s/%s/%s' % (netloc,
-                    self.cross_process_id, self.external_txn_name)
+            name = f'ExternalTransaction/{netloc}/{self.cross_process_id}/{self.external_txn_name}'
 
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
@@ -152,9 +151,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         if self.cross_process_id is None:
             name = f'External/{netloc}/{self.library}/{method}'
         else:
-            name = 'ExternalTransaction/%s/%s/%s' % (netloc,
-                                                     self.cross_process_id,
-                                                     self.external_txn_name)
+            name = f'ExternalTransaction/{netloc}/{self.cross_process_id}/{self.external_txn_name}'
 
         name = root.string_table.cache(name)
 

@@ -901,11 +901,7 @@ def _validate_node_parenting(node, expected_node):
     expected_children = expected_node[1]
 
     def len_error():
-        return ("len(node.children)=%s, len(expected_children)=%s, node.children=%s") % (
-            len(node.children),
-            len(expected_children),
-            node.children,
-        )
+        return f"len(node.children)={len(node.children)}, len(expected_children)={len(expected_children)}, node.children={node.children}"
 
     assert len(node.children) == len(expected_children), len_error()
 

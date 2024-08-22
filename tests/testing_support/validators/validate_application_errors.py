@@ -42,11 +42,7 @@ def validate_application_errors(errors=None, required_params=None, forgone_param
             for e in app_errors:
                 for name, value in required_params:
                     assert name in e.parameters["userAttributes"], f"name={name!r}, params={e.parameters!r}"
-                    assert e.parameters["userAttributes"][name] == value, "name=%r, value=%r, params=%r" % (
-                        name,
-                        value,
-                        e.parameters,
-                    )
+                    assert e.parameters["userAttributes"][name] == value, f"name={name!r}, value={value!r}, params={e.parameters!r}"
 
                 for name, value in forgone_params:
                     assert name not in e.parameters["userAttributes"], f"name={name!r}, params={e.parameters!r}"

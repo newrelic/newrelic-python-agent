@@ -50,11 +50,7 @@ HEADER_AUDIT_LOGGING_DENYLIST = frozenset(("x-api-key", "api-key"))
 # does not rely on this, but is used to target specific agents if there
 # is a problem with data collector handling requests.
 
-USER_AGENT = "NewRelic-PythonAgent/%s (Python %s %s)" % (
-    version,
-    sys.version.split()[0],
-    sys.platform,
-)
+USER_AGENT = f"NewRelic-PythonAgent/{version} (Python {sys.version.split()[0]} {sys.platform})"
 
 
 # This is a monkey patch for urllib3 + python3.6 + gevent/eventlet.

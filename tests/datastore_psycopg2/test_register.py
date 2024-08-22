@@ -50,9 +50,7 @@ def test_register_range():
 
         type_name = f"floatrange_{str(os.getpid())}"
 
-        create_sql = (f'CREATE TYPE {type_name} AS RANGE (' +
-                      'subtype = float8,'
-                      'subtype_diff = float8mi)')
+        create_sql = f"CREATE TYPE {type_name} AS RANGE (subtype = float8,subtype_diff = float8mi)"
 
         cursor = connection.cursor()
 

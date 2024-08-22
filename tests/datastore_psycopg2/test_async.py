@@ -105,12 +105,10 @@ def _exercise_db(async_keyword):
     async_cur.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
     wait(async_cur.connection)
 
-    async_cur.execute(f"""create table {DB_SETTINGS['table_name']} """ +
-            """(a integer, b real, c text)""")
+    async_cur.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
     wait(async_cur.connection)
 
-    async_cur.execute(f"""insert into {DB_SETTINGS['table_name']} """ +
-        """values (%s, %s, %s)""", (1, 1.0, '1.0'))
+    async_cur.execute(f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)", (1, 1.0, '1.0'))
     wait(async_cur.connection)
 
     async_cur.execute(f"""select * from {DB_SETTINGS['table_name']}""")

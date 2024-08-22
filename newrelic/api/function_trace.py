@@ -55,18 +55,7 @@ class FunctionTrace(TimeTrace):
         return result
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (
-            self.__class__.__name__,
-            id(self),
-            dict(
-                name=self.name,
-                group=self.group,
-                label=self.label,
-                params=self.params,
-                terminal=self.terminal,
-                rollup=self.rollup,
-            ),
-        )
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(name=self.name, group=self.group, label=self.label, params=self.params, terminal=self.terminal, rollup=self.rollup)}>"
 
     def terminal_node(self):
         return self.terminal

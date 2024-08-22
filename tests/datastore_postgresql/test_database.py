@@ -101,9 +101,7 @@ def test_execute_via_cursor():
         cursor.execute(f"""select * from {DB_SETTINGS['table_name']}""")
 
         cursor.execute(
-            f"""with temporaryTable (averageValue) as (select avg(b) from {DB_SETTINGS['table_name']}) """
-            + f"""select * from {DB_SETTINGS['table_name']},temporaryTable """
-            + f"""where {DB_SETTINGS['table_name']}.b > temporaryTable.averageValue"""
+            f"with temporaryTable (averageValue) as (select avg(b) from {DB_SETTINGS['table_name']}) select * from {DB_SETTINGS['table_name']},temporaryTable where {DB_SETTINGS['table_name']}.b > temporaryTable.averageValue"
         )
 
         cursor.execute(

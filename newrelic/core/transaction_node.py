@@ -213,12 +213,7 @@ class TransactionNode(_TransactionNode):
         # Generate Distributed Tracing metrics
 
         if self.settings.distributed_tracing.enabled:
-            dt_tag = "%s/%s/%s/%s/all" % (
-                self.parent_type or "Unknown",
-                self.parent_account or "Unknown",
-                self.parent_app or "Unknown",
-                self.parent_transport_type or "Unknown",
-            )
+            dt_tag = f"{self.parent_type or 'Unknown'}/{self.parent_account or 'Unknown'}/{self.parent_app or 'Unknown'}/{self.parent_transport_type or 'Unknown'}/all"
 
             for bonus_tag in ("", metric_suffix):
                 yield TimeMetric(

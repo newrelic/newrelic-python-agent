@@ -48,19 +48,9 @@ def get_metadata_string(log_message, is_txn):
     assert host
     entity_guid = application_settings().entity_guid
     if is_txn:
-        metadata_string = "".join(
-            (
-                "NR-LINKING|",
-                entity_guid,
-                "|",
-                host,
-                "|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28logger_logging%29|",
-            )
-        )
+        metadata_string = f"NR-LINKING|{entity_guid}|{host}|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28logger_logging%29|"
     else:
-        metadata_string = "".join(
-            ("NR-LINKING|", entity_guid, "|", host, "|||Python%20Agent%20Test%20%28logger_logging%29|")
-        )
+        metadata_string = f"NR-LINKING|{entity_guid}|{host}|||Python%20Agent%20Test%20%28logger_logging%29|"
     formatted_string = f"{log_message} {metadata_string}"
     return formatted_string
 

@@ -64,11 +64,7 @@ def validate_transaction_errors(
             assert e.span_id
             for name, value in required_params:
                 assert name in e.custom_params, f"name={name!r}, params={e.custom_params!r}"
-                assert e.custom_params[name] == value, "name=%r, value=%r, params=%r" % (
-                    name,
-                    value,
-                    e.custom_params,
-                )
+                assert e.custom_params[name] == value, f"name={name!r}, value={value!r}, params={e.custom_params!r}"
 
             for name, value in forgone_params:
                 assert name not in e.custom_params, f"name={name!r}, params={e.custom_params!r}"

@@ -119,16 +119,9 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
                         data_points = data_points_to_dict(sent_summary_metrics[metric]["summary"]["data_points"])
                         assert tags not in data_points, f"({metric}, {tags and dict(tags)}) Unexpected but found."
                 else:
-                    assert metric in sent_summary_metrics, "%s Not Found. Got: %s" % (
-                        metric,
-                        list(sent_summary_metrics.keys()),
-                    )
+                    assert metric in sent_summary_metrics, f"{metric} Not Found. Got: {list(sent_summary_metrics.keys())}"
                     data_points = data_points_to_dict(sent_summary_metrics[metric]["summary"]["data_points"])
-                    assert tags in data_points, "(%s, %s) Not Found. Got: %s" % (
-                        metric,
-                        tags and dict(tags),
-                        list(data_points.keys()),
-                    )
+                    assert tags in data_points, f"({metric}, {tags and dict(tags)}) Not Found. Got: {list(data_points.keys())}"
 
                     # Validate metric format
                     metric_container = data_points[tags]
@@ -139,12 +132,7 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
 
                     # Validate metric count
                     if count != "present":
-                        assert int(metric_container["count"]) == count, "(%s, %s): Expected: %s Got: %s" % (
-                            metric,
-                            tags and dict(tags),
-                            count,
-                            metric_container["count"],
-                        )
+                        assert int(metric_container["count"]) == count, f"({metric}, {tags and dict(tags)}): Expected: {count} Got: {metric_container['count']}"
 
             for metric, tags, count in count_metrics:
                 if isinstance(tags, dict):
@@ -155,16 +143,9 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
                         data_points = data_points_to_dict(sent_count_metrics[metric]["sum"]["data_points"])
                         assert tags not in data_points, f"({metric}, {tags and dict(tags)}) Unexpected but found."
                 else:
-                    assert metric in sent_count_metrics, "%s Not Found. Got: %s" % (
-                        metric,
-                        list(sent_count_metrics.keys()),
-                    )
+                    assert metric in sent_count_metrics, f"{metric} Not Found. Got: {list(sent_count_metrics.keys())}"
                     data_points = data_points_to_dict(sent_count_metrics[metric]["sum"]["data_points"])
-                    assert tags in data_points, "(%s, %s) Not Found. Got: %s" % (
-                        metric,
-                        tags and dict(tags),
-                        list(data_points.keys()),
-                    )
+                    assert tags in data_points, f"({metric}, {tags and dict(tags)}) Not Found. Got: {list(data_points.keys())}"
 
                     # Validate metric format
                     assert sent_count_metrics[metric]["sum"].get("is_monotonic")
@@ -175,12 +156,7 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
 
                     # Validate metric count
                     if count != "present":
-                        assert int(metric_container["as_int"]) == count, "(%s, %s): Expected: %s Got: %s" % (
-                            metric,
-                            tags and dict(tags),
-                            count,
-                            metric_container["count"],
-                        )
+                        assert int(metric_container["as_int"]) == count, f"({metric}, {tags and dict(tags)}): Expected: {count} Got: {metric_container['count']}"
 
         return val
 

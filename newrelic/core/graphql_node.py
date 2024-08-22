@@ -97,8 +97,7 @@ class GraphQLOperationNode(_GraphQLOperationNode, GraphQLNodeMixin):
         deepest_path = self.deepest_path
         product = self.product
 
-        name = 'GraphQL/operation/%s/%s/%s/%s' % (product, operation_type,
-                operation_name, deepest_path)
+        name = f'GraphQL/operation/{product}/{operation_type}/{operation_name}/{deepest_path}'
 
         return name
 
@@ -115,8 +114,7 @@ class GraphQLOperationNode(_GraphQLOperationNode, GraphQLNodeMixin):
 
         # Determine the scoped metric
 
-        operation_metric_name = 'GraphQL/operation/%s/%s/%s/%s' % (product,
-                operation_type, operation_name, deepest_path)
+        operation_metric_name = f'GraphQL/operation/{product}/{operation_type}/{operation_name}/{deepest_path}'
 
         scoped_metric_name = operation_metric_name
 

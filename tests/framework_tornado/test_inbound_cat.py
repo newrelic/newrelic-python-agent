@@ -60,8 +60,7 @@ def test_response_to_inbound_cat(app, manual_flush):
     client_cross_process_id = headers['X-NewRelic-ID']
     txn_header = headers['X-NewRelic-Transaction']
 
-    response = app.fetch('/force-cat-response/%s/%s/%s' %
-            (client_cross_process_id, txn_header, manual_flush))
+    response = app.fetch(f'/force-cat-response/{client_cross_process_id}/{txn_header}/{manual_flush}')
     assert response.code == 200
     assert 'X-NewRelic-App-Data' in list(response.headers.keys())
 

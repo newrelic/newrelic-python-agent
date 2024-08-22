@@ -104,7 +104,7 @@ def validate_outbound_payload(actual, expected, trusted_account_key):
             traceparent = value.split("-")
         elif key == "tracestate":
             vendors = W3CTraceState.decode(value)
-            nr_entry = vendors.pop(trusted_account_key + "@nr", "")
+            nr_entry = vendors.pop(f"{trusted_account_key}@nr", "")
             tracestate = nr_entry.split("-")
     exact_values = expected.get("exact", {})
     expected_attrs = expected.get("expected", [])
@@ -240,7 +240,7 @@ def test_trace_context(
     @override_compute_sampled(force_sampled_true)
     def _test():
         return test_application.get(
-            "/" + test_name,
+            f"/{test_name}",
             headers=inbound_headers,
             extra_environ=extra_environ,
         )

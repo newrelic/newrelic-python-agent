@@ -74,8 +74,8 @@ def test_quoting_styles(psycopg2_cursor, sql, obfuscated):
 
 _parameter_tests = [
     (
-        "SELECT * FROM " + DB_SETTINGS["table_name"] + " where b=%s",
-        "SELECT * FROM " + DB_SETTINGS["table_name"] + " where b=%s",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s",
     ),
 ]
 

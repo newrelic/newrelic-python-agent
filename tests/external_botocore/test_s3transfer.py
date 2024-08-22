@@ -38,15 +38,15 @@ TEST_BUCKET = f"python-agent-test-{uuid.uuid4()}"
 if BOTOCORE_VERSION < (1, 7, 41):
     S3_URL = "s3-us-west-2.amazonaws.com"
     EXPECTED_BUCKET_URL = f"https://{S3_URL}/{TEST_BUCKET}"
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/hello_world"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}/hello_world"
 elif BOTOCORE_VERSION < (1, 28):
     S3_URL = "s3.us-west-2.amazonaws.com"
     EXPECTED_BUCKET_URL = f"https://{S3_URL}/{TEST_BUCKET}"
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/hello_world"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}/hello_world"
 else:
     S3_URL = f"{TEST_BUCKET}.s3.us-west-2.amazonaws.com"
     EXPECTED_BUCKET_URL = f"https://{S3_URL}/"
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "hello_world"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}hello_world"
 
 
 @dt_enabled

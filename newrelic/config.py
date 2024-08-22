@@ -800,7 +800,7 @@ def translate_deprecated_settings(settings, cached_settings):
             ignored_params = fetch_config_setting(settings, "ignored_params")
 
             for p in ignored_params:
-                attr_value = "request.parameters." + p
+                attr_value = f"request.parameters.{p}"
                 excluded_attrs = fetch_config_setting(settings, "attributes.exclude")
 
                 if attr_value not in excluded_attrs:

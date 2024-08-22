@@ -64,7 +64,7 @@ except SyntaxError:
 
 URL_PARAM = "some_key"
 URL_PARAM2 = "second_key"
-REQUEST_URL = "/?" + URL_PARAM + "=someval&" + URL_PARAM2 + "=anotherval"
+REQUEST_URL = f"/?{URL_PARAM}=someval&{URL_PARAM2}=anotherval"
 REQUEST_HEADERS = [
     ("Accept", "*/*"),
     ("Host", "foobar"),
@@ -73,7 +73,7 @@ REQUEST_HEADERS = [
     ("Content-Length", "10"),
 ]
 
-REQ_PARAMS = ["request.parameters." + URL_PARAM, "request.parameters." + URL_PARAM2]
+REQ_PARAMS = [f"request.parameters.{URL_PARAM}", f"request.parameters.{URL_PARAM2}"]
 DISTRIBUTED_TRACE_ATTRS = [
     "traceId",
     "priority",
@@ -368,22 +368,22 @@ def test_browser_include_request_params(normal_application):
 
 _override_settings = {
     "error_collector.attributes.include": ["request.parameters.*"],
-    "error_collector.attributes.exclude": ["request.parameters." + URL_PARAM2],
+    "error_collector.attributes.exclude": [f"request.parameters.{URL_PARAM2}"],
 }
 
 _expected_attributes = {
-    "agent": TRACE_ERROR_AGENT_KEYS + ["request.parameters." + URL_PARAM],
+    "agent": TRACE_ERROR_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
     "user": ERROR_USER_ATTRS,
     "intrinsic": ["trip_id"],
 }
 
 _expected_attributes_event = {
-    "agent": TRACE_ERROR_AGENT_KEYS + ["request.parameters." + URL_PARAM],
+    "agent": TRACE_ERROR_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
     "user": ERROR_USER_ATTRS,
     "intrinsic": ERROR_EVENT_INTRINSICS,
 }
 
-_expected_absent_attributes = {"agent": ["request.parameters." + URL_PARAM2], "user": [], "intrinsic": []}
+_expected_absent_attributes = {"agent": [f"request.parameters.{URL_PARAM2}"], "user": [], "intrinsic": []}
 
 
 @validate_error_event_attributes(_expected_attributes_event, _expected_absent_attributes)
@@ -395,11 +395,11 @@ def test_error_in_transaction_include_exclude(normal_application):
 
 _override_settings = {
     "transaction_tracer.attributes.include": ["request.parameters.*"],
-    "transaction_tracer.attributes.exclude": ["request.parameters." + URL_PARAM2],
+    "transaction_tracer.attributes.exclude": [f"request.parameters.{URL_PARAM2}"],
 }
 
 _expected_attributes = {
-    "agent": TRACE_ERROR_AGENT_KEYS + ["request.parameters." + URL_PARAM],
+    "agent": TRACE_ERROR_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
     "user": USER_ATTRS,
     "intrinsic": ["trip_id"],
 }
@@ -413,16 +413,16 @@ def test_transaction_trace_include_exclude(normal_application):
 
 _override_settings = {
     "transaction_events.attributes.include": ["request.parameters.*"],
-    "transaction_events.attributes.exclude": ["request.parameters." + URL_PARAM2],
+    "transaction_events.attributes.exclude": [f"request.parameters.{URL_PARAM2}"],
 }
 
 _expected_attributes = {
-    "agent": TRANS_EVENT_AGENT_KEYS + ["request.parameters." + URL_PARAM],
+    "agent": TRANS_EVENT_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
     "user": USER_ATTRS,
     "intrinsic": TRANS_EVENT_INTRINSICS,
 }
 
-_expected_absent_attributes = {"agent": ["request.parameters." + URL_PARAM2], "user": [], "intrinsic": []}
+_expected_absent_attributes = {"agent": [f"request.parameters.{URL_PARAM2}"], "user": [], "intrinsic": []}
 
 
 @validate_transaction_event_attributes(_expected_attributes, _expected_absent_attributes)
@@ -434,16 +434,16 @@ def test_transaction_event_include_exclude(normal_application):
 _override_settings = {
     "browser_monitoring.attributes.enabled": True,
     "browser_monitoring.attributes.include": ["request.parameters.*"],
-    "browser_monitoring.attributes.exclude": ["request.parameters." + URL_PARAM2],
+    "browser_monitoring.attributes.exclude": [f"request.parameters.{URL_PARAM2}"],
 }
 
 _expected_attributes = {
-    "agent": ["request.parameters." + URL_PARAM],
+    "agent": [f"request.parameters.{URL_PARAM}"],
     "user": USER_ATTRS,
     "intrinsic": BROWSER_INTRINSIC_KEYS,
 }
 
-_expected_absent_attributes = {"agent": ABSENT_BROWSER_KEYS + ["request.parameters." + URL_PARAM2], "user": []}
+_expected_absent_attributes = {"agent": ABSENT_BROWSER_KEYS + [f"request.parameters.{URL_PARAM2}"], "user": []}
 
 
 @validate_browser_attributes(_expected_attributes, _expected_absent_attributes)

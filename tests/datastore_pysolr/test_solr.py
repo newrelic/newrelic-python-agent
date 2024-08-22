@@ -30,7 +30,7 @@ SOLR_URL = f"http://{DB_SETTINGS['host']}:{DB_SETTINGS['port']}/solr/collection"
 def _exercise_solr(solr):
     # Construct document names within namespace
     documents = ["pysolr_doc_1", "pysolr_doc_2"]
-    documents = [x + "_" + DB_SETTINGS["namespace"] for x in documents]
+    documents = [f"{x}_{DB_SETTINGS['namespace']}" for x in documents]
 
     solr.add([{"id": x} for x in documents])
 

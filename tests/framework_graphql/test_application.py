@@ -444,7 +444,7 @@ def test_field_resolver_metrics_and_attrs(target_application):
         "graphql.field.name": "hello",
         "graphql.field.parentType": "Query",
         "graphql.field.path": "hello",
-        "graphql.field.returnType": "String" + type_annotation,
+        "graphql.field.returnType": f"String{type_annotation}",
     }
 
     # Span count 4: Transaction, Operation, and 1 Resolver and Resolver function

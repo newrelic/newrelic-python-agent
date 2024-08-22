@@ -29,7 +29,7 @@ def server():
         yield _server
 
 
-@pytest.mark.parametrize('path', ('', '/foo', '/' + 'a' * 256))
+@pytest.mark.parametrize('path', ('', '/foo', f"/{'a' * 256}"))
 def test_span_events(server, path):
     _settings = {
         'distributed_tracing.enabled': True,

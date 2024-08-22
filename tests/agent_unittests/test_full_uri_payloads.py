@@ -27,7 +27,7 @@ class FullUriClient(HttpClient):
     def send_request(
         self, method="POST", path="/agent_listener/invoke_raw_method", *args, **kwargs
     ):
-        path = "https://" + self._host + path
+        path = f"https://{self._host}{path}"
         return super(FullUriClient, self).send_request(method, path, *args, **kwargs)
 
 

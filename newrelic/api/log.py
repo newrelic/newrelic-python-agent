@@ -115,7 +115,7 @@ class NewRelicContextFormatter(logging.Formatter):
         # add them to the output record.
         keys_to_add = set(record.__dict__.keys()) - DEFAULT_LOG_RECORD_KEYS
         for key in keys_to_add:
-            output["extra." + key] = getattr(record, key)
+            output[f"extra.{key}"] = getattr(record, key)
 
         if record.exc_info:
             output.update(cls.format_exc_info(record.exc_info, stack_trace_limit))
@@ -275,5 +275,5 @@ class NewRelicLogHandler(logging.Handler):
             return "log-api.newrelic.com"
 
         region = region_aware_match.group(1)
-        host = "log-api." + region + ".newrelic.com"
+        host = f"log-api.{region}.newrelic.com"
         return host

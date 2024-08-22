@@ -38,7 +38,7 @@ ASYNCPG_VERSION = get_package_version_tuple("asyncpg")
 if ASYNCPG_VERSION < (0, 11):
     CONNECT_METRICS = ()
 else:
-    CONNECT_METRICS = ((PG_PREFIX + "connect", 1),)
+    CONNECT_METRICS = ((f"{PG_PREFIX}connect", 1),)
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def conn(event_loop):
 @validate_transaction_metrics(
     "test_single",
     background_task=True,
-    scoped_metrics=((PG_PREFIX + "select", 1),),
+    scoped_metrics=((f"{PG_PREFIX}select", 1),),
     rollup_metrics=(("Datastore/all", 1),),
 )
 @validate_tt_collector_json(datastore_params={"port_path_or_id": str(DB_SETTINGS["port"])})
@@ -75,8 +75,8 @@ def test_single(event_loop, method, conn):
     "test_prepared_single",
     background_task=True,
     scoped_metrics=(
-        (PG_PREFIX + "prepare", 1),
-        (PG_PREFIX + "select", 1),
+        (f"{PG_PREFIX}prepare", 1),
+        (f"{PG_PREFIX}select", 1),
     ),
     rollup_metrics=(("Datastore/all", 2),),
 )
@@ -91,7 +91,7 @@ def test_prepared_single(event_loop, method, conn):
 @validate_transaction_metrics(
     "test_prepare",
     background_task=True,
-    scoped_metrics=((PG_PREFIX + "prepare", 1),),
+    scoped_metrics=((f"{PG_PREFIX}prepare", 1),),
     rollup_metrics=(("Datastore/all", 1),),
 )
 @background_task(name="test_prepare")
@@ -114,8 +114,8 @@ def table(event_loop, conn):
     "test_copy",
     background_task=True,
     scoped_metrics=(
-        (PG_PREFIX + "prepare", 1),
-        (PG_PREFIX + "copy", 3),
+        (f"{PG_PREFIX}prepare", 1),
+        (f"{PG_PREFIX}copy", 3),
     ),
     rollup_metrics=(("Datastore/all", 4),),
 )
@@ -137,8 +137,8 @@ def test_copy(event_loop, table, conn):
     "test_select_many",
     background_task=True,
     scoped_metrics=(
-        (PG_PREFIX + "prepare", 1),
-        (PG_PREFIX + "select", 1),
+        (f"{PG_PREFIX}prepare", 1),
+        (f"{PG_PREFIX}select", 1),
     ),
     rollup_metrics=(("Datastore/all", 2),),
 )
@@ -152,9 +152,9 @@ def test_select_many(event_loop, conn):
     "test_transaction",
     background_task=True,
     scoped_metrics=(
-        (PG_PREFIX + "begin", 1),
-        (PG_PREFIX + "select", 1),
-        (PG_PREFIX + "commit", 1),
+        (f"{PG_PREFIX}begin", 1),
+        (f"{PG_PREFIX}select", 1),
+        (f"{PG_PREFIX}commit", 1),
     ),
     rollup_metrics=(("Datastore/all", 3),),
 )
@@ -172,10 +172,10 @@ def test_transaction(event_loop, conn):
     "test_cursor",
     background_task=True,
     scoped_metrics=(
-        (PG_PREFIX + "begin", 1),
-        (PG_PREFIX + "prepare", 2),
-        (PG_PREFIX + "select", 3),
-        (PG_PREFIX + "commit", 1),
+        (f"{PG_PREFIX}begin", 1),
+        (f"{PG_PREFIX}prepare", 2),
+        (f"{PG_PREFIX}select", 3),
+        (f"{PG_PREFIX}commit", 1),
     ),
     rollup_metrics=(("Datastore/all", 7),),
 )
@@ -201,7 +201,7 @@ def test_cursor(event_loop, conn):
     background_task=True,
     rollup_metrics=[
         (
-            "Datastore/instance/Postgres/" + instance_hostname("localhost") + "//.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST",
+            f"Datastore/instance/Postgres/{instance_hostname('localhost')}//.s.PGSQL.THIS_FILE_BETTER_NOT_EXIST",
             1,
         )
     ],
@@ -220,7 +220,7 @@ def test_unix_socket_connect(event_loop):
 @validate_transaction_metrics(
     "test_pool_acquire",
     background_task=True,
-    scoped_metrics=((PG_PREFIX + "connect", 2),),
+    scoped_metrics=((f"{PG_PREFIX}connect", 2),),
 )
 @background_task(name="test_pool_acquire")
 def test_pool_acquire(event_loop):

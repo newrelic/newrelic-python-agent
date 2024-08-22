@@ -61,7 +61,7 @@ def get_metadata_string(log_message, is_txn):
         metadata_string = "".join(
             ("NR-LINKING|", entity_guid, "|", host, "|||Python%20Agent%20Test%20%28logger_logging%29|")
         )
-    formatted_string = log_message + " " + metadata_string
+    formatted_string = f"{log_message} {metadata_string}"
     return formatted_string
 
 

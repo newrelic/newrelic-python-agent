@@ -155,9 +155,9 @@ def test_tracestate_generation(inbound_nr_tracestate):
 
 @pytest.mark.parametrize('inbound_tracestate,expected', (
     ('', None),
-    (INBOUND_NR_TRACESTATE + "," + INBOUND_TRACESTATE, INBOUND_TRACESTATE),
+    (f"{INBOUND_NR_TRACESTATE},{INBOUND_TRACESTATE}", INBOUND_TRACESTATE),
     (INBOUND_TRACESTATE, INBOUND_TRACESTATE),
-    (LONG_TRACESTATE + ',' + INBOUND_NR_TRACESTATE,
+    (f"{LONG_TRACESTATE},{INBOUND_NR_TRACESTATE}",
             ','.join(f"{x}@rojo=f06a0ba902b7" for x in range(31))),
 ), ids=(
     'empty_inbound_payload',
@@ -231,7 +231,7 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
             "parentSpanId": "00f067aa0ba902b7",
             "parent.transportType": "HTTP"},
             [("Supportability/TraceContext/TraceParent/Accept/Success", 1)]),
-    (INBOUND_TRACEPARENT + ' ', {
+    (f"{INBOUND_TRACEPARENT} ", {
             "traceId": "0af7651916cd43dd8448eb211c80319c",
             "parentSpanId": "00f067aa0ba902b7",
             "parent.transportType": "HTTP"},
@@ -283,16 +283,16 @@ def test_inbound_traceparent_header(traceparent, intrinsics, metrics):
     (INBOUND_NR_TRACESTATE,
             {'trustedParentId': '27ddd2d8890283b4'}),
     ('garbage', {'parentId': '00f067aa0ba902b7'}),
-    (INBOUND_TRACESTATE + ',' + INBOUND_NR_TRACESTATE,
+    (f"{INBOUND_TRACESTATE},{INBOUND_NR_TRACESTATE}",
             {'parentId': '00f067aa0ba902b7',
              'trustedParentId': '27ddd2d8890283b4',
              'tracingVendors': 'rojo,congo'}),
-    (INBOUND_TRACESTATE + ',' + INBOUND_UNTRUSTED_NR_TRACESTATE,
+    (f"{INBOUND_TRACESTATE},{INBOUND_UNTRUSTED_NR_TRACESTATE}",
             {'parentId': '00f067aa0ba902b7',
              'tracingVendors': 'rojo,congo,2@nr'}),
-    ('rojo=12345,' + 'v' * 257 + '=x',
+    (f"rojo=12345,{'v' * 257}=x",
             {'tracingVendors': 'rojo'}),
-    ('rojo=12345,k=' + 'v' * 257,
+    (f"rojo=12345,k={'v' * 257}",
             {'tracingVendors': 'rojo'}),
 ))
 @override_application_settings(_override_settings)

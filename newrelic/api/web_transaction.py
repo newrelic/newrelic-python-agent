@@ -538,7 +538,7 @@ class WSGIHeaderProxy(object):
             return "CONTENT_LENGTH"
         elif key == "CONTENT-TYPE":
             return "CONTENT_TYPE"
-        return "HTTP_" + key.replace("-", "_")
+        return f"HTTP_{key.replace('-', '_')}"
 
     @staticmethod
     def _from_wsgi(key):

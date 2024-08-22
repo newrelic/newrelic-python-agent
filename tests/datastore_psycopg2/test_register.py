@@ -48,7 +48,7 @@ def test_register_range():
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
             port=DB_SETTINGS['port']) as connection:
 
-        type_name = "floatrange_" + str(os.getpid())
+        type_name = f"floatrange_{str(os.getpid())}"
 
         create_sql = (f'CREATE TYPE {type_name} AS RANGE (' +
                       'subtype = float8,'

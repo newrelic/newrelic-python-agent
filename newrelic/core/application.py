@@ -1157,7 +1157,7 @@ class Application(object):
         call_metric = "flexible" if flexible else "default"
 
         with InternalTraceContext(internal_metrics):
-            with InternalTrace("Supportability/Python/Harvest/Calls/" + call_metric):
+            with InternalTrace(f"Supportability/Python/Harvest/Calls/{call_metric}"):
                 self._harvest_count += 1
 
                 start = time.time()

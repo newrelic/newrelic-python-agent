@@ -102,7 +102,7 @@ async def _exercise_db(multiple_connections):
         cursor = connection.cursor()
         await maybe_await(cursor.execute(f"drop table if exists {DB_SETTINGS['table_name']}"))
         await maybe_await(
-            cursor.execute(f"create table {DB_SETTINGS['table_name']} " + "(a integer, b real, c text)")
+            cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
         )
         await maybe_await(connection.commit())
     finally:

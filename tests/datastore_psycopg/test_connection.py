@@ -100,7 +100,7 @@ async def _execute(connection, row_type, wrapper):
     await maybe_await(connection.execute(wrapper(sql)))
 
     for params in [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")]:
-        sql = f"insert into {DB_SETTINGS['table_name']} " + "values (%s, %s, %s)"
+        sql = f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)"
         await maybe_await(connection.execute(wrapper(sql), params))
 
     sql = f"select * from {DB_SETTINGS['table_name']}"
@@ -114,7 +114,7 @@ async def _execute(connection, row_type, wrapper):
             assert isinstance(row, row_type)
 
     # Reuse cursor to ensure it is also wrapped
-    sql = f"update {DB_SETTINGS['table_name']}" + " set a=%s, b=%s, c=%s where a=%s"
+    sql = f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s"
     params = (4, 4.0, "4.0", 1)
     await maybe_await(cursor.execute(wrapper(sql), params))
 

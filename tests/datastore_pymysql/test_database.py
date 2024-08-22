@@ -25,8 +25,8 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 
 DB_SETTINGS = mysql_settings()[0]
-TABLE_NAME = "datastore_pymysql_" + DB_SETTINGS["namespace"]
-PROCEDURE_NAME = "hello_" + DB_SETTINGS["namespace"]
+TABLE_NAME = f"datastore_pymysql_{DB_SETTINGS['namespace']}"
+PROCEDURE_NAME = f"hello_{DB_SETTINGS['namespace']}"
 
 HOST = instance_hostname(DB_SETTINGS["host"])
 PORT = DB_SETTINGS["port"]
@@ -35,10 +35,10 @@ PORT = DB_SETTINGS["port"]
 def execute_db_calls_with_cursor(cursor):
     cursor.execute(f"""drop table if exists {TABLE_NAME}""")
 
-    cursor.execute(f"""create table {TABLE_NAME} """ + """(a integer, b real, c text)""")
+    cursor.execute(f"create table {TABLE_NAME} (a integer, b real, c text)")
 
     cursor.executemany(
-        f"""insert into {TABLE_NAME} """ + """values (%s, %s, %s)""",
+        f"insert into {TABLE_NAME} values (%s, %s, %s)",
         [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
     )
 
@@ -47,7 +47,7 @@ def execute_db_calls_with_cursor(cursor):
     for row in cursor:
         pass
 
-    cursor.execute(f"""update {TABLE_NAME}""" + """ set a=%s, b=%s, """ """c=%s where a=%s""", (4, 4.0, "4.0", 1))
+    cursor.execute(f"update {TABLE_NAME} set a=%s, b=%s, c=%s where a=%s", (4, 4.0, "4.0", 1))
 
     cursor.execute(f"""delete from {TABLE_NAME} where a=2""")
     cursor.execute(f"""drop procedure if exists {PROCEDURE_NAME}""")

@@ -34,7 +34,7 @@ from newrelic.api.transaction import (
 )
 from newrelic.common.encoding_utils import deobfuscate
 
-_runtime_error_name = RuntimeError.__module__ + ":" + RuntimeError.__name__
+_runtime_error_name = f"{RuntimeError.__module__}:{RuntimeError.__name__}"
 
 
 @asgi_application()

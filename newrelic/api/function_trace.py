@@ -37,7 +37,7 @@ class FunctionTrace(TimeTrace):
         group = group or "Function"
 
         if group.startswith("/"):
-            group = "Function" + group
+            group = f"Function{group}"
 
         self.name = name
         self.group = group

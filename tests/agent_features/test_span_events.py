@@ -351,7 +351,7 @@ def test_external_span_limits(kwarg_override, attr_override):
     "kwarg_override,attribute_override",
     (
         ({"host": "a" * 256}, {"peer.hostname": "a" * 255, "peer.address": "a" * 255}),
-        ({"port_path_or_id": "a" * 256, "host": "a"}, {"peer.hostname": "a", "peer.address": "a:" + "a" * 253}),
+        ({"port_path_or_id": "a" * 256, "host": "a"}, {"peer.hostname": "a", "peer.address": f"a:{'a' * 253}"}),
         ({"database_name": "a" * 256}, {"db.instance": "a" * 255}),
     ),
 )

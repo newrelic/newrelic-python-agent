@@ -602,7 +602,7 @@ def default_host(license_key):
         return "collector.newrelic.com"
 
     region = region_aware_match.group(1)
-    host = "collector." + region + ".nr-data.net"
+    host = f"collector.{region}.nr-data.net"
     return host
 
 

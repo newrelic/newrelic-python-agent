@@ -24,7 +24,7 @@ def crc(b):
 
 def int_to_escaped_bytes(i, num_bytes=1):
     """Convert an integer into an arbitrary number of bytes."""
-    return bytes.fromhex(("{:0" + str(num_bytes * 2) + "x}").format(i))
+    return bytes.fromhex(f"{{:0{str(num_bytes * 2)}x}}".format(i))
 
 
 def encode_headers(headers):

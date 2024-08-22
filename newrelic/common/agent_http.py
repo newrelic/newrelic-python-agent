@@ -303,7 +303,7 @@ class HttpClient(BaseClient):
             else:
                 self._host = proxy.host
                 self._port = proxy.port or 443
-                self._prefix = self.PREFIX_SCHEME + host + ":" + str(port)
+                self._prefix = f"{self.PREFIX_SCHEME + host}:{str(port)}"
                 urlopen_kwargs["assert_same_host"] = False
                 if proxy_headers:
                     self._headers.update(proxy_headers)
@@ -328,7 +328,7 @@ class HttpClient(BaseClient):
         else:
             auth = username
             if auth and password is not None:
-                auth = auth + ":" + password
+                auth = f"{auth}:{password}"
 
         # Host must be defined
         if not host:
@@ -377,7 +377,7 @@ class HttpClient(BaseClient):
         compression_time=None,
     ):
         if not self._prefix:
-            url = self.CONNECTION_CLS.scheme + "://" + self._host + url
+            url = f"{self.CONNECTION_CLS.scheme}://{self._host}{url}"
 
         return super(HttpClient, self).log_request(fp, method, url, params, payload, headers, body, compression_time)
 
@@ -405,7 +405,7 @@ class HttpClient(BaseClient):
     ):
         if self._proxy:
             proxy_scheme = self._proxy.scheme or "http"
-            connection = proxy_scheme + "-proxy"
+            connection = f"{proxy_scheme}-proxy"
         else:
             connection = "direct"
 
@@ -624,7 +624,7 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
         request_id = self.log_request(
             self._audit_log_fp,
             "POST",
-            "https://fake-collector.newrelic.com" + path,
+            f"https://fake-collector.newrelic.com{path}",
             params,
             payload,
             headers,

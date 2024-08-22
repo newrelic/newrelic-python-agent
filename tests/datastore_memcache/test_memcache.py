@@ -72,7 +72,7 @@ _disable_rollup_metrics.append(
 # Query
 
 def _exercise_db(client):
-    key = DB_SETTINGS['namespace'] + 'key'
+    key = f"{DB_SETTINGS['namespace']}key"
     client.set(key, 'value')
     value = client.get(key)
     client.delete(key)

@@ -52,7 +52,7 @@ def test_simple(target_application, route):
     @validate_transaction_count(2)
     def _test():
         app = target_application["none"]
-        response = app.get("/" + route)
+        response = app.get(f"/{route}")
         assert response.status == 200
 
     _test()
@@ -68,7 +68,7 @@ def test_asgi_style_middleware(target_application, route):
     @validate_transaction_count(2)
     def _test():
         app = target_application["asgi"]
-        response = app.get("/" + route)
+        response = app.get(f"/{route}")
         assert response.status == 200
 
     _test()
@@ -85,7 +85,7 @@ def test_basehttp_style_middleware(target_application, route):
 
     def _test():
         app = target_application["basehttp"]
-        response = app.get("/" + route)
+        response = app.get(f"/{route}")
         assert response.status == 200
 
     # The bug was fixed in version 0.21.0 but re-occured in 0.23.1.

@@ -46,7 +46,7 @@ class capture_external_trace(object):
         if parsed_url.startswith("feed:http"):
             parsed_url = parsed_url[5:]
         elif parsed_url.startswith("feed:"):
-            parsed_url = "http:" + url[5:]
+            parsed_url = f"http:{url[5:]}"
 
         if parsed_url.split(":")[0].lower() in ["http", "https", "ftp"]:
             current_transaction = newrelic.api.transaction.current_transaction()

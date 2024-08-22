@@ -29,7 +29,7 @@ def feedparser():
     "feed://localhost",
 ))
 def test_feedparser_external(feedparser, server, url):
-    url = url + ':' + str(server.port)
+    url = f"{url}:{str(server.port)}"
 
     @validate_transaction_metrics(
         "test_feedparser_external",
@@ -70,6 +70,6 @@ def test_feedparser_file(feedparser, stream, server):
 ))
 def test_feedparser_no_transaction(feedparser, server, url):
     if url.startswith('http://'):
-        url = url + ':' + str(server.port)
+        url = f"{url}:{str(server.port)}"
     feed = feedparser.parse(url)
     assert feed["feed"]["link"] == u"https://pypi.org/"

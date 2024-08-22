@@ -65,8 +65,8 @@ def test_obfuscation_quoting_styles(loop, cursor, sql, obfuscated):
 
 _parameter_tests = [
     (
-        "SELECT * FROM " + DB_SETTINGS["table_name"] + " where b=%s",
-        "SELECT * FROM " + DB_SETTINGS["table_name"] + " where b=%s",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s",
     ),
 ]
 

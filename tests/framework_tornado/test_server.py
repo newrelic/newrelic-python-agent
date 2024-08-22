@@ -62,7 +62,7 @@ def test_server(app, uri, name, metrics, method_metric):
     metrics.append((FRAMEWORK_METRIC, 1))
     metrics.append((METHOD_METRIC, 1 if method_metric else None))
 
-    host = "127.0.0.1:" + str(app.get_http_port())
+    host = f"127.0.0.1:{str(app.get_http_port())}"
     namespace, func_name = name.split(".")
     namespace = namespace.replace(":", ".")
 

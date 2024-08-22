@@ -33,7 +33,7 @@ FOLDER = "aiobotocore"
 ENDPOINT = f"localhost:{PORT}"
 KEY = f"{FOLDER}/{FILENAME}"
 EXPECTED_BUCKET_URL = f"http://{ENDPOINT}/{TEST_BUCKET}"
-EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/" + KEY
+EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}/{KEY}"
 
 
 _s3_scoped_metrics = [

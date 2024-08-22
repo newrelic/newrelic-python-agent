@@ -91,10 +91,10 @@ def test_execute_via_cursor():
 
         cursor.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
 
-        cursor.execute(f"""create table {DB_SETTINGS['table_name']} """ + """(a integer, b real, c text)""")
+        cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
 
         cursor.executemany(
-            f"""insert into {DB_SETTINGS['table_name']} """ + """values (%s, %s, %s)""",
+            f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)",
             [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
         )
 
@@ -107,7 +107,7 @@ def test_execute_via_cursor():
         )
 
         cursor.execute(
-            f"""update {DB_SETTINGS['table_name']} """ + """set a=%s, b=%s, c=%s where a=%s""",
+            f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s",
             (4, 4.0, "4.0", 1),
         )
 

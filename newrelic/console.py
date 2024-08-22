@@ -69,7 +69,7 @@ def shell_command(wrapped):
         return wrapped(self, *args, **kwargs)
 
     if wrapper.__name__.startswith("do_"):
-        prototype = wrapper.__name__[3:] + " " + doc_signature(wrapped)
+        prototype = f"{wrapper.__name__[3:]} {doc_signature(wrapped)}"
 
         if hasattr(wrapper, "__doc__") and wrapper.__doc__ is not None:
             wrapper.__doc__ = "\n".join((prototype, wrapper.__doc__.lstrip("\n")))

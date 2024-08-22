@@ -44,5 +44,5 @@ def patch_motor(module):
             'MotorCollection']
     for patched_class in patched_classes:
         if hasattr(module, patched_class):
-            wrap_function_wrapper(module, patched_class + '.__getattr__',
+            wrap_function_wrapper(module, f"{patched_class}.__getattr__",
                     _nr_wrapper_Motor_getattr_)

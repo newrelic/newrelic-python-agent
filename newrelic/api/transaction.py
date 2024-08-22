@@ -1143,7 +1143,7 @@ class Transaction(object):
 
                 tracestate = NrTraceState(data).text()
                 if self.tracestate:
-                    tracestate += "," + self.tracestate
+                    tracestate += f",{self.tracestate}"
                 yield ("tracestate", tracestate)
 
                 self._record_supportability("Supportability/TraceContext/Create/Success")
@@ -1338,7 +1338,7 @@ class Transaction(object):
                     trusted_account_key = self._settings.trusted_account_key or (
                         self._settings.serverless_mode.enabled and self._settings.account_id
                     )
-                    payload = vendors.pop(trusted_account_key + "@nr", "")
+                    payload = vendors.pop(f"{trusted_account_key}@nr", "")
                     self.tracing_vendors = ",".join(vendors.keys())
                     self.tracestate = vendors.text(limit=31)
                 except:
@@ -1536,7 +1536,7 @@ class Transaction(object):
         group = group or "Function"
 
         if group.startswith("/"):
-            group = "Function" + group
+            group = f"Function{group}"
 
         self._group = group
         self._name = name

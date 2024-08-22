@@ -99,7 +99,7 @@ async def _execute(connection, cursor, row_type, wrapper):
     sql = f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)"
     await maybe_await(cursor.execute(wrapper(sql)))
 
-    sql = f"insert into {DB_SETTINGS['table_name']} " + "values (%s, %s, %s)"
+    sql = f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)"
     params = [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")]
     await maybe_await(cursor.executemany(wrapper(sql), params))
 
@@ -114,7 +114,7 @@ async def _execute(connection, cursor, row_type, wrapper):
         for row in cursor:
             assert isinstance(row, row_type)
 
-    sql = f"update {DB_SETTINGS['table_name']}" + " set a=%s, b=%s, c=%s where a=%s"
+    sql = f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s"
     params = (4, 4.0, "4.0", 1)
     await maybe_await(cursor.execute(wrapper(sql), params))
 

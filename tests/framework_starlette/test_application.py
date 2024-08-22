@@ -113,7 +113,7 @@ middleware_test = (
 def test_application_nonexistent_route(target_application, app_name, transaction_name):
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=[("Function/" + transaction_name, 1)],
+        scoped_metrics=[(f"Function/{transaction_name}", 1)],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():
@@ -226,7 +226,7 @@ def test_application_handled_error(target_application, app_name, transaction_nam
     @validate_transaction_errors(errors=[error])
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=[("Function/" + transaction_name, 1)],
+        scoped_metrics=[(f"Function/{transaction_name}", 1)],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():
@@ -257,7 +257,7 @@ def test_application_ignored_error(target_application, app_name, transaction_nam
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=[("Function/" + transaction_name, 1)],
+        scoped_metrics=[(f"Function/{transaction_name}", 1)],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():

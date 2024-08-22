@@ -87,7 +87,7 @@ transaction_metric_prefix = 'test_multiple_dbs:test_multiple_datastores'
 @pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2,
         reason='Test environment not configured with multiple databases.')
 @override_application_settings(_enable_instance_settings)
-@validate_transaction_metrics(transaction_metric_prefix+'_enabled',
+@validate_transaction_metrics(f"{transaction_metric_prefix}_enabled",
         scoped_metrics=_enable_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
@@ -105,7 +105,7 @@ def test_multiple_datastores_enabled(memcached_multi):
 @pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2,
         reason='Test environment not configured with multiple databases.')
 @override_application_settings(_disable_instance_settings)
-@validate_transaction_metrics(transaction_metric_prefix+'_disabled',
+@validate_transaction_metrics(f"{transaction_metric_prefix}_disabled",
         scoped_metrics=_disable_scoped_metrics,
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)

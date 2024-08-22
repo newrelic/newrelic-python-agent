@@ -90,11 +90,11 @@ def test_websocket(app):
     ),
 )
 def test_method_view(app, method):
-    metric_name = "Function/_target_application:MethodView." + method
+    metric_name = f"Function/_target_application:MethodView.{method}"
 
     @validate_code_level_metrics("_target_application.MethodView", method)
     @validate_transaction_metrics(
-        "_target_application:MethodView." + method,
+        f"_target_application:MethodView.{method}",
         scoped_metrics=[(metric_name, 1)],
         rollup_metrics=[(metric_name, 1)],
     )
@@ -150,9 +150,9 @@ def test_recorded_error(app, endpoint, sanic_version):
     def _test():
         if endpoint == "write_response_error":
             with pytest.raises(ValueError):
-                response = app.fetch("get", "/" + endpoint)
+                response = app.fetch("get", f"/{endpoint}")
         else:
-            response = app.fetch("get", "/" + endpoint)
+            response = app.fetch("get", f"/{endpoint}")
             assert response.status == 500
 
     _test()

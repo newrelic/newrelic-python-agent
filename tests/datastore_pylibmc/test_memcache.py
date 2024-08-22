@@ -57,7 +57,7 @@ def test_bt_set_get_delete():
     set_background_task(True)
     client = pylibmc.Client([MEMCACHED_ADDR])
 
-    key = MEMCACHED_NAMESPACE + "key"
+    key = f"{MEMCACHED_NAMESPACE}key"
 
     client.set(key, "value")
     value = client.get(key)
@@ -94,7 +94,7 @@ def test_wt_set_get_delete():
     set_background_task(False)
     client = pylibmc.Client([MEMCACHED_ADDR])
 
-    key = MEMCACHED_NAMESPACE + "key"
+    key = f"{MEMCACHED_NAMESPACE}key"
 
     client.set(key, "value")
     value = client.get(key)

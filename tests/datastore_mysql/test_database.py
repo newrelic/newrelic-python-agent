@@ -28,7 +28,7 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 DB_SETTINGS = mysql_settings()
 DB_SETTINGS = DB_SETTINGS[0]
 DB_NAMESPACE = DB_SETTINGS["namespace"]
-DB_PROCEDURE = "hello_" + DB_NAMESPACE
+DB_PROCEDURE = f"hello_{DB_NAMESPACE}"
 
 mysql_version = get_package_version_tuple("mysql.connector")
 
@@ -104,7 +104,7 @@ def test_execute_via_cursor(table_name):
     cursor.execute(f"""create table {table_name} (a integer, b real, c text)""")
 
     cursor.executemany(
-        f"""insert into `{table_name}` """ + """values (%(a)s, %(b)s, %(c)s)""",
+        f"insert into `{table_name}` values (%(a)s, %(b)s, %(c)s)",
         [{"a": 1, "b": 1.0, "c": "1.0"}, {"a": 2, "b": 2.2, "c": "2.2"}, {"a": 3, "b": 3.3, "c": "3.3"}],
     )
 
@@ -114,7 +114,7 @@ def test_execute_via_cursor(table_name):
         pass
 
     cursor.execute(
-        f"""update `{table_name}` """ + """set a=%(a)s, b=%(b)s, c=%(c)s where a=%(old_a)s""",
+        f"update `{table_name}` set a=%(a)s, b=%(b)s, c=%(c)s where a=%(old_a)s",
         {"a": 4, "b": 4.0, "c": "4.0", "old_a": 1},
     )
 
@@ -196,7 +196,7 @@ def test_connect_using_alias(table_name):
     cursor.execute(f"""create table {table_name} (a integer, b real, c text)""")
 
     cursor.executemany(
-        f"""insert into `{table_name}` """ + """values (%(a)s, %(b)s, %(c)s)""",
+        f"insert into `{table_name}` values (%(a)s, %(b)s, %(c)s)",
         [{"a": 1, "b": 1.0, "c": "1.0"}, {"a": 2, "b": 2.2, "c": "2.2"}, {"a": 3, "b": 3.3, "c": "3.3"}],
     )
 
@@ -206,7 +206,7 @@ def test_connect_using_alias(table_name):
         pass
 
     cursor.execute(
-        f"""update `{table_name}` """ + """set a=%(a)s, b=%(b)s, c=%(c)s where a=%(old_a)s""",
+        f"update `{table_name}` set a=%(a)s, b=%(b)s, c=%(c)s where a=%(old_a)s",
         {"a": 4, "b": 4.0, "c": "4.0", "old_a": 1},
     )
 

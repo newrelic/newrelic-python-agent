@@ -44,9 +44,9 @@ _double_quotes_p = r'"(?:[^"]|"")*?(?:\\".*|"(?!"))'
 _dollar_quotes_p = r'(\$(?!\d)[^$]*?\$).*?(?:\1|$)'
 _oracle_quotes_p = (r"q'\[.*?(?:\]'|$)|q'\{.*?(?:\}'|$)|"
         r"q'\<.*?(?:\>'|$)|q'\(.*?(?:\)'|$)")
-_any_quotes_p = _single_quotes_p + '|' + _double_quotes_p
-_single_dollar_p = _single_quotes_p + '|' + _dollar_quotes_p
-_single_oracle_p = _single_quotes_p + '|' + _oracle_quotes_p
+_any_quotes_p = f"{_single_quotes_p}|{_double_quotes_p}"
+_single_dollar_p = f"{_single_quotes_p}|{_dollar_quotes_p}"
+_single_oracle_p = f"{_single_quotes_p}|{_oracle_quotes_p}"
 
 _single_quotes_re = re.compile(_single_quotes_p)
 _any_quotes_re = re.compile(_any_quotes_p)
@@ -85,7 +85,7 @@ _bool_p = r'\b(?:true|false|null)\b'
 # first to avoid the situation of partial matches on shorter expressions. UUIDs
 # might be an example.
 
-_all_literals_p = '(' + ')|('.join([_uuid_p, _hex_p, _int_p, _bool_p]) + ')'
+_all_literals_p = f"({')|('.join([_uuid_p, _hex_p, _int_p, _bool_p])})"
 _all_literals_re = re.compile(_all_literals_p, re.IGNORECASE)
 
 _quotes_table = {

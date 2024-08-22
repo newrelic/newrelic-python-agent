@@ -195,7 +195,7 @@ def test_http_no_payload(server, method):
     assert connection.pool is None
 
     # Verify request line
-    assert data[0].startswith(method + " /agent_listener/invoke_raw_method ")
+    assert data[0].startswith(f"{method} /agent_listener/invoke_raw_method ")
 
     # Verify headers
     user_agent_header = ""
@@ -419,8 +419,8 @@ def test_ssl_via_ssl_proxy(server, auth):
     if proxy_user:
         auth_expected = proxy_user
         if proxy_pass:
-            auth_expected = auth_expected + ":" + proxy_pass
-        auth_expected = "Basic " + base64.b64encode(auth_expected.encode("utf-8")).decode("utf-8")
+            auth_expected = f"{auth_expected}:{proxy_pass}"
+        auth_expected = f"Basic {base64.b64encode(auth_expected.encode('utf-8')).decode('utf-8')}"
         assert proxy_auth == auth_expected
     else:
         assert not proxy_auth
@@ -487,8 +487,8 @@ def test_ssl_via_non_ssl_proxy(insecure_server, auth):
         if proxy_user:
             auth_expected = proxy_user
             if proxy_pass:
-                auth_expected = auth_expected + ":" + proxy_pass
-            auth_expected = "Basic " + base64.b64encode(auth_expected.encode("utf-8")).decode("utf-8")
+                auth_expected = f"{auth_expected}:{proxy_pass}"
+            auth_expected = f"Basic {base64.b64encode(auth_expected.encode('utf-8')).decode('utf-8')}"
             assert insecure_server.httpd.connect_headers["proxy-authorization"] == auth_expected
         else:
             assert "proxy-authorization" not in insecure_server.httpd.connect_headers

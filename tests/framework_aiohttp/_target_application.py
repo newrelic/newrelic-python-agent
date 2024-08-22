@@ -113,7 +113,7 @@ async def websocket_handler(request):
     while not ws.closed:
         msg = await ws.receive()
         if msg.type == WSMsgType.TEXT:
-            result = ws.send_str("/" + msg.data)
+            result = ws.send_str(f"/{msg.data}")
             if hasattr(result, "__await__"):
                 await result
 

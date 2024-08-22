@@ -62,10 +62,10 @@ class LoopNode(_LoopNode, GenericNodeMixin):
                 exclusive=None)
 
         if root.type == 'WebTransaction':
-            yield TimeMetric(name=name + 'Web', scope='',
+            yield TimeMetric(name=f"{name}Web", scope='',
                     duration=self.duration, exclusive=None)
         else:
-            yield TimeMetric(name=name + 'Other', scope='',
+            yield TimeMetric(name=f"{name}Other", scope='',
                     duration=self.duration, exclusive=None)
 
     def trace_node(self, stats, root, connections):

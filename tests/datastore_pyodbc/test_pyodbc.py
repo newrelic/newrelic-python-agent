@@ -57,16 +57,16 @@ def test_execute_via_cursor(pyodbc_driver):
     ) as connection:
         cursor = connection.cursor()
         cursor.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
-        cursor.execute(f"""create table {DB_SETTINGS['table_name']} """ + """(a integer, b real, c text)""")
+        cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
         cursor.executemany(
-            f"""insert into {DB_SETTINGS['table_name']} """ + """values (?, ?, ?)""",
+            f"insert into {DB_SETTINGS['table_name']} values (?, ?, ?)",
             [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
         )
         cursor.execute(f"""select * from {DB_SETTINGS['table_name']}""")
         for row in cursor:
             pass
         cursor.execute(
-            f"""update {DB_SETTINGS['table_name']} """ + """set a=?, b=?, c=? where a=?""",
+            f"update {DB_SETTINGS['table_name']} set a=?, b=?, c=? where a=?",
             (4, 4.0, "4.0", 1),
         )
         cursor.execute(f"""delete from {DB_SETTINGS['table_name']} where a=2""")

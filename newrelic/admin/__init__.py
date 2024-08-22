@@ -83,7 +83,7 @@ def help(args):
                 print()
                 description = details.description
                 if details.deprecated:
-                    description = "[DEPRECATED] " + description
+                    description = f"[DEPRECATED] {description}"
                 print(description)
 
 

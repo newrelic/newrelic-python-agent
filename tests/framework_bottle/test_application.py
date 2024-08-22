@@ -177,7 +177,7 @@ _test_application_auth_basic_okay_custom_metrics = [("Python/Framework/Bottle/%s
 )
 def test_application_auth_basic_okay(target_application):
     authorization_value = base64.b64encode(b"user:password").decode("Latin-1")
-    environ = {"HTTP_AUTHORIZATION": "Basic " + authorization_value}
+    environ = {"HTTP_AUTHORIZATION": f"Basic {authorization_value}"}
     response = target_application.get("/auth", extra_environ=environ)
     response.mustcontain("AUTH OKAY")
 

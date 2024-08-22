@@ -361,9 +361,9 @@ def test_custom_params_int_too_big():
 
 
 OK_KEY = "*" * (255 - len("request.parameters."))
-OK_REQUEST_PARAM = "request.parameters." + OK_KEY
+OK_REQUEST_PARAM = f"request.parameters.{OK_KEY}"
 TOO_LONG_KEY = "*" * (256 - len("request.parameters."))
-TOO_LONG_REQUEST_PARAM = "request.parameters." + TOO_LONG_KEY
+TOO_LONG_REQUEST_PARAM = f"request.parameters.{TOO_LONG_KEY}"
 
 assert len(OK_REQUEST_PARAM) == 255
 assert len(TOO_LONG_REQUEST_PARAM) == 256

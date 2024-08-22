@@ -310,4 +310,4 @@ def instrument_psycopg2_sql(module):
             if not issubclass(cls, module.Composable):
                 continue
 
-            wrap_function_wrapper(module, name + ".as_string", wrapper_psycopg2_as_string)
+            wrap_function_wrapper(module, f"{name}.as_string", wrapper_psycopg2_as_string)

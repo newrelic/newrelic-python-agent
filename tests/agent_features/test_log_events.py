@@ -118,8 +118,8 @@ _serialized_attributes = {
     "non_serializable_attr": NonSerializableObject(),
     "non_printable_attr": NonPrintableObject(),
     "attr_value_too_long": "*" * 256,
-    "attr_name_too_long_" + ("*" * 237): "value",
-    "attr_name_with_prefix_too_long_" + ("*" * 220): "value",
+    f"attr_name_too_long_{'*' * 237}": "value",
+    f"attr_name_with_prefix_too_long_{'*' * 220}": "value",
 }
 
 _exercise_record_log_event_events = [

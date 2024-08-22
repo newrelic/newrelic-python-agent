@@ -260,7 +260,7 @@ def test_exception_in_middleware(target_application):
 @dt_enabled
 def test_exception_in_resolver(target_application, field):
     framework, version, target_application = target_application
-    query = "query MyQuery { %s }" % field
+    query = f"query MyQuery {{ {field} }}"
 
     txn_name = "framework_graphql._target_schema_sync:resolve_error"
 

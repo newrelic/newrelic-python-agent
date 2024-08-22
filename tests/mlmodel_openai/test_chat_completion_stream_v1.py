@@ -185,7 +185,7 @@ def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info, sync_open
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_lines",
     # custom_metrics=[
-    #     ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    #     (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     # ],
     background_task=True,
 )
@@ -227,7 +227,7 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_l
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_bytes",
     # custom_metrics=[
-    #     ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    #     (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     # ],
     background_task=True,
 )
@@ -269,7 +269,7 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_b
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_text",
     # custom_metrics=[
-    #     ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    #     (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     # ],
     background_task=True,
 )
@@ -521,7 +521,7 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info, as
     # scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     # rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     # custom_metrics=[
-    #     ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    #     (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     # ],
     background_task=True,
 )
@@ -569,7 +569,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
     # scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     # rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     # custom_metrics=[
-    #     ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    #     (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     # ],
     background_task=True,
 )
@@ -617,7 +617,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
     # scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     # rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     # custom_metrics=[
-    #     ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+    #     (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     # ],
     background_task=True,
 )

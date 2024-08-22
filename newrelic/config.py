@@ -934,7 +934,7 @@ def _load_configuration(
     if _configuration_done:
         if _config_file != config_file or _environment != environment:
             raise newrelic.api.exceptions.ConfigurationError(
-                f"Configuration has already been done against differing configuration file or environment. Prior configuration file used was \"{_config_file}\" and environment \"{_environment}\"."
+                f'Configuration has already been done against differing configuration file or environment. Prior configuration file used was "{_config_file}" and environment "{_environment}".'
             )
         return
 

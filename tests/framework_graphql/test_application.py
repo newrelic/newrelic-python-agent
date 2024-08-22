@@ -306,7 +306,7 @@ def test_exception_in_middleware(target_application, middleware):
 @dt_enabled
 def test_exception_in_resolver(target_application, field):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
-    query = "query MyQuery { %s }" % field
+    query = f"query MyQuery {{ {field} }}"
 
     txn_name = f"framework_{framework.lower()}._target_schema_{schema_type}:resolve_error"
 

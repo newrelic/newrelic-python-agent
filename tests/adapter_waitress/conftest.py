@@ -38,4 +38,4 @@ def target_application():
     import _application
 
     port = _application.setup_application()
-    return webtest.TestApp("http://localhost:%d" % port)
+    return webtest.TestApp(f"http://localhost:{int(port)}")

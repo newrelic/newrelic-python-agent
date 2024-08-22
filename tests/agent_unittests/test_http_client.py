@@ -230,7 +230,7 @@ def test_non_ok_response(client_cls, server):
         assert internal_metrics == {
             "Supportability/Python/Collector/Failures": [1, 0, 0, 0, 0, 0],
             "Supportability/Python/Collector/Failures/direct": [1, 0, 0, 0, 0, 0],
-            "Supportability/Python/Collector/HTTPError/%d" % status: [1, 0, 0, 0, 0, 0],
+            f"Supportability/Python/Collector/HTTPError/{int(status)}": [1, 0, 0, 0, 0, 0],
         }
     else:
         assert not internal_metrics

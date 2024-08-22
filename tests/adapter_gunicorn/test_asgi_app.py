@@ -31,7 +31,7 @@ def test_asgi_app(nr_enabled):
     gunicorn = os.path.join(os.environ['TOX_ENV_DIR'], 'bin', 'gunicorn')
 
     PORT = get_open_port()
-    cmd = [gunicorn, '-b', '127.0.0.1:%d' % PORT, '--worker-class',
+    cmd = [gunicorn, '-b', f'127.0.0.1:{int(PORT)}', '--worker-class',
             'worker.AsgiWorker', 'asgi_app:Application']
 
     if nr_enabled:
@@ -66,7 +66,7 @@ def test_asgi_app(nr_enabled):
                 time.sleep(0.1)
             else:
                 continue
-            with urlopen('http://127.0.0.1:%d' % PORT) as resp:
+            with urlopen(f'http://127.0.0.1:{int(PORT)}') as resp:
                 assert resp.getcode() == 200
                 assert resp.read() == b'PONG'
 

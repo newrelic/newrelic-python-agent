@@ -307,7 +307,7 @@ _forgone_custom_params_too_many = [("key-128", "value")]
 @background_task()
 def test_custom_param_too_many():
     for i in range(129):
-        result = add_custom_attribute("key-%02d" % i, "value")
+        result = add_custom_attribute(f"key-{int(i):02}", "value")
         if i < 128:
             assert result
         else:
@@ -317,7 +317,7 @@ def test_custom_param_too_many():
 @validate_custom_parameters(_required_custom_params_too_many, _forgone_custom_params_too_many)
 @background_task()
 def test_custom_params_too_many():
-    item_list = [("key-%02d" % i, "value") for i in range(129)]
+    item_list = [(f"key-{int(i):02}", "value") for i in range(129)]
     result = add_custom_attributes(item_list)
     assert not result
 

@@ -81,7 +81,7 @@ def bedrock_server():
             client = boto3.client(  # nosec
                 "bedrock-runtime",
                 "us-east-1",
-                endpoint_url="http://localhost:%d" % server.port,
+                endpoint_url=f"http://localhost:{int(server.port)}",
                 aws_access_key_id="NOT-A-REAL-SECRET",
                 aws_secret_access_key="NOT-A-REAL-SECRET",
             )

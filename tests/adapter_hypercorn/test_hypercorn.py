@@ -97,7 +97,7 @@ def port(loop, app):
 
         config = hypercorn.config.Config.from_mapping(
             {
-                "bind": ["127.0.0.1:%d" % port],
+                "bind": [f"127.0.0.1:{int(port)}"],
             }
         )
 
@@ -123,7 +123,7 @@ def wait_for_port(port, retries=10):
     status = None
     for _ in range(retries):
         try:
-            status = urlopen("http://localhost:%d/ignored" % port, timeout=1).status  # nosec
+            status = urlopen(f"http://localhost:{int(port)}/ignored", timeout=1).status  # nosec
             assert status == 200
             return
         except Exception as e:
@@ -131,7 +131,7 @@ def wait_for_port(port, retries=10):
 
         time.sleep(1)
 
-    raise RuntimeError("Failed to wait for port %d. Got status %s" % (port, status))
+    raise RuntimeError(f"Failed to wait for port {int(port)}. Got status {status}")
 
 
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
@@ -147,7 +147,7 @@ def test_hypercorn_200(port, app):
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():
-        return urlopen("http://localhost:%d" % port, timeout=10)  # nosec
+        return urlopen(f"http://localhost:{int(port)}", timeout=10)  # nosec
 
     assert response().status == 200
 
@@ -160,6 +160,6 @@ def test_hypercorn_500(port, app):
     @wait_for_background_threads()
     def _test():
         with pytest.raises(HTTPError):
-            urlopen("http://localhost:%d/exc" % port)  # nosec
+            urlopen(f"http://localhost:{int(port)}/exc")  # nosec
 
     _test()

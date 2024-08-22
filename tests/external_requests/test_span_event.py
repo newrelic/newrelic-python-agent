@@ -36,7 +36,7 @@ def test_span_events(server, path):
         'span_events.enabled': True,
     }
 
-    uri = 'http://localhost:%d' % server.port
+    uri = f'http://localhost:{int(server.port)}'
     if path:
         uri += path
 
@@ -44,7 +44,7 @@ def test_span_events(server, path):
     expected_uri = uri[:255]
 
     exact_intrinsics = {
-        'name': 'External/localhost:%d/requests/' % server.port,
+        'name': f'External/localhost:{int(server.port)}/requests/',
         'type': 'Span',
         'sampled': True,
         'priority': 0.5,

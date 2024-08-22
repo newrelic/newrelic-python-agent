@@ -100,7 +100,7 @@ def _check_event_attributes(expected, captured, mismatches):
 
 def _event_details(matching_custom_events, captured, mismatches):
     details = [
-        "matching_custom_events=%d" % matching_custom_events,
+        f"matching_custom_events={int(matching_custom_events)}",
         f"mismatches={mismatches}",
         f"captured_events={captured}",
     ]

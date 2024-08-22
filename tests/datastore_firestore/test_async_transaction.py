@@ -29,7 +29,7 @@ from newrelic.api.background_task import background_task
 @pytest.fixture(autouse=True)
 def sample_data(collection):
     for x in range(1, 4):
-        collection.add({"x": x}, "doc%d" % x)
+        collection.add({"x": x}, f"doc{int(x)}")
 
 
 @pytest.fixture()
@@ -56,7 +56,7 @@ def exercise_async_transaction_commit(async_client, async_collection):
             with pytest.raises(
                 TypeError
             ):  # get_all is currently broken. It attempts to await an async_generator instead of consuming it.
-                all_docs = async_transaction.get_all([async_collection.document("doc%d" % x) for x in range(1, 4)])
+                all_docs = async_transaction.get_all([async_collection.document(f"doc{int(x)}") for x in range(1, 4)])
                 assert len([_ async for _ in all_docs]) == 3
 
             # set and delete methods

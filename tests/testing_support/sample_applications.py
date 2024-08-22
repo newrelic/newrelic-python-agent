@@ -81,7 +81,7 @@ def fully_featured_app(environ, start_response):
     if "db" in environ and int(environ["db"]) > 0:
         connection = db.connect(":memory:")
         for i in range(int(environ["db"]) - 1):
-            connection.execute("create table test_db%d (a, b, c)" % i)
+            connection.execute(f"create table test_db{int(i)} (a, b, c)")
 
     if "external" in environ:
         for i in range(int(environ["external"])):

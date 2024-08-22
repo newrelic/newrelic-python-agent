@@ -48,7 +48,7 @@ def validate_log_event_count_outside_transaction(count=1):
         record_called[:] = []
         recorded_logs[:] = []
 
-        assert count == len(logs), "Expected %d, Got %d" % (count, len(logs))
+        assert count == len(logs), f"Expected {int(count)}, Got {len(logs)}"
 
         return val
 

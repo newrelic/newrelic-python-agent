@@ -195,7 +195,7 @@ class ConsoleShell(cmd.Cmd):
         Enable or disable the console prompt."""
 
         if flag == "on":
-            self.prompt = "(newrelic:%d) " % os.getpid()
+            self.prompt = f"(newrelic:{int(os.getpid())}) "
         elif flag == "off":
             self.prompt = ""
 
@@ -418,7 +418,7 @@ class ConsoleShell(cmd.Cmd):
                 block.append(f"# Type: {type(thr).__name__}")
                 block.append(f"# Name: {thr.name}")
             for filename, lineno, name, line in traceback.extract_stack(stack):
-                block.append("File: '%s', line %d, in %s" % (filename, lineno, name))
+                block.append(f"File: '{filename}', line {int(lineno)}, in {name}")
                 if line:
                     block.append(f"  {line.strip()}")
             all.append("\n".join(block))

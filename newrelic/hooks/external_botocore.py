@@ -131,7 +131,7 @@ def create_chat_completion_message_event(
         content = message.get("content", "")
 
         if response_id:
-            id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
+            id_ = f"{response_id}-{int(index)}"  # Response ID was set, append message index to it.
         else:
             id_ = str(uuid.uuid4())  # No response IDs, use random UUID
 
@@ -169,7 +169,7 @@ def create_chat_completion_message_event(
             content = content[0]
 
         if response_id:
-            id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
+            id_ = f"{response_id}-{int(index)}"  # Response ID was set, append message index to it.
         else:
             id_ = str(uuid.uuid4())  # No response IDs, use random UUID
 

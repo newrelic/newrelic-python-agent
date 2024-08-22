@@ -577,8 +577,8 @@ def test_span_custom_attribute_limit():
 
     for i in range(128):
         if i < 64:
-            span_custom_attrs.append("span_attr%i" % i)
-        txn_custom_attrs.append("txn_attr%i" % i)
+            span_custom_attrs.append(f"span_attr{int(i)}")
+        txn_custom_attrs.append(f"txn_attr{int(i)}")
 
     unexpected_txn_attrs.extend(span_custom_attrs)
     span_custom_attrs.extend(txn_custom_attrs[:64])
@@ -594,9 +594,9 @@ def test_span_custom_attribute_limit():
         transaction = current_transaction()
 
         for i in range(128):
-            transaction.add_custom_parameter("txn_attr%i" % i, "txnValue")
+            transaction.add_custom_parameter(f"txn_attr{int(i)}", "txnValue")
             if i < 64:
-                add_custom_span_attribute("span_attr%i" % i, "spanValue")
+                add_custom_span_attribute(f"span_attr{int(i)}", "spanValue")
 
     _test()
 

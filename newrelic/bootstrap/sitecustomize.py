@@ -29,7 +29,7 @@ def log_message(text, *args, **kwargs):
     if startup_debug or critical:
         text = text % args
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        sys.stdout.write("NEWRELIC: %s (%d) - %s\n" % (timestamp, os.getpid(), text))
+        sys.stdout.write(f"NEWRELIC: {timestamp} ({int(os.getpid())}) - {text}\n")
         sys.stdout.flush()
 
 

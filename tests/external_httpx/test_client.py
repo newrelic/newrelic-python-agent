@@ -82,7 +82,7 @@ def server():
 def populate_metrics(server, request):
     SCOPED_METRICS[:] = []
     method = request.getfixturevalue("method").upper()
-    SCOPED_METRICS.append(("External/localhost:%d/httpx/%s" % (server.port, method), 2))
+    SCOPED_METRICS.append((f"External/localhost:{int(server.port)}/httpx/{method}", 2))
 
 
 def exercise_sync_client(server, client, method):
@@ -370,7 +370,7 @@ def test_sync_client_event_hook_exception(httpx, server):
 
     @validate_span_events(
         count=1,
-        exact_intrinsics={"name": "External/localhost:%d/httpx/GET" % server.port},
+        exact_intrinsics={"name": f"External/localhost:{int(server.port)}/httpx/GET"},
         exact_agents={"http.statusCode": CAT_RESPONSE_CODE},
     )
     @background_task(name="test_sync_client_event_hook_exception")
@@ -416,7 +416,7 @@ def test_async_client_event_hook_exception(httpx, server, loop):
 
     @validate_span_events(
         count=1,
-        exact_intrinsics={"name": "External/localhost:%d/httpx/GET" % server.port},
+        exact_intrinsics={"name": f"External/localhost:{int(server.port)}/httpx/GET"},
         exact_agents={"http.statusCode": CAT_RESPONSE_CODE},
     )
     @background_task(name="test_sync_client_event_hook_exception")

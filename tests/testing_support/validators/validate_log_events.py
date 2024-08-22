@@ -97,7 +97,7 @@ def validate_log_events(events=None, required_attrs=None, forgone_attrs=None):
 
     def _log_details(matching_log_events, captured, mismatches):
         details = [
-            "matching_log_events=%d" % matching_log_events,
+            f"matching_log_events={int(matching_log_events)}",
             f"mismatches={mismatches}",
             f"captured_events={captured}",
         ]

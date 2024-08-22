@@ -38,5 +38,5 @@ def memory_usage_data_source():
     yield ("Memory/Physical/Utilization", memory_utilization)
 
     if settings.memory_runtime_pid_metrics.enabled:
-        yield ("Memory/Physical/%d" % (pid), memory)
-        yield ("Memory/Physical/Utilization/%d" % (pid), memory_utilization)
+        yield (f"Memory/Physical/{int(pid)}", memory)
+        yield (f"Memory/Physical/Utilization/{int(pid)}", memory_utilization)

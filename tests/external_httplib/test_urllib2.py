@@ -36,13 +36,13 @@ from newrelic.api.background_task import background_task
 
 @pytest.fixture(scope="session")
 def metrics(server):
-    scoped = [("External/localhost:%d/urllib2/" % server.port, 1)]
+    scoped = [(f"External/localhost:{int(server.port)}/urllib2/", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%d/all" % server.port, 1),
-        ("External/localhost:%d/urllib2/" % server.port, 1),
+        (f"External/localhost:{int(server.port)}/all", 1),
+        (f"External/localhost:{int(server.port)}/urllib2/", 1),
     ]
 
     return scoped, rollup
@@ -57,7 +57,7 @@ def test_urlopen_http_request(server, metrics):
     )
     @background_task(name="test_urllib2:test_urlopen_http_request")
     def _test():
-        urllib2.urlopen("http://localhost:%d/" % server.port)
+        urllib2.urlopen(f"http://localhost:{int(server.port)}/")
 
     _test()
 
@@ -72,7 +72,7 @@ def test_urlopen_https_request(server, metrics):
     @background_task(name="test_urllib2:test_urlopen_https_request")
     def _test():
         try:
-            urllib2.urlopen("https://localhost:%d/" % server.port)
+            urllib2.urlopen(f"https://localhost:{int(server.port)}/")
         except Exception:
             pass
 
@@ -80,13 +80,13 @@ def test_urlopen_https_request(server, metrics):
 
 
 def test_urlopen_http_request_with_port(server):
-    scoped = [("External/localhost:%d/urllib2/" % server.port, 1)]
+    scoped = [(f"External/localhost:{int(server.port)}/urllib2/", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%d/all" % server.port, 1),
-        ("External/localhost:%d/urllib2/" % server.port, 1),
+        (f"External/localhost:{int(server.port)}/all", 1),
+        (f"External/localhost:{int(server.port)}/urllib2/", 1),
     ]
 
     @validate_transaction_metrics(
@@ -97,7 +97,7 @@ def test_urlopen_http_request_with_port(server):
     )
     @background_task(name="test_urllib2:test_urlopen_http_request_with_port")
     def _test():
-        urllib2.urlopen("http://localhost:%d/" % server.port)
+        urllib2.urlopen(f"http://localhost:{int(server.port)}/")
 
     _test()
 
@@ -128,21 +128,21 @@ def test_urlopen_file_request():
 @cache_outgoing_headers
 @validate_cross_process_headers
 def test_urlopen_cross_process_request(server):
-    urllib2.urlopen("http://localhost:%d/" % server.port)
+    urllib2.urlopen(f"http://localhost:{int(server.port)}/")
 
 
 @cat_enabled
 def test_urlopen_cross_process_response(server):
     _test_urlopen_cross_process_response_scoped_metrics = [
-        ("ExternalTransaction/localhost:%d/1#2/test" % server.port, 1)
+        (f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1)
     ]
 
     _test_urlopen_cross_process_response_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%d/all" % server.port, 1),
-        ("ExternalApp/localhost:%d/1#2/all" % server.port, 1),
-        ("ExternalTransaction/localhost:%d/1#2/test" % server.port, 1),
+        (f"External/localhost:{int(server.port)}/all", 1),
+        (f"ExternalApp/localhost:{int(server.port)}/1#2/all", 1),
+        (f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1),
     ]
 
     _test_urlopen_cross_process_response_external_node_params = [
@@ -161,6 +161,6 @@ def test_urlopen_cross_process_response(server):
     @validate_external_node_params(params=_test_urlopen_cross_process_response_external_node_params)
     @background_task(name="test_urllib2:test_urlopen_cross_process_response")
     def _test():
-        urllib2.urlopen("http://localhost:%d/" % server.port)
+        urllib2.urlopen(f"http://localhost:{int(server.port)}/")
 
     _test()

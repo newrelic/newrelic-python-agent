@@ -273,7 +273,7 @@ def _linux_physical_memory_used(filename=None):
     #              data       data + stack
     #              dt         dirty pages (unused in Linux 2.6)
 
-    filename = filename or "/proc/%d/statm" % os.getpid()
+    filename = filename or f"/proc/{int(os.getpid())}/statm"
 
     try:
         with open(filename, "r") as fp:

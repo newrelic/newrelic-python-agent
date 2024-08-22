@@ -53,7 +53,7 @@ def test_publish_to_sns(loop):
             async with session.create_client(
                 "sns",
                 region_name="us-east-1",
-                endpoint_url="http://localhost:%d" % PORT,
+                endpoint_url=f"http://localhost:{int(PORT)}",
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             ) as client:

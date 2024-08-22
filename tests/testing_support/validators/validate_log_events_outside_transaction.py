@@ -94,7 +94,7 @@ def validate_log_events_outside_transaction(events=None, required_attrs=None, fo
 
     def _log_details(matching_log_events, captured, mismatches):
         details = [
-            "matching_log_events=%d" % matching_log_events,
+            f"matching_log_events={int(matching_log_events)}",
             f"mismatches={mismatches}",
             f"captured_events={captured}",
         ]

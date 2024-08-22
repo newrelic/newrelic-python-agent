@@ -34,7 +34,7 @@ def test_feedparser_external(feedparser, server, url):
     @validate_transaction_metrics(
         "test_feedparser_external",
         background_task=True,
-        scoped_metrics=(("External/localhost:%d/feedparser/GET" % server.port, 1),),
+        scoped_metrics=((f"External/localhost:{int(server.port)}/feedparser/GET", 1),),
     )
     @background_task(name="test_feedparser_external")
     def _test():
@@ -50,7 +50,7 @@ def test_feedparser_file(feedparser, stream, server):
     @validate_transaction_metrics(
         "test_feedparser_file",
         background_task=True,
-        scoped_metrics=(("External/localhost:%d/feedparser/GET" % server.port, None),),
+        scoped_metrics=((f"External/localhost:{int(server.port)}/feedparser/GET", None),),
     )
     @background_task(name="test_feedparser_file")
     def _test():

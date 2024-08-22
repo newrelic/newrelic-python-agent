@@ -39,7 +39,7 @@ ENCODING_KEY = "1234567890123456789012345678901234567890"
 @wsgi_application()
 def target_wsgi_application(environ, start_response):
     status_code = int(environ["PATH_INFO"].strip("/"))
-    status = "%d STATUS" % status_code
+    status = f"{int(status_code)} STATUS"
 
     if status_code == 304:
         output = b""

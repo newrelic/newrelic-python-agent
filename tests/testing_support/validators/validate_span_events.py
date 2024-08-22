@@ -102,8 +102,8 @@ def validate_span_events(
 
         def _span_details():
             details = [
-                "matching_span_events=%d" % matching_span_events,
-                "count=%d" % count,
+                f"matching_span_events={int(matching_span_events)}",
+                f"count={int(count)}",
                 f"mismatches={mismatches}",
                 f"captured_events={captured_events}",
             ]

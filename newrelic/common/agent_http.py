@@ -559,7 +559,7 @@ class SupportabilityMixin(object):
                     1,
                 )
             else:
-                internal_count_metric(f"Supportability/Python/Collector/HTTPError/{int(status)}", 1)
+                internal_count_metric(f"Supportability/Python/Collector/HTTPError/{status}", 1)
 
 
 class ApplicationModeClient(SupportabilityMixin, HttpClient):

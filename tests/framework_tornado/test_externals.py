@@ -322,8 +322,8 @@ def test_httpclient_fetch_crashes(external):
     @validate_transaction_metrics(
         "test_httpclient_fetch_crashes",
         background_task=True,
-        rollup_metrics=[(f"External/localhost:{int(external.port)}/tornado/GET", 1)],
-        scoped_metrics=[(f"External/localhost:{int(external.port)}/tornado/GET", 1)],
+        rollup_metrics=[(f"External/localhost:{external.port}/tornado/GET", 1)],
+        scoped_metrics=[(f"External/localhost:{external.port}/tornado/GET", 1)],
     )
     @background_task(name="test_httpclient_fetch_crashes")
     def _test():
@@ -346,8 +346,8 @@ def test_httpclient_fetch_inside_terminal_node(external):
     @validate_transaction_metrics(
         "test_httpclient_fetch_inside_terminal_node",
         background_task=True,
-        rollup_metrics=[(f"External/localhost:{int(external.port)}/tornado/GET", None)],
-        scoped_metrics=[(f"External/localhost:{int(external.port)}/tornado/GET", None)],
+        rollup_metrics=[(f"External/localhost:{external.port}/tornado/GET", None)],
+        scoped_metrics=[(f"External/localhost:{external.port}/tornado/GET", None)],
     )
     @background_task(name="test_httpclient_fetch_inside_terminal_node")
     def _test():

@@ -67,7 +67,7 @@ def test_aiobotocore_sqs(loop):
             async with session.create_client(
                 "sqs",
                 region_name="us-east-1",
-                endpoint_url=f"http://localhost:{int(PORT)}",
+                endpoint_url=f"http://localhost:{PORT}",
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             ) as client:

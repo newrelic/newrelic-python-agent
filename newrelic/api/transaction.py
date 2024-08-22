@@ -1848,7 +1848,7 @@ class Transaction(object):
         print(f"Application: {self.application.name}", file=file)
         print(f"Time Started: {time.asctime(time.localtime(self.start_time))}", file=file)
         print(f"Thread Id: {self.thread_id!r}", file=file)
-        print(f"Current Status: {int(self._state)}", file=file)
+        print(f"Current Status: {self._state}", file=file)
         print(f"Recording Enabled: {self.enabled}", file=file)
         print(f"Ignore Transaction: {self.ignore_transaction}", file=file)
         print(f"Transaction Dead: {self._dead}", file=file)

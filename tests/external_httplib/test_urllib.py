@@ -39,13 +39,13 @@ from newrelic.api.background_task import background_task
 
 @pytest.fixture(scope="session")
 def metrics(server):
-    scoped = [(f"External/localhost:{int(server.port)}/urllib/", 1)]
+    scoped = [(f"External/localhost:{server.port}/urllib/", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"External/localhost:{int(server.port)}/urllib/", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/urllib/", 1),
     ]
 
     return scoped, rollup
@@ -61,7 +61,7 @@ def test_urlopener_http_request(server, metrics):
     @background_task(name="test_urllib:test_urlopener_http_request")
     def _test():
         opener = urllib.URLopener()
-        opener.open(f"http://localhost:{int(server.port)}/")
+        opener.open(f"http://localhost:{server.port}/")
 
     _test()
 
@@ -77,7 +77,7 @@ def test_urlopener_https_request(server, metrics):
     def _test():
         opener = urllib.URLopener()
         try:
-            opener.open(f"https://localhost:{int(server.port)}/")
+            opener.open(f"https://localhost:{server.port}/")
         except Exception:
             pass
 
@@ -85,13 +85,13 @@ def test_urlopener_https_request(server, metrics):
 
 
 def test_urlopener_http_request_with_port(server):
-    scoped = [(f"External/localhost:{int(server.port)}/urllib/", 1)]
+    scoped = [(f"External/localhost:{server.port}/urllib/", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"External/localhost:{int(server.port)}/urllib/", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/urllib/", 1),
     ]
 
     @validate_transaction_metrics(
@@ -103,7 +103,7 @@ def test_urlopener_http_request_with_port(server):
     @background_task(name="test_urllib:test_urlopener_http_request_with_port")
     def _test():
         opener = urllib.URLopener()
-        opener.open(f"http://localhost:{int(server.port)}/")
+        opener.open(f"http://localhost:{server.port}/")
 
     _test()
 
@@ -135,21 +135,21 @@ def test_urlopener_file_request():
 @validate_cross_process_headers
 def test_urlopener_cross_process_request(server):
     opener = urllib.URLopener()
-    opener.open(f"http://localhost:{int(server.port)}/")
+    opener.open(f"http://localhost:{server.port}/")
 
 
 @cat_enabled
 def test_urlopener_cross_process_response(server):
     _test_urlopener_cross_process_response_scoped_metrics = [
-        (f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1)
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)
     ]
 
     _test_urlopener_cross_process_response_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"ExternalApp/localhost:{int(server.port)}/1#2/all", 1),
-        (f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
     ]
 
     _test_urlopener_cross_process_response_external_node_params = [
@@ -169,7 +169,7 @@ def test_urlopener_cross_process_response(server):
     @background_task(name="test_urllib:test_urlopener_cross_process_response")
     def _test():
         opener = urllib.URLopener()
-        opener.open(f"http://localhost:{int(server.port)}/")
+        opener.open(f"http://localhost:{server.port}/")
 
     _test()
 
@@ -183,7 +183,7 @@ def test_urlretrieve_http_request(server, metrics):
     )
     @background_task(name="test_urllib:test_urlretrieve_http_request")
     def _test():
-        urllib.urlretrieve(f"http://localhost:{int(server.port)}/")
+        urllib.urlretrieve(f"http://localhost:{server.port}/")
 
     _test()
 
@@ -198,7 +198,7 @@ def test_urlretrieve_https_request(server, metrics):
     @background_task(name="test_urllib:test_urlretrieve_https_request")
     def _test():
         try:
-            urllib.urlretrieve(f"https://localhost:{int(server.port)}/")
+            urllib.urlretrieve(f"https://localhost:{server.port}/")
         except Exception:
             pass
 
@@ -209,21 +209,21 @@ def test_urlretrieve_https_request(server, metrics):
 @cache_outgoing_headers
 @validate_cross_process_headers
 def test_urlretrieve_cross_process_request(server):
-    urllib.urlretrieve(f"http://localhost:{int(server.port)}/")
+    urllib.urlretrieve(f"http://localhost:{server.port}/")
 
 
 @cat_enabled
 def test_urlretrieve_cross_process_response(server):
     _test_urlretrieve_cross_process_response_scoped_metrics = [
-        (f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1)
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)
     ]
 
     _test_urlretrieve_cross_process_response_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"ExternalApp/localhost:{int(server.port)}/1#2/all", 1),
-        (f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
     ]
 
     _test_urlretrieve_cross_process_response_external_node_params = [
@@ -242,6 +242,6 @@ def test_urlretrieve_cross_process_response(server):
     @validate_external_node_params(params=_test_urlretrieve_cross_process_response_external_node_params)
     @background_task(name="test_urllib:test_urlretrieve_cross_process_response")
     def _test():
-        urllib.urlretrieve(f"http://localhost:{int(server.port)}/")
+        urllib.urlretrieve(f"http://localhost:{server.port}/")
 
     _test()

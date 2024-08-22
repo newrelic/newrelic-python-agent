@@ -125,10 +125,10 @@ def client_set(request, loop):  # noqa
             if request.param == "Redis":
                 return (
                     loop.run_until_complete(
-                        aioredis.create_redis(f"redis://{DB_SETTINGS[0]['host']}:{int(DB_SETTINGS[0]['port'])}", db=0)
+                        aioredis.create_redis(f"redis://{DB_SETTINGS[0]['host']}:{DB_SETTINGS[0]['port']}", db=0)
                     ),
                     loop.run_until_complete(
-                        aioredis.create_redis(f"redis://{DB_SETTINGS[1]['host']}:{int(DB_SETTINGS[1]['port'])}", db=0)
+                        aioredis.create_redis(f"redis://{DB_SETTINGS[1]['host']}:{DB_SETTINGS[1]['port']}", db=0)
                     ),
                 )
             elif request.param == "StrictRedis":
@@ -190,7 +190,7 @@ def test_concurrent_calls(client_set, loop):  # noqa
     import asyncio
 
     async def exercise_concurrent():
-        await asyncio.gather(*(client.set(f"key-{int(i)}", i) for i, client in enumerate(client_set)))
-        await asyncio.gather(*(client.get(f"key-{int(i)}") for i, client in enumerate(client_set)))
+        await asyncio.gather(*(client.set(f"key-{i}", i) for i, client in enumerate(client_set)))
+        await asyncio.gather(*(client.get(f"key-{i}") for i, client in enumerate(client_set)))
 
     loop.run_until_complete(exercise_concurrent())

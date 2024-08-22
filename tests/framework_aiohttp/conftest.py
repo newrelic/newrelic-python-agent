@@ -137,7 +137,7 @@ def mock_external_http_server():
 
 @pytest.fixture(scope="session")
 def local_server_info(mock_header_server):
-    host_port = f"127.0.0.1:{int(mock_header_server.port)}"
+    host_port = f"127.0.0.1:{mock_header_server.port}"
     metric = f"External/{host_port}/aiohttp/"
     url = f"http://{host_port}"
     return ServerInfo(metric, url)

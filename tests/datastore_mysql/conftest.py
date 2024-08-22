@@ -39,4 +39,4 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope="session")
 def table_name():
-    return str(f"datastore_mysql_{int(os.getpid())}")
+    return str(f"datastore_mysql_{os.getpid()}")

@@ -41,14 +41,14 @@ from newrelic.common.encoding_utils import DistributedTracePayload
 
 def test_httplib_http_request(server):
     scoped = [
-        (f"External/localhost:{int(server.port)}/http/", 1),
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"External/localhost:{int(server.port)}/http/", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     @validate_transaction_metrics(
@@ -67,14 +67,14 @@ def test_httplib_http_request(server):
 
 def test_httplib_https_request(server):
     _test_httplib_https_request_scoped_metrics = [
-        (f"External/localhost:{int(server.port)}/http/", 1),
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     _test_httplib_https_request_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"External/localhost:{int(server.port)}/http/", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     @validate_transaction_metrics(
@@ -101,14 +101,14 @@ def test_httplib_https_request(server):
 def test_httplib_http_with_port_request(server):
 
     scoped = [
-        (f"External/localhost:{int(server.port)}/http/", 1),
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"External/localhost:{int(server.port)}/http/", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     @validate_transaction_metrics(
@@ -168,14 +168,14 @@ _test_httplib_cross_process_response_external_node_params = [
 @cat_enabled
 @insert_incoming_headers
 def test_httplib_cross_process_response(server):
-    scoped = [(f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1)]
+    scoped = [(f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"ExternalApp/localhost:{int(server.port)}/1#2/all", 1),
-        (f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
     ]
 
     @validate_transaction_metrics(
@@ -200,14 +200,14 @@ def test_httplib_cross_process_response(server):
 def test_httplib_multiple_requests_cross_process_response(server):
     connection = httplib.HTTPConnection("localhost", server.port)
 
-    scoped = [(f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1)]
+    scoped = [(f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"ExternalApp/localhost:{int(server.port)}/1#2/all", 1),
-        (f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
     ]
 
     @validate_transaction_metrics(
@@ -300,10 +300,10 @@ def test_span_events(server):
         "span_events.enabled": True,
     }
 
-    uri = f"http://localhost:{int(server.port)}"
+    uri = f"http://localhost:{server.port}"
 
     exact_intrinsics = {
-        "name": f"External/localhost:{int(server.port)}/http/",
+        "name": f"External/localhost:{server.port}/http/",
         "type": "Span",
         "sampled": True,
         "category": "http",

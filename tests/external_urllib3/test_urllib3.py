@@ -45,13 +45,13 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 
 @pytest.fixture(scope="session")
 def metrics(server):
-    scoped = [(f"External/localhost:{int(server.port)}/urllib3/GET", 1)]
+    scoped = [(f"External/localhost:{server.port}/urllib3/GET", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"External/localhost:{int(server.port)}/urllib3/GET", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/urllib3/GET", 1),
     ]
 
     return scoped, rollup
@@ -67,7 +67,7 @@ def test_http_request_connection_pool_urlopen(server, metrics):
     )
     @background_task(name="test_urllib3:test_http_request_connection_pool_urlopen")
     def _test():
-        pool = urllib3.HTTPConnectionPool(f"localhost:{int(server.port)}")
+        pool = urllib3.HTTPConnectionPool(f"localhost:{server.port}")
         pool.urlopen("GET", "/")
 
     _test()
@@ -83,7 +83,7 @@ def test_http_request_connection_pool_request(server, metrics):
     )
     @background_task(name="test_urllib3:test_http_request_connection_pool_request")
     def _test():
-        pool = urllib3.HTTPConnectionPool(f"localhost:{int(server.port)}")
+        pool = urllib3.HTTPConnectionPool(f"localhost:{server.port}")
         pool.request("GET", "/")
 
     _test()
@@ -99,7 +99,7 @@ def test_http_request_connection_from_url_request(server, metrics):
     )
     @background_task(name="test_urllib3:test_http_request_connection_from_url_request")
     def _test():
-        conn = urllib3.connection_from_url(f"http://localhost:{int(server.port)}")
+        conn = urllib3.connection_from_url(f"http://localhost:{server.port}")
         conn.request("GET", "/")
 
     _test()
@@ -116,7 +116,7 @@ def test_http_request_pool_manager_urlopen(server, metrics):
     @background_task(name="test_urllib3:test_http_request_pool_manager_urlopen")
     def _test():
         pool = urllib3.PoolManager(5)
-        pool.urlopen("GET", f"http://localhost:{int(server.port)}/")
+        pool.urlopen("GET", f"http://localhost:{server.port}/")
 
     _test()
 
@@ -132,7 +132,7 @@ def test_https_request_connection_pool_urlopen(server, metrics):
     @background_task(name="test_urllib3:test_https_request_connection_pool_urlopen")
     def _test():
         # Setting retries to 0 so that metrics are recorded only once
-        pool = urllib3.HTTPSConnectionPool(f"localhost:{int(server.port)}", retries=0)
+        pool = urllib3.HTTPSConnectionPool(f"localhost:{server.port}", retries=0)
         try:
             pool.urlopen("GET", "/")
         except Exception:
@@ -152,7 +152,7 @@ def test_https_request_connection_pool_request(server, metrics):
     @background_task(name="test_urllib3:test_https_request_connection_pool_request")
     def _test():
         # Setting retries to 0 so that metrics are recorded only once
-        pool = urllib3.HTTPSConnectionPool(f"localhost:{int(server.port)}", retries=0)
+        pool = urllib3.HTTPSConnectionPool(f"localhost:{server.port}", retries=0)
         try:
             pool.request("GET", "/")
         except Exception:
@@ -162,13 +162,13 @@ def test_https_request_connection_pool_request(server, metrics):
 
 
 def test_port_included(server):
-    scoped = [(f"External/localhost:{int(server.port)}/urllib3/GET", 1)]
+    scoped = [(f"External/localhost:{server.port}/urllib3/GET", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"External/localhost:{int(server.port)}/urllib3/GET", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/urllib3/GET", 1),
     ]
 
     @validate_transaction_errors(errors=[])
@@ -177,7 +177,7 @@ def test_port_included(server):
     )
     @background_task(name="test_urllib3:test_port_included")
     def _test():
-        conn = urllib3.connection_from_url(f"http://localhost:{int(server.port)}")
+        conn = urllib3.connection_from_url(f"http://localhost:{server.port}")
         conn.request("GET", "/")
 
     _test()
@@ -190,13 +190,13 @@ def test_port_included(server):
     get_package_version_tuple("urllib3") < (1, 8), reason="urllib3.connection.HTTPConnection added in 1.8"
 )
 def test_HTTPConnection_port_included(server):
-    scoped = [(f"External/localhost:{int(server.port)}/urllib3/", 1)]
+    scoped = [(f"External/localhost:{server.port}/urllib3/", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"External/localhost:{int(server.port)}/urllib3/", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/urllib3/", 1),
     ]
 
     @validate_transaction_errors(errors=[])
@@ -208,7 +208,7 @@ def test_HTTPConnection_port_included(server):
     )
     @background_task(name="test_urllib3:test_HTTPConnection_port_included")
     def _test():
-        conn = urllib3.connection.HTTPConnection(f"localhost:{int(server.port)}")
+        conn = urllib3.connection.HTTPConnection(f"localhost:{server.port}")
         conn.request("GET", "/")
 
     _test()
@@ -228,7 +228,7 @@ def test_urlopen_cross_process_request(distributed_tracing, span_events, server)
     @cache_outgoing_headers
     @validate_cross_process_headers
     def _test():
-        pool = urllib3.HTTPConnectionPool(f"localhost:{int(server.port)}")
+        pool = urllib3.HTTPConnectionPool(f"localhost:{server.port}")
         pool.urlopen("GET", "/")
 
     _test = override_application_settings(
@@ -245,15 +245,15 @@ def test_urlopen_cross_process_request(distributed_tracing, span_events, server)
 @cat_enabled
 def test_urlopen_cross_process_response(server):
     _test_urlopen_cross_process_response_scoped_metrics = [
-        (f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1)
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)
     ]
 
     _test_urlopen_cross_process_response_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
-        (f"External/localhost:{int(server.port)}/all", 1),
-        (f"ExternalApp/localhost:{int(server.port)}/1#2/all", 1),
-        (f"ExternalTransaction/localhost:{int(server.port)}/1#2/test", 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
     ]
 
     _test_urlopen_cross_process_response_external_node_params = [
@@ -273,7 +273,7 @@ def test_urlopen_cross_process_response(server):
     @validate_external_node_params(params=_test_urlopen_cross_process_response_external_node_params)
     @background_task(name="test_urllib3:test_urlopen_cross_process_response")
     def _test():
-        pool = urllib3.HTTPConnectionPool(f"localhost:{int(server.port)}")
+        pool = urllib3.HTTPConnectionPool(f"localhost:{server.port}")
         pool.urlopen("GET", "/")
 
     _test()

@@ -200,7 +200,7 @@ def test_cat_map(
                 "txn": txn_name,
                 "guid": guid,
                 "old_cat": str(old_cat),
-                "server_url": f"http://localhost:{int(server.port)}",
+                "server_url": f"http://localhost:{server.port}",
             },
         )
 

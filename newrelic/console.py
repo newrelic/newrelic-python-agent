@@ -195,7 +195,7 @@ class ConsoleShell(cmd.Cmd):
         Enable or disable the console prompt."""
 
         if flag == "on":
-            self.prompt = f"(newrelic:{int(os.getpid())}) "
+            self.prompt = f"(newrelic:{os.getpid()}) "
         elif flag == "off":
             self.prompt = ""
 

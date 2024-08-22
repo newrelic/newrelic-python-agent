@@ -71,11 +71,11 @@ def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
     if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
         with MockExternalOpenAIServer() as server:
             chat = ChatOpenAI(
-                base_url=f"http://localhost:{int(server.port)}",
+                base_url=f"http://localhost:{server.port}",
                 api_key="NOT-A-REAL-SECRET",
             )
             embeddings = OpenAIEmbeddings(
-                openai_api_key="NOT-A-REAL-SECRET", openai_api_base=f"http://localhost:{int(server.port)}"
+                openai_api_key="NOT-A-REAL-SECRET", openai_api_base=f"http://localhost:{server.port}"
             )
             yield chat, embeddings
     else:

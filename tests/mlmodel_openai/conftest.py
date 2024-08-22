@@ -93,16 +93,16 @@ def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
     if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
         with MockExternalOpenAIServer() as server:
             if openai_version < (1, 0):
-                openai.api_base = f"http://localhost:{int(server.port)}"
+                openai.api_base = f"http://localhost:{server.port}"
                 openai.api_key = "NOT-A-REAL-SECRET"
                 yield
             else:
                 openai_sync = openai.OpenAI(
-                    base_url=f"http://localhost:{int(server.port)}",
+                    base_url=f"http://localhost:{server.port}",
                     api_key="NOT-A-REAL-SECRET",
                 )
                 openai_async = openai.AsyncOpenAI(
-                    base_url=f"http://localhost:{int(server.port)}",
+                    base_url=f"http://localhost:{server.port}",
                     api_key="NOT-A-REAL-SECRET",
                 )
                 yield (openai_sync, openai_async)

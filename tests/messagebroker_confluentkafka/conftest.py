@@ -228,7 +228,7 @@ def get_consumer_record(topic, send_producer_message, consumer, deserialize):
             record_count += 1
         consumer.poll(0.5)  # Exit the transaction.
 
-        assert record_count == 1, f"Incorrect count of records consumed: {int(record_count)}. Expected 1."
+        assert record_count == 1, f"Incorrect count of records consumed: {record_count}. Expected 1."
 
     return _test
 

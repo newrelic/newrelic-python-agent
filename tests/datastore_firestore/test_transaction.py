@@ -28,7 +28,7 @@ from newrelic.api.background_task import background_task
 @pytest.fixture(autouse=True)
 def sample_data(collection):
     for x in range(1, 4):
-        collection.add({"x": x}, f"doc{int(x)}")
+        collection.add({"x": x}, f"doc{x}")
 
 
 @pytest.fixture()
@@ -46,7 +46,7 @@ def exercise_transaction_commit(client, collection):
             assert len([_ for _ in transaction.get(query)]) == 1
 
             # get_all on a list of DocumentReferences
-            all_docs = transaction.get_all([collection.document(f"doc{int(x)}") for x in range(1, 4)])
+            all_docs = transaction.get_all([collection.document(f"doc{x}") for x in range(1, 4)])
             assert len([_ for _ in all_docs]) == 3
 
             # set and delete methods

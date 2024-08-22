@@ -102,7 +102,7 @@ def test_prepare(event_loop, conn):
 
 @pytest.fixture
 def table(event_loop, conn):
-    table_name = f"table_{int(os.getpid())}"
+    table_name = f"table_{os.getpid()}"
 
     event_loop.run_until_complete(conn.execute(f"""create table {table_name} (a integer, b real, c text)"""))
 

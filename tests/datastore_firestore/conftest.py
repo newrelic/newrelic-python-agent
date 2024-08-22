@@ -62,7 +62,7 @@ def instance_info():
 
 @pytest.fixture(scope="session")
 def client():
-    os.environ["FIRESTORE_EMULATOR_HOST"] = f"{FIRESTORE_HOST}:{int(FIRESTORE_PORT)}"
+    os.environ["FIRESTORE_EMULATOR_HOST"] = f"{FIRESTORE_HOST}:{FIRESTORE_PORT}"
     client = Client()
     # Ensure connection is available
     client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5)
@@ -78,7 +78,7 @@ def collection(client):
 
 @pytest.fixture(scope="session")
 def async_client(loop):
-    os.environ["FIRESTORE_EMULATOR_HOST"] = f"{FIRESTORE_HOST}:{int(FIRESTORE_PORT)}"
+    os.environ["FIRESTORE_EMULATOR_HOST"] = f"{FIRESTORE_HOST}:{FIRESTORE_PORT}"
     client = AsyncClient()
     loop.run_until_complete(
         client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5)

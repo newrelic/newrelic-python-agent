@@ -252,8 +252,8 @@ class Agent(object):
 
         print(f"Time Created: {time.asctime(time.localtime(self._creation_time))}", file=file)
         print(f"Initialization PID: {self._process_id}", file=file)
-        print(f"Default Harvest Count: {int(self._default_harvest_count)}", file=file)
-        print(f"Flexible Harvest Count: {int(self._flexible_harvest_count)}", file=file)
+        print(f"Default Harvest Count: {self._default_harvest_count}", file=file)
+        print(f"Flexible Harvest Count: {self._flexible_harvest_count}", file=file)
         print(f"Last Default Harvest: {time.asctime(time.localtime(self._last_default_harvest))}", file=file)
         print(f"Last Flexible Harvest: {time.asctime(time.localtime(self._last_flexible_harvest))}", file=file)
         print(f"Default Harvest Duration: {self._default_harvest_duration:.2f}", file=file)

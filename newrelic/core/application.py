@@ -159,8 +159,8 @@ class Application(object):
         print(f"Time Created: {time.asctime(time.localtime(self._creation_time))}", file=file)
         print(f"Linked Applications: {self._linked_applications!r}", file=file)
         print(f"Registration PID: {self._process_id}", file=file)
-        print(f"Harvest Count: {int(self._harvest_count)}", file=file)
-        print(f"Agent Restart: {int(self._agent_restart)}", file=file)
+        print(f"Harvest Count: {self._harvest_count}", file=file)
+        print(f"Agent Restart: {self._agent_restart}", file=file)
         print(f"Forced Shutdown: {self._agent_shutdown}", file=file)
 
         active_session = self._active_session
@@ -176,11 +176,11 @@ class Application(object):
             print(f"Transaction Normalization Rules: {self._rules_engine['transaction'].rules!r}", file=file)
             print(f"Transaction Segment Allowlist Rules: {self._rules_engine['segment'].rules!r}", file=file)
             print(f"Harvest Period Start: {time.asctime(time.localtime(self._period_start))}", file=file)
-            print(f"Transaction Count: {int(self._transaction_count)}", file=file)
+            print(f"Transaction Count: {self._transaction_count}", file=file)
             print(f"Last Transaction: {time.asctime(time.localtime(self._last_transaction))}", file=file)
-            print(f"Global Events Count: {int(self._global_events_account)}", file=file)
-            print(f"Harvest Metrics Count: {int(self._stats_engine.metrics_count())}", file=file)
-            print(f"Harvest Discard Count: {int(self._discard_count)}", file=file)
+            print(f"Global Events Count: {self._global_events_account}", file=file)
+            print(f"Harvest Metrics Count: {self._stats_engine.metrics_count()}", file=file)
+            print(f"Harvest Discard Count: {self._discard_count}", file=file)
 
     def activate_session(self, activate_agent=None, timeout=0.0):
         """Creates a background thread to initiate registration of the

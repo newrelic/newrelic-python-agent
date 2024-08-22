@@ -52,26 +52,26 @@ def memory_data_source():
 PID = os.getpid()
 
 EXPECTED_GC_METRICS = (
-    f"GC/objects/{int(PID)}/all",
-    f"GC/objects/{int(PID)}/generation/0",
-    f"GC/objects/{int(PID)}/generation/1",
-    f"GC/objects/{int(PID)}/generation/2",
-    f"GC/collections/{int(PID)}/all",
-    f"GC/collections/{int(PID)}/0",
-    f"GC/collections/{int(PID)}/1",
-    f"GC/collections/{int(PID)}/2",
-    f"GC/collected/{int(PID)}/all",
-    f"GC/collected/{int(PID)}/0",
-    f"GC/collected/{int(PID)}/1",
-    f"GC/collected/{int(PID)}/2",
-    f"GC/uncollectable/{int(PID)}/all",
-    f"GC/uncollectable/{int(PID)}/0",
-    f"GC/uncollectable/{int(PID)}/1",
-    f"GC/uncollectable/{int(PID)}/2",
-    f"GC/time/{int(PID)}/all",
-    f"GC/time/{int(PID)}/0",
-    f"GC/time/{int(PID)}/1",
-    f"GC/time/{int(PID)}/2",
+    f"GC/objects/{PID}/all",
+    f"GC/objects/{PID}/generation/0",
+    f"GC/objects/{PID}/generation/1",
+    f"GC/objects/{PID}/generation/2",
+    f"GC/collections/{PID}/all",
+    f"GC/collections/{PID}/0",
+    f"GC/collections/{PID}/1",
+    f"GC/collections/{PID}/2",
+    f"GC/collected/{PID}/all",
+    f"GC/collected/{PID}/0",
+    f"GC/collected/{PID}/1",
+    f"GC/collected/{PID}/2",
+    f"GC/uncollectable/{PID}/all",
+    f"GC/uncollectable/{PID}/0",
+    f"GC/uncollectable/{PID}/1",
+    f"GC/uncollectable/{PID}/2",
+    f"GC/time/{PID}/all",
+    f"GC/time/{PID}/0",
+    f"GC/time/{PID}/1",
+    f"GC/time/{PID}/2",
 )
 
 
@@ -144,8 +144,8 @@ def test_cpu_metrics_collection(cpu_data_source):
 EXPECTED_MEMORY_METRICS = (
     "Memory/Physical",
     "Memory/Physical/Utilization",
-    f"Memory/Physical/{int(PID)}",
-    f"Memory/Physical/Utilization/{int(PID)}",
+    f"Memory/Physical/{PID}",
+    f"Memory/Physical/Utilization/{PID}",
 )
 
 

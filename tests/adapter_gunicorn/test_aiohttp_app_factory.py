@@ -36,7 +36,7 @@ def test_aiohttp_app_factory(nr_enabled):
     # Restart the server if it dies during testing
     for _ in range(5):
         PORT = get_open_port()
-        cmd = [gunicorn, '-b', f'127.0.0.1:{int(PORT)}', '--worker-class',
+        cmd = [gunicorn, '-b', f'127.0.0.1:{PORT}', '--worker-class',
                 'aiohttp.GunicornWebWorker', 'async_app:app_factory']
 
         if nr_enabled:
@@ -71,7 +71,7 @@ def test_aiohttp_app_factory(nr_enabled):
             else:
                 continue
 
-            with urlopen(f'http://127.0.0.1:{int(PORT)}') as resp:
+            with urlopen(f'http://127.0.0.1:{PORT}') as resp:
                 assert resp.getcode() == 200
                 assert resp.read() == b'PONG'
 

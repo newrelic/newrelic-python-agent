@@ -48,7 +48,7 @@ class ContextOf(object):
         elif trace_cache_id is not None:
             self.trace = self.trace_cache.get(trace_cache_id, None)
             if self.trace is None:
-                log_propagation_failure(f"No trace with id {int(trace_cache_id)}.")
+                log_propagation_failure(f"No trace with id {trace_cache_id}.")
         elif hasattr(request, "_nr_trace") and request._nr_trace is not None:
             # Unpack traces from objects patched with them
             self.trace = request._nr_trace

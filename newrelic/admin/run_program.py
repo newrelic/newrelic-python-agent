@@ -40,7 +40,7 @@ def run_program(args):
         if startup_debug:
             text = text % args
             timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-            print(f'NEWRELIC: {timestamp} ({int(os.getpid())}) - {text}')
+            print(f'NEWRELIC: {timestamp} ({os.getpid()}) - {text}')
 
     log_message('New Relic Admin Script (%s)', __file__)
 

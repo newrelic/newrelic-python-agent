@@ -60,7 +60,7 @@ INBOUND_TRACEPARENT_VERSION_ZERO_EXTRA_FIELDS = \
 INBOUND_TRACESTATE = \
         'rojo=f06a0ba902b7,congo=t61rcWkgMzE'
 LONG_TRACESTATE = \
-        ','.join(["{}@rojo=f06a0ba902b7".format(x) for x in range(32)])
+        ','.join([f"{x}@rojo=f06a0ba902b7" for x in range(32)])
 INBOUND_UNTRUSTED_NR_TRACESTATE = \
         ('2@nr=0-0-1345936-55632452-27jjj2d8890283b4-b28ce285632jjhl9-'
         '1-1.1273-1569367663277')
@@ -143,7 +143,7 @@ def test_tracestate_generation(inbound_nr_tracestate):
     (INBOUND_NR_TRACESTATE + "," + INBOUND_TRACESTATE, INBOUND_TRACESTATE),
     (INBOUND_TRACESTATE, INBOUND_TRACESTATE),
     (LONG_TRACESTATE + ',' + INBOUND_NR_TRACESTATE,
-            ','.join("{}@rojo=f06a0ba902b7".format(x) for x in range(31))),
+            ','.join(f"{x}@rojo=f06a0ba902b7" for x in range(31))),
 ), ids=(
     'empty_inbound_payload',
     'nr_payload',

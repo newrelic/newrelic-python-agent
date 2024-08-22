@@ -96,8 +96,7 @@ def test_outbound_distributed_trace(
         'span.kind': 'client',
     }
 
-    txn_name = 'test_outbound_DT[{0}-{1}-{2}-{3}]'.format(
-            method_type, method_name, dt_enabled, dt_error)
+    txn_name = f'test_outbound_DT[{method_type}-{method_name}-{dt_enabled}-{dt_error}]'
     settings = {'distributed_tracing.enabled': dt_enabled}
     span_count = 1 if dt_enabled else 0
     if dt_error:

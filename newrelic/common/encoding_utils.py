@@ -417,13 +417,9 @@ class W3CTraceParent(dict):
         if "id" in self:
             guid = self["id"]
         else:
-            guid = "{:016x}".format(random.getrandbits(64))
+            guid = f"{random.getrandbits(64):016x}"
 
-        return "00-{}-{}-{:02x}".format(
-            self["tr"].lower().zfill(32),
-            guid,
-            int(self.get("sa", 0)),
-        )
+        return f"00-{self['tr'].lower().zfill(32)}-{guid}-{int(self.get('sa', 0)):02x}"
 
     @classmethod
     def decode(cls, payload):
@@ -466,7 +462,7 @@ class W3CTraceParent(dict):
 
 class W3CTraceState(OrderedDict):
     def text(self, limit=32):
-        return ",".join("{}={}".format(k, v) for k, v in itertools.islice(self.items(), limit))
+        return ",".join(f"{k}={v}" for k, v in itertools.islice(self.items(), limit))
 
     @classmethod
     def decode(cls, tracestate):
@@ -504,10 +500,7 @@ class NrTraceState(dict):
                 str(self["ti"]),
             )
         )
-        return "{}@nr={}".format(
-            self.get("tk", self["ac"]),
-            payload,
-        )
+        return f"{self.get('tk', self['ac'])}@nr={payload}"
 
     @classmethod
     def decode(cls, payload, tk):

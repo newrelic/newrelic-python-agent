@@ -31,7 +31,7 @@ TEST_BUCKET = "python-agent-test"
 FILENAME = "dummy.bin"
 FOLDER = "aiobotocore"
 ENDPOINT = f"localhost:{PORT}"
-KEY = "{}/{}".format(FOLDER, FILENAME)
+KEY = f"{FOLDER}/{FILENAME}"
 EXPECTED_BUCKET_URL = f"http://{ENDPOINT}/{TEST_BUCKET}"
 EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/" + KEY
 

@@ -52,7 +52,7 @@ _test_matrix = [
 def test_simple(method_name, streaming_request, mock_grpc_server, stub):
     port = mock_grpc_server
     request = create_request(streaming_request)
-    _transaction_name = "sample_application:SampleApplicationServicer.{}".format(method_name)
+    _transaction_name = f"sample_application:SampleApplicationServicer.{method_name}"
     method = getattr(stub, method_name)
 
     @validate_code_level_metrics("sample_application.SampleApplicationServicer", method_name)
@@ -85,7 +85,7 @@ def test_raises_response_status(method_name, streaming_request, mock_grpc_server
 
     method_name = method_name + "Raises"
 
-    _transaction_name = "sample_application:SampleApplicationServicer.{}".format(method_name)
+    _transaction_name = f"sample_application:SampleApplicationServicer.{method_name}"
     method = getattr(stub, method_name)
 
     status_code = str(grpc.StatusCode.UNKNOWN.value[0])

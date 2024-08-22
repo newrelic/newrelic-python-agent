@@ -81,7 +81,7 @@ def record_deploy(
                 "the application to register with New Relic." % app_name
             )
 
-        path = "/v2/applications/{}/deployments.json".format(app_id)
+        path = f"/v2/applications/{app_id}/deployments.json"
 
         if user is None:
             user = pwd.getpwuid(os.getuid()).pw_gecos

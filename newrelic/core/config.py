@@ -1131,7 +1131,7 @@ def apply_config_setting(settings_object, name, value, nested=False):
     default_value = getattr(target, fields[0], None)
     if isinstance(value, dict) and value and not isinstance(default_value, dict):
         for k, v in value.items():
-            k_name = "{}.{}".format(fields[0], k)
+            k_name = f"{fields[0]}.{k}"
             apply_config_setting(target, k_name, v, nested=True)
     else:
         setattr(target, fields[0], value)

@@ -297,9 +297,9 @@ _test_record_log_event_context_attribute_filtering_params = [
 @pytest.mark.parametrize("include,exclude,attr,expected", _test_record_log_event_context_attribute_filtering_params)
 def test_record_log_event_context_attribute_filtering_inside_transaction(include, exclude, attr, expected, prefix):
     if expected:
-        expected_event = {"required_attrs": [".".join((prefix, attr))]}
+        expected_event = {"required_attrs": [f"{prefix}.{attr}"]}
     else:
-        expected_event = {"forgone_attrs": [".".join((prefix, attr))]}
+        expected_event = {"forgone_attrs": [f"{prefix}.{attr}"]}
 
     @override_application_settings(
         {
@@ -326,9 +326,9 @@ def test_record_log_event_context_attribute_filtering_inside_transaction(include
 @reset_core_stats_engine()
 def test_record_log_event_context_attribute_filtering_outside_transaction(include, exclude, attr, expected, prefix):
     if expected:
-        expected_event = {"required_attrs": [".".join((prefix, attr))]}
+        expected_event = {"required_attrs": [f"{prefix}.{attr}"]}
     else:
-        expected_event = {"forgone_attrs": [".".join((prefix, attr))]}
+        expected_event = {"forgone_attrs": [f"{prefix}.{attr}"]}
 
     @override_application_settings(
         {

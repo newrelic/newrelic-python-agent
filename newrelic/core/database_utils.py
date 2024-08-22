@@ -85,7 +85,7 @@ _bool_p = r'\b(?:true|false|null)\b'
 # first to avoid the situation of partial matches on shorter expressions. UUIDs
 # might be an example.
 
-_all_literals_p = f"({')|('.join([_uuid_p, _hex_p, _int_p, _bool_p])})"
+_all_literals_p = f"({_uuid_p})|({_hex_p})|({_int_p})|({_bool_p})"
 _all_literals_re = re.compile(_all_literals_p, re.IGNORECASE)
 
 _quotes_table = {

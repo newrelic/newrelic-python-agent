@@ -6733,7 +6733,7 @@ def extract_shortened_prompt(content, model):
         prompt = content.get("inputText", "") or content.get("prompt", "") or content.get("texts", [""])[0]
     # Sometimes there are leading whitespaces in the prompt.
     prompt = prompt.strip()
-    prompt = "::".join((model, prompt))  # Prepend model name to prompt key to keep separate copies
+    prompt = f"{model}::{prompt}"  # Prepend model name to prompt key to keep separate copies
     return prompt.lstrip().split("\n")[0]
 
 

@@ -228,4 +228,4 @@ class SegmentCollapseEngine(object):
         result = [x if x in allowlist_terms else "*" for x in segments]
         result = self.COLLAPSE_STAR_RE.sub("\\1", "/".join(result))
 
-        return "/".join((prefix, result)), False
+        return f"{prefix}/{result}", False

@@ -546,7 +546,7 @@ def capitalize(string):
     elif len(string) == 1:
         return string.capitalize()
     else:
-        return "".join((string[0].upper(), string[1:]))
+        return f"{string[0].upper()}{string[1:]}"
 
 
 def camel_case(string, upper=False):

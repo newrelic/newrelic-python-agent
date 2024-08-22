@@ -32,7 +32,7 @@ def add_nr_linking_metadata(message):
     trace_id = available_metadata.get("trace.id", "")
     hostname = available_metadata.get("hostname", "")
 
-    nr_linking_str = "|".join(("NR-LINKING", entity_guid, hostname, trace_id, span_id, entity_name))
+    nr_linking_str = f"NR-LINKING|{entity_guid}|{hostname}|{trace_id}|{span_id}|{entity_name}"
     return f"{message} {nr_linking_str}|"
 
 

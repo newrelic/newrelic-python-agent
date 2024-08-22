@@ -41,10 +41,10 @@ from newrelic.api.function_trace import FunctionTrace
 is_pypy = hasattr(sys, "pypy_version_info")
 
 NAMESPACE = "_test_code_level_metrics"
-CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClass"))
-CALLABLE_CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClassCallable"))
-TYPE_CONSTRUCTOR_NAMESPACE = ".".join((NAMESPACE, "ExerciseTypeConstructor"))
-TYPE_CONSTRUCTOR_CALLABLE_NAMESPACE = ".".join((NAMESPACE, "ExerciseTypeConstructorCallable"))
+CLASS_NAMESPACE = f"{NAMESPACE}.ExerciseClass"
+CALLABLE_CLASS_NAMESPACE = f"{NAMESPACE}.ExerciseClassCallable"
+TYPE_CONSTRUCTOR_NAMESPACE = f"{NAMESPACE}.ExerciseTypeConstructor"
+TYPE_CONSTRUCTOR_CALLABLE_NAMESPACE = f"{NAMESPACE}.ExerciseTypeConstructorCallable"
 if FILE_PATH.endswith(".pyc"):
     FILE_PATH = FILE_PATH[:-1]
 

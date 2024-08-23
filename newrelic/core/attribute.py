@@ -226,8 +226,7 @@ def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding="utf-8", ending=None):
     # Truncate text so that its byte representation
     # is no longer than maxsize bytes.
 
-    # If text is unicode (Python 2 or 3), return unicode.
-    # If text is a Python 2 string, return str.
+    # Handle unicode or bytes strings and return the same type as the input.
 
     if isinstance(text, str):
         truncated = _truncate_unicode(text, maxsize, encoding)

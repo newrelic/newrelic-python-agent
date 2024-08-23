@@ -55,12 +55,7 @@ class DatastoreTrace(TimeTrace):
 
     """
 
-    def __init__(self, product, target, operation, host=None, port_path_or_id=None, database_name=None, **kwargs):
-        parent = kwargs.pop("parent", None)
-        source = kwargs.pop("source", None)
-        if kwargs:
-            raise TypeError("Invalid keyword arguments:", kwargs)
-
+    def __init__(self, product, target, operation, host=None, port_path_or_id=None, database_name=None, *, parent=None, source=None):
         super(DatastoreTrace, self).__init__(parent=parent, source=source)
 
         self.instance_reporting_enabled = False

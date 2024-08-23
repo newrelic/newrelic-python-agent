@@ -22,12 +22,7 @@ from newrelic.core.function_node import FunctionNode
 
 
 class FunctionTrace(TimeTrace):
-    def __init__(self, name, group=None, label=None, params=None, terminal=False, rollup=None, **kwargs):
-        parent = kwargs.pop("parent", None)
-        source = kwargs.pop("source", None)
-        if kwargs:
-            raise TypeError("Invalid keyword arguments:", kwargs)
-
+    def __init__(self, name, group=None, label=None, params=None, terminal=False, rollup=None, *, parent=None, source=None):
         super(FunctionTrace, self).__init__(parent=parent, source=source)
 
         # Handle incorrect groupings and leading slashes. This will

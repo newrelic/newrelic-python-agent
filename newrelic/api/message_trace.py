@@ -28,12 +28,7 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
     cat_synthetics_key = "NewRelicSynthetics"
     cat_synthetics_info_key = "NewRelicSyntheticsInfo"
 
-    def __init__(self, library, operation, destination_type, destination_name, params=None, terminal=True, **kwargs):
-        parent = kwargs.pop("parent", None)
-        source = kwargs.pop("source", None)
-        if kwargs:
-            raise TypeError("Invalid keyword arguments:", kwargs)
-
+    def __init__(self, library, operation, destination_type, destination_name, params=None, terminal=True, *, parent=None, source=None):
         super(MessageTrace, self).__init__(parent=parent, source=source)
 
         self.terminal = terminal

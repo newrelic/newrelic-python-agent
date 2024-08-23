@@ -61,13 +61,10 @@ class DatabaseTrace(TimeTrace):
         host=None,
         port_path_or_id=None,
         database_name=None,
-        **kwargs
+        *,
+        parent=None,
+        source=None,
     ):
-        parent = kwargs.pop("parent", None)
-        source = kwargs.pop("source", None)
-        if kwargs:
-            raise TypeError("Invalid keyword arguments:", kwargs)
-
         super(DatabaseTrace, self).__init__(parent=parent, source=source)
 
         self.sql = sql

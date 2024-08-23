@@ -22,12 +22,7 @@ from newrelic.core.graphql_node import GraphQLOperationNode, GraphQLResolverNode
 
 
 class GraphQLOperationTrace(TimeTrace):
-    def __init__(self, **kwargs):
-        parent = kwargs.pop("parent", None)
-        source = kwargs.pop("source", None)
-        if kwargs:
-            raise TypeError("Invalid keyword arguments:", kwargs)
-
+    def __init__(self, *, parent=None, source=None):
         super(GraphQLOperationTrace, self).__init__(parent=parent, source=source)
 
         self.operation_name = "<anonymous>"
@@ -139,12 +134,7 @@ def wrap_graphql_operation_trace(module, object_path, async_wrapper=None):
 
 
 class GraphQLResolverTrace(TimeTrace):
-    def __init__(self, field_name=None, field_parent_type=None, field_return_type=None, field_path=None, **kwargs):
-        parent = kwargs.pop("parent", None)
-        source = kwargs.pop("source", None)
-        if kwargs:
-            raise TypeError("Invalid keyword arguments:", kwargs)
-
+    def __init__(self, field_name=None, field_parent_type=None, field_return_type=None, field_path=None, *, parent=None, source=None):
         super(GraphQLResolverTrace, self).__init__(parent=parent, source=source)
 
         self.field_name = field_name

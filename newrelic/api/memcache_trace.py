@@ -21,12 +21,7 @@ from newrelic.core.memcache_node import MemcacheNode
 
 
 class MemcacheTrace(TimeTrace):
-    def __init__(self, command, **kwargs):
-        parent = kwargs.pop("parent", None)
-        source = kwargs.pop("source", None)
-        if kwargs:
-            raise TypeError("Invalid keyword arguments:", kwargs)
-
+    def __init__(self, command, *, parent=None, source=None):
         super(MemcacheTrace, self).__init__(parent=parent, source=source)
 
         self.command = command

@@ -1354,7 +1354,7 @@ def check_error_attributes(
     check_attributes(parameters, required_params, forgone_params, exact_attrs)
 
 
-class Environ(object):
+class Environ():
     """Context manager for setting environment variables temporarily."""
 
     def __init__(self, **kwargs):

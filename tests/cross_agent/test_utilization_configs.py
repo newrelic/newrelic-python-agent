@@ -72,7 +72,7 @@ def _mock_getips(ip_addresses):
     return getips
 
 
-class UpdatedSettings(object):
+class UpdatedSettings():
     def __init__(self):
         self.initial_settings = newrelic.core.config._settings
 

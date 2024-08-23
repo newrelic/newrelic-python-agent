@@ -82,7 +82,7 @@ _logger.addHandler(_NullHandler())
 # sub categories we don't know about.
 
 
-class Settings(object):
+class Settings():
     nested = False
 
     def __repr__(self):

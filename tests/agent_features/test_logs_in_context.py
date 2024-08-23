@@ -62,14 +62,14 @@ def log_buffer_with_stack_trace(caplog):
     _logger.removeHandler(_handler)
 
 
-class NonPrintableObject(object):
+class NonPrintableObject():
     def __str__(self):
         raise RuntimeError("Unable to print object.")
 
     __repr__ = __str__
 
 
-class NonSerializableObject(object):
+class NonSerializableObject():
     def __str__(self):
         return "<%s object>" % self.__class__.__name__
 

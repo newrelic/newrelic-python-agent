@@ -54,7 +54,7 @@ class NormalizationRule(_NormalizationRule):
         return self.match_expression_re.subn(self.replacement, string, count)
 
 
-class RulesEngine(object):
+class RulesEngine():
     def __init__(self, rules):
         self.__rules = []
 
@@ -126,7 +126,7 @@ class RulesEngine(object):
         return (final_string, ignore)
 
 
-class SegmentCollapseEngine(object):
+class SegmentCollapseEngine():
     """Segment names in transaction name are collapsed using the rules
     from the data collector. The collector sends a prefix and list of
     allowlist terms associated with that prefix. If a transaction name

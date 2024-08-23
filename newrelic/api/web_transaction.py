@@ -526,7 +526,7 @@ class WebTransaction(Transaction):
         return intrinsics
 
 
-class WSGIHeaderProxy(object):
+class WSGIHeaderProxy():
     def __init__(self, environ):
         self.environ = environ
         self.length = None

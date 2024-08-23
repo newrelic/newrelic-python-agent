@@ -30,7 +30,7 @@ from testing_support.validators.validate_transaction_errors import (
 CHERRYPY_VERSION = tuple(int(v) for v in cherrypy.__version__.split("."))
 
 
-class Application(object):
+class Application():
     @cherrypy.expose
     def index(self):
         return "INDEX RESPONSE"

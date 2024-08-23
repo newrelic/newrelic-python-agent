@@ -142,7 +142,7 @@ def request(app, method, url, headers=None):
     return RESPONSES.pop()
 
 
-class TestApplication(object):
+class TestApplication():
     def __init__(self, app):
         self.app = app
 

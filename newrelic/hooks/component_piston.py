@@ -20,7 +20,7 @@ from newrelic.common.object_names import callable_name
 import newrelic.api.in_function
 
 
-class MethodWrapper(object):
+class MethodWrapper():
 
     def __init__(self, wrapped, priority=None):
         self._nr_name = callable_name(wrapped)
@@ -46,7 +46,7 @@ class MethodWrapper(object):
             return self._nr_wrapped(*args, **kwargs)
 
 
-class ResourceInitWrapper(object):
+class ResourceInitWrapper():
 
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):

@@ -50,7 +50,7 @@ from newrelic.network.exceptions import (
 _logger = logging.getLogger(__name__)
 
 
-class AgentProtocol(object):
+class AgentProtocol():
     VERSION = 17
 
     STATUS_CODE_RESPONSE = {

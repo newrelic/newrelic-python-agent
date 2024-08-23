@@ -570,7 +570,7 @@ def test_audit_logging():
 )
 def test_ca_bundle_path(monkeypatch, ca_bundle_path):
     # Pretend CA certificates are not available
-    class DefaultVerifyPaths(object):
+    class DefaultVerifyPaths():
         cafile = None
         capath = None
 

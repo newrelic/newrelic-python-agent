@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from minversion import pika_version_info
+from conftest import PIKA_VERSION_INFO
 
 
 def basic_consume(channel, queue, callback, auto_ack=None):
     kwargs = {"queue": queue}
-    if pika_version_info[0] < 1:
+    if PIKA_VERSION_INFO[0] < 1:
         kwargs["consumer_callback"] = callback
         if auto_ack is not None:
             kwargs["no_ack"] = not auto_ack

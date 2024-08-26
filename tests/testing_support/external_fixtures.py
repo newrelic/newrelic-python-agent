@@ -77,7 +77,7 @@ def validate_synthetics_external_trace_header(
             # reviewed and a better way of achieving what is
             # required found.
 
-            class _Transaction(object):
+            class _Transaction():
                 def __init__(self, wrapped):
                     self.__wrapped__ = wrapped
 

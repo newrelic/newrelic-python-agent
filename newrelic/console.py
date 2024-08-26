@@ -100,7 +100,7 @@ def setquit():
     else:
         eof = "Ctrl-D (i.e. EOF)"
 
-    class Quitter(object):
+    class Quitter():
         def __init__(self, name):
             self.name = name
 
@@ -426,7 +426,7 @@ class ConsoleShell(cmd.Cmd):
         print("\n\n".join(all), file=self.stdout)
 
 
-class ConnectionManager(object):
+class ConnectionManager():
     def __init__(self, listener_socket):
         self.__listener_socket = listener_socket
         self.__console_initialized = False

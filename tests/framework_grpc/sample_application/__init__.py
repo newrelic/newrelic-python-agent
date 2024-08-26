@@ -33,7 +33,7 @@ add_SampleApplicationServicer_to_server = sample_application_pb2_grpc.add_Sample
 SampleApplicationStub = sample_application_pb2_grpc.SampleApplicationStub
 
 
-class Status(object):
+class Status():
     code = grpc.StatusCode.ABORTED
     details = "abort_with_status"
     trailing_metadata = {}

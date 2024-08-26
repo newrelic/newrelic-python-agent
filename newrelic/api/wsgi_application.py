@@ -29,7 +29,7 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 _logger = logging.getLogger(__name__)
 
 
-class _WSGIApplicationIterable(object):
+class _WSGIApplicationIterable():
     def __init__(self, transaction, generator):
         self.transaction = transaction
         self.generator = generator
@@ -95,7 +95,7 @@ class _WSGIApplicationIterable(object):
             self.closed = True
 
 
-class _WSGIInputWrapper(object):
+class _WSGIInputWrapper():
     def __init__(self, transaction, input):
         self.__transaction = transaction
         self.__input = input
@@ -150,7 +150,7 @@ class _WSGIInputWrapper(object):
         return lines
 
 
-class _WSGIApplicationMiddleware(object):
+class _WSGIApplicationMiddleware():
     # This is a WSGI middleware for automatically inserting RUM into
     # HTML responses. It only works for where a WSGI application is
     # returning response content via a iterable/generator. It does not

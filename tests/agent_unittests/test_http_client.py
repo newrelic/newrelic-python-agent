@@ -367,7 +367,7 @@ def test_default_cert_path(monkeypatch, system_certs_available):
         cert_file = None
         ca_path = None
 
-    class DefaultVerifyPaths(object):
+    class DefaultVerifyPaths():
         cafile = cert_file
         capath = ca_path
 

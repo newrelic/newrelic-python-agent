@@ -195,7 +195,7 @@ class CountStats(TimeStats):
         pass
 
 
-class CustomMetrics(object):
+class CustomMetrics():
 
     """Table for collection a set of value metrics."""
 
@@ -241,7 +241,7 @@ class CustomMetrics(object):
         self.__stats_table = {}
 
 
-class DimensionalMetrics(object):
+class DimensionalMetrics():
 
     """Nested dictionary table for collecting a set of metrics broken down by tags."""
 
@@ -377,7 +377,7 @@ class SlowSqlStats(list):
         self[0] += 1
 
 
-class SampledDataSet(object):
+class SampledDataSet():
     def __init__(self, capacity=100):
         self.pq = []
         self.heap = False
@@ -501,7 +501,7 @@ class LimitedDataSet(list):
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 
-class StatsEngine(object):
+class StatsEngine():
 
     """The stats engine object holds the accumulated transactions metrics,
     details of errors and slow transactions. There should be one instance

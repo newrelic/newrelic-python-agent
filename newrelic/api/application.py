@@ -20,7 +20,7 @@ import newrelic.core.agent
 import newrelic.core.config
 
 
-class Application(object):
+class Application():
     _lock = threading.Lock()
     _instances = {}
 

@@ -32,7 +32,7 @@ _logger = logging.getLogger(__name__)
 AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + os.sep
 
 
-class SessionState(object):
+class SessionState():
     RUNNING = 1
     FINISHED = 2
 
@@ -113,7 +113,7 @@ def collect_stack_traces(include_nr_threads=False):
         yield thread_category, stack_trace
 
 
-class ProfileSessionManager(object):
+class ProfileSessionManager():
     """Singleton class that manages multiple profile sessions. Do NOT
     instantiate directly from this class. Instead use profile_session_manager()
 
@@ -282,7 +282,7 @@ class ProfileSessionManager(object):
         return True
 
 
-class ProfileSession(object):
+class ProfileSession():
     def __init__(self, profile_id, stop_time):
         self.profile_id = profile_id
         self.start_time_s = time.time()
@@ -431,7 +431,7 @@ class ProfileSession(object):
         return profile
 
 
-class CallTree(object):
+class CallTree():
     def __init__(self, method_data, call_count=0, depth=1):
         self.method_data = method_data
         self.call_count = call_count

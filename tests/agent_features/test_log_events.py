@@ -36,14 +36,14 @@ from newrelic.api.transaction import (
 from newrelic.core.config import _parse_attributes
 
 
-class NonPrintableObject(object):
+class NonPrintableObject():
     def __str__(self):
         raise RuntimeError("Unable to print object.")
 
     __repr__ = __str__
 
 
-class NonSerializableObject(object):
+class NonSerializableObject():
     def __str__(self):
         return f"<{self.__class__.__name__} object>"
 

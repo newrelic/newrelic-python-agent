@@ -16,7 +16,7 @@ import newrelic.core.attribute as attribute
 from newrelic.core.attribute_filter import DST_SPAN_EVENTS, DST_TRANSACTION_SEGMENTS
 
 
-class GenericNodeMixin(object):
+class GenericNodeMixin():
     @property
     def processed_user_attributes(self):
         if hasattr(self, "_processed_user_attributes"):

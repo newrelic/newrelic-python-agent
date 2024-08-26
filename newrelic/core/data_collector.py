@@ -35,7 +35,7 @@ from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data
 _logger = logging.getLogger(__name__)
 
 
-class Session(object):
+class Session():
     PROTOCOL = AgentProtocol
     OTLP_PROTOCOL = OtlpProtocol
     CLIENT = ApplicationModeClient

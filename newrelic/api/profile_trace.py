@@ -25,7 +25,7 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 AGENT_PACKAGE_DIRECTORY = f"{os.path.dirname(AGENT_PACKAGE_FILE)}/"
 
 
-class ProfileTrace(object):
+class ProfileTrace():
     def __init__(self, depth):
         self.function_traces = []
         self.maximum_depth = depth

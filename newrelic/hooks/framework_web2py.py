@@ -108,7 +108,7 @@ def instrument_gluon_main(module):
     # where we want to name the web transactions as
     # such, we pick that up later.
 
-    class error_serve_controller(object):
+    class error_serve_controller():
         def __init__(self, wrapped):
             newrelic.api.object_wrapper.update_wrapper(self, wrapped)
             self._nr_next_object = wrapped

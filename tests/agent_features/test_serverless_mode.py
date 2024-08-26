@@ -167,7 +167,7 @@ def test_payload_metadata_arn(serverless_application, arn_set):
 
     settings.aws_lambda_metadata.update({"arn": arn, "function_version": "$LATEST"})
 
-    class Context(object):
+    class Context():
         invoked_function_arn = arn
 
     @validate_serverless_metadata(exact_metadata={"arn": arn})

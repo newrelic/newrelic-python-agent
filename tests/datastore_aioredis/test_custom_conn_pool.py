@@ -30,7 +30,7 @@ from newrelic.api.background_task import background_task
 DB_SETTINGS = redis_settings()[0]
 
 
-class FakeConnectionPool(object):
+class FakeConnectionPool():
     """Connection Pool without connection_kwargs attribute."""
 
     def __init__(self, connection):

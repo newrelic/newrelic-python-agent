@@ -71,7 +71,7 @@ def get_event_loop(task):
     return getattr(task, "_loop", None)
 
 
-class cached_module(object):
+class cached_module():
     def __init__(self, module_path, name=None):
         self.module_path = module_path
         self.name = name or module_path

@@ -479,7 +479,7 @@ def test_sanitize_tuple():
     assert sanitize(t) == "('one', 'two', 'three')"
 
 
-class Foo(object):
+class Foo():
     pass
 
 
@@ -488,7 +488,7 @@ def test_sanitize_object():
     assert sanitize(f) == str(f)
 
 
-class TypeErrorString(object):
+class TypeErrorString():
     def __str__(self):
         return 42
 
@@ -498,7 +498,7 @@ def test_str_raises_type_error():
         sanitize(TypeErrorString())
 
 
-class AttributeErrorString(object):
+class AttributeErrorString():
     def __str__(self):
         raise AttributeError()
 

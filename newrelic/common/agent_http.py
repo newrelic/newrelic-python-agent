@@ -35,7 +35,7 @@ try:
     from ssl import get_default_verify_paths
 except ImportError:
 
-    class _DEFAULT_CERT_PATH(object):
+    class _DEFAULT_CERT_PATH():
         cafile = None
         capath = None
 
@@ -73,7 +73,7 @@ def _urllib3_ssl_recursion_workaround(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
 
-class BaseClient(object):
+class BaseClient():
     AUDIT_LOG_ID = 0
 
     def __init__(
@@ -517,7 +517,7 @@ class InsecureHttpClient(HttpClient):
         )
 
 
-class SupportabilityMixin(object):
+class SupportabilityMixin():
     @staticmethod
     def _supportability_request(params, payload, body, compression_time):
         # *********

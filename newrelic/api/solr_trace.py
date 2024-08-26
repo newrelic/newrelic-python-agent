@@ -51,7 +51,7 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
         )
 
 
-class SolrTraceWrapper(object):
+class SolrTraceWrapper():
     def __init__(self, wrapped, library, command):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped

@@ -17,7 +17,7 @@ from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 
 
-class PostgresApi(object):
+class PostgresApi():
     @staticmethod
     def _instance_info(addr, connected_fut, con_params, *args, **kwargs):
         if isinstance(addr, str):

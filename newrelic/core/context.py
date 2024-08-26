@@ -24,7 +24,7 @@ from newrelic.core.trace_cache import trace_cache
 _logger = logging.getLogger(__name__)
 
 
-class ContextOf(object):
+class ContextOf():
     def __init__(self, trace=None, request=None, trace_cache_id=None, strict=True):
         self.trace = None
         self.trace_cache = trace_cache()

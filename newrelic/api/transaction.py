@@ -145,7 +145,7 @@ class Sentinel(TimeTrace):
         pass
 
 
-class CachedPath(object):
+class CachedPath():
     def __init__(self, transaction):
         self._name = None
         self.transaction = weakref.ref(transaction)
@@ -161,7 +161,7 @@ class CachedPath(object):
         return "Unknown"
 
 
-class Transaction(object):
+class Transaction():
     STATE_PENDING = 0
     STATE_RUNNING = 1
     STATE_STOPPED = 2

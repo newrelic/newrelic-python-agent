@@ -18,7 +18,7 @@ from newrelic.core.config import finalize_application_settings
 from testing_support.fixtures import override_generic_settings
 
 
-class FakeApplication(object):
+class FakeApplication():
     name = 'Fake'
 
     def __init__(self, *args, **kwargs):

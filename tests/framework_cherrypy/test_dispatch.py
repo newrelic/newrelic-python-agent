@@ -26,7 +26,7 @@ is_ge_cherrypy32 = (tuple(map(int,
 requires_cherrypy32 = pytest.mark.skipif(not is_ge_cherrypy32,
         reason="The dispatch mechanism was only added in CherryPy 3.2.")
 
-class Resource(object):
+class Resource():
 
     def _cp_dispatch(self, vpath):
         raise RuntimeError('dispatch error')

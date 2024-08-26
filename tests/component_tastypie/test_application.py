@@ -53,7 +53,7 @@ def test_application_index():
     response.mustcontain("INDEX RESPONSE")
 
 
-class TastyPieFullDebugMode(object):
+class TastyPieFullDebugMode():
     def __init__(self, tastypie_full_debug):
         from django.conf import settings
 

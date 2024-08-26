@@ -26,7 +26,7 @@ def name_controller(self, environ, start_response):
     action = environ['pylons.routes_dict']['action']
     return f"{callable_name(self)}.{action}"
 
-class capture_error(object):
+class capture_error():
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped

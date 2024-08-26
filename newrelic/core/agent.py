@@ -79,7 +79,7 @@ def check_environment():
             )
 
 
-class Agent(object):
+class Agent():
 
     """Only one instance of the agent should ever exist and that can be
     obtained using the agent_instance() function.

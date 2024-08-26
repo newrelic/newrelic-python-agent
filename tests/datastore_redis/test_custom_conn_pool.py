@@ -33,7 +33,7 @@ DB_SETTINGS = redis_settings()[0]
 REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 
-class FakeConnectionPool(object):
+class FakeConnectionPool():
     """Connection Pool without connection_kwargs attribute."""
 
     def __init__(self, connection):

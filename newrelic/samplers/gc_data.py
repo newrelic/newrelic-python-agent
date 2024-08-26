@@ -25,7 +25,7 @@ from newrelic.samplers.decorators import data_source_factory
 
 
 @data_source_factory(name="Garbage Collector Metrics")
-class _GCDataSource(object):
+class _GCDataSource():
     def __init__(self, settings, environ):
         self.gc_time_metrics = CustomMetrics()
         self.start_time = 0.0

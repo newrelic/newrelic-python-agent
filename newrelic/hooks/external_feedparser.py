@@ -22,7 +22,7 @@ import newrelic.common.object_wrapper
 import newrelic.api.external_trace
 
 
-class capture_external_trace(object):
+class capture_external_trace():
     def __init__(self, wrapped):
         newrelic.api.object_wrapper.update_wrapper(self, wrapped)
         self._nr_next_object = wrapped

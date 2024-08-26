@@ -27,7 +27,7 @@ import socket
 #       ... test stuff ...
 
 
-class MockExternalgRPCServer(object):
+class MockExternalgRPCServer():
     def __init__(self, port=None, *args, **kwargs):
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
         if port:

@@ -21,7 +21,7 @@ import newrelic.common.object_wrapper
 
 _context = threading.local()
 
-class InternalTrace(object):
+class InternalTrace():
 
     def __init__(self, name, metrics=None):
         self.name = name
@@ -39,7 +39,7 @@ class InternalTrace(object):
         if self.metrics is not None:
             self.metrics.record_custom_metric(self.name, duration)
 
-class InternalTraceWrapper(object):
+class InternalTraceWrapper():
 
     def __init__(self, wrapped, name):
         if type(wrapped) == type(()):
@@ -68,7 +68,7 @@ class InternalTraceWrapper(object):
         with InternalTrace(self.__name, metrics):
             return self.__wrapped(*args, **kwargs)
 
-class InternalTraceContext(object):
+class InternalTraceContext():
 
     def __init__(self, metrics):
         self.previous = None

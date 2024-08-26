@@ -23,7 +23,7 @@ from newrelic.common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
 
-class DataSampler(object):
+class DataSampler():
 
     def __init__(self, consumer, source, name, settings, **properties):
         self.consumer = consumer

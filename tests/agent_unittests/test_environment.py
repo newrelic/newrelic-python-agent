@@ -24,7 +24,7 @@ settings = global_settings()
 
 
 def module(version):
-    class Module(object):
+    class Module():
         pass
 
     if version:
@@ -68,7 +68,7 @@ def test_plugin_list_when_package_reporting_disabled():
     assert plugin_list == []
 
 
-class NoIteratorDict(object):
+class NoIteratorDict():
     def __init__(self, d):
         self.d = d
 

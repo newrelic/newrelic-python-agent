@@ -479,7 +479,7 @@ def test_span_event_agent_attributes(include_attribues):
     _test()
 
 
-class FakeTrace(object):
+class FakeTrace():
     def __enter__(self):
         pass
 

@@ -123,7 +123,7 @@ def test_distributed_tracing_web_transaction():
     assert "X-NewRelic-App-Data" not in response.headers
 
 
-class TestAsgiRequest(object):
+class TestAsgiRequest():
     scope = {
         "asgi": {"spec_version": "2.1", "version": "3.0"},
         "client": ("127.0.0.1", 54768),

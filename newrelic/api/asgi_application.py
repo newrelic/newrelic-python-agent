@@ -49,7 +49,7 @@ def double_to_single_callable(wrapped, instance, args, kwargs):
     return coro_function_wrapper(coro_function, receive, send)
 
 
-class ASGIBrowserMiddleware(object):
+class ASGIBrowserMiddleware():
     def __init__(self, app, transaction=None, search_maximum=64 * 1024):
         self.app = app
         self.send = None

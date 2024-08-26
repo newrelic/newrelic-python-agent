@@ -521,7 +521,7 @@ def _obfuscate_explain_plan(database, columns, rows):
     return columns, rows
 
 
-class SQLConnection(object):
+class SQLConnection():
 
     def __init__(self, database, connection):
         self.database = database
@@ -561,7 +561,7 @@ class SQLConnection(object):
         self.connection.close()
 
 
-class SQLConnections(object):
+class SQLConnections():
 
     def __init__(self, maximum=4):
         self.connections = []
@@ -767,7 +767,7 @@ def explain_plan(connections, sql_statement, connect_params, cursor_params,
 # Wrapper for information about a specific database.
 
 
-class SQLDatabase(object):
+class SQLDatabase():
 
     def __init__(self, dbapi2_module):
         self.dbapi2_module = dbapi2_module
@@ -811,7 +811,7 @@ class SQLDatabase(object):
         return result
 
 
-class SQLStatement(object):
+class SQLStatement():
 
     def __init__(self, sql, database=None):
         self._operation = None

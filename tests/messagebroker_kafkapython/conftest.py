@@ -173,7 +173,7 @@ def json_deserializer():
 
 @pytest.fixture(scope="session")
 def json_callable_serializer():
-    class JSONCallableSerializer(object):
+    class JSONCallableSerializer():
         def __call__(self, obj):
             return json.dumps(obj).encode("utf-8") if obj is not None else None
 
@@ -182,7 +182,7 @@ def json_callable_serializer():
 
 @pytest.fixture(scope="session")
 def json_callable_deserializer():
-    class JSONCallableDeserializer(object):
+    class JSONCallableDeserializer():
         def __call__(self, obj):
             return json.loads(obj.decode("utf-8")) if obj is not None else None
 

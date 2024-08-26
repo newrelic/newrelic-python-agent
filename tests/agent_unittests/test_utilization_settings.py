@@ -72,7 +72,7 @@ INITIAL_ENV = os.environ
 # Tests for loading settings and testing for values precedence
 
 
-class Environ(object):
+class Environ():
     def __init__(self, env_dict):
         self.env_dict = {}
         for key in env_dict.keys():

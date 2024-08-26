@@ -41,7 +41,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-class FakeProtos(object):
+class FakeProtos():
     Span = object()
     SpanBatch = object()
 

@@ -25,7 +25,7 @@ _logger = logging.getLogger(__name__)
 CancelledError = None
 
 
-class TransactionContext(object):
+class TransactionContext():
     def __init__(self, transaction_init):
         self.enter_time = None
         self.transaction = None
@@ -101,7 +101,7 @@ class TransactionContext(object):
             self.transaction.__exit__(exc, value, tb)
 
 
-class LoopContext(object):
+class LoopContext():
     def __enter__(self):
         self.enter_time = time.time()
 

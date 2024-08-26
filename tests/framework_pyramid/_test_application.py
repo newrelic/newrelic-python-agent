@@ -95,7 +95,7 @@ else:
 
 
     @cornice.resource.resource(collection_path="/resource", path="/resource/{id}")
-    class Resource(object):
+    class Resource():
         def __init__(self, request, context=None):
             self.request = request
 

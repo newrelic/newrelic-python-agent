@@ -30,15 +30,17 @@ _logger = logging.getLogger(__name__)
 LANGCHAIN_VERSION = get_package_version("langchain")
 EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in langchain instrumentation: While reporting an exception in langchain, another exception occurred. Report this issue to New Relic Support.\n%s"
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in langchain instrumentation: Failed to record LLM events. Report this issue to New Relic Support.\n%s"
-
 VECTORSTORE_CLASSES = {
+    "langchain_community.vectorstores.aerospike": "Aerospike",
     "langchain_community.vectorstores.alibabacloud_opensearch": "AlibabaCloudOpenSearch",
     "langchain_community.vectorstores.analyticdb": "AnalyticDB",
     "langchain_community.vectorstores.annoy": "Annoy",
     "langchain_community.vectorstores.apache_doris": "ApacheDoris",
+    "langchain_community.vectorstores.aperturedb": "ApertureDB",
     "langchain_community.vectorstores.astradb": "AstraDB",
     "langchain_community.vectorstores.atlas": "AtlasDB",
     "langchain_community.vectorstores.awadb": "AwaDB",
+    "langchain_community.vectorstores.azure_cosmos_db_no_sql": "AzureCosmosDBNoSqlVectorSearch",
     "langchain_community.vectorstores.azure_cosmos_db": "AzureCosmosDBVectorSearch",
     "langchain_community.vectorstores.azuresearch": "AzureSearch",
     "langchain_community.vectorstores.baiduvectordb": "BaiduVectorDB",
@@ -72,6 +74,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.lancedb": "LanceDB",
     "langchain_community.vectorstores.lantern": "Lantern",
     "langchain_community.vectorstores.llm_rails": "LLMRails",
+    "langchain_community.vectorstores.manticore_search": "ManticoreSearch",
     "langchain_community.vectorstores.marqo": "Marqo",
     "langchain_community.vectorstores.matching_engine": "MatchingEngine",
     "langchain_community.vectorstores.meilisearch": "Meilisearch",
@@ -80,7 +83,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.mongodb_atlas": "MongoDBAtlasVectorSearch",
     "langchain_community.vectorstores.myscale": "MyScale",
     "langchain_community.vectorstores.neo4j_vector": "Neo4jVector",
-    "langchain_community.vectorstores.thirdai_neuraldb": "NeuralDBVectorStore",
+    "langchain_community.vectorstores.thirdai_neuraldb": ["NeuralDBClientVectorStore", "NeuralDBVectorStore"],
     "langchain_community.vectorstores.nucliadb": "NucliaDB",
     "langchain_community.vectorstores.oraclevs": "OracleVS",
     "langchain_community.vectorstores.opensearch_vector_search": "OpenSearchVectorSearch",
@@ -119,6 +122,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.weaviate": "Weaviate",
     "langchain_community.vectorstores.xata": "XataVectorStore",
     "langchain_community.vectorstores.yellowbrick": "Yellowbrick",
+    "langchain_community.vectorstores.zep_cloud": "ZepCloudVectorStore",
     "langchain_community.vectorstores.zep": "ZepVectorStore",
     "langchain_community.vectorstores.docarray.hnsw": "DocArrayHnswSearch",
     "langchain_community.vectorstores.docarray.in_memory": "DocArrayInMemorySearch",
@@ -871,12 +875,20 @@ def instrument_langchain_chains_base(module):
 
 
 def instrument_langchain_vectorstore_similarity_search(module):
-    vector_class = VECTORSTORE_CLASSES.get(module.__name__)
+    def _instrument_class(module, vector_class):
+        if hasattr(getattr(module, vector_class, ""), "similarity_search"):
+            wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
+        if hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
+            wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)
 
-    if vector_class and hasattr(getattr(module, vector_class, ""), "similarity_search"):
-        wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
-    if vector_class and hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
-        wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)
+    vector_classes = VECTORSTORE_CLASSES.get(module.__name__)
+    if vector_classes is None:
+        return
+    if isinstance(vector_classes, list):
+        for vector_class in vector_classes:
+            _instrument_class(module, vector_class)
+    else:
+        _instrument_class(module, vector_classes)
 
 
 def instrument_langchain_core_tools(module):

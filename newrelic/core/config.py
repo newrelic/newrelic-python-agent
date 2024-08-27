@@ -365,13 +365,13 @@ class SecurityRequestSettings(Settings):
 class SecurityScanScheduleSettings(Settings):
     pass
 
-class SecuritySkipIASTScanSettings(Settings):
+class SecurityExcludeFromIASTScanSettings(Settings):
     pass
 
-class SecuritySkipIASTScanParametersSettings(Settings):
+class SecurityExcludeFromIASTScanHTTPRequestParametersSettings(Settings):
     pass
 
-class SecuritySkipIASTScanIASTDetectionCategorySettings(Settings):
+class SecurityExcludeFromIASTScanIASTDetectionCategorySettings(Settings):
     pass
 
 class InfiniteTracingSettings(Settings):
@@ -507,11 +507,13 @@ _settings.security.detection = SecurityDetectionSettings()
 _settings.security.detection.deserialization = SecurityDetectionDeserializationSettings()
 _settings.security.detection.rci = SecurityDetectionRCISettings()
 _settings.security.detection.rxss = SecurityDetectionRXSSSettings()
+_settings.security.exclude_from_iast_scan = SecurityExcludeFromIASTScanSettings()
+_settings.security.exclude_from_iast_scan.http_request_parameters = \
+    SecurityExcludeFromIASTScanHTTPRequestParametersSettings()
+_settings.security.exclude_from_iast_scan.iast_detection_category = \
+    SecurityExcludeFromIASTScanIASTDetectionCategorySettings()
 _settings.security.request = SecurityRequestSettings()
 _settings.security.scan_schedule = SecurityScanScheduleSettings()
-_settings.security.skip_iast_scan = SecuritySkipIASTScanSettings()
-_settings.security.skip_iast_scan.parameters = SecuritySkipIASTScanParametersSettings()
-_settings.security.skip_iast_scan.iast_detection_category = SecuritySkipIASTScanIASTDetectionCategorySettings()
 _settings.serverless_mode = ServerlessModeSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.span_events = SpanEventSettings()
@@ -1028,48 +1030,54 @@ _settings.security.scan_schedule.delay = _environ_as_int("NEW_RELIC_SECURITY_SCA
 _settings.security.scan_schedule.always_sample_traces = _environ_as_bool(
     "NEW_RELIC_SECURITY_SCAN_SCHEDULE_ALWAYS_SAMPLE_TRACES", False
     )
-_settings.security.skip_iast_scan.api = _environ_as_set(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_API", default=""
+_settings.security.exclude_from_iast_scan.api = _environ_as_set(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_API", default=""
 )
-_settings.security.skip_iast_scan.parameters.header = _environ_as_set(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_PARAMETERS_HEADER", default=""
+_settings.security.exclude_from_iast_scan.http_request_parameters.header = _environ_as_set(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_HTTP_REQUEST_PARAMETERS_HEADER", default=""
 )
-_settings.security.skip_iast_scan.parameters.query = _environ_as_set(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_PARAMETERS_QUERY", default=""
+_settings.security.exclude_from_iast_scan.http_request_parameters.query = _environ_as_set(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_HTTP_REQUEST_PARAMETERS_QUERY", default=""
 )
-_settings.security.skip_iast_scan.parameters.body = _environ_as_set(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_PARAMETERS_BODY", default=""
+_settings.security.exclude_from_iast_scan.http_request_parameters.body = _environ_as_set(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_HTTP_REQUEST_PARAMETERS_BODY", default=""
 )
-_settings.security.skip_iast_scan.iast_detection_category.insecure_settings = _environ_as_bool(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_INSECURE_SETTINGS", False
+_settings.security.exclude_from_iast_scan.iast_detection_category.insecure_settings = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_INSECURE_SETTINGS", False
 )
-_settings.security.skip_iast_scan.iast_detection_category.invalid_file_access = _environ_as_bool(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_INVALID_FILE_ACCESS", False
+_settings.security.exclude_from_iast_scan.iast_detection_category.invalid_file_access = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_INVALID_FILE_ACCESS", False
 )
-_settings.security.skip_iast_scan.iast_detection_category.sql_injection = _environ_as_bool(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_SQL_INJECTION", False
+_settings.security.exclude_from_iast_scan.iast_detection_category.sql_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_SQL_INJECTION", False
 )
-_settings.security.skip_iast_scan.iast_detection_category.nosql_injection = _environ_as_bool(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_NOSQL_INJECTION", False
+_settings.security.exclude_from_iast_scan.iast_detection_category.nosql_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_NOSQL_INJECTION", False
 )
-_settings.security.skip_iast_scan.iast_detection_category.ldap_injection = _environ_as_bool(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_LDAP_INJECTION", False
+_settings.security.exclude_from_iast_scan.iast_detection_category.ldap_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_LDAP_INJECTION", False
 )
-_settings.security.skip_iast_scan.iast_detection_category.javascript_injection = _environ_as_bool(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_JAVASCRIPT_INJECTION", False
+_settings.security.exclude_from_iast_scan.iast_detection_category.javascript_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_JAVASCRIPT_INJECTION", False
 )
-_settings.security.skip_iast_scan.iast_detection_category.command_injection = _environ_as_bool(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_COMMAND_INJECTION", False
+_settings.security.exclude_from_iast_scan.iast_detection_category.command_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_COMMAND_INJECTION", False
 )
-_settings.security.skip_iast_scan.iast_detection_category.xpath_injection = _environ_as_bool(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_XPATH_INJECTION", False
+_settings.security.exclude_from_iast_scan.iast_detection_category.xpath_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_XPATH_INJECTION", False
 )
-_settings.security.skip_iast_scan.iast_detection_category.ssrf = _environ_as_bool(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_SSRF", False
+_settings.security.exclude_from_iast_scan.iast_detection_category.ssrf = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_SSRF", False
 )
-_settings.security.skip_iast_scan.iast_detection_category.rxss = _environ_as_bool(
-    "NEW_RELIC_SECURITY_SKIP_IAST_SCAN_IAST_DETECTION_CATEGORY_RXSS", False
+_settings.security.exclude_from_iast_scan.iast_detection_category.rxss = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_RXSS", False
 )
+_settings.security.scan_schedule.schedule = os.environ.get("NEW_RELIC_SECURITY_SCAN_SCHEDULE_SCHEDULE", None)
+_settings.security.scan_schedule.duration = _environ_as_int("NEW_RELIC_SECURITY_SCAN_SCHEDULE_DURATION", -1)
+_settings.security.scan_schedule.delay = _environ_as_int("NEW_RELIC_SECURITY_SCAN_SCHEDULE_DELAY", 0)
+_settings.security.scan_schedule.always_sample_traces = _environ_as_bool("NEW_RELIC_SECURITY_SCAN_SCHEDULE_ALWAYS_SAMPLE_TRACES", False)
+
+
 def global_settings():
     """This returns the default global settings. Generally only used
     directly in test scripts and test harnesses or when applying global

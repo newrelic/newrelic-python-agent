@@ -509,7 +509,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
 
         request_id = response_headers.get("x-request-id")
         organization = response_headers.get("openai-organization") or getattr(response, "organization", None)
-        messages = kwargs.get("messages") or [{"content": kwargs.get("prompt"), "role": "user"}] or []
+        messages = kwargs.get("messages") or [{"content": kwargs.get("prompt"), "role": "user"}]
         input_message_list = list(messages)
         full_chat_completion_summary_dict = {
             "id": completion_id,

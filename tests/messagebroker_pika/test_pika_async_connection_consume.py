@@ -28,7 +28,7 @@ from conftest import (
     QUEUE_2,
     REPLY_TO,
 )
-from minversion import pika_version_info
+from conftest import PIKA_VERSION_INFO
 from pika.adapters.tornado_connection import TornadoConnection
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (
@@ -181,7 +181,7 @@ _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
 
 
 @pytest.mark.skipif(
-    condition=pika_version_info[0] > 0, reason="pika 1.0 removed the ability to use basic_get with callback=None"
+    condition=PIKA_VERSION_INFO[0] > 0, reason="pika 1.0 removed the ability to use basic_get with callback=None"
 )
 @parametrized_connection
 @validate_transaction_metrics(

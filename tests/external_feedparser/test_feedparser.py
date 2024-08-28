@@ -39,7 +39,7 @@ def test_feedparser_external(feedparser, server, url):
     @background_task(name="test_feedparser_external")
     def _test():
         feed = feedparser.parse(url)
-        assert feed["feed"]["link"] == u"https://pypi.org/"
+        assert feed["feed"]["link"] == "https://pypi.org/"
 
     _test()
 
@@ -59,7 +59,7 @@ def test_feedparser_file(feedparser, stream, server):
                 feed = feedparser.parse(f)
         else:
             feed = feedparser.parse("packages.xml")
-        assert feed["feed"]["link"] == u"https://pypi.org/"
+        assert feed["feed"]["link"] == "https://pypi.org/"
 
     _test()
 
@@ -72,4 +72,4 @@ def test_feedparser_no_transaction(feedparser, server, url):
     if url.startswith('http://'):
         url = f"{url}:{str(server.port)}"
     feed = feedparser.parse(url)
-    assert feed["feed"]["link"] == u"https://pypi.org/"
+    assert feed["feed"]["link"] == "https://pypi.org/"

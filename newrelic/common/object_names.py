@@ -296,22 +296,9 @@ def parse_exc_info(exc_info):
         fullnames = (name,)
 
     try:
-
-        # Favor unicode in exception messages.
-
+        # Ensure exception messages are strings
         message = str(value)
-
     except Exception:
-        try:
-
-            # If exception cannot be represented in unicode, this means
-            # that it is a byte string encoded with an encoding
-            # that is not compatible with the default system encoding.
-            # So, just pass this byte string along.
-
-            message = str(value)
-
-        except Exception:
-            message = f"<unprintable {type(value).__name__} object>"
+        message = f"<unprintable {type(value).__name__} object>"
 
     return (module, name, fullnames, message)

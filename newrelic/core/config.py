@@ -166,6 +166,10 @@ class K8sOperatorSettings(Settings):
     pass
 
 
+class AzureSidecarSettings(Settings):
+    pass
+
+
 class PackageReportingSettings(Settings):
     pass
 
@@ -435,6 +439,7 @@ _settings.ai_monitoring = AIMonitoringSettings()
 _settings.ai_monitoring.streaming = AIMonitoringStreamingSettings()
 _settings.ai_monitoring.record_content = AIMonitoringRecordContentSettings()
 _settings.k8s_operator = K8sOperatorSettings()
+_settings.azure_sidecar = AzureSidecarSettings()
 _settings.package_reporting = PackageReportingSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
@@ -961,6 +966,7 @@ _settings.ai_monitoring.record_content.enabled = _environ_as_bool(
 )
 _settings.ai_monitoring._llm_token_count_callback = None
 _settings.k8s_operator.enabled = _environ_as_bool("NEW_RELIC_K8S_OPERATOR_ENABLED", default=False)
+_settings.azure_sidecar.enabled = _environ_as_bool("NEW_RELIC_AZURE_SIDECAR_ENABLED", default=False)
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 

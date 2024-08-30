@@ -120,12 +120,14 @@ actual_python_version = ".".join(map(str, sys.version_info[:2]))
 python_prefix_matches = expected_python_prefix == actual_python_prefix
 python_version_matches = expected_python_version == actual_python_version
 k8s_operator_enabled = os.environ.get("NEW_RELIC_K8S_OPERATOR_ENABLED", "off").lower() in ("on", "true", "1")
+azure_sidecar_enabled = os.environ.get("NEW_RELIC_AZURE_SIDECAR_ENABLED", "off").lower() in ("on", "true", "1")
 
 log_message("python_prefix_matches = %r", python_prefix_matches)
 log_message("python_version_matches = %r", python_version_matches)
 log_message("k8s_operator_enabled = %r", k8s_operator_enabled)
+log_message("azure_sidecar_enabled = %r", azure_sidecar_enabled)
 
-if k8s_operator_enabled or (python_prefix_matches and python_version_matches):
+if k8s_operator_enabled or azure_sidecar_enabled or (python_prefix_matches and python_version_matches):
     # We also need to skip agent initialisation if neither the license
     # key or config file environment variables are set. We do this as
     # some people like to use a common startup script which always uses
@@ -141,7 +143,26 @@ if k8s_operator_enabled or (python_prefix_matches and python_version_matches):
     log_message("initialize_agent = %r", initialize_agent)
 
     if initialize_agent:
-        if not k8s_operator_enabled:
+        if k8s_operator_enabled or azure_sidecar_enabled:
+            # When installed with either the kubernetes operator or the
+            # azure sidecar functionality enabled, we need to attempt to
+            # find a distribution from our initcontainer that matches the
+            # current environment. For wheels, this is platform dependent and we
+            # rely on pip to identify the correct wheel to use. If no suitable
+            # wheel can be found, we will fall back to the sdist and disable
+            # extensions. Once the appropriate distribution is found, we import
+            # it and leave the entry in sys.path. This allows users to import
+            # the 'newrelic' module later and use our APIs in their code.
+            try:
+                sys.path.insert(0, boot_directory)
+                # should be the same for both k8 and azure sidecar
+                from newrelic_k8s_operator import find_supported_newrelic_distribution
+            finally:
+                del_sys_path_entry(boot_directory)
+
+            new_relic_path = find_supported_newrelic_distribution()
+            do_insert_path = True
+        else:
             # When installed as an egg with buildout, the root directory for
             # packages is not listed in sys.path and scripts instead set it
             # after Python has started up. This will cause importing of
@@ -156,23 +177,6 @@ if k8s_operator_enabled or (python_prefix_matches and python_version_matches):
 
             new_relic_path = root_directory
             do_insert_path = root_directory not in sys.path
-        else:
-            # When installed with the kubernetes operator, we need to attempt
-            # to find a distribution from our initcontainer that matches the
-            # current environment. For wheels, this is platform dependent and we
-            # rely on pip to identify the correct wheel to use. If no suitable
-            # wheel can be found, we will fall back to the sdist and disable
-            # extensions. Once the appropriate distribution is found, we import
-            # it and leave the entry in sys.path. This allows users to import
-            # the 'newrelic' module later and use our APIs in their code.
-            try:
-                sys.path.insert(0, boot_directory)
-                from newrelic_k8s_operator import find_supported_newrelic_distribution
-            finally:
-                del_sys_path_entry(boot_directory)
-
-            new_relic_path = find_supported_newrelic_distribution()
-            do_insert_path = True
 
         # Now that the appropriate location of the module has been identified,
         # either by the kubernetes operator or this script, we are ready to import

@@ -38,11 +38,11 @@ from newrelic.common.object_names import callable_name
 
 def test_custom_metrics(get_consumer_record, topic):
     @validate_transaction_metrics(
-        "Named/%s" % topic,
+        f"Named/{topic}",
         group="Message/Kafka/Topic",
         custom_metrics=[
-            ("Message/Kafka/Topic/Named/%s/Received/Bytes" % topic, 1),
-            ("Message/Kafka/Topic/Named/%s/Received/Messages" % topic, 1),
+            (f"Message/Kafka/Topic/Named/{topic}/Received/Bytes", 1),
+            (f"Message/Kafka/Topic/Named/{topic}/Received/Messages", 1),
         ],
         background_task=True,
     )
@@ -67,9 +67,9 @@ def test_custom_metrics_on_existing_transaction(get_consumer_record, topic):
     @validate_transaction_metrics(
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test",
         custom_metrics=[
-            ("Message/Kafka/Topic/Named/%s/Received/Bytes" % topic, 1),
-            ("Message/Kafka/Topic/Named/%s/Received/Messages" % topic, 1),
-            ("Python/MessageBroker/Kafka-Python/%s" % version, 1),
+            (f"Message/Kafka/Topic/Named/{topic}/Received/Bytes", 1),
+            (f"Message/Kafka/Topic/Named/{topic}/Received/Messages", 1),
+            (f"Python/MessageBroker/Kafka-Python/{version}", 1),
         ],
         background_task=True,
     )
@@ -85,8 +85,8 @@ def test_custom_metrics_inactive_transaction(get_consumer_record, topic):
     @validate_transaction_metrics(
         "test_consumer:test_custom_metrics_inactive_transaction.<locals>._test",
         custom_metrics=[
-            ("Message/Kafka/Topic/Named/%s/Received/Bytes" % topic, None),
-            ("Message/Kafka/Topic/Named/%s/Received/Messages" % topic, None),
+            (f"Message/Kafka/Topic/Named/{topic}/Received/Bytes", None),
+            (f"Message/Kafka/Topic/Named/{topic}/Received/Messages", None),
         ],
         background_task=True,
     )
@@ -138,7 +138,7 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize):
         producer.flush()
 
     @validate_transaction_metrics(
-        "Named/%s" % topic,
+        f"Named/{topic}",
         group="Message/Kafka/Topic",
         rollup_metrics=[
             ("Supportability/DistributedTrace/AcceptPayload/Success", None),

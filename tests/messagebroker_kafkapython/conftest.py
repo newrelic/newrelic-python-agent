@@ -28,7 +28,7 @@ from newrelic.common.object_wrapper import transient_function_wrapper
 
 DB_SETTINGS = kafka_settings()[0]
 
-BOOTSTRAP_SERVER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
+BOOTSTRAP_SERVER = f"{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"
 BROKER = [BOOTSTRAP_SERVER]
 
 
@@ -194,7 +194,7 @@ def topic():
     from kafka.admin.client import KafkaAdminClient
     from kafka.admin.new_topic import NewTopic
 
-    topic = "test-topic-%s" % str(uuid.uuid4())
+    topic = f"test-topic-{str(uuid.uuid4())}"
 
     admin = KafkaAdminClient(bootstrap_servers=BROKER)
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
@@ -235,7 +235,7 @@ def get_consumer_record(topic, send_producer_message, consumer, deserialize):
                 record_count += 1
             attempts += 1
 
-        assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
+        assert record_count == 1, f"Incorrect count of records consumed: {record_count}. Expected 1."
 
     return _test
 

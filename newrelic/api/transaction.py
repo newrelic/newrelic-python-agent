@@ -269,7 +269,7 @@ class Transaction():
 
         self.rum_token = None
 
-        trace_id = "%032x" % random.getrandbits(128)
+        trace_id = f"{random.getrandbits(128):032x}"
 
         # 16-digit random hex. Padded with zeros in the front.
         # This is the official transactionId in the UI.
@@ -547,7 +547,7 @@ class Transaction():
         self.total_time += exclusive
 
         if self.client_cross_process_id is not None:
-            metric_name = "ClientApplication/%s/all" % (self.client_cross_process_id)
+            metric_name = f"ClientApplication/{self.client_cross_process_id}/all"
             self.record_custom_metric(metric_name, duration)
 
         # Record supportability metrics for api calls
@@ -557,19 +557,19 @@ class Transaction():
 
         if self._frameworks:
             for framework, version in self._frameworks:
-                self.record_custom_metric("Python/Framework/%s/%s" % (framework, version), 1)
+                self.record_custom_metric(f"Python/Framework/{framework}/{version}", 1)
 
         if self._message_brokers:
             for message_broker, version in self._message_brokers:
-                self.record_custom_metric("Python/MessageBroker/%s/%s" % (message_broker, version), 1)
+                self.record_custom_metric(f"Python/MessageBroker/{message_broker}/{version}", 1)
 
         if self._dispatchers:
             for dispatcher, version in self._dispatchers:
-                self.record_custom_metric("Python/Dispatcher/%s/%s" % (dispatcher, version), 1)
+                self.record_custom_metric(f"Python/Dispatcher/{dispatcher}/{version}", 1)
 
         if self._ml_models:
             for ml_model, version in self._ml_models:
-                self.record_custom_metric("Supportability/Python/ML/%s/%s" % (ml_model, version), 1)
+                self.record_custom_metric(f"Supportability/Python/ML/{ml_model}/{version}", 1)
 
         if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the
@@ -716,9 +716,9 @@ class Transaction():
         # leading slash may be significant in that situation.
 
         if group in ("Uri", "NormalizedUri") and transaction_name.startswith("/"):
-            name = "%s%s" % (group, transaction_name)
+            name = f"{group}{transaction_name}"
         else:
-            name = "%s/%s" % (group, transaction_name)
+            name = f"{group}/{transaction_name}"
 
         return name
 
@@ -739,7 +739,7 @@ class Transaction():
         if self._frozen_path:
             return self._frozen_path
 
-        return "%s/%s" % (self.type, self.name_for_metric)
+        return f"{self.type}/{self.name_for_metric}"
 
     @property
     def trip_id(self):
@@ -771,7 +771,7 @@ class Transaction():
         if not self.is_part_of_cat:
             return None
 
-        identifier = "%s;%s" % (self.application.name, self.path)
+        identifier = f"{self.application.name};{self.path}"
 
         # Check if identifier is already part of the _alternate_path_hashes and
         # return the value if available.
@@ -864,7 +864,7 @@ class Transaction():
             # Add all synthetics attributes
             for k, v in self.synthetics_attributes.items():
                 if k:
-                    i_attrs["synthetics_%s" % snake_case(k)] = v
+                    i_attrs[f"synthetics_{snake_case(k)}"] = v
 
         if self.total_time:
             i_attrs["totalTime"] = self.total_time
@@ -976,7 +976,7 @@ class Transaction():
                 r_attrs = {}
 
                 for k, v in self._request_params.items():
-                    new_key = "request.parameters.%s" % k
+                    new_key = f"request.parameters.{k}"
                     new_val = ",".join(v)
 
                     final_key, final_val = process_user_attribute(new_key, new_val)
@@ -1012,7 +1012,7 @@ class Transaction():
     def _compute_sampled_and_priority(self):
         if self._priority is None:
             # truncate priority field to 6 digits past the decimal
-            self._priority = float("%.6f" % random.random())  # nosec
+            self._priority = float(f"{random.random():.6f}")  # nosec
 
         if self._sampled is None:
             self._sampled = self._application.compute_sampled()
@@ -1143,7 +1143,7 @@ class Transaction():
 
                 tracestate = NrTraceState(data).text()
                 if self.tracestate:
-                    tracestate += "," + self.tracestate
+                    tracestate += f",{self.tracestate}"
                 yield ("tracestate", tracestate)
 
                 self._record_supportability("Supportability/TraceContext/Create/Success")
@@ -1338,7 +1338,7 @@ class Transaction():
                     trusted_account_key = self._settings.trusted_account_key or (
                         self._settings.serverless_mode.enabled and self._settings.account_id
                     )
-                    payload = vendors.pop(trusted_account_key + "@nr", "")
+                    payload = vendors.pop(f"{trusted_account_key}@nr", "")
                     self.tracing_vendors = ",".join(vendors.keys())
                     self.tracestate = vendors.text(limit=31)
                 except:
@@ -1536,7 +1536,7 @@ class Transaction():
         group = group or "Function"
 
         if group.startswith("/"):
-            group = "Function" + group
+            group = f"Function{group}"
 
         self._group = group
         self._name = name
@@ -1845,22 +1845,22 @@ class Transaction():
     def dump(self, file):
         """Dumps details about the transaction to the file object."""
 
-        print("Application: %s" % (self.application.name), file=file)
-        print("Time Started: %s" % (time.asctime(time.localtime(self.start_time))), file=file)
-        print("Thread Id: %r" % (self.thread_id), file=file)
-        print("Current Status: %d" % (self._state), file=file)
-        print("Recording Enabled: %s" % (self.enabled), file=file)
-        print("Ignore Transaction: %s" % (self.ignore_transaction), file=file)
-        print("Transaction Dead: %s" % (self._dead), file=file)
-        print("Transaction Stopped: %s" % (self.stopped), file=file)
-        print("Background Task: %s" % (self.background_task), file=file)
-        print("Request URI: %s" % (self._request_uri), file=file)
-        print("Transaction Group: %s" % (self._group), file=file)
-        print("Transaction Name: %s" % (self._name), file=file)
-        print("Name Priority: %r" % (self._name_priority), file=file)
-        print("Frozen Path: %s" % (self._frozen_path), file=file)
-        print("AutoRUM Disabled: %s" % (self.autorum_disabled), file=file)
-        print("Supress Apdex: %s" % (self.suppress_apdex), file=file)
+        print(f"Application: {self.application.name}", file=file)
+        print(f"Time Started: {time.asctime(time.localtime(self.start_time))}", file=file)
+        print(f"Thread Id: {self.thread_id!r}", file=file)
+        print(f"Current Status: {self._state}", file=file)
+        print(f"Recording Enabled: {self.enabled}", file=file)
+        print(f"Ignore Transaction: {self.ignore_transaction}", file=file)
+        print(f"Transaction Dead: {self._dead}", file=file)
+        print(f"Transaction Stopped: {self.stopped}", file=file)
+        print(f"Background Task: {self.background_task}", file=file)
+        print(f"Request URI: {self._request_uri}", file=file)
+        print(f"Transaction Group: {self._group}", file=file)
+        print(f"Transaction Name: {self._name}", file=file)
+        print(f"Name Priority: {self._name_priority!r}", file=file)
+        print(f"Frozen Path: {self._frozen_path}", file=file)
+        print(f"AutoRUM Disabled: {self.autorum_disabled}", file=file)
+        print(f"Supress Apdex: {self.suppress_apdex}", file=file)
 
 
 def current_transaction(active_only=True):

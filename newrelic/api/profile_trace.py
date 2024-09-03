@@ -22,7 +22,7 @@ from newrelic.api.time_trace import current_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(AGENT_PACKAGE_FILE) + "/"
+AGENT_PACKAGE_DIRECTORY = f"{os.path.dirname(AGENT_PACKAGE_FILE)}/"
 
 
 class ProfileTrace():
@@ -99,12 +99,12 @@ class ProfileTrace():
                 if func:
                     name = callable_name(func)
                 else:
-                    name = "%s:%s#%s" % (func_filename, func_name, func_line_no)
+                    name = f"{func_filename}:{func_name}#{func_line_no}"
             else:
                 func = arg
                 name = callable_name(arg)
                 if not name:
-                    name = "%s:@%s#%s" % (func_filename, func_name, func_line_no)
+                    name = f"{func_filename}:@{func_name}#{func_line_no}"
 
             function_trace = FunctionTrace(name=name, parent=parent)
             function_trace.__enter__()

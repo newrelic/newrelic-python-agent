@@ -71,7 +71,7 @@ def client(client):
     ],
 )
 def test_method_on_client_datastore_trace_inputs(client, sub_module, method, args, kwargs, expected_index):
-    expected_operation = "%s.%s" % (sub_module, method) if sub_module else method
+    expected_operation = f"{sub_module}.{method}" if sub_module else method
 
     @validate_datastore_trace_inputs(target=expected_index, operation=expected_operation)
     @background_task()
@@ -93,7 +93,7 @@ def _test_methods_wrapped(_object, ignored_methods=None):
 
     methods = {m for m in dir(_object) if not m[0] == "_"}
     uninstrumented = {m for m in (methods - ignored_methods) if not is_wrapped(m)}
-    assert not uninstrumented, "There are uninstrumented methods: %s" % uninstrumented
+    assert not uninstrumented, f"There are uninstrumented methods: {uninstrumented}"
 
 
 @RUN_IF_V8

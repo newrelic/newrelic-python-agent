@@ -34,7 +34,7 @@ from newrelic.api.transaction import (
 )
 from newrelic.common.encoding_utils import deobfuscate
 
-_runtime_error_name = RuntimeError.__module__ + ":" + RuntimeError.__name__
+_runtime_error_name = f"{RuntimeError.__module__}:{RuntimeError.__name__}"
 
 
 @asgi_application()
@@ -75,7 +75,7 @@ def test_header_attributes():
     assert settings.error_beacon
 
     token = "0123456789ABCDEF"  # nosec
-    headers = {"Cookie": "NRAGENT=tk=%s" % token}
+    headers = {"Cookie": f"NRAGENT=tk={token}"}
 
     response = target_application_manual_rum.get("/", headers=headers)
 

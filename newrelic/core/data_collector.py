@@ -69,7 +69,7 @@ class Session():
             port = self.configuration.infinite_tracing.trace_observer_port
             ssl = self.configuration.infinite_tracing.ssl
             compression_setting = self.configuration.infinite_tracing.compression
-            endpoint = "{}:{}".format(host, port)
+            endpoint = f"{host}:{port}"
 
             if (
                 self.configuration.distributed_tracing.enabled

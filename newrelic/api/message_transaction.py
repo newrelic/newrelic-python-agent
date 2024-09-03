@@ -60,8 +60,8 @@ class MessageTransaction(BackgroundTask):
 
     @staticmethod
     def get_transaction_name(library, destination_type, destination_name):
-        group = "Message/%s/%s" % (library, destination_type)
-        name = "Named/%s" % destination_name
+        group = f"Message/{library}/{destination_type}"
+        name = f"Named/{destination_name}"
         return name, group
 
     def _update_agent_attributes(self):
@@ -77,7 +77,7 @@ class MessageTransaction(BackgroundTask):
             ms_attrs["message.correlationId"] = self.correlation_id
         if self.headers:
             for k, v in self.headers.items():
-                new_key = "message.headers.%s" % k
+                new_key = f"message.headers.{k}"
                 new_val = str(v)
                 ms_attrs[new_key] = new_val
         if self.routing_key is not None:

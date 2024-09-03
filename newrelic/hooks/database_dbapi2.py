@@ -79,7 +79,7 @@ class CursorWrapper(ObjectProxy):
 
     def callproc(self, procname, parameters=DEFAULT):
         with DatabaseTrace(
-            sql="CALL %s" % procname,
+            sql=f"CALL {procname}",
             dbapi2_module=self._nr_dbapi2_module,
             connect_params=self._nr_connect_params,
             source=self.__wrapped__.callproc,
@@ -132,7 +132,7 @@ class ConnectionFactory(ObjectProxy):
         self._nr_dbapi2_module = dbapi2_module
 
     def __call__(self, *args, **kwargs):
-        rollup = ["Datastore/all", "Datastore/%s/all" % self._nr_dbapi2_module._nr_database_product]
+        rollup = ["Datastore/all", f"Datastore/{self._nr_dbapi2_module._nr_database_product}/all"]
 
         with FunctionTrace(name=callable_name(self.__wrapped__), terminal=True, rollup=rollup, source=self.__wrapped__):
             return self.__connection_wrapper__(

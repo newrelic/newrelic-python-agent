@@ -70,7 +70,7 @@ def client(request, loop):
     else:
         if request.param == "Redis":
             return loop.run_until_complete(
-                aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS["host"], DB_SETTINGS["port"]), db=0)
+                aioredis.create_redis(f"redis://{DB_SETTINGS['host']}:{DB_SETTINGS['port']}", db=0)
             )
         elif request.param == "StrictRedis":
             pytest.skip("StrictRedis not implemented.")
@@ -80,4 +80,4 @@ def client(request, loop):
 
 @pytest.fixture(scope="session")
 def key():
-    return "AIOREDIS-TEST-" + str(os.getpid())
+    return f"AIOREDIS-TEST-{str(os.getpid())}"

@@ -71,6 +71,6 @@ def stub_and_channel(mock_grpc_server):
 def create_stub_and_channel(port):
     from sample_application import SampleApplicationStub
 
-    channel = grpc.insecure_channel("localhost:%s" % port)
+    channel = grpc.insecure_channel(f"localhost:{port}")
     stub = SampleApplicationStub(channel)
     return stub, channel

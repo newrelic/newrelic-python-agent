@@ -156,31 +156,31 @@ class Application():
     def dump(self, file):
         """Dumps details about the application to the file object."""
 
-        print("Time Created: %s" % (time.asctime(time.localtime(self._creation_time))), file=file)
-        print("Linked Applications: %r" % (self._linked_applications), file=file)
-        print("Registration PID: %s" % (self._process_id), file=file)
-        print("Harvest Count: %d" % (self._harvest_count), file=file)
-        print("Agent Restart: %d" % (self._agent_restart), file=file)
-        print("Forced Shutdown: %s" % (self._agent_shutdown), file=file)
+        print(f"Time Created: {time.asctime(time.localtime(self._creation_time))}", file=file)
+        print(f"Linked Applications: {self._linked_applications!r}", file=file)
+        print(f"Registration PID: {self._process_id}", file=file)
+        print(f"Harvest Count: {self._harvest_count}", file=file)
+        print(f"Agent Restart: {self._agent_restart}", file=file)
+        print(f"Forced Shutdown: {self._agent_shutdown}", file=file)
 
         active_session = self._active_session
 
         if active_session:
             try:
-                print("Collector URL: %s" % (active_session._protocol.client._host), file=file)
+                print(f"Collector URL: {active_session._protocol.client._host}", file=file)
             except AttributeError:
                 pass
-            print("Agent Run ID: %s" % (active_session.agent_run_id), file=file)
-            print("URL Normalization Rules: %r" % (self._rules_engine["url"].rules), file=file)
-            print("Metric Normalization Rules: %r" % (self._rules_engine["metric"].rules), file=file)
-            print("Transaction Normalization Rules: %r" % (self._rules_engine["transaction"].rules), file=file)
-            print("Transaction Segment Allowlist Rules: %r" % (self._rules_engine["segment"].rules), file=file)
-            print("Harvest Period Start: %s" % (time.asctime(time.localtime(self._period_start))), file=file)
-            print("Transaction Count: %d" % (self._transaction_count), file=file)
-            print("Last Transaction: %s" % (time.asctime(time.localtime(self._last_transaction))), file=file)
-            print("Global Events Count: %d" % (self._global_events_account), file=file)
-            print("Harvest Metrics Count: %d" % (self._stats_engine.metrics_count()), file=file)
-            print("Harvest Discard Count: %d" % (self._discard_count), file=file)
+            print(f"Agent Run ID: {active_session.agent_run_id}", file=file)
+            print(f"URL Normalization Rules: {self._rules_engine['url'].rules!r}", file=file)
+            print(f"Metric Normalization Rules: {self._rules_engine['metric'].rules!r}", file=file)
+            print(f"Transaction Normalization Rules: {self._rules_engine['transaction'].rules!r}", file=file)
+            print(f"Transaction Segment Allowlist Rules: {self._rules_engine['segment'].rules!r}", file=file)
+            print(f"Harvest Period Start: {time.asctime(time.localtime(self._period_start))}", file=file)
+            print(f"Transaction Count: {self._transaction_count}", file=file)
+            print(f"Last Transaction: {time.asctime(time.localtime(self._last_transaction))}", file=file)
+            print(f"Global Events Count: {self._global_events_account}", file=file)
+            print(f"Harvest Metrics Count: {self._stats_engine.metrics_count()}", file=file)
+            print(f"Harvest Discard Count: {self._discard_count}", file=file)
 
     def activate_session(self, activate_agent=None, timeout=0.0):
         """Creates a background thread to initiate registration of the
@@ -224,7 +224,7 @@ class Application():
             self._detect_deadlock = True
 
         thread = threading.Thread(
-            target=self.connect_to_data_collector, name="NR-Activate-Session/%s" % self.name, args=(activate_agent,)
+            target=self.connect_to_data_collector, name=f"NR-Activate-Session/{self.name}", args=(activate_agent,)
         )
         thread.daemon = True
         thread.start()
@@ -544,17 +544,15 @@ class Application():
             )
             ai_monitoring_streaming = configuration.ai_monitoring.streaming.enabled
             internal_metric(
-                "Supportability/Logging/Forwarding/Python/%s"
-                % ("enabled" if application_logging_forwarding else "disabled"),
+                f"Supportability/Logging/Forwarding/Python/{'enabled' if application_logging_forwarding else 'disabled'}",
                 1,
             )
             internal_metric(
-                "Supportability/Logging/LocalDecorating/Python/%s"
-                % ("enabled" if application_logging_local_decorating else "disabled"),
+                f"Supportability/Logging/LocalDecorating/Python/{'enabled' if application_logging_local_decorating else 'disabled'}",
                 1,
             )
             internal_metric(
-                "Supportability/Logging/Metrics/Python/%s" % ("enabled" if application_logging_metrics else "disabled"),
+                f"Supportability/Logging/Metrics/Python/{'enabled' if application_logging_metrics else 'disabled'}",
                 1,
             )
             if not ai_monitoring_streaming:
@@ -569,13 +567,11 @@ class Application():
                 infinite_tracing_batching = configuration.infinite_tracing.batching
                 infinite_tracing_compression = configuration.infinite_tracing.compression
                 internal_metric(
-                    "Supportability/InfiniteTracing/gRPC/Batching/%s"
-                    % ("enabled" if infinite_tracing_batching else "disabled"),
+                    f"Supportability/InfiniteTracing/gRPC/Batching/{'enabled' if infinite_tracing_batching else 'disabled'}",
                     1,
                 )
                 internal_metric(
-                    "Supportability/InfiniteTracing/gRPC/Compression/%s"
-                    % ("enabled" if infinite_tracing_compression else "disabled"),
+                    f"Supportability/InfiniteTracing/gRPC/Compression/{'enabled' if infinite_tracing_compression else 'disabled'}",
                     1,
                 )
 
@@ -1157,7 +1153,7 @@ class Application():
         call_metric = "flexible" if flexible else "default"
 
         with InternalTraceContext(internal_metrics):
-            with InternalTrace("Supportability/Python/Harvest/Calls/" + call_metric):
+            with InternalTrace(f"Supportability/Python/Harvest/Calls/{call_metric}"):
                 self._harvest_count += 1
 
                 start = time.time()
@@ -1253,7 +1249,7 @@ class Application():
                     if self._uninstrumented:
                         for uninstrumented in self._uninstrumented:
                             internal_count_metric("Supportability/Python/Uninstrumented", 1)
-                            internal_count_metric("Supportability/Uninstrumented/%s" % uninstrumented, 1)
+                            internal_count_metric(f"Supportability/Uninstrumented/{uninstrumented}", 1)
 
                 # Create our time stamp as to when this reporting period
                 # ends and start reporting the data.
@@ -1591,7 +1587,7 @@ class Application():
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric("Supportability/Python/Harvest/Exception/%s" % callable_name(exc_type), 1)
+                    internal_metric(f"Supportability/Python/Harvest/Exception/{callable_name(exc_type)}", 1)
 
                     if self._period_start != period_end:
                         self._stats_engine.rollback(stats)
@@ -1604,7 +1600,7 @@ class Application():
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric("Supportability/Python/Harvest/Exception/%s" % callable_name(exc_type), 1)
+                    internal_metric(f"Supportability/Python/Harvest/Exception/{callable_name(exc_type)}", 1)
 
                     self._discard_count += 1
 
@@ -1614,7 +1610,7 @@ class Application():
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric("Supportability/Python/Harvest/Exception/%s" % callable_name(exc_type), 1)
+                    internal_metric(f"Supportability/Python/Harvest/Exception/{callable_name(exc_type)}", 1)
 
                     _logger.exception(
                         "Unexpected exception when attempting "
@@ -1734,7 +1730,7 @@ class Application():
                 # we don't know about a specific agent command we just
                 # ignore it.
 
-                func_name = "cmd_%s" % cmd_name
+                func_name = f"cmd_{cmd_name}"
 
                 cmd_handler = getattr(self, func_name, None)
 

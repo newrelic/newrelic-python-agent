@@ -222,7 +222,7 @@ def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
         port = "default"
     elif parsed_host.startswith("/"):
         host = "localhost"
-        port = "%s/.s.PGSQL.%s" % (parsed_host, parsed_port or "5432")
+        port = f"{parsed_host}/.s.PGSQL.{parsed_port or '5432'}"
     else:
         host = parsed_host
         port = parsed_port or "5432"
@@ -310,4 +310,4 @@ def instrument_psycopg2_sql(module):
             if not issubclass(cls, module.Composable):
                 continue
 
-            wrap_function_wrapper(module, name + ".as_string", wrapper_psycopg2_as_string)
+            wrap_function_wrapper(module, f"{name}.as_string", wrapper_psycopg2_as_string)

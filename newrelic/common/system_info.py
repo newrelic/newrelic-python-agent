@@ -273,7 +273,7 @@ def _linux_physical_memory_used(filename=None):
     #              data       data + stack
     #              dt         dirty pages (unused in Linux 2.6)
 
-    filename = filename or "/proc/%d/statm" % os.getpid()
+    filename = filename or f"/proc/{os.getpid()}/statm"
 
     try:
         with open(filename, "r") as fp:
@@ -329,7 +329,7 @@ def _resolve_hostname(use_dyno_names, dyno_shorten_prefixes):
 
     for prefix in dyno_shorten_prefixes:
         if prefix and dyno_name.startswith(prefix):
-            return "%s.*" % prefix
+            return f"{prefix}.*"
 
     return dyno_name
 

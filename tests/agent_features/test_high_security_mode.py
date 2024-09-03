@@ -523,7 +523,7 @@ class TestException(Exception):
     pass
 
 
-_test_exception_name = "%s:%s" % (__name__, TestException.__name__)
+_test_exception_name = f"{__name__}:{TestException.__name__}"
 
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)

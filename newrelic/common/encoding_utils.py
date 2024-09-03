@@ -247,7 +247,7 @@ def generate_path_hash(name, seed):
         name = name.encode("UTF-8")
 
     path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)  # nosec
-    return "%08x" % path_hash
+    return f"{path_hash:08x}"
 
 
 def base64_encode(text):
@@ -417,13 +417,9 @@ class W3CTraceParent(dict):
         if "id" in self:
             guid = self["id"]
         else:
-            guid = "{:016x}".format(random.getrandbits(64))
+            guid = f"{random.getrandbits(64):016x}"
 
-        return "00-{}-{}-{:02x}".format(
-            self["tr"].lower().zfill(32),
-            guid,
-            int(self.get("sa", 0)),
-        )
+        return f"00-{self['tr'].lower().zfill(32)}-{guid}-{int(self.get('sa', 0)):02x}"
 
     @classmethod
     def decode(cls, payload):
@@ -466,7 +462,7 @@ class W3CTraceParent(dict):
 
 class W3CTraceState(OrderedDict):
     def text(self, limit=32):
-        return ",".join("{}={}".format(k, v) for k, v in itertools.islice(self.items(), limit))
+        return ",".join(f"{k}={v}" for k, v in itertools.islice(self.items(), limit))
 
     @classmethod
     def decode(cls, tracestate):
@@ -490,24 +486,10 @@ class NrTraceState(dict):
     def text(self):
         pr = self.get("pr", "")
         if pr:
-            pr = ("%.6f" % pr).rstrip("0").rstrip(".")
+            pr = f"{pr:.6f}".rstrip("0").rstrip(".")
 
-        payload = "-".join(
-            (
-                "0-0",
-                self["ac"],
-                self["ap"],
-                self.get("id", ""),
-                self.get("tx", ""),
-                "1" if self.get("sa") else "0",
-                pr,
-                str(self["ti"]),
-            )
-        )
-        return "{}@nr={}".format(
-            self.get("tk", self["ac"]),
-            payload,
-        )
+        payload = f"0-0-{self['ac']}-{self['ap']}-{self.get('id', '')}-{self.get('tx', '')}-{'1' if self.get('sa') else '0'}-{pr}-{str(self['ti'])}"
+        return f"{self.get('tk', self['ac'])}@nr={payload}"
 
     @classmethod
     def decode(cls, payload, tk):
@@ -553,7 +535,7 @@ def capitalize(string):
     elif len(string) == 1:
         return string.capitalize()
     else:
-        return "".join((string[0].upper(), string[1:]))
+        return f"{string[0].upper()}{string[1:]}"
 
 
 def camel_case(string, upper=False):

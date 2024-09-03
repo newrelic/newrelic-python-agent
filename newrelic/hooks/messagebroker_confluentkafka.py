@@ -162,10 +162,10 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
             # Don't add metrics if there was an inactive transaction.
             # Name the metrics using the same format as the transaction, but in case the active transaction
             # was an existing one and not a message transaction, reproduce the naming logic here.
-            group = "Message/%s/%s" % (library, destination_type)
-            name = "Named/%s" % destination_name
-            transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
-            transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
+            group = f"Message/{library}/{destination_type}"
+            name = f"Named/{destination_name}"
+            transaction.record_custom_metric(f"{group}/{name}/Received/Bytes", received_bytes)
+            transaction.record_custom_metric(f"{group}/{name}/Received/Messages", message_count)
             transaction.add_messagebroker_info("Confluent-Kafka", get_package_version("confluent-kafka"))
 
     return record
@@ -191,8 +191,8 @@ def wrap_serializer(serializer_name, group_prefix):
             return wrapped(*args, **kwargs)
 
         topic = args[1].topic
-        group = "%s/Kafka/Topic" % group_prefix
-        name = "Named/%s/%s" % (topic, serializer_name)
+        group = f"{group_prefix}/Kafka/Topic"
+        name = f"Named/{topic}/{serializer_name}"
 
         return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
 

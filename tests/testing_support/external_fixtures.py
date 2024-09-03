@@ -90,14 +90,14 @@ def validate_synthetics_external_trace_header(
             if synthetics_header:
                 assert (
                     synthetics_header == external_headers["X-NewRelic-Synthetics"]
-                ), "synthetics_header=%r, external_headers=%r" % (synthetics_header, external_headers)
+                ), f"synthetics_header={synthetics_header!r}, external_headers={external_headers!r}"
             else:
                 assert "X-NewRelic-Synthetics" not in external_headers
 
             if synthetics_info_header:
                 assert (
                     synthetics_info_header == external_headers["X-NewRelic-Synthetics-Info"]
-                ), "synthetics_info_header=%r, external_headers=%r" % (synthetics_info_header, external_headers)
+                ), f"synthetics_info_header={synthetics_info_header!r}, external_headers={external_headers!r}"
             else:
                 assert "X-NewRelic-Synthetics-Info" not in external_headers
 

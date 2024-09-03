@@ -238,7 +238,7 @@ class AgentProtocol():
         if not 200 <= status < 300:
             if status == 413:
                 internal_count_metric(
-                    "Supportability/Python/Collector/MaxPayloadSizeLimit/%s" % method,
+                    f"Supportability/Python/Collector/MaxPayloadSizeLimit/{method}",
                     1,
                 )
             level, message = self.LOG_MESSAGES.get(status, self.LOG_MESSAGES["default"])

@@ -328,7 +328,7 @@ class DimensionalMetrics():
         return str(self.__stats_table)
 
     def __repr__(self):
-        return "%s(%s)" % (__class__.__name__, repr(self.__stats_table))
+        return f"{__class__.__name__}({repr(self.__stats_table)})"
 
     def items(self):
         return self.metrics()
@@ -860,8 +860,7 @@ class StatsEngine():
                         _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
                         if error_group_name is None or not isinstance(error_group_name, str):
                             raise ValueError(
-                                "Invalid attribute value for error.group.name. Expected string, got: %s"
-                                % repr(error_group_name_raw)
+                                f"Invalid attribute value for error.group.name. Expected string, got: {repr(error_group_name_raw)}"
                             )
                         else:
                             agent_attributes["error.group.name"] = error_group_name

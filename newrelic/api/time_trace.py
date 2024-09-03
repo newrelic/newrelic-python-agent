@@ -52,7 +52,7 @@ class TimeTrace():
         self.exc_data = (None, None, None)
         self.should_record_segment_params = False
         # 16-digit random hex. Padded with zeros in the front.
-        self.guid = "%016x" % random.getrandbits(64)
+        self.guid = f"{random.getrandbits(64):016x}"
         self.agent_attributes = {}
         self.user_attributes = {}
 
@@ -71,7 +71,7 @@ class TimeTrace():
         return self.child_count == len(self.children)
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), dict(name=getattr(self, "name", None)))
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(name=getattr(self, 'name', None))}>"
 
     def __enter__(self):
         self.parent = parent = self.parent or current_trace()
@@ -214,8 +214,7 @@ class TimeTrace():
                 node.add_attrs(self._add_agent_attribute)
             except Exception as exc:
                 _logger.debug(
-                    "Failed to extract source code context from callable %s. Report this issue to newrelic support. Exception: %s"
-                    % (source, exc)
+                    f"Failed to extract source code context from callable {source}. Report this issue to newrelic support. Exception: {exc}"
                 )
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
@@ -443,8 +442,7 @@ class TimeTrace():
                             _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
                             if error_group_name is None or not isinstance(error_group_name, str):
                                 raise ValueError(
-                                    "Invalid attribute value for error.group.name. Expected string, got: %s"
-                                    % repr(error_group_name_raw)
+                                    f"Invalid attribute value for error.group.name. Expected string, got: {repr(error_group_name_raw)}"
                                 )
                     except Exception:
                         _logger.error(

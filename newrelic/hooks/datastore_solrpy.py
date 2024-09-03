@@ -30,4 +30,4 @@ _solrpy_client_methods = (
 def instrument_solrpy(module):
     for name in _solrpy_client_methods:
         if hasattr(module.SolrConnection, name):
-            wrap_datastore_trace(module, "SolrConnection.%s" % name, product="Solr", target=None, operation=name)
+            wrap_datastore_trace(module, f"SolrConnection.{name}", product="Solr", target=None, operation=name)

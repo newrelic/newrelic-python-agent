@@ -41,6 +41,8 @@ if len(version) == 2:
 version = tuple(version)
 assert version > (0, 1), "version information not found"
 
+version_metrics = [(f"Python/Framework/Bottle/{'.'.join(str(v) for v in version)}", 1)]
+
 requires_auth_basic = pytest.mark.skipif(version < (0, 9, 0), reason="Bottle only added auth_basic in 0.9.0.")
 requires_plugins = pytest.mark.skipif(version < (0, 9, 0), reason="Bottle only added auth_basic in 0.9.0.")
 
@@ -56,7 +58,7 @@ if version >= (0, 9, 0):
 else:
     _test_application_index_scoped_metrics.extend([("Function/bottle:Bottle.__call__", 1)])
 
-_test_application_index_custom_metrics = [("Python/Framework/Bottle/%s.%s.%s" % version, 1)]
+_test_application_index_custom_metrics = version_metrics.copy()
 
 
 @validate_code_level_metrics("_target_application", "index_page")
@@ -83,7 +85,7 @@ if version >= (0, 9, 0):
 else:
     _test_application_error_scoped_metrics.extend([("Function/bottle:Bottle.__call__", 1)])
 
-_test_application_error_custom_metrics = [("Python/Framework/Bottle/%s.%s.%s" % version, 1)]
+_test_application_error_custom_metrics = version_metrics.copy()
 _test_application_error_errors = ["builtins:RuntimeError"]
 
 
@@ -110,7 +112,7 @@ if version >= (0, 9, 0):
 else:
     _test_application_not_found_scoped_metrics.extend([("Function/bottle:Bottle.__call__", 1)])
 
-_test_application_not_found_custom_metrics = [("Python/Framework/Bottle/%s.%s.%s" % version, 1)]
+_test_application_not_found_custom_metrics = version_metrics.copy()
 
 
 @validate_code_level_metrics("_target_application", "error404_page")
@@ -137,7 +139,7 @@ if version >= (0, 9, 0):
 else:
     _test_application_auth_basic_fail_scoped_metrics.extend([("Function/bottle:Bottle.__call__", 1)])
 
-_test_application_auth_basic_fail_custom_metrics = [("Python/Framework/Bottle/%s.%s.%s" % version, 1)]
+_test_application_auth_basic_fail_custom_metrics = version_metrics.copy()
 
 
 @requires_auth_basic
@@ -164,7 +166,7 @@ if version >= (0, 9, 0):
 else:
     _test_application_auth_basic_okay_scoped_metrics.extend([("Function/bottle:Bottle.__call__", 1)])
 
-_test_application_auth_basic_okay_custom_metrics = [("Python/Framework/Bottle/%s.%s.%s" % version, 1)]
+_test_application_auth_basic_okay_custom_metrics = version_metrics.copy()
 
 
 @requires_auth_basic
@@ -177,7 +179,7 @@ _test_application_auth_basic_okay_custom_metrics = [("Python/Framework/Bottle/%s
 )
 def test_application_auth_basic_okay(target_application):
     authorization_value = base64.b64encode(b"user:password").decode("Latin-1")
-    environ = {"HTTP_AUTHORIZATION": "Basic " + authorization_value}
+    environ = {"HTTP_AUTHORIZATION": f"Basic {authorization_value}"}
     response = target_application.get("/auth", extra_environ=environ)
     response.mustcontain("AUTH OKAY")
 
@@ -194,7 +196,7 @@ if version >= (0, 9, 0):
 else:
     _test_application_plugin_error_scoped_metrics.extend([("Function/bottle:Bottle.__call__", 1)])
 
-_test_application_plugin_error_custom_metrics = [("Python/Framework/Bottle/%s.%s.%s" % version, 1)]
+_test_application_plugin_error_custom_metrics = version_metrics.copy()
 
 
 @requires_plugins

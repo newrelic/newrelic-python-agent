@@ -449,9 +449,9 @@ class CallTree():
         # are labeled with an @ sign in the second element of the tuple.
 
         if func_line == exec_line:
-            method_data = (filename, "@%s#%s" % (func_name, func_line), exec_line)
+            method_data = (filename, f"@{func_name}#{func_line}", exec_line)
         else:
-            method_data = (filename, "%s#%s" % (func_name, func_line), exec_line)
+            method_data = (filename, f"{func_name}#{func_line}", exec_line)
 
         return [method_data, self.call_count, 0, [x.flatten() for x in self.children.values() if not x.ignore]]
 

@@ -29,7 +29,7 @@ def log_message(text, *args, **kwargs):
     if startup_debug or critical:
         text = text % args
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        sys.stdout.write("NEWRELIC: %s (%d) - %s\n" % (timestamp, os.getpid(), text))
+        sys.stdout.write(f"NEWRELIC: {timestamp} ({os.getpid()}) - {text}\n")
         sys.stdout.flush()
 
 
@@ -170,8 +170,8 @@ if k8s_operator_enabled or (python_prefix_matches and python_version_matches):
         # and the sys.path entry is removed afterwards to reduce chance that will
         # cause any issues.
 
-        log_message("new_relic_path = %r" % new_relic_path)
-        log_message("do_insert_path = %r" % do_insert_path)
+        log_message(f"new_relic_path = {new_relic_path!r}")
+        log_message(f"do_insert_path = {do_insert_path!r}")
 
         try:
             if do_insert_path:

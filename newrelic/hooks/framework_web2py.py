@@ -36,8 +36,7 @@ def instrument_gluon_compileapp(module):
     # and view path.
 
     def transaction_name_run_models_in(environment):
-        return '%s::%s' % (environment['request'].application,
-                environment['response'].view)
+        return f"{environment['request'].application}::{environment['response'].view}"
 
     newrelic.api.transaction_name.wrap_transaction_name(module,
             'run_models_in', name=transaction_name_run_models_in,
@@ -50,23 +49,21 @@ def instrument_gluon_compileapp(module):
     # handling.
 
     def name_function_run_models_in(environment):
-        return '%s/%s' % (environment['request'].controller,
-                environment['request'].function)
+        return f"{environment['request'].controller}/{environment['request'].function}"
 
     newrelic.api.function_trace.wrap_function_trace(module,
             'run_models_in', name=name_function_run_models_in,
             group='Python/Web2Py/Models')
 
     def name_function_run_controller_in(controller, function, environment):
-        return '%s/%s' % (controller, function)
+        return f'{controller}/{function}'
 
     newrelic.api.function_trace.wrap_function_trace(module,
             'run_controller_in', name=name_function_run_controller_in,
             group='Python/Web2Py/Controller')
 
     def name_function_run_view_in(environment):
-        return '%s/%s' % (environment['request'].controller,
-                environment['request'].function)
+        return f"{environment['request'].controller}/{environment['request'].function}"
 
     newrelic.api.function_trace.wrap_function_trace(module,
             'run_view_in', name=name_function_run_view_in,
@@ -150,9 +147,9 @@ def instrument_gluon_template(module):
         if 'request' in context:
             folder = context['request'].folder
             if path.startswith(folder):
-                return '%s/%s' % (path[len(folder):], filename)
+                return f'{path[len(folder):]}/{filename}'
         else:
-            return '%s/%s' % (path, filename)
+            return f'{path}/{filename}'
 
     newrelic.api.function_trace.wrap_function_trace(module, 'parse_template',
             name=name_function_parse_template, group='Template/Compile')
@@ -240,11 +237,11 @@ def instrument_gluon_http(module):
                         if parts[0] == '/':
                             txn.set_transaction_name('*', 'Web2Py')
                         else:
-                            name = '%s/*' % parts[0].lstrip('/')
+                            name = f"{parts[0].lstrip('/')}/*"
                             txn.set_transaction_name(name, 'Web2Py')
                     else:
                         extension = os.path.splitext(parts[1])[-1]
-                        name = '%s/*%s' % (parts[0].lstrip('/'), extension)
+                        name = f"{parts[0].lstrip('/')}/*{extension}"
                         txn.set_transaction_name(name, 'Web2Py')
                 else:
                     txn.set_transaction_name('*', 'Web2Py')

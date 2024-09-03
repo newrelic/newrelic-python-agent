@@ -55,12 +55,12 @@ class _GCDataSource():
             self.start_time = time.time()
         elif phase == "stop":
             total_time = time.time() - self.start_time
-            self.gc_time_metrics.record_custom_metric("GC/time/%d/all" % self.pid, total_time)
+            self.gc_time_metrics.record_custom_metric(f"GC/time/{self.pid}/all", total_time)
             for gen in range(0, 3):
                 if gen <= current_generation:
-                    self.gc_time_metrics.record_custom_metric("GC/time/%d/%d" % (self.pid, gen), total_time)
+                    self.gc_time_metrics.record_custom_metric(f"GC/time/{self.pid}/{gen}", total_time)
                 else:
-                    self.gc_time_metrics.record_custom_metric("GC/time/%d/%d" % (self.pid, gen), 0)
+                    self.gc_time_metrics.record_custom_metric(f"GC/time/{self.pid}/{gen}", 0)
 
     def start(self):
         if hasattr(gc, "callbacks"):
@@ -83,10 +83,10 @@ class _GCDataSource():
         # Record object count in total and per generation
         if hasattr(gc, "get_count"):
             counts = gc.get_count()
-            yield ("GC/objects/%d/all" % self.pid, {"count": sum(counts)})
+            yield (f"GC/objects/{self.pid}/all", {"count": sum(counts)})
             for gen, count in enumerate(counts):
                 yield (
-                    "GC/objects/%d/generation/%d" % (self.pid, gen),
+                    f"GC/objects/{self.pid}/generation/{gen}",
                     {"count": count},
                 )
 
@@ -97,7 +97,7 @@ class _GCDataSource():
                 highest_types = Counter(object_types).most_common(self.top_object_count_limit)
                 for obj_type, count in highest_types:
                     yield (
-                        "GC/objects/%d/type/%s" % (self.pid, callable_name(obj_type)),
+                        f"GC/objects/{self.pid}/type/{callable_name(obj_type)}",
                         {"count": count},
                     )
 
@@ -111,7 +111,7 @@ class _GCDataSource():
                     self.previous_stats[(stat_name, "all")] = count
                     change_in_value = count - previous_value
                     yield (
-                        "GC/%s/%d/all" % (stat_name, self.pid),
+                        f"GC/{stat_name}/{self.pid}/all",
                         {"count": change_in_value},
                     )
 
@@ -122,7 +122,7 @@ class _GCDataSource():
                         change_in_value = stats[stat_name] - previous_value
 
                         yield (
-                            "GC/%s/%d/%d" % (stat_name, self.pid, gen),
+                            f"GC/{stat_name}/{self.pid}/{gen}",
                             {"count": change_in_value},
                         )
 

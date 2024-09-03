@@ -26,8 +26,8 @@ from newrelic.common.object_names import callable_name
 
 def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_message):
     _metrics = [
-        ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Value" % topic, 1),
-        ("MessageBroker/Kafka/Topic/Named/%s/Serialization/Key" % topic, 1),
+        (f"MessageBroker/Kafka/Topic/Named/{topic}/Serialization/Value", 1),
+        (f"MessageBroker/Kafka/Topic/Named/{topic}/Serialization/Key", 1),
     ]
 
     @validate_transaction_metrics(
@@ -45,12 +45,12 @@ def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_mes
 
 def test_deserialization_metrics(skip_if_not_serializing, topic, get_consumer_record):
     _metrics = [
-        ("Message/Kafka/Topic/Named/%s/Deserialization/Value" % topic, 1),
-        ("Message/Kafka/Topic/Named/%s/Deserialization/Key" % topic, 1),
+        (f"Message/Kafka/Topic/Named/{topic}/Deserialization/Value", 1),
+        (f"Message/Kafka/Topic/Named/{topic}/Deserialization/Key", 1),
     ]
 
     @validate_transaction_metrics(
-        "Named/%s" % topic,
+        f"Named/{topic}",
         group="Message/Kafka/Topic",
         scoped_metrics=_metrics,
         rollup_metrics=_metrics,
@@ -146,6 +146,6 @@ def get_consumer_record(topic, send_producer_message, consumer):
             record_count += 1
         consumer.poll(0.5)  # Exit the transaction.
 
-        assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
+        assert record_count == 1, f"Incorrect count of records consumed: {record_count}. Expected 1."
 
     return _test

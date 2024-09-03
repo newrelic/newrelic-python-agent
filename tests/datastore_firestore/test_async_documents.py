@@ -67,7 +67,7 @@ def test_firestore_async_documents(loop, exercise_async_documents, instance_info
         ("Datastore/operation/Firestore/delete", 1),
         ("Datastore/all", 7),
         ("Datastore/allOther", 7),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 7),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 7),
     ]
 
     @validate_database_duration()

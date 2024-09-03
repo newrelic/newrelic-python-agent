@@ -66,7 +66,7 @@ def instrument_pymongo_connection(module):
     rollup = ("Datastore/all", "Datastore/MongoDB/all")
 
     wrap_function_trace(
-        module, "Connection.__init__", name="%s:Connection.__init__" % module.__name__, terminal=True, rollup=rollup
+        module, "Connection.__init__", name=f"{module.__name__}:Connection.__init__", terminal=True, rollup=rollup
     )
 
 
@@ -77,7 +77,7 @@ def instrument_pymongo_mongo_client(module):
     rollup = ("Datastore/all", "Datastore/MongoDB/all")
 
     wrap_function_trace(
-        module, "MongoClient.__init__", name="%s:MongoClient.__init__" % module.__name__, terminal=True, rollup=rollup
+        module, "MongoClient.__init__", name=f"{module.__name__}:MongoClient.__init__", terminal=True, rollup=rollup
     )
 
 
@@ -88,5 +88,5 @@ def instrument_pymongo_collection(module):
     for name in _pymongo_client_methods:
         if hasattr(module.Collection, name):
             wrap_datastore_trace(
-                module, "Collection.%s" % name, product="MongoDB", target=_collection_name, operation=name
+                module, f"Collection.{name}", product="MongoDB", target=_collection_name, operation=name
             )

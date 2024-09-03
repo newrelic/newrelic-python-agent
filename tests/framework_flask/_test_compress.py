@@ -28,7 +28,7 @@ compress.init_app(application)
 
 @application.route("/compress")
 def index_page():
-    return "<body>" + 500 * "X" + "</body>"
+    return f"<body>{500 * 'X'}</body>"
 
 
 @application.route("/html_insertion")

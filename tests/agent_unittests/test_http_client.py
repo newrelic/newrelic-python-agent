@@ -47,7 +47,7 @@ SERVER_CERT = os.path.join(os.path.dirname(__file__), "cert.pem")
 def echo_full_request(self):
     self.server.connections.append(self.connection)
     request_line = str(self.requestline).encode("utf-8")
-    headers = "\n".join("%s: %s" % (k.lower(), v) for k, v in self.headers.items())
+    headers = "\n".join(f"{k.lower()}: {v}" for k, v in self.headers.items())
     self.send_response(200)
     self.end_headers()
     self.wfile.write(request_line)
@@ -195,7 +195,7 @@ def test_http_no_payload(server, method):
     assert connection.pool is None
 
     # Verify request line
-    assert data[0].startswith(method + " /agent_listener/invoke_raw_method ")
+    assert data[0].startswith(f"{method} /agent_listener/invoke_raw_method ")
 
     # Verify headers
     user_agent_header = ""
@@ -230,7 +230,7 @@ def test_non_ok_response(client_cls, server):
         assert internal_metrics == {
             "Supportability/Python/Collector/Failures": [1, 0, 0, 0, 0, 0],
             "Supportability/Python/Collector/Failures/direct": [1, 0, 0, 0, 0, 0],
-            "Supportability/Python/Collector/HTTPError/%d" % status: [1, 0, 0, 0, 0, 0],
+            f"Supportability/Python/Collector/HTTPError/{status}": [1, 0, 0, 0, 0, 0],
         }
     else:
         assert not internal_metrics
@@ -419,8 +419,8 @@ def test_ssl_via_ssl_proxy(server, auth):
     if proxy_user:
         auth_expected = proxy_user
         if proxy_pass:
-            auth_expected = auth_expected + ":" + proxy_pass
-        auth_expected = "Basic " + base64.b64encode(auth_expected.encode("utf-8")).decode("utf-8")
+            auth_expected = f"{auth_expected}:{proxy_pass}"
+        auth_expected = f"Basic {base64.b64encode(auth_expected.encode('utf-8')).decode('utf-8')}"
         assert proxy_auth == auth_expected
     else:
         assert not proxy_auth
@@ -487,8 +487,8 @@ def test_ssl_via_non_ssl_proxy(insecure_server, auth):
         if proxy_user:
             auth_expected = proxy_user
             if proxy_pass:
-                auth_expected = auth_expected + ":" + proxy_pass
-            auth_expected = "Basic " + base64.b64encode(auth_expected.encode("utf-8")).decode("utf-8")
+                auth_expected = f"{auth_expected}:{proxy_pass}"
+            auth_expected = f"Basic {base64.b64encode(auth_expected.encode('utf-8')).decode('utf-8')}"
             assert insecure_server.httpd.connect_headers["proxy-authorization"] == auth_expected
         else:
             assert "proxy-authorization" not in insecure_server.httpd.connect_headers
@@ -628,8 +628,8 @@ def test_audit_logging(server, insecure_server, client_cls, proxy_host, exceptio
             connection = "direct"
         assert internal_metrics == {
             "Supportability/Python/Collector/Failures": [1, 0, 0, 0, 0, 0],
-            "Supportability/Python/Collector/Failures/%s" % connection: [1, 0, 0, 0, 0, 0],
-            "Supportability/Python/Collector/Exception/%s" % exc: [1, 0, 0, 0, 0, 0],
+            f"Supportability/Python/Collector/Failures/{connection}": [1, 0, 0, 0, 0, 0],
+            f"Supportability/Python/Collector/Exception/{exc}": [1, 0, 0, 0, 0, 0],
         }
     else:
         assert not internal_metrics

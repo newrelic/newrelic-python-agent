@@ -38,7 +38,7 @@ def httplib_endheaders_wrapper(wrapped, instance, args, kwargs,
     if hasattr(connection, '_nr_library_info'):
         library, scheme = connection._nr_library_info
 
-    url = '%s://%s:%s' % (scheme, connection.host, connection.port)
+    url = f'{scheme}://{connection.host}:{connection.port}'
 
     # Check if the NR headers have already been added. This is just in
     # case a higher level library which uses httplib underneath so

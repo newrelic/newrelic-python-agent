@@ -63,9 +63,9 @@ def _test_collector_hostname(
             os.environ["NEW_RELIC_LICENSE_KEY"] = env_key
 
         if config_file_key:
-            ini_contents += "\nlicense_key = %s" % config_file_key
+            ini_contents += f"\nlicense_key = {config_file_key}"
         if config_override_host:
-            ini_contents += "\nhost = %s" % config_override_host
+            ini_contents += f"\nhost = {config_override_host}"
 
         import newrelic.config as config
         import newrelic.core.config as core_config

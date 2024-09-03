@@ -29,7 +29,7 @@ from newrelic.api.background_task import background_task
 @pytest.fixture(autouse=True)
 def sample_data(collection):
     for x in range(1, 4):
-        collection.add({"x": x}, "doc%d" % x)
+        collection.add({"x": x}, f"doc{x}")
 
 
 @pytest.fixture()
@@ -56,7 +56,7 @@ def exercise_async_transaction_commit(async_client, async_collection):
             with pytest.raises(
                 TypeError
             ):  # get_all is currently broken. It attempts to await an async_generator instead of consuming it.
-                all_docs = async_transaction.get_all([async_collection.document("doc%d" % x) for x in range(1, 4)])
+                all_docs = async_transaction.get_all([async_collection.document(f"doc{x}") for x in range(1, 4)])
                 assert len([_ async for _ in all_docs]) == 3
 
             # set and delete methods
@@ -92,8 +92,8 @@ def test_firestore_async_transaction_commit(loop, exercise_async_transaction_com
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/commit", 1),
         # ("Datastore/operation/Firestore/get_all", 2),
-        # ("Datastore/statement/Firestore/%s/stream" % async_collection.id, 1),
-        ("Datastore/statement/Firestore/%s/list_documents" % async_collection.id, 1),
+        # (f"Datastore/statement/Firestore/{async_collection.id}/stream", 1),
+        (f"Datastore/statement/Firestore/{async_collection.id}/list_documents", 1),
     ]
 
     _test_rollup_metrics = [
@@ -101,7 +101,7 @@ def test_firestore_async_transaction_commit(loop, exercise_async_transaction_com
         ("Datastore/operation/Firestore/list_documents", 1),
         ("Datastore/all", 2),  # Should be 5 if not for broken APIs
         ("Datastore/allOther", 2),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 2),
     ]
 
     @validate_database_duration()
@@ -123,14 +123,14 @@ def test_firestore_async_transaction_rollback(
 ):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/rollback", 1),
-        ("Datastore/statement/Firestore/%s/list_documents" % async_collection.id, 1),
+        (f"Datastore/statement/Firestore/{async_collection.id}/list_documents", 1),
     ]
 
     _test_rollup_metrics = [
         ("Datastore/operation/Firestore/list_documents", 1),
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 2),
     ]
 
     @validate_database_duration()

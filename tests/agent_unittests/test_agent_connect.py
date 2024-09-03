@@ -70,9 +70,9 @@ def test_logging_connect_supportability_metrics(feature_setting, subfeature_sett
     )
     @validate_internal_metrics(
         [
-            ("Supportability/Logging/Forwarding/Python/%s" % metric_value, 1),
-            ("Supportability/Logging/LocalDecorating/Python/%s" % metric_value, 1),
-            ("Supportability/Logging/Metrics/Python/%s" % metric_value, 1),
+            (f"Supportability/Logging/Forwarding/Python/{metric_value}", 1),
+            (f"Supportability/Logging/LocalDecorating/Python/{metric_value}", 1),
+            (f"Supportability/Logging/Metrics/Python/{metric_value}", 1),
         ]
     )
     def test():

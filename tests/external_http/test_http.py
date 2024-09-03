@@ -35,14 +35,14 @@ import http.client
 
 @pytest.fixture(scope="session")
 def metrics(server):
-    _external_metric = "External/localhost:%s/http/" % server.port
+    _external_metric = f"External/localhost:{server.port}/http/"
 
     scoped = [(_external_metric, 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%s/all" % server.port, 1),
+        (f"External/localhost:{server.port}/all", 1),
         (_external_metric, 1),
     ]
 
@@ -112,14 +112,14 @@ def test_http_cross_process_request(distributed_tracing, span_events, server):
 
 @cat_enabled
 def test_http_cross_process_response(server):
-    _test_http_cross_process_response_scoped_metrics = [("ExternalTransaction/localhost:%s/1#2/test" % server.port, 1)]
+    _test_http_cross_process_response_scoped_metrics = [(f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)]
 
     _test_http_cross_process_response_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%s/all" % server.port, 1),
-        ("ExternalApp/localhost:%s/1#2/all" % server.port, 1),
-        ("ExternalTransaction/localhost:%s/1#2/test" % server.port, 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
     ]
 
     _test_http_cross_process_response_external_node_params = [

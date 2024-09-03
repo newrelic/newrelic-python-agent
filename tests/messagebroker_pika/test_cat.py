@@ -84,7 +84,7 @@ def test_basic_consume_cat_headers():
 
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        queue_name = "TESTCAT-%s" % os.getpid()
+        queue_name = f"TESTCAT-{os.getpid()}"
         channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()
@@ -131,7 +131,7 @@ def do_basic_get(channel, QUEUE):
 def test_basic_get_no_cat_headers():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        queue_name = "TESTCAT-%s" % os.getpid()
+        queue_name = f"TESTCAT-{os.getpid()}"
         channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()

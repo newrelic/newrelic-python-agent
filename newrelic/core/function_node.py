@@ -34,7 +34,7 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
 
         """
 
-        name = '%s/%s' % (self.group, self.name)
+        name = f'{self.group}/{self.name}'
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                 exclusive=self.exclusive)
@@ -88,7 +88,7 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
 
     def trace_node(self, stats, root, connections):
 
-        name = '%s/%s' % (self.group, self.name)
+        name = f'{self.group}/{self.name}'
 
         name = root.string_table.cache(name)
 
@@ -115,6 +115,6 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
         attrs = super(FunctionNode, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
-        i_attrs['name'] = '%s/%s' % (self.group, self.name)
+        i_attrs['name'] = f'{self.group}/{self.name}'
 
         return attrs

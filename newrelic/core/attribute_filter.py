@@ -65,7 +65,7 @@ class AttributeFilter():
         self.cache = {}
 
     def __repr__(self):
-        return "<AttributeFilter: destinations: %s, rules: %s>" % (bin(self.enabled_destinations), self.rules)
+        return f"<AttributeFilter: destinations: {bin(self.enabled_destinations)}, rules: {self.rules}>"
 
     def _set_enabled_destinations(self, settings):
         # Determines and returns bitfield representing attribute destinations enabled.
@@ -207,7 +207,7 @@ class AttributeFilterRule():
         return self._as_sortable() >= other._as_sortable()
 
     def __repr__(self):
-        return "(%s, %s, %s, %s)" % (self.name, bin(self.destinations), self.is_wildcard, self.is_include)
+        return f"({self.name}, {bin(self.destinations)}, {self.is_wildcard}, {self.is_include})"
 
     def name_match(self, name):
         if self.is_wildcard:

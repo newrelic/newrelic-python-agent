@@ -27,7 +27,7 @@ from newrelic.common.object_wrapper import transient_function_wrapper
 
 DB_SETTINGS = kafka_settings()[0]
 
-BROKER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
+BROKER = f"{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"
 
 
 _default_settings = {
@@ -171,7 +171,7 @@ def json_deserializer():
 def topic():
     from confluent_kafka.admin import AdminClient, NewTopic
 
-    topic = "test-topic-%s" % str(uuid.uuid4())
+    topic = f"test-topic-{str(uuid.uuid4())}"
 
     admin = AdminClient({"bootstrap.servers": BROKER})
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
@@ -228,7 +228,7 @@ def get_consumer_record(topic, send_producer_message, consumer, deserialize):
             record_count += 1
         consumer.poll(0.5)  # Exit the transaction.
 
-        assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
+        assert record_count == 1, f"Incorrect count of records consumed: {record_count}. Expected 1."
 
     return _test
 

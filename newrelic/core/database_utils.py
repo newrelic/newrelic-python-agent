@@ -44,9 +44,9 @@ _double_quotes_p = r'"(?:[^"]|"")*?(?:\\".*|"(?!"))'
 _dollar_quotes_p = r'(\$(?!\d)[^$]*?\$).*?(?:\1|$)'
 _oracle_quotes_p = (r"q'\[.*?(?:\]'|$)|q'\{.*?(?:\}'|$)|"
         r"q'\<.*?(?:\>'|$)|q'\(.*?(?:\)'|$)")
-_any_quotes_p = _single_quotes_p + '|' + _double_quotes_p
-_single_dollar_p = _single_quotes_p + '|' + _dollar_quotes_p
-_single_oracle_p = _single_quotes_p + '|' + _oracle_quotes_p
+_any_quotes_p = f"{_single_quotes_p}|{_double_quotes_p}"
+_single_dollar_p = f"{_single_quotes_p}|{_dollar_quotes_p}"
+_single_oracle_p = f"{_single_quotes_p}|{_oracle_quotes_p}"
 
 _single_quotes_re = re.compile(_single_quotes_p)
 _any_quotes_re = re.compile(_any_quotes_p)
@@ -85,7 +85,7 @@ _bool_p = r'\b(?:true|false|null)\b'
 # first to avoid the situation of partial matches on shorter expressions. UUIDs
 # might be an example.
 
-_all_literals_p = '(' + ')|('.join([_uuid_p, _hex_p, _int_p, _bool_p]) + ')'
+_all_literals_p = f"({_uuid_p})|({_hex_p})|({_int_p})|({_bool_p})"
 _all_literals_re = re.compile(_all_literals_p, re.IGNORECASE)
 
 _quotes_table = {
@@ -278,10 +278,7 @@ _parse_identifier_5_p = r'\(\s*(\S+)\s*\)'
 _parse_identifier_6_p = r'\{\s*(\S+)\s*\}'
 _parse_identifier_7_p = r'([^\s\(\)\[\],]+)'
 
-_parse_identifier_p = ''.join(('(', _parse_identifier_1_p, '|',
-        _parse_identifier_2_p, '|', _parse_identifier_3_p, '|',
-        _parse_identifier_4_p, '|', _parse_identifier_5_p, '|',
-        _parse_identifier_6_p, '|', _parse_identifier_7_p, ')'))
+_parse_identifier_p = f"({_parse_identifier_1_p}|{_parse_identifier_2_p}|{_parse_identifier_3_p}|{_parse_identifier_4_p}|{_parse_identifier_5_p}|{_parse_identifier_6_p}|{_parse_identifier_7_p})"
 
 _parse_from_p = r'\s+FROM\s+' + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
@@ -670,7 +667,7 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params,
                     'semicolons in the query string.', database.client)
         return None
 
-    query = '%s %s' % (database.explain_query, sql)
+    query = f'{database.explain_query} {sql}'
 
     if settings.debug.log_explain_plan_queries:
         _logger.debug('Executing explain plan for %r on %r.', query,
@@ -827,8 +824,7 @@ class SQLStatement():
             except UnicodeError as e:
                 settings = global_settings()
                 if settings.debug.log_explain_plan_queries:
-                    _logger.debug('An error occurred while decoding sql '
-                            'statement: %s' % e.reason)
+                    _logger.debug(f'An error occurred while decoding sql statement: {e.reason}')
 
                 self._operation = ''
                 self._target = ''

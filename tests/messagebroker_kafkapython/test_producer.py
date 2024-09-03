@@ -32,14 +32,14 @@ from newrelic.common.object_names import callable_name
 def test_trace_metrics(topic, send_producer_message):
     from kafka.version import __version__ as version
 
-    scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
+    scoped_metrics = [(f"MessageBroker/Kafka/Topic/Produce/Named/{topic}", 1)]
     unscoped_metrics = scoped_metrics
 
     @validate_transaction_metrics(
         "test_producer:test_trace_metrics.<locals>.test",
         scoped_metrics=scoped_metrics,
         rollup_metrics=unscoped_metrics,
-        custom_metrics=[("Python/MessageBroker/Kafka-Python/%s" % version, 1)],
+        custom_metrics=[(f"Python/MessageBroker/Kafka-Python/{version}", 1)],
         background_task=True,
     )
     @background_task()

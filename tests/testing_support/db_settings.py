@@ -39,8 +39,8 @@ def postgresql_settings():
             "name": "postgres",
             "host": host,
             "port": 8080 + instance_num,
-            "procedure_name": "postgres_procedure_" + identifier,
-            "table_name": "postgres_table_" + identifier,
+            "procedure_name": f"postgres_procedure_{identifier}",
+            "table_name": f"postgres_table_{identifier}",
         }
         for instance_num in range(instances)
     ]
@@ -186,7 +186,7 @@ def mongodb_settings():
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
     settings = [
-        {"host": host, "port": 8080 + instance_num, "collection": "mongodb_collection_" + str(os.getpid())}
+        {"host": host, "port": 8080 + instance_num, "collection": f"mongodb_collection_{str(os.getpid())}"}
         for instance_num in range(instances)
     ]
     return settings

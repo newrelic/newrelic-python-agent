@@ -25,14 +25,13 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_available_fixture,
 )
 
-
 PIKA_VERSION_INFO = get_package_version_tuple("pika")
 
-QUEUE = "test_pika-%s" % uuid.uuid4()
-QUEUE_2 = "test_pika-%s" % uuid.uuid4()
+QUEUE = f"test_pika-{uuid.uuid4()}"
+QUEUE_2 = f"test_pika-{uuid.uuid4()}"
 
-EXCHANGE = "exchange-%s" % uuid.uuid4()
-EXCHANGE_2 = "exchange-%s" % uuid.uuid4()
+EXCHANGE = f"exchange-{uuid.uuid4()}"
+EXCHANGE_2 = f"exchange-{uuid.uuid4()}"
 
 CORRELATION_ID = "test-correlation-id"
 REPLY_TO = "test-reply-to"

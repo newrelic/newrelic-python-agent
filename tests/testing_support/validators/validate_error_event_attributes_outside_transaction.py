@@ -34,10 +34,7 @@ def validate_error_event_attributes_outside_transaction(
         event_data = list(instance.error_events)
 
         if num_errors is not None:
-            exc_message = "Expected: %d, Got: %d. Verify StatsEngine is being reset before using this validator." % (
-                num_errors,
-                len(event_data),
-            )
+            exc_message = f"Expected: {int(num_errors)}, Got: {len(event_data)}. Verify StatsEngine is being reset before using this validator."
             assert num_errors == len(event_data), exc_message
 
         for event in event_data:

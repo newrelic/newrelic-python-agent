@@ -22,7 +22,7 @@ def instrument_weberror_errormiddleware(module):
 def instrument_weberror_reporter(module):
 
     def smtp_url(reporter, *args, **kwargs):
-        return 'smtp://' + reporter.smtp_server
+        return f"smtp://{reporter.smtp_server}"
 
     wrap_external_trace(module, 'EmailReporter.report', 'weberror', smtp_url)
     wrap_function_trace(module, 'EmailReporter.report')

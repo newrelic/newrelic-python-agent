@@ -236,9 +236,7 @@ def _raise_configuration_error(section, option=None):
         if not _ignore_errors:
             if section:
                 raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for section "%s". '
-                    "Check New Relic agent log file for further "
-                    "details." % section
+                    f'Invalid configuration for section "{section}". Check New Relic agent log file for further details.'
                 )
             raise newrelic.api.exceptions.ConfigurationError(
                 "Invalid configuration. Check New Relic agent log file for further details."
@@ -251,14 +249,10 @@ def _raise_configuration_error(section, option=None):
         if not _ignore_errors:
             if section:
                 raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for option "%s" in '
-                    'section "%s". Check New Relic agent log '
-                    "file for further details." % (option, section)
+                    f'Invalid configuration for option "{option}" in section "{section}". Check New Relic agent log file for further details.'
                 )
             raise newrelic.api.exceptions.ConfigurationError(
-                'Invalid configuration for option "%s". '
-                "Check New Relic agent log file for further "
-                "details." % option
+                f'Invalid configuration for option "{option}". Check New Relic agent log file for further details.'
             )
 
 
@@ -800,7 +794,7 @@ def translate_deprecated_settings(settings, cached_settings):
             ignored_params = fetch_config_setting(settings, "ignored_params")
 
             for p in ignored_params:
-                attr_value = "request.parameters." + p
+                attr_value = f"request.parameters.{p}"
                 excluded_attrs = fetch_config_setting(settings, "attributes.exclude")
 
                 if attr_value not in excluded_attrs:
@@ -940,10 +934,7 @@ def _load_configuration(
     if _configuration_done:
         if _config_file != config_file or _environment != environment:
             raise newrelic.api.exceptions.ConfigurationError(
-                "Configuration has already been done against "
-                "differing configuration file or environment. "
-                'Prior configuration file used was "%s" and '
-                'environment "%s".' % (_config_file, _environment)
+                f'Configuration has already been done against differing configuration file or environment. Prior configuration file used was "{_config_file}" and environment "{_environment}".'
             )
         return
 
@@ -1004,7 +995,7 @@ def _load_configuration(
     # name in internal settings object as indication of succeeding.
 
     if not _config_object.read([config_file]):
-        raise newrelic.api.exceptions.ConfigurationError("Unable to open configuration file %s." % config_file)
+        raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
 
     _settings.config_file = config_file
 
@@ -1014,7 +1005,7 @@ def _load_configuration(
     _process_setting("newrelic", "log_file", "get", None)
 
     if environment:
-        _process_setting("newrelic:%s" % environment, "log_file", "get", None)
+        _process_setting(f"newrelic:{environment}", "log_file", "get", None)
 
     if log_file is None:
         log_file = _settings.log_file
@@ -1022,7 +1013,7 @@ def _load_configuration(
     _process_setting("newrelic", "log_level", "get", _map_log_level)
 
     if environment:
-        _process_setting("newrelic:%s" % environment, "log_level", "get", _map_log_level)
+        _process_setting(f"newrelic:{environment}", "log_level", "get", _map_log_level)
 
     if log_level is None:
         log_level = _settings.log_level
@@ -1042,7 +1033,7 @@ def _load_configuration(
 
     if environment:
         _settings.environment = environment
-        _process_configuration("newrelic:%s" % environment)
+        _process_configuration(f"newrelic:{environment}")
 
     # Log details of the configuration options which were
     # read and the values they have as would be applied
@@ -1239,7 +1230,7 @@ def _module_function_glob(module, object_path):
                     # Skip adding individual class's methods on failure
                     available_functions.update(
                         {
-                            "%s.%s" % (cls, k): v
+                            f"{cls}.{k}": v
                             for k, v in available_classes.get(cls).__dict__.items()
                             if callable(v) and not isinstance(v, type)
                         }
@@ -1995,7 +1986,7 @@ def _process_module_definition(target, module, function="instrument"):
         return
 
     try:
-        section = "import-hook:%s" % target
+        section = f"import-hook:{target}"
         if _config_object.has_section(section):
             enabled = _config_object.getboolean(section, "enabled")
     except configparser.NoOptionError:

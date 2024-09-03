@@ -35,8 +35,8 @@ _message_broker_tt_params = {
 }
 
 _test_blocking_connection_consume_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown", None),
 ]
 
@@ -127,14 +127,14 @@ def test_blocking_connection_consume_exception_in_for_loop(producer):
             # Expected error
             pass
         except Exception as e:
-            assert False, "Wrong exception was raised: %s" % e
+            assert False, f"Wrong exception was raised: {e}"
         else:
             assert False, "No exception was raised!"
 
 
 _test_blocking_connection_consume_empty_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown", None),
 ]
 
@@ -159,14 +159,14 @@ def test_blocking_connection_consume_exception_in_generator():
             # Expected error
             pass
         except Exception as e:
-            assert False, "Wrong exception was raised: %s" % e
+            assert False, f"Wrong exception was raised: {e}"
         else:
             assert False, "No exception was raised!"
 
 
 _test_blocking_connection_consume_many_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/%s" % EXCHANGE, None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE, None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
     ("MessageBroker/RabbitMQ/Exchange/Consume/Named/Unknown", None),
 ]
 
@@ -227,7 +227,7 @@ def test_blocking_connection_consume_using_methods(producer):
 
 
 @validate_transaction_metrics(
-    "Named/%s" % EXCHANGE,
+    f"Named/{EXCHANGE}",
     scoped_metrics=_test_blocking_connection_consume_metrics,
     rollup_metrics=_test_blocking_connection_consume_metrics,
     background_task=True,
@@ -251,7 +251,7 @@ def test_blocking_connection_consume_outside_txn(producer):
 
 def test_blocking_connection_consume_many_outside_txn(produce_five):
     @validate_transaction_metrics(
-        "Named/%s" % EXCHANGE,
+        f"Named/{EXCHANGE}",
         scoped_metrics=_test_blocking_connection_consume_metrics,
         rollup_metrics=_test_blocking_connection_consume_metrics,
         background_task=True,
@@ -282,7 +282,7 @@ def test_blocking_connection_consume_many_outside_txn(produce_five):
 
 
 @validate_transaction_metrics(
-    "Named/%s" % EXCHANGE,
+    f"Named/{EXCHANGE}",
     scoped_metrics=_test_blocking_connection_consume_metrics,
     rollup_metrics=_test_blocking_connection_consume_metrics,
     background_task=True,

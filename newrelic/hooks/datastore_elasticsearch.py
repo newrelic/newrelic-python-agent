@@ -123,7 +123,7 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
             index = arg_extractor(*args, **kwargs)
 
         if prefix:
-            operation = "%s.%s" % (prefix, method_name)
+            operation = f"{prefix}.{method_name}"
         else:
             operation = method_name
 
@@ -142,7 +142,7 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
 
             return result
 
-    wrap_function_wrapper(module, "%s.%s" % (class_name, method_name), _nr_wrapper_Elasticsearch_method_)
+    wrap_function_wrapper(module, f"{class_name}.{method_name}", _nr_wrapper_Elasticsearch_method_)
 
 
 _elasticsearch_client_methods_below_v8 = (

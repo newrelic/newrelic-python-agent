@@ -89,7 +89,7 @@ def test_application_raises(exception, status_code, ignore_status_code, propagat
     @validate_transaction_metrics("_test_application:exception", scoped_metrics=_test_application_raises_scoped_metrics)
     def _test():
         try:
-            application.get("/exception/%s/%i" % (exception, status_code), status=status_code, expect_errors=True)
+            application.get(f"/exception/{exception}/{status_code}", status=status_code, expect_errors=True)
         except Exception as e:
             assert propagate_exceptions
 

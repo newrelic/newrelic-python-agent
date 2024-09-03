@@ -61,20 +61,20 @@ def proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user,
         netloc = proxy_host
 
     if proxy_port:
-        netloc = '%s:%s' % (netloc, proxy_port)
+        netloc = f'{netloc}:{proxy_port}'
 
     if proxy_user:
         proxy_user = proxy_user or ''
         proxy_pass = proxy_pass or ''
 
         if proxy_pass:
-            netloc = '%s:%s@%s' % (proxy_user, proxy_pass, netloc)
+            netloc = f'{proxy_user}:{proxy_pass}@{netloc}'
         else:
-            netloc = '%s@%s' % (proxy_user, netloc)
+            netloc = f'{proxy_user}@{netloc}'
 
     if proxy_scheme is None:
         proxy_scheme = 'http'
 
-    proxy = '%s://%s%s' % (proxy_scheme, netloc, path)
+    proxy = f'{proxy_scheme}://{netloc}{path}'
 
     return {'http': proxy, 'https': proxy}

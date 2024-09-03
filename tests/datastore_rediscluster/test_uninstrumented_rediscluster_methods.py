@@ -165,4 +165,4 @@ def test_uninstrumented_methods():
             is_wrapped = lambda m: hasattr(getattr(module_client, m), "__wrapped__")
             uninstrumented |= {m for m in module_methods - IGNORED_METHODS if not is_wrapped(m)}
 
-    assert not uninstrumented, "Uninstrumented methods: %s" % sorted(uninstrumented)
+    assert not uninstrumented, f"Uninstrumented methods: {sorted(uninstrumented)}"

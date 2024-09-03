@@ -93,7 +93,7 @@ class DataSampler():
             return []
 
         if self.group:
-            return (('%s/%s' % (self.group, key), value)
+            return ((f'{self.group}/{key}', value)
                     for key, value in self.instance())
         else:
             return self.instance()

@@ -103,7 +103,7 @@ def test_not_found(api_version, tastypie_full_debug):
     )
     def _test_not_found():
         with TastyPieFullDebugMode(tastypie_full_debug) as debug_status:
-            test_application.get("/api/%s/simple/NotFound/" % api_version, status=debug_status)
+            test_application.get(f"/api/{api_version}/simple/NotFound/", status=debug_status)
 
     _test_not_found()
 
@@ -121,7 +121,7 @@ _test_application_object_does_not_exist_scoped_metrics.append(("Function/tastypi
 )
 def test_object_does_not_exist(api_version, tastypie_full_debug):
     with TastyPieFullDebugMode(tastypie_full_debug):
-        test_application.get("/api/%s/simple/ObjectDoesNotExist/" % api_version, status=404)
+        test_application.get(f"/api/{api_version}/simple/ObjectDoesNotExist/", status=404)
 
 
 _test_application_raises_zerodivision_exceptions = ["builtins:ZeroDivisionError"]
@@ -144,7 +144,7 @@ def test_raises_zerodivision(api_version, tastypie_full_debug):
     )
     def _test_raises_zerodivision():
         with TastyPieFullDebugMode(tastypie_full_debug):
-            test_application.get("/api/%s/simple/ZeroDivisionError/" % api_version, status=500)
+            test_application.get(f"/api/{api_version}/simple/ZeroDivisionError/", status=500)
 
     _test_raises_zerodivision()
 
@@ -171,7 +171,7 @@ def test_record_404_errors(api_version, tastypie_full_debug):
     )
     def _test_not_found():
         with TastyPieFullDebugMode(tastypie_full_debug) as debug_status:
-            test_application.get("/api/%s/simple/NotFound/" % api_version, status=debug_status)
+            test_application.get(f"/api/{api_version}/simple/NotFound/", status=debug_status)
 
     _test_not_found()
 
@@ -186,4 +186,4 @@ def test_ended_txn_name(api_version, tastypie_full_debug):
     end_of_transaction()
 
     with TastyPieFullDebugMode(tastypie_full_debug) as debug_status:
-        test_application.get("/api/%s/simple/NotFound/" % api_version, status=debug_status)
+        test_application.get(f"/api/{api_version}/simple/NotFound/", status=debug_status)

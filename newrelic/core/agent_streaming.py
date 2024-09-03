@@ -128,7 +128,7 @@ class StreamingRpc():
                     details = response_iterator.details()
 
                     self.record_metric(
-                        "Supportability/InfiniteTracing/Span/gRPC/%s" % code.name,
+                        f"Supportability/InfiniteTracing/Span/gRPC/{code.name}",
                         {"count": 1},
                     )
 

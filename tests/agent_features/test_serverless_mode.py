@@ -38,7 +38,7 @@ def serverless_application(request):
     orig = settings.serverless_mode.enabled
     settings.serverless_mode.enabled = True
 
-    application_name = "Python Agent Test (test_serverless_mode:%s)" % (request.node.name)
+    application_name = f"Python Agent Test (test_serverless_mode:{request.node.name})"
     application = application_instance(application_name)
     application.activate()
 

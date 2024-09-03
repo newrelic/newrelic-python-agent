@@ -39,8 +39,7 @@ def create_app(module):
             elif 'CustomException' in exception:
                 e = CustomException()
             else:
-                raise AssertionError('Unexpected exception received: %s' %
-                        exception)
+                raise AssertionError(f'Unexpected exception received: {exception}')
             e.code = code
             raise e
 

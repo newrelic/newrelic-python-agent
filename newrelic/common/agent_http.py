@@ -50,11 +50,7 @@ HEADER_AUDIT_LOGGING_DENYLIST = frozenset(("x-api-key", "api-key"))
 # does not rely on this, but is used to target specific agents if there
 # is a problem with data collector handling requests.
 
-USER_AGENT = "NewRelic-PythonAgent/%s (Python %s %s)" % (
-    version,
-    sys.version.split()[0],
-    sys.platform,
-)
+USER_AGENT = f"NewRelic-PythonAgent/{version} (Python {sys.version.split()[0]} {sys.platform})"
 
 
 # This is a monkey patch for urllib3 + python3.6 + gevent/eventlet.
@@ -138,19 +134,19 @@ class BaseClient():
         cls.AUDIT_LOG_ID += 1
 
         print(
-            "TIME: %r" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            f"TIME: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())!r}",
             file=fp,
         )
         print(file=fp)
-        print("ID: %r" % cls.AUDIT_LOG_ID, file=fp)
+        print(f"ID: {cls.AUDIT_LOG_ID!r}", file=fp)
         print(file=fp)
-        print("PID: %r" % os.getpid(), file=fp)
+        print(f"PID: {os.getpid()!r}", file=fp)
         print(file=fp)
-        print("URL: %r" % url, file=fp)
+        print(f"URL: {url!r}", file=fp)
         print(file=fp)
-        print("PARAMS: %r" % params, file=fp)
+        print(f"PARAMS: {params!r}", file=fp)
         print(file=fp)
-        print("HEADERS: %r" % headers, file=fp)
+        print(f"HEADERS: {headers!r}", file=fp)
         print(file=fp)
         print("DATA:", end=" ", file=fp)
 
@@ -191,18 +187,18 @@ class BaseClient():
         except Exception:
             result = data
 
-        print("TIME: %r" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), file=fp)
+        print(f"TIME: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())!r}", file=fp)
         print(file=fp)
-        print("ID: %r" % log_id, file=fp)
+        print(f"ID: {log_id!r}", file=fp)
         print(file=fp)
-        print("PID: %r" % os.getpid(), file=fp)
+        print(f"PID: {os.getpid()!r}", file=fp)
         print(file=fp)
 
         if exc_info:
-            print("Exception: %r" % exc_info[1], file=fp)
+            print(f"Exception: {exc_info[1]!r}", file=fp)
             print(file=fp)
         else:
-            print("STATUS: %r" % status, file=fp)
+            print(f"STATUS: {status!r}", file=fp)
             print(file=fp)
             print("HEADERS:", end=" ", file=fp)
             pprint(dict(headers), stream=fp)
@@ -303,7 +299,7 @@ class HttpClient(BaseClient):
             else:
                 self._host = proxy.host
                 self._port = proxy.port or 443
-                self._prefix = self.PREFIX_SCHEME + host + ":" + str(port)
+                self._prefix = f"{self.PREFIX_SCHEME + host}:{str(port)}"
                 urlopen_kwargs["assert_same_host"] = False
                 if proxy_headers:
                     self._headers.update(proxy_headers)
@@ -328,7 +324,7 @@ class HttpClient(BaseClient):
         else:
             auth = username
             if auth and password is not None:
-                auth = auth + ":" + password
+                auth = f"{auth}:{password}"
 
         # Host must be defined
         if not host:
@@ -377,7 +373,7 @@ class HttpClient(BaseClient):
         compression_time=None,
     ):
         if not self._prefix:
-            url = self.CONNECTION_CLS.scheme + "://" + self._host + url
+            url = f"{self.CONNECTION_CLS.scheme}://{self._host}{url}"
 
         return super(HttpClient, self).log_request(fp, method, url, params, payload, headers, body, compression_time)
 
@@ -405,7 +401,7 @@ class HttpClient(BaseClient):
     ):
         if self._proxy:
             proxy_scheme = self._proxy.scheme or "http"
-            connection = proxy_scheme + "-proxy"
+            connection = f"{proxy_scheme}-proxy"
         else:
             connection = "direct"
 
@@ -536,16 +532,16 @@ class SupportabilityMixin():
             # Compression was applied
             if compression_time is not None:
                 internal_metric(
-                    "Supportability/Python/Collector/%s/ZLIB/Bytes" % agent_method,
+                    f"Supportability/Python/Collector/{agent_method}/ZLIB/Bytes",
                     len(body),
                 )
                 internal_metric("Supportability/Python/Collector/ZLIB/Bytes", len(body))
                 internal_metric(
-                    "Supportability/Python/Collector/%s/ZLIB/Compress" % agent_method,
+                    f"Supportability/Python/Collector/{agent_method}/ZLIB/Compress",
                     compression_time,
                 )
             internal_metric(
-                "Supportability/Python/Collector/%s/Output/Bytes" % agent_method,
+                f"Supportability/Python/Collector/{agent_method}/Output/Bytes",
                 len(payload),
             )
             # Top level metric to aggregate overall bytes being sent
@@ -555,15 +551,15 @@ class SupportabilityMixin():
     def _supportability_response(status, exc, connection="direct"):
         if exc or not 200 <= status < 300:
             internal_count_metric("Supportability/Python/Collector/Failures", 1)
-            internal_count_metric("Supportability/Python/Collector/Failures/%s" % connection, 1)
+            internal_count_metric(f"Supportability/Python/Collector/Failures/{connection}", 1)
 
             if exc:
                 internal_count_metric(
-                    "Supportability/Python/Collector/Exception/" "%s" % callable_name(exc),
+                    f"Supportability/Python/Collector/Exception/{callable_name(exc)}",
                     1,
                 )
             else:
-                internal_count_metric("Supportability/Python/Collector/HTTPError/%d" % status, 1)
+                internal_count_metric(f"Supportability/Python/Collector/HTTPError/{status}", 1)
 
 
 class ApplicationModeClient(SupportabilityMixin, HttpClient):
@@ -624,7 +620,7 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
         request_id = self.log_request(
             self._audit_log_fp,
             "POST",
-            "https://fake-collector.newrelic.com" + path,
+            f"https://fake-collector.newrelic.com{path}",
             params,
             payload,
             headers,

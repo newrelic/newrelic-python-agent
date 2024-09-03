@@ -153,7 +153,7 @@ def _encode_nonce(nonce):
     if not nonce:
         return ""
     else:
-        return ' nonce="%s"' % ensure_str(nonce)  # Extra space intentional
+        return f' nonce="{ensure_str(nonce)}"'  # Extra space intentional
 
 
 class WebTransaction(Transaction):
@@ -538,7 +538,7 @@ class WSGIHeaderProxy():
             return "CONTENT_LENGTH"
         elif key == "CONTENT-TYPE":
             return "CONTENT_TYPE"
-        return "HTTP_" + key.replace("-", "_")
+        return f"HTTP_{key.replace('-', '_')}"
 
     @staticmethod
     def _from_wsgi(key):

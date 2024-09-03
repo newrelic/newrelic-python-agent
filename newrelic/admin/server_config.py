@@ -73,4 +73,4 @@ def server_config(args):
     _logger.debug('Registration took %s seconds.', _duration)
 
     for key, value in sorted(_application.settings):
-        print('%s = %r' % (key, value))
+        print(f'{key} = {value!r}')

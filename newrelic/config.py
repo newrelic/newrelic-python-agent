@@ -4492,7 +4492,7 @@ def _process_module_builtin_defaults():
         "instrument_cornice_service",
     )
 
-    _process_module_definition("gevent.monkey", "newrelic.hooks.coroutines_gevent", "instrument_gevent_monkey")
+    # _process_module_definition("gevent.monkey", "newrelic.hooks.coroutines_gevent", "instrument_gevent_monkey")
 
     _process_module_definition(
         "weberror.errormiddleware",

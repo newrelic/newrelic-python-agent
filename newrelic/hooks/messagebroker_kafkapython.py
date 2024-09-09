@@ -47,6 +47,7 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     topic, value, key, headers, partition, timestamp_ms = _bind_send(*args, **kwargs)
+    topic = topic or "Default"
     headers = list(headers) if headers else []
 
     transaction.add_messagebroker_info(
@@ -57,7 +58,7 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
         library="Kafka",
         operation="Produce",
         destination_type="Topic",
-        destination_name=topic or "Default",
+        destination_name=topic,
         source=wrapped,
         terminal=False,
     ):
@@ -66,6 +67,9 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
         if headers:
             dt_headers.extend(headers)
 
+        if hasattr(instance, "config"):
+            for server_name in instance.config.get("bootstrap_servers", []):
+                transaction.record_custom_metric("MessageBroker/Kafka/Nodes/%s/Produce/%s" % (server_name, topic), 1)
         try:
             return wrapped(
                 topic, value=value, key=key, headers=dt_headers, partition=partition, timestamp_ms=timestamp_ms
@@ -154,9 +158,12 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             name = "Named/%s" % destination_name
             transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
             transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
-            transaction.add_messagebroker_info(
-                "Kafka-Python", get_package_version("kafka-python") or get_package_version("kafka-python-ng")
-            )
+            if hasattr(instance, "config"):
+                for server_name in instance.config.get("bootstrap_servers", []):
+                    transaction.record_custom_metric(
+                        "MessageBroker/Kafka/Nodes/%s/Consume/%s" % (server_name, destination_name), 1
+                    )
+            transaction.add_messagebroker_info("Kafka-Python", get_package_version("kafka-python") or get_package_version("kafka-python-ng"))
 
     return record
 

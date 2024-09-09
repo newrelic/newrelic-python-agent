@@ -4443,17 +4443,6 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("gevent.monkey", "newrelic.hooks.coroutines_gevent", "instrument_gevent_monkey")
 
-    _process_module_definition(
-        "weberror.errormiddleware",
-        "newrelic.hooks.middleware_weberror",
-        "instrument_weberror_errormiddleware",
-    )
-    _process_module_definition(
-        "weberror.reporter",
-        "newrelic.hooks.middleware_weberror",
-        "instrument_weberror_reporter",
-    )
-
     _process_module_definition("thrift.transport.TSocket", "newrelic.hooks.external_thrift")
 
     _process_module_definition(

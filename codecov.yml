@@ -14,7 +14,6 @@ ignore:
   - "newrelic/hooks/external_dropbox.py"
   - "newrelic/hooks/external_facepy.py"
   - "newrelic/hooks/external_xmlrpclib.py"
-  - "newrelic/hooks/framework_web2py.py"
   - "newrelic/hooks/framework_webpy.py"
   - "newrelic/hooks/middleware_weberror.py"
   - "newrelic/packages/*"

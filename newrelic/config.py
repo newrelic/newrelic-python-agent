@@ -2800,21 +2800,6 @@ def _process_module_builtin_defaults():
     # _process_module_definition('web.template',
     #        'newrelic.hooks.framework_webpy')
 
-    _process_module_definition(
-        "gluon.compileapp",
-        "newrelic.hooks.framework_web2py",
-        "instrument_gluon_compileapp",
-    )
-    _process_module_definition(
-        "gluon.restricted",
-        "newrelic.hooks.framework_web2py",
-        "instrument_gluon_restricted",
-    )
-    _process_module_definition("gluon.main", "newrelic.hooks.framework_web2py", "instrument_gluon_main")
-    _process_module_definition("gluon.template", "newrelic.hooks.framework_web2py", "instrument_gluon_template")
-    _process_module_definition("gluon.tools", "newrelic.hooks.framework_web2py", "instrument_gluon_tools")
-    _process_module_definition("gluon.http", "newrelic.hooks.framework_web2py", "instrument_gluon_http")
-
     _process_module_definition("httpx._client", "newrelic.hooks.external_httpx", "instrument_httpx_client")
 
     _process_module_definition("gluon.contrib.feedparser", "newrelic.hooks.external_feedparser")

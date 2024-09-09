@@ -2978,10 +2978,6 @@ def _process_module_builtin_defaults():
     _process_module_definition("grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel")
     _process_module_definition("grpc._server", "newrelic.hooks.framework_grpc", "instrument_grpc_server")
 
-    _process_module_definition("pylons.wsgiapp", "newrelic.hooks.framework_pylons")
-    _process_module_definition("pylons.controllers.core", "newrelic.hooks.framework_pylons")
-    _process_module_definition("pylons.templating", "newrelic.hooks.framework_pylons")
-
     _process_module_definition("bottle", "newrelic.hooks.framework_bottle", "instrument_bottle")
 
     _process_module_definition(

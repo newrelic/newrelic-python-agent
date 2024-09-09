@@ -13,7 +13,6 @@ ignore:
   - "newrelic/hooks/datastore_pyelasticsearch.py"
   - "newrelic/hooks/external_dropbox.py"
   - "newrelic/hooks/external_facepy.py"
-  - "newrelic/hooks/external_pywapi.py"
   - "newrelic/hooks/external_xmlrpclib.py"
   - "newrelic/hooks/framework_pylons.py"
   - "newrelic/hooks/framework_web2py.py"

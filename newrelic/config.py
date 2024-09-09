@@ -4405,8 +4405,6 @@ def _process_module_builtin_defaults():
         "instrument_flup_server_scgi_base",
     )
 
-    _process_module_definition("pywapi", "newrelic.hooks.external_pywapi", "instrument_pywapi")
-
     _process_module_definition(
         "meinheld.server",
         "newrelic.hooks.adapter_meinheld",

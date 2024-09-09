@@ -2795,11 +2795,6 @@ def _process_module_builtin_defaults():
         "sentry_sdk.integrations.asgi", "newrelic.hooks.component_sentry", "instrument_sentry_sdk_integrations_asgi"
     )
 
-    # _process_module_definition('web.application',
-    #        'newrelic.hooks.framework_webpy')
-    # _process_module_definition('web.template',
-    #        'newrelic.hooks.framework_webpy')
-
     _process_module_definition("httpx._client", "newrelic.hooks.external_httpx", "instrument_httpx_client")
 
     _process_module_definition("gluon.contrib.feedparser", "newrelic.hooks.external_feedparser")

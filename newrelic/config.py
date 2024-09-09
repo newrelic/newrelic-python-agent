@@ -2795,26 +2795,6 @@ def _process_module_builtin_defaults():
         "sentry_sdk.integrations.asgi", "newrelic.hooks.component_sentry", "instrument_sentry_sdk_integrations_asgi"
     )
 
-    # _process_module_definition('web.application',
-    #        'newrelic.hooks.framework_webpy')
-    # _process_module_definition('web.template',
-    #        'newrelic.hooks.framework_webpy')
-
-    _process_module_definition(
-        "gluon.compileapp",
-        "newrelic.hooks.framework_web2py",
-        "instrument_gluon_compileapp",
-    )
-    _process_module_definition(
-        "gluon.restricted",
-        "newrelic.hooks.framework_web2py",
-        "instrument_gluon_restricted",
-    )
-    _process_module_definition("gluon.main", "newrelic.hooks.framework_web2py", "instrument_gluon_main")
-    _process_module_definition("gluon.template", "newrelic.hooks.framework_web2py", "instrument_gluon_template")
-    _process_module_definition("gluon.tools", "newrelic.hooks.framework_web2py", "instrument_gluon_tools")
-    _process_module_definition("gluon.http", "newrelic.hooks.framework_web2py", "instrument_gluon_http")
-
     _process_module_definition("httpx._client", "newrelic.hooks.external_httpx", "instrument_httpx_client")
 
     _process_module_definition("gluon.contrib.feedparser", "newrelic.hooks.external_feedparser")
@@ -2978,10 +2958,6 @@ def _process_module_builtin_defaults():
     _process_module_definition("grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel")
     _process_module_definition("grpc._server", "newrelic.hooks.framework_grpc", "instrument_grpc_server")
 
-    _process_module_definition("pylons.wsgiapp", "newrelic.hooks.framework_pylons")
-    _process_module_definition("pylons.controllers.core", "newrelic.hooks.framework_pylons")
-    _process_module_definition("pylons.templating", "newrelic.hooks.framework_pylons")
-
     _process_module_definition("bottle", "newrelic.hooks.framework_bottle", "instrument_bottle")
 
     _process_module_definition(
@@ -3086,7 +3062,6 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("mysql.connector", "newrelic.hooks.database_mysql", "instrument_mysql_connector")
     _process_module_definition("MySQLdb", "newrelic.hooks.database_mysqldb", "instrument_mysqldb")
-    _process_module_definition("oursql", "newrelic.hooks.database_oursql", "instrument_oursql")
     _process_module_definition("pymysql", "newrelic.hooks.database_pymysql", "instrument_pymysql")
 
     _process_module_definition("pyodbc", "newrelic.hooks.database_pyodbc", "instrument_pyodbc")
@@ -3171,7 +3146,6 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition("memcache", "newrelic.hooks.datastore_memcache", "instrument_memcache")
-    _process_module_definition("umemcache", "newrelic.hooks.datastore_umemcache", "instrument_umemcache")
     _process_module_definition(
         "pylibmc.client",
         "newrelic.hooks.datastore_pylibmc",
@@ -4407,8 +4381,6 @@ def _process_module_builtin_defaults():
         "instrument_flup_server_scgi_base",
     )
 
-    _process_module_definition("pywapi", "newrelic.hooks.external_pywapi", "instrument_pywapi")
-
     _process_module_definition(
         "meinheld.server",
         "newrelic.hooks.adapter_meinheld",
@@ -4470,17 +4442,6 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition("gevent.monkey", "newrelic.hooks.coroutines_gevent", "instrument_gevent_monkey")
-
-    _process_module_definition(
-        "weberror.errormiddleware",
-        "newrelic.hooks.middleware_weberror",
-        "instrument_weberror_errormiddleware",
-    )
-    _process_module_definition(
-        "weberror.reporter",
-        "newrelic.hooks.middleware_weberror",
-        "instrument_weberror_reporter",
-    )
 
     _process_module_definition("thrift.transport.TSocket", "newrelic.hooks.external_thrift")
 

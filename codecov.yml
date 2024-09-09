@@ -12,7 +12,6 @@ ignore:
   - "newrelic/hooks/datastore_aredis.py"
   - "newrelic/hooks/datastore_motor.py"
   - "newrelic/hooks/datastore_pyelasticsearch.py"
-  - "newrelic/hooks/datastore_umemcache.py"
   - "newrelic/hooks/external_dropbox.py"
   - "newrelic/hooks/external_facepy.py"
   - "newrelic/hooks/external_pywapi.py"

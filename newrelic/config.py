@@ -3171,7 +3171,6 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition("memcache", "newrelic.hooks.datastore_memcache", "instrument_memcache")
-    _process_module_definition("umemcache", "newrelic.hooks.datastore_umemcache", "instrument_umemcache")
     _process_module_definition(
         "pylibmc.client",
         "newrelic.hooks.datastore_pylibmc",

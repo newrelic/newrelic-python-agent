@@ -6,7 +6,6 @@ ignore:
   - "newrelic/hooks/adapter_meinheld.py"
   - "newrelic/hooks/adapter_paste.py"
   - "newrelic/hooks/component_piston.py"
-  - "newrelic/hooks/database_oursql.py"
   - "newrelic/hooks/database_psycopg2ct.py"
   - "newrelic/hooks/datastore_aioredis.py"
   - "newrelic/hooks/datastore_aredis.py"

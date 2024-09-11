@@ -15,7 +15,7 @@
 import os
 import pytest
 import newrelic.common.utilization as u
-from tests.cross_agent.fixtures.ecs_container_id.ecs_mock_server import mock_server
+from fixtures.ecs_container_id.ecs_mock_server import mock_server
 from test_pcf_utilization_data import Environ
 
 

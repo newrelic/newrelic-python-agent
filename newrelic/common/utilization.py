@@ -369,7 +369,7 @@ class ECSUtilization(CommonUtilization):
             resp.release_conn()
             return docker_id
         except:
-            _logger.debug(f"Unable to fetch Docker container ID from ECS endpoint: {metadata_uri}.")
+            _logger.debug("Unable to fetch Docker container ID data from ECS endpoint: %s", metadata_uri)
             return None
 
     @classmethod

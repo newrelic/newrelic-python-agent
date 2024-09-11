@@ -363,7 +363,7 @@ class ECSUtilization(CommonUtilization):
     def get_ecs_container_id(cls, metadata_uri):
         try:
             http = urllib3.PoolManager()
-            resp = http.request('GET', metadata_uri)
+            resp = http.request("GET", metadata_uri)
             resp_dict = json.loads(resp.data)
             docker_id = resp_dict.get("DockerId")
             resp.release_conn()

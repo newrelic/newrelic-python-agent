@@ -2086,6 +2086,12 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_resources_chat_completions",
     )
+
+    _process_module_definition(
+        "openai.resources.completions",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_resources_chat_completions",
+    )
     _process_module_definition(
         "openai._base_client",
         "newrelic.hooks.mlmodel_openai",
@@ -2102,6 +2108,11 @@ def _process_module_builtin_defaults():
         "langchain_core.runnables.base",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_runnables_chains_base",
+    )
+    _process_module_definition(
+        "langchain_core.runnables.config",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_core_runnables_config",
     )
     _process_module_definition(
         "langchain.chains.base",
@@ -2134,6 +2145,11 @@ def _process_module_builtin_defaults():
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
+        "langchain_community.vectorstores.aerospike",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
         "langchain_community.vectorstores.analyticdb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2149,6 +2165,11 @@ def _process_module_builtin_defaults():
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
+        "langchain_community.vectorstores.aperturedb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
         "langchain_community.vectorstores.astradb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2160,6 +2181,11 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition(
         "langchain_community.vectorstores.awadb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.azure_cosmos_db_no_sql",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
@@ -2350,6 +2376,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_community.vectorstores.manticore_search",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
         "langchain_community.vectorstores.marqo",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2393,6 +2425,12 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "langchain_community.vectorstores.neo4j_vector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.thirdai_neuraldb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
@@ -2621,6 +2659,12 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "langchain_community.vectorstores.yellowbrick",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.zep_cloud",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )

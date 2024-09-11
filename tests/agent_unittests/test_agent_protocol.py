@@ -42,7 +42,7 @@ Request = namedtuple("Request", ("method", "path", "params", "headers", "payload
 
 # Global constants used in tests
 APP_NAME = "test_app"
-IP_ADDRESS = AWS = AZURE = GCP = PCF = BOOT_ID = DOCKER = KUBERNETES = None
+IP_ADDRESS = AWS = AZURE = ECS = GCP = PCF = BOOT_ID = DOCKER = KUBERNETES = None
 BROWSER_MONITORING_DEBUG = "debug"
 BROWSER_MONITORING_LOADER = "loader"
 CAPTURE_PARAMS = "capture_params"
@@ -117,9 +117,10 @@ def clear_sent_values():
 
 @pytest.fixture(autouse=True)
 def override_utilization(monkeypatch):
-    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES
+    global AWS, AZURE, ECS, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES
     AWS = {"id": "foo", "type": "bar", "zone": "baz"}
     AZURE = {"location": "foo", "name": "bar", "vmId": "baz", "vmSize": "boo"}
+    ECS = {"ecsDockerId": "foobar"}
     GCP = {"id": 1, "machineType": "trmntr-t1000", "name": "arnold", "zone": "abc"}
     PCF = {"cf_instance_guid": "1", "cf_instance_ip": "7", "memory_limit": "0"}
     BOOT_ID = "cca356a7d72737f645a10c122ebbe906"
@@ -134,8 +135,12 @@ def override_utilization(monkeypatch):
             output = BOOT_ID
         elif name.startswith("AWS"):
             output = AWS
+        elif name.startswith("ECS"):
+            output = ECS
         elif name.startswith("Azure"):
             output = AZURE
+        elif name.startswith("ECS"):
+            output = ECS
         elif name.startswith("GCP"):
             output = GCP
         elif name.startswith("PCF"):
@@ -290,6 +295,7 @@ def test_close_connection():
 def connect_payload_asserts(
     payload,
     with_aws=True,
+    with_ecs=True,
     with_gcp=True,
     with_pcf=True,
     with_azure=True,
@@ -332,7 +338,7 @@ def connect_payload_asserts(
     else:
         assert "ip_address" not in payload_data["utilization"]
 
-    utilization_len = utilization_len + any([with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes])
+    utilization_len = utilization_len + any([with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes])
     assert len(payload_data["utilization"]) == utilization_len
     assert payload_data["utilization"]["hostname"] == HOST
 
@@ -349,11 +355,13 @@ def connect_payload_asserts(
     assert harvest_limits["error_event_data"] == ERROR_EVENT_DATA
 
     vendors_len = 0
-
     if any([with_aws, with_pcf, with_gcp, with_azure]):
         vendors_len += 1
 
-    if with_docker:
+    if with_ecs:
+        vendors_len += 1
+
+    if with_docker and not with_ecs:
         vendors_len += 1
 
     if with_kubernetes:
@@ -372,7 +380,10 @@ def connect_payload_asserts(
         elif with_azure:
             assert payload_data["utilization"]["vendors"]["azure"] == AZURE
 
-        if with_docker:
+        if with_ecs:
+            assert payload_data["utilization"]["vendors"]["ecs"] == ECS
+
+        if with_docker and not with_ecs:
             assert payload_data["utilization"]["vendors"]["docker"] == DOCKER
 
         if with_kubernetes:
@@ -382,24 +393,25 @@ def connect_payload_asserts(
 
 
 @pytest.mark.parametrize(
-    "with_aws,with_pcf,with_gcp,with_azure,with_docker,with_kubernetes,with_ip",
+    "with_aws,with_ecs,with_pcf,with_gcp,with_azure,with_docker,with_kubernetes,with_ip",
     [
-        (False, False, False, False, False, False, False),
-        (False, False, False, False, False, False, True),
-        (True, False, False, False, True, True, True),
-        (False, True, False, False, True, True, True),
-        (False, False, True, False, True, True, True),
-        (False, False, False, True, True, True, True),
-        (True, False, False, False, False, False, True),
-        (False, True, False, False, False, False, True),
-        (False, False, True, False, False, False, True),
-        (False, False, False, True, False, False, True),
-        (True, True, True, True, True, True, True),
-        (True, True, True, True, True, False, True),
-        (True, True, True, True, False, True, True),
+        (False, False, False, False, False, False, False, False),
+        (False, False, False, False, False, False, False, True),
+        (True, True, False, False, False, True, False, True),
+        (True, True, False, False, False, True, True, True),
+        (False, False, True, False, False, True, True, True),
+        (False, False, False, True, False, True, True, True),
+        (False, False, False, False, True, True, True, True),
+        (True, True, False, False, False, False, False, True),
+        (False, False, True, False, False, False, False, True),
+        (False, False, False, True, False, False, False, True),
+        (False, False, False, False, True, False, False, True),
+        (True, True, True, True, True, True, True, True),
+        (True, True, True, True, True, True, False, True),
+        (True, True, True, True, True, False, True, True),
     ],
 )
-def test_connect(with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_ip):
+def test_connect(with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_ip):
     global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, IP_ADDRESS
     if not with_aws:
         AWS = Exception
@@ -409,6 +421,8 @@ def test_connect(with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kub
         GCP = Exception
     if not with_azure:
         AZURE = Exception
+    if not with_ecs:
+        ECS = Exception
     if not with_docker:
         DOCKER = Exception
     if not with_kubernetes:
@@ -466,6 +480,7 @@ def test_connect(with_aws, with_pcf, with_gcp, with_azure, with_docker, with_kub
         with_pcf=with_pcf,
         with_gcp=with_gcp,
         with_azure=with_azure,
+        with_ecs=with_ecs,
         with_docker=with_docker,
         with_kubernetes=with_kubernetes,
     )

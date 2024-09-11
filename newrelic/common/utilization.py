@@ -339,9 +339,9 @@ class ECSUtilization(CommonUtilization):
         try:
             uri = os.environ.get("ECS_CONTAINER_METADATA_URI_V4")
             if uri:
-                docker_id = cls.get_ecs_docker_id(uri)
-                if docker_id:
-                    return docker_id
+                ecs_id = cls.get_ecs_container_id(uri)
+                if ecs_id:
+                    return ecs_id
         except:
             # There are all sorts of exceptions that can occur here
             # (i.e. permissions, non-existent file, etc)
@@ -351,16 +351,16 @@ class ECSUtilization(CommonUtilization):
         try:
             uri = os.environ.get("ECS_CONTAINER_METADATA_URI")
             if uri:
-                docker_id = cls.get_ecs_docker_id(uri)
-                if docker_id:
-                    return docker_id
+                ecs_id = cls.get_ecs_container_id(uri)
+                if ecs_id:
+                    return ecs_id
         except:
             # There are all sorts of exceptions that can occur here
             # (i.e. permissions, non-existent file, etc)
             pass
 
     @classmethod
-    def get_ecs_docker_id(cls, metadata_uri):
+    def get_ecs_container_id(cls, metadata_uri):
         try:
             http = urllib3.PoolManager()
             resp = http.request('GET', metadata_uri)
@@ -369,7 +369,7 @@ class ECSUtilization(CommonUtilization):
             resp.release_conn()
             return docker_id
         except:
-            _logger.debug(f"Unable to fetch Docker ID from ECS endpoint: {metadata_uri}.")
+            _logger.debug(f"Unable to fetch Docker container ID from ECS endpoint: {metadata_uri}.")
             return None
 
     @classmethod

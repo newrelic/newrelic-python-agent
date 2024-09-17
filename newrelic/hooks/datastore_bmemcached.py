@@ -32,7 +32,29 @@ _memcache_client_methods = (
 )
 
 
+def capture_host(self, *args, **kwargs):
+    if hasattr(self, "servers"):
+        for s in self.servers:
+            if hasattr(s, "host"):
+                return s.host
+
+
+def capture_port(self, *args, **kwargs):
+    if hasattr(self, "servers"):
+        for s in self.servers:
+            if hasattr(s, "port"):
+                return s.port
+
+
 def instrument_bmemcached_client(module):
     for name in _memcache_client_methods:
         if hasattr(module.Client, name):
-            wrap_datastore_trace(module, "Client.%s" % name, product="Memcached", target=None, operation=name)
+            wrap_datastore_trace(
+                module,
+                "Client.%s" % name,
+                product="Memcached",
+                target=None,
+                operation=name,
+                host=capture_host,
+                port_path_or_id=capture_port,
+            )

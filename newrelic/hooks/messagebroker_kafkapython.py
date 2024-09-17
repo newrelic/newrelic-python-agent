@@ -163,7 +163,9 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
                     transaction.record_custom_metric(
                         "MessageBroker/Kafka/Nodes/%s/Consume/%s" % (server_name, destination_name), 1
                     )
-            transaction.add_messagebroker_info("Kafka-Python", get_package_version("kafka-python") or get_package_version("kafka-python-ng"))
+            transaction.add_messagebroker_info(
+                "Kafka-Python", get_package_version("kafka-python") or get_package_version("kafka-python-ng")
+            )
 
     return record
 

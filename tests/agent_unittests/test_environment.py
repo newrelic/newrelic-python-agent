@@ -113,6 +113,17 @@ def test_plugin_list_uses_no_sys_modules_iterator(monkeypatch):
             "1.2.3",
             "4.5.6",
         ),
+        # New replacement module uvicorn_worker should function the same
+        (
+            {
+                "gunicorn": module("1.2.3"),
+                "uvicorn": module("4.5.6"),
+                "uvicorn_worker": object(),
+            },
+            "gunicorn (uvicorn)",
+            "1.2.3",
+            "4.5.6",
+        ),
         ({"uvicorn": object()}, "uvicorn", None, None),
         (
             {

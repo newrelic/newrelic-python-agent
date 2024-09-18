@@ -158,6 +158,7 @@ from newrelic.api.ml_model import (
 )
 from newrelic.api.ml_model import set_llm_token_count_callback as __set_llm_token_count_callback
 from newrelic.api.ml_model import wrap_mlmodel as __wrap_mlmodel
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes as __WithLlmCustomAttributes
 from newrelic.api.profile_trace import ProfileTraceWrapper as __ProfileTraceWrapper
 from newrelic.api.profile_trace import profile_trace as __profile_trace
 from newrelic.api.profile_trace import wrap_profile_trace as __wrap_profile_trace
@@ -251,6 +252,7 @@ record_custom_metrics = __wrap_api_call(__record_custom_metrics, "record_custom_
 record_custom_event = __wrap_api_call(__record_custom_event, "record_custom_event")
 record_log_event = __wrap_api_call(__record_log_event, "record_log_event")
 record_ml_event = __wrap_api_call(__record_ml_event, "record_ml_event")
+WithLlmCustomAttributes = __wrap_api_call(__WithLlmCustomAttributes, "WithLlmCustomAttributes")
 accept_distributed_trace_payload = __wrap_api_call(
     __accept_distributed_trace_payload, "accept_distributed_trace_payload"
 )

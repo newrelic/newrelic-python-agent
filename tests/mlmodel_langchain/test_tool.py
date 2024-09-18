@@ -25,6 +25,7 @@ from testing_support.fixtures import reset_core_stats_engine, validate_attribute
 from testing_support.ml_testing_utils import (  # noqa: F401
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
+    events_with_context_attrs,
     set_trace_info,
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
@@ -40,6 +41,7 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 
 
@@ -108,7 +110,8 @@ single_arg_tool_recorded_events = [
 @background_task()
 def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
     set_trace_info()
-    single_arg_tool.run({"query": "Python Agent"})
+    with WithLlmCustomAttributes({"context": "attrs"}):
+        single_arg_tool.run({"query": "Python Agent"})
 
 
 @reset_core_stats_engine()

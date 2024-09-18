@@ -25,6 +25,7 @@ from testing_support.ml_testing_utils import (  # noqa: F401
     disabled_ai_monitoring_streaming_settings,
     events_sans_content,
     events_sans_llm_metadata,
+    events_with_context_attrs,
     llm_token_count_callback,
     set_trace_info,
 )
@@ -35,6 +36,7 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}

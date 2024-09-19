@@ -37,14 +37,15 @@ from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
 
-def test_custom_metrics(get_consumer_record, topic):
+def test_custom_metrics(get_consumer_record, topic, expected_broker_metrics):
     @validate_transaction_metrics(
         "Named/%s" % topic,
         group="Message/Kafka/Topic",
         custom_metrics=[
             ("Message/Kafka/Topic/Named/%s/Received/Bytes" % topic, 1),
             ("Message/Kafka/Topic/Named/%s/Received/Messages" % topic, 1),
-        ],
+        ]
+        + expected_broker_metrics,
         background_task=True,
     )
     def _test():
@@ -62,7 +63,7 @@ def test_multiple_transactions(get_consumer_record, topic):
     _test()
 
 
-def test_custom_metrics_on_existing_transaction(get_consumer_record, topic):
+def test_custom_metrics_on_existing_transaction(get_consumer_record, topic, expected_broker_metrics):
     from kafka.version import __version__ as version
 
     transaction_name = (
@@ -75,7 +76,8 @@ def test_custom_metrics_on_existing_transaction(get_consumer_record, topic):
             ("Message/Kafka/Topic/Named/%s/Received/Bytes" % topic, 1),
             ("Message/Kafka/Topic/Named/%s/Received/Messages" % topic, 1),
             ("Python/MessageBroker/Kafka-Python/%s" % version, 1),
-        ],
+        ]
+        + expected_broker_metrics,
         background_task=True,
     )
     @validate_transaction_count(1)
@@ -86,7 +88,7 @@ def test_custom_metrics_on_existing_transaction(get_consumer_record, topic):
     _test()
 
 
-def test_custom_metrics_inactive_transaction(get_consumer_record, topic):
+def test_custom_metrics_inactive_transaction(get_consumer_record, topic, expected_missing_broker_metrics):
     transaction_name = (
         "test_consumer:test_custom_metrics_inactive_transaction.<locals>._test" if six.PY3 else "test_consumer:_test"
     )
@@ -96,7 +98,8 @@ def test_custom_metrics_inactive_transaction(get_consumer_record, topic):
         custom_metrics=[
             ("Message/Kafka/Topic/Named/%s/Received/Bytes" % topic, None),
             ("Message/Kafka/Topic/Named/%s/Received/Messages" % topic, None),
-        ],
+        ]
+        + expected_missing_broker_metrics,
         background_task=True,
     )
     @validate_transaction_count(1)
@@ -139,7 +142,7 @@ def test_consumer_handled_errors_not_recorded(get_consumer_record):
     _test()
 
 
-def test_distributed_tracing_headers(topic, producer, consumer, serialize):
+def test_distributed_tracing_headers(topic, producer, consumer, serialize, expected_broker_metrics):
     # Produce the messages inside a transaction, making sure to close it.
     @background_task()
     def _produce():
@@ -152,7 +155,8 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize):
         rollup_metrics=[
             ("Supportability/DistributedTrace/AcceptPayload/Success", None),
             ("Supportability/TraceContext/Accept/Success", 1),
-        ],
+        ]
+        + expected_broker_metrics,
         background_task=True,
     )
     @validate_transaction_count(1)
@@ -189,3 +193,13 @@ def consumer_next_raises(consumer):
 
     consumer.poll = _poll
     return consumer
+
+
+@pytest.fixture(scope="function")
+def expected_broker_metrics(broker, topic):
+    return [("MessageBroker/Kafka/Nodes/%s/Consume/%s" % (server, topic), 1) for server in broker]
+
+
+@pytest.fixture(scope="function")
+def expected_missing_broker_metrics(broker, topic):
+    return [("MessageBroker/Kafka/Nodes/%s/Consume/%s" % (server, topic), None) for server in broker]

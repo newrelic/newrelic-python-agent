@@ -28,8 +28,11 @@ from newrelic.common.object_wrapper import transient_function_wrapper
 
 DB_SETTINGS = kafka_settings()[0]
 
-BOOTSTRAP_SERVER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
-BROKER = [BOOTSTRAP_SERVER]
+
+@pytest.fixture(scope="session")
+def broker():
+    BOOTSTRAP_SERVER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
+    return [BOOTSTRAP_SERVER]
 
 
 _default_settings = {
@@ -62,24 +65,24 @@ def skip_if_not_serializing(client_type):
 
 
 @pytest.fixture(scope="function")
-def producer(client_type, json_serializer, json_callable_serializer):
+def producer(client_type, json_serializer, json_callable_serializer, broker):
     if client_type == "no_serializer":
-        producer = kafka.KafkaProducer(bootstrap_servers=BROKER)
+        producer = kafka.KafkaProducer(bootstrap_servers=broker)
     elif client_type == "serializer_function":
         producer = kafka.KafkaProducer(
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             value_serializer=lambda v: json.dumps(v).encode("utf-8") if v else None,
             key_serializer=lambda v: json.dumps(v).encode("utf-8") if v else None,
         )
     elif client_type == "callable_object":
         producer = kafka.KafkaProducer(
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             value_serializer=json_callable_serializer,
             key_serializer=json_callable_serializer,
         )
     elif client_type == "serializer_object":
         producer = kafka.KafkaProducer(
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             value_serializer=json_serializer,
             key_serializer=json_serializer,
         )
@@ -89,11 +92,11 @@ def producer(client_type, json_serializer, json_callable_serializer):
 
 
 @pytest.fixture(scope="function")
-def consumer(group_id, topic, producer, client_type, json_deserializer, json_callable_deserializer):
+def consumer(group_id, topic, producer, client_type, json_deserializer, json_callable_deserializer, broker):
     if client_type == "no_serializer":
         consumer = kafka.KafkaConsumer(
             topic,
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
@@ -102,7 +105,7 @@ def consumer(group_id, topic, producer, client_type, json_deserializer, json_cal
     elif client_type == "serializer_function":
         consumer = kafka.KafkaConsumer(
             topic,
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             key_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else None,
             value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else None,
             auto_offset_reset="earliest",
@@ -113,7 +116,7 @@ def consumer(group_id, topic, producer, client_type, json_deserializer, json_cal
     elif client_type == "callable_object":
         consumer = kafka.KafkaConsumer(
             topic,
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             key_deserializer=json_callable_deserializer,
             value_deserializer=json_callable_deserializer,
             auto_offset_reset="earliest",
@@ -124,7 +127,7 @@ def consumer(group_id, topic, producer, client_type, json_deserializer, json_cal
     elif client_type == "serializer_object":
         consumer = kafka.KafkaConsumer(
             topic,
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             key_deserializer=json_deserializer,
             value_deserializer=json_deserializer,
             auto_offset_reset="earliest",
@@ -190,13 +193,13 @@ def json_callable_deserializer():
 
 
 @pytest.fixture(scope="function")
-def topic():
+def topic(broker):
     from kafka.admin.client import KafkaAdminClient
     from kafka.admin.new_topic import NewTopic
 
     topic = "test-topic-%s" % str(uuid.uuid4())
 
-    admin = KafkaAdminClient(bootstrap_servers=BROKER)
+    admin = KafkaAdminClient(bootstrap_servers=broker)
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
     admin.create_topics(new_topics)
 

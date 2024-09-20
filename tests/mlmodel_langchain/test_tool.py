@@ -95,7 +95,7 @@ single_arg_tool_recorded_events = [
 
 
 @reset_core_stats_engine()
-@validate_custom_events(single_arg_tool_recorded_events)
+@validate_custom_events(events_with_context_attrs(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_tool:test_langchain_single_arg_tool",
@@ -110,7 +110,7 @@ single_arg_tool_recorded_events = [
 @background_task()
 def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
     set_trace_info()
-    with WithLlmCustomAttributes({"context": "attrs"}):
+    with WithLlmCustomAttributes({"context": "attr"}):
         single_arg_tool.run({"query": "Python Agent"})
 
 
@@ -135,7 +135,7 @@ def test_langchain_single_arg_tool_no_content(set_trace_info, single_arg_tool):
 
 
 @reset_core_stats_engine()
-@validate_custom_events(single_arg_tool_recorded_events)
+@validate_custom_events(events_with_context_attrs(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_tool:test_langchain_single_arg_tool_async",
@@ -150,7 +150,8 @@ def test_langchain_single_arg_tool_no_content(set_trace_info, single_arg_tool):
 @background_task()
 def test_langchain_single_arg_tool_async(set_trace_info, single_arg_tool, loop):
     set_trace_info()
-    loop.run_until_complete(single_arg_tool.arun({"query": "Python Agent"}))
+    with WithLlmCustomAttributes({"context": "attr"}):
+        loop.run_until_complete(single_arg_tool.arun({"query": "Python Agent"}))
 
 
 @reset_core_stats_engine()
@@ -279,7 +280,7 @@ multi_arg_error_recorded_events = [
         "user": {},
     },
 )
-@validate_custom_events(multi_arg_error_recorded_events)
+@validate_custom_events(events_with_context_attrs(multi_arg_error_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_tool:test_langchain_error_in_run",
@@ -295,9 +296,10 @@ def test_langchain_error_in_run(set_trace_info, multi_arg_tool):
     with pytest.raises(pydantic_core._pydantic_core.ValidationError):
         set_trace_info()
         # Only one argument is provided while the tool expects two to create an error
-        multi_arg_tool.run(
-            {"first_num": 53}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
-        )
+        with WithLlmCustomAttributes({"context": "attr"}):
+            multi_arg_tool.run(
+                {"first_num": 53}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
+            )
 
 
 @reset_core_stats_engine()
@@ -342,7 +344,7 @@ def test_langchain_error_in_run_no_content(set_trace_info, multi_arg_tool):
         "user": {},
     },
 )
-@validate_custom_events(multi_arg_error_recorded_events)
+@validate_custom_events(events_with_context_attrs(multi_arg_error_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_tool:test_langchain_error_in_run_async",
@@ -356,13 +358,14 @@ def test_langchain_error_in_run_no_content(set_trace_info, multi_arg_tool):
 @background_task()
 def test_langchain_error_in_run_async(set_trace_info, multi_arg_tool, loop):
     with pytest.raises(pydantic_core._pydantic_core.ValidationError):
-        set_trace_info()
-        # Only one argument is provided while the tool expects two to create an error
-        loop.run_until_complete(
-            multi_arg_tool.arun(
-                {"first_num": 53}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
+        with WithLlmCustomAttributes({"context": "attr"}):
+            set_trace_info()
+            # Only one argument is provided while the tool expects two to create an error
+            loop.run_until_complete(
+                multi_arg_tool.arun(
+                    {"first_num": 53}, tags=["test_tags", "python"], metadata={"test_run": True, "test": "langchain"}
+                )
             )
-        )
 
 
 @reset_core_stats_engine()

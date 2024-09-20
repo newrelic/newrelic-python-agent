@@ -52,4 +52,5 @@ class WithLlmCustomAttributes(object):
         return self
 
     def __exit__(self, exc, value, tb):
-        self.transaction._llm_context_attrs = None
+        if self.transaction:
+            self.transaction._llm_context_attrs = None

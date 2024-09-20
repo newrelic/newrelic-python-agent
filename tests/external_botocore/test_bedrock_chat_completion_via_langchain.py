@@ -19,7 +19,7 @@ from _test_bedrock_chat_completion import (
 )
 from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
-from testing_support.ml_testing_utils import set_trace_info  # noqa: F401
+from testing_support.ml_testing_utils import set_trace_info, events_with_context_attrs  # noqa: F401
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_transaction_metrics import (
@@ -27,6 +27,7 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 
 UNSUPPORTED_LANGCHAIN_MODELS = [
@@ -105,7 +106,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(
     expected_metrics,
     response_streaming,
 ):
-    @validate_custom_events(expected_events)
+    @validate_custom_events(events_with_context_attrs(expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=6)
     @validate_transaction_metrics(
@@ -124,6 +125,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
-        exercise_model(prompt="Hi there!")
+        with WithLlmCustomAttributes({"context": "attr"}):
+            exercise_model(prompt="Hi there!")
 
     _test()

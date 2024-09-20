@@ -31,6 +31,7 @@ from testing_support.ml_testing_utils import (  # noqa: F401
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
+    events_with_context_attrs,
     set_trace_info,
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
@@ -47,6 +48,7 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 
 _test_openai_chat_completion_messages = (
@@ -690,7 +692,7 @@ chat_completion_recorded_events_error_in_langchain = [
 
 
 @reset_core_stats_engine()
-@validate_custom_events(chat_completion_recorded_events_list_response)
+@validate_custom_events(events_with_context_attrs(chat_completion_recorded_events_list_response))
 @validate_custom_event_count(count=7)
 @validate_transaction_metrics(
     name="test_chain:test_langchain_chain_list_response",
@@ -720,10 +722,11 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
         ]
     )
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
-    chain.invoke(
-        {"text": "colors"},
-        config={"metadata": {"id": "123"}},
-    )
+    with WithLlmCustomAttributes({"context": "attr"}):
+        chain.invoke(
+            {"text": "colors"},
+            config={"metadata": {"id": "123"}},
+        )
 
 
 @pytest.mark.parametrize(
@@ -991,7 +994,7 @@ def test_langchain_chain_error_in_openai(
 ):
     @reset_core_stats_engine()
     @validate_transaction_error_event_count(1)
-    @validate_custom_events(expected_events)
+    @validate_custom_events(events_with_context_attrs(expected_events))
     @validate_custom_event_count(count=6)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_openai.<locals>._test",
@@ -1012,7 +1015,8 @@ def test_langchain_chain_error_in_openai(
         runnable = create_function(json_schema, chat_openai_client, prompt_openai_error)
 
         with pytest.raises(openai.AuthenticationError):
-            getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
+            with WithLlmCustomAttributes({"context": "attr"}):
+                getattr(runnable, call_function)(*call_function_args, **call_function_kwargs)
 
     _test()
 
@@ -1215,7 +1219,7 @@ def test_langchain_chain_ai_monitoring_disabled(
 
 
 @reset_core_stats_engine()
-@validate_custom_events(chat_completion_recorded_events_list_response)
+@validate_custom_events(events_with_context_attrs(chat_completion_recorded_events_list_response))
 @validate_custom_event_count(count=7)
 @validate_transaction_metrics(
     name="test_chain:test_async_langchain_chain_list_response",
@@ -1247,15 +1251,15 @@ def test_async_langchain_chain_list_response(
         ]
     )
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
-
-    loop.run_until_complete(
-        chain.ainvoke(
-            {"text": "colors"},
-            config={
-                "metadata": {"id": "123"},
-            },
+    with WithLlmCustomAttributes({"context": "attr"}):
+        loop.run_until_complete(
+            chain.ainvoke(
+                {"text": "colors"},
+                config={
+                    "metadata": {"id": "123"},
+                },
+            )
         )
-    )
 
 
 @reset_core_stats_engine()
@@ -1495,7 +1499,7 @@ def test_async_langchain_chain_error_in_openai(
 ):
     @reset_core_stats_engine()
     @validate_transaction_error_event_count(1)
-    @validate_custom_events(expected_events)
+    @validate_custom_events(events_with_context_attrs(expected_events))
     @validate_custom_event_count(count=6)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_openai.<locals>._test",
@@ -1516,7 +1520,8 @@ def test_async_langchain_chain_error_in_openai(
         runnable = create_function(json_schema, chat_openai_client, prompt_openai_error)
 
         with pytest.raises(openai.AuthenticationError):
-            loop.run_until_complete(getattr(runnable, call_function)(*call_function_args, **call_function_kwargs))
+            with WithLlmCustomAttributes({"context": "attr"}):
+                loop.run_until_complete(getattr(runnable, call_function)(*call_function_args, **call_function_kwargs))
 
     _test()
 
@@ -1740,11 +1745,11 @@ def test_multiple_async_langchain_chain(
     expected_events,
     loop,
 ):
-    call1 = expected_events.copy()
+    call1 = events_with_context_attrs(expected_events.copy())
     call1[0][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
     call1[1][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
     call1[2][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
-    call2 = expected_events.copy()
+    call2 = events_with_context_attrs(expected_events.copy())
     call2[0][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
     call2[1][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
     call2[2][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
@@ -1781,14 +1786,15 @@ def test_multiple_async_langchain_chain(
             add_custom_attribute("non_llm_attr", "python-agent")
 
             runnable = create_function(json_schema, chat_openai_client, prompt)
+            with WithLlmCustomAttributes({"context": "attr"}):
 
-            call1 = asyncio.ensure_future(
-                getattr(runnable, call_function)(*call_function_args, **call_function_kwargs), loop=loop
-            )
-            call2 = asyncio.ensure_future(
-                getattr(runnable, call_function)(*call_function_args, **call_function_kwargs), loop=loop
-            )
-            loop.run_until_complete(asyncio.gather(call1, call2))
+                call1 = asyncio.ensure_future(
+                    getattr(runnable, call_function)(*call_function_args, **call_function_kwargs), loop=loop
+                )
+                call2 = asyncio.ensure_future(
+                    getattr(runnable, call_function)(*call_function_args, **call_function_kwargs), loop=loop
+                )
+                loop.run_until_complete(asyncio.gather(call1, call2))
 
     _test()
 

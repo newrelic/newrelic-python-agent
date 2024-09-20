@@ -560,7 +560,6 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             "response.number_of_messages": len(input_message_list) + len(output_message_list),
         }
         llm_metadata = _get_llm_attributes(transaction)
-
         if llm_context_attrs:
             llm_metadata.update(llm_context_attrs)
         full_chat_completion_summary_dict.update(llm_metadata)

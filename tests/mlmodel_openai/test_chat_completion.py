@@ -46,96 +46,6 @@ _test_openai_chat_completion_messages = (
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
 )
 
-testing = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,  # UUID that varies with each run
-            "llm.conversation_id": "my-awesome-id",
-            "llm.foo": "bar",
-            "span_id": None,
-            "trace_id": None,
-            "request_id": None,
-            "duration": None,  # Response time varies each test run
-            "request.model": "gpt-3.5-turbo",
-            "response.model": "gpt-3.5-turbo-0613",
-            "response.organization": "new-relic-nkmd8b",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "response.choices.finish_reason": "stop",
-            "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 200,
-            "response.headers.ratelimitLimitTokens": 40000,
-            "response.headers.ratelimitResetTokens": "90ms",
-            "response.headers.ratelimitResetRequests": "7m12s",
-            "response.headers.ratelimitRemainingTokens": 39940,
-            "response.headers.ratelimitRemainingRequests": 199,
-            "vendor": "openai",
-            "ingest_source": "Python",
-            "response.number_of_messages": 3,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "llm.conversation_id": "my-awesome-id",
-            "llm.foo": "bar",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": None,
-            "content": "You are a scientist.",
-            "role": "system",
-            "completion_id": None,
-            "sequence": 0,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openai",
-            "ingest_source": "Python",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "llm.conversation_id": "my-awesome-id",
-            "llm.foo": "bar",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": None,
-            "content": "What is 212 degrees Fahrenheit converted to Celsius?",
-            "role": "user",
-            "completion_id": None,
-            "sequence": 1,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openai",
-            "ingest_source": "Python",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "llm.conversation_id": "my-awesome-id",
-            "llm.foo": "bar",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": None,
-            "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
-            "role": "assistant",
-            "completion_id": None,
-            "sequence": 2,
-            "response.model": "gpt-3.5-turbo-0613",
-            "vendor": "openai",
-            "is_response": True,
-            "ingest_source": "Python",
-        },
-    ),
-]
-
-_test_openai_chat_completion_messages = (
-    {"role": "system", "content": "You are a scientist."},
-    {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
-)
 
 chat_completion_recorded_events = [
     (
@@ -246,30 +156,6 @@ def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info):
         openai.ChatCompletion.create(
             model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
         )
-
-
-@reset_core_stats_engine()
-@validate_custom_events(testing + testing)
-# One summary event, one system message, one user message, and one response message from the assistant
-@background_task()
-def test_openai_chat_completion_exit(set_trace_info):
-    set_trace_info()
-    transaction = current_transaction()
-    add_custom_attribute("llm.conversation_id", "my-awesome-id")
-    add_custom_attribute("llm.foo", "bar")
-    add_custom_attribute("non_llm_attr", "python-agent")
-    with WithLlmCustomAttributes({"context": "attr"}):
-        openai.ChatCompletion.create(
-            model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
-        )
-        transaction.__exit__(None, None, None)
-        with BackgroundTask(application(), "fg") as txn:
-            add_custom_attribute("llm.conversation_id", "my-awesome-id")
-            add_custom_attribute("llm.foo", "bar")
-            add_custom_attribute("non_llm_attr", "python-agent")
-            openai.ChatCompletion.create(
-                model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
-            )
 
 
 @reset_core_stats_engine()

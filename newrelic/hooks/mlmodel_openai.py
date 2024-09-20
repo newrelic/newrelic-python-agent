@@ -560,6 +560,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             "response.number_of_messages": len(input_message_list) + len(output_message_list),
         }
         llm_metadata = _get_llm_attributes(transaction)
+
         if llm_context_attrs:
             llm_metadata.update(llm_context_attrs)
         full_chat_completion_summary_dict.update(llm_metadata)
@@ -647,7 +648,8 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             "error": True,
         }
         llm_metadata = _get_llm_attributes(transaction)
-        llm_metadata.update(llm_context_attrs)
+        if llm_context_attrs:
+            llm_metadata.update(llm_context_attrs)
         error_chat_completion_dict.update(llm_metadata)
 
         transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)

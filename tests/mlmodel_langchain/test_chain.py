@@ -1801,7 +1801,7 @@ def test_multiple_async_langchain_chain(
     scoped_metrics=[("Llm/chain/LangChain/invoke", 3)],
     rollup_metrics=[("Llm/chain/LangChain/invoke", 3)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )

@@ -189,9 +189,9 @@ def consumer_next_raises(consumer):
 
 @pytest.fixture(scope="function")
 def expected_broker_metrics(broker, topic):
-    return [("MessageBroker/Kafka/Nodes/%s/Consume/%s" % (server, topic), 1) for server in broker]
+    return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", 1) for server in broker]
 
 
 @pytest.fixture(scope="function")
 def expected_missing_broker_metrics(broker, topic):
-    return [("MessageBroker/Kafka/Nodes/%s/Consume/%s" % (server, topic), None) for server in broker]
+    return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", None) for server in broker]

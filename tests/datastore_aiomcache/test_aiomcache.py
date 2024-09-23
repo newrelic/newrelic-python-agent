@@ -29,7 +29,7 @@ DB_SETTINGS = memcached_settings()[0]
 MEMCACHED_HOST = DB_SETTINGS["host"]
 MEMCACHED_PORT = DB_SETTINGS["port"]
 MEMCACHED_NAMESPACE = str(os.getpid())
-INSTANCE_METRIC_NAME = "Datastore/instance/Memcached/%s/%s" % (MEMCACHED_HOST, MEMCACHED_PORT)
+INSTANCE_METRIC_NAME = f"Datastore/instance/Memcached/{MEMCACHED_HOST}/{MEMCACHED_PORT}"
 
 _test_bt_set_get_delete_scoped_metrics = [
     ("Datastore/operation/Memcached/set", 1),

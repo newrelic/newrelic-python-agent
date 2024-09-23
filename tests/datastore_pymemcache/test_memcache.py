@@ -43,7 +43,7 @@ _test_bt_set_get_delete_rollup_metrics = [
     ("Datastore/operation/Memcached/set", 1),
     ("Datastore/operation/Memcached/get", 1),
     ("Datastore/operation/Memcached/delete", 1),
-    ("Datastore/instance/Memcached/%s/%s" % (MEMCACHED_HOST, MEMCACHED_PORT), 3),
+    (f"Datastore/instance/Memcached/{MEMCACHED_HOST}/{MEMCACHED_PORT}", 3),
 ]
 
 
@@ -81,7 +81,7 @@ _test_wt_set_get_delete_rollup_metrics = [
     ("Datastore/operation/Memcached/set", 1),
     ("Datastore/operation/Memcached/get", 1),
     ("Datastore/operation/Memcached/delete", 1),
-    ("Datastore/instance/Memcached/%s/%s" % (MEMCACHED_HOST, MEMCACHED_PORT), 3),
+    (f"Datastore/instance/Memcached/{MEMCACHED_HOST}/{MEMCACHED_PORT}", 3),
 ]
 
 

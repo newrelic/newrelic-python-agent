@@ -69,7 +69,7 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
 
         if hasattr(instance, "config"):
             for server_name in instance.config.get("bootstrap_servers", []):
-                transaction.record_custom_metric("MessageBroker/Kafka/Nodes/%s/Produce/%s" % (server_name, topic), 1)
+                transaction.record_custom_metric(f"MessageBroker/Kafka/Nodes/{server_name}/Produce/{topic}", 1)
         try:
             return wrapped(
                 topic, value=value, key=key, headers=dt_headers, partition=partition, timestamp_ms=timestamp_ms
@@ -161,7 +161,7 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             if hasattr(instance, "config"):
                 for server_name in instance.config.get("bootstrap_servers", []):
                     transaction.record_custom_metric(
-                        "MessageBroker/Kafka/Nodes/%s/Consume/%s" % (server_name, destination_name), 1
+                        f"MessageBroker/Kafka/Nodes/{server_name}/Consume/{destination_name}", 1
                     )
             transaction.add_messagebroker_info(
                 "Kafka-Python", get_package_version("kafka-python") or get_package_version("kafka-python-ng")

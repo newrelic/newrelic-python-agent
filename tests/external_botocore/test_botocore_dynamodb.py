@@ -124,7 +124,6 @@ def test_dynamodb():
         Key={
             "Id": {"N": "101"},
             "Foo": {"S": "hello_world"},
-            "SomeValue": {"S": "some_random_attribute"},
         },
     )
     assert resp["Item"]["SomeValue"]["S"] == "some_random_attribute"
@@ -135,7 +134,6 @@ def test_dynamodb():
         Key={
             "Id": {"N": "101"},
             "Foo": {"S": "hello_world"},
-            "SomeValue": {"S": "some_random_attribute"},
         },
         AttributeUpdates={
             "Foo2": {"Value": {"S": "hello_world2"}, "Action": "PUT"},

@@ -20,7 +20,9 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
-from testing_support.validators.validate_log_event_count_outside_transaction import validate_log_event_count_outside_transaction
+from testing_support.validators.validate_log_event_count_outside_transaction import (
+    validate_log_event_count_outside_transaction,
+)
 
 
 def set_trace_ids():
@@ -30,6 +32,7 @@ def set_trace_ids():
     trace = current_trace()
     if trace:
         trace.guid = "abcdefgh"
+
 
 def exercise_logging(logger):
     set_trace_ids()
@@ -42,7 +45,9 @@ def get_metadata_string(log_message, is_txn):
     assert host
     entity_guid = application_settings().entity_guid
     if is_txn:
-        metadata_string = f"NR-LINKING|{entity_guid}|{host}|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28logger_loguru%29|"
+        metadata_string = (
+            f"NR-LINKING|{entity_guid}|{host}|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28logger_loguru%29|"
+        )
     else:
         metadata_string = f"NR-LINKING|{entity_guid}|{host}|||Python%20Agent%20Test%20%28logger_loguru%29|"
     formatted_string = f"{log_message} {metadata_string}"
@@ -55,7 +60,7 @@ def test_local_log_decoration_inside_transaction(logger):
     @background_task()
     def test():
         exercise_logging(logger)
-        assert logger.caplog.records[0] == get_metadata_string('C', True)
+        assert logger.caplog.records[0] == get_metadata_string("C", True)
 
     test()
 
@@ -65,7 +70,7 @@ def test_local_log_decoration_outside_transaction(logger):
     @validate_log_event_count_outside_transaction(1)
     def test():
         exercise_logging(logger)
-        assert logger.caplog.records[0] == get_metadata_string('C', False)
+        assert logger.caplog.records[0] == get_metadata_string("C", False)
 
     test()
 
@@ -80,6 +85,6 @@ def test_patcher_application_order(logger):
     def test():
         patch_logger = logger.patch(patch)
         exercise_logging(patch_logger)
-        assert logger.caplog.records[0] == get_metadata_string('C-PATCH', False)
+        assert logger.caplog.records[0] == get_metadata_string("C-PATCH", False)
 
     test()

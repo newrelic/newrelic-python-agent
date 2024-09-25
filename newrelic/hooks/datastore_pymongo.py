@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 from newrelic.api.datastore_trace import wrap_datastore_trace
 from newrelic.api.function_trace import wrap_function_trace
 
@@ -59,11 +61,16 @@ _pymongo_client_methods = (
 )
 
 
-def instrument_pymongo_connection(module):
-    # Must name function explicitly as pymongo overrides the
-    # __getattr__() method in a way that breaks introspection.
+def instrument_pymongo_pool(module):
+    # Exit early if this is a reimport of code from the newer module location
+    moved_module = "pymongo.synchronous.pool"
+    if module.__name__ != moved_module and moved_module in sys.modules:
+        return
 
     rollup = ("Datastore/all", "Datastore/MongoDB/all")
+
+    # Must name function explicitly as pymongo overrides the
+    # __getattr__() method in a way that breaks introspection.
 
     wrap_function_trace(
         module, "Connection.__init__", name="%s:Connection.__init__" % module.__name__, terminal=True, rollup=rollup
@@ -71,10 +78,15 @@ def instrument_pymongo_connection(module):
 
 
 def instrument_pymongo_mongo_client(module):
-    # Must name function explicitly as pymongo overrides the
-    # __getattr__() method in a way that breaks introspection.
+    # Exit early if this is a reimport of code from the newer module location
+    moved_module = "pymongo.synchronous.mongo_client"
+    if module.__name__ != moved_module and moved_module in sys.modules:
+        return
 
     rollup = ("Datastore/all", "Datastore/MongoDB/all")
+
+    # Must name function explicitly as pymongo overrides the
+    # __getattr__() method in a way that breaks introspection.
 
     wrap_function_trace(
         module, "MongoClient.__init__", name="%s:MongoClient.__init__" % module.__name__, terminal=True, rollup=rollup
@@ -82,6 +94,11 @@ def instrument_pymongo_mongo_client(module):
 
 
 def instrument_pymongo_collection(module):
+    # Exit early if this is a reimport of code from the newer module location
+    moved_module = "pymongo.synchronous.collection"
+    if module.__name__ != moved_module and moved_module in sys.modules:
+        return
+
     def _collection_name(collection, *args, **kwargs):
         return collection.name
 

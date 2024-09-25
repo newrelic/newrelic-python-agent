@@ -492,7 +492,9 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             finish_reason = None
             choices = response.get("choices") or []
             if choices:
-                output_message_list = [choices[0].get("message")]
+                output_message_list = [
+                    choices[0].get("message") or {"content": choices[0].get("text"), "role": "assistant"}
+                ]
                 finish_reason = choices[0].get("finish_reason")
         else:
             response_model = kwargs.get("response.model")
@@ -507,7 +509,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
 
         request_id = response_headers.get("x-request-id")
         organization = response_headers.get("openai-organization") or getattr(response, "organization", None)
-        messages = kwargs.get("messages", None) or []
+        messages = kwargs.get("messages") or [{"content": kwargs.get("prompt"), "role": "user"}]
         input_message_list = list(messages)
         full_chat_completion_summary_dict = {
             "id": completion_id,
@@ -683,17 +685,6 @@ def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
     return returned_response
 
 
-def bind_base_client_process_response(
-    cast_to,
-    options,
-    response,
-    stream,
-    stream_cls,
-):
-    nr_response_headers = getattr(response, "headers", None) or {}
-    return nr_response_headers
-
-
 def wrap_base_client_process_response_sync(wrapped, instance, args, kwargs):
     """Obtain response headers for v1."""
     transaction = current_transaction()
@@ -704,7 +695,9 @@ def wrap_base_client_process_response_sync(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
-    nr_response_headers = bind_base_client_process_response(*args, **kwargs)
+    bound_args = bind_args(wrapped, args, kwargs)
+    nr_response_headers = getattr(bound_args["response"], "headers", None) or {}
+
     return_val = wrapped(*args, **kwargs)
     return_val._nr_response_headers = nr_response_headers
     return return_val
@@ -720,7 +713,8 @@ async def wrap_base_client_process_response_async(wrapped, instance, args, kwarg
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
-    nr_response_headers = bind_base_client_process_response(*args, **kwargs)
+    bound_args = bind_args(wrapped, args, kwargs)
+    nr_response_headers = getattr(bound_args["response"], "headers", None) or {}
     return_val = await wrapped(*args, **kwargs)
     return_val._nr_response_headers = nr_response_headers
     return return_val

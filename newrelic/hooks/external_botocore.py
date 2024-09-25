@@ -14,6 +14,7 @@
 
 import json
 import logging
+import re
 import sys
 import traceback
 import uuid
@@ -24,9 +25,10 @@ from botocore.response import StreamingBody
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.message_trace import message_trace
-from newrelic.api.time_trace import get_trace_linking_metadata
+from newrelic.api.message_trace import MessageTrace, message_trace
+from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
+from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import (
     ObjectProxy,
     function_wrapper,
@@ -35,6 +37,7 @@ from newrelic.common.object_wrapper import (
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
 
+QUEUE_URL_PATTERN = re.compile(r"https://sqs.([\w\d-]+).amazonaws.com/(\d+)/([^/]+)")
 BOTOCORE_VERSION = get_package_version("botocore")
 
 
@@ -52,6 +55,23 @@ UNSUPPORTED_MODEL_WARNING_SENT = False
 def extract_sqs(*args, **kwargs):
     queue_value = kwargs.get("QueueUrl", "Unknown")
     return queue_value.rsplit("/", 1)[-1]
+
+
+def extract_sqs_agent_attrs(*args, **kwargs):
+    # Try to capture AWS SQS info as agent attributes. Log any exception to debug.
+    agent_attrs = {}
+    try:
+        queue_url = kwargs.get("QueueUrl")
+        if queue_url:
+            m = QUEUE_URL_PATTERN.match(queue_url)
+            if m:
+                agent_attrs["messaging.system"] = "aws_sqs"
+                agent_attrs["cloud.region"] = m.group(1)
+                agent_attrs["cloud.account.id"] = m.group(2)
+                agent_attrs["messaging.destination.name"] = m.group(3)
+    except Exception as e:
+        _logger.debug("Failed to capture AWS SQS info.", exc_info=True)
+    return agent_attrs
 
 
 def extract(argument_names, default=None):
@@ -817,6 +837,54 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     )
 
 
+def sqs_message_trace(
+    operation,
+    destination_type,
+    destination_name,
+    params={},
+    terminal=True,
+    async_wrapper=None,
+    extract_agent_attrs=None,
+):
+    @function_wrapper
+    def _nr_sqs_message_trace_wrapper_(wrapped, instance, args, kwargs):
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
+
+        _library = "SQS"
+        _operation = operation
+        _destination_type = destination_type
+        _destination_name = destination_name(*args, **kwargs)
+
+        trace = MessageTrace(
+            _library,
+            _operation,
+            _destination_type,
+            _destination_name,
+            params=params,
+            terminal=terminal,
+            parent=parent,
+            source=wrapped,
+        )
+
+        # Attach extracted agent attributes.
+        _agent_attrs = extract_agent_attrs(*args, **kwargs)
+        trace.agent_attributes.update(_agent_attrs)
+
+        if wrapper:  # pylint: disable=W0125,W0126
+            return wrapper(wrapped, trace)(*args, **kwargs)
+
+        with trace:
+            return wrapped(*args, **kwargs)
+
+    return _nr_sqs_message_trace_wrapper_
+
+
 CUSTOM_TRACE_POINTS = {
     ("sns", "publish"): message_trace("SNS", "Produce", "Topic", extract(("TopicArn", "TargetArn"), "PhoneNumber")),
     ("dynamodb", "put_item"): datastore_trace("DynamoDB", extract("TableName"), "put_item"),
@@ -827,9 +895,15 @@ CUSTOM_TRACE_POINTS = {
     ("dynamodb", "delete_table"): datastore_trace("DynamoDB", extract("TableName"), "delete_table"),
     ("dynamodb", "query"): datastore_trace("DynamoDB", extract("TableName"), "query"),
     ("dynamodb", "scan"): datastore_trace("DynamoDB", extract("TableName"), "scan"),
-    ("sqs", "send_message"): message_trace("SQS", "Produce", "Queue", extract_sqs),
-    ("sqs", "send_message_batch"): message_trace("SQS", "Produce", "Queue", extract_sqs),
-    ("sqs", "receive_message"): message_trace("SQS", "Consume", "Queue", extract_sqs),
+    ("sqs", "send_message"): sqs_message_trace(
+        "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
+    ),
+    ("sqs", "send_message_batch"): sqs_message_trace(
+        "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
+    ),
+    ("sqs", "receive_message"): sqs_message_trace(
+        "Consume", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
+    ),
     ("bedrock-runtime", "invoke_model"): wrap_bedrock_runtime_invoke_model(response_streaming=False),
     ("bedrock-runtime", "invoke_model_with_response_stream"): wrap_bedrock_runtime_invoke_model(
         response_streaming=True

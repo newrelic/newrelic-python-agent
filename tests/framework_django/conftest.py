@@ -27,6 +27,10 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "debug.log_autorum_middleware": True,
     "feature_flag": set(["django.instrumentation.inclusion-tags.r1"]),
+    "security.agent.enabled": True,
+    "security.enabled": True,
+    "security.mode": "IAST",
+    "security.validator_service_url": "wss://csec-staging.nr-data.net"
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

@@ -2094,6 +2094,12 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_resources_chat_completions",
     )
+
+    _process_module_definition(
+        "openai.resources.completions",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_resources_chat_completions",
+    )
     _process_module_definition(
         "openai._base_client",
         "newrelic.hooks.mlmodel_openai",
@@ -2110,6 +2116,11 @@ def _process_module_builtin_defaults():
         "langchain_core.runnables.base",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_runnables_chains_base",
+    )
+    _process_module_definition(
+        "langchain_core.runnables.config",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_core_runnables_config",
     )
     _process_module_definition(
         "langchain.chains.base",
@@ -2142,6 +2153,11 @@ def _process_module_builtin_defaults():
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
+        "langchain_community.vectorstores.aerospike",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
         "langchain_community.vectorstores.analyticdb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2157,6 +2173,11 @@ def _process_module_builtin_defaults():
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
+        "langchain_community.vectorstores.aperturedb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
         "langchain_community.vectorstores.astradb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2168,6 +2189,11 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition(
         "langchain_community.vectorstores.awadb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.azure_cosmos_db_no_sql",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
@@ -2358,6 +2384,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_community.vectorstores.manticore_search",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
         "langchain_community.vectorstores.marqo",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2401,6 +2433,12 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "langchain_community.vectorstores.neo4j_vector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.thirdai_neuraldb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
@@ -2629,6 +2667,12 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "langchain_community.vectorstores.yellowbrick",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.zep_cloud",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
@@ -3538,20 +3582,38 @@ def _process_module_builtin_defaults():
         "instrument_pyelasticsearch_client",
     )
 
+    # Newer pymongo module locations
+    _process_module_definition(
+        "pymongo.synchronous.pool",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_pool",
+    )
+    _process_module_definition(
+        "pymongo.synchronous.collection",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_collection",
+    )
+    _process_module_definition(
+        "pymongo.synchronous.mongo_client",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_mongo_client",
+    )
+
+    # Older pymongo module locations
     _process_module_definition(
         "pymongo.connection",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_connection",
-    )
-    _process_module_definition(
-        "pymongo.mongo_client",
-        "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_mongo_client",
+        "instrument_pymongo_pool",
     )
     _process_module_definition(
         "pymongo.collection",
         "newrelic.hooks.datastore_pymongo",
         "instrument_pymongo_collection",
+    )
+    _process_module_definition(
+        "pymongo.mongo_client",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_mongo_client",
     )
 
     # Redis v4.2+
@@ -4546,6 +4608,12 @@ def _process_module_builtin_defaults():
         "botocore.client",
         "newrelic.hooks.external_botocore",
         "instrument_botocore_client",
+    )
+
+    _process_module_definition(
+        "s3transfer.futures",
+        "newrelic.hooks.external_s3transfer",
+        "instrument_s3transfer_futures",
     )
 
     _process_module_definition(

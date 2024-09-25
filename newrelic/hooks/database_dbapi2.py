@@ -51,12 +51,13 @@ class CursorWrapper(ObjectProxy):
             ):
                 return self.__wrapped__.execute(sql, **kwargs)
 
-    def executemany(self, sql, seq_of_parameters):
+    def executemany(self, sql, seq_of_parameters, *args, **kwargs):
         try:
             seq_of_parameters = list(seq_of_parameters)
             parameters = seq_of_parameters[0]
         except (TypeError, IndexError):
             parameters = DEFAULT
+
         if parameters is not DEFAULT:
             with DatabaseTrace(
                 sql=sql,
@@ -66,7 +67,7 @@ class CursorWrapper(ObjectProxy):
                 sql_parameters=parameters,
                 source=self.__wrapped__.executemany,
             ):
-                return self.__wrapped__.executemany(sql, seq_of_parameters)
+                return self.__wrapped__.executemany(sql, seq_of_parameters, *args, **kwargs)
         else:
             with DatabaseTrace(
                 sql=sql,
@@ -75,7 +76,7 @@ class CursorWrapper(ObjectProxy):
                 cursor_params=self._nr_cursor_params,
                 source=self.__wrapped__.executemany,
             ):
-                return self.__wrapped__.executemany(sql, seq_of_parameters)
+                return self.__wrapped__.executemany(sql, seq_of_parameters, *args, **kwargs)
 
     def callproc(self, procname, parameters=DEFAULT):
         with DatabaseTrace(

@@ -98,7 +98,7 @@ def server_and_port():
 
         server = daphne.server.Server(
             fake_app,
-            endpoints=["tcp:%d:interface=127.0.0.1" % port],
+            endpoints=[f"tcp:{port}:interface=127.0.0.1"],
             ready_callable=on_ready,
             signal_handlers=False,
             verbosity=9,
@@ -124,13 +124,13 @@ def test_daphne_200(port, app):
     @validate_transaction_metrics(
         callable_name(app),
         custom_metrics=[
-            ("Python/Dispatcher/Daphne/%s" % daphne.__version__, 1),
+            (f"Python/Dispatcher/Daphne/{daphne.__version__}", 1),
         ],
     )
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():
-        return urlopen("http://localhost:%d" % port, timeout=10)  # nosec
+        return urlopen(f"http://localhost:{port}", timeout=10)  # nosec
 
     assert response().status == 200
 
@@ -143,7 +143,7 @@ def test_daphne_500(port, app):
     @wait_for_background_threads()
     def _test():
         try:
-            urlopen("http://localhost:%d/exc" % port)  # nosec
+            urlopen(f"http://localhost:{port}/exc")  # nosec
         except HTTPError:
             pass
 

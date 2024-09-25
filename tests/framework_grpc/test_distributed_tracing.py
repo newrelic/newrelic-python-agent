@@ -45,7 +45,7 @@ def test_inbound_distributed_trace(mock_grpc_server, method_name,
     dt_headers = ExternalTrace.generate_request_headers(transaction)
 
     @validate_transaction_metrics(
-        'sample_application:SampleApplicationServicer.' + method_name,
+        f"sample_application:SampleApplicationServicer.{method_name}",
         rollup_metrics=(
             ('Supportability/TraceContext/Accept/Success', 1),
         ),
@@ -84,7 +84,7 @@ def test_outbound_distributed_trace(
     request_type, response_type = method_type.split('_', 1)
     streaming_request = request_type == 'stream'
     streaming_response = response_type == 'stream'
-    stub_method = 'DtNoTxn' + method_type.title().replace('_', '')
+    stub_method = f"DtNoTxn{method_type.title().replace('_', '')}"
 
     request = create_request(streaming_request)
 
@@ -96,8 +96,7 @@ def test_outbound_distributed_trace(
         'span.kind': 'client',
     }
 
-    txn_name = 'test_outbound_DT[{0}-{1}-{2}-{3}]'.format(
-            method_type, method_name, dt_enabled, dt_error)
+    txn_name = f'test_outbound_DT[{method_type}-{method_name}-{dt_enabled}-{dt_error}]'
     settings = {'distributed_tracing.enabled': dt_enabled}
     span_count = 1 if dt_enabled else 0
     if dt_error:
@@ -162,7 +161,7 @@ def test_outbound_payload_outside_transaction(
     request_type, response_type = method_type.split('_', 1)
     streaming_request = request_type == 'stream'
     streaming_response = response_type == 'stream'
-    stub_method = 'DtNoTxn' + method_type.title().replace('_', '')
+    stub_method = f"DtNoTxn{method_type.title().replace('_', '')}"
 
     request = create_request(streaming_request)
 

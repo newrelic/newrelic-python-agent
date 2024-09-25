@@ -67,7 +67,7 @@ def _wrap_method_trace(module, class_, method, name=None, group=None):
         if settings and not settings.machine_learning.enabled:
             return wrapped(*args, **kwargs)
 
-        wrapped_attr_name = "_nr_wrapped_%s" % method
+        wrapped_attr_name = f"_nr_wrapped_{method}"
 
         # If the method has already been wrapped do not wrap it again. This happens
         # when one class inherits from another and they both implement the method.
@@ -99,7 +99,7 @@ def _wrap_method_trace(module, class_, method, name=None, group=None):
             return PredictReturnTypeProxy(return_val, model_name=class_, training_step=training_step)
         return return_val
 
-    wrap_function_wrapper(module, "%s.%s" % (class_, method), _nr_wrapper_method)
+    wrap_function_wrapper(module, f"{class_}.{method}", _nr_wrapper_method)
 
 
 def _calc_prediction_feature_stats(prediction_input, class_, feature_column_names, tags):
@@ -145,18 +145,18 @@ def _record_stats(data, column_names, class_, column_type, tags):
     # to upload them one at a time instead of as a dictionary of stats per
     # feature column.
     for index, col_name in enumerate(column_names):
-        metric_name = "MLModel/Sklearn/Named/%s/Predict/%s/%s" % (class_, column_type, col_name)
+        metric_name = f"MLModel/Sklearn/Named/{class_}/Predict/{column_type}/{col_name}"
 
         transaction.record_dimensional_metrics(
             [
-                ("%s/%s" % (metric_name, "Mean"), float(mean[index]), tags),
-                ("%s/%s" % (metric_name, "Percentile25"), float(percentile25[index]), tags),
-                ("%s/%s" % (metric_name, "Percentile50"), float(percentile50[index]), tags),
-                ("%s/%s" % (metric_name, "Percentile75"), float(percentile75[index]), tags),
-                ("%s/%s" % (metric_name, "StandardDeviation"), float(standard_deviation[index]), tags),
-                ("%s/%s" % (metric_name, "Min"), float(_min[index]), tags),
-                ("%s/%s" % (metric_name, "Max"), float(_max[index]), tags),
-                ("%s/%s" % (metric_name, "Count"), _count, tags),
+                (f"{metric_name}/Mean", float(mean[index]), tags),
+                (f"{metric_name}/Percentile25", float(percentile25[index]), tags),
+                (f"{metric_name}/Percentile50", float(percentile50[index]), tags),
+                (f"{metric_name}/Percentile75", float(percentile75[index]), tags),
+                (f"{metric_name}/StandardDeviation", float(standard_deviation[index]), tags),
+                (f"{metric_name}/Min", float(_min[index]), tags),
+                (f"{metric_name}/Max", float(_max[index]), tags),
+                (f"{metric_name}/Count", _count, tags),
             ]
         )
 
@@ -302,13 +302,13 @@ def create_prediction_event(transaction, class_, instance, args, kwargs, return_
         if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:
             event.update(
                 {
-                    "feature.%s" % str(final_feature_names[feature_col_index]): value
+                    f"feature.{str(final_feature_names[feature_col_index])}": value
                     for feature_col_index, value in enumerate(prediction)
                 }
             )
             event.update(
                 {
-                    "label.%s" % str(label_names_list[index]): str(value)
+                    f"label.{str(label_names_list[index])}": str(value)
                     for index, value in enumerate(labels[prediction_index])
                 }
             )
@@ -319,7 +319,7 @@ def _nr_instrument_model(module, model_class):
     for method_name in METHODS_TO_WRAP:
         if hasattr(getattr(module, model_class), method_name):
             # Function/MLModel/Sklearn/Named/<class name>.<method name>
-            name = "MLModel/Sklearn/Named/%s.%s" % (model_class, method_name)
+            name = f"MLModel/Sklearn/Named/{model_class}.{method_name}"
             _wrap_method_trace(module, model_class, method_name, name=name)
 
 
@@ -359,10 +359,10 @@ def wrap_metric_scorer(wrapped, instance, args, kwargs):
         if hasattr(score, "__iter__"):
             for i, s in enumerate(score):
                 transaction._add_agent_attribute(
-                    "%s/TrainingStep/%s/%s[%s]" % (model_name, training_step, wrapped.__name__, i), s
+                    f"{model_name}/TrainingStep/{training_step}/{wrapped.__name__}[{i}]", s
                 )
     else:
-        transaction._add_agent_attribute("%s/TrainingStep/%s/%s" % (model_name, training_step, wrapped.__name__), score)
+        transaction._add_agent_attribute(f"{model_name}/TrainingStep/{training_step}/{wrapped.__name__}", score)
     return score
 
 

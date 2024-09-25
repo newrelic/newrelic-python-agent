@@ -36,7 +36,7 @@ def validate_apdex_metrics(name, group='Function', count=1,
             return result
 
         def _validate():
-            metric_name = 'Apdex/%s/%s' % (group, name)
+            metric_name = f'Apdex/{group}/{name}'
             key = (metric_name, '')
 
             metric = recorded_metrics.get(key)

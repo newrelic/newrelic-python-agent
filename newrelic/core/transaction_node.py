@@ -186,7 +186,7 @@ class TransactionNode(_TransactionNode):
         # Generate the rollup metric.
 
         if self.type != "WebTransaction":
-            rollup = "%s/all" % self.type
+            rollup = f"{self.type}/all"
         else:
             rollup = self.type
 
@@ -202,7 +202,7 @@ class TransactionNode(_TransactionNode):
             metric_suffix = "Other"
 
         yield TimeMetric(
-            name="%s/%s" % (metric_prefix, self.name_for_metric),
+            name=f"{metric_prefix}/{self.name_for_metric}",
             scope="",
             duration=self.total_time,
             exclusive=self.total_time,
@@ -213,16 +213,11 @@ class TransactionNode(_TransactionNode):
         # Generate Distributed Tracing metrics
 
         if self.settings.distributed_tracing.enabled:
-            dt_tag = "%s/%s/%s/%s/all" % (
-                self.parent_type or "Unknown",
-                self.parent_account or "Unknown",
-                self.parent_app or "Unknown",
-                self.parent_transport_type or "Unknown",
-            )
+            dt_tag = f"{self.parent_type or 'Unknown'}/{self.parent_account or 'Unknown'}/{self.parent_app or 'Unknown'}/{self.parent_transport_type or 'Unknown'}/all"
 
             for bonus_tag in ("", metric_suffix):
                 yield TimeMetric(
-                    name="DurationByCaller/%s%s" % (dt_tag, bonus_tag),
+                    name=f"DurationByCaller/{dt_tag}{bonus_tag}",
                     scope="",
                     duration=self.duration,
                     exclusive=self.duration,
@@ -230,7 +225,7 @@ class TransactionNode(_TransactionNode):
 
                 if self.parent_transport_duration is not None:
                     yield TimeMetric(
-                        name="TransportDuration/%s%s" % (dt_tag, bonus_tag),
+                        name=f"TransportDuration/{dt_tag}{bonus_tag}",
                         scope="",
                         duration=self.parent_transport_duration,
                         exclusive=self.parent_transport_duration,
@@ -238,7 +233,7 @@ class TransactionNode(_TransactionNode):
 
                 if self.errors:
                     yield TimeMetric(
-                        name="ErrorsByCaller/%s%s" % (dt_tag, bonus_tag), scope="", duration=0.0, exclusive=None
+                        name=f"ErrorsByCaller/{dt_tag}{bonus_tag}", scope="", duration=0.0, exclusive=None
                     )
 
         # Generate Error metrics
@@ -249,10 +244,10 @@ class TransactionNode(_TransactionNode):
                 yield TimeMetric(name="Errors/all", scope="", duration=0.0, exclusive=None)
 
                 # Generate individual error metric for transaction.
-                yield TimeMetric(name="Errors/%s" % self.path, scope="", duration=0.0, exclusive=None)
+                yield TimeMetric(name=f"Errors/{self.path}", scope="", duration=0.0, exclusive=None)
 
                 # Generate rollup metric for WebTransaction errors.
-                yield TimeMetric(name="Errors/all%s" % metric_suffix, scope="", duration=0.0, exclusive=None)
+                yield TimeMetric(name=f"Errors/all{metric_suffix}", scope="", duration=0.0, exclusive=None)
             else:
                 yield TimeMetric(name="ErrorsExpected/all", scope="", duration=0.0, exclusive=None)
 
@@ -297,7 +292,7 @@ class TransactionNode(_TransactionNode):
         # Generate the full apdex metric.
 
         yield ApdexMetric(
-            name="Apdex/%s" % self.name_for_metric,
+            name=f"Apdex/{self.name_for_metric}",
             satisfying=satisfying,
             tolerating=tolerating,
             frustrating=frustrating,
@@ -598,7 +593,7 @@ class TransactionNode(_TransactionNode):
                 # Add all synthetics attributes
                 for k, v in self.synthetics_attributes.items():
                     if k:
-                        intrinsics["nr.synthetics%s" % camel_case(k, upper=True)] = v
+                        intrinsics[f"nr.synthetics{camel_case(k, upper=True)}"] = v
 
         def _add_call_time(source, target):
             # include time for keys previously added to stats table via

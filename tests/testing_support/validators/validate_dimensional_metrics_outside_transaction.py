@@ -54,17 +54,17 @@ def validate_dimensional_metrics_outside_transaction(dimensional_metrics=None):
 
             def _metrics_table():
                 out = [""]
-                out.append("Expected: {0}: {1}".format(key, count))
+                out.append(f"Expected: {key}: {count}")
                 for metric_key, metric_container in metrics.items():
                     if isinstance(metric_container, dict):
                         for metric_tags, metric_value in metric_container.items():
-                            out.append("{0}: {1}".format((metric_key, metric_tags), metric_value[0]))
+                            out.append(f"{metric_key, metric_tags}: {metric_value[0]}")
                     else:
-                        out.append("{0}: {1}".format(metric_key, metric_container[0]))
+                        out.append(f"{metric_key}: {metric_container[0]}")
                 return "\n".join(out)
 
             def _metric_details():
-                return "metric=%r, count=%r" % (key, metric.call_count)
+                return f"metric={key!r}, count={metric.call_count!r}"
 
             if count is not None:
                 assert metric is not None, _metrics_table()

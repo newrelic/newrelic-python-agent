@@ -33,20 +33,20 @@ AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION_NAME = "us-west-2"
 
-TEST_BUCKET = "python-agent-test-%s" % uuid.uuid4()
+TEST_BUCKET = f"python-agent-test-{uuid.uuid4()}"
 
 if BOTOCORE_VERSION < (1, 7, 41):
     S3_URL = "s3-us-west-2.amazonaws.com"
-    EXPECTED_BUCKET_URL = "https://%s/%s" % (S3_URL, TEST_BUCKET)
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/hello_world"
+    EXPECTED_BUCKET_URL = f"https://{S3_URL}/{TEST_BUCKET}"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}/hello_world"
 elif BOTOCORE_VERSION < (1, 28):
     S3_URL = "s3.us-west-2.amazonaws.com"
-    EXPECTED_BUCKET_URL = "https://%s/%s" % (S3_URL, TEST_BUCKET)
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/hello_world"
+    EXPECTED_BUCKET_URL = f"https://{S3_URL}/{TEST_BUCKET}"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}/hello_world"
 else:
-    S3_URL = "%s.s3.us-west-2.amazonaws.com" % TEST_BUCKET
-    EXPECTED_BUCKET_URL = "https://%s/" % S3_URL
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "hello_world"
+    S3_URL = f"{TEST_BUCKET}.s3.us-west-2.amazonaws.com"
+    EXPECTED_BUCKET_URL = f"https://{S3_URL}/"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}hello_world"
 
 
 @dt_enabled
@@ -55,13 +55,13 @@ else:
 @validate_transaction_metrics(
     "test_s3transfer:test_s3_context_propagation",
     scoped_metrics=[
-        ("External/%s/botocore/PUT" % S3_URL, 2),
+        (f"External/{S3_URL}/botocore/PUT", 2),
     ],
     rollup_metrics=[
         ("External/all", 2),
         ("External/allOther", 2),
-        ("External/%s/all" % S3_URL, 2),
-        ("External/%s/botocore/PUT" % S3_URL, 2),
+        (f"External/{S3_URL}/all", 2),
+        (f"External/{S3_URL}/botocore/PUT", 2),
     ],
     background_task=True,
 )

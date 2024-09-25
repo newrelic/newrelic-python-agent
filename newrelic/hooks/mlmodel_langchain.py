@@ -268,7 +268,7 @@ def _record_vector_search_success(transaction, linking_metadata, ft, search_id, 
         page_content = getattr(doc, "page_content")
         metadata = getattr(doc, "metadata") or {}
 
-        metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+        metadata_dict = {f"metadata.{key}": value for key, value in metadata.items()}
 
         llm_vector_search_result = {
             "id": str(uuid.uuid4()),
@@ -433,7 +433,7 @@ def _record_tool_success(
     # Update tags and metadata previously obtained from run_args with instance values
     metadata.update(getattr(instance, "metadata", None) or {})
     tags.extend(getattr(instance, "tags", None) or [])
-    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
+    full_tool_event_dict = {f"metadata.{key}": value for key, value in metadata.items() if key != "nr_tool_id"}
     full_tool_event_dict.update(
         {
             "id": tool_id,
@@ -453,7 +453,7 @@ def _record_tool_success(
         result = str(response)
     except Exception:
         _logger.debug(
-            "Failed to convert tool response into a string.\n%s" % traceback.format_exception(*sys.exc_info())
+            f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}"
         )
     if settings.ai_monitoring.record_content.enabled:
         full_tool_event_dict.update(
@@ -482,7 +482,7 @@ def _record_tool_error(
     tags.extend(getattr(instance, "tags", None) or [])
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
+    error_tool_event_dict = {f"metadata.{key}": value for key, value in metadata.items() if key != "nr_tool_id"}
     error_tool_event_dict.update(
         {
             "id": tool_id,
@@ -663,7 +663,7 @@ def _create_error_chain_run_events(transaction, instance, run_args, completion_i
     input_message_list = [_input]
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_chat_completion_summary_dict = {f"metadata.{key}": value for key, value in metadata.items()}
     full_chat_completion_summary_dict.update(
         {
             "id": completion_id,
@@ -734,12 +734,11 @@ def _create_successful_chain_run_events(
             output_message_list = [str(response)]
         except Exception as e:
             _logger.warning(
-                "Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n%s"
-                % traceback.format_exception(*sys.exc_info())
+                f"Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n{traceback.format_exception(*sys.exc_info())}"
             )
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_chat_completion_summary_dict = {f"metadata.{key}": value for key, value in metadata.items()}
     full_chat_completion_summary_dict.update(
         {
             "id": completion_id,
@@ -882,9 +881,9 @@ def instrument_langchain_chains_base(module):
 def instrument_langchain_vectorstore_similarity_search(module):
     def _instrument_class(module, vector_class):
         if hasattr(getattr(module, vector_class, ""), "similarity_search"):
-            wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
+            wrap_function_wrapper(module, f"{vector_class}.similarity_search", wrap_similarity_search)
         if hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
-            wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)
+            wrap_function_wrapper(module, f"{vector_class}.asimilarity_search", wrap_asimilarity_search)
 
     vector_classes = VECTORSTORE_CLASSES.get(module.__name__)
     if vector_classes is None:

@@ -34,7 +34,7 @@ def _wrap_Aredis_method_wrapper_(module, instance_class_name, operation):
         with DatastoreTrace(product="Redis", target=None, operation=operation):
             return await wrapped(*args, **kwargs)
 
-    name = "%s.%s" % (instance_class_name, operation)
+    name = f"{instance_class_name}.{operation}"
     wrap_function_wrapper(module, name, _nr_wrapper_Aredis_method_)
 
 
@@ -80,7 +80,7 @@ async def wrap_Connection_send_command(wrapped, instance, args, kwargs):
     # Convert multi args to single arg string
 
     if operation in _redis_multipart_commands and len(args) > 1:
-        operation = "%s %s" % (operation, args[1].strip().lower())
+        operation = f"{operation} {args[1].strip().lower()}"
 
     operation = _redis_operation_re.sub("_", operation)
 

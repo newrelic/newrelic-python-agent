@@ -51,8 +51,8 @@ def exercise_query(collection):
 
 def test_firestore_query(exercise_query, collection, instance_info):
     _test_scoped_metrics = [
-        ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
+        (f"Datastore/statement/Firestore/{collection.id}/stream", 1),
+        (f"Datastore/statement/Firestore/{collection.id}/get", 1),
     ]
 
     _test_rollup_metrics = [
@@ -60,7 +60,7 @@ def test_firestore_query(exercise_query, collection, instance_info):
         ("Datastore/operation/Firestore/stream", 1),
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 2),
     ]
 
     @validate_database_duration()
@@ -107,8 +107,8 @@ def exercise_aggregation_query(collection):
 
 def test_firestore_aggregation_query(exercise_aggregation_query, collection, instance_info):
     _test_scoped_metrics = [
-        ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
+        (f"Datastore/statement/Firestore/{collection.id}/stream", 1),
+        (f"Datastore/statement/Firestore/{collection.id}/get", 1),
     ]
 
     _test_rollup_metrics = [
@@ -116,7 +116,7 @@ def test_firestore_aggregation_query(exercise_aggregation_query, collection, ins
         ("Datastore/operation/Firestore/stream", 1),
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 2),
     ]
 
     @validate_database_duration()
@@ -193,9 +193,9 @@ def exercise_collection_group(client, collection, patch_partition_queries):
 
 def test_firestore_collection_group(exercise_collection_group, client, collection, instance_info):
     _test_scoped_metrics = [
-        ("Datastore/statement/Firestore/%s/get" % collection.id, 3),
-        ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/get_partitions" % collection.id, 1),
+        (f"Datastore/statement/Firestore/{collection.id}/get", 3),
+        (f"Datastore/statement/Firestore/{collection.id}/stream", 1),
+        (f"Datastore/statement/Firestore/{collection.id}/get_partitions", 1),
     ]
 
     _test_rollup_metrics = [
@@ -204,7 +204,7 @@ def test_firestore_collection_group(exercise_collection_group, client, collectio
         ("Datastore/operation/Firestore/get_partitions", 1),
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 5),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 5),
     ]
 
     @validate_database_duration()

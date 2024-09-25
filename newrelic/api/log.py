@@ -26,7 +26,6 @@ from newrelic.common.encoding_utils import json_encode
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error
-from newrelic.packages import six
 
 
 def safe_json_encode(obj, ignore_string_types=False, **kwargs):
@@ -34,7 +33,7 @@ def safe_json_encode(obj, ignore_string_types=False, **kwargs):
     # If ignore_string_types is True, do not encode string types further.
     # Currently used for safely encoding logging attributes.
 
-    if ignore_string_types and isinstance(obj, (six.string_types, six.binary_type)):
+    if ignore_string_types and isinstance(obj, (str, bytes)):
         return obj
 
     # Attempt to run through JSON serialization
@@ -48,7 +47,7 @@ def safe_json_encode(obj, ignore_string_types=False, **kwargs):
         return repr(obj)
     except Exception:
         # If repr fails then default to an unprinatable object name
-        return "<unprintable %s object>" % type(obj).__name__
+        return f"<unprintable {type(obj).__name__} object>"
 
 
 class NewRelicContextFormatter(logging.Formatter):
@@ -116,7 +115,7 @@ class NewRelicContextFormatter(logging.Formatter):
         # add them to the output record.
         keys_to_add = set(record.__dict__.keys()) - DEFAULT_LOG_RECORD_KEYS
         for key in keys_to_add:
-            output["extra." + key] = getattr(record, key)
+            output[f"extra.{key}"] = getattr(record, key)
 
         if record.exc_info:
             output.update(cls.format_exc_info(record.exc_info, stack_trace_limit))
@@ -157,7 +156,7 @@ class NewRelicLogForwardingHandler(logging.Handler):
                 level_name = str(getattr(record, "levelname", "UNKNOWN"))
                 if settings.application_logging.metrics.enabled:
                     nr.record_custom_metric("Logging/lines", {"count": 1})
-                    nr.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                    nr.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
 
                 if settings.application_logging.forwarding.enabled:
                     if self.formatter:
@@ -252,16 +251,7 @@ class NewRelicLogHandler(logging.Handler):
                 status_code, response = self.client.send_request(path=self.PATH, headers=headers, payload=payload)
                 if status_code < 200 or status_code >= 300:
                     raise RuntimeError(
-                        "An unexpected HTTP response of %r was received for request made to https://%s:%d%s."
-                        "The response payload for the request was %r. If this issue persists then please "
-                        "report this problem to New Relic support for further investigation."
-                        % (
-                            status_code,
-                            self.client._host,
-                            self.client._port,
-                            self.PATH,
-                            truncate(response.decode("utf-8"), 1024),
-                        )
+                        f"An unexpected HTTP response of {status_code!r} was received for request made to https://{self.client._host}:{int(self.client._port)}{self.PATH}.The response payload for the request was {truncate(response.decode('utf-8'), 1024)!r}. If this issue persists then please report this problem to New Relic support for further investigation."
                     )
 
         except Exception:
@@ -276,5 +266,5 @@ class NewRelicLogHandler(logging.Handler):
             return "log-api.newrelic.com"
 
         region = region_aware_match.group(1)
-        host = "log-api." + region + ".newrelic.com"
+        host = f"log-api.{region}.newrelic.com"
         return host

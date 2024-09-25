@@ -34,7 +34,7 @@ AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec (This is fine for testing pur
 AWS_REGION = "us-east-1"
 UBUNTU_14_04_PARAVIRTUAL_AMI = "ami-c65be9ae"
 
-TEST_INSTANCE = "python-agent-test-%s" % uuid.uuid4()
+TEST_INSTANCE = f"python-agent-test-{uuid.uuid4()}"
 
 _ec2_scoped_metrics = [
     ("External/ec2.us-east-1.amazonaws.com/botocore/POST", 3),

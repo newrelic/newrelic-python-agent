@@ -24,7 +24,7 @@ def crc(b):
 
 def int_to_escaped_bytes(i, num_bytes=1):
     """Convert an integer into an arbitrary number of bytes."""
-    return bytes.fromhex(("{:0" + str(num_bytes * 2) + "x}").format(i))
+    return bytes.fromhex(f"{{:0{str(num_bytes * 2)}x}}".format(i))
 
 
 def encode_headers(headers):
@@ -32,7 +32,7 @@ def encode_headers(headers):
     new_headers = []
     for h, v in headers.items():
         if not h.startswith(":"):
-            h = ":%s" % h
+            h = f":{h}"
         h = h.encode("utf-8")
         v = v.encode("utf-8")
         new_headers.append(b"".join((int_to_escaped_bytes(len(h)), h, b"\x07\x00", int_to_escaped_bytes(len(v)), v)))

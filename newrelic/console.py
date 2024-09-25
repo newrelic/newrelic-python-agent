@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 import atexit
+import builtins
 import cmd
 import code
+import configparser
 import functools
 import glob
 import inspect
@@ -29,47 +29,8 @@ import threading
 import time
 import traceback
 
-try:
-    import ConfigParser
-except ImportError:
-    import configparser as ConfigParser
-
-try:
-    import __builtin__
-except ImportError:
-    import builtins as __builtin__
-
-
-def _argspec_py2(func):
-    return inspect.getargspec(func)
-
-
-def _argspec_py3(func):
-    a = inspect.getfullargspec(func)
-    return (a.args, a.varargs, a.varkw, a.defaults)
-
-
-if hasattr(inspect, "getfullargspec"):
-    _argspec = _argspec_py3
-else:
-    _argspec = _argspec_py2
-
-try:
-    from collections import OrderedDict
-    from inspect import signature
-
-    def doc_signature(func):
-        sig = signature(func)
-        sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
-        return str(sig)
-
-
-except ImportError:
-    from inspect import formatargspec
-
-    def doc_signature(func):
-        args, varargs, keywords, defaults = _argspec(func)
-        return formatargspec(args[1:], varargs, keywords, defaults)
+from collections import OrderedDict
+from inspect import signature
 
 
 from newrelic.common.object_wrapper import ObjectProxy
@@ -77,15 +38,22 @@ from newrelic.core.agent import agent_instance
 from newrelic.core.config import flatten_settings, global_settings
 from newrelic.core.trace_cache import trace_cache
 
+
+def doc_signature(func):
+    sig = signature(func)
+    sig._parameters = OrderedDict(list(sig._parameters.items())[1:])
+    return str(sig)
+
+
 _trace_cache = trace_cache()
 
 
 def shell_command(wrapped):
-    args, varargs, keywords, defaults = _argspec(wrapped)
+    args = inspect.getfullargspec(wrapped).args
 
     parser = optparse.OptionParser()
     for name in args[1:]:
-        parser.add_option("--%s" % name, dest=name)
+        parser.add_option(f"--{name}", dest=name)
 
     @functools.wraps(wrapped)
     def wrapper(self, line):
@@ -101,10 +69,10 @@ def shell_command(wrapped):
         return wrapped(self, *args, **kwargs)
 
     if wrapper.__name__.startswith("do_"):
-        prototype = wrapper.__name__[3:] + " " + doc_signature(wrapped)
+        prototype = f"{wrapper.__name__[3:]} {doc_signature(wrapped)}"
 
         if hasattr(wrapper, "__doc__") and wrapper.__doc__ is not None:
-            wrapper.__doc__ = "\n".join((prototype, wrapper.__doc__.lstrip("\n")))
+            wrapper.__doc__ = "\n".join((prototype, wrapper.__doc__.lstrip('\n')))  # noqa: flynt
 
     return wrapper
 
@@ -132,12 +100,12 @@ def setquit():
     else:
         eof = "Ctrl-D (i.e. EOF)"
 
-    class Quitter(object):
+    class Quitter():
         def __init__(self, name):
             self.name = name
 
         def __repr__(self):
-            return "Use %s() or %s to exit" % (self.name, eof)
+            return f"Use {self.name}() or {eof} to exit"
 
         def __call__(self, code=None):
             # If executed with our interactive console, only raise the
@@ -156,8 +124,8 @@ def setquit():
                 pass
             raise SystemExit(code)
 
-    __builtin__.quit = Quitter("quit")
-    __builtin__.exit = Quitter("exit")
+    builtins.quit = Quitter("quit")
+    builtins.exit = Quitter("exit")
 
 
 class OutputWrapper(ObjectProxy):
@@ -227,7 +195,7 @@ class ConsoleShell(cmd.Cmd):
         Enable or disable the console prompt."""
 
         if flag == "on":
-            self.prompt = "(newrelic:%d) " % os.getpid()
+            self.prompt = f"(newrelic:{os.getpid()}) "
         elif flag == "off":
             self.prompt = ""
 
@@ -267,7 +235,7 @@ class ConsoleShell(cmd.Cmd):
         for name, module in sorted(sys.modules.items()):
             if module is not None:
                 file = getattr(module, "__file__", None)
-                print("%s - %s" % (name, file), file=self.stdout)
+                print(f"{name} - {file}", file=self.stdout)
 
     @shell_command
     def do_sys_meta_path(self):
@@ -282,7 +250,7 @@ class ConsoleShell(cmd.Cmd):
         Displays the set of user environment variables."""
 
         for key, name in os.environ.items():
-            print("%s = %r" % (key, name), file=self.stdout)
+            print(f"{key} = {name!r}", file=self.stdout)
 
     @shell_command
     def do_current_time(self):
@@ -326,7 +294,7 @@ class ConsoleShell(cmd.Cmd):
             config = flatten_settings(config)
             keys = sorted(config.keys())
             for key in keys:
-                print("%s = %r" % (key, config[key]), file=self.stdout)
+                print(f"{key} = {config[key]!r}", file=self.stdout)
 
     @shell_command
     def do_agent_status(self):
@@ -376,13 +344,13 @@ class ConsoleShell(cmd.Cmd):
             result = results[key]
             if result is None:
                 if key[0] not in sys.modules:
-                    print("%s: PENDING" % (key,), file=self.stdout)
+                    print(f"{key}: PENDING", file=self.stdout)
                 else:
-                    print("%s: IMPORTED" % (key,), file=self.stdout)
+                    print(f"{key}: IMPORTED", file=self.stdout)
             elif not result:
-                print("%s: INSTRUMENTED" % (key,), file=self.stdout)
+                print(f"{key}: INSTRUMENTED", file=self.stdout)
             else:
-                print("%s: FAILED" % (key,), file=self.stdout)
+                print(f"{key}: FAILED", file=self.stdout)
                 for line in result:
                     print(line, end="", file=self.stdout)
 
@@ -444,21 +412,21 @@ class ConsoleShell(cmd.Cmd):
         all = []
         for threadId, stack in sys._current_frames().items():
             block = []
-            block.append("# ThreadID: %s" % threadId)
+            block.append(f"# ThreadID: {threadId}")
             thr = threading._active.get(threadId)
             if thr:
-                block.append("# Type: %s" % type(thr).__name__)
-                block.append("# Name: %s" % thr.name)
+                block.append(f"# Type: {type(thr).__name__}")
+                block.append(f"# Name: {thr.name}")
             for filename, lineno, name, line in traceback.extract_stack(stack):
-                block.append("File: '%s', line %d, in %s" % (filename, lineno, name))
+                block.append(f"File: '{filename}', line {int(lineno)}, in {name}")
                 if line:
-                    block.append("  %s" % (line.strip()))
+                    block.append(f"  {line.strip()}")
             all.append("\n".join(block))
 
         print("\n\n".join(all), file=self.stdout)
 
 
-class ConnectionManager(object):
+class ConnectionManager():
     def __init__(self, listener_socket):
         self.__listener_socket = listener_socket
         self.__console_initialized = False
@@ -540,11 +508,11 @@ class ClientShell(cmd.Cmd):
         cmd.Cmd.__init__(self, stdin=stdin, stdout=stdout)
 
         self.__config_file = config_file
-        self.__config_object = ConfigParser.RawConfigParser()
+        self.__config_object = configparser.RawConfigParser()
         self.__log_object = log
 
         if not self.__config_object.read([config_file]):
-            raise RuntimeError("Unable to open configuration file %s." % config_file)
+            raise RuntimeError(f"Unable to open configuration file {config_file}.")
 
         listener_socket = self.__config_object.get("newrelic", "console.listener_socket") % {"pid": "*"}
 
@@ -577,7 +545,7 @@ class ClientShell(cmd.Cmd):
         Display a list of the servers which can be connected to."""
 
         for i in range(len(self.__servers)):
-            print("%s: %s" % (i + 1, self.__servers[i]), file=self.stdout)
+            print(f"{i + 1}: {self.__servers[i]}", file=self.stdout)
 
     def do_connect(self, line):
         """connect [index]

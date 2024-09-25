@@ -33,7 +33,7 @@ MOTO_VERSION = get_package_version_tuple("moto")
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec (This is fine for testing purposes)
 
-TEST_USER = "python-agent-test-%s" % uuid.uuid4()
+TEST_USER = f"python-agent-test-{uuid.uuid4()}"
 
 _iam_scoped_metrics = [
     ("External/iam.amazonaws.com/botocore/POST", 3),

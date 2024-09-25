@@ -116,8 +116,7 @@ def set_llm_token_count_callback(callback, application=None):
 
         if not isinstance(token_count_val, int) or token_count_val < 0:
             _logger.warning(
-                "llm_token_count_callback returned an invalid value of %s. This value must be a positive integer and will not be recorded for the token_count."
-                % token_count_val
+                f"llm_token_count_callback returned an invalid value of {token_count_val}. This value must be a positive integer and will not be recorded for the token_count."
             )
             return None
 

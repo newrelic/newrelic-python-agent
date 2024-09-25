@@ -32,7 +32,7 @@ def attribute_to_value(attribute):
     elif attribute_type == "string_value":
         return str(attribute_value)
     else:
-        raise TypeError("Invalid attribute type: %s" % attribute_type)
+        raise TypeError(f"Invalid attribute type: {attribute_type}")
 
 
 def payload_to_ml_events(payload):
@@ -105,10 +105,10 @@ def validate_ml_event_payload(ml_events=None):
         all_inference_logs = normalize_logs(decoded_inference_payloads)
 
         for expected_event in ml_events.get("inference", []):
-            assert expected_event in all_inference_logs, "%s Not Found. Got: %s" % (expected_event, all_inference_logs)
+            assert expected_event in all_inference_logs, f"{expected_event} Not Found. Got: {all_inference_logs}"
 
         for expected_event in ml_events.get("apm", []):
-            assert expected_event in all_apm_logs, "%s Not Found. Got: %s" % (expected_event, all_apm_logs)
+            assert expected_event in all_apm_logs, f"{expected_event} Not Found. Got: {all_apm_logs}"
         return val
 
     return _validate_wrapper
@@ -119,7 +119,7 @@ def normalize_logs(decoded_payloads):
     for sent_logs in decoded_payloads:
         for data_point in sent_logs:
             for key in ("time_unix_nano",):
-                assert key in data_point, "Invalid log format. Missing key: %s" % key
+                assert key in data_point, f"Invalid log format. Missing key: {key}"
                 all_logs.append(
                     {attr["key"]: attribute_to_value(attr["value"]) for attr in (data_point.get("attributes") or [])}
                 )

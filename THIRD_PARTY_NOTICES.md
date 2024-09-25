@@ -35,15 +35,6 @@ Distributed under the following license(s):
 * [The Apache License, Version 2.0 License](https://opensource.org/license/apache-2-0/)
 
 
-## [six](https://pypi.org/project/six)
-
-Copyright (c) 2010-2013 Benjamin Peterson
-
-Distributed under the following license(s):
-
-* [The MIT License](http://opensource.org/licenses/MIT)
-
-
 ## [time.monotonic](newrelic/common/_monotonic.c)
 
 Copyright (c) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013 Python Software Foundation; All Rights Reserved

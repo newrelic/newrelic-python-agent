@@ -22,7 +22,6 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
 )
 from testing_support.mock_external_grpc_server import MockExternalgRPCServer
 
-import newrelic.packages.six as six
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -56,29 +55,6 @@ def mock_grpc_server(grpc_app_server):
     return port
 
 
-@pytest.fixture(scope="function", autouse=True)
-def gc_garbage_empty():
-    yield
-
-    # Python 2 fails to collect objects with finalizers that participate in a reference cycle.
-    # These assertions are made with that assumption in mind.
-    # If there's a failure on py2, it's applicable to py3 as well.
-    # If PY3 has a reference cycle (which it shouldn't), but PY2 does not, it will be GCed
-    if six.PY2:
-        # garbage collect until everything is reachable
-        while gc.collect():
-            pass
-
-        from grpc._channel import _Rendezvous
-
-        rendezvous_stored = sum(1 for o in gc.get_objects() if hasattr(o, "__class__") and isinstance(o, _Rendezvous))
-
-        assert rendezvous_stored == 0
-
-        # make sure that even python knows there isn't any garbage remaining
-        assert not gc.garbage
-
-
 @pytest.fixture(scope="session")
 def stub(stub_and_channel):
     return stub_and_channel[0]
@@ -95,6 +71,6 @@ def stub_and_channel(mock_grpc_server):
 def create_stub_and_channel(port):
     from sample_application import SampleApplicationStub
 
-    channel = grpc.insecure_channel("localhost:%s" % port)
+    channel = grpc.insecure_channel(f"localhost:{port}")
     stub = SampleApplicationStub(channel)
     return stub, channel

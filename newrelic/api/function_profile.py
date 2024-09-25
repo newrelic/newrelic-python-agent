@@ -20,7 +20,7 @@ import time
 
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
-class FunctionProfile(object):
+class FunctionProfile():
 
     def __init__(self, profile):
         self.profile = profile
@@ -33,7 +33,7 @@ class FunctionProfile(object):
         self.profile.disable()
         pass
 
-class FunctionProfileSession(object):
+class FunctionProfileSession():
 
     def __init__(self, filename, delay=1.0, checkpoint=30):
         self.filename = filename % { 'pid': os.getpid() }

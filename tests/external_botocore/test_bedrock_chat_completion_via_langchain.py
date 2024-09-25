@@ -114,7 +114,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )

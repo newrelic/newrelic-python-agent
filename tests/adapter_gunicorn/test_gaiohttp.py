@@ -36,7 +36,7 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
     # Restart the server if it dies during testing
     for _ in range(5):
         PORT = get_open_port()
-        cmd = [gunicorn, '-b', '127.0.0.1:%d' % PORT, '-k', 'gaiohttp',
+        cmd = [gunicorn, '-b', f'127.0.0.1:{PORT}', '-k', 'gaiohttp',
                 'app:application']
 
         if nr_enabled:
@@ -69,7 +69,7 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
             else:
                 continue
 
-            with urlopen('http://127.0.0.1:%d' % PORT) as resp:
+            with urlopen(f'http://127.0.0.1:{PORT}') as resp:
                 assert resp.getcode() == 200
                 assert resp.read() == b'PONG'
 

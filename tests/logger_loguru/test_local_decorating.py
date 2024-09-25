@@ -14,15 +14,16 @@
 
 import platform
 
-from newrelic.api.application import application_settings
-from newrelic.api.background_task import background_task
-from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import (
     validate_log_event_count_outside_transaction,
 )
+
+from newrelic.api.application import application_settings
+from newrelic.api.background_task import background_task
+from newrelic.api.time_trace import current_trace
+from newrelic.api.transaction import current_transaction
 
 
 def set_trace_ids():

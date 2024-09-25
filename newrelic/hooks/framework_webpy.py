@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import newrelic.packages.six as six
 
 import newrelic.api.transaction
 import newrelic.api.function_trace
@@ -27,7 +26,7 @@ from newrelic.api.time_trace import notice_error
 def transaction_name_delegate(*args, **kwargs):
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:
-        if isinstance(args[1], six.string_types):
+        if isinstance(args[1], str):
             f = args[1]
         else:
             f = callable_name(args[1])

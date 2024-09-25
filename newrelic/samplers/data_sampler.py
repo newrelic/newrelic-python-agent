@@ -23,7 +23,7 @@ from newrelic.common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
 
-class DataSampler(object):
+class DataSampler():
 
     def __init__(self, consumer, source, name, settings, **properties):
         self.consumer = consumer
@@ -93,7 +93,7 @@ class DataSampler(object):
             return []
 
         if self.group:
-            return (('%s/%s' % (self.group, key), value)
+            return ((f'{self.group}/{key}', value)
                     for key, value in self.instance())
         else:
             return self.instance()

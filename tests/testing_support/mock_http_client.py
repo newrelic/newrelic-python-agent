@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import newrelic.packages.urllib3 as urllib3
+from urllib.parse import urlencode
 
-try:
-    from urllib import urlencode
-except ImportError:
-    from urllib.parse import urlencode
+import newrelic.packages.urllib3 as urllib3
 
 from newrelic.common.agent_http import BaseClient
 

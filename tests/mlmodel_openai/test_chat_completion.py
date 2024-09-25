@@ -136,7 +136,7 @@ chat_completion_recorded_events = [
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_sync_with_llm_metadata",
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -161,7 +161,7 @@ def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info):
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_sync_no_content",
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -185,7 +185,7 @@ def test_openai_chat_completion_sync_no_content(set_trace_info):
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_sync_with_token_count",
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -307,7 +307,7 @@ def test_openai_chat_completion_async_stream_monitoring_disabled(loop, set_trace
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -335,7 +335,7 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info):
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -361,7 +361,7 @@ def test_openai_chat_completion_async_no_content(loop, set_trace_info):
 @validate_transaction_metrics(
     name="test_chat_completion:test_openai_chat_completion_async_with_token_count",
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )

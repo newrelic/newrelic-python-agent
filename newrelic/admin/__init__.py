@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 import logging
 import sys
 
@@ -51,7 +49,7 @@ def usage(name):
     details = _commands[name]
     if details.deprecated:
         print("[WARNING] This command is deprecated and will be removed")
-    print("Usage: newrelic-admin %s %s" % (name, details.options))
+    print(f"Usage: newrelic-admin {name} {details.options}")
 
 
 @command("help", "[command]", hidden=True)
@@ -74,18 +72,18 @@ def help(args):
         name = args[0]
 
         if name not in _commands:
-            print("Unknown command '%s'." % name, end=" ")
+            print(f"Unknown command '{name}'.", end=" ")
             print("Type 'newrelic-admin help' for usage.")
 
         else:
             details = _commands[name]
 
-            print("Usage: newrelic-admin %s %s" % (name, details.options))
+            print(f"Usage: newrelic-admin {name} {details.options}")
             if details.description:
                 print()
                 description = details.description
                 if details.deprecated:
-                    description = "[DEPRECATED] " + description
+                    description = f"[DEPRECATED] {description}"
                 print(description)
 
 
@@ -117,7 +115,7 @@ def setup_log_intercept():
 
 def load_internal_plugins():
     for name in _builtin_plugins:
-        module_name = "%s.%s" % (__name__, name)
+        module_name = f"{__name__}.{name}"
         __import__(module_name)
 
 
@@ -151,7 +149,7 @@ def main():
         callback = _commands[command]
 
     except Exception:
-        print("Unknown command '%s'." % command, end="")
+        print(f"Unknown command '{command}'.", end="")
         print("Type 'newrelic-admin help' for usage.")
         sys.exit(1)
 

@@ -19,24 +19,20 @@ import threading
 import time
 import zlib
 from collections import defaultdict, deque
+from sys import intern
 
 import newrelic
-import newrelic.packages.six as six
 from newrelic.common.encoding_utils import json_encode
 from newrelic.core.config import global_settings
 from newrelic.core.trace_cache import trace_cache
 
-try:
-    from sys import intern
-except ImportError:
-    pass
 
 _logger = logging.getLogger(__name__)
 
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + "/"
+AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + os.sep
 
 
-class SessionState(object):
+class SessionState():
     RUNNING = 1
     FINISHED = 2
 
@@ -117,7 +113,7 @@ def collect_stack_traces(include_nr_threads=False):
         yield thread_category, stack_trace
 
 
-class ProfileSessionManager(object):
+class ProfileSessionManager():
     """Singleton class that manages multiple profile sessions. Do NOT
     instantiate directly from this class. Instead use profile_session_manager()
 
@@ -286,7 +282,7 @@ class ProfileSessionManager(object):
         return True
 
 
-class ProfileSession(object):
+class ProfileSession():
     def __init__(self, profile_id, stop_time):
         self.profile_id = profile_id
         self.start_time_s = time.time()
@@ -393,7 +389,7 @@ class ProfileSession(object):
         flat_tree = {}
         thread_count = 0
 
-        for category, bucket in six.iteritems(self.call_buckets):
+        for category, bucket in self.call_buckets.items():
 
             # Only flatten buckets that have data in them. No need to send
             # empty buckets.
@@ -414,10 +410,7 @@ class ProfileSession(object):
         level = settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
 
-        encoded_tree = base64.standard_b64encode(zlib.compress(six.b(json_call_tree), level))
-
-        if six.PY3:
-            encoded_tree = encoded_tree.decode("Latin-1")
+        encoded_tree = base64.standard_b64encode(zlib.compress(json_call_tree.encode("latin-1"), level)).decode("Latin-1")
 
         profile = [
             [
@@ -438,7 +431,7 @@ class ProfileSession(object):
         return profile
 
 
-class CallTree(object):
+class CallTree():
     def __init__(self, method_data, call_count=0, depth=1):
         self.method_data = method_data
         self.call_count = call_count
@@ -456,9 +449,9 @@ class CallTree(object):
         # are labeled with an @ sign in the second element of the tuple.
 
         if func_line == exec_line:
-            method_data = (filename, "@%s#%s" % (func_name, func_line), exec_line)
+            method_data = (filename, f"@{func_name}#{func_line}", exec_line)
         else:
-            method_data = (filename, "%s#%s" % (func_name, func_line), exec_line)
+            method_data = (filename, f"{func_name}#{func_line}", exec_line)
 
         return [method_data, self.call_count, 0, [x.flatten() for x in self.children.values() if not x.ignore]]
 

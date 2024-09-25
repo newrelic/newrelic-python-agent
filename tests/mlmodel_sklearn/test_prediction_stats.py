@@ -469,7 +469,7 @@ def test_prediction_stats_multilabel_output(force_uuid):
     stats = ["Mean", "Percentile25", "Percentile50", "Percentile75", "StandardDeviation", "Min", "Max", "Count"]
     metrics = [
         (
-            "MLModel/Sklearn/Named/MultiOutputClassifier/Predict/Feature/%s/%s" % (feature_col, stat_name),
+            f"MLModel/Sklearn/Named/MultiOutputClassifier/Predict/Feature/{feature_col}/{stat_name}",
             _test_prediction_stats_multilabel_output_tags,
             1,
         )
@@ -479,7 +479,7 @@ def test_prediction_stats_multilabel_output(force_uuid):
     metrics.extend(
         [
             (
-                "MLModel/Sklearn/Named/MultiOutputClassifier/Predict/Label/%s/%s" % (label_col, stat_name),
+                f"MLModel/Sklearn/Named/MultiOutputClassifier/Predict/Label/{label_col}/{stat_name}",
                 _test_prediction_stats_multilabel_output_tags,
                 1,
             )

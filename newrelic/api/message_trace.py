@@ -64,11 +64,7 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
         return result
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (
-            self.__class__.__name__,
-            id(self),
-            dict(library=self.library, operation=self.operation),
-        )
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(library=self.library, operation=self.operation)}>"
 
     def terminal_node(self):
         return self.terminal

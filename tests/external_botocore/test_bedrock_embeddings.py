@@ -117,7 +117,7 @@ def test_bedrock_embedding_with_llm_metadata(set_trace_info, exercise_model, exp
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -143,7 +143,7 @@ def test_bedrock_embedding_no_content(set_trace_info, exercise_model, model_id):
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -168,7 +168,7 @@ def test_bedrock_embedding_no_llm_metadata(set_trace_info, exercise_model, expec
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -190,7 +190,7 @@ def test_bedrock_embedding_with_token_count(set_trace_info, exercise_model, expe
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -258,7 +258,7 @@ def test_bedrock_embedding_error_incorrect_access_key(
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -395,7 +395,7 @@ def test_bedrock_embedding_error_malformed_request_body(
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -438,7 +438,7 @@ def test_bedrock_embedding_error_malformed_response_body(
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -482,4 +482,4 @@ def test_embedding_models_instrumented():
         if not is_supported:
             not_supported.append(model)
 
-    assert not not_supported, "The following unsupported models were found: %s" % not_supported
+    assert not not_supported, f"The following unsupported models were found: {not_supported}"

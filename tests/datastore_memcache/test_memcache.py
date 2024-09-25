@@ -23,7 +23,7 @@ from newrelic.api.background_task import background_task
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 DB_SETTINGS = memcached_settings()[0]
-MEMCACHED_ADDR = '%s:%s' % (DB_SETTINGS['host'], DB_SETTINGS['port'])
+MEMCACHED_ADDR = f"{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"
 
 # Settings
 
@@ -59,7 +59,7 @@ _enable_rollup_metrics = list(_base_rollup_metrics)
 _host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
-_instance_metric_name = 'Datastore/instance/Memcached/%s/%s' % (_host, _port)
+_instance_metric_name = f'Datastore/instance/Memcached/{_host}/{_port}'
 
 _enable_rollup_metrics.append(
         (_instance_metric_name, 3)
@@ -72,7 +72,7 @@ _disable_rollup_metrics.append(
 # Query
 
 def _exercise_db(client):
-    key = DB_SETTINGS['namespace'] + 'key'
+    key = f"{DB_SETTINGS['namespace']}key"
     client.set(key, 'value')
     value = client.get(key)
     client.delete(key)

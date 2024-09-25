@@ -22,12 +22,20 @@ from testing_support.validators.validate_database_duration import (
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
 DB_SETTINGS = mongodb_settings()[0]
 MONGODB_HOST = DB_SETTINGS["host"]
 MONGODB_PORT = DB_SETTINGS["port"]
 MONGODB_COLLECTION = DB_SETTINGS["collection"]
+
+
+# Find correct metric name based on import availability.
+try:
+    from pymongo.synchronous.mongo_client import MongoClient  # noqa
+    INIT_FUNCTION_METRIC = "Function/pymongo.synchronous.mongo_client:MongoClient.__init__"
+except ImportError:
+    from pymongo.mongo_client import MongoClient  # noqa
+    INIT_FUNCTION_METRIC = "Function/pymongo.mongo_client:MongoClient.__init__"    
 
 
 def _exercise_mongo_v3(db):
@@ -115,56 +123,56 @@ def _exercise_mongo(db):
 
 
 _test_pymongo_scoped_metrics_v3 = [
-    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
-    ("Datastore/statement/MongoDB/%s/create_index" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find" % MONGODB_COLLECTION, 3),
-    ("Datastore/statement/MongoDB/%s/find_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/save" % MONGODB_COLLECTION, 3),
-    ("Datastore/statement/MongoDB/%s" % MONGODB_COLLECTION + "/initialize_unordered_bulk_op", 1),
-    ("Datastore/statement/MongoDB/%s" % MONGODB_COLLECTION + "/initialize_ordered_bulk_op", 1),
-    ("Datastore/statement/MongoDB/%s/parallel_scan" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/insert_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/bulk_write" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/insert_many" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/replace_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/update_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/delete_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/delete_many" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_raw_batches" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/create_indexes" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/list_indexes" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/aggregate" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/aggregate_raw_batches" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_delete" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_replace" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_update" % MONGODB_COLLECTION, 1),
+    (INIT_FUNCTION_METRIC, 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/create_index", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find", 3),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/save", 3),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/initialize_unordered_bulk_op", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/initialize_ordered_bulk_op", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/parallel_scan", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/bulk_write", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_many", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/replace_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/update_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/delete_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/delete_many", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_raw_batches", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/create_indexes", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/list_indexes", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/aggregate", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/aggregate_raw_batches", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_delete", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_replace", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_update", 1),
 ]
 
 
 _test_pymongo_scoped_metrics_v4 = [
-    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
-    ("Datastore/statement/MongoDB/%s/create_index" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find" % MONGODB_COLLECTION, 3),
-    ("Datastore/statement/MongoDB/%s/find_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/insert_one" % MONGODB_COLLECTION, 4),
-    ("Datastore/statement/MongoDB/%s/bulk_write" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/insert_many" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/replace_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/update_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/delete_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/delete_many" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_raw_batches" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/create_indexes" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/list_indexes" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/aggregate" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/aggregate_raw_batches" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_delete" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_replace" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_update" % MONGODB_COLLECTION, 1),
+    (INIT_FUNCTION_METRIC, 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/create_index", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find", 3),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_one", 4),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/bulk_write", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_many", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/replace_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/update_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/delete_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/delete_many", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_raw_batches", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/create_indexes", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/list_indexes", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/aggregate", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/aggregate_raw_batches", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_delete", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_replace", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_update", 1),
 ]
 
 _test_pymongo_rollup_metrics_v3 = [
-    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
+    (INIT_FUNCTION_METRIC, 1),
     ("Datastore/all", 28),
     ("Datastore/allOther", 28),
     ("Datastore/MongoDB/all", 28),
@@ -172,17 +180,17 @@ _test_pymongo_rollup_metrics_v3 = [
     ("Datastore/operation/MongoDB/create_index", 1),
     ("Datastore/operation/MongoDB/find", 3),
     ("Datastore/operation/MongoDB/find_one", 1),
-    ("Datastore/statement/MongoDB/%s/create_index" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find" % MONGODB_COLLECTION, 3),
-    ("Datastore/statement/MongoDB/%s/find_one" % MONGODB_COLLECTION, 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/create_index", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find", 3),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one", 1),
     ("Datastore/operation/MongoDB/save", 3),
     ("Datastore/operation/MongoDB/initialize_unordered_bulk_op", 1),
     ("Datastore/operation/MongoDB/initialize_ordered_bulk_op", 1),
     ("Datastore/operation/MongoDB/parallel_scan", 1),
-    ("Datastore/statement/MongoDB/%s/save" % MONGODB_COLLECTION, 3),
-    (("Datastore/statement/MongoDB/%s" % MONGODB_COLLECTION + "/initialize_unordered_bulk_op"), 1),
-    (("Datastore/statement/MongoDB/%s" % MONGODB_COLLECTION + "/initialize_ordered_bulk_op"), 1),
-    ("Datastore/statement/MongoDB/%s/parallel_scan" % MONGODB_COLLECTION, 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/save", 3),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/initialize_unordered_bulk_op", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/initialize_ordered_bulk_op", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/parallel_scan", 1),
     ("Datastore/operation/MongoDB/bulk_write", 1),
     ("Datastore/operation/MongoDB/insert_one", 1),
     ("Datastore/operation/MongoDB/insert_many", 1),
@@ -198,25 +206,25 @@ _test_pymongo_rollup_metrics_v3 = [
     ("Datastore/operation/MongoDB/find_one_and_delete", 1),
     ("Datastore/operation/MongoDB/find_one_and_replace", 1),
     ("Datastore/operation/MongoDB/find_one_and_update", 1),
-    ("Datastore/statement/MongoDB/%s/bulk_write" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/insert_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/insert_many" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/replace_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/update_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/delete_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/delete_many" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_raw_batches" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/create_indexes" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/list_indexes" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/aggregate" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/aggregate_raw_batches" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_delete" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_replace" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_update" % MONGODB_COLLECTION, 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/bulk_write", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_many", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/replace_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/update_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/delete_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/delete_many", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_raw_batches", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/create_indexes", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/list_indexes", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/aggregate", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/aggregate_raw_batches", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_delete", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_replace", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_update", 1),
 ]
 
 _test_pymongo_rollup_metrics_v4 = [
-    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
+    (INIT_FUNCTION_METRIC, 1),
     ("Datastore/all", 25),
     ("Datastore/allOther", 25),
     ("Datastore/MongoDB/all", 25),
@@ -224,9 +232,9 @@ _test_pymongo_rollup_metrics_v4 = [
     ("Datastore/operation/MongoDB/create_index", 1),
     ("Datastore/operation/MongoDB/find", 3),
     ("Datastore/operation/MongoDB/find_one", 1),
-    ("Datastore/statement/MongoDB/%s/create_index" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find" % MONGODB_COLLECTION, 3),
-    ("Datastore/statement/MongoDB/%s/find_one" % MONGODB_COLLECTION, 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/create_index", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find", 3),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one", 1),
     ("Datastore/operation/MongoDB/bulk_write", 1),
     ("Datastore/operation/MongoDB/insert_one", 4),
     ("Datastore/operation/MongoDB/insert_many", 1),
@@ -242,21 +250,21 @@ _test_pymongo_rollup_metrics_v4 = [
     ("Datastore/operation/MongoDB/find_one_and_delete", 1),
     ("Datastore/operation/MongoDB/find_one_and_replace", 1),
     ("Datastore/operation/MongoDB/find_one_and_update", 1),
-    ("Datastore/statement/MongoDB/%s/bulk_write" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/insert_one" % MONGODB_COLLECTION, 4),
-    ("Datastore/statement/MongoDB/%s/insert_many" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/replace_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/update_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/delete_one" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/delete_many" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_raw_batches" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/create_indexes" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/list_indexes" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/aggregate" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/aggregate_raw_batches" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_delete" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_replace" % MONGODB_COLLECTION, 1),
-    ("Datastore/statement/MongoDB/%s/find_one_and_update" % MONGODB_COLLECTION, 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/bulk_write", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_one", 4),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_many", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/replace_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/update_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/delete_one", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/delete_many", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_raw_batches", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/create_indexes", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/list_indexes", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/aggregate", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/aggregate_raw_batches", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_delete", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_replace", 1),
+    (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one_and_update", 1),
 ]
 
 
@@ -268,18 +276,16 @@ def test_mongodb_client_operation():
         _test_pymongo_client_scoped_metrics = _test_pymongo_scoped_metrics_v4
         _test_pymongo_client_rollup_metrics = _test_pymongo_rollup_metrics_v4
 
-    txn_name = "test_pymongo:test_mongodb_client_operation.<locals>._test" if six.PY3 else "test_pymongo:_test"
-
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        txn_name,
+        "test_pymongo:test_mongodb_client_operation.<locals>._test",
         scoped_metrics=_test_pymongo_client_scoped_metrics,
         rollup_metrics=_test_pymongo_client_rollup_metrics,
         background_task=True,
     )
     @background_task()
     def _test():
-        client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+        client = MongoClient(MONGODB_HOST, MONGODB_PORT)
         db = client.test
         _exercise_mongo(db)
 
@@ -289,7 +295,7 @@ def test_mongodb_client_operation():
 @validate_database_duration()
 @background_task()
 def test_mongodb_database_duration():
-    client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+    client = MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client.test
     _exercise_mongo(db)
 
@@ -300,7 +306,7 @@ def test_mongodb_and_sqlite_database_duration():
 
     # Make mongodb queries
 
-    client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+    client = MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client.test
     _exercise_mongo(db)
 

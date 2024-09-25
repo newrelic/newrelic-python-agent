@@ -156,9 +156,9 @@ def test_each_span_type(trace_type, args):
         pytest.param("a" * 2001, "raw", "".join(["a"] * 1997 + ["..."]), id="truncate"),
         pytest.param("a" * 2000, "raw", "".join(["a"] * 2000), id="no_truncate"),
         pytest.param(
-            "select * from %s" % "".join(["?"] * 2000),
+            f"select * from {''.join(['?'] * 2000)}",
             "obfuscated",
-            "select * from %s..." % ("".join(["?"] * (2000 - len("select * from ") - 3))),
+            f"select * from {''.join(['?'] * (2000 - len('select * from ') - 3))}...",
             id="truncate_obfuscated",
         ),
         pytest.param("select 1", "off", ""),
@@ -351,7 +351,7 @@ def test_external_span_limits(kwarg_override, attr_override):
     "kwarg_override,attribute_override",
     (
         ({"host": "a" * 256}, {"peer.hostname": "a" * 255, "peer.address": "a" * 255}),
-        ({"port_path_or_id": "a" * 256, "host": "a"}, {"peer.hostname": "a", "peer.address": "a:" + "a" * 253}),
+        ({"port_path_or_id": "a" * 256, "host": "a"}, {"peer.hostname": "a", "peer.address": f"a:{'a' * 253}"}),
         ({"database_name": "a" * 256}, {"db.instance": "a" * 255}),
     ),
 )
@@ -479,7 +479,7 @@ def test_span_event_agent_attributes(include_attribues):
     _test()
 
 
-class FakeTrace(object):
+class FakeTrace():
     def __enter__(self):
         pass
 
@@ -577,8 +577,8 @@ def test_span_custom_attribute_limit():
 
     for i in range(128):
         if i < 64:
-            span_custom_attrs.append("span_attr%i" % i)
-        txn_custom_attrs.append("txn_attr%i" % i)
+            span_custom_attrs.append(f"span_attr{i}")
+        txn_custom_attrs.append(f"txn_attr{i}")
 
     unexpected_txn_attrs.extend(span_custom_attrs)
     span_custom_attrs.extend(txn_custom_attrs[:64])
@@ -594,9 +594,9 @@ def test_span_custom_attribute_limit():
         transaction = current_transaction()
 
         for i in range(128):
-            transaction.add_custom_parameter("txn_attr%i" % i, "txnValue")
+            transaction.add_custom_parameter(f"txn_attr{i}", "txnValue")
             if i < 64:
-                add_custom_span_attribute("span_attr%i" % i, "spanValue")
+                add_custom_span_attribute(f"span_attr{i}", "spanValue")
 
     _test()
 

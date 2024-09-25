@@ -165,10 +165,10 @@ def test_ws_connect_async_await(event_loop, local_server_info, method, exc_expec
         "fetch_multiple",
         background_task=True,
         scoped_metrics=[
-            (local_server_info.base_metric + "GET", 2),
+            (f"{local_server_info.base_metric}GET", 2),
         ],
         rollup_metrics=[
-            (local_server_info.base_metric + "GET", 2),
+            (f"{local_server_info.base_metric}GET", 2),
         ],
     )
     def task_test():

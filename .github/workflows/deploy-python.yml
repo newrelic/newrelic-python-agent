@@ -64,35 +64,6 @@ jobs:
           path: ./wheelhouse/*.whl
           retention-days: 1
 
-  build-linux-py2:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # 3.0.0
-
-      - name: Build Wheels
-        uses: pypa/cibuildwheel@bf3a5590c9aeb9a7e4ff4025ef7400e0c6ad1248 # 1.12.0  (Last release to support Python 2)
-        env:
-          CIBW_PLATFORM: linux
-          CIBW_BUILD: cp27-manylinux_x86_64
-          CIBW_ARCHS_LINUX: x86_64
-          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
-          CIBW_TEST_REQUIRES: pytest==4.6.11
-          CIBW_TEST_COMMAND: "PYTHONPATH={project}/tests pytest {project}/tests/agent_unittests -vx"
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
-        with:
-          name: ${{ github.job }}
-          path: ./wheelhouse/*.whl
-          retention-days: 1
-
   build-sdist:
     runs-on: ubuntu-latest
     steps:
@@ -130,7 +101,6 @@ jobs:
 
     needs:
       - build-linux-py3
-      - build-linux-py2
       - build-sdist
 
     steps:

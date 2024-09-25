@@ -17,7 +17,7 @@ import copy
 import uuid
 
 import langchain
-import pydantic
+import pydantic_core
 import pytest
 from langchain.tools import tool
 from mock import patch
@@ -100,7 +100,7 @@ single_arg_tool_recorded_events = [
     scoped_metrics=[("Llm/tool/LangChain/run", 1)],
     rollup_metrics=[("Llm/tool/LangChain/run", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -120,7 +120,7 @@ def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
     scoped_metrics=[("Llm/tool/LangChain/run", 1)],
     rollup_metrics=[("Llm/tool/LangChain/run", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -139,7 +139,7 @@ def test_langchain_single_arg_tool_no_content(set_trace_info, single_arg_tool):
     scoped_metrics=[("Llm/tool/LangChain/arun", 1)],
     rollup_metrics=[("Llm/tool/LangChain/arun", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -159,7 +159,7 @@ def test_langchain_single_arg_tool_async(set_trace_info, single_arg_tool, loop):
     scoped_metrics=[("Llm/tool/LangChain/arun", 1)],
     rollup_metrics=[("Llm/tool/LangChain/arun", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -201,7 +201,7 @@ multi_arg_tool_recorded_events = [
     scoped_metrics=[("Llm/tool/LangChain/run", 1)],
     rollup_metrics=[("Llm/tool/LangChain/run", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -225,7 +225,7 @@ def test_langchain_multi_arg_tool(set_trace_info, multi_arg_tool):
     scoped_metrics=[("Llm/tool/LangChain/arun", 1)],
     rollup_metrics=[("Llm/tool/LangChain/arun", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -269,7 +269,7 @@ multi_arg_error_recorded_events = [
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(
-    callable_name(pydantic.v1.error_wrappers.ValidationError),
+    callable_name(pydantic_core._pydantic_core.ValidationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -283,13 +283,13 @@ multi_arg_error_recorded_events = [
     scoped_metrics=[("Llm/tool/LangChain/run", 1)],
     rollup_metrics=[("Llm/tool/LangChain/run", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
 @background_task()
 def test_langchain_error_in_run(set_trace_info, multi_arg_tool):
-    with pytest.raises(pydantic.v1.error_wrappers.ValidationError):
+    with pytest.raises(pydantic_core._pydantic_core.ValidationError):
         set_trace_info()
         # Only one argument is provided while the tool expects two to create an error
         multi_arg_tool.run(
@@ -301,7 +301,7 @@ def test_langchain_error_in_run(set_trace_info, multi_arg_tool):
 @disabled_ai_monitoring_record_content_settings
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(
-    callable_name(pydantic.v1.error_wrappers.ValidationError),
+    callable_name(pydantic_core._pydantic_core.ValidationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -315,13 +315,13 @@ def test_langchain_error_in_run(set_trace_info, multi_arg_tool):
     scoped_metrics=[("Llm/tool/LangChain/run", 1)],
     rollup_metrics=[("Llm/tool/LangChain/run", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
 @background_task()
 def test_langchain_error_in_run_no_content(set_trace_info, multi_arg_tool):
-    with pytest.raises(pydantic.v1.error_wrappers.ValidationError):
+    with pytest.raises(pydantic_core._pydantic_core.ValidationError):
         set_trace_info()
         # Only one argument is provided while the tool expects two to create an error
         multi_arg_tool.run(
@@ -332,7 +332,7 @@ def test_langchain_error_in_run_no_content(set_trace_info, multi_arg_tool):
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(
-    callable_name(pydantic.v1.error_wrappers.ValidationError),
+    callable_name(pydantic_core._pydantic_core.ValidationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -346,13 +346,13 @@ def test_langchain_error_in_run_no_content(set_trace_info, multi_arg_tool):
     scoped_metrics=[("Llm/tool/LangChain/arun", 1)],
     rollup_metrics=[("Llm/tool/LangChain/arun", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
 @background_task()
 def test_langchain_error_in_run_async(set_trace_info, multi_arg_tool, loop):
-    with pytest.raises(pydantic.v1.error_wrappers.ValidationError):
+    with pytest.raises(pydantic_core._pydantic_core.ValidationError):
         set_trace_info()
         # Only one argument is provided while the tool expects two to create an error
         loop.run_until_complete(
@@ -366,7 +366,7 @@ def test_langchain_error_in_run_async(set_trace_info, multi_arg_tool, loop):
 @disabled_ai_monitoring_record_content_settings
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(
-    callable_name(pydantic.v1.error_wrappers.ValidationError),
+    callable_name(pydantic_core._pydantic_core.ValidationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -380,13 +380,13 @@ def test_langchain_error_in_run_async(set_trace_info, multi_arg_tool, loop):
     scoped_metrics=[("Llm/tool/LangChain/arun", 1)],
     rollup_metrics=[("Llm/tool/LangChain/arun", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
 @background_task()
 def test_langchain_error_in_run_async_no_content(set_trace_info, multi_arg_tool, loop):
-    with pytest.raises(pydantic.v1.error_wrappers.ValidationError):
+    with pytest.raises(pydantic_core._pydantic_core.ValidationError):
         set_trace_info()
         # Only one argument is provided while the tool expects two to create an error
         loop.run_until_complete(
@@ -451,7 +451,7 @@ def test_langchain_multiple_async_calls(set_trace_info, single_arg_tool, multi_a
     @validate_transaction_metrics(
         name="test_tool:test_langchain_multiple_async_calls.<locals>._test",
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )

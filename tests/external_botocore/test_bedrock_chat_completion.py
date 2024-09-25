@@ -169,7 +169,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -196,7 +196,7 @@ def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model, expe
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -223,7 +223,7 @@ def test_bedrock_chat_completion_with_token_count(set_trace_info, exercise_model
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -249,7 +249,7 @@ def test_bedrock_chat_completion_no_llm_metadata(set_trace_info, exercise_model,
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -290,7 +290,7 @@ def test_bedrock_chat_completion_streaming_disabled(
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -338,7 +338,7 @@ def test_bedrock_chat_completion_error_invalid_model(
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -403,7 +403,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -456,7 +456,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -503,7 +503,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_with_token(
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -556,7 +556,7 @@ def test_bedrock_chat_completion_error_malformed_request_body(
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -607,7 +607,7 @@ def test_bedrock_chat_completion_error_malformed_response_body(
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -651,7 +651,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_body(
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -696,7 +696,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
     @validate_custom_events(chat_completion_expected_malformed_response_streaming_chunk_events)
     @validate_custom_event_count(count=2)
     @validate_error_trace_attributes(
-        "botocore.eventstream:InvalidHeadersLength",
+        "botocore.eventstream:ChecksumMismatch",
         exact_attrs={
             "agent": {},
             "intrinsic": {},
@@ -715,7 +715,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -723,7 +723,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
     def _test():
         model = "amazon.titan-text-express-v1"
         body = (chat_completion_payload_templates[model] % ("Malformed Streaming Chunk", 0.7, 100)).encode("utf-8")
-        with pytest.raises(botocore.eventstream.InvalidHeadersLength):
+        with pytest.raises(botocore.eventstream.ChecksumMismatch):
             set_trace_info()
             add_custom_attribute("llm.conversation_id", "my-awesome-id")
             add_custom_attribute("llm.foo", "bar")
@@ -783,7 +783,7 @@ def test_bedrock_chat_completion_error_streaming_exception(
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -844,7 +844,7 @@ def test_bedrock_chat_completion_error_streaming_exception_no_content(
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -905,7 +905,7 @@ def test_bedrock_chat_completion_error_streaming_exception_with_token_count(
         scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/Bedrock/%s" % BOTOCORE_VERSION, 1),
+            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
         ],
         background_task=True,
     )
@@ -955,4 +955,4 @@ def test_chat_models_instrumented():
         if not is_supported:
             not_supported.append(model)
 
-    assert not not_supported, "The following unsupported models were found: %s" % not_supported
+    assert not not_supported, f"The following unsupported models were found: {not_supported}"

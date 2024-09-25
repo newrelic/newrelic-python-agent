@@ -17,7 +17,7 @@ from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 
 
-class PostgresApi(object):
+class PostgresApi():
     @staticmethod
     def _instance_info(addr, connected_fut, con_params, *args, **kwargs):
         if isinstance(addr, str):
@@ -89,7 +89,7 @@ class ProtocolProxy(ObjectProxy):
 
     async def prepare(self, stmt_name, query, *args, **kwargs):
         with DatabaseTrace(
-            "PREPARE {stmt_name} FROM '{query}'".format(stmt_name=stmt_name, query=query),
+            f"PREPARE {stmt_name} FROM '{query}'",
             dbapi2_module=PostgresApi,
             connect_params=getattr(self, "_nr_connect_params", None),
             source=self.__wrapped__.prepare,

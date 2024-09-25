@@ -74,7 +74,7 @@ def test_middleware(nr_enabled, aiohttp_app, middleware, metric):
         rollup_metrics = [
             ("Function/_target_application:index", 1),
             (metric, 1),
-            ("Python/Framework/aiohttp/%s" % aiohttp.__version__, 1),
+            (f"Python/Framework/aiohttp/{aiohttp.__version__}", 1),
         ]
 
         _test = validate_transaction_metrics(

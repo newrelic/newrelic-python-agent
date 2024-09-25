@@ -16,8 +16,7 @@ import os
 import sys
 import time
 
-# Avoiding additional imports by defining PY2 manually
-PY2 = sys.version_info[0] == 2
+from importlib.machinery import PathFinder
 
 # Define some debug logging routines to help sort out things when this
 # all doesn't work as expected.
@@ -30,7 +29,7 @@ def log_message(text, *args, **kwargs):
     if startup_debug or critical:
         text = text % args
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        sys.stdout.write("NEWRELIC: %s (%d) - %s\n" % (timestamp, os.getpid(), text))
+        sys.stdout.write(f"NEWRELIC: {timestamp} ({os.getpid()}) - {text}\n")
         sys.stdout.flush()
 
 
@@ -82,25 +81,14 @@ log_message("boot_directory = %r", boot_directory)
 del_sys_path_entry(boot_directory)
 
 try:
-    if PY2:
-        import imp
-
-        module_spec = imp.find_module("sitecustomize", sys.path)
-    else:
-        from importlib.machinery import PathFinder
-
-        module_spec = PathFinder.find_spec("sitecustomize", path=sys.path)
-
+    module_spec = PathFinder.find_spec("sitecustomize", path=sys.path)
 except ImportError:
     pass
 else:
     if module_spec is not None:  # Import error not raised in importlib
         log_message("sitecustomize = %r", module_spec)
 
-        if PY2:
-            imp.load_module("sitecustomize", *module_spec)
-        else:
-            module_spec.loader.load_module("sitecustomize")
+        module_spec.loader.load_module("sitecustomize")
 
 # Because the PYTHONPATH environment variable has been amended and the
 # bootstrap directory added, if a Python application creates a sub
@@ -182,8 +170,8 @@ if k8s_operator_enabled or (python_prefix_matches and python_version_matches):
         # and the sys.path entry is removed afterwards to reduce chance that will
         # cause any issues.
 
-        log_message("new_relic_path = %r" % new_relic_path)
-        log_message("do_insert_path = %r" % do_insert_path)
+        log_message(f"new_relic_path = {new_relic_path!r}")
+        log_message(f"do_insert_path = {do_insert_path!r}")
 
         try:
             if do_insert_path:

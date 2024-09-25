@@ -28,7 +28,6 @@ from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
-from newrelic.packages import six
 
 try:
     # The __version__ attribute was only added in 0.7.0.
@@ -53,10 +52,7 @@ def target_application():
     # issues whereby the agent needs to be initialised before Flask is
     # imported and the routes configured. Normally pytest only runs the
     # global fixture which will initialise the agent after each test
-    # file is imported, which is too late. We also can't do application
-    # creation within a function as we will then get view handler
-    # functions are different between Python 2 and 3, with the latter
-    # showing <local> scope in path.
+    # file is imported, which is too late.
 
     if not async_handler_support:
         from _test_application import _test_application
@@ -179,13 +175,7 @@ _test_application_error_scoped_metrics = [
 ]
 
 
-if six.PY3:
-    _test_application_error_errors = ["builtins:RuntimeError"]
-else:
-    _test_application_error_errors = ["exceptions:RuntimeError"]
-
-
-@validate_transaction_errors(errors=_test_application_error_errors)
+@validate_transaction_errors(errors=["builtins:RuntimeError"])
 @validate_transaction_metrics("_test_application:error_page", scoped_metrics=_test_application_error_scoped_metrics)
 @validate_code_level_metrics("_test_application", "error_page")
 def test_application_error():

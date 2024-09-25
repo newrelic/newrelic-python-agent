@@ -523,7 +523,7 @@ recorded_events_retrieval_chain_response = [
             "vendor": "langchain",
             "ingest_source": "Python",
             "virtual_llm": True,
-            "content": "{'input': 'math', 'context': [Document(page_content='What is 2 + 4?')]}",
+            "content": "{'input': 'math', 'context': [Document(metadata={}, page_content='What is 2 + 4?')]}",
         },
     ],
     [
@@ -555,7 +555,7 @@ recorded_events_retrieval_chain_response = [
             "ingest_source": "Python",
             "is_response": True,
             "virtual_llm": True,
-            "content": "{'input': 'math', 'context': [Document(page_content='What is 2 + 4?')], 'answer': '```html\\n<!DOCTYPE html>\\n<html>\\n<head>\\n  <title>Math Quiz</title>\\n</head>\\n<body>\\n  <h2>Math Quiz Questions</h2>\\n  <ol>\\n    <li>What is the result of 5 + 3?</li>\\n      <ul>\\n        <li>A) 7</li>\\n        <li>B) 8</li>\\n        <li>C) 9</li>\\n        <li>D) 10</li>\\n      </ul>\\n    <li>What is the product of 6 x 7?</li>\\n      <ul>\\n        <li>A) 36</li>\\n        <li>B) 42</li>\\n        <li>C) 48</li>\\n        <li>D) 56</li>\\n      </ul>\\n    <li>What is the square root of 64?</li>\\n      <ul>\\n        <li>A) 6</li>\\n        <li>B) 7</li>\\n        <li>C) 8</li>\\n        <li>D) 9</li>\\n      </ul>\\n    <li>What is the result of 12 / 4?</li>\\n      <ul>\\n        <li>A) 2</li>\\n        <li>B) 3</li>\\n        <li>C) 4</li>\\n        <li>D) 5</li>\\n      </ul>\\n    <li>What is the sum of 15 + 9?</li>\\n      <ul>\\n        <li>A) 22</li>\\n        <li>B) 23</li>\\n        <li>C) 24</li>\\n        <li>D) 25</li>\\n      </ul>\\n  </ol>\\n</body>\\n</html>\\n```'}",
+            "content": "{'input': 'math', 'context': [Document(metadata={}, page_content='What is 2 + 4?')], 'answer': '```html\\n<!DOCTYPE html>\\n<html>\\n<head>\\n  <title>Math Quiz</title>\\n</head>\\n<body>\\n  <h2>Math Quiz Questions</h2>\\n  <ol>\\n    <li>What is the result of 5 + 3?</li>\\n      <ul>\\n        <li>A) 7</li>\\n        <li>B) 8</li>\\n        <li>C) 9</li>\\n        <li>D) 10</li>\\n      </ul>\\n    <li>What is the product of 6 x 7?</li>\\n      <ul>\\n        <li>A) 36</li>\\n        <li>B) 42</li>\\n        <li>C) 48</li>\\n        <li>D) 56</li>\\n      </ul>\\n    <li>What is the square root of 64?</li>\\n      <ul>\\n        <li>A) 6</li>\\n        <li>B) 7</li>\\n        <li>C) 8</li>\\n        <li>D) 9</li>\\n      </ul>\\n    <li>What is the result of 12 / 4?</li>\\n      <ul>\\n        <li>A) 2</li>\\n        <li>B) 3</li>\\n        <li>C) 4</li>\\n        <li>D) 5</li>\\n      </ul>\\n    <li>What is the sum of 15 + 9?</li>\\n      <ul>\\n        <li>A) 22</li>\\n        <li>B) 23</li>\\n        <li>C) 24</li>\\n        <li>D) 25</li>\\n      </ul>\\n  </ol>\\n</body>\\n</html>\\n```'}",
         },
     ],
 ]
@@ -697,7 +697,7 @@ chat_completion_recorded_events_error_in_langchain = [
     scoped_metrics=[("Llm/chain/LangChain/invoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/invoke", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -822,10 +822,10 @@ def test_langchain_chain(
     @validate_custom_event_count(count=8)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain.<locals>._test",
-        scoped_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
-        rollup_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
+        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
+        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )
@@ -896,10 +896,10 @@ def test_langchain_chain_no_content(
     @validate_custom_event_count(count=8)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_no_content.<locals>._test",
-        scoped_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
-        rollup_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
+        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
+        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )
@@ -995,10 +995,10 @@ def test_langchain_chain_error_in_openai(
     @validate_custom_event_count(count=6)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_openai.<locals>._test",
-        scoped_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
-        rollup_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
+        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
+        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )
@@ -1072,10 +1072,10 @@ def test_langchain_chain_error_in_langchain(
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_langchain.<locals>._test",
-        scoped_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
-        rollup_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
+        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
+        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )
@@ -1150,10 +1150,10 @@ def test_langchain_chain_error_in_langchain_no_content(
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_langchain_no_content.<locals>._test",
-        scoped_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
-        rollup_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
+        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
+        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )
@@ -1222,7 +1222,7 @@ def test_langchain_chain_ai_monitoring_disabled(
     scoped_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -1267,7 +1267,7 @@ def test_async_langchain_chain_list_response(
     scoped_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -1400,10 +1400,10 @@ def test_async_langchain_chain(
     @validate_custom_event_count(count=8)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain.<locals>._test",
-        scoped_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
-        rollup_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
+        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
+        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )
@@ -1499,10 +1499,10 @@ def test_async_langchain_chain_error_in_openai(
     @validate_custom_event_count(count=6)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_openai.<locals>._test",
-        scoped_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
-        rollup_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
+        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
+        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )
@@ -1575,10 +1575,10 @@ def test_async_langchain_chain_error_in_langchain(
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_langchain.<locals>._test",
-        scoped_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
-        rollup_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
+        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
+        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )
@@ -1652,10 +1652,10 @@ def test_async_langchain_chain_error_in_langchain_no_content(
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_langchain_no_content.<locals>._test",
-        scoped_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
-        rollup_metrics=[("Llm/chain/LangChain/%s" % call_function, 1)],
+        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
+        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )
@@ -1755,10 +1755,10 @@ def test_multiple_async_langchain_chain(
     @validate_custom_event_count(count=16)
     @validate_transaction_metrics(
         name="test_chain:test_multiple_async_langchain_chain.<locals>._test",
-        scoped_metrics=[("Llm/chain/LangChain/%s" % call_function, 2)],
-        rollup_metrics=[("Llm/chain/LangChain/%s" % call_function, 2)],
+        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 2)],
+        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 2)],
         custom_metrics=[
-            ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
         ],
         background_task=True,
     )
@@ -1801,7 +1801,7 @@ def test_multiple_async_langchain_chain(
     scoped_metrics=[("Llm/chain/LangChain/invoke", 3)],
     rollup_metrics=[("Llm/chain/LangChain/invoke", 3)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )

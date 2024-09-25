@@ -35,7 +35,6 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.packages import six
 
 Request = namedtuple("Request", ("method", "path", "params", "headers", "payload"))
 
@@ -304,12 +303,7 @@ def connect_payload_asserts(
 ):
     payload_data = payload[0]
 
-    # Turn off black formatting for this section of the code. While Python 2 has been
-    # EOL'd since 2020, New Relic still supports it and therefore this unicode assert
-    # needs the u"" still.
-    # fmt: off
-    assert isinstance(payload_data["agent_version"], type(u""))  # pylint: disable=W1406
-    # fmt: on
+    assert isinstance(payload_data["agent_version"], str)
     assert payload_data["app_name"] == PAYLOAD_APP_NAME
     assert payload_data["display_host"] == DISPLAY_NAME
     assert payload_data["environment"] == ENVIRONMENT
@@ -501,7 +495,7 @@ def test_connect(with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker
     assert agent_settings_payload["proxy_host"] == "None"
     assert agent_settings_payload["attributes.include"] == "[]"
     assert agent_settings_payload["feature_flag"] == str(set())
-    assert isinstance(agent_settings_payload["attribute_filter"], six.string_types)
+    assert isinstance(agent_settings_payload["attribute_filter"], str)
 
     # Verify that the connection is closed
     assert HttpClientRecorder.STATE == 0
@@ -586,7 +580,7 @@ def test_audit_logging():
 )
 def test_ca_bundle_path(monkeypatch, ca_bundle_path):
     # Pretend CA certificates are not available
-    class DefaultVerifyPaths(object):
+    class DefaultVerifyPaths():
         cafile = None
         capath = None
 

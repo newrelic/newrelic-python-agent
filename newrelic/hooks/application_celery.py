@@ -55,7 +55,7 @@ def task_info(instance, *args, **kwargs):
     if task_name in MAPPING_TASK_NAMES:
         try:
             subtask = kwargs["task"]["task"]
-            task_name = "/".join((task_name, subtask))
+            task_name = f"{task_name}/{subtask}"
             task_source = task.app._tasks[subtask]
         except Exception:
             pass

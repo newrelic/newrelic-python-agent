@@ -15,7 +15,6 @@
 import sys
 import types
 
-import newrelic.packages.six as six
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -23,7 +22,7 @@ import newrelic.common.object_wrapper
 import newrelic.api.external_trace
 
 
-class capture_external_trace(object):
+class capture_external_trace():
     def __init__(self, wrapped):
         newrelic.api.object_wrapper.update_wrapper(self, wrapped)
         self._nr_next_object = wrapped
@@ -35,7 +34,7 @@ class capture_external_trace(object):
         # The URL be a string or a file like object. Pass call
         # through if not a string.
 
-        if not isinstance(url, six.string_types):
+        if not isinstance(url, str):
             return self._nr_next_object(url, *args, **kwargs)
 
         # Only then wrap the call if it looks like a URL. To
@@ -47,7 +46,7 @@ class capture_external_trace(object):
         if parsed_url.startswith("feed:http"):
             parsed_url = parsed_url[5:]
         elif parsed_url.startswith("feed:"):
-            parsed_url = "http:" + url[5:]
+            parsed_url = f"http:{url[5:]}"
 
         if parsed_url.split(":")[0].lower() in ["http", "https", "ftp"]:
             current_transaction = newrelic.api.transaction.current_transaction()

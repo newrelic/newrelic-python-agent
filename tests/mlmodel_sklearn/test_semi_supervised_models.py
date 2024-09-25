@@ -20,7 +20,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
-from newrelic.packages import six
 
 SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
@@ -46,14 +45,8 @@ def test_model_methods_wrapped_in_function_trace(semi_supervised_model_name, run
         ],
     }
 
-    expected_transaction_name = (
-        "test_semi_supervised_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_semi_supervised_models:_test"
-    )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_semi_supervised_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[semi_supervised_model_name],
         rollup_metrics=expected_scoped_metrics[semi_supervised_model_name],
         background_task=True,
@@ -82,14 +75,9 @@ def test_above_v1_0_model_methods_wrapped_in_function_trace(semi_supervised_mode
             ("Function/MLModel/Sklearn/Named/SelfTrainingClassifier.predict_proba", 1),
         ],
     }
-    expected_transaction_name = (
-        "test_semi_supervised_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_semi_supervised_models:_test"
-    )
 
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_semi_supervised_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[semi_supervised_model_name],
         rollup_metrics=expected_scoped_metrics[semi_supervised_model_name],
         background_task=True,

@@ -18,7 +18,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
 
 def test_model_methods_wrapped_in_function_trace(calibration_model_name, run_calibration_model):
@@ -30,14 +29,8 @@ def test_model_methods_wrapped_in_function_trace(calibration_model_name, run_cal
         ],
     }
 
-    expected_transaction_name = "test_calibration_models:_test"
-    if six.PY3:
-        expected_transaction_name = (
-            "test_calibration_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_calibration_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[calibration_model_name],
         rollup_metrics=expected_scoped_metrics[calibration_model_name],
         background_task=True,

@@ -52,7 +52,7 @@ def test_firestore_async_client(loop, exercise_async_client, instance_info):
     _test_rollup_metrics = [
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 2),
     ]
 
     @validate_database_duration()

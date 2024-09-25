@@ -113,7 +113,7 @@ def test_cat_headers(
 
             app_data = json.loads(deobfuscate(raw_headers["X-NewRelic-App-Data"], ENCODING_KEY))
             assert app_data[0] == cat_id
-            assert app_data[1] == ("WebTransaction/Function/%s" % metric_name)
+            assert app_data[1] == f"WebTransaction/Function/{metric_name}"
         else:
             assert "X-NewRelic-App-Data" not in resp.headers
 
@@ -135,7 +135,7 @@ def test_cat_headers(
     #       a fixture from conftest.py/_target_application.py
 
     @validate_analytics_catmap_data(
-        "WebTransaction/Function/%s" % metric_name,
+        f"WebTransaction/Function/{metric_name}",
         expected_attributes=expected_intrinsics,
         non_expected_attributes=forgone_intrinsics,
     )

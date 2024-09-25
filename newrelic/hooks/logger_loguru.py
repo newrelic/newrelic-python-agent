@@ -34,7 +34,7 @@ ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
 def _filter_record_attributes(record):
     attrs = {k: v for k, v in record.items() if k not in LOGURU_FILTERED_RECORD_ATTRS}
     extra_attrs = dict(record.get("extra", {}))
-    attrs.update({"extra.%s" % k: v for k, v in extra_attrs.items()})
+    attrs.update({f"extra.{k}": v for k, v in extra_attrs.items()})
     return attrs
 
 
@@ -56,12 +56,12 @@ def _nr_log_forwarder(message_instance):
         if settings.application_logging.metrics and settings.application_logging.metrics.enabled:
             if transaction:
                 transaction.record_custom_metric("Logging/lines", {"count": 1})
-                transaction.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                transaction.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
             else:
                 application = application_instance(activate=False)
                 if application and application.enabled:
                     application.record_custom_metric("Logging/lines", {"count": 1})
-                    application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                    application.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
 
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             attrs = _filter_record_attributes(record)
@@ -93,7 +93,7 @@ def wrap_log(wrapped, instance, args, kwargs):
             options[1] += 2
 
     except Exception as e:
-        _logger.debug("Exception in loguru handling: %s" % str(e))
+        _logger.debug(f"Exception in loguru handling: {str(e)}")
         return wrapped(*args, **kwargs)
     else:
         return wrapped(**bound_args)

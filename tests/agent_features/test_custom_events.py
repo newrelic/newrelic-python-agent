@@ -246,12 +246,12 @@ def test_application_create_custom_event_not_called():
             {
                 "content": "A" * 9001,
                 "input": "B" * 9001,
-                "foo": "b" + "a" * 9000 + "r",
+                "foo": f"b{'a' * 9000}r",
             },
             {
                 "content": "A" * 9001,
                 "input": "B" * 300,
-                "foo": "b" + "a" * 299,
+                "foo": f"b{'a' * 299}",
             },
         ],
         [
@@ -259,12 +259,12 @@ def test_application_create_custom_event_not_called():
             {
                 "content": "A" * 9001,
                 "input": "B" * 9001,
-                "foo": "b" + "a" * 9000 + "r",
+                "foo": f"b{'a' * 9000}r",
             },
             {
                 "content": "A" * 300,
                 "input": "B" * 9001,
-                "foo": "b" + "a" * 299,
+                "foo": f"b{'a' * 299}",
             },
         ],
         [
@@ -272,12 +272,12 @@ def test_application_create_custom_event_not_called():
             {
                 "content": "A" * 9001,
                 "input": "B" * 9001,
-                "foo": "b" + "a" * 9000 + "r",
+                "foo": f"b{'a' * 9000}r",
             },
             {
                 "content": "A" * 300,
                 "input": "B" * 300,
-                "foo": "b" + "a" * 299,
+                "foo": f"b{'a' * 299}",
             },
         ],
     ),

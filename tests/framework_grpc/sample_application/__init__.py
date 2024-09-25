@@ -33,7 +33,7 @@ add_SampleApplicationServicer_to_server = sample_application_pb2_grpc.add_Sample
 SampleApplicationStub = sample_application_pb2_grpc.SampleApplicationStub
 
 
-class Status(object):
+class Status():
     code = grpc.StatusCode.ABORTED
     details = "abort_with_status"
     trailing_metadata = {}
@@ -45,7 +45,7 @@ class SampleApplicationServicer(sample_application_pb2_grpc.SampleApplicationSer
         if request.timesout:
             while context.is_active():
                 time.sleep(0.1)
-        return Message(text="unary_unary: %s" % request.text)
+        return Message(text=f"unary_unary: {request.text}")
 
     def DoUnaryStream(self, request, context):
         context.set_trailing_metadata([("content-type", "text/plain")])
@@ -53,7 +53,7 @@ class SampleApplicationServicer(sample_application_pb2_grpc.SampleApplicationSer
             while context.is_active():
                 time.sleep(0.1)
         for i in range(request.count):
-            yield Message(text="unary_stream: %s" % request.text)
+            yield Message(text=f"unary_stream: {request.text}")
 
     def DoStreamUnary(self, request_iter, context):
         context.set_trailing_metadata([("content-type", "text/plain")])
@@ -61,7 +61,7 @@ class SampleApplicationServicer(sample_application_pb2_grpc.SampleApplicationSer
             if request.timesout:
                 while context.is_active():
                     time.sleep(0.1)
-            return Message(text="stream_unary: %s" % request.text)
+            return Message(text=f"stream_unary: {request.text}")
 
     def DoStreamStream(self, request_iter, context):
         context.set_trailing_metadata([("content-type", "text/plain")])
@@ -69,39 +69,39 @@ class SampleApplicationServicer(sample_application_pb2_grpc.SampleApplicationSer
             if request.timesout:
                 while context.is_active():
                     time.sleep(0.1)
-            yield Message(text="stream_stream: %s" % request.text)
+            yield Message(text=f"stream_stream: {request.text}")
 
     def DoUnaryUnaryRaises(self, request, context):
-        raise AssertionError("unary_unary: %s" % request.text)
+        raise AssertionError(f"unary_unary: {request.text}")
 
     def DoUnaryStreamRaises(self, request, context):
-        raise AssertionError("unary_stream: %s" % request.text)
+        raise AssertionError(f"unary_stream: {request.text}")
 
     def DoStreamUnaryRaises(self, request_iter, context):
         for request in request_iter:
-            raise AssertionError("stream_unary: %s" % request.text)
+            raise AssertionError(f"stream_unary: {request.text}")
 
     def DoStreamStreamRaises(self, request_iter, context):
         for request in request_iter:
-            raise AssertionError("stream_stream: %s" % request.text)
+            raise AssertionError(f"stream_stream: {request.text}")
 
     def NoTxnUnaryUnaryRaises(self, request, context):
         current_transaction().ignore_transaction = True
-        raise AssertionError("unary_unary: %s" % request.text)
+        raise AssertionError(f"unary_unary: {request.text}")
 
     def NoTxnUnaryStreamRaises(self, request, context):
         current_transaction().ignore_transaction = True
-        raise AssertionError("unary_stream: %s" % request.text)
+        raise AssertionError(f"unary_stream: {request.text}")
 
     def NoTxnStreamUnaryRaises(self, request_iter, context):
         current_transaction().ignore_transaction = True
         for request in request_iter:
-            raise AssertionError("stream_unary: %s" % request.text)
+            raise AssertionError(f"stream_unary: {request.text}")
 
     def NoTxnStreamStreamRaises(self, request_iter, context):
         current_transaction().ignore_transaction = True
         for request in request_iter:
-            raise AssertionError("stream_stream: %s" % request.text)
+            raise AssertionError(f"stream_stream: {request.text}")
 
     def NoTxnUnaryUnary(self, request, context):
         current_transaction().ignore_transaction = True

@@ -19,7 +19,7 @@ import weakref
 from newrelic.core.database_utils import SQLStatement
 
 
-class GraphQLStyle(object):
+class GraphQLStyle():
     """Helper class to initialize SQLStatement instances."""
 
     quoting_style = "single+double"

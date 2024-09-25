@@ -20,7 +20,7 @@ pytestmark = pytest.mark.custom_app
 
 
 def test_custom_handler(app):
-    FRAMEWORK_METRIC = 'Python/Framework/Tornado/%s' % app.tornado_version
+    FRAMEWORK_METRIC = f'Python/Framework/Tornado/{app.tornado_version}'
 
     @validate_transaction_metrics(
         name='_target_application:CustomApplication',

@@ -45,10 +45,10 @@ def exercise_async_collections(async_collection):
 
 def test_firestore_async_collections(loop, exercise_async_collections, async_collection, instance_info):
     _test_scoped_metrics = [
-        ("Datastore/statement/Firestore/%s/stream" % async_collection.id, 1),
-        ("Datastore/statement/Firestore/%s/get" % async_collection.id, 1),
-        ("Datastore/statement/Firestore/%s/list_documents" % async_collection.id, 1),
-        ("Datastore/statement/Firestore/%s/add" % async_collection.id, 2),
+        (f"Datastore/statement/Firestore/{async_collection.id}/stream", 1),
+        (f"Datastore/statement/Firestore/{async_collection.id}/get", 1),
+        (f"Datastore/statement/Firestore/{async_collection.id}/list_documents", 1),
+        (f"Datastore/statement/Firestore/{async_collection.id}/add", 2),
     ]
 
     _test_rollup_metrics = [
@@ -58,7 +58,7 @@ def test_firestore_async_collections(loop, exercise_async_collections, async_col
         ("Datastore/operation/Firestore/list_documents", 1),
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 5),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 5),
     ]
 
     @validate_database_duration()

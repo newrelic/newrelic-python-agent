@@ -33,7 +33,7 @@ def instrument_aiomcache_client(module):
         if hasattr(module.Client, name):
             wrap_datastore_trace(
                 module,
-                "Client.%s" % name,
+                f"Client.{name}",
                 product="Memcached",
                 target=None,
                 operation=name,

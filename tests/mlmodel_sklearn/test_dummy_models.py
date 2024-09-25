@@ -19,7 +19,6 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
-from newrelic.packages import six
 
 SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
@@ -47,14 +46,8 @@ def test_model_methods_wrapped_in_function_trace(dummy_model_name, run_dummy_mod
         ],
     }
 
-    expected_transaction_name = (
-        "test_dummy_models:test_model_methods_wrapped_in_function_trace.<locals>._test"
-        if six.PY3
-        else "test_dummy_models:_test"
-    )
-
     @validate_transaction_metrics(
-        expected_transaction_name,
+        "test_dummy_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
         scoped_metrics=expected_scoped_metrics[dummy_model_name],
         rollup_metrics=expected_scoped_metrics[dummy_model_name],
         background_task=True,

@@ -93,7 +93,7 @@ def _nr_wrapper_Flask_add_url_rule_input_(wrapped, instance, args, kwargs):
 
 def _nr_wrapper_Flask_views_View_as_view_(wrapped, instance, args, kwargs):
     view = wrapped(*args, **kwargs)
-    view._nr_view_func_name = "%s:%s" % (view.__module__, view.__name__)
+    view._nr_view_func_name = f"{view.__module__}:{view.__name__}"
     return view
 
 

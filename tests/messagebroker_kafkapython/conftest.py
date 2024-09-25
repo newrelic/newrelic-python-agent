@@ -31,7 +31,7 @@ DB_SETTINGS = kafka_settings()[0]
 
 @pytest.fixture(scope="session")
 def broker():
-    BOOTSTRAP_SERVER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
+    BOOTSTRAP_SERVER = f"{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"
     return [BOOTSTRAP_SERVER]
 
 
@@ -176,7 +176,7 @@ def json_deserializer():
 
 @pytest.fixture(scope="session")
 def json_callable_serializer():
-    class JSONCallableSerializer(object):
+    class JSONCallableSerializer():
         def __call__(self, obj):
             return json.dumps(obj).encode("utf-8") if obj is not None else None
 
@@ -185,7 +185,7 @@ def json_callable_serializer():
 
 @pytest.fixture(scope="session")
 def json_callable_deserializer():
-    class JSONCallableDeserializer(object):
+    class JSONCallableDeserializer():
         def __call__(self, obj):
             return json.loads(obj.decode("utf-8")) if obj is not None else None
 
@@ -197,7 +197,7 @@ def topic(broker):
     from kafka.admin.client import KafkaAdminClient
     from kafka.admin.new_topic import NewTopic
 
-    topic = "test-topic-%s" % str(uuid.uuid4())
+    topic = f"test-topic-{str(uuid.uuid4())}"
 
     admin = KafkaAdminClient(bootstrap_servers=broker)
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
@@ -238,7 +238,7 @@ def get_consumer_record(topic, send_producer_message, consumer, deserialize):
                 record_count += 1
             attempts += 1
 
-        assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
+        assert record_count == 1, f"Incorrect count of records consumed: {record_count}. Expected 1."
 
     return _test
 

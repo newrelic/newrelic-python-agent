@@ -13,12 +13,17 @@
 # limitations under the License.
 
 import logging
+
 import pytest
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
-
+from newrelic.api.log import NewRelicLogForwardingHandler
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -26,6 +31,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "application_logging.enabled": True,
     "application_logging.forwarding.enabled": True,
+    "application_logging.forwarding.context_data.enabled": True,
     "application_logging.metrics.enabled": True,
     "application_logging.local_decorating.enabled": True,
     "event_harvest_config.harvest_limits.log_event_data": 100000,
@@ -42,6 +48,7 @@ class CaplogHandler(logging.StreamHandler):
     To prevent possible issues with pytest's monkey patching
     use a custom Caplog handler to capture all records
     """
+
     def __init__(self, *args, **kwargs):
         self.records = []
         super(CaplogHandler, self).__init__(*args, **kwargs)
@@ -50,13 +57,45 @@ class CaplogHandler(logging.StreamHandler):
         self.records.append(self.format(record))
 
 
-@pytest.fixture(scope="function")
-def logger():
+@pytest.fixture(scope="function", params=["instrumented_logger", "forwarding_handler"])
+def logger(request):
     _logger = logging.getLogger("my_app")
     caplog = CaplogHandler()
     _logger.addHandler(caplog)
     _logger.caplog = caplog
     _logger.setLevel(logging.WARNING)
+
+    # Save instrumentation so we can disable it
+    instrumented = logging.Logger.callHandlers
+
+    forwarding_handler = None
+    if request.param == "forwarding_handler":
+        forwarding_handler = NewRelicLogForwardingHandler()
+        _logger.addHandler(forwarding_handler)
+
+        # Uninstrument Logging
+        logging.Logger.callHandlers = logging.Logger.callHandlers.__wrapped__  # noqa, pylint: disable=E1101
+
     yield _logger
     del caplog.records[:]
+
+    _logger.removeHandler(caplog)
+    if forwarding_handler:
+        _logger.removeHandler(forwarding_handler)
+
+    # Reinstrument logging in case it was uninstrumented
+    logging.Logger.callHandlers = instrumented
+
+
+@pytest.fixture(scope="function")
+def instrumented_logger():
+    _logger = logging.getLogger("my_app")
+    caplog = CaplogHandler()
+    _logger.addHandler(caplog)
+    _logger.caplog = caplog
+    _logger.setLevel(logging.WARNING)
+
+    yield _logger
+    del caplog.records[:]
+
     _logger.removeHandler(caplog)

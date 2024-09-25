@@ -16,17 +16,17 @@ import functools
 
 from newrelic.api.cat_header_mixin import CatHeaderMixin
 from newrelic.api.time_trace import TimeTrace, current_trace
-from newrelic.common.async_wrapper import async_wrapper
+from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.message_node import MessageNode
 
 
 class MessageTrace(CatHeaderMixin, TimeTrace):
-
     cat_id_key = "NewRelicID"
     cat_transaction_key = "NewRelicTransaction"
     cat_appdata_key = "NewRelicAppData"
     cat_synthetics_key = "NewRelicSynthetics"
+    cat_synthetics_info_key = "NewRelicSyntheticsInfo"
 
     def __init__(self, library, operation, destination_type, destination_name, params=None, terminal=True, **kwargs):
         parent = kwargs.pop("parent", None)
@@ -91,9 +91,11 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
         )
 
 
-def MessageTraceWrapper(wrapped, library, operation, destination_type, destination_name, params={}, terminal=True):
+def MessageTraceWrapper(
+    wrapped, library, operation, destination_type, destination_name, params={}, terminal=True, async_wrapper=None
+):
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
-        wrapper = async_wrapper(wrapped)
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
             if not parent:
@@ -133,7 +135,16 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type, destinati
         else:
             _destination_name = destination_name
 
-        trace = MessageTrace(_library, _operation, _destination_type, _destination_name, params={}, terminal=terminal, parent=parent, source=wrapped)
+        trace = MessageTrace(
+            _library,
+            _operation,
+            _destination_type,
+            _destination_name,
+            params=params,
+            terminal=terminal,
+            parent=parent,
+            source=wrapped,
+        )
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -144,7 +155,7 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type, destinati
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
 
 
-def message_trace(library, operation, destination_type, destination_name, params={}, terminal=True):
+def message_trace(library, operation, destination_type, destination_name, params={}, terminal=True, async_wrapper=None):
     return functools.partial(
         MessageTraceWrapper,
         library=library,
@@ -153,10 +164,24 @@ def message_trace(library, operation, destination_type, destination_name, params
         destination_name=destination_name,
         params=params,
         terminal=terminal,
+        async_wrapper=async_wrapper,
     )
 
 
-def wrap_message_trace(module, object_path, library, operation, destination_type, destination_name, params={}, terminal=True):
+def wrap_message_trace(
+    module,
+    object_path,
+    library,
+    operation,
+    destination_type,
+    destination_name,
+    params={},
+    terminal=True,
+    async_wrapper=None,
+):
     wrap_object(
-        module, object_path, MessageTraceWrapper, (library, operation, destination_type, destination_name, params, terminal)
+        module,
+        object_path,
+        MessageTraceWrapper,
+        (library, operation, destination_type, destination_name, params, terminal, async_wrapper),
     )

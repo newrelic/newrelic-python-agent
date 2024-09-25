@@ -18,6 +18,7 @@ from collections import namedtuple
 from newrelic.core.attribute_filter import (
     DST_ALL,
     DST_ERROR_COLLECTOR,
+    DST_LOG_EVENT_CONTEXT_DATA,
     DST_SPAN_EVENTS,
     DST_TRANSACTION_EVENTS,
     DST_TRANSACTION_SEGMENTS,
@@ -47,6 +48,8 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "aws.lambda.eventSource.arn",
         "aws.operation",
         "aws.requestId",
+        "cloud.account.id",
+        "cloud.region",
         "code.filepath",
         "code.function",
         "code.lineno",
@@ -58,8 +61,8 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "enduser.id",
         "error.class",
         "error.expected",
-        "error.message",
         "error.group.name",
+        "error.message",
         "graphql.field.name",
         "graphql.field.parentType",
         "graphql.field.path",
@@ -70,8 +73,11 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "host.displayName",
         "http.statusCode",
         "http.url",
+        "llm",
         "message.queueName",
         "message.routingKey",
+        "messaging.destination.name",
+        "messaging.system",
         "peer.address",
         "peer.hostname",
         "request.headers.accept",
@@ -84,11 +90,14 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "response.headers.contentLength",
         "response.headers.contentType",
         "response.status",
+        "server.address",
     )
 )
 
 MAX_NUM_USER_ATTRIBUTES = 128
 MAX_ATTRIBUTE_LENGTH = 255
+MAX_NUM_ML_USER_ATTRIBUTES = 64
+MAX_ML_ATTRIBUTE_LENGTH = 4095
 MAX_64_BIT_INT = 2**63 - 1
 MAX_LOG_MESSAGE_LENGTH = 32768
 
@@ -109,6 +118,10 @@ class CastingFailureException(Exception):
     pass
 
 
+class NullValueException(ValueError):
+    pass
+
+
 class Attribute(_Attribute):
     def __repr__(self):
         return "Attribute(name=%r, value=%r, destinations=%r)" % (self.name, self.value, bin(self.destinations))
@@ -125,6 +138,13 @@ def create_attributes(attr_dict, destinations, attribute_filter):
 
 
 def create_agent_attributes(attr_dict, attribute_filter):
+    """
+    Returns a dictionary of Attribute objects with appropriate destinations.
+
+    If the attribute's key is in the known list of event attributes, it is assigned
+    to _DESTINATIONS_WITH_EVENTS, otherwise it is assigned to _DESTINATIONS.
+    Note attributes with a value of None are filtered out.
+    """
     attributes = []
 
     for k, v in attr_dict.items():
@@ -142,12 +162,15 @@ def create_agent_attributes(attr_dict, attribute_filter):
 
 
 def resolve_user_attributes(attr_dict, attribute_filter, target_destination, attr_class=dict):
+    """
+    Returns an attr_class of key value attributes filtered to the target_destination.
+
+    process_user_attribute MUST be called before this function to filter out invalid
+    attributes.
+    """
     u_attrs = attr_class()
 
     for attr_name, attr_value in attr_dict.items():
-        if attr_value is None:
-            continue
-
         dest = attribute_filter.apply(attr_name, DST_ALL)
 
         if dest & target_destination:
@@ -174,13 +197,33 @@ def resolve_agent_attributes(attr_dict, attribute_filter, target_destination, at
     return a_attrs
 
 
-def create_user_attributes(attr_dict, attribute_filter):
-    destinations = DST_ALL
-    return create_attributes(attr_dict, destinations, attribute_filter)
+def resolve_logging_context_attributes(attr_dict, attribute_filter, attr_prefix, attr_class=dict):
+    """
+    Helper function for processing logging context attributes that require a prefix. Correctly filters attribute names
+    before applying the required prefix, and then applies the process_user_attribute after the prefix is applied to
+    correctly check length requirements.
+    """
+    c_attrs = attr_class()
+
+    for attr_name, attr_value in attr_dict.items():
+        dest = attribute_filter.apply(attr_name, DST_LOG_EVENT_CONTEXT_DATA)
+
+        if dest & DST_LOG_EVENT_CONTEXT_DATA:
+            try:
+                attr_name, attr_value = process_user_attribute(attr_prefix + attr_name, attr_value)
+                if attr_name:
+                    c_attrs[attr_name] = attr_value
+            except Exception:
+                _logger.debug(
+                    "Log event context attribute failed to validate for unknown reason. Dropping context attribute: %s. Check traceback for clues.",
+                    attr_name,
+                    exc_info=True,
+                )
+
+    return c_attrs
 
 
 def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding="utf-8", ending=None):
-
     # Truncate text so that its byte representation
     # is no longer than maxsize bytes.
 
@@ -225,7 +268,6 @@ def check_max_int(value, max_int=MAX_64_BIT_INT):
 
 
 def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=None):
-
     # Perform all necessary checks on a potential attribute.
     #
     # Returns:
@@ -245,23 +287,31 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
         value = sanitize(value)
 
     except NameIsNotStringException:
-        _logger.debug("Attribute name must be a string. Dropping " "attribute: %r=%r", name, value)
+        _logger.debug("Attribute name must be a string. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except NameTooLongException:
-        _logger.debug("Attribute name exceeds maximum length. Dropping " "attribute: %r=%r", name, value)
+        _logger.debug("Attribute name exceeds maximum length. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except IntTooLargeException:
-        _logger.debug("Attribute value exceeds maximum integer value. " "Dropping attribute: %r=%r", name, value)
+        _logger.debug("Attribute value exceeds maximum integer value. Dropping attribute: %r=%r", name, value)
         return FAILED_RESULT
 
     except CastingFailureException:
-        _logger.debug("Attribute value cannot be cast to a string. " "Dropping attribute: %r=%r", name, value)
+        _logger.debug("Attribute value cannot be cast to a string. Dropping attribute: %r=%r", name, value)
+        return FAILED_RESULT
+
+    except NullValueException:
+        _logger.debug(
+            "Attribute value is None. There is no difference between omitting the key "
+            "and sending None. Dropping attribute: %r=%r",
+            name,
+            value,
+        )
         return FAILED_RESULT
 
     else:
-
         # Check length after casting
 
         valid_types_text = (six.text_type, six.binary_type)
@@ -270,7 +320,7 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
             trunc_value = truncate(value, maxsize=max_length, ending=ending)
             if value != trunc_value:
                 _logger.debug(
-                    "Attribute value exceeds maximum length " "(%r bytes). Truncating value: %r=%r.",
+                    "Attribute value exceeds maximum length (%r bytes). Truncating value: %r=%r.",
                     max_length,
                     name,
                     trunc_value,
@@ -282,15 +332,40 @@ def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=
 
 
 def sanitize(value):
+    """
+    Return value unchanged, if it's a valid type that is supported by
+    Insights. Otherwise, convert value to a string.
 
-    # Return value unchanged, if it's a valid type that is supported by
-    # Insights. Otherwise, convert value to a string.
-    #
-    # Raise CastingFailureException, if str(value) somehow fails.
+    Raise CastingFailureException, if str(value) somehow fails.
+    Raise NullValueException, if value is None (null values SHOULD NOT be reported).
+    """
 
     valid_value_types = (six.text_type, six.binary_type, bool, float, six.integer_types)
+    # According to the agent spec, agents should not report None attribute values.
+    # There is no difference between omitting the key and sending a None, so we can
+    # reduce the payload size by not sending None values.
+    if value is None:
+        raise NullValueException(
+            "Attribute value is of type: None. Omitting value since there is "
+            "no difference between omitting the key and sending None."
+        )
 
-    if not isinstance(value, valid_value_types):
+    # When working with numpy, note that numpy has its own `int`s, `str`s,
+    # et cetera. `numpy.str_` and `numpy.float_` inherit from Python's native
+    # `str` and `float`, respectively.  However, some types, such as `numpy.int_`
+    # and `numpy.bool_`, do not inherit from `int` and `bool` (respectively).
+    # In those cases, the valid_value_types check fails and it will try to
+    # convert these to string, which is not the desired behavior.  Checking for
+    # `type` in lieu of `isinstance` has the potential to impact performance.
+
+    # numpy values have an attribute "item" that returns the closest
+    # equivalent Python native type.  Ex: numpy.int64 -> int
+    # This is important to utilize in cases like int and bool where
+    # numpy does not inherit from those classes. This logic is
+    # determining whether or not the value is a valid_value_type (or
+    # inherited from one of those types) AND whether it is a numpy
+    # type (by determining if it has the attribute "item").
+    if not isinstance(value, valid_value_types) and not hasattr(value, "item"):
         original = value
 
         try:
@@ -298,8 +373,6 @@ def sanitize(value):
         except Exception:
             raise CastingFailureException()
         else:
-            _logger.debug(
-                "Attribute value is of type: %r. Casting %r to " "string: %s", type(original), original, value
-            )
+            _logger.debug("Attribute value is of type: %r. Casting %r to string: %s", type(original), original, value)
 
     return value

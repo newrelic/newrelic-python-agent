@@ -325,7 +325,7 @@ def test_http_payload_compression(server, client_cls, method, threshold):
             # Verify the compressed payload length is recorded
             assert internal_metrics["Supportability/Python/Collector/method1/ZLIB/Bytes"][:2] == [1, payload_byte_len]
             assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes"][:2] == [2, payload_byte_len*2]
-            
+
             assert len(internal_metrics) == 8
         else:
             # Verify no ZLIB compression metrics were sent
@@ -366,11 +366,14 @@ def test_cert_path(server):
 def test_default_cert_path(monkeypatch, system_certs_available):
     if system_certs_available:
         cert_file = "foo"
+        ca_path = "/usr/certs"
     else:
         cert_file = None
+        ca_path = None
 
     class DefaultVerifyPaths(object):
         cafile = cert_file
+        capath = ca_path
 
         def __init__(self, *args, **kwargs):
             pass

@@ -31,12 +31,25 @@ from newrelic.common.object_wrapper import (
     wrap_object,
 )
 
-_START_KEY = "_nr_start_time"
 KWARGS_ERROR = "Supportability/hooks/pika/kwargs_error"
 
 
-def _add_consume_rabbitmq_trace(transaction, method, properties, nr_start_time, queue_name=None):
+def instance_info(channel):
+    # Only host is currently used, so we only extract that.
+    try:
+        connection = channel.connection
+        if not hasattr(connection, "params") and hasattr(connection, "_impl"):
+            # Check for _impl attribute used by BlockingConnection to wrap actual connection objects
+            connection = connection._impl
 
+        host = connection.params.host
+    except Exception:
+        host = None
+
+    return host
+
+
+def _add_consume_rabbitmq_trace(transaction, method, properties, nr_start_time, queue_name=None, channel=None):
     routing_key = None
     if hasattr(method, "routing_key"):
         routing_key = method.routing_key
@@ -80,7 +93,16 @@ def _add_consume_rabbitmq_trace(transaction, method, properties, nr_start_time, 
         params=params,
     )
     trace.__enter__()
+
+    # Set start time and attributes after trace has started
     trace.start_time = nr_start_time
+
+    # Extract host from channel to add as an agent attribute
+    host = instance_info(channel)
+    if trace and host:
+        trace._add_agent_attribute("server.address", host)
+
+    # Exit trace immediately and complete
     trace.__exit__(None, None, None)
 
 
@@ -127,9 +149,15 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
         destination_name=exchange or "Default",
         params=params,
         source=wrapped,
-    ):
+    ) as trace:
         cat_headers = MessageTrace.generate_request_headers(transaction)
         properties.headers.update(cat_headers)
+
+        # Extract host from channel to add as an agent attribute
+        host = instance_info(instance)
+        if trace and host:
+            trace._add_agent_attribute("server.address", host)
+
         return wrapped(*args, **kwargs)
 
 
@@ -145,9 +173,15 @@ def _wrap_Channel_get_callback(module, obj, wrap_get):
             if not _kwargs:
                 method, properties = _args[1:3]
                 start_time = getattr(callback_wrapper, "_nr_start_time", None)
+                channel = getattr(callback_wrapper, "_nr_channel", None)
 
                 _add_consume_rabbitmq_trace(
-                    transaction, method=method, properties=properties, nr_start_time=start_time, queue_name=queue
+                    transaction,
+                    method=method,
+                    properties=properties,
+                    nr_start_time=start_time,
+                    queue_name=queue,
+                    channel=channel,
                 )
             else:
                 m = transaction._transaction_metrics.get(KWARGS_ERROR, 0)
@@ -156,7 +190,12 @@ def _wrap_Channel_get_callback(module, obj, wrap_get):
             name = callable_name(callback)
             return FunctionTraceWrapper(callback, name=name)(*_args, **_kwargs)
 
-        callback_wrapper._nr_start_time = time.time()
+        try:
+            callback_wrapper._nr_start_time = time.time()
+            callback_wrapper._nr_channel = instance
+        except Exception:
+            pass
+
         queue, args, kwargs = wrap_get(callback_wrapper, *args, **kwargs)
         return wrapped(*args, **kwargs)
 
@@ -197,7 +236,7 @@ def _wrap_basic_get_Channel(wrapper, queue, callback, *args, **kwargs):
     return queue, args, kwargs
 
 
-def _wrap_basic_get_Channel_old(wrapper, callback=None, queue="", *args, **kwargs):
+def _wrap_basic_get_Channel_old(wrapper, callback=None, queue="", *args, **kwargs):  # pragma: no cover
     if callback is not None:
         callback = wrapper(callback)
     args = (callback, queue) + args
@@ -267,6 +306,11 @@ def _ConsumeGeneratorWrapper(wrapped):
                 )
                 bt.__enter__()
 
+                # Extract host from channel to add as an agent attribute
+                host = instance_info(instance)
+                if bt and host:
+                    bt._add_agent_attribute("server.address", host)
+
                 return bt
 
         def _generator(generator):
@@ -279,7 +323,7 @@ def _ConsumeGeneratorWrapper(wrapped):
                     if any(exc):
                         to_throw = exc
                         exc = (None, None, None)
-                        yielded = generator.throw(*to_throw)
+                        yielded = generator.throw(to_throw[1])
                     else:
                         yielded = generator.send(value)
 
@@ -368,7 +412,6 @@ def _wrap_Channel_consume_callback(module, obj, wrap_consume):
                     correlation_id=correlation_id,
                     source=wrapped,
                 ) as mt:
-
                     # Improve transaction naming
                     _new_txn_name = "RabbitMQ/Exchange/%s/%s" % (exchange, name)
                     mt.set_transaction_name(_new_txn_name, group="Message")
@@ -377,6 +420,11 @@ def _wrap_Channel_consume_callback(module, obj, wrap_consume):
                     if unknown_kwargs:
                         m = mt._transaction_metrics.get(KWARGS_ERROR, 0)
                         mt._transaction_metrics[KWARGS_ERROR] = m + 1
+
+                    # Extract host from channel to add as an agent attribute
+                    host = instance_info(channel)
+                    if mt and host:
+                        mt._add_agent_attribute("server.address", host)
 
                     return wrapped(*args, **kwargs)
 
@@ -404,7 +452,7 @@ def instrument_pika_adapters(module):
 
     version = tuple(int(num) for num in pika.__version__.split(".", 1)[0])
 
-    if version[0] < 1:
+    if version[0] < 1:  # pragma: no cover
         wrap_consume = _wrap_basic_consume_BlockingChannel_old
     else:
         wrap_consume = _wrap_basic_consume_Channel
@@ -426,7 +474,7 @@ def instrument_pika_channel(module):
 
     version = tuple(int(num) for num in pika.__version__.split(".", 1)[0])
 
-    if version[0] < 1:
+    if version[0] < 1:  # pragma: no cover
         wrap_consume = _wrap_basic_consume_Channel_old
         wrap_get = _wrap_basic_get_Channel_old
     else:

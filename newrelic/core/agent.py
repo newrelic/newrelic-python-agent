@@ -339,7 +339,6 @@ class Agent(object):
         with self._lock:
             application = self._applications.get(app_name, None)
             if not application:
-
                 process_id = os.getpid()
 
                 if process_id != self._process_id:
@@ -449,7 +448,6 @@ class Agent(object):
                     instance.register_data_source(source, name, settings, **properties)
 
     def remove_thread_utilization(self):
-
         _logger.debug("Removing thread utilization data source from all applications")
 
         source_name = thread_utilization_data_source.__name__
@@ -524,6 +522,33 @@ class Agent(object):
 
         application.record_custom_metrics(metrics)
 
+    def record_dimensional_metric(self, app_name, name, value, tags=None):
+        """Records a basic metric for the named application. If there has
+        been no prior request to activate the application, the metric is
+        discarded.
+
+        """
+
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_dimensional_metric(name, value, tags)
+
+    def record_dimensional_metrics(self, app_name, metrics):
+        """Records the metrics for the named application. If there has
+        been no prior request to activate the application, the metric is
+        discarded. The metrics should be an iterable yielding tuples
+        consisting of the name and value.
+
+        """
+
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_dimensional_metrics(metrics)
+
     def record_custom_event(self, app_name, event_type, params):
         application = self._applications.get(app_name, None)
         if application is None or not application.active:
@@ -531,12 +556,19 @@ class Agent(object):
 
         application.record_custom_event(event_type, params)
 
-    def record_log_event(self, app_name, message, level=None, timestamp=None, priority=None):
+    def record_ml_event(self, app_name, event_type, params):
         application = self._applications.get(app_name, None)
         if application is None or not application.active:
             return
 
-        application.record_log_event(message, level, timestamp, priority=priority)
+        application.record_ml_event(event_type, params)
+
+    def record_log_event(self, app_name, message, level=None, timestamp=None, attributes=None, priority=None):
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_log_event(message, level, timestamp, attributes=attributes, priority=priority)
 
     def record_transaction(self, app_name, data):
         """Processes the raw transaction data, generating and recording

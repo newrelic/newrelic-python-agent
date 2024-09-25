@@ -15,8 +15,12 @@
 import sys
 
 import pytest
+from testing_support.fixtures import override_generic_settings
 
+from newrelic.core.config import global_settings
 from newrelic.core.environment import environment_settings
+
+settings = global_settings()
 
 
 def module(version):
@@ -45,6 +49,23 @@ def test_plugin_list():
     assert "newrelic.hooks.newrelic" not in plugin_list
     # Check that plugin that should get reported has version info.
     assert "pytest (%s)" % (pytest.__version__) in plugin_list
+
+
+@override_generic_settings(settings, {"package_reporting.enabled": False})
+def test_plugin_list_when_package_reporting_disabled():
+    # Let's pretend we fired an import hook
+    import newrelic.hooks.adapter_gunicorn  # noqa: F401
+
+    environment_info = environment_settings()
+
+    for key, plugin_list in environment_info:
+        if key == "Plugin List":
+            break
+    else:
+        assert False, "'Plugin List' not found"
+
+    # Check that bogus plugins don't get reported
+    assert plugin_list == []
 
 
 class NoIteratorDict(object):
@@ -87,6 +108,17 @@ def test_plugin_list_uses_no_sys_modules_iterator(monkeypatch):
                 "gunicorn": module("1.2.3"),
                 "uvicorn": module("4.5.6"),
                 "uvicorn.workers": object(),
+            },
+            "gunicorn (uvicorn)",
+            "1.2.3",
+            "4.5.6",
+        ),
+        # New replacement module uvicorn_worker should function the same
+        (
+            {
+                "gunicorn": module("1.2.3"),
+                "uvicorn": module("4.5.6"),
+                "uvicorn_worker": object(),
             },
             "gunicorn (uvicorn)",
             "1.2.3",

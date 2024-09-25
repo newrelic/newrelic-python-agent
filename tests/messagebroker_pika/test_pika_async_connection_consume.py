@@ -16,7 +16,6 @@ import functools
 
 import pika
 import pytest
-import six
 import tornado
 from compat import basic_consume
 from conftest import (
@@ -34,12 +33,14 @@ from pika.adapters.tornado_connection import TornadoConnection
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (
     capture_transaction_metrics,
+    dt_enabled,
     function_not_called,
     override_application_settings,
 )
 from testing_support.validators.validate_code_level_metrics import (
     validate_code_level_metrics,
 )
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -48,6 +49,7 @@ from testing_support.validators.validate_tt_collector_json import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.packages import six
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
@@ -98,12 +100,19 @@ else:
 
 @parametrized_connection
 @pytest.mark.parametrize("callback_as_partial", [True, False])
+@dt_enabled
 @validate_code_level_metrics(
-    "test_pika_async_connection_consume" + (".test_async_connection_basic_get_inside_txn.<locals>" if six.PY3 else ""),
+    "test_pika_async_connection_consume.test_async_connection_basic_get_inside_txn.<locals>",
     "on_message",
+    py2_namespace="test_pika_async_connection_consume",
+)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={"name": "MessageBroker/RabbitMQ/Exchange/Consume/Named/%s" % EXCHANGE},
+    exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @validate_transaction_metrics(
-    ("test_pika_async_connection_consume:" "test_async_connection_basic_get_inside_txn"),
+    "test_pika_async_connection_consume:test_async_connection_basic_get_inside_txn",
     scoped_metrics=_test_select_conn_basic_get_inside_txn_metrics,
     rollup_metrics=_test_select_conn_basic_get_inside_txn_metrics,
     background_task=True,
@@ -191,7 +200,7 @@ _test_select_conn_basic_get_inside_txn_no_callback_metrics = [
 )
 @parametrized_connection
 @validate_transaction_metrics(
-    ("test_pika_async_connection_consume:" "test_async_connection_basic_get_inside_txn_no_callback"),
+    "test_pika_async_connection_consume:test_async_connection_basic_get_inside_txn_no_callback",
     scoped_metrics=_test_select_conn_basic_get_inside_txn_no_callback_metrics,
     rollup_metrics=_test_select_conn_basic_get_inside_txn_no_callback_metrics,
     background_task=True,
@@ -227,7 +236,7 @@ _test_async_connection_basic_get_empty_metrics = [
 @parametrized_connection
 @pytest.mark.parametrize("callback_as_partial", [True, False])
 @validate_transaction_metrics(
-    ("test_pika_async_connection_consume:" "test_async_connection_basic_get_empty"),
+    "test_pika_async_connection_consume:test_async_connection_basic_get_empty",
     scoped_metrics=_test_async_connection_basic_get_empty_metrics,
     rollup_metrics=_test_async_connection_basic_get_empty_metrics,
     background_task=True,
@@ -284,15 +293,15 @@ else:
 
 @parametrized_connection
 @validate_transaction_metrics(
-    ("test_pika_async_connection_consume:" "test_async_connection_basic_consume_inside_txn"),
+    "test_pika_async_connection_consume:test_async_connection_basic_consume_inside_txn",
     scoped_metrics=_test_select_conn_basic_consume_in_txn_metrics,
     rollup_metrics=_test_select_conn_basic_consume_in_txn_metrics,
     background_task=True,
 )
 @validate_code_level_metrics(
-    "test_pika_async_connection_consume"
-    + (".test_async_connection_basic_consume_inside_txn.<locals>" if six.PY3 else ""),
+    "test_pika_async_connection_consume.test_async_connection_basic_consume_inside_txn.<locals>",
     "on_message",
+    py2_namespace="test_pika_async_connection_consume",
 )
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
@@ -360,20 +369,20 @@ else:
 
 @parametrized_connection
 @validate_transaction_metrics(
-    ("test_pika_async_connection_consume:" "test_async_connection_basic_consume_two_exchanges"),
+    "test_pika_async_connection_consume:test_async_connection_basic_consume_two_exchanges",
     scoped_metrics=_test_select_conn_basic_consume_two_exchanges,
     rollup_metrics=_test_select_conn_basic_consume_two_exchanges,
     background_task=True,
 )
 @validate_code_level_metrics(
-    "test_pika_async_connection_consume"
-    + (".test_async_connection_basic_consume_two_exchanges.<locals>" if six.PY3 else ""),
+    "test_pika_async_connection_consume.test_async_connection_basic_consume_two_exchanges.<locals>",
     "on_message_1",
+    py2_namespace="test_pika_async_connection_consume",
 )
 @validate_code_level_metrics(
-    "test_pika_async_connection_consume"
-    + (".test_async_connection_basic_consume_two_exchanges.<locals>" if six.PY3 else ""),
+    "test_pika_async_connection_consume.test_async_connection_basic_consume_two_exchanges.<locals>",
     "on_message_2",
+    py2_namespace="test_pika_async_connection_consume",
 )
 @background_task()
 def test_async_connection_basic_consume_two_exchanges(producer, producer_2, ConnectionClass):
@@ -483,9 +492,9 @@ else:
     group="Message/RabbitMQ/Exchange/%s" % EXCHANGE,
 )
 @validate_code_level_metrics(
-    "test_pika_async_connection_consume"
-    + (".test_select_connection_basic_consume_outside_transaction.<locals>" if six.PY3 else ""),
+    "test_pika_async_connection_consume.test_select_connection_basic_consume_outside_transaction.<locals>",
     "on_message",
+    py2_namespace="test_pika_async_connection_consume",
 )
 def test_select_connection_basic_consume_outside_transaction(producer):
     def on_message(channel, method_frame, header_frame, body):

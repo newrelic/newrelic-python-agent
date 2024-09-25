@@ -15,7 +15,7 @@
 import functools
 
 from newrelic.api.time_trace import TimeTrace, current_trace
-from newrelic.common.async_wrapper import async_wrapper
+from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.memcache_node import MemcacheNode
 
@@ -51,9 +51,9 @@ class MemcacheTrace(TimeTrace):
         )
 
 
-def MemcacheTraceWrapper(wrapped, command):
+def MemcacheTraceWrapper(wrapped, command, async_wrapper=None):
     def _nr_wrapper_memcache_trace_(wrapped, instance, args, kwargs):
-        wrapper = async_wrapper(wrapped)
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
             if not parent:
@@ -80,9 +80,9 @@ def MemcacheTraceWrapper(wrapped, command):
     return FunctionWrapper(wrapped, _nr_wrapper_memcache_trace_)
 
 
-def memcache_trace(command):
-    return functools.partial(MemcacheTraceWrapper, command=command)
+def memcache_trace(command, async_wrapper=None):
+    return functools.partial(MemcacheTraceWrapper, command=command, async_wrapper=async_wrapper)
 
 
-def wrap_memcache_trace(module, object_path, command):
-    wrap_object(module, object_path, MemcacheTraceWrapper, (command,))
+def wrap_memcache_trace(module, object_path, command, async_wrapper=None):
+    wrap_object(module, object_path, MemcacheTraceWrapper, (command, async_wrapper))

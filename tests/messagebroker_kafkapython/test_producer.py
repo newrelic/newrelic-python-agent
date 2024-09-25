@@ -25,11 +25,12 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
 from newrelic.packages import six
 
 
-def test_trace_metrics(topic, send_producer_message):
+def test_trace_metrics(topic, send_producer_message, expected_broker_metrics):
     from kafka.version import __version__ as version
 
     scoped_metrics = [("MessageBroker/Kafka/Topic/Produce/Named/%s" % topic, 1)]
@@ -40,7 +41,7 @@ def test_trace_metrics(topic, send_producer_message):
         txn_name,
         scoped_metrics=scoped_metrics,
         rollup_metrics=unscoped_metrics,
-        custom_metrics=[("Python/MessageBroker/Kafka-Python/%s" % version, 1)],
+        custom_metrics=[("Python/MessageBroker/Kafka-Python/%s" % version, 1)] + expected_broker_metrics,
         background_task=True,
     )
     @background_task()
@@ -50,7 +51,7 @@ def test_trace_metrics(topic, send_producer_message):
     test()
 
 
-def test_distributed_tracing_headers(topic, send_producer_message):
+def test_distributed_tracing_headers(topic, send_producer_message, expected_broker_metrics):
     txn_name = "test_producer:test_distributed_tracing_headers.<locals>.test" if six.PY3 else "test_producer:test"
 
     @validate_transaction_metrics(
@@ -58,7 +59,8 @@ def test_distributed_tracing_headers(topic, send_producer_message):
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1),
             ("Supportability/DistributedTrace/CreatePayload/Success", 1),
-        ],
+        ]
+        + expected_broker_metrics,
         background_task=True,
     )
     @background_task()
@@ -66,6 +68,26 @@ def test_distributed_tracing_headers(topic, send_producer_message):
     @validate_messagebroker_headers
     def test():
         send_producer_message()
+
+    test()
+
+
+def test_distributed_tracing_headers_under_terminal(topic, send_producer_message, expected_broker_metrics):
+    @validate_transaction_metrics(
+        "test_distributed_tracing_headers_under_terminal",
+        rollup_metrics=[
+            ("Supportability/TraceContext/Create/Success", 1),
+            ("Supportability/DistributedTrace/CreatePayload/Success", 1),
+        ]
+        + expected_broker_metrics,
+        background_task=True,
+    )
+    @background_task(name="test_distributed_tracing_headers_under_terminal")
+    @cache_kafka_producer_headers
+    @validate_messagebroker_headers
+    def test():
+        with FunctionTrace(name="terminal_trace", terminal=True):
+            send_producer_message()
 
     test()
 
@@ -82,3 +104,8 @@ def test_producer_errors(topic, producer, monkeypatch):
             producer.flush()
 
     test()
+
+
+@pytest.fixture(scope="function")
+def expected_broker_metrics(broker, topic):
+    return [("MessageBroker/Kafka/Nodes/%s/Produce/%s" % (server, topic), 1) for server in broker]

@@ -19,7 +19,6 @@ from testing_support.fixtures import (
     dt_enabled,
     override_application_settings,
     override_generic_settings,
-    validate_tt_segment_params,
 )
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer,
@@ -28,8 +27,15 @@ from testing_support.validators.validate_cross_process_headers import (
     validate_cross_process_headers,
 )
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+from testing_support.validators.validate_tt_segment_params import (
+    validate_tt_segment_params,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace

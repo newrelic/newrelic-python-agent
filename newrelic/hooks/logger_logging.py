@@ -24,6 +24,9 @@ except ImportError:
     from urllib.parse import quote
 
 
+IGNORED_LOG_RECORD_KEYS = set(["message", "msg"])
+
+
 def add_nr_linking_metadata(message):
     available_metadata = get_linking_metadata()
     entity_name = quote(available_metadata.get("entity.name", ""))
@@ -74,8 +77,18 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
 
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             try:
-                message = record.getMessage()
-                record_log_event(message, level_name, int(record.created * 1000))
+                message = record.msg
+                if not isinstance(message, dict):
+                    # Allow python to convert the message to a string and template it with args.
+                    message = record.getMessage()
+
+                # Grab and filter context attributes from log record
+                record_attrs = vars(record)
+                context_attrs = {k: record_attrs[k] for k in record_attrs if k not in IGNORED_LOG_RECORD_KEYS}
+
+                record_log_event(
+                    message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs
+                )
             except Exception:
                 pass
 

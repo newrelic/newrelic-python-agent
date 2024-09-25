@@ -18,19 +18,24 @@ import sys
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
-is_pypy = hasattr(sys, "pypy_version_info")
+
+IS_PYPY = hasattr(sys, "pypy_version_info")
+LOGURU_VERSION = get_package_version_tuple("loguru")
+LOGURU_FILTERED_RECORD_ATTRS = {"extra", "message", "time", "level", "_nr_original_message", "record"}
+ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
 
 
-def loguru_version():
-    from loguru import __version__
-
-    return tuple(int(x) for x in __version__.split("."))
+def _filter_record_attributes(record):
+    attrs = {k: v for k, v in record.items() if k not in LOGURU_FILTERED_RECORD_ATTRS}
+    extra_attrs = dict(record.get("extra", {}))
+    attrs.update({"extra.%s" % k: v for k, v in extra_attrs.items()})
+    return attrs
 
 
 def _nr_log_forwarder(message_instance):
@@ -59,13 +64,15 @@ def _nr_log_forwarder(message_instance):
                     application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
 
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
+            attrs = _filter_record_attributes(record)
+
             try:
-                record_log_event(message, level_name, int(record["time"].timestamp()))
+                time = record.get("time", None)
+                if time:
+                    time = int(time.timestamp()*1000)
+                record_log_event(message, level_name, time, attributes=attrs)
             except Exception:
                 pass
-
-
-ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
 
 
 def wrap_log(wrapped, instance, args, kwargs):
@@ -78,7 +85,7 @@ def wrap_log(wrapped, instance, args, kwargs):
         # Loguru looks into the stack trace to find the caller's module and function names.
         # options[1] tells loguru how far up to look in the stack trace to find the caller.
         # Because wrap_log is an extra call in the stack trace, loguru needs to look 1 level higher.
-        if not is_pypy:
+        if not IS_PYPY:
             options[1] += 1
         else:
             # PyPy inspection requires an additional frame of offset, as the wrapt internals seem to
@@ -109,7 +116,7 @@ def nr_log_patcher(original_patcher=None):
                 record["_nr_original_message"] = message = record["message"]
                 record["message"] = add_nr_linking_metadata(message)
 
-    if loguru_version() > (0, 6, 0):
+    if LOGURU_VERSION > (0, 6, 0):
         if original_patcher is not None:
             patchers = [p for p in original_patcher]  # Consumer iterable into list so we can modify
             # Wipe out reference so patchers aren't called twice, as the framework will handle calling other patchers.
@@ -134,8 +141,8 @@ def patch_loguru_logger(logger):
         if not hasattr(logger._core, "_nr_instrumented"):
             logger.add(_nr_log_forwarder, format="{message}")
             logger._core._nr_instrumented = True
-    elif not hasattr(logger, "_nr_instrumented"):
-        for _, handler in six.iteritems(logger._handlers):
+    elif not hasattr(logger, "_nr_instrumented"):  # pragma: no cover
+        for _, handler in logger._handlers.items():
             if handler._writer is _nr_log_forwarder:
                 logger._nr_instrumented = True
                 return

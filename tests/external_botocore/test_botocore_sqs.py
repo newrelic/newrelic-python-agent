@@ -12,33 +12,69 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import uuid
 
 import botocore.session
-import moto
 import pytest
-from testing_support.fixtures import override_application_settings
+from moto import mock_aws
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-MOTO_VERSION = tuple(int(v) for v in moto.__version__.split(".")[:3])
-
-# patch earlier versions of moto to support py37
-if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
-    import re
-
-    moto.packages.responses.responses.re._pattern_type = re.Pattern
+MOTO_VERSION = get_package_version_tuple("moto")
+BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 url = "sqs.us-east-1.amazonaws.com"
-botocore_version = tuple([int(n) for n in get_package_version("botocore").split(".")])
-if botocore_version < (1, 29, 0):
+EXPECTED_SEND_MESSAGE_AGENT_ATTRS = {
+    "expected_agents": ["messaging.destination.name"],
+    "exact_agents": {
+        "aws.operation": "SendMessage",
+        "cloud.account.id": "123456789012",
+        "cloud.region": "us-east-1",
+        "messaging.system": "aws_sqs",
+    },
+}
+EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS = {
+    "expected_agents": ["messaging.destination.name"],
+    "exact_agents": {
+        "aws.operation": "ReceiveMessage",
+        "cloud.account.id": "123456789012",
+        "cloud.region": "us-east-1",
+        "messaging.system": "aws_sqs",
+    },
+}
+EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS = required = {
+    "expected_agents": ["messaging.destination.name"],
+    "exact_agents": {
+        "aws.operation": "SendMessageBatch",
+        "cloud.account.id": "123456789012",
+        "cloud.region": "us-east-1",
+        "messaging.system": "aws_sqs",
+    },
+}
+if BOTOCORE_VERSION < (1, 29, 0):
     url = "queue.amazonaws.com"
+    # The old style url does not contain the necessary AWS info.
+    EXPECTED_SEND_MESSAGE_AGENT_ATTRS = {
+        "exact_agents": {
+            "aws.operation": "SendMessage",
+        },
+    }
+    EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS = {
+        "exact_agents": {
+            "aws.operation": "ReceiveMessage",
+        },
+    }
+    EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS = {
+        "exact_agents": {
+            "aws.operation": "SendMessageBatch",
+        },
+    }
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
@@ -70,11 +106,20 @@ _sqs_rollup_metrics_malformed = [
 ]
 
 
-@override_application_settings({"distributed_tracing.enabled": True})
+@dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateQueue"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "SendMessage"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "ReceiveMessage"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "SendMessageBatch"}, count=1)
+@validate_span_events(
+    **EXPECTED_SEND_MESSAGE_AGENT_ATTRS,
+    count=1,
+)
+@validate_span_events(
+    **EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS,
+    count=1,
+)
+@validate_span_events(
+    **EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS,
+    count=1,
+)
 @validate_span_events(exact_agents={"aws.operation": "PurgeQueue"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "DeleteQueue"}, count=1)
 @validate_transaction_metrics(
@@ -84,7 +129,7 @@ _sqs_rollup_metrics_malformed = [
     background_task=True,
 )
 @background_task()
-@moto.mock_sqs
+@mock_aws
 def test_sqs():
     session = botocore.session.get_session()
     client = session.create_client(
@@ -124,7 +169,7 @@ def test_sqs():
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
-@override_application_settings({"distributed_tracing.enabled": True})
+@dt_enabled
 @validate_transaction_metrics(
     "test_botocore_sqs:test_sqs_malformed",
     scoped_metrics=_sqs_scoped_metrics_malformed,
@@ -132,7 +177,7 @@ def test_sqs():
     background_task=True,
 )
 @background_task()
-@moto.mock_sqs
+@mock_aws
 def test_sqs_malformed():
     session = botocore.session.get_session()
     client = session.create_client(

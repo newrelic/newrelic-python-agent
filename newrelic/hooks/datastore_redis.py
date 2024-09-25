@@ -14,14 +14,88 @@
 
 import re
 
-from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.datastore_trace import (
+    DatastoreTrace,
+    DatastoreTraceWrapper,
+    wrap_datastore_trace,
+)
+from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
+from newrelic.common.async_wrapper import (
+    async_generator_wrapper,
+    coroutine_wrapper,
+    generator_wrapper,
+)
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
-_redis_client_methods = {
+_redis_client_sync_methods = {
+    "acl_dryrun",
+    "auth",
+    "bgrewriteaof",
+    "bitfield",
+    "blmpop",
+    "bzmpop",
+    "client",
+    "command",
+    "command_docs",
+    "command_getkeysandflags",
+    "command_info",
+    "debug_segfault",
+    "expiretime",
+    "failover",
+    "hello",
+    "hexpire",
+    "hexpireat",
+    "hexpiretime",
+    "hpersist",
+    "hpexpire",
+    "hpexpireat",
+    "hpexpiretime",
+    "hpttl",
+    "httl",
+    "latency_doctor",
+    "latency_graph",
+    "latency_histogram",
+    "lcs",
+    "lpop",
+    "lpos",
+    "memory_doctor",
+    "memory_help",
+    "monitor",
+    "pexpiretime",
+    "psetex",
+    "psync",
+    "pubsub",
+    "renamenx",
+    "rpop",
+    "script_debug",
+    "sentinel_ckquorum",
+    "sentinel_failover",
+    "sentinel_flushconfig",
+    "sentinel_get_master_addr_by_name",
+    "sentinel_master",
+    "sentinel_masters",
+    "sentinel_monitor",
+    "sentinel_remove",
+    "sentinel_reset",
+    "sentinel_sentinels",
+    "sentinel_set",
+    "sentinel_slaves",
+    "shutdown",
+    "sort",
+    "sort_ro",
+    "spop",
+    "srandmember",
+    "unwatch",
+    "watch",
+    "zlexcount",
+    "zrevrangebyscore",
+}
+
+
+_redis_client_async_methods = {
     "acl_cat",
     "acl_deluser",
-    "acl_dryrun",
     "acl_genpass",
     "acl_getuser",
     "acl_help",
@@ -50,11 +124,8 @@ _redis_client_methods = {
     "arrlen",
     "arrpop",
     "arrtrim",
-    "auth",
-    "bgrewriteaof",
     "bgsave",
     "bitcount",
-    "bitfield",
     "bitfield_ro",
     "bitop_and",
     "bitop_not",
@@ -63,13 +134,11 @@ _redis_client_methods = {
     "bitop",
     "bitpos",
     "blmove",
-    "blmpop",
     "blpop",
     "brpop",
     "brpoplpush",
     "byrank",
     "byrevrank",
-    "bzmpop",
     "bzpopmax",
     "bzpopmin",
     "card",
@@ -85,12 +154,12 @@ _redis_client_methods = {
     "client_no_evict",
     "client_pause",
     "client_reply",
+    "client_setinfo",
     "client_setname",
     "client_tracking",
     "client_trackinginfo",
     "client_unblock",
     "client_unpause",
-    "client",
     "cluster_add_slots",
     "cluster_addslots",
     "cluster_count_failure_report",
@@ -117,10 +186,7 @@ _redis_client_methods = {
     "cluster_slots",
     "cluster",
     "command_count",
-    "command_docs",
     "command_getkeys",
-    "command_getkeysandflags",
-    "command_info",
     "command_list",
     "command",
     "commit",
@@ -136,7 +202,6 @@ _redis_client_methods = {
     "createrule",
     "dbsize",
     "debug_object",
-    "debug_segfault",
     "debug_sleep",
     "debug",
     "decr",
@@ -159,10 +224,8 @@ _redis_client_methods = {
     "exists",
     "expire",
     "expireat",
-    "expiretime",
     "explain_cli",
     "explain",
-    "failover",
     "fcall_ro",
     "fcall",
     "flushall",
@@ -176,6 +239,7 @@ _redis_client_methods = {
     "function_load",
     "function_restore",
     "function_stats",
+    "gears_refresh_cluster",
     "geoadd",
     "geodist",
     "geohash",
@@ -191,7 +255,6 @@ _redis_client_methods = {
     "getrange",
     "getset",
     "hdel",
-    "hello",
     "hexists",
     "hget",
     "hgetall",
@@ -203,7 +266,7 @@ _redis_client_methods = {
     "hmset_dict",
     "hmset",
     "hrandfield",
-    "hscan_inter",
+    "hscan_iter",
     "hscan",
     "hset",
     "hsetnx",
@@ -219,13 +282,9 @@ _redis_client_methods = {
     "insertnx",
     "keys",
     "lastsave",
-    "latency_doctor",
-    "latency_graph",
-    "latency_histogram",
     "latency_history",
     "latency_latest",
     "latency_reset",
-    "lcs",
     "lindex",
     "linsert",
     "list",
@@ -234,8 +293,6 @@ _redis_client_methods = {
     "lmpop",
     "loadchunk",
     "lolwut",
-    "lpop",
-    "lpos",
     "lpush",
     "lpushx",
     "lrange",
@@ -244,8 +301,6 @@ _redis_client_methods = {
     "ltrim",
     "madd",
     "max",
-    "memory_doctor",
-    "memory_help",
     "memory_malloc_stats",
     "memory_purge",
     "memory_stats",
@@ -260,7 +315,6 @@ _redis_client_methods = {
     "module_load",
     "module_loadex",
     "module_unload",
-    "monitor",
     "move",
     "mrange",
     "mrevrange",
@@ -276,21 +330,19 @@ _redis_client_methods = {
     "persist",
     "pexpire",
     "pexpireat",
-    "pexpiretime",
     "pfadd",
     "pfcount",
     "pfmerge",
     "ping",
     "profile",
-    "psetex",
     "psubscribe",
-    "psync",
     "pttl",
     "publish",
     "pubsub_channels",
     "pubsub_numpat",
     "pubsub_numsub",
-    "pubsub",
+    "pubsub_shardchannels",
+    "pubsub_shardnumsub",
     "punsubscribe",
     "quantile",
     "query",
@@ -302,7 +354,6 @@ _redis_client_methods = {
     "readonly",
     "readwrite",
     "rename",
-    "renamenx",
     "replicaof",
     "reserve",
     "reset",
@@ -311,7 +362,6 @@ _redis_client_methods = {
     "revrange",
     "revrank",
     "role",
-    "rpop",
     "rpoplpush",
     "rpush",
     "rpushx",
@@ -321,7 +371,6 @@ _redis_client_methods = {
     "scan",
     "scandump",
     "scard",
-    "script_debug",
     "script_exists",
     "script_flush",
     "script_kill",
@@ -330,24 +379,11 @@ _redis_client_methods = {
     "sdiffstore",
     "search",
     "select",
-    "sentinel_ckquorum",
-    "sentinel_failover",
-    "sentinel_flushconfig",
-    "sentinel_get_master_addr_by_name",
-    "sentinel_master",
-    "sentinel_masters",
-    "sentinel_monitor",
-    "sentinel_remove",
-    "sentinel_reset",
-    "sentinel_sentinels",
-    "sentinel_set",
-    "sentinel_slaves",
     "set",
     "setbit",
     "setex",
     "setnx",
     "setrange",
-    "shutdown",
     "sinter",
     "sintercard",
     "sinterstore",
@@ -360,11 +396,8 @@ _redis_client_methods = {
     "smembers",
     "smismember",
     "smove",
-    "sort_ro",
-    "sort",
     "spellcheck",
-    "spop",
-    "srandmember",
+    "spublish",
     "srem",
     "sscan_iter",
     "sscan",
@@ -384,6 +417,11 @@ _redis_client_methods = {
     "syndump",
     "synupdate",
     "tagvals",
+    "tfcall_async",
+    "tfcall",
+    "tfunction_delete",
+    "tfunction_list",
+    "tfunction_load",
     "time",
     "toggle",
     "touch",
@@ -392,9 +430,8 @@ _redis_client_methods = {
     "type",
     "unlink",
     "unsubscribe",
-    "unwatch",
     "wait",
-    "watch",
+    "waitaof",
     "xack",
     "xadd",
     "xautoclaim",
@@ -430,7 +467,6 @@ _redis_client_methods = {
     "zinter",
     "zintercard",
     "zinterstore",
-    "zlexcount",
     "zmpop",
     "zmscore",
     "zpopmax",
@@ -447,7 +483,6 @@ _redis_client_methods = {
     "zremrangebyscore",
     "zrevrange",
     "zrevrangebylex",
-    "zrevrangebyscore",
     "zrevrank",
     "zscan_iter",
     "zscan",
@@ -455,6 +490,15 @@ _redis_client_methods = {
     "zunion",
     "zunionstore",
 }
+
+_redis_client_gen_methods = {
+    "scan_iter",
+    "hscan_iter",
+    "sscan_iter",
+    "zscan_iter",
+}
+
+_redis_client_methods = _redis_client_sync_methods.union(_redis_client_async_methods)
 
 _redis_multipart_commands = set(["client", "cluster", "command", "config", "debug", "sentinel", "slowlog", "script"])
 
@@ -479,28 +523,87 @@ def _instance_info(kwargs):
 
 
 def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
-    def _nr_wrapper_Redis_method_(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+    name = "%s.%s" % (instance_class_name, operation)
+    if operation in _redis_client_gen_methods:
+        async_wrapper = generator_wrapper
+    else:
+        async_wrapper = None
 
-        if transaction is None:
+    wrap_datastore_trace(module, name, product="Redis", target=None, operation=operation, async_wrapper=async_wrapper)
+
+
+def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, operation):
+    def _nr_wrapper_asyncio_Redis_method_(wrapped, instance, args, kwargs):
+        from redis.asyncio.client import Pipeline
+
+        if isinstance(instance, Pipeline):
             return wrapped(*args, **kwargs)
 
-        dt = DatastoreTrace(product="Redis", target=None, operation=operation, source=wrapped)
-
-        transaction._nr_datastore_instance_info = (None, None, None)
-
-        with dt:
-            result = wrapped(*args, **kwargs)
-
-            host, port_path_or_id, db = transaction._nr_datastore_instance_info
-            dt.host = host
-            dt.port_path_or_id = port_path_or_id
-            dt.database_name = db
-
-            return result
+        # Method should be run when awaited or iterated, therefore we wrap in an async wrapper.
+        return DatastoreTraceWrapper(
+            wrapped, product="Redis", target=None, operation=operation, async_wrapper=async_wrapper
+        )(*args, **kwargs)
 
     name = "%s.%s" % (instance_class_name, operation)
-    wrap_function_wrapper(module, name, _nr_wrapper_Redis_method_)
+    if operation in _redis_client_gen_methods:
+        async_wrapper = async_generator_wrapper
+    else:
+        async_wrapper = coroutine_wrapper
+
+    wrap_function_wrapper(module, name, _nr_wrapper_asyncio_Redis_method_)
+
+
+async def wrap_async_Connection_send_command(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    host, port_path_or_id, db = (None, None, None)
+
+    try:
+        dt = transaction.settings.datastore_tracer
+        if dt.instance_reporting.enabled or dt.database_name_reporting.enabled:
+            conn_kwargs = _conn_attrs_to_dict(instance)
+            host, port_path_or_id, db = _instance_info(conn_kwargs)
+    except Exception:
+        pass
+
+    # Older Redis clients would when sending multi part commands pass
+    # them in as separate arguments to send_command(). Need to therefore
+    # detect those and grab the next argument from the set of arguments.
+
+    operation = args[0].strip().lower()
+
+    # If it's not a multi part command, there's no need to trace it, so
+    # we can return early.
+
+    if (
+        operation.split()[0] not in _redis_multipart_commands
+    ):  # Set the datastore info on the DatastoreTrace containing this function call.
+        trace = current_trace()
+
+        # Find DatastoreTrace no matter how many other traces are inbetween
+        while trace is not None and not isinstance(trace, DatastoreTrace):
+            trace = getattr(trace, "parent", None)
+
+        if trace is not None:
+            trace.host = host
+            trace.port_path_or_id = port_path_or_id
+            trace.database_name = db
+
+        return await wrapped(*args, **kwargs)
+
+    # Convert multi args to single arg string
+
+    if operation in _redis_multipart_commands and len(args) > 1:
+        operation = "%s %s" % (operation, args[1].strip().lower())
+
+    operation = _redis_operation_re.sub("_", operation)
+
+    with DatastoreTrace(
+        product="Redis", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db
+    ):
+        return await wrapped(*args, **kwargs)
 
 
 def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
@@ -519,7 +622,15 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     except:
         pass
 
-    transaction._nr_datastore_instance_info = (host, port_path_or_id, db)
+    # Find DatastoreTrace no matter how many other traces are inbetween
+    trace = current_trace()
+    while trace is not None and not isinstance(trace, DatastoreTrace):
+        trace = getattr(trace, "parent", None)
+
+    if trace is not None:
+        trace.host = host
+        trace.port_path_or_id = port_path_or_id
+        trace.database_name = db
 
     # Older Redis clients would when sending multi part commands pass
     # them in as separate arguments to send_command(). Need to therefore
@@ -564,6 +675,14 @@ def instrument_redis_client(module):
                 _wrap_Redis_method_wrapper_(module, "Redis", name)
 
 
+def instrument_asyncio_redis_client(module):
+    if hasattr(module, "Redis"):
+        class_ = getattr(module, "Redis")
+        for operation in _redis_client_async_methods:
+            if hasattr(class_, operation):
+                _wrap_asyncio_Redis_method_wrapper(module, "Redis", operation)
+
+
 def instrument_redis_commands_core(module):
     _instrument_redis_commands_module(module, "CoreCommands")
 
@@ -596,6 +715,10 @@ def instrument_redis_commands_bf_commands(module):
     _instrument_redis_commands_module(module, "TOPKCommands")
 
 
+def instrument_redis_commands_cluster(module):
+    _instrument_redis_commands_module(module, "RedisClusterCommands")
+
+
 def _instrument_redis_commands_module(module, class_name):
     for name in _redis_client_methods:
         if hasattr(module, class_name):
@@ -605,4 +728,12 @@ def _instrument_redis_commands_module(module, class_name):
 
 
 def instrument_redis_connection(module):
-    wrap_function_wrapper(module, "Connection.send_command", _nr_Connection_send_command_wrapper_)
+    if hasattr(module, "Connection"):
+        if hasattr(module.Connection, "send_command"):
+            wrap_function_wrapper(module, "Connection.send_command", _nr_Connection_send_command_wrapper_)
+
+
+def instrument_asyncio_redis_connection(module):
+    if hasattr(module, "Connection"):
+        if hasattr(module.Connection, "send_command"):
+            wrap_function_wrapper(module, "Connection.send_command", wrap_async_Connection_send_command)

@@ -15,9 +15,10 @@
 import pytest
 import redis
 
+from newrelic.common.package_version_utils import get_package_version_tuple
 from newrelic.hooks.datastore_redis import _conn_attrs_to_dict, _instance_info
 
-REDIS_PY_VERSION = redis.VERSION
+REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 _instance_info_tests = [
     ((), {}, ("localhost", "6379", "0")),

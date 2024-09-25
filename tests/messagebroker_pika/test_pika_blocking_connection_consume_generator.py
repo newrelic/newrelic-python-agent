@@ -42,7 +42,7 @@ _test_blocking_connection_consume_metrics = [
 
 
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_break"),
+    "test_pika_blocking_connection_consume_generator:test_blocking_connection_consume_break",
     scoped_metrics=_test_blocking_connection_consume_metrics,
     rollup_metrics=_test_blocking_connection_consume_metrics,
     background_task=True,
@@ -59,7 +59,7 @@ def test_blocking_connection_consume_break(producer):
 
 
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_connection_close"),
+    "test_pika_blocking_connection_consume_generator:test_blocking_connection_consume_connection_close",
     scoped_metrics=_test_blocking_connection_consume_metrics,
     rollup_metrics=_test_blocking_connection_consume_metrics,
     background_task=True,
@@ -83,7 +83,7 @@ def test_blocking_connection_consume_connection_close(producer):
 
 
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_timeout"),
+    "test_pika_blocking_connection_consume_generator:test_blocking_connection_consume_timeout",
     scoped_metrics=_test_blocking_connection_consume_metrics,
     rollup_metrics=_test_blocking_connection_consume_metrics,
     background_task=True,
@@ -107,7 +107,7 @@ def test_blocking_connection_consume_timeout(producer):
 
 
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_exception_in_for_loop"),
+    "test_pika_blocking_connection_consume_generator:test_blocking_connection_consume_exception_in_for_loop",
     scoped_metrics=_test_blocking_connection_consume_metrics,
     rollup_metrics=_test_blocking_connection_consume_metrics,
     background_task=True,
@@ -122,7 +122,7 @@ def test_blocking_connection_consume_exception_in_for_loop(producer):
             # We should still create the metric in this case even if there is
             # an exception
             for result in channel.consume(QUEUE):
-                1 / 0
+                1 / 0  # noqa
         except ZeroDivisionError:
             # Expected error
             pass
@@ -140,7 +140,7 @@ _test_blocking_connection_consume_empty_metrics = [
 
 
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_exception_in_generator"),
+    "test_pika_blocking_connection_consume_generator:test_blocking_connection_consume_exception_in_generator",
     scoped_metrics=_test_blocking_connection_consume_empty_metrics,
     rollup_metrics=_test_blocking_connection_consume_empty_metrics,
     background_task=True,
@@ -172,7 +172,7 @@ _test_blocking_connection_consume_many_metrics = [
 
 
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_many"),
+    "test_pika_blocking_connection_consume_generator:test_blocking_connection_consume_many",
     scoped_metrics=_test_blocking_connection_consume_many_metrics,
     rollup_metrics=_test_blocking_connection_consume_many_metrics,
     background_task=True,
@@ -193,7 +193,7 @@ def test_blocking_connection_consume_many(produce_five):
 
 
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_using_methods"),
+    "test_pika_blocking_connection_consume_generator:test_blocking_connection_consume_using_methods",
     scoped_metrics=_test_blocking_connection_consume_metrics,
     rollup_metrics=_test_blocking_connection_consume_metrics,
     background_task=True,
@@ -316,7 +316,7 @@ def test_blocking_connection_consume_using_methods_outside_txn(producer):
 
 
 @validate_transaction_metrics(
-    ("test_pika_blocking_connection_consume_generator:" "test_blocking_connection_consume_exception_on_creation"),
+    "test_pika_blocking_connection_consume_generator:test_blocking_connection_consume_exception_on_creation",
     scoped_metrics=_test_blocking_connection_consume_empty_metrics,
     rollup_metrics=_test_blocking_connection_consume_empty_metrics,
     background_task=True,

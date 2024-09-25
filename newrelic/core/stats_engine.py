@@ -35,16 +35,18 @@ import newrelic.packages.six as six
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.common.encoding_utils import json_encode
+from newrelic.common.metric_utils import create_metric_identity
 from newrelic.common.object_names import parse_exc_info
 from newrelic.common.streaming_utils import StreamBuffer
 from newrelic.core.attribute import (
     MAX_LOG_MESSAGE_LENGTH,
     create_agent_attributes,
-    create_user_attributes,
+    create_attributes,
     process_user_attribute,
+    resolve_logging_context_attributes,
     truncate,
 )
-from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
+from newrelic.core.attribute_filter import DST_ALL, DST_ERROR_COLLECTOR
 from newrelic.core.code_level_metrics import extract_code_from_traceback
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.database_utils import explain_plan
@@ -61,7 +63,7 @@ EVENT_HARVEST_METHODS = {
         "reset_synthetics_events",
     ),
     "span_event_data": ("reset_span_events",),
-    "custom_event_data": ("reset_custom_events",),
+    "custom_event_data": ("reset_custom_events", "reset_ml_events"),
     "error_event_data": ("reset_error_events",),
     "log_event_data": ("reset_log_events",),
 }
@@ -180,6 +182,11 @@ class TimeStats(list):
 
         self.merge_raw_time_metric(value)
 
+    def merge_dimensional_metric(self, value):
+        """Merge data value."""
+
+        self.merge_raw_time_metric(value)
+
 
 class CountStats(TimeStats):
     def merge_stats(self, other):
@@ -233,6 +240,99 @@ class CustomMetrics(object):
 
         """
         self.__stats_table = {}
+
+
+class DimensionalMetrics(object):
+
+    """Nested dictionary table for collecting a set of metrics broken down by tags."""
+
+    def __init__(self):
+        self.__stats_table = {}
+
+    def __contains__(self, key):
+        if isinstance(key, tuple):
+            if not isinstance(key[1], frozenset):
+                # Convert tags dict to a frozen set for proper comparisons
+                name, tags = create_metric_identity(*key)
+            else:
+                name, tags = key
+
+            # Check that both metric name and tags are already present.
+            stats_container = self.__stats_table.get(name)
+            return stats_container and tags in stats_container
+        else:
+            # Only look for metric name
+            return key in self.__stats_table
+
+    def record_dimensional_metric(self, name, value, tags=None):
+        """Record a single value metric, merging the data with any data
+        from prior value metrics with the same name and tags.
+        """
+        name, tags = create_metric_identity(name, tags)
+
+        if isinstance(value, dict):
+            if len(value) == 1 and "count" in value:
+                new_stats = CountStats(call_count=value["count"])
+            else:
+                new_stats = TimeStats(*c2t(**value))
+        else:
+            new_stats = TimeStats(1, value, value, value, value, value**2)
+
+        stats_container = self.__stats_table.get(name)
+        if stats_container is None:
+            # No existing metrics with this name. Set up new stats container.
+            self.__stats_table[name] = {tags: new_stats}
+        else:
+            # Existing metric container found.
+            stats = stats_container.get(tags)
+            if stats is None:
+                # No data points for this set of tags. Add new data.
+                stats_container[tags] = new_stats
+            else:
+                # Existing data points found, merge stats.
+                stats.merge_stats(new_stats)
+
+        return (name, tags)
+
+    def metrics(self):
+        """Returns an iterator over the set of value metrics.
+        The items returned are a dictionary of tags for each metric value.
+        Metric values are each a tuple consisting of the metric name and accumulated
+        stats for the metric.
+        """
+
+        return six.iteritems(self.__stats_table)
+
+    def metrics_count(self):
+        """Returns a count of the number of unique metrics currently
+        recorded for apdex, time and value metrics.
+        """
+
+        return sum(len(metric) for metric in self.__stats_table.values())
+
+    def reset_metric_stats(self):
+        """Resets the accumulated statistics back to initial state for
+        metric data.
+        """
+        self.__stats_table = {}
+
+    def get(self, key, default=None):
+        return self.__stats_table.get(key, default)
+
+    def __setitem__(self, key, value):
+        self.__stats_table[key] = value
+
+    def __getitem__(self, key):
+        return self.__stats_table[key]
+
+    def __str__(self):
+        return str(self.__stats_table)
+
+    def __repr__(self):
+        return "%s(%s)" % (__class__.__name__, repr(self.__stats_table))
+
+    def items(self):
+        return self.metrics()
 
 
 class SlowSqlStats(list):
@@ -433,9 +533,11 @@ class StatsEngine(object):
     def __init__(self):
         self.__settings = None
         self.__stats_table = {}
+        self.__dimensional_stats_table = DimensionalMetrics()
         self._transaction_events = SampledDataSet()
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
+        self._ml_events = SampledDataSet()
         self._span_events = SampledDataSet()
         self._log_events = SampledDataSet()
         self._span_stream = None
@@ -457,12 +559,20 @@ class StatsEngine(object):
         return self.__stats_table
 
     @property
+    def dimensional_stats_table(self):
+        return self.__dimensional_stats_table
+
+    @property
     def transaction_events(self):
         return self._transaction_events
 
     @property
     def custom_events(self):
         return self._custom_events
+
+    @property
+    def ml_events(self):
+        return self._ml_events
 
     @property
     def span_events(self):
@@ -494,7 +604,7 @@ class StatsEngine(object):
 
         """
 
-        return len(self.__stats_table)
+        return len(self.__stats_table) + self.__dimensional_stats_table.metrics_count()
 
     def record_apdex_metric(self, metric):
         """Record a single apdex metric, merging the data with any data
@@ -615,6 +725,11 @@ class StatsEngine(object):
         module, name, fullnames, message_raw = parse_exc_info(error)
         fullname = fullnames[0]
 
+        # In the case case of JSON formatting for OpenAI models
+        # this will result in a "cleaner" message format
+        if getattr(value, "_nr_message", None):
+            message_raw = value._nr_message
+
         # Check to see if we need to strip the message before recording it.
 
         if settings.strip_exception_messages.enabled and fullname not in settings.strip_exception_messages.allowlist:
@@ -714,8 +829,7 @@ class StatsEngine(object):
                 )
                 custom_attributes = {}
 
-            user_attributes = create_user_attributes(custom_attributes, settings.attribute_filter)
-
+            user_attributes = create_attributes(custom_attributes, DST_ALL, settings.attribute_filter)
 
         # Extract additional details about the exception as agent attributes
         agent_attributes = {}
@@ -728,28 +842,37 @@ class StatsEngine(object):
                 error_group_name = None
                 try:
                     # Call callback to obtain error group name
-                    error_group_name_raw = settings.error_collector.error_group_callback(value, {
-                        "traceback": tb,
-                        "error.class": exc,
-                        "error.message": message_raw,
-                        "error.expected": is_expected,
-                        "custom_params": attributes,
-                        # Transaction specific items should be set to None
-                        "transactionName": None,
-                        "response.status": None,
-                        "request.method": None,
-                        "request.uri": None,
-                    })
+                    error_group_name_raw = settings.error_collector.error_group_callback(
+                        value,
+                        {
+                            "traceback": tb,
+                            "error.class": exc,
+                            "error.message": message_raw,
+                            "error.expected": is_expected,
+                            "custom_params": attributes,
+                            # Transaction specific items should be set to None
+                            "transactionName": None,
+                            "response.status": None,
+                            "request.method": None,
+                            "request.uri": None,
+                        },
+                    )
                     if error_group_name_raw:
                         _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
                         if error_group_name is None or not isinstance(error_group_name, six.string_types):
-                            raise ValueError("Invalid attribute value for error.group.name. Expected string, got: %s" % repr(error_group_name_raw))
+                            raise ValueError(
+                                "Invalid attribute value for error.group.name. Expected string, got: %s"
+                                % repr(error_group_name_raw)
+                            )
                         else:
                             agent_attributes["error.group.name"] = error_group_name
 
                 except Exception:
-                    _logger.error("Encountered error when calling error group callback:\n%s", "".join(traceback.format_exception(*sys.exc_info())))
-        
+                    _logger.error(
+                        "Encountered error when calling error group callback:\n%s",
+                        "".join(traceback.format_exception(*sys.exc_info())),
+                    )
+
         agent_attributes = create_agent_attributes(agent_attributes, settings.attribute_filter)
 
         # Record the exception details.
@@ -774,9 +897,13 @@ class StatsEngine(object):
         for attr in agent_attributes:
             if attr.destinations & DST_ERROR_COLLECTOR:
                 attributes["agentAttributes"][attr.name] = attr.value
-        
+
         error_details = TracedError(
-            start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
+            start_time=time.time(),
+            path="Exception",
+            message=message,
+            type=fullname,
+            parameters=attributes,
         )
 
         # Save this error as a trace and an event.
@@ -829,6 +956,15 @@ class StatsEngine(object):
         if settings.collect_custom_events and settings.custom_insights_events.enabled:
             self._custom_events.add(event)
 
+    def record_ml_event(self, event):
+        settings = self.__settings
+
+        if not settings:
+            return
+
+        if settings.ml_insights_events.enabled:
+            self._ml_events.add(event)
+
     def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data
         from prior value metrics with the same name.
@@ -864,6 +1000,28 @@ class StatsEngine(object):
 
         for name, value in metrics:
             self.record_custom_metric(name, value)
+
+    def record_dimensional_metric(self, name, value, tags=None):
+        """Record a single value metric, merging the data with any data
+        from prior value metrics with the same name and tags.
+        """
+        return self.__dimensional_stats_table.record_dimensional_metric(name, value, tags)
+
+    def record_dimensional_metrics(self, metrics):
+        """Record the value metrics supplied by the iterable, merging
+        the data with any data from prior value metrics with the same
+        name.
+
+        """
+
+        if not self.__settings:
+            return
+
+        for metric in metrics:
+            name, value = metric[:2]
+            tags = metric[2] if len(metric) >= 3 else None
+
+            self.record_dimensional_metric(name, value, tags)
 
     def record_slow_sql_node(self, node):
         """Record a single sql metric, merging the data with any data
@@ -975,6 +1133,8 @@ class StatsEngine(object):
 
         self.merge_custom_metrics(transaction.custom_metrics.metrics())
 
+        self.merge_dimensional_metrics(transaction.dimensional_metrics.metrics())
+
         self.record_time_metrics(transaction.time_metrics(self))
 
         # Capture any errors if error collection is enabled.
@@ -1042,6 +1202,11 @@ class StatsEngine(object):
         if settings.collect_custom_events and settings.custom_insights_events.enabled:
             self.custom_events.merge(transaction.custom_events)
 
+        # Merge in machine learning events
+
+        if settings.ml_insights_events.enabled:
+            self.ml_events.merge(transaction.ml_events)
+
         # Merge in span events
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
@@ -1063,7 +1228,7 @@ class StatsEngine(object):
         ):
             self._log_events.merge(transaction.log_events, priority=transaction.priority)
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
         settings = self.__settings
         if not (
             settings
@@ -1076,18 +1241,62 @@ class StatsEngine(object):
 
         timestamp = timestamp if timestamp is not None else time.time()
         level = str(level) if level is not None else "UNKNOWN"
+        context_attributes = attributes  # Name reassigned for clarity
 
-        if not message or message.isspace():
-            _logger.debug("record_log_event called where message was missing. No log event will be sent.")
-            return
+        # Unpack message and attributes from dict inputs
+        if isinstance(message, dict):
+            message_attributes = {k: v for k, v in message.items() if k != "message"}
+            message = message.get("message", "")
+        else:
+            message_attributes = None
 
-        message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+        if message is not None:
+            # Coerce message into a string type
+            if not isinstance(message, six.string_types):
+                try:
+                    message = str(message)
+                except Exception:
+                    # Exit early for invalid message type after unpacking
+                    _logger.debug(
+                        "record_log_event called where message could not be converted to a string type. No log event will be sent."
+                    )
+                    return
+
+            # Truncate the now unpacked and string converted message
+            message = truncate(message, MAX_LOG_MESSAGE_LENGTH)
+
+        # Collect attributes from linking metadata, context data, and message attributes
+        collected_attributes = {}
+        if settings and settings.application_logging.forwarding.context_data.enabled:
+            if context_attributes:
+                context_attributes = resolve_logging_context_attributes(
+                    context_attributes, settings.attribute_filter, "context."
+                )
+                if context_attributes:
+                    collected_attributes.update(context_attributes)
+
+            if message_attributes:
+                message_attributes = resolve_logging_context_attributes(
+                    message_attributes, settings.attribute_filter, "message."
+                )
+                if message_attributes:
+                    collected_attributes.update(message_attributes)
+
+            # Exit early if no message or attributes found after filtering
+            if (not message or message.isspace()) and not context_attributes and not message_attributes:
+                _logger.debug(
+                    "record_log_event called where no message and no attributes were found. No log event will be sent."
+                )
+                return
+
+        # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute
+        collected_attributes.update(get_linking_metadata())
 
         event = LogEventNode(
             timestamp=timestamp,
             level=level,
             message=message,
-            attributes=get_linking_metadata(),
+            attributes=collected_attributes,
         )
 
         if priority is None:
@@ -1129,7 +1338,11 @@ class StatsEngine(object):
 
         if normalizer is not None:
             for key, value in six.iteritems(self.__stats_table):
-                key = (normalizer(key[0])[0], key[1])
+                normalized_name, ignored = normalizer(key[0])
+                if ignored:
+                    continue
+
+                key = (normalized_name, key[1])
                 stats = normalized_stats.get(key)
                 if stats is None:
                     normalized_stats[key] = copy.copy(value)
@@ -1158,6 +1371,66 @@ class StatsEngine(object):
             return 0
 
         return len(self.__stats_table)
+
+    def dimensional_metric_data(self, normalizer=None):
+        """Returns a list containing the low level metric data for
+        sending to the core application pertaining to the reporting
+        period. This consists of tuple pairs where first is dictionary
+        with name and scope keys with corresponding values, or integer
+        identifier if metric had an entry in dictionary mapping metric
+        (name, tags) as supplied from core application. The second is
+        the list of accumulated metric data, the list always being of
+        length 6.
+
+        """
+
+        if not self.__settings:
+            return []
+
+        result = []
+        normalized_stats = {}
+
+        # Metric Renaming and Re-Aggregation. After applying the metric
+        # renaming rules, the metrics are re-aggregated to collapse the
+        # metrics with same names after the renaming.
+
+        if self.__settings.debug.log_raw_metric_data:
+            _logger.info(
+                "Raw dimensional metric data for harvest of %r is %r.",
+                self.__settings.app_name,
+                list(self.__dimensional_stats_table.metrics()),
+            )
+
+        if normalizer is not None:
+            for key, value in self.__dimensional_stats_table.metrics():
+                key = normalizer(key)[0]
+                stats = normalized_stats.get(key)
+                if stats is None:
+                    normalized_stats[key] = copy.copy(value)
+                else:
+                    stats.merge_stats(value)
+        else:
+            normalized_stats = self.__dimensional_stats_table
+
+        if self.__settings.debug.log_normalized_metric_data:
+            _logger.info(
+                "Normalized metric data for harvest of %r is %r.",
+                self.__settings.app_name,
+                list(normalized_stats.metrics()),
+            )
+
+        for key, value in normalized_stats.items():
+            result.append((key, value))
+
+        return result
+
+    def dimensional_metric_data_count(self):
+        """Returns a count of the number of unique metrics."""
+
+        if not self.__settings:
+            return 0
+
+        return self.__dimensional_stats_table.metrics_count()
 
     def error_data(self):
         """Returns a to a list containing any errors collected during
@@ -1436,7 +1709,6 @@ class StatsEngine(object):
         """
 
         self.__settings = settings
-        self.__stats_table = {}
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -1444,9 +1716,11 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__synthetics_transactions = []
 
+        self.reset_metric_stats()
         self.reset_transaction_events()
         self.reset_error_events()
         self.reset_custom_events()
+        self.reset_ml_events()
         self.reset_span_events()
         self.reset_log_events()
         self.reset_synthetics_events()
@@ -1463,6 +1737,7 @@ class StatsEngine(object):
         """
 
         self.__stats_table = {}
+        self.__dimensional_stats_table.reset_metric_stats()
 
     def reset_transaction_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1488,6 +1763,12 @@ class StatsEngine(object):
             self._custom_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.custom_event_data)
         else:
             self._custom_events = SampledDataSet()
+
+    def reset_ml_events(self):
+        if self.__settings is not None:
+            self._ml_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.ml_event_data)
+        else:
+            self._ml_events = SampledDataSet()
 
     def reset_span_events(self):
         if self.__settings is not None:
@@ -1622,6 +1903,7 @@ class StatsEngine(object):
         self._merge_error_events(snapshot)
         self._merge_error_traces(snapshot)
         self._merge_custom_events(snapshot)
+        self._merge_ml_events(snapshot)
         self._merge_span_events(snapshot)
         self._merge_log_events(snapshot)
         self._merge_sql(snapshot)
@@ -1647,6 +1929,7 @@ class StatsEngine(object):
         self._merge_synthetics_events(snapshot, rollback=True)
         self._merge_error_events(snapshot)
         self._merge_custom_events(snapshot, rollback=True)
+        self._merge_ml_events(snapshot, rollback=True)
         self._merge_span_events(snapshot, rollback=True)
         self._merge_log_events(snapshot, rollback=True)
 
@@ -1715,6 +1998,12 @@ class StatsEngine(object):
         if not events:
             return
         self._custom_events.merge(events)
+
+    def _merge_ml_events(self, snapshot, rollback=False):
+        events = snapshot.ml_events
+        if not events:
+            return
+        self._ml_events.merge(events)
 
     def _merge_span_events(self, snapshot, rollback=False):
         events = snapshot.span_events
@@ -1785,6 +2074,29 @@ class StatsEngine(object):
             else:
                 stats.merge_stats(other)
 
+    def merge_dimensional_metrics(self, metrics):
+        """
+        Merges in a set of dimensional metrics. The metrics should be
+        provide as an iterable where each item is a tuple of the metric
+        key and the accumulated stats for the metric. The metric key should
+        also be a tuple, containing a name and attribute filtered frozenset of tags.
+        """
+
+        if not self.__settings:
+            return
+
+        for key, other in metrics:
+            stats_container = self.__dimensional_stats_table.get(key)
+            if not stats_container:
+                self.__dimensional_stats_table[key] = other
+            else:
+                for tags, other_value in other.items():
+                    stats = stats_container.get(tags)
+                    if not stats:
+                        stats_container[tags] = other_value
+                    else:
+                        stats.merge_stats(other_value)
+
     def _snapshot(self):
         copy = object.__new__(StatsEngineSnapshot)
         copy.__dict__.update(self.__dict__)
@@ -1797,6 +2109,9 @@ class StatsEngineSnapshot(StatsEngine):
 
     def reset_custom_events(self):
         self._custom_events = None
+
+    def reset_ml_events(self):
+        self._ml_events = None
 
     def reset_span_events(self):
         self._span_events = None

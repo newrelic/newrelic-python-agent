@@ -26,7 +26,6 @@ from newrelic.hooks.logger_logging import add_nr_linking_metadata
 _logger = logging.getLogger(__name__)
 
 IS_PYPY = hasattr(sys, "pypy_version_info")
-LOGURU_VERSION = get_package_version_tuple("loguru")
 LOGURU_FILTERED_RECORD_ATTRS = {"extra", "message", "time", "level", "_nr_original_message", "record"}
 ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
 

@@ -80,41 +80,41 @@ class CursorWrapper(DBAPI2CursorWrapper):
 
         return self
 
-    def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
-        if hasattr(sql, "as_string"):
-            sql = sql.as_string(self)
+    def execute(self, query, params=DEFAULT, *args, **kwargs):
+        if hasattr(query, "as_string"):
+            query = query.as_string(self)
 
-        return super(CursorWrapper, self).execute(sql, parameters, *args, **kwargs)
+        return super(CursorWrapper, self).execute(query, params, *args, **kwargs)
 
-    def executemany(self, sql, seq_of_parameters):
-        if hasattr(sql, "as_string"):
-            sql = sql.as_string(self)
+    def executemany(self, query, params_seq, *args, **kwargs):
+        if hasattr(query, "as_string"):
+            query = query.as_string(self)
 
-        return super(CursorWrapper, self).executemany(sql, seq_of_parameters)
+        return super(CursorWrapper, self).executemany(query, params_seq, *args, **kwargs)
 
 
 class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
 
     __cursor_wrapper__ = CursorWrapper
 
-    def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
-        if hasattr(sql, "as_string"):
-            sql = sql.as_string(self)
+    def execute(self, query, params=DEFAULT, *args, **kwargs):
+        if hasattr(query, "as_string"):
+            query = query.as_string(self)
 
-        if parameters is not DEFAULT:
+        if params is not DEFAULT:
             with DatabaseTrace(
-                sql=sql,
+                sql=query,
                 dbapi2_module=self._nr_dbapi2_module,
                 connect_params=self._nr_connect_params,
                 cursor_params=None,
-                sql_parameters=parameters,
+                sql_parameters=params,
                 execute_params=(args, kwargs),
                 source=self.__wrapped__.execute,
             ):
-                cursor = self.__wrapped__.execute(sql, parameters, *args, **kwargs)
+                cursor = self.__wrapped__.execute(query, params, *args, **kwargs)
         else:
             with DatabaseTrace(
-                sql=sql,
+                sql=query,
                 dbapi2_module=self._nr_dbapi2_module,
                 connect_params=self._nr_connect_params,
                 cursor_params=None,
@@ -122,7 +122,7 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
                 execute_params=(args, kwargs),
                 source=self.__wrapped__.execute,
             ):
-                cursor = self.__wrapped__.execute(sql, **kwargs)
+                cursor = self.__wrapped__.execute(query, **kwargs)
 
         return self.__cursor_wrapper__(cursor, self._nr_dbapi2_module, self._nr_connect_params, (args, kwargs))
 
@@ -226,41 +226,41 @@ class AsyncCursorWrapper(DBAPI2AsyncCursorWrapper):
 
         return self
 
-    async def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
-        if hasattr(sql, "as_string"):
-            sql = sql.as_string(self)
+    async def execute(self, query, params=DEFAULT, *args, **kwargs):
+        if hasattr(query, "as_string"):
+            query = query.as_string(self)
 
-        return await super(AsyncCursorWrapper, self).execute(sql, parameters, *args, **kwargs)
+        return await super(AsyncCursorWrapper, self).execute(query, params, *args, **kwargs)
 
-    async def executemany(self, sql, seq_of_parameters):
-        if hasattr(sql, "as_string"):
-            sql = sql.as_string(self)
+    async def executemany(self, query, params_seq, *args, **kwargs):
+        if hasattr(query, "as_string"):
+            query = query.as_string(self)
 
-        return await super(AsyncCursorWrapper, self).executemany(sql, seq_of_parameters)
+        return await super(AsyncCursorWrapper, self).executemany(query, params_seq, *args, **kwargs)
 
 
 class AsyncConnectionSaveParamsWrapper(DBAPI2AsyncConnectionWrapper):
 
     __cursor_wrapper__ = AsyncCursorWrapper
 
-    async def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
-        if hasattr(sql, "as_string"):
-            sql = sql.as_string(self)
+    async def execute(self, query, params=DEFAULT, *args, **kwargs):
+        if hasattr(query, "as_string"):
+            query = query.as_string(self)
 
-        if parameters is not DEFAULT:
+        if params is not DEFAULT:
             with DatabaseTrace(
-                sql=sql,
+                sql=query,
                 dbapi2_module=self._nr_dbapi2_module,
                 connect_params=self._nr_connect_params,
                 cursor_params=None,
-                sql_parameters=parameters,
+                sql_parameters=params,
                 execute_params=(args, kwargs),
                 source=self.__wrapped__.execute,
             ):
-                cursor = await self.__wrapped__.execute(sql, parameters, *args, **kwargs)
+                cursor = await self.__wrapped__.execute(query, params, *args, **kwargs)
         else:
             with DatabaseTrace(
-                sql=sql,
+                sql=query,
                 dbapi2_module=self._nr_dbapi2_module,
                 connect_params=self._nr_connect_params,
                 cursor_params=None,
@@ -268,7 +268,7 @@ class AsyncConnectionSaveParamsWrapper(DBAPI2AsyncConnectionWrapper):
                 execute_params=(args, kwargs),
                 source=self.__wrapped__.execute,
             ):
-                cursor = await self.__wrapped__.execute(sql, **kwargs)
+                cursor = await self.__wrapped__.execute(query, **kwargs)
 
         return self.__cursor_wrapper__(cursor, self._nr_dbapi2_module, self._nr_connect_params, (args, kwargs))
 

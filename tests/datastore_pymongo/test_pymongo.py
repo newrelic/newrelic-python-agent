@@ -29,6 +29,15 @@ MONGODB_PORT = DB_SETTINGS["port"]
 MONGODB_COLLECTION = DB_SETTINGS["collection"]
 
 
+# Find correct metric name based on import availability.
+try:
+    from pymongo.synchronous.mongo_client import MongoClient  # noqa
+    INIT_FUNCTION_METRIC = "Function/pymongo.synchronous.mongo_client:MongoClient.__init__"
+except ImportError:
+    from pymongo.mongo_client import MongoClient  # noqa
+    INIT_FUNCTION_METRIC = "Function/pymongo.mongo_client:MongoClient.__init__"    
+
+
 def _exercise_mongo_v3(db):
     db[MONGODB_COLLECTION].save({"x": 10})
     db[MONGODB_COLLECTION].save({"x": 8})
@@ -114,7 +123,7 @@ def _exercise_mongo(db):
 
 
 _test_pymongo_scoped_metrics_v3 = [
-    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
+    (INIT_FUNCTION_METRIC, 1),
     (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/create_index", 1),
     (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find", 3),
     (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one", 1),
@@ -141,7 +150,7 @@ _test_pymongo_scoped_metrics_v3 = [
 
 
 _test_pymongo_scoped_metrics_v4 = [
-    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
+    (INIT_FUNCTION_METRIC, 1),
     (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/create_index", 1),
     (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find", 3),
     (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/find_one", 1),
@@ -163,7 +172,7 @@ _test_pymongo_scoped_metrics_v4 = [
 ]
 
 _test_pymongo_rollup_metrics_v3 = [
-    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
+    (INIT_FUNCTION_METRIC, 1),
     ("Datastore/all", 28),
     ("Datastore/allOther", 28),
     ("Datastore/MongoDB/all", 28),
@@ -215,7 +224,7 @@ _test_pymongo_rollup_metrics_v3 = [
 ]
 
 _test_pymongo_rollup_metrics_v4 = [
-    ("Function/pymongo.mongo_client:MongoClient.__init__", 1),
+    (INIT_FUNCTION_METRIC, 1),
     ("Datastore/all", 25),
     ("Datastore/allOther", 25),
     ("Datastore/MongoDB/all", 25),
@@ -276,7 +285,7 @@ def test_mongodb_client_operation():
     )
     @background_task()
     def _test():
-        client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+        client = MongoClient(MONGODB_HOST, MONGODB_PORT)
         db = client.test
         _exercise_mongo(db)
 
@@ -286,7 +295,7 @@ def test_mongodb_client_operation():
 @validate_database_duration()
 @background_task()
 def test_mongodb_database_duration():
-    client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+    client = MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client.test
     _exercise_mongo(db)
 
@@ -297,7 +306,7 @@ def test_mongodb_and_sqlite_database_duration():
 
     # Make mongodb queries
 
-    client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+    client = MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client.test
     _exercise_mongo(db)
 

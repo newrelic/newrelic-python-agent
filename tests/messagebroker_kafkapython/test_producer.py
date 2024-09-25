@@ -29,7 +29,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
 
 
-def test_trace_metrics(topic, send_producer_message):
+def test_trace_metrics(topic, send_producer_message, expected_broker_metrics):
     from kafka.version import __version__ as version
 
     scoped_metrics = [(f"MessageBroker/Kafka/Topic/Produce/Named/{topic}", 1)]
@@ -39,7 +39,7 @@ def test_trace_metrics(topic, send_producer_message):
         "test_producer:test_trace_metrics.<locals>.test",
         scoped_metrics=scoped_metrics,
         rollup_metrics=unscoped_metrics,
-        custom_metrics=[(f"Python/MessageBroker/Kafka-Python/{version}", 1)],
+        custom_metrics=[(f"Python/MessageBroker/Kafka-Python/{version}", 1)] + expected_broker_metrics,
         background_task=True,
     )
     @background_task()
@@ -49,13 +49,14 @@ def test_trace_metrics(topic, send_producer_message):
     test()
 
 
-def test_distributed_tracing_headers(topic, send_producer_message):
+def test_distributed_tracing_headers(topic, send_producer_message, expected_broker_metrics):
     @validate_transaction_metrics(
         "test_producer:test_distributed_tracing_headers.<locals>.test",
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1),
             ("Supportability/DistributedTrace/CreatePayload/Success", 1),
-        ],
+        ]
+        + expected_broker_metrics,
         background_task=True,
     )
     @background_task()
@@ -67,13 +68,14 @@ def test_distributed_tracing_headers(topic, send_producer_message):
     test()
 
 
-def test_distributed_tracing_headers_under_terminal(topic, send_producer_message):
+def test_distributed_tracing_headers_under_terminal(topic, send_producer_message, expected_broker_metrics):
     @validate_transaction_metrics(
         "test_distributed_tracing_headers_under_terminal",
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1),
             ("Supportability/DistributedTrace/CreatePayload/Success", 1),
-        ],
+        ]
+        + expected_broker_metrics,
         background_task=True,
     )
     @background_task(name="test_distributed_tracing_headers_under_terminal")
@@ -98,3 +100,8 @@ def test_producer_errors(topic, producer, monkeypatch):
             producer.flush()
 
     test()
+
+
+@pytest.fixture(scope="function")
+def expected_broker_metrics(broker, topic):
+    return [(f"MessageBroker/Kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker]

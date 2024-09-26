@@ -13,16 +13,21 @@
 # limitations under the License.
 
 import logging
+
 import pytest
+from testing_support.fixtures import reset_core_stats_engine
+from testing_support.validators.validate_log_event_count import validate_log_event_count
+from testing_support.validators.validate_log_event_count_outside_transaction import (
+    validate_log_event_count_outside_transaction,
+)
+from testing_support.validators.validate_log_events import validate_log_events
+from testing_support.validators.validate_log_events_outside_transaction import (
+    validate_log_events_outside_transaction,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from testing_support.fixtures import reset_core_stats_engine
-from testing_support.validators.validate_log_event_count import validate_log_event_count
-from testing_support.validators.validate_log_event_count_outside_transaction import validate_log_event_count_outside_transaction
-from testing_support.validators.validate_log_events import validate_log_events
-from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
 
 
 def set_trace_ids():
@@ -33,23 +38,33 @@ def set_trace_ids():
     if trace:
         trace.guid = "abcdefgh"
 
+
 def exercise_logging(logger):
     set_trace_ids()
 
     logger.warning("C")
     logger.error("D")
     logger.critical("E")
-    
+
     assert len(logger.caplog.records) == 3
 
 
-_common_attributes_service_linking = {"timestamp": None, "hostname": None, "entity.name": "Python Agent Test (logger_loguru)", "entity.guid": None}
-_common_attributes_trace_linking = {"span.id": "abcdefgh", "trace.id": "abcdefgh12345678", **_common_attributes_service_linking}
+_common_attributes_service_linking = {
+    "timestamp": None,
+    "hostname": None,
+    "entity.name": "Python Agent Test (logger_loguru)",
+    "entity.guid": None,
+}
+_common_attributes_trace_linking = {
+    "span.id": "abcdefgh",
+    "trace.id": "abcdefgh12345678",
+    **_common_attributes_service_linking,
+}
 
 _test_logging_inside_transaction_events = [
     {"message": "C", "level": "WARNING", **_common_attributes_trace_linking},
     {"message": "D", "level": "ERROR", **_common_attributes_trace_linking},
-    {"message": "E", "level": "CRITICAL", **_common_attributes_trace_linking},   
+    {"message": "E", "level": "CRITICAL", **_common_attributes_trace_linking},
 ]
 
 
@@ -67,8 +82,9 @@ def test_logging_inside_transaction(logger):
 _test_logging_outside_transaction_events = [
     {"message": "C", "level": "WARNING", **_common_attributes_service_linking},
     {"message": "D", "level": "ERROR", **_common_attributes_service_linking},
-    {"message": "E", "level": "CRITICAL", **_common_attributes_service_linking},   
+    {"message": "E", "level": "CRITICAL", **_common_attributes_service_linking},
 ]
+
 
 @reset_core_stats_engine()
 def test_logging_outside_transaction(logger):
@@ -96,6 +112,7 @@ def test_logging_newrelic_logs_not_forwarded(logger):
 _test_patcher_application_captured_event = {"message": "C-PATCH", "level": "WARNING"}
 _test_patcher_application_captured_event.update(_common_attributes_trace_linking)
 
+
 @reset_core_stats_engine()
 def test_patcher_application_captured(logger):
     def patch(record):
@@ -112,8 +129,10 @@ def test_patcher_application_captured(logger):
 
     test()
 
+
 _test_logger_catch_event = {"level": "ERROR"}  # Message varies wildly, can't be included in test
 _test_logger_catch_event.update(_common_attributes_trace_linking)
+
 
 @reset_core_stats_engine()
 def test_logger_catch(logger):
@@ -132,5 +151,5 @@ def test_logger_catch(logger):
                 throw()
         except ValueError:
             pass
-    
+
     test()

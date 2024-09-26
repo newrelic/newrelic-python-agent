@@ -786,9 +786,10 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
-    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
+    llm_context_attrs = getattr(transaction, "_custom_attr_context_var", None)
     if llm_context_attrs:
-        llm_metadata_dict.update(llm_context_attrs)
+        context_attrs = llm_context_attrs.get()
+        llm_metadata_dict.update(context_attrs)
 
     span_id = bedrock_attrs.get("span_id", None)
     trace_id = bedrock_attrs.get("trace_id", None)

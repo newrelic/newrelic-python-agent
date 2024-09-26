@@ -710,9 +710,10 @@ def _get_llm_metadata(transaction):
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
-    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
+    llm_context_attrs = getattr(transaction, "_custom_attr_context_var", None)
     if llm_context_attrs:
-        llm_metadata_dict.update(llm_context_attrs)
+        context_attrs = llm_context_attrs.get()
+        llm_metadata_dict.update(context_attrs)
 
     return llm_metadata_dict
 

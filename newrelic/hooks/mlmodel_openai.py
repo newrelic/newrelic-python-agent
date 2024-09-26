@@ -438,7 +438,6 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
     stream = kwargs.get("stream", False)
     llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
 
-
     # Only if streaming and streaming monitoring is enabled and the response is not empty
     # do we not exit the function trace.
     if not stream or not settings.ai_monitoring.streaming.enabled or not return_val:
@@ -479,12 +478,16 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
                 # openai._legacy_response.LegacyAPIResponse
                 response = json.loads(response.http_response.text.strip())
 
-        _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, None, response)
+        _record_completion_success(
+            transaction, linking_metadata, completion_id, kwargs, ft, response_headers, None, response
+        )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
-def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, llm_context_attrs, response):
+def _record_completion_success(
+    transaction, linking_metadata, completion_id, kwargs, ft, response_headers, llm_context_attrs, response
+):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -797,7 +800,14 @@ def _record_events_on_stop_iteration(self, transaction):
             llm_context_attrs = getattr(self, "nr_llm_context_attrs", None)
             response_headers = openai_attrs.get("response_headers") or {}
             _record_completion_success(
-                transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, response_headers, llm_context_attrs, None
+                transaction,
+                linking_metadata,
+                completion_id,
+                openai_attrs,
+                self._nr_ft,
+                response_headers,
+                llm_context_attrs,
+                None,
             )
         except Exception:
             _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
@@ -823,7 +833,9 @@ def _handle_streaming_completion_error(self, transaction, exc):
         llm_context_attrs = getattr(self, "_nr_llm_context_attrs", None)
         linking_metadata = get_trace_linking_metadata()
         completion_id = str(uuid.uuid4())
-        _record_completion_error(transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, llm_context_attrs, exc)
+        _record_completion_error(
+            transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, llm_context_attrs, exc
+        )
 
 
 class AsyncGeneratorProxy(ObjectProxy):
@@ -941,9 +953,10 @@ def _get_llm_attributes(transaction):
     custom_attrs_dict = transaction._custom_params
     llm_metadata = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
-    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
+    llm_context_attrs = getattr(transaction, "_custom_attr_context_var", None)
     if llm_context_attrs:
-        llm_metadata.update(llm_context_attrs)
+        context_attrs = llm_context_attrs.get()
+        llm_metadata.update(context_attrs)
 
     return llm_metadata
 

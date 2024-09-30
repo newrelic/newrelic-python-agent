@@ -96,7 +96,7 @@ RUN echo 'eval "$(pyenv init -)"' >>${HOME}/.bashrc && \
 
 # Install Python
 ARG PYTHON_VERSIONS="3.12 3.11 3.10 3.9 3.8 3.7 3.13 pypy3.10-7.3.17"
-COPY --chown=1000:1000 --chmod=+x ./install-python.sh /tmp/install-python.sh
+COPY --chown=1000:1000 --chmod=755 ./install-python.sh /tmp/install-python.sh
 RUN /tmp/install-python.sh && \
     rm /tmp/install-python.sh
 

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:24.04
+FROM ubuntu:20.04
 
 # Install OS packages
 RUN export DEBIAN_FRONTEND=noninteractive && \

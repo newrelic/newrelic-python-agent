@@ -54,6 +54,47 @@ jobs:
       - name: Success
         run: echo "Success!"
 
+  # Upload Trivy data
+  trivy:
+    if: success() || failure() # Does not run on cancelled workflows
+    runs-on: ubuntu-20.04
+    needs:
+      - tests
+
+    steps:
+      # Git Checkout
+      - name: Checkout Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Run Trivy vulnerability scanner in repo mode
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: table
+          exit-code: 1
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+
+      - name: Run Trivy vulnerability scanner in repo mode
+        if: ${{ github.event_name == 'schedule' }}
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: ${{ github.event_name == 'schedule' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
   # Combine and upload coverage data
   coverage:
     if: success() || failure() # Does not run on cancelled workflows

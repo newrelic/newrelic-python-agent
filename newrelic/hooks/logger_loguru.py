@@ -26,7 +26,6 @@ from newrelic.hooks.logger_logging import add_nr_linking_metadata
 _logger = logging.getLogger(__name__)
 
 IS_PYPY = hasattr(sys, "pypy_version_info")
-LOGURU_VERSION = get_package_version_tuple("loguru")
 LOGURU_FILTERED_RECORD_ATTRS = {"extra", "message", "time", "level", "_nr_original_message", "record"}
 ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
 
@@ -69,7 +68,7 @@ def _nr_log_forwarder(message_instance):
             try:
                 time = record.get("time", None)
                 if time:
-                    time = int(time.timestamp()*1000)
+                    time = int(time.timestamp() * 1000)
                 record_log_event(message, level_name, time, attributes=attrs)
             except Exception:
                 pass
@@ -116,18 +115,15 @@ def nr_log_patcher(original_patcher=None):
                 record["_nr_original_message"] = message = record["message"]
                 record["message"] = add_nr_linking_metadata(message)
 
-    if LOGURU_VERSION > (0, 6, 0):
-        if original_patcher is not None:
-            patchers = [p for p in original_patcher]  # Consumer iterable into list so we can modify
-            # Wipe out reference so patchers aren't called twice, as the framework will handle calling other patchers.
-            original_patcher = None
-        else:
-            patchers = []
-
-        patchers.append(_nr_log_patcher)
-        return patchers
+    if original_patcher is not None:
+        patchers = [p for p in original_patcher]  # Consumer iterable into list so we can modify
+        # Wipe out reference so patchers aren't called twice, as the framework will handle calling other patchers.
+        original_patcher = None
     else:
-        return _nr_log_patcher
+        patchers = []
+
+    patchers.append(_nr_log_patcher)
+    return patchers
 
 
 def wrap_Logger_init(wrapped, instance, args, kwargs):

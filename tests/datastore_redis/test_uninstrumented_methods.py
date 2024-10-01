@@ -58,6 +58,7 @@ IGNORED_METHODS = {
     "flush",
     "from_pool",
     "from_url",
+    "get_cache",
     "get_connection_kwargs",
     "get_encoder",
     "get_label",

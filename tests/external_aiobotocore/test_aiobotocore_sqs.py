@@ -27,21 +27,21 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 
-URL = "localhost:%s" % PORT
+URL = f"localhost:{PORT}"
 TEST_QUEUE = "python-agent-test"
 
 _sqs_scoped_metrics = [
-    ("MessageBroker/SQS/Queue/Produce/Named/%s" % TEST_QUEUE, 2),
-    ("External/%s/aiobotocore/POST" % URL, 7),
+    (f"MessageBroker/SQS/Queue/Produce/Named/{TEST_QUEUE}", 2),
+    (f"External/{URL}/aiobotocore/POST", 7),
 ]
 
 _sqs_rollup_metrics = [
-    ("MessageBroker/SQS/Queue/Produce/Named/%s" % TEST_QUEUE, 2),
-    ("MessageBroker/SQS/Queue/Consume/Named/%s" % TEST_QUEUE, 1),
+    (f"MessageBroker/SQS/Queue/Produce/Named/{TEST_QUEUE}", 2),
+    (f"MessageBroker/SQS/Queue/Consume/Named/{TEST_QUEUE}", 1),
     ("External/all", 7),
     ("External/allOther", 7),
-    ("External/%s/all" % URL, 7),
-    ("External/%s/aiobotocore/POST" % URL, 7),
+    (f"External/{URL}/all", 7),
+    (f"External/{URL}/aiobotocore/POST", 7),
 ]
 
 
@@ -67,7 +67,7 @@ def test_aiobotocore_sqs(loop):
             async with session.create_client(
                 "sqs",
                 region_name="us-east-1",
-                endpoint_url="http://localhost:%d" % PORT,
+                endpoint_url=f"http://localhost:{PORT}",
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             ) as client:

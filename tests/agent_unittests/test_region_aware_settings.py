@@ -19,24 +19,24 @@ INI_FILE_WITHOUT_LICENSE_KEY = b"""
 """
 
 NO_REGION_KEY = '66c637a29c3982469a3fe8d1982d002c4a'
-INI_FILE_NO_REGION_KEY = """
+INI_FILE_NO_REGION_KEY = f"""
 [newrelic]
-license_key = %s
-""" % NO_REGION_KEY
+license_key = {NO_REGION_KEY}
+"""
 INI_FILE_NO_REGION_KEY = INI_FILE_NO_REGION_KEY.encode('utf-8')
 
 EU01_KEY = 'eu01xx66c637a29c3982469a3fe8d1982d002c4a'
-INI_FILE_EU01_KEY = """
+INI_FILE_EU01_KEY = f"""
 [newrelic]
-license_key = %s
-""" % EU01_KEY
+license_key = {EU01_KEY}
+"""
 INI_FILE_EU01_KEY = INI_FILE_EU01_KEY.encode('utf-8')
 
-INI_FILE_HOST_OVERRIDE = """
+INI_FILE_HOST_OVERRIDE = f"""
 [newrelic]
 host = staging-collector.newrelic.com
-license_key = %s
-""" % EU01_KEY
+license_key = {EU01_KEY}
+"""
 INI_FILE_HOST_OVERRIDE = INI_FILE_HOST_OVERRIDE.encode('utf-8')
 
 STAGING_HOST = 'staging-collector.newrelic.com'

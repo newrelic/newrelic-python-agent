@@ -43,10 +43,7 @@ def target_application():
     # issues whereby the agent needs to be initialised before Flask is
     # imported and the routes configured. Normally pytest only runs the
     # global fixture which will initialise the agent after each test
-    # file is imported, which is too late. We also can't do application
-    # creation within a function as we will then get view handler
-    # functions are different between Python 2 and 3, with the latter
-    # showing <local> scope in path.
+    # file is imported, which is too late.
 
     if not async_handler_support:
         from _test_views import _test_application

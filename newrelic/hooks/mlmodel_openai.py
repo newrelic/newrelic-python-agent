@@ -144,7 +144,7 @@ def create_chat_completion_message_event(
 
         # Response ID was set, append message index to it.
         if response_id:
-            message_id = "%s-%d" % (response_id, index)
+            message_id = f"{response_id}-{int(index)}"
         # No response IDs, use random UUID
         else:
             message_id = str(uuid.uuid4())
@@ -184,7 +184,7 @@ def create_chat_completion_message_event(
 
             # Response ID was set, append message index to it.
             if response_id:
-                message_id = "%s-%d" % (response_id, index)
+                message_id = f"{response_id}-{int(index)}"
             # No response IDs, use random UUID
             else:
                 message_id = str(uuid.uuid4())
@@ -492,7 +492,9 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             finish_reason = None
             choices = response.get("choices") or []
             if choices:
-                output_message_list = [choices[0].get("message")]
+                output_message_list = [
+                    choices[0].get("message") or {"content": choices[0].get("text"), "role": "assistant"}
+                ]
                 finish_reason = choices[0].get("finish_reason")
         else:
             response_model = kwargs.get("response.model")
@@ -507,7 +509,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
 
         request_id = response_headers.get("x-request-id")
         organization = response_headers.get("openai-organization") or getattr(response, "organization", None)
-        messages = kwargs.get("messages", None) or []
+        messages = kwargs.get("messages") or [{"content": kwargs.get("prompt"), "role": "user"}]
         input_message_list = list(messages)
         full_chat_completion_summary_dict = {
             "id": completion_id,

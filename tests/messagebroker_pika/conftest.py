@@ -16,17 +16,22 @@ import uuid
 
 import pika
 import pytest
+
+from newrelic.common.package_version_utils import get_package_version_tuple
+
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
 
-QUEUE = "test_pika-%s" % uuid.uuid4()
-QUEUE_2 = "test_pika-%s" % uuid.uuid4()
+PIKA_VERSION_INFO = get_package_version_tuple("pika")
 
-EXCHANGE = "exchange-%s" % uuid.uuid4()
-EXCHANGE_2 = "exchange-%s" % uuid.uuid4()
+QUEUE = f"test_pika-{uuid.uuid4()}"
+QUEUE_2 = f"test_pika-{uuid.uuid4()}"
+
+EXCHANGE = f"exchange-{uuid.uuid4()}"
+EXCHANGE_2 = f"exchange-{uuid.uuid4()}"
 
 CORRELATION_ID = "test-correlation-id"
 REPLY_TO = "test-reply-to"

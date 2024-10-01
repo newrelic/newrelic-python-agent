@@ -42,7 +42,7 @@ def attribute_to_value(attribute):
     elif attribute_type == "string_value":
         return str(attribute_value)
     else:
-        raise TypeError("Invalid attribute type: %s" % attribute_type)
+        raise TypeError(f"Invalid attribute type: {attribute_type}")
 
 
 def payload_to_metrics(payload):
@@ -77,7 +77,7 @@ def payload_to_metrics(payload):
         elif metric.get("summary"):
             sent_summary_metrics[metric_name] = metric
         else:
-            raise TypeError("Unknown metrics type for metric: %s" % metric)
+            raise TypeError(f"Unknown metrics type for metric: {metric}")
 
     return sent_summary_metrics, sent_count_metrics
 
@@ -117,34 +117,22 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
                 if not count:
                     if metric in sent_summary_metrics:
                         data_points = data_points_to_dict(sent_summary_metrics[metric]["summary"]["data_points"])
-                        assert tags not in data_points, "(%s, %s) Unexpected but found." % (metric, tags and dict(tags))
+                        assert tags not in data_points, f"({metric}, {tags and dict(tags)}) Unexpected but found."
                 else:
-                    assert metric in sent_summary_metrics, "%s Not Found. Got: %s" % (
-                        metric,
-                        list(sent_summary_metrics.keys()),
-                    )
+                    assert metric in sent_summary_metrics, f"{metric} Not Found. Got: {list(sent_summary_metrics.keys())}"
                     data_points = data_points_to_dict(sent_summary_metrics[metric]["summary"]["data_points"])
-                    assert tags in data_points, "(%s, %s) Not Found. Got: %s" % (
-                        metric,
-                        tags and dict(tags),
-                        list(data_points.keys()),
-                    )
+                    assert tags in data_points, f"({metric}, {tags and dict(tags)}) Not Found. Got: {list(data_points.keys())}"
 
                     # Validate metric format
                     metric_container = data_points[tags]
                     for key in ("start_time_unix_nano", "time_unix_nano", "count", "sum", "quantile_values"):
-                        assert key in metric_container, "Invalid metric format. Missing key: %s" % key
+                        assert key in metric_container, f"Invalid metric format. Missing key: {key}"
                     quantile_values = metric_container["quantile_values"]
                     assert len(quantile_values) == 2  # Min and Max
 
                     # Validate metric count
                     if count != "present":
-                        assert int(metric_container["count"]) == count, "(%s, %s): Expected: %s Got: %s" % (
-                            metric,
-                            tags and dict(tags),
-                            count,
-                            metric_container["count"],
-                        )
+                        assert int(metric_container["count"]) == count, f"({metric}, {tags and dict(tags)}): Expected: {count} Got: {metric_container['count']}"
 
             for metric, tags, count in count_metrics:
                 if isinstance(tags, dict):
@@ -153,34 +141,22 @@ def validate_dimensional_metric_payload(summary_metrics=None, count_metrics=None
                 if not count:
                     if metric in sent_count_metrics:
                         data_points = data_points_to_dict(sent_count_metrics[metric]["sum"]["data_points"])
-                        assert tags not in data_points, "(%s, %s) Unexpected but found." % (metric, tags and dict(tags))
+                        assert tags not in data_points, f"({metric}, {tags and dict(tags)}) Unexpected but found."
                 else:
-                    assert metric in sent_count_metrics, "%s Not Found. Got: %s" % (
-                        metric,
-                        list(sent_count_metrics.keys()),
-                    )
+                    assert metric in sent_count_metrics, f"{metric} Not Found. Got: {list(sent_count_metrics.keys())}"
                     data_points = data_points_to_dict(sent_count_metrics[metric]["sum"]["data_points"])
-                    assert tags in data_points, "(%s, %s) Not Found. Got: %s" % (
-                        metric,
-                        tags and dict(tags),
-                        list(data_points.keys()),
-                    )
+                    assert tags in data_points, f"({metric}, {tags and dict(tags)}) Not Found. Got: {list(data_points.keys())}"
 
                     # Validate metric format
                     assert sent_count_metrics[metric]["sum"].get("is_monotonic")
                     assert sent_count_metrics[metric]["sum"].get("aggregation_temporality") == 1
                     metric_container = data_points[tags]
                     for key in ("start_time_unix_nano", "time_unix_nano", "as_int"):
-                        assert key in metric_container, "Invalid metric format. Missing key: %s" % key
+                        assert key in metric_container, f"Invalid metric format. Missing key: {key}"
 
                     # Validate metric count
                     if count != "present":
-                        assert int(metric_container["as_int"]) == count, "(%s, %s): Expected: %s Got: %s" % (
-                            metric,
-                            tags and dict(tags),
-                            count,
-                            metric_container["count"],
-                        )
+                        assert int(metric_container["as_int"]) == count, f"({metric}, {tags and dict(tags)}): Expected: {count} Got: {metric_container['count']}"
 
         return val
 

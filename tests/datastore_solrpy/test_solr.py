@@ -24,18 +24,18 @@ from newrelic.api.background_task import background_task
 DB_SETTINGS = solr_settings()[0]
 SOLR_HOST = DB_SETTINGS["host"]
 SOLR_PORT = DB_SETTINGS["port"]
-SOLR_URL = "http://%s:%s/solr/collection" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
+SOLR_URL = f"http://{DB_SETTINGS['host']}:{DB_SETTINGS['port']}/solr/collection"
 
 
 def _exercise_solr(solr):
     # Construct document names within namespace
     documents = ["pysolr_doc_1", "pysolr_doc_2"]
-    documents = [x + "_" + DB_SETTINGS["namespace"] for x in documents]
+    documents = [f"{x}_{DB_SETTINGS['namespace']}" for x in documents]
 
     solr.add_many([{"id": x} for x in documents])
     solr.commit()
-    solr.query("id:%s" % documents[0]).results
-    solr.delete("id:*_%s" % DB_SETTINGS["namespace"])
+    solr.query(f"id:{documents[0]}").results
+    solr.delete(f"id:*_{DB_SETTINGS['namespace']}")
     solr.commit()
 
 
@@ -51,7 +51,7 @@ _test_solr_search_rollup_metrics = [
     ("Datastore/allOther", 5),
     ("Datastore/Solr/all", 5),
     ("Datastore/Solr/allOther", 5),
-    ("Datastore/instance/Solr/%s/%s" % (instance_hostname(SOLR_HOST), SOLR_PORT), 3),
+    (f"Datastore/instance/Solr/{instance_hostname(SOLR_HOST)}/{SOLR_PORT}", 3),
     ("Datastore/operation/Solr/add_many", 1),
     ("Datastore/operation/Solr/query", 1),
     ("Datastore/operation/Solr/commit", 2),

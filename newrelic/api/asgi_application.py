@@ -26,7 +26,7 @@ from newrelic.common.object_wrapper import (
     function_wrapper,
     wrap_object,
 )
-from newrelic.packages import asgiref_compatibility, six
+from newrelic.packages import asgiref_compatibility
 
 
 def _bind_scope(scope, *args, **kwargs):
@@ -49,7 +49,7 @@ def double_to_single_callable(wrapped, instance, args, kwargs):
     return coro_function_wrapper(coro_function, receive, send)
 
 
-class ASGIBrowserMiddleware(object):
+class ASGIBrowserMiddleware():
     def __init__(self, app, transaction=None, search_maximum=64 * 1024):
         self.app = app
         self.send = None
@@ -158,7 +158,7 @@ class ASGIBrowserMiddleware(object):
             # if there's a valid body string, attempt to insert the HTML
             if verify_body_exists(self.body):
                 body = insert_html_snippet(
-                    self.body, lambda: six.b(self.transaction.browser_timing_header()), self.search_maximum
+                    self.body, lambda: self.transaction.browser_timing_header().encode("latin-1"), self.search_maximum
                 )
 
                 # If we have inserted the browser agent

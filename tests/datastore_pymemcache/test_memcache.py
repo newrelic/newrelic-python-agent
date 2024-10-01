@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
 import pymemcache.client
 from testing_support.db_settings import memcached_settings
 from testing_support.validators.validate_transaction_metrics import (
@@ -45,6 +43,7 @@ _test_bt_set_get_delete_rollup_metrics = [
     ("Datastore/operation/Memcached/set", 1),
     ("Datastore/operation/Memcached/get", 1),
     ("Datastore/operation/Memcached/delete", 1),
+    (f"Datastore/instance/Memcached/{MEMCACHED_HOST}/{MEMCACHED_PORT}", 3),
 ]
 
 
@@ -59,7 +58,7 @@ def test_bt_set_get_delete():
     set_background_task(True)
     client = pymemcache.client.Client(MEMCACHED_ADDR)
 
-    key = MEMCACHED_NAMESPACE + "key"
+    key = f"{MEMCACHED_NAMESPACE}key"
 
     client.set(key, b"value")
     value = client.get(key)
@@ -82,6 +81,7 @@ _test_wt_set_get_delete_rollup_metrics = [
     ("Datastore/operation/Memcached/set", 1),
     ("Datastore/operation/Memcached/get", 1),
     ("Datastore/operation/Memcached/delete", 1),
+    (f"Datastore/instance/Memcached/{MEMCACHED_HOST}/{MEMCACHED_PORT}", 3),
 ]
 
 
@@ -96,7 +96,7 @@ def test_wt_set_get_delete():
     set_background_task(False)
     client = pymemcache.client.Client(MEMCACHED_ADDR)
 
-    key = MEMCACHED_NAMESPACE + "key"
+    key = f"{MEMCACHED_NAMESPACE}key"
 
     client.set(key, b"value")
     value = client.get(key)

@@ -16,6 +16,7 @@ import os
 
 import aiomcache
 from testing_support.db_settings import memcached_settings
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -23,14 +24,12 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import set_background_task
 
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.fixture.event_loop import event_loop as loop
-
 DB_SETTINGS = memcached_settings()[0]
 
 MEMCACHED_HOST = DB_SETTINGS["host"]
 MEMCACHED_PORT = DB_SETTINGS["port"]
 MEMCACHED_NAMESPACE = str(os.getpid())
+INSTANCE_METRIC_NAME = f"Datastore/instance/Memcached/{MEMCACHED_HOST}/{MEMCACHED_PORT}"
 
 _test_bt_set_get_delete_scoped_metrics = [
     ("Datastore/operation/Memcached/set", 1),
@@ -43,6 +42,7 @@ _test_bt_set_get_delete_rollup_metrics = [
     ("Datastore/allOther", 3),
     ("Datastore/Memcached/all", 3),
     ("Datastore/Memcached/allOther", 3),
+    (INSTANCE_METRIC_NAME, 3),
     ("Datastore/operation/Memcached/set", 1),
     ("Datastore/operation/Memcached/get", 1),
     ("Datastore/operation/Memcached/delete", 1),
@@ -60,7 +60,7 @@ def test_bt_set_get_delete(loop):
     set_background_task(True)
     client = aiomcache.Client(host=MEMCACHED_HOST, port=MEMCACHED_PORT)
 
-    key = (MEMCACHED_NAMESPACE + "key").encode()
+    key = f"{MEMCACHED_NAMESPACE}key".encode()
     data = "value".encode()
 
     loop.run_until_complete(client.set(key, data))
@@ -81,6 +81,7 @@ _test_wt_set_get_delete_rollup_metrics = [
     ("Datastore/allWeb", 3),
     ("Datastore/Memcached/all", 3),
     ("Datastore/Memcached/allWeb", 3),
+    (INSTANCE_METRIC_NAME, 3),
     ("Datastore/operation/Memcached/set", 1),
     ("Datastore/operation/Memcached/get", 1),
     ("Datastore/operation/Memcached/delete", 1),
@@ -98,7 +99,7 @@ def test_wt_set_get_delete(loop):
     set_background_task(False)
     client = aiomcache.Client(host=MEMCACHED_HOST, port=MEMCACHED_PORT)
 
-    key = (MEMCACHED_NAMESPACE + "key").encode()
+    key = f"{MEMCACHED_NAMESPACE}key".encode()
     data = "value".encode()
 
     loop.run_until_complete(client.set(key, data))

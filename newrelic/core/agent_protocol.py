@@ -27,6 +27,7 @@ from newrelic.common.utilization import (
     AWSUtilization,
     AzureUtilization,
     DockerUtilization,
+    ECSUtilization,
     GCPUtilization,
     KubernetesUtilization,
     PCFUtilization,
@@ -50,7 +51,7 @@ from newrelic.network.exceptions import (
 _logger = logging.getLogger(__name__)
 
 
-class AgentProtocol(object):
+class AgentProtocol():
     VERSION = 17
 
     STATUS_CODE_RESPONSE = {
@@ -238,7 +239,7 @@ class AgentProtocol(object):
         if not 200 <= status < 300:
             if status == 413:
                 internal_count_metric(
-                    "Supportability/Python/Collector/MaxPayloadSizeLimit/%s" % method,
+                    f"Supportability/Python/Collector/MaxPayloadSizeLimit/{method}",
                     1,
                 )
             level, message = self.LOG_MESSAGES.get(status, self.LOG_MESSAGES["default"])
@@ -321,8 +322,15 @@ class AgentProtocol(object):
             utilization_settings["config"] = utilization_conf
 
         vendors = []
+        ecs_id = None
+        utilization_vendor_settings = {}
+
         if settings["utilization.detect_aws"]:
             vendors.append(AWSUtilization)
+            ecs_id = ECSUtilization.detect()
+            if ecs_id:
+                utilization_vendor_settings["ecs"] = ecs_id
+
         if settings["utilization.detect_pcf"]:
             vendors.append(PCFUtilization)
         if settings["utilization.detect_gcp"]:
@@ -330,7 +338,6 @@ class AgentProtocol(object):
         if settings["utilization.detect_azure"]:
             vendors.append(AzureUtilization)
 
-        utilization_vendor_settings = {}
         for vendor in vendors:
             metadata = vendor.detect()
             if metadata:
@@ -338,9 +345,10 @@ class AgentProtocol(object):
                 break
 
         if settings["utilization.detect_docker"]:
-            docker = DockerUtilization.detect()
-            if docker:
-                utilization_vendor_settings["docker"] = docker
+            if not ecs_id:
+                docker = DockerUtilization.detect()
+                if docker:
+                    utilization_vendor_settings["docker"] = docker
 
         if settings["utilization.detect_kubernetes"]:
             kubernetes = KubernetesUtilization.detect()

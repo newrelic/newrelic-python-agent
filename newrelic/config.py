@@ -12,16 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import configparser
 import fnmatch
 import logging
 import os
 import sys
 import traceback
-
-try:
-    import ConfigParser
-except ImportError:
-    import configparser as ConfigParser
 
 import newrelic.api.application
 import newrelic.api.background_task
@@ -50,7 +46,6 @@ from newrelic.core.config import (
     default_host,
     fetch_config_setting,
 )
-from newrelic.packages import six
 
 __all__ = ["initialize", "filter_app_factory"]
 
@@ -93,7 +88,7 @@ _settings = newrelic.api.settings.settings()
 # modules to look up customised settings defined in the loaded
 # configuration file.
 
-_config_object = ConfigParser.RawConfigParser()
+_config_object = configparser.RawConfigParser()
 
 # Cache of the parsed global settings found in the configuration
 # file. We cache these so can dump them out to the log file once
@@ -105,7 +100,7 @@ _cache_object = []
 def _reset_config_parser():
     global _config_object
     global _cache_object
-    _config_object = ConfigParser.RawConfigParser()
+    _config_object = configparser.RawConfigParser()
     _cache_object = []
 
 
@@ -241,9 +236,7 @@ def _raise_configuration_error(section, option=None):
         if not _ignore_errors:
             if section:
                 raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for section "%s". '
-                    "Check New Relic agent log file for further "
-                    "details." % section
+                    f'Invalid configuration for section "{section}". Check New Relic agent log file for further details.'
                 )
             raise newrelic.api.exceptions.ConfigurationError(
                 "Invalid configuration. Check New Relic agent log file for further details."
@@ -256,14 +249,10 @@ def _raise_configuration_error(section, option=None):
         if not _ignore_errors:
             if section:
                 raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for option "%s" in '
-                    'section "%s". Check New Relic agent log '
-                    "file for further details." % (option, section)
+                    f'Invalid configuration for option "{option}" in section "{section}". Check New Relic agent log file for further details.'
                 )
             raise newrelic.api.exceptions.ConfigurationError(
-                'Invalid configuration for option "%s". '
-                "Check New Relic agent log file for further "
-                "details." % option
+                f'Invalid configuration for option "{option}". Check New Relic agent log file for further details.'
             )
 
 
@@ -304,10 +293,10 @@ def _process_setting(section, option, getter, mapper):
 
         _cache_object.append((option, value))
 
-    except ConfigParser.NoSectionError:
+    except configparser.NoSectionError:
         pass
 
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         pass
 
     except Exception:
@@ -806,7 +795,7 @@ def translate_deprecated_settings(settings, cached_settings):
             ignored_params = fetch_config_setting(settings, "ignored_params")
 
             for p in ignored_params:
-                attr_value = "request.parameters." + p
+                attr_value = f"request.parameters.{p}"
                 excluded_attrs = fetch_config_setting(settings, "attributes.exclude")
 
                 if attr_value not in excluded_attrs:
@@ -946,10 +935,7 @@ def _load_configuration(
     if _configuration_done:
         if _config_file != config_file or _environment != environment:
             raise newrelic.api.exceptions.ConfigurationError(
-                "Configuration has already been done against "
-                "differing configuration file or environment. "
-                'Prior configuration file used was "%s" and '
-                'environment "%s".' % (_config_file, _environment)
+                f'Configuration has already been done against differing configuration file or environment. Prior configuration file used was "{_config_file}" and environment "{_environment}".'
             )
         return
 
@@ -1010,7 +996,7 @@ def _load_configuration(
     # name in internal settings object as indication of succeeding.
 
     if not _config_object.read([config_file]):
-        raise newrelic.api.exceptions.ConfigurationError("Unable to open configuration file %s." % config_file)
+        raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
 
     _settings.config_file = config_file
 
@@ -1020,7 +1006,7 @@ def _load_configuration(
     _process_setting("newrelic", "log_file", "get", None)
 
     if environment:
-        _process_setting("newrelic:%s" % environment, "log_file", "get", None)
+        _process_setting(f"newrelic:{environment}", "log_file", "get", None)
 
     if log_file is None:
         log_file = _settings.log_file
@@ -1028,7 +1014,7 @@ def _load_configuration(
     _process_setting("newrelic", "log_level", "get", _map_log_level)
 
     if environment:
-        _process_setting("newrelic:%s" % environment, "log_level", "get", _map_log_level)
+        _process_setting(f"newrelic:{environment}", "log_level", "get", _map_log_level)
 
     if log_level is None:
         log_level = _settings.log_level
@@ -1048,7 +1034,7 @@ def _load_configuration(
 
     if environment:
         _settings.environment = environment
-        _process_configuration("newrelic:%s" % environment)
+        _process_configuration(f"newrelic:{environment}")
 
     # Log details of the configuration options which were
     # read and the values they have as would be applied
@@ -1193,7 +1179,7 @@ def _process_module_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1245,7 +1231,7 @@ def _module_function_glob(module, object_path):
                     # Skip adding individual class's methods on failure
                     available_functions.update(
                         {
-                            "%s.%s" % (cls, k): v
+                            f"{cls}.{k}": v
                             for k, v in available_classes.get(cls).__dict__.items()
                             if callable(v) and not isinstance(v, type)
                         }
@@ -1285,7 +1271,7 @@ def _process_wsgi_application_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1334,7 +1320,7 @@ def _process_background_task_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1393,7 +1379,7 @@ def _process_database_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1443,7 +1429,7 @@ def _process_external_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1504,7 +1490,7 @@ def _process_function_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1572,7 +1558,7 @@ def _process_generator_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1628,7 +1614,7 @@ def _process_profile_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1687,7 +1673,7 @@ def _process_memcache_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1738,7 +1724,7 @@ def _process_transaction_name_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1797,7 +1783,7 @@ def _process_error_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1847,7 +1833,7 @@ def _process_data_source_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1958,7 +1944,7 @@ def _process_function_profile_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -2001,10 +1987,10 @@ def _process_module_definition(target, module, function="instrument"):
         return
 
     try:
-        section = "import-hook:%s" % target
+        section = f"import-hook:{target}"
         if _config_object.has_section(section):
             enabled = _config_object.getboolean(section, "enabled")
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         pass
     except Exception:
         _raise_configuration_error(section)
@@ -2087,6 +2073,12 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_resources_chat_completions",
     )
+
+    _process_module_definition(
+        "openai.resources.completions",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_resources_chat_completions",
+    )
     _process_module_definition(
         "openai._base_client",
         "newrelic.hooks.mlmodel_openai",
@@ -2103,6 +2095,11 @@ def _process_module_builtin_defaults():
         "langchain_core.runnables.base",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_runnables_chains_base",
+    )
+    _process_module_definition(
+        "langchain_core.runnables.config",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_core_runnables_config",
     )
     _process_module_definition(
         "langchain.chains.base",
@@ -2135,6 +2132,11 @@ def _process_module_builtin_defaults():
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
+        "langchain_community.vectorstores.aerospike",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
         "langchain_community.vectorstores.analyticdb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2150,6 +2152,11 @@ def _process_module_builtin_defaults():
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
+        "langchain_community.vectorstores.aperturedb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
         "langchain_community.vectorstores.astradb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2161,6 +2168,11 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition(
         "langchain_community.vectorstores.awadb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.azure_cosmos_db_no_sql",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
@@ -2351,6 +2363,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_community.vectorstores.manticore_search",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
         "langchain_community.vectorstores.marqo",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2394,6 +2412,12 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "langchain_community.vectorstores.neo4j_vector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.thirdai_neuraldb",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
@@ -2627,6 +2651,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_community.vectorstores.zep_cloud",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
         "langchain_community.vectorstores.zep",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
@@ -2810,26 +2840,6 @@ def _process_module_builtin_defaults():
         "sentry_sdk.integrations.asgi", "newrelic.hooks.component_sentry", "instrument_sentry_sdk_integrations_asgi"
     )
 
-    # _process_module_definition('web.application',
-    #        'newrelic.hooks.framework_webpy')
-    # _process_module_definition('web.template',
-    #        'newrelic.hooks.framework_webpy')
-
-    _process_module_definition(
-        "gluon.compileapp",
-        "newrelic.hooks.framework_web2py",
-        "instrument_gluon_compileapp",
-    )
-    _process_module_definition(
-        "gluon.restricted",
-        "newrelic.hooks.framework_web2py",
-        "instrument_gluon_restricted",
-    )
-    _process_module_definition("gluon.main", "newrelic.hooks.framework_web2py", "instrument_gluon_main")
-    _process_module_definition("gluon.template", "newrelic.hooks.framework_web2py", "instrument_gluon_template")
-    _process_module_definition("gluon.tools", "newrelic.hooks.framework_web2py", "instrument_gluon_tools")
-    _process_module_definition("gluon.http", "newrelic.hooks.framework_web2py", "instrument_gluon_http")
-
     _process_module_definition("httpx._client", "newrelic.hooks.external_httpx", "instrument_httpx_client")
 
     _process_module_definition("gluon.contrib.feedparser", "newrelic.hooks.external_feedparser")
@@ -2993,10 +3003,6 @@ def _process_module_builtin_defaults():
     _process_module_definition("grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel")
     _process_module_definition("grpc._server", "newrelic.hooks.framework_grpc", "instrument_grpc_server")
 
-    _process_module_definition("pylons.wsgiapp", "newrelic.hooks.framework_pylons")
-    _process_module_definition("pylons.controllers.core", "newrelic.hooks.framework_pylons")
-    _process_module_definition("pylons.templating", "newrelic.hooks.framework_pylons")
-
     _process_module_definition("bottle", "newrelic.hooks.framework_bottle", "instrument_bottle")
 
     _process_module_definition(
@@ -3101,7 +3107,6 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("mysql.connector", "newrelic.hooks.database_mysql", "instrument_mysql_connector")
     _process_module_definition("MySQLdb", "newrelic.hooks.database_mysqldb", "instrument_mysqldb")
-    _process_module_definition("oursql", "newrelic.hooks.database_oursql", "instrument_oursql")
     _process_module_definition("pymysql", "newrelic.hooks.database_pymysql", "instrument_pymysql")
 
     _process_module_definition("pyodbc", "newrelic.hooks.database_pyodbc", "instrument_pyodbc")
@@ -3186,7 +3191,6 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition("memcache", "newrelic.hooks.datastore_memcache", "instrument_memcache")
-    _process_module_definition("umemcache", "newrelic.hooks.datastore_umemcache", "instrument_umemcache")
     _process_module_definition(
         "pylibmc.client",
         "newrelic.hooks.datastore_pylibmc",
@@ -3215,20 +3219,11 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("genshi.template.base", "newrelic.hooks.template_genshi")
 
-    if six.PY2:
-        _process_module_definition("httplib", "newrelic.hooks.external_httplib")
-    else:
-        _process_module_definition("http.client", "newrelic.hooks.external_httplib")
+    _process_module_definition("http.client", "newrelic.hooks.external_httplib")
 
     _process_module_definition("httplib2", "newrelic.hooks.external_httplib2")
 
-    if six.PY2:
-        _process_module_definition("urllib", "newrelic.hooks.external_urllib")
-    else:
-        _process_module_definition("urllib.request", "newrelic.hooks.external_urllib")
-
-    if six.PY2:
-        _process_module_definition("urllib2", "newrelic.hooks.external_urllib2")
+    _process_module_definition("urllib.request", "newrelic.hooks.external_urllib")
 
     _process_module_definition(
         "urllib3.connectionpool",
@@ -3531,20 +3526,38 @@ def _process_module_builtin_defaults():
         "instrument_pyelasticsearch_client",
     )
 
+    # Newer pymongo module locations
+    _process_module_definition(
+        "pymongo.synchronous.pool",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_pool",
+    )
+    _process_module_definition(
+        "pymongo.synchronous.collection",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_collection",
+    )
+    _process_module_definition(
+        "pymongo.synchronous.mongo_client",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_mongo_client",
+    )
+
+    # Older pymongo module locations
     _process_module_definition(
         "pymongo.connection",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_connection",
-    )
-    _process_module_definition(
-        "pymongo.mongo_client",
-        "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_mongo_client",
+        "instrument_pymongo_pool",
     )
     _process_module_definition(
         "pymongo.collection",
         "newrelic.hooks.datastore_pymongo",
         "instrument_pymongo_collection",
+    )
+    _process_module_definition(
+        "pymongo.mongo_client",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_mongo_client",
     )
 
     # Redis v4.2+
@@ -4431,8 +4444,6 @@ def _process_module_builtin_defaults():
         "instrument_flup_server_scgi_base",
     )
 
-    _process_module_definition("pywapi", "newrelic.hooks.external_pywapi", "instrument_pywapi")
-
     _process_module_definition(
         "meinheld.server",
         "newrelic.hooks.adapter_meinheld",
@@ -4494,17 +4505,6 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition("gevent.monkey", "newrelic.hooks.coroutines_gevent", "instrument_gevent_monkey")
-
-    _process_module_definition(
-        "weberror.errormiddleware",
-        "newrelic.hooks.middleware_weberror",
-        "instrument_weberror_errormiddleware",
-    )
-    _process_module_definition(
-        "weberror.reporter",
-        "newrelic.hooks.middleware_weberror",
-        "instrument_weberror_reporter",
-    )
 
     _process_module_definition("thrift.transport.TSocket", "newrelic.hooks.external_thrift")
 

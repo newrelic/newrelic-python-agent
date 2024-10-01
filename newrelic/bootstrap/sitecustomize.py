@@ -15,7 +15,6 @@
 import os
 import sys
 import time
-
 from importlib.machinery import PathFinder
 
 # Define some debug logging routines to help sort out things when this
@@ -143,7 +142,7 @@ if k8s_operator_enabled or azure_sidecar_enabled or (python_prefix_matches and p
             # the 'newrelic' module later and use our APIs in their code.
             try:
                 sys.path.insert(0, boot_directory)
-                # should be the same for both k8 and azure sidecar
+                # Will be the same for both k8 and azure sidecar
                 from newrelic_k8s_operator import find_supported_newrelic_distribution
             finally:
                 del_sys_path_entry(boot_directory)

@@ -175,7 +175,6 @@ def patch_system_info(test, monkeypatch):
 
 @pytest.mark.parametrize("test", _load_tests())
 def test_utilization_settings(test, monkeypatch):
-
     env = test.get("input_environment_variables", {})
 
     if test.get("input_pcf_guid"):

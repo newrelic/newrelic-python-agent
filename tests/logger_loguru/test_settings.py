@@ -12,25 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import platform
+
+import pytest
+from testing_support.fixtures import (
+    override_application_settings,
+    reset_core_stats_engine,
+)
+from testing_support.validators.validate_log_event_count import validate_log_event_count
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.application import application_settings
 from newrelic.api.background_task import background_task
-from testing_support.fixtures import reset_core_stats_engine
-from testing_support.validators.validate_log_event_count import validate_log_event_count
-from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
 
 def get_metadata_string(log_message, is_txn):
     host = platform.uname().node
     assert host
     entity_guid = application_settings().entity_guid
     if is_txn:
-        metadata_string = "".join(('NR-LINKING|', entity_guid, '|', host, '|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28internal_logging%29|'))
+        metadata_string = (
+            f"NR-LINKING|{entity_guid}|{host}|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28internal_logging%29|"
+        )
     else:
-        metadata_string = "".join(('NR-LINKING|', entity_guid, '|', host, '|||Python%20Agent%20Test%20%28internal_logging%29|'))
-    formatted_string = log_message + " " + metadata_string
+        metadata_string = f"NR-LINKING|{entity_guid}|{host}|||Python%20Agent%20Test%20%28internal_logging%29|"
+    formatted_string = f"{log_message} {metadata_string}"
     return formatted_string
 
 
@@ -49,10 +57,12 @@ _settings_matrix = [
 @pytest.mark.parametrize("feature_setting,subfeature_setting,expected", _settings_matrix)
 @reset_core_stats_engine()
 def test_log_forwarding_settings(logger, feature_setting, subfeature_setting, expected):
-    @override_application_settings({
-        "application_logging.enabled": feature_setting,
-        "application_logging.forwarding.enabled": subfeature_setting,
-    })
+    @override_application_settings(
+        {
+            "application_logging.enabled": feature_setting,
+            "application_logging.forwarding.enabled": subfeature_setting,
+        }
+    )
     @validate_log_event_count(1 if expected else 0)
     @background_task()
     def test():
@@ -65,10 +75,12 @@ def test_log_forwarding_settings(logger, feature_setting, subfeature_setting, ex
 @pytest.mark.parametrize("feature_setting,subfeature_setting,expected", _settings_matrix)
 @reset_core_stats_engine()
 def test_local_decorating_settings(logger, feature_setting, subfeature_setting, expected):
-    @override_application_settings({
-        "application_logging.enabled": feature_setting,
-        "application_logging.local_decorating.enabled": subfeature_setting,
-    })
+    @override_application_settings(
+        {
+            "application_logging.enabled": feature_setting,
+            "application_logging.local_decorating.enabled": subfeature_setting,
+        }
+    )
     @background_task()
     def test():
         basic_logging(logger)
@@ -86,10 +98,13 @@ def test_local_decorating_settings(logger, feature_setting, subfeature_setting, 
 @reset_core_stats_engine()
 def test_log_metrics_settings(logger, feature_setting, subfeature_setting, expected):
     metric_count = 1 if expected else None
-    @override_application_settings({
-        "application_logging.enabled": feature_setting,
-        "application_logging.metrics.enabled": subfeature_setting,
-    })
+
+    @override_application_settings(
+        {
+            "application_logging.enabled": feature_setting,
+            "application_logging.metrics.enabled": subfeature_setting,
+        }
+    )
     @validate_transaction_metrics(
         "test_settings:test_log_metrics_settings.<locals>.test",
         custom_metrics=[

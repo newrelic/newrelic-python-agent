@@ -28,7 +28,7 @@ from newrelic.api.background_task import background_task
 @pytest.fixture(autouse=True)
 def sample_data(collection):
     for x in range(1, 4):
-        collection.add({"x": x}, "doc%d" % x)
+        collection.add({"x": x}, f"doc{x}")
 
 
 @pytest.fixture()
@@ -46,7 +46,7 @@ def exercise_transaction_commit(client, collection):
             assert len([_ for _ in transaction.get(query)]) == 1
 
             # get_all on a list of DocumentReferences
-            all_docs = transaction.get_all([collection.document("doc%d" % x) for x in range(1, 4)])
+            all_docs = transaction.get_all([collection.document(f"doc{x}") for x in range(1, 4)])
             assert len([_ for _ in all_docs]) == 3
 
             # set and delete methods
@@ -82,8 +82,8 @@ def test_firestore_transaction_commit(exercise_transaction_commit, collection, i
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/commit", 1),
         ("Datastore/operation/Firestore/get_all", 2),
-        ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/list_documents" % collection.id, 1),
+        (f"Datastore/statement/Firestore/{collection.id}/stream", 1),
+        (f"Datastore/statement/Firestore/{collection.id}/list_documents", 1),
     ]
 
     _test_rollup_metrics = [
@@ -91,7 +91,7 @@ def test_firestore_transaction_commit(exercise_transaction_commit, collection, i
         ("Datastore/operation/Firestore/list_documents", 1),
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 5),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 5),
     ]
 
     @validate_database_duration()
@@ -111,14 +111,14 @@ def test_firestore_transaction_commit(exercise_transaction_commit, collection, i
 def test_firestore_transaction_rollback(exercise_transaction_rollback, collection, instance_info):
     _test_scoped_metrics = [
         ("Datastore/operation/Firestore/rollback", 1),
-        ("Datastore/statement/Firestore/%s/list_documents" % collection.id, 1),
+        (f"Datastore/statement/Firestore/{collection.id}/list_documents", 1),
     ]
 
     _test_rollup_metrics = [
         ("Datastore/operation/Firestore/list_documents", 1),
         ("Datastore/all", 2),
         ("Datastore/allOther", 2),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 2),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 2),
     ]
 
     @validate_database_duration()

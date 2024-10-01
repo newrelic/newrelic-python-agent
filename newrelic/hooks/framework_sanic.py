@@ -40,7 +40,7 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
     if view_class:
         try:
             method = args[0].method.lower()
-            name = callable_name(view_class) + "." + method
+            name = f"{callable_name(view_class)}.{method}"
             view = getattr(view_class, method)
         except:
             pass

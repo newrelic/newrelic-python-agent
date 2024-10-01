@@ -47,11 +47,11 @@ _base_scoped_metrics = (
     ("Datastore/operation/Postgres/create", 2),
     ("Datastore/operation/Postgres/drop", 1),
     ("Datastore/operation/Postgres/rollback", 1),
-    ("Datastore/statement/Postgres/%s/call" % DB_SETTINGS["procedure_name"], 1),
-    ("Datastore/statement/Postgres/%s/delete" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/insert" % DB_SETTINGS["table_name"], 3),
-    ("Datastore/statement/Postgres/%s/select" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/update" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['procedure_name']}/call", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 3),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
 )
 
 _base_rollup_metrics = (
@@ -68,11 +68,11 @@ _base_rollup_metrics = (
     ("Datastore/operation/Postgres/rollback", 1),
     ("Datastore/operation/Postgres/select", 1),
     ("Datastore/operation/Postgres/update", 1),
-    ("Datastore/statement/Postgres/%s/call" % DB_SETTINGS["procedure_name"], 1),
-    ("Datastore/statement/Postgres/%s/delete" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/insert" % DB_SETTINGS["table_name"], 3),
-    ("Datastore/statement/Postgres/%s/select" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/update" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['procedure_name']}/call", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 3),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
 )
 
 _disable_scoped_metrics = list(_base_scoped_metrics)
@@ -84,7 +84,7 @@ _enable_rollup_metrics = list(_base_rollup_metrics)
 _host = instance_hostname(DB_SETTINGS["host"])
 _port = DB_SETTINGS["port"]
 
-_instance_metric_name = "Datastore/instance/Postgres/%s/%s" % (_host, _port)
+_instance_metric_name = f"Datastore/instance/Postgres/{_host}/{_port}"
 
 _enable_rollup_metrics.append((_instance_metric_name, 13))
 
@@ -93,17 +93,17 @@ _disable_rollup_metrics.append((_instance_metric_name, None))
 
 # Query
 async def _execute(connection, row_type, wrapper):
-    sql = "drop table if exists %s" % DB_SETTINGS["table_name"]
+    sql = f"drop table if exists {DB_SETTINGS['table_name']}"
     await maybe_await(connection.execute(wrapper(sql)))
 
-    sql = "create table %s (a integer, b real, c text)" % DB_SETTINGS["table_name"]
+    sql = f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)"
     await maybe_await(connection.execute(wrapper(sql)))
 
     for params in [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")]:
-        sql = "insert into %s " % DB_SETTINGS["table_name"] + "values (%s, %s, %s)"
+        sql = f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)"
         await maybe_await(connection.execute(wrapper(sql), params))
 
-    sql = "select * from %s" % DB_SETTINGS["table_name"]
+    sql = f"select * from {DB_SETTINGS['table_name']}"
     cursor = await maybe_await(connection.execute(wrapper(sql)))
 
     if hasattr(cursor, "__aiter__"):
@@ -114,22 +114,21 @@ async def _execute(connection, row_type, wrapper):
             assert isinstance(row, row_type)
 
     # Reuse cursor to ensure it is also wrapped
-    sql = "update %s" % DB_SETTINGS["table_name"] + " set a=%s, b=%s, c=%s where a=%s"
+    sql = f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s"
     params = (4, 4.0, "4.0", 1)
     await maybe_await(cursor.execute(wrapper(sql), params))
 
-    sql = "delete from %s where a=2" % DB_SETTINGS["table_name"]
+    sql = f"delete from {DB_SETTINGS['table_name']} where a=2"
     await maybe_await(connection.execute(wrapper(sql)))
 
     await maybe_await(connection.commit())
 
     await maybe_await(
         connection.execute(
-            "create or replace procedure %s() \nlanguage plpgsql as $$ begin perform now(); end; $$"
-            % DB_SETTINGS["procedure_name"]
+            f"create or replace procedure {DB_SETTINGS['procedure_name']}() \nlanguage plpgsql as $$ begin perform now(); end; $$"
         )
     )
-    await maybe_await(connection.execute("call %s()" % DB_SETTINGS["procedure_name"]))
+    await maybe_await(connection.execute(f"call {DB_SETTINGS['procedure_name']}()"))
 
     await maybe_await(connection.rollback())
     await maybe_await(connection.commit())

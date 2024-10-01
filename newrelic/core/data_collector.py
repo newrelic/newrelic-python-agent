@@ -16,8 +16,6 @@
 
 """
 
-from __future__ import print_function
-
 import logging
 
 from newrelic.common.agent_http import (
@@ -37,7 +35,7 @@ from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data
 _logger = logging.getLogger(__name__)
 
 
-class Session(object):
+class Session:
     PROTOCOL = AgentProtocol
     OTLP_PROTOCOL = OtlpProtocol
     CLIENT = ApplicationModeClient
@@ -71,7 +69,7 @@ class Session(object):
             port = self.configuration.infinite_tracing.trace_observer_port
             ssl = self.configuration.infinite_tracing.ssl
             compression_setting = self.configuration.infinite_tracing.compression
-            endpoint = "{}:{}".format(host, port)
+            endpoint = f"{host}:{port}"
 
             if (
                 self.configuration.distributed_tracing.enabled

@@ -18,26 +18,29 @@ import traceback
 import uuid
 
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.time_trace import get_trace_linking_metadata
+from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
+from newrelic.core.context import context_wrapper
 
 _logger = logging.getLogger(__name__)
 LANGCHAIN_VERSION = get_package_version("langchain")
 EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in langchain instrumentation: While reporting an exception in langchain, another exception occurred. Report this issue to New Relic Support.\n%s"
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in langchain instrumentation: Failed to record LLM events. Report this issue to New Relic Support.\n%s"
-
 VECTORSTORE_CLASSES = {
+    "langchain_community.vectorstores.aerospike": "Aerospike",
     "langchain_community.vectorstores.alibabacloud_opensearch": "AlibabaCloudOpenSearch",
     "langchain_community.vectorstores.analyticdb": "AnalyticDB",
     "langchain_community.vectorstores.annoy": "Annoy",
     "langchain_community.vectorstores.apache_doris": "ApacheDoris",
+    "langchain_community.vectorstores.aperturedb": "ApertureDB",
     "langchain_community.vectorstores.astradb": "AstraDB",
     "langchain_community.vectorstores.atlas": "AtlasDB",
     "langchain_community.vectorstores.awadb": "AwaDB",
+    "langchain_community.vectorstores.azure_cosmos_db_no_sql": "AzureCosmosDBNoSqlVectorSearch",
     "langchain_community.vectorstores.azure_cosmos_db": "AzureCosmosDBVectorSearch",
     "langchain_community.vectorstores.azuresearch": "AzureSearch",
     "langchain_community.vectorstores.baiduvectordb": "BaiduVectorDB",
@@ -71,6 +74,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.lancedb": "LanceDB",
     "langchain_community.vectorstores.lantern": "Lantern",
     "langchain_community.vectorstores.llm_rails": "LLMRails",
+    "langchain_community.vectorstores.manticore_search": "ManticoreSearch",
     "langchain_community.vectorstores.marqo": "Marqo",
     "langchain_community.vectorstores.matching_engine": "MatchingEngine",
     "langchain_community.vectorstores.meilisearch": "Meilisearch",
@@ -79,7 +83,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.mongodb_atlas": "MongoDBAtlasVectorSearch",
     "langchain_community.vectorstores.myscale": "MyScale",
     "langchain_community.vectorstores.neo4j_vector": "Neo4jVector",
-    "langchain_community.vectorstores.thirdai_neuraldb": "NeuralDBVectorStore",
+    "langchain_community.vectorstores.thirdai_neuraldb": ["NeuralDBClientVectorStore", "NeuralDBVectorStore"],
     "langchain_community.vectorstores.nucliadb": "NucliaDB",
     "langchain_community.vectorstores.oraclevs": "OracleVS",
     "langchain_community.vectorstores.opensearch_vector_search": "OpenSearchVectorSearch",
@@ -118,17 +122,35 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.weaviate": "Weaviate",
     "langchain_community.vectorstores.xata": "XataVectorStore",
     "langchain_community.vectorstores.yellowbrick": "Yellowbrick",
+    "langchain_community.vectorstores.zep_cloud": "ZepCloudVectorStore",
     "langchain_community.vectorstores.zep": "ZepVectorStore",
     "langchain_community.vectorstores.docarray.hnsw": "DocArrayHnswSearch",
     "langchain_community.vectorstores.docarray.in_memory": "DocArrayInMemorySearch",
 }
 
 
-def _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata):
+def bind_submit(func, *args, **kwargs):
+    return {"func": func, "args": args, "kwargs": kwargs}
+
+
+def wrap_ContextThreadPoolExecutor_submit(wrapped, instance, args, kwargs):
+    trace = current_trace()
+    if not trace:
+        return wrapped(*args, **kwargs)
+
+    # Use hardened function signature bind so we have safety net catchall of args and kwargs.
+    bound_args = bind_submit(*args, **kwargs)
+    bound_args["func"] = context_wrapper(bound_args["func"], trace=trace, strict=True)
+    return wrapped(bound_args["func"], *bound_args["args"], **bound_args["kwargs"])
+
+
+def _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
-    request_query, request_k = bind_similarity_search(*args, **kwargs)
+    bound_args = bind_args(wrapped, args, kwargs)
+    request_query = bound_args["query"]
+    request_k = bound_args["k"]
     llm_metadata_dict = _get_llm_metadata(transaction)
     vectorstore_error_dict = {
         "request.k": request_k,
@@ -169,19 +191,15 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     except Exception as exc:
         ft.notice_error(attributes={"vector_store_id": search_id})
         ft.__exit__(*sys.exc_info())
-        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata)
+        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped)
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response)
+    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped)
     return response
-
-
-def bind_similarity_search(query, k, *args, **kwargs):
-    return query, k
 
 
 def wrap_similarity_search(wrapped, instance, args, kwargs):
@@ -206,20 +224,22 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     except Exception as exc:
         ft.notice_error(attributes={"vector_store_id": search_id})
         ft.__exit__(*sys.exc_info())
-        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata)
+        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped)
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response)
+    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped)
     return response
 
 
-def _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response):
+def _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped):
     settings = transaction.settings if transaction.settings is not None else global_settings()
-    request_query, request_k = bind_similarity_search(*args, **kwargs)
+    bound_args = bind_args(wrapped, args, kwargs)
+    request_query = bound_args["query"]
+    request_k = bound_args["k"]
     duration = ft.duration * 1000
     response_number_of_documents = len(response)
     llm_metadata_dict = _get_llm_metadata(transaction)
@@ -248,7 +268,7 @@ def _record_vector_search_success(transaction, linking_metadata, ft, search_id, 
         page_content = getattr(doc, "page_content")
         metadata = getattr(doc, "metadata") or {}
 
-        metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+        metadata_dict = {f"metadata.{key}": value for key, value in metadata.items()}
 
         llm_vector_search_result = {
             "id": str(uuid.uuid4()),
@@ -413,7 +433,7 @@ def _record_tool_success(
     # Update tags and metadata previously obtained from run_args with instance values
     metadata.update(getattr(instance, "metadata", None) or {})
     tags.extend(getattr(instance, "tags", None) or [])
-    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
+    full_tool_event_dict = {f"metadata.{key}": value for key, value in metadata.items() if key != "nr_tool_id"}
     full_tool_event_dict.update(
         {
             "id": tool_id,
@@ -433,7 +453,7 @@ def _record_tool_success(
         result = str(response)
     except Exception:
         _logger.debug(
-            "Failed to convert tool response into a string.\n%s" % traceback.format_exception(*sys.exc_info())
+            f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}"
         )
     if settings.ai_monitoring.record_content.enabled:
         full_tool_event_dict.update(
@@ -462,7 +482,7 @@ def _record_tool_error(
     tags.extend(getattr(instance, "tags", None) or [])
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
+    error_tool_event_dict = {f"metadata.{key}": value for key, value in metadata.items() if key != "nr_tool_id"}
     error_tool_event_dict.update(
         {
             "id": tool_id,
@@ -643,7 +663,7 @@ def _create_error_chain_run_events(transaction, instance, run_args, completion_i
     input_message_list = [_input]
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_chat_completion_summary_dict = {f"metadata.{key}": value for key, value in metadata.items()}
     full_chat_completion_summary_dict.update(
         {
             "id": completion_id,
@@ -709,12 +729,11 @@ def _create_successful_chain_run_events(
             output_message_list = [str(response)]
         except Exception as e:
             _logger.warning(
-                "Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n%s"
-                % traceback.format_exception(*sys.exc_info())
+                f"Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n{traceback.format_exception(*sys.exc_info())}"
             )
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_chat_completion_summary_dict = {f"metadata.{key}": value for key, value in metadata.items()}
     full_chat_completion_summary_dict.update(
         {
             "id": completion_id,
@@ -855,12 +874,20 @@ def instrument_langchain_chains_base(module):
 
 
 def instrument_langchain_vectorstore_similarity_search(module):
-    vector_class = VECTORSTORE_CLASSES.get(module.__name__)
+    def _instrument_class(module, vector_class):
+        if hasattr(getattr(module, vector_class, ""), "similarity_search"):
+            wrap_function_wrapper(module, f"{vector_class}.similarity_search", wrap_similarity_search)
+        if hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
+            wrap_function_wrapper(module, f"{vector_class}.asimilarity_search", wrap_asimilarity_search)
 
-    if vector_class and hasattr(getattr(module, vector_class, ""), "similarity_search"):
-        wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
-    if vector_class and hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
-        wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)
+    vector_classes = VECTORSTORE_CLASSES.get(module.__name__)
+    if vector_classes is None:
+        return
+    if isinstance(vector_classes, list):
+        for vector_class in vector_classes:
+            _instrument_class(module, vector_class)
+    else:
+        _instrument_class(module, vector_classes)
 
 
 def instrument_langchain_core_tools(module):
@@ -879,3 +906,8 @@ def instrument_langchain_callbacks_manager(module):
         wrap_function_wrapper(module, "CallbackManager.on_chain_start", wrap_on_chain_start)
     if hasattr(getattr(module, "AsyncCallbackManager"), "on_chain_start"):
         wrap_function_wrapper(module, "AsyncCallbackManager.on_chain_start", wrap_async_on_chain_start)
+
+
+def instrument_langchain_core_runnables_config(module):
+    if hasattr(module, "ContextThreadPoolExecutor"):
+        wrap_function_wrapper(module, "ContextThreadPoolExecutor.submit", wrap_ContextThreadPoolExecutor_submit)

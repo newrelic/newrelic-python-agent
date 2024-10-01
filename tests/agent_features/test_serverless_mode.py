@@ -38,7 +38,7 @@ def serverless_application(request):
     orig = settings.serverless_mode.enabled
     settings.serverless_mode.enabled = True
 
-    application_name = "Python Agent Test (test_serverless_mode:%s)" % (request.node.name)
+    application_name = f"Python Agent Test (test_serverless_mode:{request.node.name})"
     application = application_instance(application_name)
     application.activate()
 
@@ -167,7 +167,7 @@ def test_payload_metadata_arn(serverless_application, arn_set):
 
     settings.aws_lambda_metadata.update({"arn": arn, "function_version": "$LATEST"})
 
-    class Context(object):
+    class Context():
         invoked_function_arn = arn
 
     @validate_serverless_metadata(exact_metadata={"arn": arn})

@@ -22,7 +22,6 @@ from newrelic.core.message_node import MessageNode
 
 
 class MessageTrace(CatHeaderMixin, TimeTrace):
-
     cat_id_key = "NewRelicID"
     cat_transaction_key = "NewRelicTransaction"
     cat_appdata_key = "NewRelicAppData"
@@ -65,11 +64,7 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
         return result
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (
-            self.__class__.__name__,
-            id(self),
-            dict(library=self.library, operation=self.operation),
-        )
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(library=self.library, operation=self.operation)}>"
 
     def terminal_node(self):
         return self.terminal
@@ -92,7 +87,9 @@ class MessageTrace(CatHeaderMixin, TimeTrace):
         )
 
 
-def MessageTraceWrapper(wrapped, library, operation, destination_type, destination_name, params={}, terminal=True, async_wrapper=None):
+def MessageTraceWrapper(
+    wrapped, library, operation, destination_type, destination_name, params={}, terminal=True, async_wrapper=None
+):
     def _nr_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
@@ -134,7 +131,16 @@ def MessageTraceWrapper(wrapped, library, operation, destination_type, destinati
         else:
             _destination_name = destination_name
 
-        trace = MessageTrace(_library, _operation, _destination_type, _destination_name, params={}, terminal=terminal, parent=parent, source=wrapped)
+        trace = MessageTrace(
+            _library,
+            _operation,
+            _destination_type,
+            _destination_name,
+            params=params,
+            terminal=terminal,
+            parent=parent,
+            source=wrapped,
+        )
 
         if wrapper:  # pylint: disable=W0125,W0126
             return wrapper(wrapped, trace)(*args, **kwargs)
@@ -158,7 +164,20 @@ def message_trace(library, operation, destination_type, destination_name, params
     )
 
 
-def wrap_message_trace(module, object_path, library, operation, destination_type, destination_name, params={}, terminal=True, async_wrapper=None):
+def wrap_message_trace(
+    module,
+    object_path,
+    library,
+    operation,
+    destination_type,
+    destination_name,
+    params={},
+    terminal=True,
+    async_wrapper=None,
+):
     wrap_object(
-        module, object_path, MessageTraceWrapper, (library, operation, destination_type, destination_name, params, terminal, async_wrapper)
+        module,
+        object_path,
+        MessageTraceWrapper,
+        (library, operation, destination_type, destination_name, params, terminal, async_wrapper),
     )

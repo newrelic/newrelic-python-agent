@@ -37,8 +37,8 @@ def psycopg2_cursor():
     try:
         cursor = connection.cursor()
 
-        cursor.execute("drop table if exists %s" % DB_SETTINGS["table_name"])
-        cursor.execute("create table %s (b text, c text)" % DB_SETTINGS["table_name"])
+        cursor.execute(f"drop table if exists {DB_SETTINGS['table_name']}")
+        cursor.execute(f"create table {DB_SETTINGS['table_name']} (b text, c text)")
 
         yield cursor
 
@@ -48,16 +48,16 @@ def psycopg2_cursor():
 
 _quoting_style_tests = [
     (
-        "SELECT * FROM %s WHERE b='2'" % DB_SETTINGS["table_name"],
-        "SELECT * FROM %s WHERE b=?" % DB_SETTINGS["table_name"],
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b='2'",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=?",
     ),
     (
-        "SELECT * FROM %s WHERE b=$func$2$func$" % DB_SETTINGS["table_name"],
-        "SELECT * FROM %s WHERE b=?" % DB_SETTINGS["table_name"],
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=$func$2$func$",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=?",
     ),
     (
-        "SELECT * FROM %s WHERE b=U&'2'" % DB_SETTINGS["table_name"],
-        "SELECT * FROM %s WHERE b=U&?" % DB_SETTINGS["table_name"],
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=U&'2'",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=U&?",
     ),
 ]
 
@@ -74,8 +74,8 @@ def test_quoting_styles(psycopg2_cursor, sql, obfuscated):
 
 _parameter_tests = [
     (
-        "SELECT * FROM " + DB_SETTINGS["table_name"] + " where b=%s",
-        "SELECT * FROM " + DB_SETTINGS["table_name"] + " where b=%s",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s",
+        f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s",
     ),
 ]
 
@@ -107,25 +107,23 @@ def any_length_explain_plan(node):
 
 _test_explain_plans = [
     (
-        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s"
-        % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
+        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']} ; SELECT (b, c) FROM {DB_SETTINGS['table_name']}",
         no_explain_plan,
     ),
     (
-        "SELECT (b, c) FROM  %s ; SELECT (b, c) FROM %s;"
-        % (DB_SETTINGS["table_name"], DB_SETTINGS["table_name"]),
+        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']} ; SELECT (b, c) FROM {DB_SETTINGS['table_name']};",
         no_explain_plan,
     ),
-    ("SELECT (b, c) FROM  %s WHERE b=';'" % DB_SETTINGS["table_name"], no_explain_plan),
-    (";SELECT (b, c) FROM %s" % DB_SETTINGS["table_name"], no_explain_plan),
-    ("SELECT (b, c) FROM  %s" % DB_SETTINGS["table_name"], any_length_explain_plan),
-    ("SELECT (b, c) FROM  %s;" % DB_SETTINGS["table_name"], any_length_explain_plan),
+    (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']} WHERE b=';'", no_explain_plan),
+    (f";SELECT (b, c) FROM {DB_SETTINGS['table_name']}", no_explain_plan),
+    (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']}", any_length_explain_plan),
+    (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};", any_length_explain_plan),
     (
-        "SELECT (b, c) FROM  %s;;;;;;" % DB_SETTINGS["table_name"],
+        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};;;;;;",
         any_length_explain_plan,
     ),
     (
-        "SELECT (b, c) FROM  %s;\n\n" % DB_SETTINGS["table_name"],
+        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};\n\n",
         any_length_explain_plan,
     ),
 ]
@@ -148,9 +146,9 @@ def test_explain_plans(sql, validator):
 
         try:
             cursor = connection.cursor()
-            cursor.execute("drop table if exists %s" % DB_SETTINGS["table_name"])
+            cursor.execute(f"drop table if exists {DB_SETTINGS['table_name']}")
             cursor.execute(
-                "create table %s (b text, c text)" % DB_SETTINGS["table_name"]
+                f"create table {DB_SETTINGS['table_name']} (b text, c text)"
             )
 
             cursor.execute(sql)

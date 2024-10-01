@@ -57,7 +57,7 @@ if REDIS_PY_VERSION >= (5, 0):
 _host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
-_instance_metric_name = 'Datastore/instance/Redis/%s/%s' % (_host, _port)
+_instance_metric_name = f'Datastore/instance/Redis/{_host}/{_port}'
 
 instance_metric_count = 3 if REDIS_PY_VERSION >= (5, 0) else 1
 

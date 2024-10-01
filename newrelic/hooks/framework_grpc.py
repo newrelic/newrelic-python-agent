@@ -24,9 +24,9 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def _get_uri_method(instance, *args, **kwargs):
-    target = instance._channel.target().decode("utf-8").lstrip("dns:///")
+    target = instance._channel.target().decode("utf-8").replace("dns:///", "")
     method = instance._method.decode("utf-8").lstrip("/")
-    uri = "grpc://%s/%s" % (target, method)
+    uri = f"grpc://{target}/{method}"
     return (uri, method)
 
 
@@ -43,7 +43,6 @@ def _prepare_request_stream(transaction, guid, request_iterator, *args, **kwargs
 
 
 def wrap_call(module, object_path, prepare):
-
     def _call_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
         if transaction is None:
@@ -58,13 +57,12 @@ def wrap_call(module, object_path, prepare):
 
 
 def wrap_future(module, object_path, prepare):
-
     def _future_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        guid = "%016x" % random.getrandbits(64)
+        guid = f"{random.getrandbits(64):016x}"
         uri, method = _get_uri_method(instance)
 
         args, kwargs = prepare(transaction, guid, *args, **kwargs)

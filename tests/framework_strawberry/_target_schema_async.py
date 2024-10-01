@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
+from typing import List, Optional
 
-import strawberry.mutation
-import strawberry.type
+import strawberry
+
+try:
+    import strawberry.mutation
+except ImportError:
+    import strawberry.types.mutation
+
 from framework_strawberry._target_schema_sync import (
     Item,
     Library,
@@ -27,7 +32,6 @@ from framework_strawberry._target_schema_sync import (
 from strawberry import Schema, field
 from strawberry.asgi import GraphQL
 from strawberry.schema.config import StrawberryConfig
-from strawberry.types.types import Optional
 from testing_support.asgi_testing import AsgiTest
 
 storage = []

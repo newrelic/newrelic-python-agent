@@ -70,12 +70,12 @@ def new_relic_event_consumer(logger, level, event):
         if settings.application_logging.metrics.enabled:
             if transaction:
                 transaction.record_custom_metric("Logging/lines", {"count": 1})
-                transaction.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                transaction.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
             else:
                 application = application_instance(activate=False)
                 if application and application.enabled:
                     application.record_custom_metric("Logging/lines", {"count": 1})
-                    application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                    application.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
 
         if settings.application_logging.forwarding.enabled:
             try:

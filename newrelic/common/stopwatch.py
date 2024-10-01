@@ -53,7 +53,7 @@ except AttributeError:
 # wall clock time and duration based on a monotonic clock where
 # available.
 
-class _Timer(object):
+class _Timer():
 
     def __init__(self):
         self._time_started = time.time()

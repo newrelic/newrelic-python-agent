@@ -415,7 +415,7 @@ def instrument_tornado_web(module):
             track_loop_time)
 
 
-class TornadoContext(object):
+class TornadoContext():
     def __init__(self):
         self.transaction = None
 

@@ -78,7 +78,7 @@ def missing_route_handler(request, exc):
     return PlainTextResponse("Missing route handler", status_code=404)
 
 
-class CustomRoute(object):
+class CustomRoute():
     def __init__(self, route):
         self.route = route
 

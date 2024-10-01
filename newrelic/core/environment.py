@@ -152,7 +152,7 @@ def environment_settings():
             dispatcher.append(("Dispatcher", "gunicorn (gevent)"))
         elif "gunicorn.workers.geventlet" in sys.modules:
             dispatcher.append(("Dispatcher", "gunicorn (eventlet)"))
-        elif "uvicorn.workers" in sys.modules:
+        elif "uvicorn.workers" in sys.modules or "uvicorn_worker" in sys.modules:
             dispatcher.append(("Dispatcher", "gunicorn (uvicorn)"))
             uvicorn = sys.modules.get("uvicorn")
             if hasattr(uvicorn, "__version__"):

@@ -68,8 +68,8 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
     host_2 = instance_hostname(es_2["host"])
     port_2 = es_2["port"]
 
-    instance_metric_name_1 = "Datastore/instance/Elasticsearch/%s/%s" % (host_1, port_1)
-    instance_metric_name_2 = "Datastore/instance/Elasticsearch/%s/%s" % (host_2, port_2)
+    instance_metric_name_1 = f"Datastore/instance/Elasticsearch/{host_1}/{port_1}"
+    instance_metric_name_2 = f"Datastore/instance/Elasticsearch/{host_2}/{port_2}"
 
     _enable_rollup_metrics.extend(
         [
@@ -88,7 +88,7 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
 
 @pytest.fixture(scope="module")
 def client():
-    urls = ["http://%s:%s" % (db["host"], db["port"]) for db in ES_MULTIPLE_SETTINGS]
+    urls = [f"http://{db['host']}:{db['port']}" for db in ES_MULTIPLE_SETTINGS]
     # When selecting a connection from the pool, use the round robin method.
     # This is actually the default already. Using round robin will ensure that
     # doing two db calls will mean elastic search is talking to two different

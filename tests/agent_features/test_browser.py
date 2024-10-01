@@ -34,9 +34,8 @@ from newrelic.api.transaction import (
 from newrelic.api.web_transaction import web_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import deobfuscate
-from newrelic.packages import six
 
-_runtime_error_name = RuntimeError.__module__ + ":" + RuntimeError.__name__
+_runtime_error_name = f"{RuntimeError.__module__}:{RuntimeError.__name__}"
 
 
 @wsgi_application()
@@ -71,12 +70,12 @@ def test_header_attributes():
     assert settings.browser_key
     assert settings.browser_monitoring.loader_version
     assert settings.js_agent_loader
-    assert isinstance(settings.js_agent_file, six.string_types)
+    assert isinstance(settings.js_agent_file, str)
     assert settings.beacon
     assert settings.error_beacon
 
     token = "0123456789ABCDEF"  # nosec
-    headers = {"Cookie": "NRAGENT=tk=%s" % token}
+    headers = {"Cookie": f"NRAGENT=tk={token}"}
 
     response = target_application_manual_rum.get("/", headers=headers)
 
@@ -108,8 +107,7 @@ def test_header_attributes():
 
     obfuscation_key = settings.license_key[:13]
 
-    type_transaction_data = unicode if six.PY2 else str  # noqa: F821
-    assert isinstance(data["transactionName"], type_transaction_data)
+    assert isinstance(data["transactionName"], str)
 
     txn_name = deobfuscate(data["transactionName"], obfuscation_key)
 

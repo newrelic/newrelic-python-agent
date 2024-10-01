@@ -16,11 +16,14 @@ import logging
 import os
 import re
 import socket
+import json
 import string
+import newrelic.packages.urllib3 as urllib3
 
 from newrelic.common.agent_http import InsecureHttpClient
 from newrelic.common.encoding_utils import json_decode
 from newrelic.core.internal_metrics import internal_count_metric
+
 
 _logger = logging.getLogger(__name__)
 VALID_CHARS_RE = re.compile(r"[0-9a-zA-Z_ ./-]")
@@ -309,7 +312,6 @@ class DockerUtilization(CommonUtilization):
     def valid_chars(cls, data):
         if data is None:
             return False
-
         hex_digits = set(string.hexdigits)
 
         valid = all((c in hex_digits for c in data))
@@ -325,6 +327,57 @@ class DockerUtilization(CommonUtilization):
 
         # Must be exactly 64 characters
         return bool(len(data) == 64)
+
+
+class ECSUtilization(CommonUtilization):
+    VENDOR_NAME = "ecs"
+    EXPECTED_KEYS = ("ecsDockerId",)
+
+    @classmethod
+    def fetch(cls):
+        # First, try checking ECS V4 metadata env var
+        try:
+            uri = os.environ.get("ECS_CONTAINER_METADATA_URI_V4")
+            if uri:
+                ecs_id = cls.get_ecs_container_id(uri)
+                if ecs_id:
+                    return ecs_id
+        except:
+            # There are all sorts of exceptions that can occur here
+            # (i.e. permissions, non-existent file, etc)
+            pass
+
+        # If V4 didn't work, try the older version
+        try:
+            uri = os.environ.get("ECS_CONTAINER_METADATA_URI")
+            if uri:
+                ecs_id = cls.get_ecs_container_id(uri)
+                if ecs_id:
+                    return ecs_id
+        except:
+            # There are all sorts of exceptions that can occur here
+            # (i.e. permissions, non-existent file, etc)
+            pass
+
+    @classmethod
+    def get_ecs_container_id(cls, metadata_uri):
+        try:
+            http = urllib3.PoolManager()
+            resp = http.request("GET", metadata_uri)
+            resp_dict = json.loads(resp.data)
+            docker_id = resp_dict.get("DockerId")
+            resp.release_conn()
+            return docker_id
+        except:
+            _logger.debug("Unable to fetch Docker container ID data from ECS endpoint: %s", metadata_uri)
+            return None
+
+    @classmethod
+    def get_values(cls, contents):
+        if contents is None:
+            return
+
+        return {"ecsDockerId": contents}
 
 
 class KubernetesUtilization(CommonUtilization):

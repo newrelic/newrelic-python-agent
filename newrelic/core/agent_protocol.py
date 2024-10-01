@@ -27,6 +27,7 @@ from newrelic.common.utilization import (
     AWSUtilization,
     AzureUtilization,
     DockerUtilization,
+    ECSUtilization,
     GCPUtilization,
     KubernetesUtilization,
     PCFUtilization,
@@ -321,8 +322,15 @@ class AgentProtocol():
             utilization_settings["config"] = utilization_conf
 
         vendors = []
+        ecs_id = None
+        utilization_vendor_settings = {}
+
         if settings["utilization.detect_aws"]:
             vendors.append(AWSUtilization)
+            ecs_id = ECSUtilization.detect()
+            if ecs_id:
+                utilization_vendor_settings["ecs"] = ecs_id
+
         if settings["utilization.detect_pcf"]:
             vendors.append(PCFUtilization)
         if settings["utilization.detect_gcp"]:
@@ -330,7 +338,6 @@ class AgentProtocol():
         if settings["utilization.detect_azure"]:
             vendors.append(AzureUtilization)
 
-        utilization_vendor_settings = {}
         for vendor in vendors:
             metadata = vendor.detect()
             if metadata:
@@ -338,9 +345,10 @@ class AgentProtocol():
                 break
 
         if settings["utilization.detect_docker"]:
-            docker = DockerUtilization.detect()
-            if docker:
-                utilization_vendor_settings["docker"] = docker
+            if not ecs_id:
+                docker = DockerUtilization.detect()
+                if docker:
+                    utilization_vendor_settings["docker"] = docker
 
         if settings["utilization.detect_kubernetes"]:
             kubernetes = KubernetesUtilization.detect()

@@ -554,7 +554,7 @@ def _process_configuration(section):
     _process_setting(section, "ai_monitoring.record_content.enabled", "getboolean", None)
     _process_setting(section, "ai_monitoring.streaming.enabled", "getboolean", None)
     _process_setting(section, "k8s_operator.enabled", "getboolean", None)
-    _process_setting(section, "azure_sidecar.enabled", "getboolean", None)
+    _process_setting(section, "azure_operator.enabled", "getboolean", None)
     _process_setting(section, "package_reporting.enabled", "getboolean", None)
 
 

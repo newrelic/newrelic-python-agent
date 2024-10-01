@@ -34,7 +34,6 @@ from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_ATTRIBUTE_LENGTH
 from newrelic.core.attribute_filter import AttributeFilter
 
-
 try:
     import grpc
 
@@ -82,7 +81,7 @@ _logger.addHandler(_NullHandler())
 # sub categories we don't know about.
 
 
-class Settings():
+class Settings:
     nested = False
 
     def __repr__(self):
@@ -162,7 +161,7 @@ class K8sOperatorSettings(Settings):
     pass
 
 
-class AzureSidecarSettings(Settings):
+class AzureOperatorSettings(Settings):
     pass
 
 
@@ -435,7 +434,7 @@ _settings.ai_monitoring = AIMonitoringSettings()
 _settings.ai_monitoring.streaming = AIMonitoringStreamingSettings()
 _settings.ai_monitoring.record_content = AIMonitoringRecordContentSettings()
 _settings.k8s_operator = K8sOperatorSettings()
-_settings.azure_sidecar = AzureSidecarSettings()
+_settings.azure_operator = AzureOperatorSettings()
 _settings.package_reporting = PackageReportingSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
@@ -962,7 +961,7 @@ _settings.ai_monitoring.record_content.enabled = _environ_as_bool(
 )
 _settings.ai_monitoring._llm_token_count_callback = None
 _settings.k8s_operator.enabled = _environ_as_bool("NEW_RELIC_K8S_OPERATOR_ENABLED", default=False)
-_settings.azure_sidecar.enabled = _environ_as_bool("NEW_RELIC_AZURE_SIDECAR_ENABLED", default=False)
+_settings.azure_operator.enabled = _environ_as_bool("NEW_RELIC_AZURE_OPERATOR_ENABLED", default=False)
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 
@@ -1097,11 +1096,7 @@ def global_settings_dump(settings_object=None, serializable=False):
             if not isinstance(key, str):
                 del settings[key]
 
-            if (
-                not isinstance(value, str)
-                and not isinstance(value, float)
-                and not isinstance(value, int)
-            ):
+            if not isinstance(value, str) and not isinstance(value, float) and not isinstance(value, int):
                 settings[key] = repr(value)
 
     return settings

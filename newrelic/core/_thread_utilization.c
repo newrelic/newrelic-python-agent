@@ -16,8 +16,8 @@
 
 /* ------------------------------------------------------------------------- */
 
+#include <sys/time.h>
 #include <Python.h>
-
 #include <pythread.h>
 
 #ifndef PyVarObject_HEAD_INIT

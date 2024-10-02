@@ -4,9 +4,9 @@ FROM ghcr.io/newrelic/newrelic-python-agent-ci:${IMAGE_TAG}
 
 # Setup non-root user
 USER root
-ARG UID=1000
+ARG UID=1001
 ARG GID=${UID}
-ENV HOME /home/vscode
+ENV HOME=/home/vscode
 RUN mkdir -p ${HOME} && \
     groupadd --gid ${GID} vscode && \
     useradd --uid ${UID} --gid ${GID} --home ${HOME} vscode && \
@@ -14,7 +14,8 @@ RUN mkdir -p ${HOME} && \
 
 # Fix pyenv installation
 RUN echo 'eval "$(pyenv init -)"' >>${HOME}/.bashrc && \
-    chown -R vscode:vscode ${PYENV_ROOT}
+    chown -R vscode:vscode "${PYENV_ROOT}" && \
+    chown -R vscode:vscode "${PIPX_HOME}"
 
 # Set user
 USER ${UID}:${GID}

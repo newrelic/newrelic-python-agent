@@ -45,7 +45,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         make \
         odbc-postgresql \
         openssl \
-        python2-dev \
         python3-dev \
         python3-pip \
         sudo \
@@ -85,7 +84,7 @@ RUN ln -fs "/usr/share/zoneinfo/${TZ}" /etc/localtime && \
     dpkg-reconfigure -f noninteractive tzdata
 
 # Use root user
-ENV HOME /root
+ENV HOME=/root
 WORKDIR "${HOME}"
 
 # Install pyenv
@@ -96,8 +95,8 @@ RUN echo 'eval "$(pyenv init -)"' >>${HOME}/.bashrc && \
     pyenv update
 
 # Install Python
-ARG PYTHON_VERSIONS="3.11 3.10 3.9 3.8 3.7 3.12 pypy3.10-7.3.15"
-COPY --chown=1000:1000 --chmod=+x ./install-python.sh /tmp/install-python.sh
+ARG PYTHON_VERSIONS="3.12 3.11 3.10 3.9 3.8 3.7 3.13 pypy3.10-7.3.17"
+COPY --chown=0:0 --chmod=755 ./install-python.sh /tmp/install-python.sh
 RUN /tmp/install-python.sh && \
     rm /tmp/install-python.sh
 
@@ -105,3 +104,14 @@ RUN /tmp/install-python.sh && \
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pyenv exec pip install --upgrade -r /tmp/requirements.txt && \
     rm /tmp/requirements.txt
+
+# Install tools with pipx in isolated environments
+COPY ./requirements-tools.txt /tmp/requirements-tools.txt
+ENV PIPX_HOME="/opt/pipx"
+ENV PIPX_BIN_DIR="${PIPX_HOME}/bin"
+ENV PATH="${PIPX_BIN_DIR}:${PATH}"
+RUN mkdir -p "${PIPX_BIN_DIR}" && \
+    while IFS="" read -r line || [ -n "$line" ]; do \
+        pyenv exec pipx install --global "${line}"; \
+    done </tmp/requirements-tools.txt && \
+    rm /tmp/requirements-tools.txt

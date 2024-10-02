@@ -20,7 +20,10 @@ import time
 from testing_support.fixtures import collector_agent_registration_fixture
 from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.common.agent_http import HttpClient
-from newrelic.core.config import global_settings
+from newrelic.core.config import global_settings, _environ_as_bool
+
+SKIP_IF_NO_LICENSE_KEY = pytest.mark.skipif("NEW_RELIC_LICENSE_KEY" not in os.environ, reason="License key is not expected to be valid")
+SKIP_IF_DEVELOPER_MODE = pytest.mark.skipif(_environ_as_bool("NEW_RELIC_DEVELOPER_MODE", False), reason="Cannot connect to collector in developer mode")
 
 
 class FullUriClient(HttpClient):
@@ -55,10 +58,8 @@ EMPTY_SAMPLES = {
 }
 
 
-@pytest.mark.skipif(
-    "NEW_RELIC_LICENSE_KEY" not in os.environ,
-    reason="License key is not expected to be valid",
-)
+@SKIP_IF_NO_LICENSE_KEY
+@SKIP_IF_DEVELOPER_MODE
 @pytest.mark.parametrize(
     "method,payload",
     [
@@ -86,10 +87,8 @@ def test_full_uri_payload(session, method, payload):
     protocol.send(method, payload)
 
 
-@pytest.mark.skipif(
-    "NEW_RELIC_LICENSE_KEY" not in os.environ,
-    reason="License key is not expected to be valid",
-)
+@SKIP_IF_NO_LICENSE_KEY
+@SKIP_IF_DEVELOPER_MODE
 def test_full_uri_connect():
     # An exception will be raised here if there's a problem with the response
     AgentProtocol.connect(

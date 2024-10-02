@@ -254,11 +254,7 @@ static PyObject *NRUtilization_enter(NRUtilizationObject *self, PyObject *args)
             PyObject *func = NULL;
 
             dict = PyModule_GetDict(module);
-#if PY_MAJOR_VERSION >= 3
             func = PyDict_GetItemString(dict, "current_thread");
-#else
-            func = PyDict_GetItemString(dict, "currentThread");
-#endif
             if (func) {
                 Py_INCREF(func);
                 thread = PyObject_Call(func, (PyObject *)NULL, (PyObject *)NULL);
@@ -408,7 +404,6 @@ PyTypeObject NRUtilization_Type = {
 
 /* ------------------------------------------------------------------------- */
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     "_thread_utilization", /* m_name */
@@ -420,18 +415,13 @@ static struct PyModuleDef moduledef = {
     NULL,                /* m_clear */
     NULL,                /* m_free */
 };
-#endif
 
 static PyObject *
 moduleinit(void)
 {
     PyObject *module;
 
-#if PY_MAJOR_VERSION >= 3
     module = PyModule_Create(&moduledef);
-#else
-    module = Py_InitModule3("_thread_utilization", NULL, NULL);
-#endif
 
     if (module == NULL)
         return NULL;
@@ -446,16 +436,9 @@ moduleinit(void)
     return module;
 }
 
-#if PY_MAJOR_VERSION < 3
-PyMODINIT_FUNC init_thread_utilization(void)
-{
-    moduleinit();
-}
-#else
 PyMODINIT_FUNC PyInit__thread_utilization(void)
 {
     return moduleinit();
 }
-#endif
 
 /* ------------------------------------------------------------------------- */

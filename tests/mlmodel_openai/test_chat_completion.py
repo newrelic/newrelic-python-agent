@@ -34,7 +34,7 @@ from testing_support.validators.validate_custom_events import validate_custom_ev
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-from newrelic.api.background_task import background_task, BackgroundTask
+from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute, current_transaction
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 
@@ -44,6 +44,7 @@ _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
     {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
 )
+
 
 chat_completion_recorded_events = [
     (

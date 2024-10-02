@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import contextvars
+import functools
 import logging
-
 from newrelic.api.transaction import current_transaction
 
 _logger = logging.getLogger(__name__)
@@ -28,15 +28,9 @@ class WithLlmCustomAttributes(object):
             raise TypeError("custom_attr_dict must be a dictionary. Received type: %s" % type(custom_attr_dict))
 
         # Add "llm." prefix to all keys in attribute dictionary
-        prefixed_attr_dict = {}
-        for k, v in custom_attr_dict.items():
-            if not k.startswith("llm."):
-                _logger.warning("Invalid attribute name %s. Renamed to llm.%s." % (k, k))
-                prefixed_attr_dict["llm." + k] = v
+        context_attrs = {k if k.startswith("llm.") else f"llm.{k}": v for k, v in custom_attr_dict.items()}
 
-        finalized_attrs = prefixed_attr_dict if prefixed_attr_dict else custom_attr_dict
-
-        self.attr_dict = finalized_attrs
+        self.attr_dict = context_attrs
         self.transaction = transaction
 
     def __enter__(self):
@@ -52,3 +46,4 @@ class WithLlmCustomAttributes(object):
         if self.transaction:
             custom_attr_context_var.set(None)
             self.transaction._custom_attr_context_var = custom_attr_context_var
+

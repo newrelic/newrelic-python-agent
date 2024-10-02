@@ -35,7 +35,7 @@ def test_llm_custom_attributes_no_attrs(context_attrs):
 
     with pytest.raises(TypeError):
         with WithLlmCustomAttributes(context_attrs):
-            assert transaction._custom_attr_context_var is None
+            assert transaction._custom_attr_context_var.get() is None
 
 
 @background_task()

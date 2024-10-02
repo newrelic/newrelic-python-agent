@@ -799,7 +799,7 @@ def _record_events_on_stop_iteration(self, transaction):
                 openai_attrs,
                 self._nr_ft,
                 response_headers,
-                None,
+                None
             )
         except Exception:
             _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
@@ -824,6 +824,7 @@ def _handle_streaming_completion_error(self, transaction, exc):
             return
         linking_metadata = get_trace_linking_metadata()
         completion_id = str(uuid.uuid4())
+
         _record_completion_error(
             transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, exc
         )
@@ -940,14 +941,14 @@ def is_stream(wrapped, args, kwargs):
 def _get_llm_attributes(transaction):
     """Returns llm.* custom attributes off of the transaction."""
     custom_attrs_dict = transaction._custom_params
-    llm_metadata = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
     llm_context_attrs = getattr(transaction, "_custom_attr_context_var", None)
     if llm_context_attrs:
         context_attrs = llm_context_attrs.get()
-        llm_metadata.update(context_attrs)
+        llm_metadata_dict.update(context_attrs)
 
-    return llm_metadata
+    return llm_metadata_dict
 
 
 def instrument_openai_api_resources_embedding(module):

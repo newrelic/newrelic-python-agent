@@ -261,7 +261,7 @@ static PyObject *NRUtilization_enter(NRUtilizationObject *self, PyObject *args)
 #endif
             if (func) {
                 Py_INCREF(func);
-                thread = PyEval_CallObject(func, (PyObject *)NULL);
+                thread = PyObject_Call(func, (PyObject *)NULL, (PyObject *)NULL);
                 if (!thread)
                     PyErr_Clear();
 

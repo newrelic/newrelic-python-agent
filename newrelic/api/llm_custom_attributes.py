@@ -24,8 +24,8 @@ custom_attr_context_var = contextvars.ContextVar("custom_attr_context_var", defa
 class WithLlmCustomAttributes(object):
     def __init__(self, custom_attr_dict):
         transaction = current_transaction()
-        if not isinstance(custom_attr_dict, dict) or custom_attr_dict is None:
-            raise TypeError("custom_attr_dict must be a dictionary. Received type: %s" % type(custom_attr_dict))
+        if not custom_attr_dict or not isinstance(custom_attr_dict, dict):
+            raise TypeError("custom_attr_dict must be a non-empty dictionary. Received type: %s" % type(custom_attr_dict))
 
         # Add "llm." prefix to all keys in attribute dictionary
         context_attrs = {k if k.startswith("llm.") else f"llm.{k}": v for k, v in custom_attr_dict.items()}

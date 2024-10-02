@@ -53,8 +53,7 @@ from newrelic.samplers.data_sampler import DataSampler
 _logger = logging.getLogger(__name__)
 
 
-class Application():
-
+class Application:
     """Class which maintains recorded data for a single application."""
 
     def __init__(self, app_name, linked_applications=None):

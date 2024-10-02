@@ -101,3 +101,23 @@ def test_ml_streaming_disabled_supportability_metrics():
     app.connect_to_data_collector(None)
 
     assert app._active_session
+
+
+@override_generic_settings(
+    SETTINGS,
+    {
+        "developer_mode": True,
+    },
+)
+@validate_internal_metrics(
+    [
+        ("Supportability/SuperAgent/Health/enabled", 1),
+    ]
+)
+def test_super_agent_health_supportability_metric(monkeypatch):
+    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_FLEET_ID", "foobar")
+
+    app = Application("Python Agent Test (agent_unittests-connect)")
+    app.connect_to_data_collector(None)
+
+    assert app._active_session

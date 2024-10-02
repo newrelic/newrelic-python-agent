@@ -590,6 +590,13 @@ class Application:
                     1,
                 )
 
+            # Super agent health check metric
+            if os.environ.get("NEW_RELIC_SUPERAGENT_FLEET_ID", None):
+                internal_metric(
+                    "Supportability/SuperAgent/Health/enabled",
+                    1,
+                )
+
         self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
         # Update the active session in this object. This will the

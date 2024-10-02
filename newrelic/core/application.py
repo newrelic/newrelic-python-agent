@@ -53,8 +53,7 @@ from newrelic.samplers.data_sampler import DataSampler
 _logger = logging.getLogger(__name__)
 
 
-class Application():
-
+class Application:
     """Class which maintains recorded data for a single application."""
 
     def __init__(self, app_name, linked_applications=None):
@@ -572,6 +571,13 @@ class Application():
                 )
                 internal_metric(
                     f"Supportability/InfiniteTracing/gRPC/Compression/{'enabled' if infinite_tracing_compression else 'disabled'}",
+                    1,
+                )
+
+            # Super agent health check metric
+            if os.environ.get("NEW_RELIC_SUPERAGENT_FLEET_ID", None):
+                internal_metric(
+                    "Supportability/SuperAgent/Health/enabled",
                     1,
                 )
 

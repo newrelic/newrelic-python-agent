@@ -1447,7 +1447,13 @@ class Application:
 
                     # Send environment plugin list
 
-                    if not self._env_sent and configuration and configuration.package_reporting.enabled:
+                    stopwatch_start = time.time()
+                    while (
+                        not self._env_sent
+                        and (time.time() - stopwatch_start) < 2.0
+                        and configuration
+                        and configuration.package_reporting.enabled
+                    ):
                         try:
                             module_info = next(self.plugins)
                             self.modules.append(module_info)

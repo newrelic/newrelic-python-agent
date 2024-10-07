@@ -823,7 +823,6 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
         "response.choices.finish_reason": bedrock_attrs.get("response.choices.finish_reason", None),
         "error": bedrock_attrs.get("error", None),
     }
-
     chat_completion_summary_dict.update(llm_metadata_dict)
     chat_completion_summary_dict = {k: v for k, v in chat_completion_summary_dict.items() if v is not None}
 

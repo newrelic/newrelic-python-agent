@@ -30,11 +30,13 @@ from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import (
+    FunctionWrapper,
     ObjectProxy,
     function_wrapper,
     wrap_function_wrapper,
 )
 from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 
 QUEUE_URL_PATTERN = re.compile(r"https://sqs.([\w\d-]+).amazonaws.com/(\d+)/([^/]+)")
@@ -889,7 +891,24 @@ def sqs_message_trace(
     return _nr_sqs_message_trace_wrapper_
 
 
+def wrap_lambda_invoke(wrapped):
+    def _nr_wrap_lambda_invoke(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        bound_args = bind_args(wrapped, args, kwargs)
+        arn = bound_args["kwargs"].get("FunctionName")
+        if arn:
+            transaction._nr_lambda_arn = arn
+
+        return wrapped(*args, **kwargs)
+
+    return FunctionWrapper(wrapped, _nr_wrap_lambda_invoke)
+
+
 CUSTOM_TRACE_POINTS = {
+    ("lambda", "invoke"): wrap_lambda_invoke,
     ("sns", "publish"): message_trace("SNS", "Produce", "Topic", extract(("TopicArn", "TargetArn"), "PhoneNumber")),
     ("dynamodb", "put_item"): datastore_trace("DynamoDB", extract("TableName"), "put_item"),
     ("dynamodb", "get_item"): datastore_trace("DynamoDB", extract("TableName"), "get_item"),
@@ -951,6 +970,11 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     with ExternalTrace(library="botocore", url=url, method=method, source=wrapped) as trace:
         try:
             trace._add_agent_attribute("aws.operation", operation_model.name)
+            lambda_arn = getattr(trace.transaction, "_nr_lambda_arn", None)
+            if lambda_arn:
+                trace._add_agent_attribute("cloud.platform", "aws_lambda")
+                trace._add_agent_attribute("cloud.resource_id", lambda_arn)
+                del trace.transaction._nr_lambda_arn
         except:
             pass
 

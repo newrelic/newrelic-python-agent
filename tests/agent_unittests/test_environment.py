@@ -17,7 +17,7 @@ import sys
 import pytest
 
 from newrelic.core.config import global_settings
-from newrelic.core.environment import environment_settings
+from newrelic.core.environment import environment_settings, plugins
 
 settings = global_settings()
 
@@ -30,6 +30,18 @@ def module(version):
         Module.__version__ = version
 
     return Module
+
+
+def test_plugin_list():
+    # Let's pretend we fired an import hook
+    import pytest  # noqa: F401
+
+    for name, version, _ in plugins():
+        if name == "newrelic.hooks.newrelic":
+            assert False, "Bogus plugin found"
+        if name == "pytest":
+            # Check that plugin that should get reported has version info.
+            assert version == pytest.__version__
 
 
 class NoIteratorDict:

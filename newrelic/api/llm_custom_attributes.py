@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+
 from newrelic.api.transaction import current_transaction
 
 _logger = logging.getLogger(__name__)
@@ -22,7 +23,9 @@ class WithLlmCustomAttributes(object):
     def __init__(self, custom_attr_dict):
         transaction = current_transaction()
         if not custom_attr_dict or not isinstance(custom_attr_dict, dict):
-            raise TypeError("custom_attr_dict must be a non-empty dictionary. Received type: %s" % type(custom_attr_dict))
+            raise TypeError(
+                "custom_attr_dict must be a non-empty dictionary. Received type: %s" % type(custom_attr_dict)
+            )
 
         # Add "llm." prefix to all keys in attribute dictionary
         context_attrs = {k if k.startswith("llm.") else f"llm.{k}": v for k, v in custom_attr_dict.items()}

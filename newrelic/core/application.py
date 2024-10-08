@@ -1458,7 +1458,6 @@ class Application:
                             module_info = next(self.plugins)
                             self.modules.append(module_info)
                         except StopIteration:
-                            self._active_session.send_loaded_modules(self.modules)
                             self._env_sent = True
 
                     # Send the accumulated error data.
@@ -1702,8 +1701,9 @@ class Application:
                 module_info = next(self.plugins)
                 self.modules.append(module_info)
             except StopIteration:
-                self._active_session.send_loaded_modules(self.modules)
                 self._env_sent = True
+
+        self._active_session.send_loaded_modules(self.modules)
 
         # Now shutdown the actual agent session.
 

@@ -1,3 +1,4 @@
+
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,9 +24,9 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 def test_llm_custom_attributes():
     transaction = current_transaction()
     with WithLlmCustomAttributes({"test": "attr", "test1": "attr1"}):
-        assert transaction._custom_attr_context_var.get() == {"llm.test": "attr", "llm.test1": "attr1"}
+        assert transaction._llm_context_attrs == {"llm.test": "attr", "llm.test1": "attr1"}
 
-    assert transaction._custom_attr_context_var.get() is None
+    assert transaction._llm_context_attrs is None
 
 
 @pytest.mark.parametrize("context_attrs", (None, "not-a-dict"))
@@ -35,14 +36,14 @@ def test_llm_custom_attributes_no_attrs(context_attrs):
 
     with pytest.raises(TypeError):
         with WithLlmCustomAttributes(context_attrs):
-            assert transaction._custom_attr_context_var.get() is None
+            assert transaction._llm_context_attrs is None
 
 
 @background_task()
 def test_llm_custom_attributes_prefixed_attrs():
     transaction = current_transaction()
-    with WithLlmCustomAttributes({"llm.test": "attr", "llm.test1": "attr1"}):
+    with WithLlmCustomAttributes({"llm.test": "attr", "test1": "attr1"}):
         # Validate API does not prefix attributes that already begin with "llm."
-        assert transaction._custom_attr_context_var.get() == {"llm.test": "attr", "llm.test1": "attr1"}
+        assert transaction._llm_context_attrs == {"llm.test": "attr", "llm.test1": "attr1"}
 
-    assert transaction._custom_attr_context_var.get() is None
+    assert transaction._llm_context_attrs is None

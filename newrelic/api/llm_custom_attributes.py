@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import contextvars
-import functools
 import logging
 from newrelic.api.transaction import current_transaction
 
 _logger = logging.getLogger(__name__)
-custom_attr_context_var = contextvars.ContextVar("custom_attr_context_var", default={})
 
 
 class WithLlmCustomAttributes(object):
@@ -38,12 +35,10 @@ class WithLlmCustomAttributes(object):
             _logger.warning("WithLlmCustomAttributes must be called within the scope of a transaction.")
             return self
 
-        token = custom_attr_context_var.set(self.attr_dict)
-        self.transaction._custom_attr_context_var = custom_attr_context_var
-        return token
+        self.transaction._llm_context_attrs = self.attr_dict
+        return self
 
     def __exit__(self, exc, value, tb):
+        # Clear out context attributes once we leave the current context
         if self.transaction:
-            custom_attr_context_var.set(None)
-            self.transaction._custom_attr_context_var = custom_attr_context_var
-
+            self.transaction._llm_context_attrs = None

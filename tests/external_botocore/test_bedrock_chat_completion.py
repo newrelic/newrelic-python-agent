@@ -59,8 +59,8 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import add_custom_attribute
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
+from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 from newrelic.hooks.external_botocore import MODEL_EXTRACTORS
 

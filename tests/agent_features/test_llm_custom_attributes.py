@@ -1,4 +1,3 @@
-
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +15,8 @@
 import pytest
 
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import current_transaction
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
+from newrelic.api.transaction import current_transaction
 
 
 @background_task()

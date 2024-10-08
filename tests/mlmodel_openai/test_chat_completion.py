@@ -34,10 +34,10 @@ from testing_support.validators.validate_custom_events import validate_custom_ev
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
-from newrelic.api.background_task import background_task
-from newrelic.api.transaction import add_custom_attribute
-from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 
+from newrelic.api.background_task import background_task
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
+from newrelic.api.transaction import add_custom_attribute
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},

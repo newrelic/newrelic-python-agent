@@ -503,6 +503,7 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info, as
         )
         async for resp in generator:
             assert resp
+
     with WithLlmCustomAttributes({"context": "attr"}):
         loop.run_until_complete(consumer())
 

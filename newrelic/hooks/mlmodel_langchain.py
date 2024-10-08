@@ -452,9 +452,7 @@ def _record_tool_success(
     try:
         result = str(response)
     except Exception:
-        _logger.debug(
-            f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}"
-        )
+        _logger.debug(f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}")
     if settings.ai_monitoring.record_content.enabled:
         full_tool_event_dict.update(
             {

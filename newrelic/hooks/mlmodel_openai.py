@@ -436,7 +436,6 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
     trace_id = linking_metadata.get("trace.id")
     request_message_list = kwargs.get("messages") or []
     stream = kwargs.get("stream", False)
-
     # Only if streaming and streaming monitoring is enabled and the response is not empty
     # do we not exit the function trace.
     if not stream or not settings.ai_monitoring.streaming.enabled or not return_val:
@@ -476,16 +475,12 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
                 # openai._legacy_response.LegacyAPIResponse
                 response = json.loads(response.http_response.text.strip())
 
-        _record_completion_success(
-            transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response
-        )
+        _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
 
 
-def _record_completion_success(
-    transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response
-):
+def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -647,7 +642,6 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
         }
         llm_metadata = _get_llm_attributes(transaction)
         error_chat_completion_dict.update(llm_metadata)
-
         transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
         output_message_list = []
@@ -786,6 +780,7 @@ def _record_events_on_stop_iteration(self, transaction):
         self._nr_ft.__exit__(None, None, None)
         try:
             openai_attrs = getattr(self, "_nr_openai_attrs", {})
+
             # If there are no openai attrs exit early as there's no data to record.
             if not openai_attrs:
                 return
@@ -793,13 +788,7 @@ def _record_events_on_stop_iteration(self, transaction):
             completion_id = str(uuid.uuid4())
             response_headers = openai_attrs.get("response_headers") or {}
             _record_completion_success(
-                transaction,
-                linking_metadata,
-                completion_id,
-                openai_attrs,
-                self._nr_ft,
-                response_headers,
-                None
+                transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, response_headers, None
             )
         except Exception:
             _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
@@ -824,10 +813,7 @@ def _handle_streaming_completion_error(self, transaction, exc):
             return
         linking_metadata = get_trace_linking_metadata()
         completion_id = str(uuid.uuid4())
-
-        _record_completion_error(
-            transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, exc
-        )
+        _record_completion_error(transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, exc)
 
 
 class AsyncGeneratorProxy(ObjectProxy):

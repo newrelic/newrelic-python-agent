@@ -41,4 +41,4 @@ class WithLlmCustomAttributes(object):
     def __exit__(self, exc, value, tb):
         # Clear out context attributes once we leave the current context
         if self.transaction:
-            self.transaction._llm_context_attrs = None
+            del self.transaction._llm_context_attrs

@@ -75,6 +75,12 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
 
 
 def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
+    #_logger.debug("Wrapping chat completion sync")
+    #_logger.debug("Wrapped: %s", wrapped)
+    #_logger.debug("Instance: %s", instance)
+    #_logger.debug("Args: %s", args)
+    #_logger.debug("Kwargs: %s", kwargs)
+    
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -104,6 +110,8 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
         _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
         raise
     kwargs["prompt"] = args[0]
+    #_logger.debug("model_name: %s", instance.model_name);
+    kwargs["model"] = instance.model_name.replace("models/", "")
     _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
     return return_val
 
@@ -491,7 +499,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
     trace_id = linking_metadata.get("trace.id")
     responseDict = response.to_dict()
     try:
-        response_model = ""
+        response_model = kwargs.get("model")
         response_id = ""
         response_usage = {}
         finish_reason = ""

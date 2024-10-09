@@ -26,7 +26,6 @@ def test_llm_custom_attributes():
         assert transaction._llm_context_attrs == {"llm.test": "attr", "llm.test1": "attr1"}
 
 
-
 @pytest.mark.parametrize("context_attrs", (None, "not-a-dict"))
 @background_task()
 def test_llm_custom_attributes_no_attrs(context_attrs):

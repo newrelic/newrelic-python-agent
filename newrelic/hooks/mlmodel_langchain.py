@@ -100,6 +100,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.semadb": "SemaDB",
     "langchain_community.vectorstores.singlestoredb": "SingleStoreDB",
     "langchain_community.vectorstores.sklearn": "SKLearnVectorStore",
+    "langchain_community.vectorstores.sqlitevec": "SQLiteVec",
     "langchain_community.vectorstores.sqlitevss": "SQLiteVSS",
     "langchain_community.vectorstores.starrocks": "StarRocks",
     "langchain_community.vectorstores.supabase": "SupabaseVectorStore",
@@ -452,9 +453,7 @@ def _record_tool_success(
     try:
         result = str(response)
     except Exception:
-        _logger.debug(
-            f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}"
-        )
+        _logger.debug(f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}")
     if settings.ai_monitoring.record_content.enabled:
         full_tool_event_dict.update(
             {

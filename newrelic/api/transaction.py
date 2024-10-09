@@ -66,7 +66,9 @@ from newrelic.core.trace_cache import TraceCacheActiveTraceError, TraceCacheNoAc
 _logger = logging.getLogger(__name__)
 
 DISTRIBUTED_TRACE_KEYS_REQUIRED = ("ty", "ac", "ap", "tr", "ti")
-DISTRIBUTED_TRACE_TRANSPORT_TYPES = set(("HTTP", "HTTPS", "Kafka", "JMS", "IronMQ", "AMQP", "Queue", "Other"))
+DISTRIBUTED_TRACE_TRANSPORT_TYPES = set(
+    ("HTTP", "HTTPS", "Kafka", "JMS", "IronMQ", "AMQP", "Queue", "PYAMQP", "SQS", "REDIS", "ZooKeeper", "Other")
+)
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
 ACCEPTED_DISTRIBUTED_TRACE = 1
 CREATED_DISTRIBUTED_TRACE = 2

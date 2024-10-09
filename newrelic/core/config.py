@@ -71,6 +71,10 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(_NullHandler())
 
 
+def parse_space_separated_into_list(string):
+    return string.split()
+
+
 def _map_aws_account_id(s, logger):
     # The AWS account id must be a 12 digit number.
     # See https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-identifiers.html#awsaccountid.
@@ -146,6 +150,18 @@ class AWSSettings(Settings):
 
 class AttributesSettings(Settings):
     pass
+
+
+class KombuSettings(Settings):
+    pass
+
+
+class IgnoredExchangesSettings(Settings):
+    pass
+
+
+class KombuConsumerSettings(Settings):
+    enabled = False
 
 
 class GCRuntimeMetricsSettings(Settings):
@@ -483,6 +499,9 @@ _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = EventHarvestConfigHarvestLimitSettings()
 _settings.event_loop_visibility = EventLoopVisibilitySettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
+_settings.kombu = KombuSettings()
+_settings.kombu.ignored_exchanges = IgnoredExchangesSettings()
+_settings.kombu.consumer = KombuConsumerSettings()
 _settings.memory_runtime_pid_metrics = MemoryRuntimeMetricsSettings()
 _settings.heroku = HerokuSettings()
 _settings.infinite_tracing = InfiniteTracingSettings()
@@ -775,6 +794,11 @@ _settings.attributes.include = []
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = False
 
+# celeryev is the monitoring queue for rabbitmq which we do not need to monitor-it just makes a lot of noise.
+_settings.kombu.ignored_exchanges = parse_space_separated_into_list(
+    os.environ.get("NEW_RELIC_KOMBU_IGNORED_EXCHANGES", "celeryev")
+)
+_settings.kombu.consumer.enabled = _environ_as_bool("NEW_RELIC_KOMBU_PRODUCER_ENABLED", default=False)
 _settings.gc_runtime_metrics.enabled = _environ_as_bool("NEW_RELIC_GC_RUNTIME_METRICS_ENABLED", default=False)
 _settings.gc_runtime_metrics.top_object_count_limit = 5
 

@@ -100,6 +100,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.semadb": "SemaDB",
     "langchain_community.vectorstores.singlestoredb": "SingleStoreDB",
     "langchain_community.vectorstores.sklearn": "SKLearnVectorStore",
+    "langchain_community.vectorstores.sqlitevec": "SQLiteVec",
     "langchain_community.vectorstores.sqlitevss": "SQLiteVSS",
     "langchain_community.vectorstores.starrocks": "StarRocks",
     "langchain_community.vectorstores.supabase": "SupabaseVectorStore",

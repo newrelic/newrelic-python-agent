@@ -37,6 +37,8 @@ jobs:
           - cp311-musllinux
           - cp312-manylinux
           - cp312-musllinux
+          - cp313-manylinux
+          - cp313-musllinux
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
@@ -48,7 +50,7 @@ jobs:
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # 3.0.0
 
       - name: Build Wheels
-        uses: pypa/cibuildwheel@8d945475ac4b1aac4ae08b2fd27db9917158b6ce # 2.17.0
+        uses: pypa/cibuildwheel@d4a2945fcc8d13f20a1b99d461b8e844d5fc6e23 # 2.21.1
         env:
           CIBW_PLATFORM: linux
           CIBW_BUILD: "${{ matrix.wheel }}*"

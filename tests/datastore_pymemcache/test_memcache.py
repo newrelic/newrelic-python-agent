@@ -21,13 +21,17 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import set_background_task
 
+from newrelic.common import system_info
+
 DB_SETTINGS = memcached_settings()[0]
 
 MEMCACHED_HOST = DB_SETTINGS["host"]
 MEMCACHED_PORT = DB_SETTINGS["port"]
 MEMCACHED_NAMESPACE = DB_SETTINGS["namespace"]
-
 MEMCACHED_ADDR = (MEMCACHED_HOST, int(MEMCACHED_PORT))
+INSTANCE_METRIC_HOST = system_info.gethostname() if MEMCACHED_HOST == "127.0.0.1" else MEMCACHED_HOST
+INSTANCE_METRIC_NAME = f"Datastore/instance/Memcached/{INSTANCE_METRIC_HOST}/{MEMCACHED_PORT}"
+
 
 _test_bt_set_get_delete_scoped_metrics = [
     ("Datastore/operation/Memcached/set", 1),
@@ -43,7 +47,7 @@ _test_bt_set_get_delete_rollup_metrics = [
     ("Datastore/operation/Memcached/set", 1),
     ("Datastore/operation/Memcached/get", 1),
     ("Datastore/operation/Memcached/delete", 1),
-    (f"Datastore/instance/Memcached/{MEMCACHED_HOST}/{MEMCACHED_PORT}", 3),
+    (INSTANCE_METRIC_NAME, 3),
 ]
 
 
@@ -81,7 +85,7 @@ _test_wt_set_get_delete_rollup_metrics = [
     ("Datastore/operation/Memcached/set", 1),
     ("Datastore/operation/Memcached/get", 1),
     ("Datastore/operation/Memcached/delete", 1),
-    (f"Datastore/instance/Memcached/{MEMCACHED_HOST}/{MEMCACHED_PORT}", 3),
+    (INSTANCE_METRIC_NAME, 3),
 ]
 
 

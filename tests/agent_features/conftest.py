@@ -19,8 +19,10 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     newrelic_caplog as caplog,
 )
+from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
+    event_loop,
+)
 
-from newrelic.packages import six
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -37,22 +39,3 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (agent_features)", default_settings=_default_settings
 )
-
-
-if six.PY2:
-    collect_ignore = [
-        "test_async_context_propagation.py",
-        "test_coroutine_trace.py",
-        "test_coroutine_transaction.py",
-        "test_async_timing.py",
-        "test_event_loop_wait_time.py",
-        "test_asgi_transaction.py",
-        "test_asgi_browser.py",
-        "test_asgi_distributed_tracing.py",
-        "test_asgi_w3c_trace_context.py",
-        "test_ml_events.py",
-    ]
-else:
-    from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
-        event_loop,
-    )

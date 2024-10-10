@@ -49,12 +49,13 @@ class AsyncCursorWrapper(ObjectProxy):
             ):
                 return await self.__wrapped__.execute(sql, **kwargs)
 
-    async def executemany(self, sql, seq_of_parameters):
+    async def executemany(self, sql, seq_of_parameters, *args, **kwargs):
         try:
             seq_of_parameters = list(seq_of_parameters)
             parameters = seq_of_parameters[0]
         except (TypeError, IndexError):
             parameters = DEFAULT
+
         if parameters is not DEFAULT:
             with DatabaseTrace(
                 sql=sql,
@@ -64,7 +65,7 @@ class AsyncCursorWrapper(ObjectProxy):
                 sql_parameters=parameters,
                 source=self.__wrapped__.executemany,
             ):
-                return await self.__wrapped__.executemany(sql, seq_of_parameters)
+                return await self.__wrapped__.executemany(sql, seq_of_parameters, *args, **kwargs)
         else:
             with DatabaseTrace(
                 sql=sql,
@@ -73,11 +74,11 @@ class AsyncCursorWrapper(ObjectProxy):
                 cursor_params=self._nr_cursor_params,
                 source=self.__wrapped__.executemany,
             ):
-                return await self.__wrapped__.executemany(sql, seq_of_parameters)
+                return await self.__wrapped__.executemany(sql, seq_of_parameters, *args, **kwargs)
 
     async def callproc(self, procname, parameters=DEFAULT):
         with DatabaseTrace(
-            sql="CALL %s" % procname,
+            sql=f"CALL {procname}",
             dbapi2_module=self._nr_dbapi2_module,
             connect_params=self._nr_connect_params,
             source=self.__wrapped__.callproc,
@@ -147,7 +148,7 @@ class AsyncConnectionFactory(ObjectProxy):
         self._nr_dbapi2_module = dbapi2_module
 
     async def __call__(self, *args, **kwargs):
-        rollup = ["Datastore/all", "Datastore/%s/all" % self._nr_dbapi2_module._nr_database_product]
+        rollup = ["Datastore/all", f"Datastore/{self._nr_dbapi2_module._nr_database_product}/all"]
 
         with FunctionTrace(name=callable_name(self.__wrapped__), terminal=True, rollup=rollup, source=self.__wrapped__):
             connection = await self.__wrapped__(*args, **kwargs)

@@ -15,6 +15,8 @@
 import sys
 import tempfile
 
+from importlib import reload
+
 import pytest
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
@@ -39,15 +41,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-try:
-    # python 2.x
-    reload
-except NameError:
-    # python 3.x
-    from importlib import reload
-
-
-class FakeProtos(object):
+class FakeProtos():
     Span = object()
     SpanBatch = object()
 

@@ -48,7 +48,7 @@ def _parametrize_test(test):
 _boot_id_tests = [_parametrize_test(t) for t in _load_tests()]
 
 
-class MockedBootIdEndpoint(object):
+class MockedBootIdEndpoint():
     def __init__(self, boot_id):
         self.boot_id = boot_id
 

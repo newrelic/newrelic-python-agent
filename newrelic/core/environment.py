@@ -152,7 +152,7 @@ def environment_settings():
             dispatcher.append(("Dispatcher", "gunicorn (gevent)"))
         elif "gunicorn.workers.geventlet" in sys.modules:
             dispatcher.append(("Dispatcher", "gunicorn (eventlet)"))
-        elif "uvicorn.workers" in sys.modules:
+        elif "uvicorn.workers" in sys.modules or "uvicorn_worker" in sys.modules:
             dispatcher.append(("Dispatcher", "gunicorn (uvicorn)"))
             uvicorn = sys.modules.get("uvicorn")
             if hasattr(uvicorn, "__version__"):
@@ -245,7 +245,7 @@ def environment_settings():
             # If it has no version it's likely not a real package so don't report it unless
             # it's a new relic hook.
             if nr_hook or version:
-                plugins.append("%s (%s)" % (name, version))
+                plugins.append(f"{name} ({version})")
 
     env.append(("Plugin List", plugins))
 

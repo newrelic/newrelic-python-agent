@@ -29,17 +29,17 @@ def feedparser():
     "feed://localhost",
 ))
 def test_feedparser_external(feedparser, server, url):
-    url = url + ':' + str(server.port)
+    url = f"{url}:{str(server.port)}"
 
     @validate_transaction_metrics(
         "test_feedparser_external",
         background_task=True,
-        scoped_metrics=(("External/localhost:%d/feedparser/GET" % server.port, 1),),
+        scoped_metrics=((f"External/localhost:{server.port}/feedparser/GET", 1),),
     )
     @background_task(name="test_feedparser_external")
     def _test():
         feed = feedparser.parse(url)
-        assert feed["feed"]["link"] == u"https://pypi.org/"
+        assert feed["feed"]["link"] == "https://pypi.org/"
 
     _test()
 
@@ -50,7 +50,7 @@ def test_feedparser_file(feedparser, stream, server):
     @validate_transaction_metrics(
         "test_feedparser_file",
         background_task=True,
-        scoped_metrics=(("External/localhost:%d/feedparser/GET" % server.port, None),),
+        scoped_metrics=((f"External/localhost:{server.port}/feedparser/GET", None),),
     )
     @background_task(name="test_feedparser_file")
     def _test():
@@ -59,7 +59,7 @@ def test_feedparser_file(feedparser, stream, server):
                 feed = feedparser.parse(f)
         else:
             feed = feedparser.parse("packages.xml")
-        assert feed["feed"]["link"] == u"https://pypi.org/"
+        assert feed["feed"]["link"] == "https://pypi.org/"
 
     _test()
 
@@ -70,6 +70,6 @@ def test_feedparser_file(feedparser, stream, server):
 ))
 def test_feedparser_no_transaction(feedparser, server, url):
     if url.startswith('http://'):
-        url = url + ':' + str(server.port)
+        url = f"{url}:{str(server.port)}"
     feed = feedparser.parse(url)
-    assert feed["feed"]["link"] == u"https://pypi.org/"
+    assert feed["feed"]["link"] == "https://pypi.org/"

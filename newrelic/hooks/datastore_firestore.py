@@ -66,7 +66,7 @@ _get_collection_ref_id = lambda obj, *args, **kwargs: getattr(getattr(obj, "_col
 def instrument_google_cloud_firestore_v1_base_client(module):
     rollup = ("Datastore/all", "Datastore/Firestore/all")
     wrap_function_trace(
-        module, "BaseClient.__init__", name="%s:BaseClient.__init__" % module.__name__, terminal=True, rollup=rollup
+        module, "BaseClient.__init__", name=f"{module.__name__}:BaseClient.__init__", terminal=True, rollup=rollup
     )
 
 
@@ -77,7 +77,7 @@ def instrument_google_cloud_firestore_v1_client(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "Client.%s" % method,
+                    f"Client.{method}",
                     operation=method,
                     product="Firestore",
                     target=None,
@@ -95,7 +95,7 @@ def instrument_google_cloud_firestore_v1_async_client(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncClient.%s" % method,
+                    f"AsyncClient.{method}",
                     operation=method,
                     product="Firestore",
                     target=None,
@@ -113,7 +113,7 @@ def instrument_google_cloud_firestore_v1_collection(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "CollectionReference.%s" % method,
+                    f"CollectionReference.{method}",
                     product="Firestore",
                     target=_get_object_id,
                     operation=method,
@@ -126,7 +126,7 @@ def instrument_google_cloud_firestore_v1_collection(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "CollectionReference.%s" % method,
+                    f"CollectionReference.{method}",
                     operation=method,
                     product="Firestore",
                     target=_get_object_id,
@@ -144,7 +144,7 @@ def instrument_google_cloud_firestore_v1_async_collection(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncCollectionReference.%s" % method,
+                    f"AsyncCollectionReference.{method}",
                     product="Firestore",
                     target=_get_object_id,
                     host=_get_client_target_host,
@@ -157,7 +157,7 @@ def instrument_google_cloud_firestore_v1_async_collection(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncCollectionReference.%s" % method,
+                    f"AsyncCollectionReference.{method}",
                     operation=method,
                     product="Firestore",
                     target=_get_object_id,
@@ -175,7 +175,7 @@ def instrument_google_cloud_firestore_v1_document(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "DocumentReference.%s" % method,
+                    f"DocumentReference.{method}",
                     product="Firestore",
                     target=_get_object_id,
                     operation=method,
@@ -188,7 +188,7 @@ def instrument_google_cloud_firestore_v1_document(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "DocumentReference.%s" % method,
+                    f"DocumentReference.{method}",
                     operation=method,
                     product="Firestore",
                     target=_get_object_id,
@@ -206,7 +206,7 @@ def instrument_google_cloud_firestore_v1_async_document(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncDocumentReference.%s" % method,
+                    f"AsyncDocumentReference.{method}",
                     product="Firestore",
                     target=_get_object_id,
                     operation=method,
@@ -219,7 +219,7 @@ def instrument_google_cloud_firestore_v1_async_document(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncDocumentReference.%s" % method,
+                    f"AsyncDocumentReference.{method}",
                     operation=method,
                     product="Firestore",
                     target=_get_object_id,
@@ -237,7 +237,7 @@ def instrument_google_cloud_firestore_v1_query(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "Query.%s" % method,
+                    f"Query.{method}",
                     product="Firestore",
                     target=_get_parent_id,
                     operation=method,
@@ -250,7 +250,7 @@ def instrument_google_cloud_firestore_v1_query(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "Query.%s" % method,
+                    f"Query.{method}",
                     operation=method,
                     product="Firestore",
                     target=_get_parent_id,
@@ -266,7 +266,7 @@ def instrument_google_cloud_firestore_v1_query(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "CollectionGroup.%s" % method,
+                    f"CollectionGroup.{method}",
                     operation=method,
                     product="Firestore",
                     target=_get_parent_id,
@@ -284,7 +284,7 @@ def instrument_google_cloud_firestore_v1_async_query(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncQuery.%s" % method,
+                    f"AsyncQuery.{method}",
                     product="Firestore",
                     target=_get_parent_id,
                     operation=method,
@@ -297,7 +297,7 @@ def instrument_google_cloud_firestore_v1_async_query(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncQuery.%s" % method,
+                    f"AsyncQuery.{method}",
                     operation=method,
                     product="Firestore",
                     target=_get_parent_id,
@@ -313,7 +313,7 @@ def instrument_google_cloud_firestore_v1_async_query(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncCollectionGroup.%s" % method,
+                    f"AsyncCollectionGroup.{method}",
                     operation=method,
                     product="Firestore",
                     target=_get_parent_id,
@@ -331,7 +331,7 @@ def instrument_google_cloud_firestore_v1_aggregation(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AggregationQuery.%s" % method,
+                    f"AggregationQuery.{method}",
                     product="Firestore",
                     target=_get_collection_ref_id,
                     operation=method,
@@ -344,7 +344,7 @@ def instrument_google_cloud_firestore_v1_aggregation(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AggregationQuery.%s" % method,
+                    f"AggregationQuery.{method}",
                     operation=method,
                     product="Firestore",
                     target=_get_collection_ref_id,
@@ -362,7 +362,7 @@ def instrument_google_cloud_firestore_v1_async_aggregation(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncAggregationQuery.%s" % method,
+                    f"AsyncAggregationQuery.{method}",
                     product="Firestore",
                     target=_get_collection_ref_id,
                     operation=method,
@@ -375,7 +375,7 @@ def instrument_google_cloud_firestore_v1_async_aggregation(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncAggregationQuery.%s" % method,
+                    f"AsyncAggregationQuery.{method}",
                     operation=method,
                     product="Firestore",
                     target=_get_collection_ref_id,
@@ -393,7 +393,7 @@ def instrument_google_cloud_firestore_v1_batch(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "WriteBatch.%s" % method,
+                    f"WriteBatch.{method}",
                     product="Firestore",
                     target=None,
                     operation=method,
@@ -410,7 +410,7 @@ def instrument_google_cloud_firestore_v1_async_batch(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "AsyncWriteBatch.%s" % method,
+                    f"AsyncWriteBatch.{method}",
                     product="Firestore",
                     target=None,
                     operation=method,
@@ -427,7 +427,7 @@ def instrument_google_cloud_firestore_v1_bulk_batch(module):
             if hasattr(class_, method):
                 wrap_datastore_trace(
                     module,
-                    "BulkWriteBatch.%s" % method,
+                    f"BulkWriteBatch.{method}",
                     product="Firestore",
                     target=None,
                     operation=method,
@@ -445,7 +445,7 @@ def instrument_google_cloud_firestore_v1_transaction(module):
                 operation = method[1:]  # Trim leading underscore
                 wrap_datastore_trace(
                     module,
-                    "Transaction.%s" % method,
+                    f"Transaction.{method}",
                     product="Firestore",
                     target=None,
                     operation=operation,
@@ -463,7 +463,7 @@ def instrument_google_cloud_firestore_v1_async_transaction(module):
                 operation = method[1:]  # Trim leading underscore
                 wrap_datastore_trace(
                     module,
-                    "AsyncTransaction.%s" % method,
+                    f"AsyncTransaction.{method}",
                     product="Firestore",
                     target=None,
                     operation=operation,

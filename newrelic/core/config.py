@@ -28,16 +28,12 @@ import logging
 import os
 import re
 import threading
+import urllib.parse as urlparse
 
-import newrelic.packages.six as six
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_ATTRIBUTE_LENGTH
 from newrelic.core.attribute_filter import AttributeFilter
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
 
 try:
     import grpc
@@ -86,7 +82,7 @@ _logger.addHandler(_NullHandler())
 # sub categories we don't know about.
 
 
-class Settings(object):
+class Settings():
     nested = False
 
     def __repr__(self):
@@ -359,6 +355,8 @@ class SecurityDetectionRXSSSettings(Settings):
 class SecurityDetectionDeserializationSettings(Settings):
     pass
 
+class SecurityRequestSettings(Settings):
+    pass
 
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
@@ -493,6 +491,7 @@ _settings.security.detection = SecurityDetectionSettings()
 _settings.security.detection.deserialization = SecurityDetectionDeserializationSettings()
 _settings.security.detection.rci = SecurityDetectionRCISettings()
 _settings.security.detection.rxss = SecurityDetectionRXSSSettings()
+_settings.security.request = SecurityRequestSettings()
 _settings.serverless_mode = ServerlessModeSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.span_events = SpanEventSettings()
@@ -635,7 +634,7 @@ def default_host(license_key):
         return "collector.newrelic.com"
 
     region = region_aware_match.group(1)
-    host = "collector." + region + ".nr-data.net"
+    host = f"collector.{region}.nr-data.net"
     return host
 
 
@@ -652,7 +651,7 @@ def default_otlp_host(host):
     otlp_host = HOST_MAP.get(host, None)
     if not otlp_host:
         default = HOST_MAP["collector.newrelic.com"]
-        _logger.warn("Unable to find corresponding OTLP host using default %s" % default)
+        _logger.warn(f"Unable to find corresponding OTLP host using default {default}")
         otlp_host = default
     return otlp_host
 
@@ -776,7 +775,7 @@ _settings.attributes.include = []
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = False
 
-_settings.gc_runtime_metrics.enabled = False
+_settings.gc_runtime_metrics.enabled = _environ_as_bool("NEW_RELIC_GC_RUNTIME_METRICS_ENABLED", default=False)
 _settings.gc_runtime_metrics.top_object_count_limit = 5
 
 _settings.memory_runtime_pid_metrics.enabled = _environ_as_bool(
@@ -1002,6 +1001,7 @@ _settings.security.detection.rxss.enabled = _environ_as_bool("NEW_RELIC_SECURITY
 _settings.security.detection.deserialization.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_DETECTION_DESERIALIZATION_ENABLED", True
 )
+_settings.security.request.body_limit = os.environ.get("NEW_RELIC_SECURITY_REQUEST_BODY_LIMIT", None)
 
 
 def global_settings():
@@ -1037,7 +1037,7 @@ def flatten_settings(settings):
                 key = key[1:]
 
             if name:
-                key = "%s.%s" % (name, key)
+                key = f"{name}.{key}"
 
             if isinstance(value, Settings):
                 if value.nested:
@@ -1067,9 +1067,9 @@ def create_obfuscated_netloc(username, password, hostname, mask):
         password = mask
 
     if username and password:
-        netloc = "%s:%s@%s" % (username, password, hostname)
+        netloc = f"{username}:{password}@{hostname}"
     elif username:
-        netloc = "%s@%s" % (username, hostname)
+        netloc = f"{username}@{hostname}"
     else:
         netloc = hostname
 
@@ -1123,21 +1123,21 @@ def global_settings_dump(settings_object=None, serializable=False):
             netloc = create_obfuscated_netloc(components.username, components.password, components.hostname, obfuscated)
 
             if components.port:
-                uri = "%s://%s:%s%s" % (components.scheme, netloc, components.port, components.path)
+                uri = f"{components.scheme}://{netloc}:{components.port}{components.path}"
             else:
-                uri = "%s://%s%s" % (components.scheme, netloc, components.path)
+                uri = f"{components.scheme}://{netloc}{components.path}"
 
             settings["proxy_host"] = uri
 
     if serializable:
-        for key, value in list(six.iteritems(settings)):
-            if not isinstance(key, six.string_types):
+        for key, value in list(settings.items()):
+            if not isinstance(key, str):
                 del settings[key]
 
             if (
-                not isinstance(value, six.string_types)
+                not isinstance(value, str)
                 and not isinstance(value, float)
-                and not isinstance(value, six.integer_types)
+                and not isinstance(value, int)
             ):
                 settings[key] = repr(value)
 
@@ -1174,7 +1174,7 @@ def apply_config_setting(settings_object, name, value, nested=False):
     default_value = getattr(target, fields[0], None)
     if isinstance(value, dict) and value and not isinstance(default_value, dict):
         for k, v in value.items():
-            k_name = "{}.{}".format(fields[0], k)
+            k_name = f"{fields[0]}.{k}"
             apply_config_setting(target, k_name, v, nested=True)
     else:
         setattr(target, fields[0], value)
@@ -1410,8 +1410,8 @@ def error_matches_rules(
                 return None
 
     # Retrieve settings based on prefix
-    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())
-    status_codes_rules = getattr(settings.error_collector, "%s_status_codes" % rules_prefix, set())
+    classes_rules = getattr(settings.error_collector, f"{rules_prefix}_classes", set())
+    status_codes_rules = getattr(settings.error_collector, f"{rules_prefix}_status_codes", set())
 
     _, _, fullnames, _ = parse_exc_info(exc_info)
     fullname = fullnames[0]
@@ -1433,7 +1433,7 @@ def error_matches_rules(
             # Coerce into integer
             status_code = int(status_code)
         except:
-            _logger.error("Failed to coerce status code into integer. status_code: %s" % str(status_code))
+            _logger.error(f"Failed to coerce status code into integer. status_code: {str(status_code)}")
         else:
             if status_code in status_codes_rules:
                 return True

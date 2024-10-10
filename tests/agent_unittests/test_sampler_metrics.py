@@ -20,7 +20,6 @@ import pytest
 from testing_support.fixtures import override_generic_settings
 
 from newrelic.core.config import global_settings
-from newrelic.packages import six
 from newrelic.samplers.cpu_usage import cpu_usage_data_source
 from newrelic.samplers.gc_data import garbage_collector_data_source
 from newrelic.samplers.memory_usage import memory_usage_data_source
@@ -52,36 +51,28 @@ def memory_data_source():
 
 PID = os.getpid()
 
-if six.PY2:
-    EXPECTED_GC_METRICS = (
-        "GC/objects/%d/all" % PID,
-        "GC/objects/%d/generation/0" % PID,
-        "GC/objects/%d/generation/1" % PID,
-        "GC/objects/%d/generation/2" % PID,
-    )
-else:
-    EXPECTED_GC_METRICS = (
-        "GC/objects/%d/all" % PID,
-        "GC/objects/%d/generation/0" % PID,
-        "GC/objects/%d/generation/1" % PID,
-        "GC/objects/%d/generation/2" % PID,
-        "GC/collections/%d/all" % PID,
-        "GC/collections/%d/0" % PID,
-        "GC/collections/%d/1" % PID,
-        "GC/collections/%d/2" % PID,
-        "GC/collected/%d/all" % PID,
-        "GC/collected/%d/0" % PID,
-        "GC/collected/%d/1" % PID,
-        "GC/collected/%d/2" % PID,
-        "GC/uncollectable/%d/all" % PID,
-        "GC/uncollectable/%d/0" % PID,
-        "GC/uncollectable/%d/1" % PID,
-        "GC/uncollectable/%d/2" % PID,
-        "GC/time/%d/all" % PID,
-        "GC/time/%d/0" % PID,
-        "GC/time/%d/1" % PID,
-        "GC/time/%d/2" % PID,
-    )
+EXPECTED_GC_METRICS = (
+    f"GC/objects/{PID}/all",
+    f"GC/objects/{PID}/generation/0",
+    f"GC/objects/{PID}/generation/1",
+    f"GC/objects/{PID}/generation/2",
+    f"GC/collections/{PID}/all",
+    f"GC/collections/{PID}/0",
+    f"GC/collections/{PID}/1",
+    f"GC/collections/{PID}/2",
+    f"GC/collected/{PID}/all",
+    f"GC/collected/{PID}/0",
+    f"GC/collected/{PID}/1",
+    f"GC/collected/{PID}/2",
+    f"GC/uncollectable/{PID}/all",
+    f"GC/uncollectable/{PID}/0",
+    f"GC/uncollectable/{PID}/1",
+    f"GC/uncollectable/{PID}/2",
+    f"GC/time/{PID}/all",
+    f"GC/time/{PID}/0",
+    f"GC/time/{PID}/1",
+    f"GC/time/{PID}/2",
+)
 
 
 @pytest.mark.xfail(
@@ -153,8 +144,8 @@ def test_cpu_metrics_collection(cpu_data_source):
 EXPECTED_MEMORY_METRICS = (
     "Memory/Physical",
     "Memory/Physical/Utilization",
-    "Memory/Physical/%d" % PID,
-    "Memory/Physical/Utilization/%d" % PID,
+    f"Memory/Physical/{PID}",
+    f"Memory/Physical/Utilization/{PID}",
 )
 
 

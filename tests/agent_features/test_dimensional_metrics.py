@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from importlib import reload
+
 import pytest
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_dimensional_metric_payload import (
@@ -33,21 +35,10 @@ from newrelic.api.transaction import (
 )
 from newrelic.common.metric_utils import create_metric_identity
 from newrelic.core.config import global_settings
-from newrelic.packages import six
-
-try:
-    # python 2.x
-    reload
-except NameError:
-    # python 3.x
-    from importlib import reload
 
 
 @pytest.fixture(scope="module", autouse=True, params=["protobuf", "json"])
 def otlp_content_encoding(request):
-    if six.PY2 and request.param == "protobuf":
-        pytest.skip("OTLP protos are not compatible with Python 2.")
-
     _settings = global_settings()
     prev = _settings.debug.otlp_content_encoding
     _settings.debug.otlp_content_encoding = request.param

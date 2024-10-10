@@ -24,10 +24,7 @@ import os
 import pytest
 import webtest
 
-try:
-    from urllib2 import urlopen  # Py2.X
-except ImportError:
-    from urllib.request import urlopen  # Py3.X
+from urllib.request import urlopen
 
 from testing_support.fixtures import (
     make_cross_agent_headers,
@@ -49,7 +46,6 @@ from newrelic.api.transaction import (
 )
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import json_encode, obfuscate
-from newrelic.packages import six
 
 ENCODING_KEY = "1234567890123456789012345678901234567890"
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -94,10 +90,7 @@ _parameters = ",".join(_parameters_list)
 def target_wsgi_application(environ, start_response):
     status = "200 OK"
 
-    txn_name = environ.get("txn")
-    if six.PY2:
-        txn_name = txn_name.decode("UTF-8")
-    txn_name = txn_name.split("/", 3)
+    txn_name = environ.get("txn").split("/", 3)
 
     guid = environ.get("guid")
     old_cat = environ.get("old_cat") == "True"
@@ -192,12 +185,8 @@ def test_cat_map(
     @override_application_settings(_custom_settings)
     @override_application_name(appName)
     def run_cat_test():
-        if six.PY2:
-            txn_name = transactionName.encode("UTF-8")
-            guid = transactionGuid.encode("UTF-8")
-        else:
-            txn_name = transactionName
-            guid = transactionGuid
+        txn_name = transactionName
+        guid = transactionGuid
 
         # Only generate old cat style headers. This will test to make sure we
         # are properly ignoring these headers when the agent is using better
@@ -211,7 +200,7 @@ def test_cat_map(
                 "txn": txn_name,
                 "guid": guid,
                 "old_cat": str(old_cat),
-                "server_url": "http://localhost:%d" % server.port,
+                "server_url": f"http://localhost:{server.port}",
             },
         )
 

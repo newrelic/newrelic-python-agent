@@ -29,7 +29,7 @@ class SolrNode(_SolrNode, GenericNodeMixin):
 
     @property
     def name(self):
-        return 'SolrClient/%s/%s' % (self.library, self.command)
+        return f'SolrClient/{self.library}/{self.command}'
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -46,7 +46,7 @@ class SolrNode(_SolrNode, GenericNodeMixin):
             yield TimeMetric(name='Solr/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-        name = 'Solr/%s' % self.command
+        name = f'Solr/{self.command}'
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                   exclusive=self.exclusive)

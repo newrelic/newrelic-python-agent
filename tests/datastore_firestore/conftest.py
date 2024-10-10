@@ -62,7 +62,7 @@ def instance_info():
 
 @pytest.fixture(scope="session")
 def client():
-    os.environ["FIRESTORE_EMULATOR_HOST"] = "%s:%d" % (FIRESTORE_HOST, FIRESTORE_PORT)
+    os.environ["FIRESTORE_EMULATOR_HOST"] = f"{FIRESTORE_HOST}:{FIRESTORE_PORT}"
     client = Client()
     # Ensure connection is available
     client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5)
@@ -71,14 +71,14 @@ def client():
 
 @pytest.fixture(scope="function")
 def collection(client):
-    collection_ = client.collection("firestore_collection_" + str(uuid.uuid4()))
+    collection_ = client.collection(f"firestore_collection_{str(uuid.uuid4())}")
     yield collection_
     client.recursive_delete(collection_)
 
 
 @pytest.fixture(scope="session")
 def async_client(loop):
-    os.environ["FIRESTORE_EMULATOR_HOST"] = "%s:%d" % (FIRESTORE_HOST, FIRESTORE_PORT)
+    os.environ["FIRESTORE_EMULATOR_HOST"] = f"{FIRESTORE_HOST}:{FIRESTORE_PORT}"
     client = AsyncClient()
     loop.run_until_complete(
         client.collection("healthcheck").document("healthcheck").set({}, retry=None, timeout=5)

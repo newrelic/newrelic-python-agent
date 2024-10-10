@@ -45,7 +45,7 @@ scoped_metrics = [
 ]
 
 rollup_metrics = scoped_metrics + [
-    ('Python/Framework/Django/%s' % django.get_version(), 1),
+    (f'Python/Framework/Django/{django.get_version()}', 1),
 ]
 
 
@@ -107,7 +107,7 @@ def test_asgi_class_based_view(application, url, view_name):
    
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(view_name,
-            scoped_metrics=[('Function/' + view_name, 1)] + scoped_metrics,
+            scoped_metrics=[(f"Function/{view_name}", 1)] + scoped_metrics,
             rollup_metrics=rollup_metrics)
     @validate_code_level_metrics(namespace, func)
     def _test():

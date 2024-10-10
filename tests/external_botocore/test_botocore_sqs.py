@@ -30,28 +30,71 @@ MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 url = "sqs.us-east-1.amazonaws.com"
+EXPECTED_SEND_MESSAGE_AGENT_ATTRS = {
+    "expected_agents": ["messaging.destination.name"],
+    "exact_agents": {
+        "aws.operation": "SendMessage",
+        "cloud.account.id": "123456789012",
+        "cloud.region": "us-east-1",
+        "messaging.system": "aws_sqs",
+    },
+}
+EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS = {
+    "expected_agents": ["messaging.destination.name"],
+    "exact_agents": {
+        "aws.operation": "ReceiveMessage",
+        "cloud.account.id": "123456789012",
+        "cloud.region": "us-east-1",
+        "messaging.system": "aws_sqs",
+    },
+}
+EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS = required = {
+    "expected_agents": ["messaging.destination.name"],
+    "exact_agents": {
+        "aws.operation": "SendMessageBatch",
+        "cloud.account.id": "123456789012",
+        "cloud.region": "us-east-1",
+        "messaging.system": "aws_sqs",
+    },
+}
 if BOTOCORE_VERSION < (1, 29, 0):
     url = "queue.amazonaws.com"
+    # The old style url does not contain the necessary AWS info.
+    EXPECTED_SEND_MESSAGE_AGENT_ATTRS = {
+        "exact_agents": {
+            "aws.operation": "SendMessage",
+        },
+    }
+    EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS = {
+        "exact_agents": {
+            "aws.operation": "ReceiveMessage",
+        },
+    }
+    EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS = {
+        "exact_agents": {
+            "aws.operation": "SendMessageBatch",
+        },
+    }
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION = "us-east-1"
 
-TEST_QUEUE = "python-agent-test-%s" % uuid.uuid4()
+TEST_QUEUE = f"python-agent-test-{uuid.uuid4()}"
 
 
 _sqs_scoped_metrics = [
-    ("MessageBroker/SQS/Queue/Produce/Named/%s" % TEST_QUEUE, 2),
-    ("External/%s/botocore/POST" % url, 3),
+    (f"MessageBroker/SQS/Queue/Produce/Named/{TEST_QUEUE}", 2),
+    (f"External/{url}/botocore/POST", 3),
 ]
 
 _sqs_rollup_metrics = [
-    ("MessageBroker/SQS/Queue/Produce/Named/%s" % TEST_QUEUE, 2),
-    ("MessageBroker/SQS/Queue/Consume/Named/%s" % TEST_QUEUE, 1),
+    (f"MessageBroker/SQS/Queue/Produce/Named/{TEST_QUEUE}", 2),
+    (f"MessageBroker/SQS/Queue/Consume/Named/{TEST_QUEUE}", 1),
     ("External/all", 3),
     ("External/allOther", 3),
-    ("External/%s/all" % url, 3),
-    ("External/%s/botocore/POST" % url, 3),
+    (f"External/{url}/all", 3),
+    (f"External/{url}/botocore/POST", 3),
 ]
 
 _sqs_scoped_metrics_malformed = [
@@ -65,9 +108,18 @@ _sqs_rollup_metrics_malformed = [
 
 @dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateQueue"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "SendMessage"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "ReceiveMessage"}, count=1)
-@validate_span_events(exact_agents={"aws.operation": "SendMessageBatch"}, count=1)
+@validate_span_events(
+    **EXPECTED_SEND_MESSAGE_AGENT_ATTRS,
+    count=1,
+)
+@validate_span_events(
+    **EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS,
+    count=1,
+)
+@validate_span_events(
+    **EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS,
+    count=1,
+)
 @validate_span_events(exact_agents={"aws.operation": "PurgeQueue"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "DeleteQueue"}, count=1)
 @validate_transaction_metrics(

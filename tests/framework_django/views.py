@@ -118,6 +118,5 @@ def gzip_html_insertion(request):
     # contents must be at least 200 bytes for gzip middleware to work
     contents = "*" * 200
     return HttpResponse(
-        "<!DOCTYPE html><html><head>Some header</head>"
-        "<body><h1>My First Heading</h1><p>%s</p></body></html>" % contents
+        f"<!DOCTYPE html><html><head>Some header</head><body><h1>My First Heading</h1><p>{contents}</p></body></html>"
     )

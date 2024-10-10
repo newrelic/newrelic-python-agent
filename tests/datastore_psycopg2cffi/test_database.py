@@ -40,10 +40,10 @@ _test_execute_via_cursor_scoped_metrics = [
     ("Function/psycopg2cffi:connect", 1),
     ("Function/psycopg2cffi._impl.connection:Connection.__enter__", 1),
     ("Function/psycopg2cffi._impl.connection:Connection.__exit__", 1),
-    ("Datastore/statement/Postgres/%s/select" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/insert" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/update" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/delete" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
     ("Datastore/statement/Postgres/now/call", 1),
     ("Datastore/statement/Postgres/pg_sleep/call", 1),
     ("Datastore/operation/Postgres/drop", 1),
@@ -58,13 +58,13 @@ _test_execute_via_cursor_rollup_metrics = [
     ("Datastore/Postgres/all", 13),
     ("Datastore/Postgres/allOther", 13),
     ("Datastore/operation/Postgres/select", 1),
-    ("Datastore/statement/Postgres/%s/select" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
     ("Datastore/operation/Postgres/insert", 1),
-    ("Datastore/statement/Postgres/%s/insert" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
     ("Datastore/operation/Postgres/update", 1),
-    ("Datastore/statement/Postgres/%s/update" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
     ("Datastore/operation/Postgres/delete", 1),
-    ("Datastore/statement/Postgres/%s/delete" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
     ("Datastore/operation/Postgres/drop", 1),
     ("Datastore/operation/Postgres/create", 1),
     ("Datastore/statement/Postgres/now/call", 1),
@@ -72,7 +72,7 @@ _test_execute_via_cursor_rollup_metrics = [
     ("Datastore/operation/Postgres/call", 2),
     ("Datastore/operation/Postgres/commit", 3),
     ("Datastore/operation/Postgres/rollback", 1),
-    ("Datastore/instance/Postgres/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 12),
+    (f"Datastore/instance/Postgres/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 12),
 ]
 
 
@@ -98,26 +98,26 @@ def test_execute_via_cursor():
         psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE, connection)
         psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE, cursor)
 
-        cursor.execute("""drop table if exists %s""" % DB_SETTINGS["table_name"])
+        cursor.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
 
-        cursor.execute("""create table %s """ % DB_SETTINGS["table_name"] + """(a integer, b real, c text)""")
+        cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
 
         cursor.executemany(
-            """insert into %s """ % DB_SETTINGS["table_name"] + """values (%s, %s, %s)""",
+            f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)",
             [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
         )
 
-        cursor.execute("""select * from %s""" % DB_SETTINGS["table_name"])
+        cursor.execute(f"""select * from {DB_SETTINGS['table_name']}""")
 
         for row in cursor:
             pass
 
         cursor.execute(
-            """update %s""" % DB_SETTINGS["table_name"] + """ set a=%s, b=%s, """ """c=%s where a=%s""",
+            f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s",
             (4, 4.0, "4.0", 1),
         )
 
-        cursor.execute("""delete from %s where a=2""" % DB_SETTINGS["table_name"])
+        cursor.execute(f"""delete from {DB_SETTINGS['table_name']} where a=2""")
 
         connection.commit()
 
@@ -168,8 +168,8 @@ def test_rollback_on_exception():
 
 _test_async_mode_scoped_metrics = [
     ("Function/psycopg2cffi:connect", 1),
-    ("Datastore/statement/Postgres/%s/select" % DB_SETTINGS["table_name"], 1),
-    ("Datastore/statement/Postgres/%s/insert" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
     ("Datastore/operation/Postgres/drop", 1),
     ("Datastore/operation/Postgres/create", 1),
 ]
@@ -180,12 +180,12 @@ _test_async_mode_rollup_metrics = [
     ("Datastore/Postgres/all", 5),
     ("Datastore/Postgres/allOther", 5),
     ("Datastore/operation/Postgres/select", 1),
-    ("Datastore/statement/Postgres/%s/select" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
     ("Datastore/operation/Postgres/insert", 1),
-    ("Datastore/statement/Postgres/%s/insert" % DB_SETTINGS["table_name"], 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
     ("Datastore/operation/Postgres/drop", 1),
     ("Datastore/operation/Postgres/create", 1),
-    ("Datastore/instance/Postgres/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 4),
+    (f"Datastore/instance/Postgres/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 4),
 ]
 
 
@@ -222,16 +222,16 @@ def test_async_mode():
     wait(async_conn)
     async_cur = async_conn.cursor()
 
-    async_cur.execute("""drop table if exists %s""" % DB_SETTINGS["table_name"])
+    async_cur.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
     wait(async_cur.connection)
 
-    async_cur.execute("""create table %s """ % DB_SETTINGS["table_name"] + """(a integer, b real, c text)""")
+    async_cur.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
     wait(async_cur.connection)
 
-    async_cur.execute("""insert into %s """ % DB_SETTINGS["table_name"] + """values (%s, %s, %s)""", (1, 1.0, "1.0"))
+    async_cur.execute(f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)", (1, 1.0, "1.0"))
     wait(async_cur.connection)
 
-    async_cur.execute("""select * from %s""" % DB_SETTINGS["table_name"])
+    async_cur.execute(f"""select * from {DB_SETTINGS['table_name']}""")
     wait(async_cur.connection)
 
     for row in async_cur:

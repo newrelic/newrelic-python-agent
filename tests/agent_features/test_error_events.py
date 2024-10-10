@@ -84,7 +84,7 @@ def test_transaction_error_event_lotsa_attributes():
         "err_message": ERR_MESSAGE,
         "external": "2",
         "db": "2",
-        "mod_wsgi.queue_start": ("t=%r" % time.time()),
+        "mod_wsgi.queue_start": (f"t={time.time()!r}"),
         "SERVER_PORT": "8888",
     }
     response = fully_featured_application.get("/", extra_environ=test_environ)

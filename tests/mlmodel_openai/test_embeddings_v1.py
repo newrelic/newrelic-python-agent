@@ -69,7 +69,7 @@ embedding_recorded_events = [
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -88,7 +88,7 @@ def test_openai_embedding_sync(set_trace_info, sync_openai_client):
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -110,7 +110,7 @@ def test_openai_embedding_sync_with_raw_response(set_trace_info, sync_openai_cli
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -130,7 +130,7 @@ def test_openai_embedding_sync_no_content(set_trace_info, sync_openai_client):
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -163,7 +163,7 @@ def test_openai_embedding_sync_ai_monitoring_disabled(sync_openai_client):
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -185,7 +185,7 @@ def test_openai_embedding_async(loop, set_trace_info, async_openai_client):
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -210,7 +210,7 @@ def test_openai_embedding_async_with_raw_response(loop, set_trace_info, async_op
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -233,7 +233,7 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )

@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 from newrelic.admin import command, usage
 
 
@@ -225,7 +223,7 @@ def validate_config(args):
                 url = parts[1].strip()
                 print("Registration successful. Reporting to:")
                 print()
-                print("  %s" % url)
+                print(f"  {url}")
                 print()
                 break
 

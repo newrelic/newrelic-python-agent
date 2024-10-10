@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
+# =============================================================================================================
+# This framework has not had recent releases and falls outside our support window, so these tests are disabled.
+# =============================================================================================================
 
 import os
 import threading
@@ -31,7 +33,7 @@ GEARMAND_SETTINGS = gearman_settings()[0]
 GEARMAND_HOST = GEARMAND_SETTINGS["host"]
 GEARMAND_PORT = GEARMAND_SETTINGS["port"]
 
-GEARMAND_ADDR = "%s:%s" % (GEARMAND_HOST, GEARMAND_PORT)
+GEARMAND_ADDR = f"{GEARMAND_HOST}:{GEARMAND_PORT}"
 
 
 class GearmanWorker(gearman.GearmanWorker):

@@ -35,7 +35,7 @@ def test_wsgi_application_index(target_application):
     @validate_transaction_metrics(
         "_application:sample_application",
         custom_metrics=[
-            ("Python/Dispatcher/Waitress/%s" % WAITRESS_VERSION, 1),
+            (f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1),
         ],
     )
     @raise_background_exceptions()
@@ -53,7 +53,7 @@ def test_raise_exception_application(target_application):
     @validate_transaction_metrics(
         "_application:sample_application",
         custom_metrics=[
-            ("Python/Dispatcher/Waitress/%s" % WAITRESS_VERSION, 1),
+            (f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1),
         ],
     )
     @raise_background_exceptions()
@@ -71,7 +71,7 @@ def test_raise_exception_response(target_application):
     @validate_transaction_metrics(
         "_application:sample_application",
         custom_metrics=[
-            ("Python/Dispatcher/Waitress/%s" % WAITRESS_VERSION, 1),
+            (f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1),
         ],
     )
     @raise_background_exceptions()
@@ -89,7 +89,7 @@ def test_raise_exception_finalize(target_application):
     @validate_transaction_metrics(
         "_application:sample_application",
         custom_metrics=[
-            ("Python/Dispatcher/Waitress/%s" % WAITRESS_VERSION, 1),
+            (f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1),
         ],
     )
     @raise_background_exceptions()

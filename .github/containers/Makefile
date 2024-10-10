@@ -23,7 +23,7 @@ REPO_ROOT:=$(realpath ${MAKEFILE_DIR}../../)
 UNAME_P:=$(shell uname -p)
 PLATFORM_AUTOMATIC:=$(if $(findstring arm,${UNAME_P}),linux/arm64,linux/amd64)
 PLATFORM:=$(if ${PLATFORM_OVERRIDE},${PLATFORM_OVERRIDE},${PLATFORM_AUTOMATIC})
-PYTHON_VERSIONS_AUTOMATIC:=3.10 2.7
+PYTHON_VERSIONS_AUTOMATIC:=3.10
 PYTHON_VERSIONS:=$(if ${PYTHON_VERSIONS_OVERRIDE},${PYTHON_VERSIONS_OVERRIDE},${PYTHON_VERSIONS_AUTOMATIC})
 
 .PHONY: default
@@ -70,6 +70,5 @@ test: build
 		ghcr.io/newrelic/python-agent-ci:local \
 		/bin/bash -c '\
 			python3.10 --version && \
-			python2.7 --version && \
 			touch tox.ini && tox --version && \
 			echo "Success! Python versions installed."'

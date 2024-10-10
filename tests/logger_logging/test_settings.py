@@ -14,7 +14,6 @@
 
 import pytest
 
-from newrelic.packages import six
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
@@ -73,14 +72,13 @@ def test_local_decorating_settings(instrumented_logger, feature_setting, subfeat
 @reset_core_stats_engine()
 def test_log_metrics_settings(logger, feature_setting, subfeature_setting, expected):
     metric_count = 1 if expected else None
-    txn_name = "test_settings:test_log_metrics_settings.<locals>.test" if six.PY3 else "test_settings:test"
 
     @override_application_settings({
         "application_logging.enabled": feature_setting,
         "application_logging.metrics.enabled": subfeature_setting,
     })
     @validate_transaction_metrics(
-        txn_name,
+        "test_settings:test_log_metrics_settings.<locals>.test",
         custom_metrics=[
             ("Logging/lines", metric_count),
             ("Logging/lines/WARNING", metric_count),

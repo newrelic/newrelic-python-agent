@@ -25,6 +25,7 @@ from testing_support.ml_testing_utils import (  # noqa: F401
     disabled_ai_monitoring_streaming_settings,
     events_sans_content,
     events_sans_llm_metadata,
+    events_with_context_attrs,
     llm_token_count_callback,
     set_trace_info,
 )
@@ -35,6 +36,7 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 
 disabled_custom_insights_settings = {"custom_insights_events.enabled": False}
@@ -132,13 +134,13 @@ chat_completion_recorded_events = [
 
 
 @reset_core_stats_engine()
-@validate_custom_events(chat_completion_recorded_events)
+@validate_custom_events(events_with_context_attrs(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_sync_with_llm_metadata",
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -150,15 +152,16 @@ def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info):
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    generator = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=_test_openai_chat_completion_messages,
-        temperature=0.7,
-        max_tokens=100,
-        stream=True,
-    )
-    for resp in generator:
-        assert resp
+    with WithLlmCustomAttributes({"context": "attr"}):
+        generator = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=_test_openai_chat_completion_messages,
+            temperature=0.7,
+            max_tokens=100,
+            stream=True,
+        )
+        for resp in generator:
+            assert resp
 
 
 @reset_core_stats_engine()
@@ -169,7 +172,7 @@ def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info):
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_sync_no_content",
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -199,7 +202,7 @@ def test_openai_chat_completion_sync_no_content(set_trace_info):
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_sync_with_token_count",
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -252,7 +255,7 @@ def test_openai_chat_completion_sync_no_llm_metadata(set_trace_info):
 @validate_transaction_metrics(
     "test_chat_completion_stream:test_openai_chat_completion_sync_ai_monitoring_streaming_disabled",
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -323,14 +326,14 @@ def test_openai_chat_completion_async_no_llm_metadata(loop, set_trace_info):
 
 
 @reset_core_stats_engine()
-@validate_custom_events(chat_completion_recorded_events)
+@validate_custom_events(events_with_context_attrs(chat_completion_recorded_events))
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     "test_chat_completion_stream:test_openai_chat_completion_async_with_llm_metadata",
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -353,7 +356,8 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info):
         async for resp in generator:
             assert resp
 
-    loop.run_until_complete(consumer())
+    with WithLlmCustomAttributes({"context": "attr"}):
+        loop.run_until_complete(consumer())
 
 
 @reset_core_stats_engine()
@@ -365,7 +369,7 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info):
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -399,7 +403,7 @@ def test_openai_chat_completion_async_no_content(loop, set_trace_info):
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     background_task=True,
 )
@@ -430,7 +434,7 @@ def test_openai_chat_completion_async_with_token_count(loop, set_trace_info):
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_async_ai_monitoring_streaming_disabled",
     custom_metrics=[
-        ("Supportability/Python/ML/OpenAI/%s" % openai.__version__, 1),
+        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
     ],
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/acreate", 1)],

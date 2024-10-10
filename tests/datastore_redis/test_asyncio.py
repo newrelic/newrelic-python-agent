@@ -48,7 +48,7 @@ _base_rollup_metrics = [
     ("Datastore/Redis/allOther", datastore_all_metric_count),
     ("Datastore/operation/Redis/publish", 3),
     (
-        "Datastore/instance/Redis/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]),
+        f"Datastore/instance/Redis/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}",
         datastore_all_metric_count,
     ),
 ]
@@ -74,7 +74,7 @@ _base_pool_rollup_metrics = [
     ("Datastore/operation/Redis/get", 1),
     ("Datastore/operation/Redis/set", 1),
     ("Datastore/operation/Redis/client_list", 1),
-    ("Datastore/instance/Redis/%s/%s" % (instance_hostname(DB_SETTINGS["host"]), DB_SETTINGS["port"]), 3),
+    (f"Datastore/instance/Redis/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 3),
 ]
 
 

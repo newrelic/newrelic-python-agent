@@ -26,12 +26,11 @@ from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
 )
 
-from newrelic.packages import six
 
 CHERRYPY_VERSION = tuple(int(v) for v in cherrypy.__version__.split("."))
 
 
-class Application(object):
+class Application():
     @cherrypy.expose
     def index(self):
         return "INDEX RESPONSE"
@@ -106,13 +105,7 @@ def test_application_missing():
     test_application.get("/missing", status=404)
 
 
-if six.PY3:
-    _test_application_unexpected_exception_errors = ["builtins:RuntimeError"]
-else:
-    _test_application_unexpected_exception_errors = ["exceptions:RuntimeError"]
-
-
-@validate_transaction_errors(errors=_test_application_unexpected_exception_errors)
+@validate_transaction_errors(errors=["builtins:RuntimeError"])
 def test_application_unexpected_exception():
     test_application.get("/error", status=500)
 

@@ -41,21 +41,15 @@ def validate_datastore_trace_inputs(operation=None, target=None, host=None, port
         ) = _bind_params(*args, **kwargs)
 
         if target is not None:
-            assert captured_target == target, "%s didn't match expected %s" % (captured_target, target)
+            assert captured_target == target, f"{captured_target} didn't match expected {target}"
         if operation is not None:
-            assert captured_operation == operation, "%s didn't match expected %s" % (captured_operation, operation)
+            assert captured_operation == operation, f"{captured_operation} didn't match expected {operation}"
         if host is not None:
-            assert captured_host == host, "%s didn't match expected %s" % (captured_host, host)
+            assert captured_host == host, f"{captured_host} didn't match expected {host}"
         if port_path_or_id is not None:
-            assert captured_port_path_or_id == port_path_or_id, "%s didn't match expected %s" % (
-                captured_port_path_or_id,
-                port_path_or_id,
-            )
+            assert captured_port_path_or_id == port_path_or_id, f"{captured_port_path_or_id} didn't match expected {port_path_or_id}"
         if database_name is not None:
-            assert captured_database_name == database_name, "%s didn't match expected %s" % (
-                captured_database_name,
-                database_name,
-            )
+            assert captured_database_name == database_name, f"{captured_database_name} didn't match expected {database_name}"
 
         return wrapped(*args, **kwargs)
 

@@ -62,7 +62,7 @@ def prompt():
     scoped_metrics=[("Llm/agent/LangChain/invoke", 1)],
     rollup_metrics=[("Llm/agent/LangChain/invoke", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )
@@ -81,7 +81,7 @@ def test_sync_agent(chat_openai_client, tools, prompt):
     scoped_metrics=[("Llm/agent/LangChain/ainvoke", 1)],
     rollup_metrics=[("Llm/agent/LangChain/ainvoke", 1)],
     custom_metrics=[
-        ("Supportability/Python/ML/LangChain/%s" % langchain.__version__, 1),
+        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
     ],
     background_task=True,
 )

@@ -123,7 +123,7 @@ def test_distributed_tracing_web_transaction():
     assert "X-NewRelic-App-Data" not in response.headers
 
 
-class TestAsgiRequest(object):
+class TestAsgiRequest():
     scope = {
         "asgi": {"spec_version": "2.1", "version": "3.0"},
         "client": ("127.0.0.1", 54768),
@@ -176,9 +176,9 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
         del dt_payload["d"]["tr"]
 
     # now run the test
-    transaction_name = "test_dt_metrics_%s" % "_".join(metrics)
+    transaction_name = f"test_dt_metrics_{'_'.join(metrics)}"
     _rollup_metrics = [
-        ("%s/%s%s" % (x, tag, bt), 1) for x in metrics for bt in ["", "Web" if web_transaction else "Other"]
+        (f"{x}/{tag}{bt}", 1) for x in metrics for bt in ["", "Web" if web_transaction else "Other"]
     ]
 
     def _make_test_transaction():

@@ -24,7 +24,7 @@ def validate_transaction_slow_sql_count(num_slow_sql):
 
         with connections:
             slow_sql_traces = instance.slow_sql_data(connections)
-            assert len(slow_sql_traces) == num_slow_sql, "Expected: %s. Got: %d." % (num_slow_sql, len(slow_sql_traces))
+            assert len(slow_sql_traces) == num_slow_sql, f"Expected: {num_slow_sql}. Got: {len(slow_sql_traces)}."
 
         return result
 

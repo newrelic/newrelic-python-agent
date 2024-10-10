@@ -21,12 +21,11 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.packages import six
 
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(AGENT_PACKAGE_FILE) + "/"
+AGENT_PACKAGE_DIRECTORY = f"{os.path.dirname(AGENT_PACKAGE_FILE)}/"
 
 
-class ProfileTrace(object):
+class ProfileTrace():
     def __init__(self, depth):
         self.function_traces = []
         self.maximum_depth = depth
@@ -71,7 +70,7 @@ class ProfileTrace(object):
             except Exception:
                 pass
 
-            for name, obj in six.iteritems(frame.f_globals):
+            for name, obj in frame.f_globals.items():
                 try:
                     if obj.__dict__[func_name].func_code is co:
                         return obj.__dict__[func_name]
@@ -100,12 +99,12 @@ class ProfileTrace(object):
                 if func:
                     name = callable_name(func)
                 else:
-                    name = "%s:%s#%s" % (func_filename, func_name, func_line_no)
+                    name = f"{func_filename}:{func_name}#{func_line_no}"
             else:
                 func = arg
                 name = callable_name(arg)
                 if not name:
-                    name = "%s:@%s#%s" % (func_filename, func_name, func_line_no)
+                    name = f"{func_filename}:@{func_name}#{func_line_no}"
 
             function_trace = FunctionTrace(name=name, parent=parent)
             function_trace.__enter__()

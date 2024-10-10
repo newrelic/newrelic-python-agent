@@ -523,7 +523,7 @@ def _instance_info(kwargs):
 
 
 def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
-    name = "%s.%s" % (instance_class_name, operation)
+    name = f"{instance_class_name}.{operation}"
     if operation in _redis_client_gen_methods:
         async_wrapper = generator_wrapper
     else:
@@ -544,7 +544,7 @@ def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, operation):
             wrapped, product="Redis", target=None, operation=operation, async_wrapper=async_wrapper
         )(*args, **kwargs)
 
-    name = "%s.%s" % (instance_class_name, operation)
+    name = f"{instance_class_name}.{operation}"
     if operation in _redis_client_gen_methods:
         async_wrapper = async_generator_wrapper
     else:
@@ -596,7 +596,7 @@ async def wrap_async_Connection_send_command(wrapped, instance, args, kwargs):
     # Convert multi args to single arg string
 
     if operation in _redis_multipart_commands and len(args) > 1:
-        operation = "%s %s" % (operation, args[1].strip().lower())
+        operation = f"{operation} {args[1].strip().lower()}"
 
     operation = _redis_operation_re.sub("_", operation)
 
@@ -647,7 +647,7 @@ def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
     # Convert multi args to single arg string
 
     if operation in _redis_multipart_commands and len(args) > 1:
-        operation = "%s %s" % (operation, args[1].strip().lower())
+        operation = f"{operation} {args[1].strip().lower()}"
 
     operation = _redis_operation_re.sub("_", operation)
 

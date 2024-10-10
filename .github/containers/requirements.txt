@@ -1,9 +1,5 @@
-bandit
-black
-flake8
-isort
 pip
+pipx
 setuptools
-tox
-virtualenv<20.22.0
+virtualenv
 wheel

@@ -44,10 +44,9 @@ def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
             None)
     if view_func_callable_name:
         if handler == view.http_method_not_allowed:
-            name = '%s.%s' % (view_func_callable_name,
-                    'http_method_not_allowed')
+            name = f'{view_func_callable_name}.http_method_not_allowed'
         else:
-            name = '%s.%s' % (view_func_callable_name, request_method)
+            name = f'{view_func_callable_name}.{request_method}'
     else:
         name = callable_name(handler)
 

@@ -54,7 +54,7 @@ class NormalizationRule(_NormalizationRule):
         return self.match_expression_re.subn(self.replacement, string, count)
 
 
-class RulesEngine(object):
+class RulesEngine():
     def __init__(self, rules):
         self.__rules = []
 
@@ -126,7 +126,7 @@ class RulesEngine(object):
         return (final_string, ignore)
 
 
-class SegmentCollapseEngine(object):
+class SegmentCollapseEngine():
     """Segment names in transaction name are collapsed using the rules
     from the data collector. The collector sends a prefix and list of
     allowlist terms associated with that prefix. If a transaction name
@@ -174,7 +174,7 @@ class SegmentCollapseEngine(object):
         # should always return prefixes and term strings as Unicode.
 
         choices = "|".join([re.escape(x) for x in prefixes])
-        pattern = "^(%s)/(.+)$" % choices
+        pattern = f"^({choices})/(.+)$"
 
         self.prefixes = re.compile(pattern)
 
@@ -228,4 +228,4 @@ class SegmentCollapseEngine(object):
         result = [x if x in allowlist_terms else "*" for x in segments]
         result = self.COLLAPSE_STAR_RE.sub("\\1", "/".join(result))
 
-        return "/".join((prefix, result)), False
+        return f"{prefix}/{result}", False

@@ -85,8 +85,8 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     _host_2 = instance_hostname(_postgresql_2["host"])
     _port_2 = _postgresql_2["port"]
 
-    _instance_metric_name_1 = "Datastore/instance/Postgres/%s/%s" % (_host_1, _port_1)
-    _instance_metric_name_2 = "Datastore/instance/Postgres/%s/%s" % (_host_2, _port_2)
+    _instance_metric_name_1 = f"Datastore/instance/Postgres/{_host_1}/{_port_1}"
+    _instance_metric_name_2 = f"Datastore/instance/Postgres/{_host_2}/{_port_2}"
 
     _enable_rollup_metrics.extend(
         [

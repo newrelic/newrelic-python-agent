@@ -71,7 +71,7 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
             _params = params
 
         def _generator(generator):
-            _gname = '%s (generator)' % _name
+            _gname = f'{_name} (generator)'
 
             try:
                 value = None

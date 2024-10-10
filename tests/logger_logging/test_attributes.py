@@ -17,7 +17,6 @@ from testing_support.validators.validate_log_event_count import validate_log_eve
 from testing_support.validators.validate_log_events import validate_log_events
 
 from newrelic.api.background_task import background_task
-from newrelic.packages import six
 
 
 @validate_log_events(
@@ -68,7 +67,6 @@ def test_logging_exc_info_context_attributes(logger):
         logger.error("exc_info", exc_info=True)
 
 
-@pytest.mark.skipif(six.PY2, reason="stack_info on log messages not available in Python 2.")
 @validate_log_events([{"message": "stack_info"}], required_attrs=["context.stack_info"])
 @validate_log_event_count(1)
 @background_task()

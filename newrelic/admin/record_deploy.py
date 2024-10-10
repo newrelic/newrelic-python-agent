@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 import os
 import pwd
 
@@ -78,12 +76,10 @@ def record_deploy(
         app_id = fetch_app_id(app_name, client, headers)
         if app_id is None:
             raise RuntimeError(
-                "The application named %r was not found in your account. Please "
-                "try running the newrelic-admin server-config command to force "
-                "the application to register with New Relic." % app_name
+                f"The application named {app_name!r} was not found in your account. Please try running the newrelic-admin server-config command to force the application to register with New Relic."
             )
 
-        path = "/v2/applications/{}/deployments.json".format(app_id)
+        path = f"/v2/applications/{app_id}/deployments.json"
 
         if user is None:
             user = pwd.getpwuid(os.getuid()).pw_gecos
@@ -107,12 +103,7 @@ def record_deploy(
 
         if status_code != 201:
             raise RuntimeError(
-                "An unexpected HTTP response of %r was received "
-                "for request made to https://%s:%d%s. The payload for the "
-                "request was %r. The response payload for the request was %r. "
-                "If this issue persists then please report this problem to New "
-                "Relic support for further investigation."
-                % (status_code, host, port, path, data, response)
+                f"An unexpected HTTP response of {status_code!r} was received for request made to https://{host}:{int(port)}{path}. The payload for the request was {data!r}. The response payload for the request was {response!r}. If this issue persists then please report this problem to New Relic support for further investigation."
             )
 
 

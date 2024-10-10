@@ -24,6 +24,7 @@ from testing_support.ml_testing_utils import (  # noqa: F401
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
+    events_with_context_attrs,
     llm_token_count_callback,
     set_trace_info,
 )
@@ -38,6 +39,7 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 
@@ -117,18 +119,19 @@ expected_events_on_no_model_error = [
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,
 )
-@validate_custom_events(expected_events_on_no_model_error)
+@validate_custom_events(events_with_context_attrs(expected_events_on_no_model_error))
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model(set_trace_info, sync_openai_client):
     with pytest.raises(TypeError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        generator = sync_openai_client.chat.completions.create(
-            messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100, stream=True
-        )
-        for resp in generator:
-            assert resp
+        with WithLlmCustomAttributes({"context": "attr"}):
+            generator = sync_openai_client.chat.completions.create(
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100, stream=True
+            )
+            for resp in generator:
+                assert resp
 
 
 @dt_enabled
@@ -188,22 +191,23 @@ def test_chat_completion_invalid_request_error_no_model_no_content(set_trace_inf
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,
 )
-@validate_custom_events(expected_events_on_no_model_error)
+@validate_custom_events(events_with_context_attrs(expected_events_on_no_model_error))
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_info, async_openai_client):
     with pytest.raises(TypeError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        with WithLlmCustomAttributes({"context": "attr"}):
 
-        async def consumer():
-            generator = await async_openai_client.chat.completions.create(
-                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100, stream=True
-            )
-            async for resp in generator:
-                assert resp
+            async def consumer():
+                generator = await async_openai_client.chat.completions.create(
+                    messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100, stream=True
+                )
+                async for resp in generator:
+                    assert resp
 
-        loop.run_until_complete(consumer())
+            loop.run_until_complete(consumer())
 
 
 @dt_enabled

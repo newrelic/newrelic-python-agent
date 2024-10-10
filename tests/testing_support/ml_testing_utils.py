@@ -54,6 +54,13 @@ def events_sans_llm_metadata(expected_events):
     return events
 
 
+def events_with_context_attrs(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        event[1]["llm.context"] = "attr"
+    return events
+
+
 @pytest.fixture(scope="session")
 def set_trace_info():
     def _set_trace_info():

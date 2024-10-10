@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import newrelic.packages.six as six
 
 import newrelic.api.transaction
 import newrelic.api.function_trace
-import newrelic.api.object_wrapper
+import newrelic.common.object_wrapper
+from newrelic.common.object_names import callable_name
 import newrelic.api.in_function
 
 
-class MethodWrapper(object):
+class MethodWrapper():
 
     def __init__(self, wrapped, priority=None):
-        self._nr_name = newrelic.api.object_wrapper.callable_name(wrapped)
+        self._nr_name = callable_name(wrapped)
         self._nr_wrapped = wrapped
         self._nr_priority = priority
 
@@ -46,7 +46,7 @@ class MethodWrapper(object):
             return self._nr_wrapped(*args, **kwargs)
 
 
-class ResourceInitWrapper(object):
+class ResourceInitWrapper():
 
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):
@@ -68,7 +68,7 @@ class ResourceInitWrapper(object):
     def __call__(self, *args, **kwargs):
         self._nr_wrapped(*args, **kwargs)
         handler = self.__instance.handler
-        for name in six.itervalues(self.__instance.callmap):
+        for name in self.__instance.callmap.values():
             if hasattr(handler, name):
                 setattr(handler, name, MethodWrapper(
                         getattr(handler, name), priority=6))
@@ -76,7 +76,7 @@ class ResourceInitWrapper(object):
 
 def instrument_piston_resource(module):
 
-    newrelic.api.object_wrapper.wrap_object(module,
+    newrelic.common.object_wrapper.wrap_object(module,
             'Resource.__init__', ResourceInitWrapper)
 
 

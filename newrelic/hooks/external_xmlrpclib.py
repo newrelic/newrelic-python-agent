@@ -15,7 +15,7 @@
 import newrelic.api.external_trace
 
 def wrap_transport_request(self, host, handler, *args, **kwargs):
-    return "http://%s%s" % (host, handler)
+    return f"http://{host}{handler}"
 
 def instrument(module):
 

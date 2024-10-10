@@ -53,7 +53,7 @@ def get_quoting_styles(dialects):
     return set([_quoting_styles.get(dialect) for dialect in dialects])
 
 
-class DummyDB(object):
+class DummyDB():
     def __init__(self, quoting_style):
         self.quoting_style = quoting_style
 

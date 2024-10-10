@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 import newrelic.api.import_hook as import_hook
-import newrelic.packages.six as six
 import pytest
 
 from newrelic.config import _module_function_glob
@@ -41,25 +38,19 @@ def test_import_hook_finder(monkeypatch):
     }
     monkeypatch.setattr(import_hook, "_import_hooks", registered_hooks)
 
-    # Finding a module that does not exist and is not registered returns None.
-    module = finder.find_module("module_does_not_exist")
+    # Finding a module that does not exist returns None, whether or not it is registered.
+    module = finder.find_spec("module_does_not_exist")
     assert module is None
 
-    # Finding a module that does not exist and is registered behaves
-    # differently on python 2 vs python 3.
-    if six.PY2:
-        with pytest.raises(ImportError):
-            module = finder.find_module("registered_but_does_not_exist")
-    else:
-        module = finder.find_module("registered_but_does_not_exist")
-        assert module is None
+    module = finder.find_spec("registered_but_does_not_exist")
+    assert module is None
 
     # Finding a module that exists, but is not registered returns None.
-    module = finder.find_module("newrelic")
+    module = finder.find_spec("newrelic")
     assert module is None
 
     # Finding a module that exists, and is registered, finds that module.
-    module = finder.find_module("newrelic.api")
+    module = finder.find_spec("newrelic.api")
     assert module is not None
 
 

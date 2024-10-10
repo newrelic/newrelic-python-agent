@@ -14,21 +14,13 @@
 
 import pytest
 
-try:
-    import http.client as httplib
-except ImportError:
-    import httplib
+import http.client as httplib
 
 from testing_support.external_fixtures import (
     cache_outgoing_headers,
     insert_incoming_headers,
 )
-from testing_support.fixtures import (
-    cat_enabled,
-    override_application_settings,
-    validate_tt_segment_params,
-)
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.fixtures import cat_enabled, override_application_settings
 from testing_support.validators.validate_cross_process_headers import (
     validate_cross_process_headers,
 )
@@ -36,32 +28,27 @@ from testing_support.validators.validate_external_node_params import (
     validate_external_node_params,
 )
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+from testing_support.validators.validate_tt_segment_params import (
+    validate_tt_segment_params,
+)
 
 from newrelic.api.background_task import background_task
 from newrelic.common.encoding_utils import DistributedTracePayload
-from newrelic.packages import six
-
-
-def select_python_version(py2, py3):
-    return six.PY3 and py3 or py2
 
 
 def test_httplib_http_request(server):
     scoped = [
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        )
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%d/all" % server.port, 1),
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        ),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     @validate_transaction_metrics(
@@ -80,20 +67,14 @@ def test_httplib_http_request(server):
 
 def test_httplib_https_request(server):
     _test_httplib_https_request_scoped_metrics = [
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        )
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     _test_httplib_https_request_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%d/all" % server.port, 1),
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        ),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     @validate_transaction_metrics(
@@ -104,7 +85,8 @@ def test_httplib_https_request(server):
     )
     @background_task(name="test_httplib:test_httplib_https_request")
     def _test():
-        connection = httplib.HTTPSConnection("localhost", server.port)
+        # fix HTTPSConnection: https://wiki.openstack.org/wiki/OSSN/OSSN-0033
+        connection = httplib.HTTPSConnection("localhost", server.port)  # nosec
         # It doesn't matter that a SSL exception is raised here because the
         # agent still records this as an external request
         try:
@@ -119,20 +101,14 @@ def test_httplib_https_request(server):
 def test_httplib_http_with_port_request(server):
 
     scoped = [
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        )
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%d/all" % server.port, 1),
-        select_python_version(
-            py2=("External/localhost:%d/httplib/" % server.port, 1),
-            py3=("External/localhost:%d/http/" % server.port, 1),
-        ),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/http/", 1),
     ]
 
     @validate_transaction_metrics(
@@ -192,14 +168,14 @@ _test_httplib_cross_process_response_external_node_params = [
 @cat_enabled
 @insert_incoming_headers
 def test_httplib_cross_process_response(server):
-    scoped = [("ExternalTransaction/localhost:%d/1#2/test" % server.port, 1)]
+    scoped = [(f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%d/all" % server.port, 1),
-        ("ExternalApp/localhost:%d/1#2/all" % server.port, 1),
-        ("ExternalTransaction/localhost:%d/1#2/test" % server.port, 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
     ]
 
     @validate_transaction_metrics(
@@ -224,14 +200,14 @@ def test_httplib_cross_process_response(server):
 def test_httplib_multiple_requests_cross_process_response(server):
     connection = httplib.HTTPConnection("localhost", server.port)
 
-    scoped = [("ExternalTransaction/localhost:%d/1#2/test" % server.port, 1)]
+    scoped = [(f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%d/all" % server.port, 1),
-        ("ExternalApp/localhost:%d/1#2/all" % server.port, 1),
-        ("ExternalTransaction/localhost:%d/1#2/test" % server.port, 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
     ]
 
     @validate_transaction_metrics(
@@ -324,17 +300,15 @@ def test_span_events(server):
         "span_events.enabled": True,
     }
 
-    uri = "http://localhost:%d" % server.port
+    uri = f"http://localhost:{server.port}"
 
     exact_intrinsics = {
-        "name": select_python_version(
-            py2="External/localhost:%d/httplib/" % server.port, py3="External/localhost:%d/http/" % server.port
-        ),
+        "name": f"External/localhost:{server.port}/http/",
         "type": "Span",
         "sampled": True,
         "category": "http",
         "span.kind": "client",
-        "component": select_python_version(py2="httplib", py3="http"),
+        "component": "http",
     }
     exact_agents = {
         "http.url": uri,

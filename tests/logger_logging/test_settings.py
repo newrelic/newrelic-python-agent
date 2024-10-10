@@ -14,7 +14,6 @@
 
 import pytest
 
-from newrelic.packages import six
 from newrelic.api.background_task import background_task
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
@@ -51,16 +50,16 @@ def test_log_forwarding_settings(logger, feature_setting, subfeature_setting, ex
 
 @pytest.mark.parametrize("feature_setting,subfeature_setting,expected", _settings_matrix)
 @reset_core_stats_engine()
-def test_local_decorating_settings(logger, feature_setting, subfeature_setting, expected):
+def test_local_decorating_settings(instrumented_logger, feature_setting, subfeature_setting, expected):
     @override_application_settings({
         "application_logging.enabled": feature_setting,
         "application_logging.local_decorating.enabled": subfeature_setting,
     })
     @background_task()
     def test():
-        basic_logging(logger)
-        assert len(logger.caplog.records) == 1
-        message = logger.caplog.records.pop()
+        basic_logging(instrumented_logger)
+        assert len(instrumented_logger.caplog.records) == 1
+        message = instrumented_logger.caplog.records.pop()
         if expected:
             assert len(message) > 1
         else:
@@ -73,14 +72,13 @@ def test_local_decorating_settings(logger, feature_setting, subfeature_setting, 
 @reset_core_stats_engine()
 def test_log_metrics_settings(logger, feature_setting, subfeature_setting, expected):
     metric_count = 1 if expected else None
-    txn_name = "test_settings:test_log_metrics_settings.<locals>.test" if six.PY3 else "test_settings:test"
 
     @override_application_settings({
         "application_logging.enabled": feature_setting,
         "application_logging.metrics.enabled": subfeature_setting,
     })
     @validate_transaction_metrics(
-        txn_name,
+        "test_settings:test_log_metrics_settings.<locals>.test",
         custom_metrics=[
             ("Logging/lines", metric_count),
             ("Logging/lines/WARNING", metric_count),

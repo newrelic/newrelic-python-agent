@@ -209,7 +209,7 @@ def test_async_coroutine_throw_error(event_loop, num_coroutines, create_test_tas
     _test_async_coroutine_throw_error()
 
     assert metrics.count((metric, "")) == num_coroutines, metrics
-    assert metrics.count(("Errors/" + metric, "")) == num_coroutines, metrics
+    assert metrics.count((f"Errors/{metric}", "")) == num_coroutines, metrics
     assert metrics.count(("Errors/all", "")) == num_coroutines, metrics
 
 

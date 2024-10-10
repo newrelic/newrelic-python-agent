@@ -17,7 +17,7 @@ import asyncio
 from gunicorn.workers.sync import SyncWorker
 
 
-class WsgiProxy(object):
+class WsgiProxy():
     def __init__(self, asgi):
         self.asgi = asgi
         self.status_code = None

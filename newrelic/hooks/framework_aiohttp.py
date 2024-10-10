@@ -152,7 +152,7 @@ def _nr_aiohttp_wrap_wsgi_response_(wrapped, instance, args, kwargs):
         def __getattr__(self, name):
             # instance.response should be overwritten at this point
             if instance.response is self:
-                raise AttributeError("%r object has no attribute %r" % (type(instance).__name__, "response"))
+                raise AttributeError(f"{type(instance).__name__!r} object has no attribute response")
             return getattr(instance.response, name)
 
     instance.response = ResponseProxy()

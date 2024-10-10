@@ -26,7 +26,7 @@ _utilization_trackers = {}
 def utilization_tracker(application):
     return _utilization_trackers.get(application)
 
-class ThreadUtilizationDataSource(object):
+class ThreadUtilizationDataSource():
 
     def __init__(self, application):
         self._consumer_name = application

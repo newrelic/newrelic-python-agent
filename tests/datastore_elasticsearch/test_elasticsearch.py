@@ -138,7 +138,7 @@ _enable_rollup_metrics = list(_base_rollup_metrics)
 _host = instance_hostname(ES_SETTINGS["host"])
 _port = ES_SETTINGS["port"]
 
-_instance_metric_name = "Datastore/instance/Elasticsearch/%s/%s" % (_host, _port)
+_instance_metric_name = f"Datastore/instance/Elasticsearch/{_host}/{_port}"
 
 _enable_rollup_metrics.append((_instance_metric_name, _all_count))
 

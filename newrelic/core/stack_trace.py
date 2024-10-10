@@ -27,8 +27,7 @@ _global_settings = global_settings()
 
 def _format_stack_trace(frames):
     result = ['Traceback (most recent call last):']
-    result.extend(['File "{source}", line {line}, in {name}'.format(**d)
-            for d in frames])
+    result.extend([f'File "{f["source"]}", line {f["line"]}, in {f["name"]}' for f in frames])
     return result
 
 def _extract_stack(f, skip, limit):

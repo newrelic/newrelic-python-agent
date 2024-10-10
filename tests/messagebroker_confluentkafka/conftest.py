@@ -17,18 +17,25 @@ import uuid
 
 import pytest
 from testing_support.db_settings import kafka_settings
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
 
 DB_SETTINGS = kafka_settings()[0]
 
-BROKER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
+
+@pytest.fixture(scope="session")
+def broker():
+    BROKER = f"{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"
+    return BROKER
 
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -55,15 +62,15 @@ def skip_if_not_serializing(client_type):
 
 
 @pytest.fixture(scope="function")
-def producer(topic, client_type, json_serializer):
+def producer(topic, client_type, json_serializer, broker):
     from confluent_kafka import Producer, SerializingProducer
 
     if client_type == "cimpl":
-        producer = Producer({"bootstrap.servers": BROKER})
+        producer = Producer({"bootstrap.servers": broker})
     elif client_type == "serializer_function":
         producer = SerializingProducer(
             {
-                "bootstrap.servers": BROKER,
+                "bootstrap.servers": broker,
                 "value.serializer": lambda v, c: json.dumps(v).encode("utf-8"),
                 "key.serializer": lambda v, c: json.dumps(v).encode("utf-8") if v is not None else None,
             }
@@ -71,7 +78,7 @@ def producer(topic, client_type, json_serializer):
     elif client_type == "serializer_object":
         producer = SerializingProducer(
             {
-                "bootstrap.servers": BROKER,
+                "bootstrap.servers": broker,
                 "value.serializer": json_serializer,
                 "key.serializer": json_serializer,
             }
@@ -84,25 +91,25 @@ def producer(topic, client_type, json_serializer):
 
 
 @pytest.fixture(scope="function")
-def consumer(topic, producer, client_type, json_deserializer):
+def consumer(group_id, topic, producer, client_type, json_deserializer, broker):
     from confluent_kafka import Consumer, DeserializingConsumer
 
     if client_type == "cimpl":
         consumer = Consumer(
             {
-                "bootstrap.servers": BROKER,
+                "bootstrap.servers": broker,
                 "auto.offset.reset": "earliest",
                 "heartbeat.interval.ms": 1000,
-                "group.id": "test",
+                "group.id": group_id,
             }
         )
     elif client_type == "serializer_function":
         consumer = DeserializingConsumer(
             {
-                "bootstrap.servers": BROKER,
+                "bootstrap.servers": broker,
                 "auto.offset.reset": "earliest",
                 "heartbeat.interval.ms": 1000,
-                "group.id": "test",
+                "group.id": group_id,
                 "value.deserializer": lambda v, c: json.loads(v.decode("utf-8")),
                 "key.deserializer": lambda v, c: json.loads(v.decode("utf-8")) if v is not None else None,
             }
@@ -110,10 +117,10 @@ def consumer(topic, producer, client_type, json_deserializer):
     elif client_type == "serializer_object":
         consumer = DeserializingConsumer(
             {
-                "bootstrap.servers": BROKER,
+                "bootstrap.servers": broker,
                 "auto.offset.reset": "earliest",
                 "heartbeat.interval.ms": 1000,
-                "group.id": "test",
+                "group.id": group_id,
                 "value.deserializer": json_deserializer,
                 "key.deserializer": json_deserializer,
             }
@@ -165,12 +172,12 @@ def json_deserializer():
 
 
 @pytest.fixture(scope="function")
-def topic():
+def topic(broker):
     from confluent_kafka.admin import AdminClient, NewTopic
 
-    topic = "test-topic-%s" % str(uuid.uuid4())
+    topic = f"test-topic-{str(uuid.uuid4())}"
 
-    admin = AdminClient({"bootstrap.servers": BROKER})
+    admin = AdminClient({"bootstrap.servers": broker})
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
     topics = admin.create_topics(new_topics)
     for _, f in topics.items():
@@ -179,6 +186,11 @@ def topic():
     yield topic
 
     admin.delete_topics(new_topics)
+
+
+@pytest.fixture(scope="session")
+def group_id():
+    return str(uuid.uuid4())
 
 
 @pytest.fixture()
@@ -220,7 +232,7 @@ def get_consumer_record(topic, send_producer_message, consumer, deserialize):
             record_count += 1
         consumer.poll(0.5)  # Exit the transaction.
 
-        assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
+        assert record_count == 1, f"Incorrect count of records consumed: {record_count}. Expected 1."
 
     return _test
 

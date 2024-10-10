@@ -80,8 +80,8 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     host_2 = instance_hostname(redis_2["host"])
     port_2 = redis_2["port"]
 
-    instance_metric_name_1 = "Datastore/instance/Redis/%s/%s" % (host_1, port_1)
-    instance_metric_name_2 = "Datastore/instance/Redis/%s/%s" % (host_2, port_2)
+    instance_metric_name_1 = f"Datastore/instance/Redis/{host_1}/{port_1}"
+    instance_metric_name_2 = f"Datastore/instance/Redis/{host_2}/{port_2}"
 
     _enable_rollup_metrics.extend(
         [
@@ -172,7 +172,7 @@ def test_concurrent_calls(loop):
     clients = (client_1, client_2)
 
     async def exercise_concurrent():
-        await asyncio.gather(*(client.set("key-%d" % i, i) for i, client in enumerate(clients)))
-        await asyncio.gather(*(client.get("key-%d" % i) for i, client in enumerate(clients)))
+        await asyncio.gather(*(client.set(f"key-{i}", i) for i, client in enumerate(clients)))
+        await asyncio.gather(*(client.get(f"key-{i}") for i, client in enumerate(clients)))
 
     loop.run_until_complete(exercise_concurrent())

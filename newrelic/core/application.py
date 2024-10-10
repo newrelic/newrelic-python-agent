@@ -16,8 +16,6 @@
 
 """
 
-from __future__ import print_function
-
 import logging
 import os
 import sys
@@ -50,13 +48,12 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.packages import six
 from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
 
-class Application(object):
+class Application():
 
     """Class which maintains recorded data for a single application."""
 
@@ -159,31 +156,31 @@ class Application(object):
     def dump(self, file):
         """Dumps details about the application to the file object."""
 
-        print("Time Created: %s" % (time.asctime(time.localtime(self._creation_time))), file=file)
-        print("Linked Applications: %r" % (self._linked_applications), file=file)
-        print("Registration PID: %s" % (self._process_id), file=file)
-        print("Harvest Count: %d" % (self._harvest_count), file=file)
-        print("Agent Restart: %d" % (self._agent_restart), file=file)
-        print("Forced Shutdown: %s" % (self._agent_shutdown), file=file)
+        print(f"Time Created: {time.asctime(time.localtime(self._creation_time))}", file=file)
+        print(f"Linked Applications: {self._linked_applications!r}", file=file)
+        print(f"Registration PID: {self._process_id}", file=file)
+        print(f"Harvest Count: {self._harvest_count}", file=file)
+        print(f"Agent Restart: {self._agent_restart}", file=file)
+        print(f"Forced Shutdown: {self._agent_shutdown}", file=file)
 
         active_session = self._active_session
 
         if active_session:
             try:
-                print("Collector URL: %s" % (active_session._protocol.client._host), file=file)
+                print(f"Collector URL: {active_session._protocol.client._host}", file=file)
             except AttributeError:
                 pass
-            print("Agent Run ID: %s" % (active_session.agent_run_id), file=file)
-            print("URL Normalization Rules: %r" % (self._rules_engine["url"].rules), file=file)
-            print("Metric Normalization Rules: %r" % (self._rules_engine["metric"].rules), file=file)
-            print("Transaction Normalization Rules: %r" % (self._rules_engine["transaction"].rules), file=file)
-            print("Transaction Segment Allowlist Rules: %r" % (self._rules_engine["segment"].rules), file=file)
-            print("Harvest Period Start: %s" % (time.asctime(time.localtime(self._period_start))), file=file)
-            print("Transaction Count: %d" % (self._transaction_count), file=file)
-            print("Last Transaction: %s" % (time.asctime(time.localtime(self._last_transaction))), file=file)
-            print("Global Events Count: %d" % (self._global_events_account), file=file)
-            print("Harvest Metrics Count: %d" % (self._stats_engine.metrics_count()), file=file)
-            print("Harvest Discard Count: %d" % (self._discard_count), file=file)
+            print(f"Agent Run ID: {active_session.agent_run_id}", file=file)
+            print(f"URL Normalization Rules: {self._rules_engine['url'].rules!r}", file=file)
+            print(f"Metric Normalization Rules: {self._rules_engine['metric'].rules!r}", file=file)
+            print(f"Transaction Normalization Rules: {self._rules_engine['transaction'].rules!r}", file=file)
+            print(f"Transaction Segment Allowlist Rules: {self._rules_engine['segment'].rules!r}", file=file)
+            print(f"Harvest Period Start: {time.asctime(time.localtime(self._period_start))}", file=file)
+            print(f"Transaction Count: {self._transaction_count}", file=file)
+            print(f"Last Transaction: {time.asctime(time.localtime(self._last_transaction))}", file=file)
+            print(f"Global Events Count: {self._global_events_account}", file=file)
+            print(f"Harvest Metrics Count: {self._stats_engine.metrics_count()}", file=file)
+            print(f"Harvest Discard Count: {self._discard_count}", file=file)
 
     def activate_session(self, activate_agent=None, timeout=0.0):
         """Creates a background thread to initiate registration of the
@@ -227,7 +224,7 @@ class Application(object):
             self._detect_deadlock = True
 
         thread = threading.Thread(
-            target=self.connect_to_data_collector, name="NR-Activate-Session/%s" % self.name, args=(activate_agent,)
+            target=self.connect_to_data_collector, name=f"NR-Activate-Session/{self.name}", args=(activate_agent,)
         )
         thread.daemon = True
         thread.start()
@@ -319,14 +316,7 @@ class Application(object):
         # code run from this thread performs a deferred module import.
 
         if self._detect_deadlock:
-            if six.PY2:
-                import imp
-
-                imp.acquire_lock()
-                self._deadlock_event.set()
-                imp.release_lock()
-            else:
-                self._deadlock_event.set()
+            self._deadlock_event.set()
 
         # Register the application with the data collector. Any errors
         # that occur will be dealt with by create_session(). The result
@@ -510,6 +500,9 @@ class Application(object):
         with self._stats_custom_lock:
             self._stats_custom_engine.reset_stats(configuration)
 
+        with self._stats_lock:
+            self._stats_engine.reset_stats(configuration)
+
         # Record an initial start time for the reporting period and
         # clear record of last transaction processed.
 
@@ -549,20 +542,24 @@ class Application(object):
             application_logging_local_decorating = (
                 configuration.application_logging.enabled and configuration.application_logging.local_decorating.enabled
             )
+            ai_monitoring_streaming = configuration.ai_monitoring.streaming.enabled
             internal_metric(
-                "Supportability/Logging/Forwarding/Python/%s"
-                % ("enabled" if application_logging_forwarding else "disabled"),
+                f"Supportability/Logging/Forwarding/Python/{'enabled' if application_logging_forwarding else 'disabled'}",
                 1,
             )
             internal_metric(
-                "Supportability/Logging/LocalDecorating/Python/%s"
-                % ("enabled" if application_logging_local_decorating else "disabled"),
+                f"Supportability/Logging/LocalDecorating/Python/{'enabled' if application_logging_local_decorating else 'disabled'}",
                 1,
             )
             internal_metric(
-                "Supportability/Logging/Metrics/Python/%s" % ("enabled" if application_logging_metrics else "disabled"),
+                f"Supportability/Logging/Metrics/Python/{'enabled' if application_logging_metrics else 'disabled'}",
                 1,
             )
+            if not ai_monitoring_streaming:
+                internal_metric(
+                    "Supportability/Python/ML/Streaming/Disabled",
+                    1,
+                )
 
             # Infinite tracing feature toggle metrics
             infinite_tracing = configuration.infinite_tracing.enabled  # Property that checks trace observer host
@@ -570,13 +567,11 @@ class Application(object):
                 infinite_tracing_batching = configuration.infinite_tracing.batching
                 infinite_tracing_compression = configuration.infinite_tracing.compression
                 internal_metric(
-                    "Supportability/InfiniteTracing/gRPC/Batching/%s"
-                    % ("enabled" if infinite_tracing_batching else "disabled"),
+                    f"Supportability/InfiniteTracing/gRPC/Batching/{'enabled' if infinite_tracing_batching else 'disabled'}",
                     1,
                 )
                 internal_metric(
-                    "Supportability/InfiniteTracing/gRPC/Compression/%s"
-                    % ("enabled" if infinite_tracing_compression else "disabled"),
+                    f"Supportability/InfiniteTracing/gRPC/Compression/{'enabled' if infinite_tracing_compression else 'disabled'}",
                     1,
                 )
 
@@ -860,6 +855,50 @@ class Application(object):
                 self._global_events_account += 1
                 self._stats_custom_engine.record_custom_metric(name, value)
 
+    def record_dimensional_metric(self, name, value, tags=None):
+        """Record a dimensional metric against the application independent
+        of a specific transaction.
+
+        NOTE that this will require locking of the stats engine for
+        dimensional metrics and so under heavy use will have performance
+        issues. It is better to record the dimensional metric against an
+        active transaction as they will then be aggregated at the end of
+        the transaction when all other metrics are aggregated and so no
+        additional locking will be required.
+
+        """
+
+        if not self._active_session:
+            return
+
+        with self._stats_lock:
+            self._global_events_account += 1
+            self._stats_engine.record_dimensional_metric(name, value, tags)
+
+    def record_dimensional_metrics(self, metrics):
+        """Record a set of dimensional metrics against the application
+        independent of a specific transaction.
+
+        NOTE that this will require locking of the stats engine for
+        dimensional metrics and so under heavy use will have performance
+        issues. It is better to record the dimensional metric against an
+        active transaction as they will then be aggregated at the end of
+        the transaction when all other metrics are aggregated and so no
+        additional locking will be required.
+
+        """
+
+        if not self._active_session:
+            return
+
+        with self._stats_lock:
+            for metric in metrics:
+                name, value = metric[:2]
+                tags = metric[2] if len(metric) >= 3 else None
+
+                self._global_events_account += 1
+                self._stats_engine.record_dimensional_metric(name, value, tags)
+
     def record_custom_event(self, event_type, params):
         if not self._active_session:
             return
@@ -869,22 +908,39 @@ class Application(object):
         if settings is None or not settings.custom_insights_events.enabled:
             return
 
-        event = create_custom_event(event_type, params)
+        event = create_custom_event(event_type, params, settings=settings)
 
         if event:
             with self._stats_custom_lock:
                 self._global_events_account += 1
                 self._stats_engine.record_custom_event(event)
 
-    def record_log_event(self, message, level=None, timestamp=None, priority=None):
+    def record_ml_event(self, event_type, params):
         if not self._active_session:
             return
 
-        if message:
+        settings = self._stats_engine.settings
+
+        if settings is None or not settings.ml_insights_events.enabled:
+            return
+
+        event = create_custom_event(event_type, params, settings=settings, is_ml_event=True)
+
+        if event:
             with self._stats_custom_lock:
-                event = self._stats_engine.record_log_event(message, level, timestamp, priority=priority)
-                if event:
-                    self._global_events_account += 1
+                self._global_events_account += 1
+                self._stats_engine.record_ml_event(event)
+
+    def record_log_event(self, message, level=None, timestamp=None, attributes=None, priority=None):
+        if not self._active_session:
+            return
+
+        with self._stats_custom_lock:
+            event = self._stats_engine.record_log_event(
+                message, level, timestamp, attributes=attributes, priority=priority
+            )
+            if event:
+                self._global_events_account += 1
 
     def record_transaction(self, data):
         """Record a single transaction against this application."""
@@ -1097,7 +1153,7 @@ class Application(object):
         call_metric = "flexible" if flexible else "default"
 
         with InternalTraceContext(internal_metrics):
-            with InternalTrace("Supportability/Python/Harvest/Calls/" + call_metric):
+            with InternalTrace(f"Supportability/Python/Harvest/Calls/{call_metric}"):
                 self._harvest_count += 1
 
                 start = time.time()
@@ -1193,7 +1249,7 @@ class Application(object):
                     if self._uninstrumented:
                         for uninstrumented in self._uninstrumented:
                             internal_count_metric("Supportability/Python/Uninstrumented", 1)
-                            internal_count_metric("Supportability/Uninstrumented/%s" % uninstrumented, 1)
+                            internal_count_metric(f"Supportability/Uninstrumented/{uninstrumented}", 1)
 
                 # Create our time stamp as to when this reporting period
                 # ends and start reporting the data.
@@ -1335,6 +1391,26 @@ class Application(object):
 
                             stats.reset_custom_events()
 
+                    # Send machine learning events
+
+                    if configuration.ml_insights_events.enabled:
+                        ml_events = stats.ml_events
+
+                        if ml_events:
+                            if ml_events.num_samples > 0:
+                                ml_event_samples = list(ml_events)
+
+                                _logger.debug("Sending machine learning event data for harvest of %r.", self._app_name)
+
+                                self._active_session.send_ml_events(ml_events.sampling_info, ml_event_samples)
+                                ml_event_samples = None
+
+                            # As per spec
+                            internal_count_metric("Supportability/Events/Customer/Seen", ml_events.num_seen)
+                            internal_count_metric("Supportability/Events/Customer/Sent", ml_events.num_samples)
+
+                            stats.reset_ml_events()
+
                     # Send log events
 
                     if (
@@ -1416,11 +1492,16 @@ class Application(object):
                         _logger.debug("Normalizing metrics for harvest of %r.", self._app_name)
 
                         metric_data = stats.metric_data(metric_normalizer)
+                        dimensional_metric_data = stats.dimensional_metric_data(metric_normalizer)
 
                         _logger.debug("Sending metric data for harvest of %r.", self._app_name)
 
                         # Send metrics
                         self._active_session.send_metric_data(self._period_start, period_end, metric_data)
+                        if dimensional_metric_data:
+                            self._active_session.send_dimensional_metric_data(
+                                self._period_start, period_end, dimensional_metric_data
+                            )
 
                         _logger.debug("Done sending data for harvest of %r.", self._app_name)
 
@@ -1506,7 +1587,7 @@ class Application(object):
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric("Supportability/Python/Harvest/Exception/%s" % callable_name(exc_type), 1)
+                    internal_metric(f"Supportability/Python/Harvest/Exception/{callable_name(exc_type)}", 1)
 
                     if self._period_start != period_end:
                         self._stats_engine.rollback(stats)
@@ -1519,7 +1600,7 @@ class Application(object):
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric("Supportability/Python/Harvest/Exception/%s" % callable_name(exc_type), 1)
+                    internal_metric(f"Supportability/Python/Harvest/Exception/{callable_name(exc_type)}", 1)
 
                     self._discard_count += 1
 
@@ -1529,7 +1610,7 @@ class Application(object):
 
                     exc_type = sys.exc_info()[0]
 
-                    internal_metric("Supportability/Python/Harvest/Exception/%s" % callable_name(exc_type), 1)
+                    internal_metric(f"Supportability/Python/Harvest/Exception/{callable_name(exc_type)}", 1)
 
                     _logger.exception(
                         "Unexpected exception when attempting "
@@ -1649,7 +1730,7 @@ class Application(object):
                 # we don't know about a specific agent command we just
                 # ignore it.
 
-                func_name = "cmd_%s" % cmd_name
+                func_name = f"cmd_{cmd_name}"
 
                 cmd_handler = getattr(self, func_name, None)
 

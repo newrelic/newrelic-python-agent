@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 from newrelic.admin import command, usage
 
 
@@ -75,4 +73,4 @@ def server_config(args):
     _logger.debug('Registration took %s seconds.', _duration)
 
     for key, value in sorted(_application.settings):
-        print('%s = %r' % (key, value))
+        print(f'{key} = {value!r}')

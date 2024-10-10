@@ -17,8 +17,6 @@ interacting with the agent core.
 
 """
 
-from __future__ import print_function
-
 import atexit
 import logging
 import os
@@ -32,7 +30,6 @@ import warnings
 import newrelic
 import newrelic.core.application
 import newrelic.core.config
-import newrelic.packages.six as six
 from newrelic.common.log_file import initialize_logging
 from newrelic.core.thread_utilization import thread_utilization_data_source
 from newrelic.samplers.cpu_usage import cpu_usage_data_source
@@ -82,7 +79,7 @@ def check_environment():
             )
 
 
-class Agent(object):
+class Agent():
 
     """Only one instance of the agent should ever exist and that can be
     obtained using the agent_instance() function.
@@ -155,7 +152,7 @@ class Agent(object):
 
         initialize_logging(settings.log_file, settings.log_level)
 
-        _logger.info("New Relic Python Agent (%s)" % newrelic.version)
+        _logger.info(f"New Relic Python Agent ({newrelic.version})")
 
         check_environment()
 
@@ -253,16 +250,16 @@ class Agent(object):
     def dump(self, file):
         """Dumps details about the agent to the file object."""
 
-        print("Time Created: %s" % (time.asctime(time.localtime(self._creation_time))), file=file)
-        print("Initialization PID: %s" % (self._process_id), file=file)
-        print("Default Harvest Count: %d" % (self._default_harvest_count), file=file)
-        print("Flexible Harvest Count: %d" % (self._flexible_harvest_count), file=file)
-        print("Last Default Harvest: %s" % (time.asctime(time.localtime(self._last_default_harvest))), file=file)
-        print("Last Flexible Harvest: %s" % (time.asctime(time.localtime(self._last_flexible_harvest))), file=file)
-        print("Default Harvest Duration: %.2f" % (self._default_harvest_duration), file=file)
-        print("Flexible Harvest Duration: %.2f" % (self._flexible_harvest_duration), file=file)
-        print("Agent Shutdown: %s" % (self._harvest_shutdown.isSet()), file=file)
-        print("Applications: %r" % (sorted(self._applications.keys())), file=file)
+        print(f"Time Created: {time.asctime(time.localtime(self._creation_time))}", file=file)
+        print(f"Initialization PID: {self._process_id}", file=file)
+        print(f"Default Harvest Count: {self._default_harvest_count}", file=file)
+        print(f"Flexible Harvest Count: {self._flexible_harvest_count}", file=file)
+        print(f"Last Default Harvest: {time.asctime(time.localtime(self._last_default_harvest))}", file=file)
+        print(f"Last Flexible Harvest: {time.asctime(time.localtime(self._last_flexible_harvest))}", file=file)
+        print(f"Default Harvest Duration: {self._default_harvest_duration:.2f}", file=file)
+        print(f"Flexible Harvest Duration: {self._flexible_harvest_duration:.2f}", file=file)
+        print(f"Agent Shutdown: {self._harvest_shutdown.isSet()}", file=file)
+        print(f"Applications: {sorted(self._applications.keys())!r}", file=file)
 
     def global_settings(self):
         """Returns the global default settings object. If access is
@@ -339,7 +336,6 @@ class Agent(object):
         with self._lock:
             application = self._applications.get(app_name, None)
             if not application:
-
                 process_id = os.getpid()
 
                 if process_id != self._process_id:
@@ -437,7 +433,7 @@ class Agent(object):
             if application is None:
                 # Bind to any applications that already exist.
 
-                for application in list(six.itervalues(self._applications)):
+                for application in list(self._applications.values()):
                     application.register_data_source(source, name, settings, **properties)
 
             else:
@@ -449,7 +445,6 @@ class Agent(object):
                     instance.register_data_source(source, name, settings, **properties)
 
     def remove_thread_utilization(self):
-
         _logger.debug("Removing thread utilization data source from all applications")
 
         source_name = thread_utilization_data_source.__name__
@@ -524,6 +519,33 @@ class Agent(object):
 
         application.record_custom_metrics(metrics)
 
+    def record_dimensional_metric(self, app_name, name, value, tags=None):
+        """Records a basic metric for the named application. If there has
+        been no prior request to activate the application, the metric is
+        discarded.
+
+        """
+
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_dimensional_metric(name, value, tags)
+
+    def record_dimensional_metrics(self, app_name, metrics):
+        """Records the metrics for the named application. If there has
+        been no prior request to activate the application, the metric is
+        discarded. The metrics should be an iterable yielding tuples
+        consisting of the name and value.
+
+        """
+
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_dimensional_metrics(metrics)
+
     def record_custom_event(self, app_name, event_type, params):
         application = self._applications.get(app_name, None)
         if application is None or not application.active:
@@ -531,12 +553,19 @@ class Agent(object):
 
         application.record_custom_event(event_type, params)
 
-    def record_log_event(self, app_name, message, level=None, timestamp=None, priority=None):
+    def record_ml_event(self, app_name, event_type, params):
         application = self._applications.get(app_name, None)
         if application is None or not application.active:
             return
 
-        application.record_log_event(message, level, timestamp, priority=priority)
+        application.record_ml_event(event_type, params)
+
+    def record_log_event(self, app_name, message, level=None, timestamp=None, attributes=None, priority=None):
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_log_event(message, level, timestamp, attributes=attributes, priority=priority)
 
     def record_transaction(self, app_name, data):
         """Processes the raw transaction data, generating and recording
@@ -587,11 +616,11 @@ class Agent(object):
         self._flexible_harvest_count += 1
         self._last_flexible_harvest = time.time()
 
-        for application in list(six.itervalues(self._applications)):
+        for application in list(self._applications.values()):
             try:
                 application.harvest(shutdown=False, flexible=True)
             except Exception:
-                _logger.exception("Failed to harvest data for %s." % application.name)
+                _logger.exception(f"Failed to harvest data for {application.name}.")
 
         self._flexible_harvest_duration = time.time() - self._last_flexible_harvest
 
@@ -611,11 +640,11 @@ class Agent(object):
         self._default_harvest_count += 1
         self._last_default_harvest = time.time()
 
-        for application in list(six.itervalues(self._applications)):
+        for application in list(self._applications.values()):
             try:
                 application.harvest(shutdown, flexible=False)
             except Exception:
-                _logger.exception("Failed to harvest data for %s." % application.name)
+                _logger.exception(f"Failed to harvest data for {application.name}.")
 
         self._default_harvest_duration = time.time() - self._last_default_harvest
 

@@ -29,7 +29,7 @@ from testing_support.validators.validate_code_level_metrics import validate_code
 def test_application(caplog, app, endpoint, transaction_name):
     caplog.set_level(logging.ERROR)
 
-    @validate_transaction_metrics(transaction_name, scoped_metrics=[("Function/" + transaction_name, 1)])
+    @validate_transaction_metrics(transaction_name, scoped_metrics=[(f"Function/{transaction_name}", 1)])
     @validate_code_level_metrics(*transaction_name.split(":"))
     def _test():
         response = app.get(endpoint)

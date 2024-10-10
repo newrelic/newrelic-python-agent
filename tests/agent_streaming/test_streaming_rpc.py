@@ -54,7 +54,7 @@ def test_correct_settings(mock_grpc_server, compression_setting, gRPC_compressio
         },
     )
     def _test():
-        endpoint = "localhost:%s" % mock_grpc_server
+        endpoint = f"localhost:{mock_grpc_server}"
         stream_buffer = StreamBuffer(1)
 
         rpc = StreamingRpc(
@@ -74,7 +74,7 @@ def test_correct_settings(mock_grpc_server, compression_setting, gRPC_compressio
 
 
 def test_close_before_connect(mock_grpc_server, batching):
-    endpoint = "localhost:%s" % mock_grpc_server
+    endpoint = f"localhost:{mock_grpc_server}"
     stream_buffer = StreamBuffer(0, batching=batching)
 
     rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
@@ -89,7 +89,7 @@ def test_close_before_connect(mock_grpc_server, batching):
 
 
 def test_close_while_connected(mock_grpc_server, buffer_empty_event, batching):
-    endpoint = "localhost:%s" % mock_grpc_server
+    endpoint = f"localhost:{mock_grpc_server}"
     stream_buffer = StreamBuffer(1, batching=batching)
 
     rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
@@ -130,7 +130,7 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch, batching)
         user_attributes={},
     )
 
-    endpoint = "localhost:%s" % mock_grpc_server
+    endpoint = f"localhost:{mock_grpc_server}"
     stream_buffer = StreamBuffer(1, batching=batching)
 
     rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, ssl=False)
@@ -158,7 +158,7 @@ def test_rpc_serialization_and_deserialization(
 ):
     """StreamingRPC sends deserializable span to correct endpoint."""
 
-    endpoint = "localhost:%s" % mock_grpc_server
+    endpoint = f"localhost:{mock_grpc_server}"
     stream_buffer = StreamBuffer(1, batching=batching)
 
     span = Span(

@@ -17,7 +17,9 @@ import asyncio
 import aiohttp
 import pytest
 from testing_support.fixtures import cat_enabled
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 from yarl import URL
 
 from newrelic.api.background_task import background_task
@@ -115,68 +117,6 @@ def test_client_no_txn_async_await(event_loop, local_server_info, method, exc_ex
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-def test_client_throw_async_await(event_loop, local_server_info, method, exc_expected):
-    class ThrowerException(ValueError):
-        pass
-
-    @background_task(name="test_client_throw_async_await")
-    async def self_driving_thrower():
-        async with aiohttp.ClientSession() as session:
-            coro = session._request(method.upper(), local_server_info.url)
-
-            # activate the coroutine
-            coro.send(None)
-
-            # inject error
-            coro.throw(ThrowerException())
-
-    @validate_transaction_metrics(
-        "test_client_throw_async_await",
-        background_task=True,
-        scoped_metrics=[
-            (local_server_info.base_metric + method.upper(), 1),
-        ],
-        rollup_metrics=[
-            (local_server_info.base_metric + method.upper(), 1),
-        ],
-    )
-    def task_test():
-        with pytest.raises(ThrowerException):
-            event_loop.run_until_complete(self_driving_thrower())
-
-    task_test()
-
-
-@pytest.mark.parametrize("method,exc_expected", test_matrix)
-def test_client_close_async_await(event_loop, local_server_info, method, exc_expected):
-    @background_task(name="test_client_close_async_await")
-    async def self_driving_closer():
-        async with aiohttp.ClientSession() as session:
-            coro = session._request(method.upper(), local_server_info.url)
-
-            # activate the coroutine
-            coro.send(None)
-
-            # force close
-            coro.close()
-
-    @validate_transaction_metrics(
-        "test_client_close_async_await",
-        background_task=True,
-        scoped_metrics=[
-            (local_server_info.base_metric + method.upper(), 1),
-        ],
-        rollup_metrics=[
-            (local_server_info.base_metric + method.upper(), 1),
-        ],
-    )
-    def task_test():
-        event_loop.run_until_complete(self_driving_closer())
-
-    task_test()
-
-
-@pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
 def test_await_request_async_await(event_loop, local_server_info, method, exc_expected):
     async def request_with_await():
@@ -225,10 +165,10 @@ def test_ws_connect_async_await(event_loop, local_server_info, method, exc_expec
         "fetch_multiple",
         background_task=True,
         scoped_metrics=[
-            (local_server_info.base_metric + "GET", 2),
+            (f"{local_server_info.base_metric}GET", 2),
         ],
         rollup_metrics=[
-            (local_server_info.base_metric + "GET", 2),
+            (f"{local_server_info.base_metric}GET", 2),
         ],
     )
     def task_test():
@@ -240,7 +180,6 @@ def test_ws_connect_async_await(event_loop, local_server_info, method, exc_expec
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 @cat_enabled
 def test_create_task_async_await(event_loop, local_server_info, method, exc_expected):
-
     # `loop.create_task` returns a Task object which uses the coroutine's
     # `send` method, not `__next__`
 

@@ -28,12 +28,9 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 
-
-def framework_details():
-    import flask
-
-    return ("Flask", getattr(flask, "__version__", None))
+FLASK_VERSION = ("Flask", get_package_version("flask"))
 
 
 def status_code(exc, value, tb):
@@ -96,7 +93,7 @@ def _nr_wrapper_Flask_add_url_rule_input_(wrapped, instance, args, kwargs):
 
 def _nr_wrapper_Flask_views_View_as_view_(wrapped, instance, args, kwargs):
     view = wrapped(*args, **kwargs)
-    view._nr_view_func_name = "%s:%s" % (view.__module__, view.__name__)
+    view._nr_view_func_name = f"{view.__module__}:{view.__name__}"
     return view
 
 
@@ -166,7 +163,7 @@ def _nr_wrapper_error_handler_(wrapped, instance, args, kwargs):
     return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
 
-def _nr_wrapper_Flask__register_error_handler_(wrapped, instance, args, kwargs):
+def _nr_wrapper_Flask__register_error_handler_(wrapped, instance, args, kwargs):  # pragma: no cover
     def _bind_params(key, code_or_exception, f):
         return key, code_or_exception, f
 
@@ -189,7 +186,6 @@ def _nr_wrapper_Flask_register_error_handler_(wrapped, instance, args, kwargs):
 
 
 def _nr_wrapper_Flask_try_trigger_before_first_request_functions_(wrapped, instance, args, kwargs):
-
     transaction = current_transaction()
 
     if transaction is None:
@@ -277,7 +273,7 @@ def instrument_flask_views(module):
 
 
 def instrument_flask_app(module):
-    wrap_wsgi_application(module, "Flask.wsgi_app", framework=framework_details)
+    wrap_wsgi_application(module, "Flask.wsgi_app", framework=FLASK_VERSION)
 
     wrap_function_wrapper(module, "Flask.add_url_rule", _nr_wrapper_Flask_add_url_rule_input_)
 
@@ -355,7 +351,6 @@ def _nr_wrapper_Blueprint_endpoint_(wrapped, instance, args, kwargs):
 
 @function_wrapper
 def _nr_wrapper_Blueprint_before_request_wrapped_(wrapped, instance, args, kwargs):
-
     transaction = current_transaction()
 
     if transaction is None:

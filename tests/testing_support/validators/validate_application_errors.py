@@ -37,19 +37,15 @@ def validate_application_errors(errors=None, required_params=None, forgone_param
             expected = sorted(errors)
             captured = sorted([(e.type, e.message) for e in stats.error_data()])
 
-            assert expected == captured, "expected=%r, captured=%r, errors=%r" % (expected, captured, app_errors)
+            assert expected == captured, f"expected={expected!r}, captured={captured!r}, errors={app_errors!r}"
 
             for e in app_errors:
                 for name, value in required_params:
-                    assert name in e.parameters["userAttributes"], "name=%r, params=%r" % (name, e.parameters)
-                    assert e.parameters["userAttributes"][name] == value, "name=%r, value=%r, params=%r" % (
-                        name,
-                        value,
-                        e.parameters,
-                    )
+                    assert name in e.parameters["userAttributes"], f"name={name!r}, params={e.parameters!r}"
+                    assert e.parameters["userAttributes"][name] == value, f"name={name!r}, value={value!r}, params={e.parameters!r}"
 
                 for name, value in forgone_params:
-                    assert name not in e.parameters["userAttributes"], "name=%r, params=%r" % (name, e.parameters)
+                    assert name not in e.parameters["userAttributes"], f"name={name!r}, params={e.parameters!r}"
 
         return result
 

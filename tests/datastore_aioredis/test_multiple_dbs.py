@@ -81,8 +81,8 @@ if len(DB_SETTINGS) > 1:
     _host_2 = instance_hostname(redis_instance_2["host"])
     _port_2 = redis_instance_2["port"]
 
-    instance_metric_name_1 = "Datastore/instance/Redis/%s/%s" % (_host_1, _port_1)
-    instance_metric_name_2 = "Datastore/instance/Redis/%s/%s" % (_host_2, _port_2)
+    instance_metric_name_1 = f"Datastore/instance/Redis/{_host_1}/{_port_1}"
+    instance_metric_name_2 = f"Datastore/instance/Redis/{_host_2}/{_port_2}"
 
     _enable_rollup_metrics.extend(
         [
@@ -125,10 +125,10 @@ def client_set(request, loop):  # noqa
             if request.param == "Redis":
                 return (
                     loop.run_until_complete(
-                        aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS[0]["host"], DB_SETTINGS[0]["port"]), db=0)
+                        aioredis.create_redis(f"redis://{DB_SETTINGS[0]['host']}:{DB_SETTINGS[0]['port']}", db=0)
                     ),
                     loop.run_until_complete(
-                        aioredis.create_redis("redis://%s:%d" % (DB_SETTINGS[1]["host"], DB_SETTINGS[1]["port"]), db=0)
+                        aioredis.create_redis(f"redis://{DB_SETTINGS[1]['host']}:{DB_SETTINGS[1]['port']}", db=0)
                     ),
                 )
             elif request.param == "StrictRedis":
@@ -190,7 +190,7 @@ def test_concurrent_calls(client_set, loop):  # noqa
     import asyncio
 
     async def exercise_concurrent():
-        await asyncio.gather(*(client.set("key-%d" % i, i) for i, client in enumerate(client_set)))
-        await asyncio.gather(*(client.get("key-%d" % i) for i, client in enumerate(client_set)))
+        await asyncio.gather(*(client.set(f"key-{i}", i) for i, client in enumerate(client_set)))
+        await asyncio.gather(*(client.get(f"key-{i}") for i, client in enumerate(client_set)))
 
     loop.run_until_complete(exercise_concurrent())

@@ -16,7 +16,7 @@ import functools
 
 from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.async_wrapper import async_wrapper
+from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.graphql_node import GraphQLOperationNode, GraphQLResolverNode
 
@@ -39,16 +39,7 @@ class GraphQLOperationTrace(TimeTrace):
         self.product = "GraphQL"
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (
-            self.__class__.__name__,
-            id(self),
-            dict(
-                operation_name=self.operation_name,
-                operation_type=self.operation_type,
-                deepest_path=self.deepest_path,
-                graphql=self.graphql,
-            ),
-        )
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(operation_name=self.operation_name, operation_type=self.operation_type, deepest_path=self.deepest_path, graphql=self.graphql)}>"
 
     @property
     def formatted(self):
@@ -102,16 +93,16 @@ class GraphQLOperationTrace(TimeTrace):
         transaction = current_transaction()
         if transaction:
             name = (
-                "%s/%s/%s" % (self.operation_type, self.operation_name, self.deepest_path)
+                f"{self.operation_type}/{self.operation_name}/{self.deepest_path}"
                 if self.deepest_path
-                else "%s/%s" % (self.operation_type, self.operation_name)
+                else f"{self.operation_type}/{self.operation_name}"
             )
             transaction.set_transaction_name(name, "GraphQL", priority=priority)
 
 
-def GraphQLOperationTraceWrapper(wrapped):
+def GraphQLOperationTraceWrapper(wrapped, async_wrapper=None):
     def _nr_graphql_trace_wrapper_(wrapped, instance, args, kwargs):
-        wrapper = async_wrapper(wrapped)
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
             if not parent:
@@ -130,16 +121,16 @@ def GraphQLOperationTraceWrapper(wrapped):
     return FunctionWrapper(wrapped, _nr_graphql_trace_wrapper_)
 
 
-def graphql_operation_trace():
-    return functools.partial(GraphQLOperationTraceWrapper)
+def graphql_operation_trace(async_wrapper=None):
+    return functools.partial(GraphQLOperationTraceWrapper, async_wrapper=async_wrapper)
 
 
-def wrap_graphql_operation_trace(module, object_path):
-    wrap_object(module, object_path, GraphQLOperationTraceWrapper)
+def wrap_graphql_operation_trace(module, object_path, async_wrapper=None):
+    wrap_object(module, object_path, GraphQLOperationTraceWrapper, (async_wrapper,))
 
 
 class GraphQLResolverTrace(TimeTrace):
-    def __init__(self, field_name=None, **kwargs):
+    def __init__(self, field_name=None, field_parent_type=None, field_return_type=None, field_path=None, **kwargs):
         parent = kwargs.pop("parent", None)
         source = kwargs.pop("source", None)
         if kwargs:
@@ -148,10 +139,13 @@ class GraphQLResolverTrace(TimeTrace):
         super(GraphQLResolverTrace, self).__init__(parent=parent, source=source)
 
         self.field_name = field_name
+        self.field_parent_type = field_parent_type
+        self.field_return_type = field_return_type
+        self.field_path = field_path
         self._product = None
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), dict(field_name=self.field_name))
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(field_name=self.field_name)}>"
 
     def __enter__(self):
         super(GraphQLResolverTrace, self).__enter__()
@@ -175,6 +169,9 @@ class GraphQLResolverTrace(TimeTrace):
 
     def finalize_data(self, *args, **kwargs):
         self._add_agent_attribute("graphql.field.name", self.field_name)
+        self._add_agent_attribute("graphql.field.parentType", self.field_parent_type)
+        self._add_agent_attribute("graphql.field.returnType", self.field_return_type)
+        self._add_agent_attribute("graphql.field.path", self.field_path)
 
         return super(GraphQLResolverTrace, self).finalize_data(*args, **kwargs)
 
@@ -193,9 +190,9 @@ class GraphQLResolverTrace(TimeTrace):
         )
 
 
-def GraphQLResolverTraceWrapper(wrapped):
+def GraphQLResolverTraceWrapper(wrapped, async_wrapper=None):
     def _nr_graphql_trace_wrapper_(wrapped, instance, args, kwargs):
-        wrapper = async_wrapper(wrapped)
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
             if not parent:
@@ -214,9 +211,9 @@ def GraphQLResolverTraceWrapper(wrapped):
     return FunctionWrapper(wrapped, _nr_graphql_trace_wrapper_)
 
 
-def graphql_resolver_trace():
-    return functools.partial(GraphQLResolverTraceWrapper)
+def graphql_resolver_trace(async_wrapper=None):
+    return functools.partial(GraphQLResolverTraceWrapper, async_wrapper=async_wrapper)
 
 
-def wrap_graphql_resolver_trace(module, object_path):
-    wrap_object(module, object_path, GraphQLResolverTraceWrapper)
+def wrap_graphql_resolver_trace(module, object_path, async_wrapper=None):
+    wrap_object(module, object_path, GraphQLResolverTraceWrapper, (async_wrapper,))

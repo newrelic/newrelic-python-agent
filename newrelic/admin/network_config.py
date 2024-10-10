@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 from newrelic.admin import command, usage
 
 
@@ -55,10 +53,10 @@ def network_config(args):
 
     _settings = global_settings()
 
-    print('host = %r' % _settings.host)
-    print('port = %r' % _settings.port)
-    print('proxy_scheme = %r' % _settings.proxy_scheme)
-    print('proxy_host = %r' % _settings.proxy_host)
-    print('proxy_port = %r' % _settings.proxy_port)
-    print('proxy_user = %r' % _settings.proxy_user)
-    print('proxy_pass = %r' % _settings.proxy_pass)
+    print(f'host = {_settings.host!r}')
+    print(f'port = {_settings.port!r}')
+    print(f'proxy_scheme = {_settings.proxy_scheme!r}')
+    print(f'proxy_host = {_settings.proxy_host!r}')
+    print(f'proxy_port = {_settings.proxy_port!r}')
+    print(f'proxy_user = {_settings.proxy_user!r}')
+    print(f'proxy_pass = {_settings.proxy_pass!r}')

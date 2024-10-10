@@ -30,24 +30,30 @@ from testing_support.validators.validate_cross_process_headers import (
 from testing_support.validators.validate_external_node_params import (
     validate_external_node_params,
 )
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
+
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 
 def get_requests_version():
-    return tuple(map(int, requests.__version__.split(".")[:2]))
+    return get_package_version_tuple("requests")
 
 
 @pytest.fixture(scope="session")
 def metrics(server):
-    scoped = [("External/localhost:%d/requests/" % server.port, 1)]
+    scoped = [(f"External/localhost:{server.port}/requests/", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%d/all" % server.port, 1),
-        ("External/localhost:%d/requests/" % server.port, 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"External/localhost:{server.port}/requests/", 1),
     ]
 
     return scoped, rollup
@@ -72,7 +78,7 @@ def test_http_request_get(server, metrics):
     )
     @background_task(name="test_requests:test_http_request_get")
     def _test():
-        requests.get("http://localhost:%d/" % server.port)
+        requests.get(f"http://localhost:{server.port}/")
 
     _test()
 
@@ -89,7 +95,7 @@ def test_https_request_get(server, metrics):
     @background_task(name="test_requests:test_https_request_get")
     def _test():
         try:
-            requests.get("https://localhost:%d/" % server.port, verify=False)
+            requests.get(f"https://localhost:{server.port}/", verify=False)  # nosec
         except Exception:
             pass
 
@@ -108,7 +114,7 @@ def test_http_session_send(server, metrics):
     @background_task(name="test_requests:test_http_session_send")
     def _test():
         session = requests.Session()
-        req = requests.Request("GET", "http://localhost:%d/" % server.port)
+        req = requests.Request("GET", f"http://localhost:{server.port}/")
         prep_req = req.prepare()
         session.send(prep_req)
 
@@ -183,7 +189,7 @@ def test_requests_cross_process_request(distributed_tracing, span_events, server
     @cache_outgoing_headers
     @validate_cross_process_headers
     def _test():
-        requests.get("http://localhost:%d/" % server.port)
+        requests.get(f"http://localhost:{server.port}/")
 
     _test = override_application_settings(
         {
@@ -199,15 +205,15 @@ def test_requests_cross_process_request(distributed_tracing, span_events, server
 @cat_enabled
 def test_requests_cross_process_response(server):
     _test_requests_cross_process_response_scoped_metrics = [
-        ("ExternalTransaction/localhost:%d/1#2/test" % server.port, 1)
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)
     ]
 
     _test_requests_cross_process_response_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/localhost:%d/all" % server.port, 1),
-        ("ExternalApp/localhost:%d/1#2/all" % server.port, 1),
-        ("ExternalTransaction/localhost:%d/1#2/test" % server.port, 1),
+        (f"External/localhost:{server.port}/all", 1),
+        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
+        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
     ]
 
     _test_requests_cross_process_response_external_node_params = [
@@ -227,6 +233,6 @@ def test_requests_cross_process_response(server):
     @validate_external_node_params(params=_test_requests_cross_process_response_external_node_params)
     @background_task(name="test_requests:test_requests_cross_process_response")
     def _test():
-        requests.get("http://localhost:%d/" % server.port)
+        requests.get(f"http://localhost:{server.port}/")
 
     _test()

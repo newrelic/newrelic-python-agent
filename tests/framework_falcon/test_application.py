@@ -26,7 +26,7 @@ SETTINGS = global_settings()
 
 def test_basic(app):
     _test_basic_metrics = (
-        ('Function/' + app.name_prefix + '.__call__', 1),
+        (f"Function/{app.name_prefix}.__call__", 1),
         ('Function/_target_application:Index.on_get', 1),
     )
 
@@ -45,7 +45,7 @@ def test_basic(app):
 @validate_transaction_errors(errors=[])
 def test_ignored_status_code(app):
 
-    @validate_transaction_metrics(app.name_prefix + '._handle_exception')
+    @validate_transaction_metrics(f"{app.name_prefix}._handle_exception")
     def _test():
         app.get('/foobar', status=404)
 
@@ -56,7 +56,7 @@ def test_ignored_status_code(app):
 def test_error_recorded(app):
 
     @validate_transaction_errors(errors=[app.not_found_error])
-    @validate_transaction_metrics(app.name_prefix + '._handle_exception')
+    @validate_transaction_metrics(f"{app.name_prefix}._handle_exception")
     def _test():
         app.get('/foobar', status=404)
 

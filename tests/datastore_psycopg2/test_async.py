@@ -44,8 +44,8 @@ _disable_instance_settings = {
 # Metrics
 
 _base_scoped_metrics = (
-        ('Datastore/statement/Postgres/%s/select' % DB_SETTINGS['table_name'], 1),
-        ('Datastore/statement/Postgres/%s/insert' % DB_SETTINGS['table_name'], 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1)
 )
@@ -56,9 +56,9 @@ _base_rollup_metrics = (
         ('Datastore/Postgres/all', 5),
         ('Datastore/Postgres/allOther', 5),
         ('Datastore/operation/Postgres/select', 1),
-        ('Datastore/statement/Postgres/%s/select' % DB_SETTINGS['table_name'], 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
         ('Datastore/operation/Postgres/insert', 1),
-        ('Datastore/statement/Postgres/%s/insert' % DB_SETTINGS['table_name'], 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1)
 )
@@ -75,7 +75,7 @@ _disable_scoped_metrics.append(('Function/psycopg2:connect', 1))
 _host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
-_instance_metric_name = 'Datastore/instance/Postgres/%s/%s' % (_host, _port)
+_instance_metric_name = f'Datastore/instance/Postgres/{_host}/{_port}'
 
 _enable_rollup_metrics.append(
         (_instance_metric_name, 4)
@@ -102,18 +102,16 @@ def _exercise_db(async_keyword):
     wait(async_conn)
     async_cur = async_conn.cursor()
 
-    async_cur.execute("""drop table if exists %s""" % DB_SETTINGS['table_name'])
+    async_cur.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
     wait(async_cur.connection)
 
-    async_cur.execute("""create table %s """ % DB_SETTINGS['table_name'] +
-            """(a integer, b real, c text)""")
+    async_cur.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
     wait(async_cur.connection)
 
-    async_cur.execute("""insert into %s """ % DB_SETTINGS['table_name'] +
-        """values (%s, %s, %s)""", (1, 1.0, '1.0'))
+    async_cur.execute(f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)", (1, 1.0, '1.0'))
     wait(async_cur.connection)
 
-    async_cur.execute("""select * from %s""" % DB_SETTINGS['table_name'])
+    async_cur.execute(f"""select * from {DB_SETTINGS['table_name']}""")
     wait(async_cur.connection)
 
     for row in async_cur:

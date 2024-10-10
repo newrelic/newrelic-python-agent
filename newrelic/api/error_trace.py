@@ -19,7 +19,7 @@ from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
-class ErrorTrace(object):
+class ErrorTrace():
     def __init__(
         self,
         ignore_errors=[],

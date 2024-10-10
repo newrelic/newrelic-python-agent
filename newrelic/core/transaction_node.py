@@ -22,9 +22,11 @@ from collections import namedtuple
 
 import newrelic.core.error_collector
 import newrelic.core.trace_node
+from newrelic.common.encoding_utils import camel_case
 from newrelic.common.streaming_utils import SpanProtoAttrs
-from newrelic.core.attribute import create_agent_attributes, create_user_attributes
+from newrelic.core.attribute import create_agent_attributes, create_attributes
 from newrelic.core.attribute_filter import (
+    DST_ALL,
     DST_ERROR_COLLECTOR,
     DST_TRANSACTION_EVENTS,
     DST_TRANSACTION_TRACER,
@@ -60,10 +62,12 @@ _TransactionNode = namedtuple(
         "errors",
         "slow_sql",
         "custom_events",
+        "ml_events",
         "log_events",
         "apdex_t",
         "suppress_apdex",
         "custom_metrics",
+        "dimensional_metrics",
         "guid",
         "cpu_time",
         "suppress_transaction_trace",
@@ -74,6 +78,10 @@ _TransactionNode = namedtuple(
         "synthetics_job_id",
         "synthetics_monitor_id",
         "synthetics_header",
+        "synthetics_type",
+        "synthetics_initiator",
+        "synthetics_attributes",
+        "synthetics_info_header",
         "is_part_of_cat",
         "trip_id",
         "path_hash",
@@ -167,8 +175,7 @@ class TransactionNode(_TransactionNode):
 
             if self.queue_start != 0:
                 queue_wait = self.start_time - self.queue_start
-                if queue_wait < 0:
-                    queue_wait = 0
+                queue_wait = max(queue_wait, 0)
 
                 yield TimeMetric(name="WebFrontend/QueueTime", scope="", duration=queue_wait, exclusive=None)
 
@@ -179,7 +186,7 @@ class TransactionNode(_TransactionNode):
         # Generate the rollup metric.
 
         if self.type != "WebTransaction":
-            rollup = "%s/all" % self.type
+            rollup = f"{self.type}/all"
         else:
             rollup = self.type
 
@@ -195,7 +202,7 @@ class TransactionNode(_TransactionNode):
             metric_suffix = "Other"
 
         yield TimeMetric(
-            name="%s/%s" % (metric_prefix, self.name_for_metric),
+            name=f"{metric_prefix}/{self.name_for_metric}",
             scope="",
             duration=self.total_time,
             exclusive=self.total_time,
@@ -206,16 +213,11 @@ class TransactionNode(_TransactionNode):
         # Generate Distributed Tracing metrics
 
         if self.settings.distributed_tracing.enabled:
-            dt_tag = "%s/%s/%s/%s/all" % (
-                self.parent_type or "Unknown",
-                self.parent_account or "Unknown",
-                self.parent_app or "Unknown",
-                self.parent_transport_type or "Unknown",
-            )
+            dt_tag = f"{self.parent_type or 'Unknown'}/{self.parent_account or 'Unknown'}/{self.parent_app or 'Unknown'}/{self.parent_transport_type or 'Unknown'}/all"
 
             for bonus_tag in ("", metric_suffix):
                 yield TimeMetric(
-                    name="DurationByCaller/%s%s" % (dt_tag, bonus_tag),
+                    name=f"DurationByCaller/{dt_tag}{bonus_tag}",
                     scope="",
                     duration=self.duration,
                     exclusive=self.duration,
@@ -223,7 +225,7 @@ class TransactionNode(_TransactionNode):
 
                 if self.parent_transport_duration is not None:
                     yield TimeMetric(
-                        name="TransportDuration/%s%s" % (dt_tag, bonus_tag),
+                        name=f"TransportDuration/{dt_tag}{bonus_tag}",
                         scope="",
                         duration=self.parent_transport_duration,
                         exclusive=self.parent_transport_duration,
@@ -231,7 +233,7 @@ class TransactionNode(_TransactionNode):
 
                 if self.errors:
                     yield TimeMetric(
-                        name="ErrorsByCaller/%s%s" % (dt_tag, bonus_tag), scope="", duration=0.0, exclusive=None
+                        name=f"ErrorsByCaller/{dt_tag}{bonus_tag}", scope="", duration=0.0, exclusive=None
                     )
 
         # Generate Error metrics
@@ -242,10 +244,10 @@ class TransactionNode(_TransactionNode):
                 yield TimeMetric(name="Errors/all", scope="", duration=0.0, exclusive=None)
 
                 # Generate individual error metric for transaction.
-                yield TimeMetric(name="Errors/%s" % self.path, scope="", duration=0.0, exclusive=None)
+                yield TimeMetric(name=f"Errors/{self.path}", scope="", duration=0.0, exclusive=None)
 
                 # Generate rollup metric for WebTransaction errors.
-                yield TimeMetric(name="Errors/all%s" % metric_suffix, scope="", duration=0.0, exclusive=None)
+                yield TimeMetric(name=f"Errors/all{metric_suffix}", scope="", duration=0.0, exclusive=None)
             else:
                 yield TimeMetric(name="ErrorsExpected/all", scope="", duration=0.0, exclusive=None)
 
@@ -290,7 +292,7 @@ class TransactionNode(_TransactionNode):
         # Generate the full apdex metric.
 
         yield ApdexMetric(
-            name="Apdex/%s" % self.name_for_metric,
+            name=f"Apdex/{self.name_for_metric}",
             satisfying=satisfying,
             tolerating=tolerating,
             frustrating=frustrating,
@@ -361,17 +363,20 @@ class TransactionNode(_TransactionNode):
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params["agentAttributes"][attr.name] = attr.value
 
-            err_attrs = create_user_attributes(error.custom_params, self.settings.attribute_filter)
+            err_attrs = create_attributes(error.custom_params, DST_ALL, self.settings.attribute_filter)
             for attr in err_attrs:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params["userAttributes"][attr.name] = attr.value
 
             yield newrelic.core.error_collector.TracedError(
-                start_time=error.timestamp, path=self.path, message=error.message, type=error.type, parameters=params
+                start_time=error.timestamp,
+                path=self.path,
+                message=error.message,
+                type=error.type,
+                parameters=params,
             )
 
     def transaction_trace(self, stats, limit, connections):
-
         self.trace_node_count = 0
         self.trace_node_limit = limit
 
@@ -498,10 +503,8 @@ class TransactionNode(_TransactionNode):
         return intrinsics
 
     def error_events(self, stats_table):
-
         errors = []
         for error in self.errors:
-
             intrinsics = self.error_event_intrinsics(error, stats_table)
 
             # Add user and agent attributes to event
@@ -530,7 +533,7 @@ class TransactionNode(_TransactionNode):
 
             # add error specific custom params to this error's userAttributes
 
-            err_attrs = create_user_attributes(error.custom_params, self.settings.attribute_filter)
+            err_attrs = create_attributes(error.custom_params, DST_ALL, self.settings.attribute_filter)
             for attr in err_attrs:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     user_attributes[attr.name] = attr.value
@@ -541,7 +544,6 @@ class TransactionNode(_TransactionNode):
         return errors
 
     def error_event_intrinsics(self, error, stats_table):
-
         intrinsics = self._event_intrinsics(stats_table)
 
         intrinsics["type"] = "TransactionError"
@@ -563,7 +565,6 @@ class TransactionNode(_TransactionNode):
 
         cache = getattr(self, "_event_intrinsics_cache", None)
         if cache is not None:
-
             # We don't want to execute this function more than once, since
             # it should always yield the same data per transaction
 
@@ -571,6 +572,7 @@ class TransactionNode(_TransactionNode):
 
         intrinsics = self.distributed_trace_intrinsics.copy()
 
+        intrinsics["guid"] = self.guid
         intrinsics["timestamp"] = int(1000.0 * self.start_time)
         intrinsics["duration"] = self.response_time
 
@@ -583,6 +585,15 @@ class TransactionNode(_TransactionNode):
             intrinsics["nr.syntheticsResourceId"] = self.synthetics_resource_id
             intrinsics["nr.syntheticsJobId"] = self.synthetics_job_id
             intrinsics["nr.syntheticsMonitorId"] = self.synthetics_monitor_id
+
+        if self.synthetics_type:
+            intrinsics["nr.syntheticsType"] = self.synthetics_type
+            intrinsics["nr.syntheticsInitiator"] = self.synthetics_initiator
+            if self.synthetics_attributes:
+                # Add all synthetics attributes
+                for k, v in self.synthetics_attributes.items():
+                    if k:
+                        intrinsics[f"nr.synthetics{camel_case(k, upper=True)}"] = v
 
         def _add_call_time(source, target):
             # include time for keys previously added to stats table via

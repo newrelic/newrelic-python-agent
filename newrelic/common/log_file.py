@@ -76,7 +76,7 @@ def _initialize_file_logging(log_file, log_level):
     _agent_logger.setLevel(log_level)
 
     _agent_logger.debug("Initializing Python agent logging.")
-    _agent_logger.debug('Log file "%s".' % log_file)
+    _agent_logger.debug(f'Log file "{log_file}".')
 
 
 def initialize_logging(log_file, log_level):
@@ -101,7 +101,7 @@ def initialize_logging(log_file, log_level):
             except Exception:
                 _initialize_stderr_logging(log_level)
 
-                _agent_logger.exception("Falling back to stderr logging as unable to create log file %r." % log_file)
+                _agent_logger.exception(f"Falling back to stderr logging as unable to create log file {log_file!r}.")
 
         _initialized = True
 

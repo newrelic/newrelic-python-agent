@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import pytest
-import six
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -32,12 +34,13 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-@pytest.fixture(scope="session")
-def app():
-    from _target_application import _target_application
+@pytest.fixture(scope="session", params=["sync-sync", "async-sync", "async-async"])
+def target_application(request):
+    from ._target_application import target_application
 
-    return _target_application
+    app = target_application.get(request.param, None)
+    if app is None:
+        pytest.skip("Unsupported combination.")
+        return
 
-
-if six.PY2:
-    collect_ignore = ["test_application_async.py"]
+    return "GraphQL", None, app, True, request.param.split("-")[1], 0

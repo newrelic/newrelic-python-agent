@@ -15,7 +15,7 @@
 from newrelic.api.application import application_instance as __application
 from newrelic.api.application import application_settings as __application_settings
 from newrelic.api.application import register_application as __register_application
-from newrelic.api.log import NewRelicContextFormatter  # noqa
+from newrelic.api.log import NewRelicContextFormatter as __NewRelicContextFormatter
 from newrelic.api.time_trace import (
     add_custom_span_attribute as __add_custom_span_attribute,
 )
@@ -59,6 +59,7 @@ from newrelic.api.transaction import record_custom_event as __record_custom_even
 from newrelic.api.transaction import record_custom_metric as __record_custom_metric
 from newrelic.api.transaction import record_custom_metrics as __record_custom_metrics
 from newrelic.api.transaction import record_log_event as __record_log_event
+from newrelic.api.transaction import record_ml_event as __record_ml_event
 from newrelic.api.transaction import set_background_task as __set_background_task
 from newrelic.api.transaction import set_transaction_name as __set_transaction_name
 from newrelic.api.transaction import suppress_apdex_metric as __suppress_apdex_metric
@@ -138,6 +139,9 @@ from newrelic.api.html_insertion import insert_html_snippet as __insert_html_sni
 from newrelic.api.html_insertion import verify_body_exists as __verify_body_exists
 from newrelic.api.lambda_handler import LambdaHandlerWrapper as __LambdaHandlerWrapper
 from newrelic.api.lambda_handler import lambda_handler as __lambda_handler
+from newrelic.api.llm_custom_attributes import (
+    WithLlmCustomAttributes as __WithLlmCustomAttributes,
+)
 from newrelic.api.message_trace import MessageTrace as __MessageTrace
 from newrelic.api.message_trace import MessageTraceWrapper as __MessageTraceWrapper
 from newrelic.api.message_trace import message_trace as __message_trace
@@ -152,6 +156,13 @@ from newrelic.api.message_transaction import (
 from newrelic.api.message_transaction import (
     wrap_message_transaction as __wrap_message_transaction,
 )
+from newrelic.api.ml_model import (
+    record_llm_feedback_event as __record_llm_feedback_event,
+)
+from newrelic.api.ml_model import (
+    set_llm_token_count_callback as __set_llm_token_count_callback,
+)
+from newrelic.api.ml_model import wrap_mlmodel as __wrap_mlmodel
 from newrelic.api.profile_trace import ProfileTraceWrapper as __ProfileTraceWrapper
 from newrelic.api.profile_trace import profile_trace as __profile_trace
 from newrelic.api.profile_trace import wrap_profile_trace as __wrap_profile_trace
@@ -172,6 +183,7 @@ from newrelic.api.web_transaction import (
 from newrelic.api.web_transaction import web_transaction as __web_transaction
 from newrelic.api.web_transaction import wrap_web_transaction as __wrap_web_transaction
 from newrelic.common.object_names import callable_name as __callable_name
+from newrelic.common.object_wrapper import CallableObjectProxy as __CallableObjectProxy
 from newrelic.common.object_wrapper import FunctionWrapper as __FunctionWrapper
 from newrelic.common.object_wrapper import InFunctionWrapper as __InFunctionWrapper
 from newrelic.common.object_wrapper import ObjectProxy as __ObjectProxy
@@ -205,11 +217,6 @@ from newrelic.common.object_wrapper import wrap_pre_function as __wrap_pre_funct
 
 # EXPERIMENTAL - Generator traces are currently experimental and may not
 # exist in this form in future versions of the agent.
-
-
-# EXPERIMENTAL - Profile traces are currently experimental and may not
-# exist in this form in future versions of the agent.
-
 
 initialize = __initialize
 extra_settings = __wrap_api_call(__extra_settings, "extra_settings")
@@ -248,6 +255,8 @@ record_custom_metric = __wrap_api_call(__record_custom_metric, "record_custom_me
 record_custom_metrics = __wrap_api_call(__record_custom_metrics, "record_custom_metrics")
 record_custom_event = __wrap_api_call(__record_custom_event, "record_custom_event")
 record_log_event = __wrap_api_call(__record_log_event, "record_log_event")
+record_ml_event = __wrap_api_call(__record_ml_event, "record_ml_event")
+WithLlmCustomAttributes = __wrap_api_call(__WithLlmCustomAttributes, "WithLlmCustomAttributes")
 accept_distributed_trace_payload = __wrap_api_call(
     __accept_distributed_trace_payload, "accept_distributed_trace_payload"
 )
@@ -278,6 +287,7 @@ BackgroundTaskWrapper = __wrap_api_call(__BackgroundTaskWrapper, "BackgroundTask
 wrap_background_task = __wrap_api_call(__wrap_background_task, "wrap_background_task")
 LambdaHandlerWrapper = __wrap_api_call(__LambdaHandlerWrapper, "LambdaHandlerWrapper")
 lambda_handler = __wrap_api_call(__lambda_handler, "lambda_handler")
+NewRelicContextFormatter = __wrap_api_call(__NewRelicContextFormatter, "NewRelicContextFormatter")
 transaction_name = __wrap_api_call(__transaction_name, "transaction_name")
 TransactionNameWrapper = __wrap_api_call(__TransactionNameWrapper, "TransactionNameWrapper")
 wrap_transaction_name = __wrap_api_call(__wrap_transaction_name, "wrap_transaction_name")
@@ -318,6 +328,7 @@ MessageTransactionWrapper = __wrap_api_call(__MessageTransactionWrapper, "Messag
 wrap_message_transaction = __wrap_api_call(__wrap_message_transaction, "wrap_message_transaction")
 callable_name = __wrap_api_call(__callable_name, "callable_name")
 ObjectProxy = __wrap_api_call(__ObjectProxy, "ObjectProxy")
+CallableObjectProxy = __wrap_api_call(__CallableObjectProxy, "CallableObjectProxy")
 wrap_object = __wrap_api_call(__wrap_object, "wrap_object")
 wrap_object_attribute = __wrap_api_call(__wrap_object_attribute, "wrap_object_attribute")
 resolve_path = __wrap_api_call(__resolve_path, "resolve_path")
@@ -341,3 +352,6 @@ OutFunctionWrapper = __wrap_api_call(__OutFunctionWrapper, "OutFunctionWrapper")
 wrap_out_function = __wrap_api_call(__wrap_out_function, "wrap_out_function")
 insert_html_snippet = __wrap_api_call(__insert_html_snippet, "insert_html_snippet")
 verify_body_exists = __wrap_api_call(__verify_body_exists, "verify_body_exists")
+wrap_mlmodel = __wrap_api_call(__wrap_mlmodel, "wrap_mlmodel")
+record_llm_feedback_event = __wrap_api_call(__record_llm_feedback_event, "record_llm_feedback_event")
+set_llm_token_count_callback = __wrap_api_call(__set_llm_token_count_callback, "set_llm_token_count_callback")

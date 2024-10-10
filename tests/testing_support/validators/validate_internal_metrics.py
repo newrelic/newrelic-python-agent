@@ -41,10 +41,10 @@ def validate_internal_metrics(metrics=None):
             metric = captured_metrics.get(name)
 
             def _metrics_table():
-                return "metric=%r, metrics=%r" % (name, captured_metrics)
+                return f"metric={name!r}, metrics={captured_metrics!r}"
 
             def _metric_details():
-                return "metric=%r, count=%r" % (name, metric.call_count)
+                return f"metric={name!r}, count={metric.call_count!r}"
 
             if count is not None and count > 0:
                 assert metric is not None, _metrics_table()

@@ -40,7 +40,8 @@ def _default_settings():
         'browser_monitoring.attributes.exclude': [],
     }
 
-FIXTURE = os.path.join(os.curdir, 'fixtures', 'attribute_configuration.json')
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+FIXTURE = os.path.join(CURRENT_DIR, 'fixtures', 'attribute_configuration.json')
 
 def _load_tests():
     with open(FIXTURE, 'r') as fh:

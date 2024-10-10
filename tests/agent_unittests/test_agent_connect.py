@@ -13,26 +13,27 @@
 # limitations under the License.
 
 import pytest
+from testing_support.fixtures import failing_endpoint, override_generic_settings
+from testing_support.validators.validate_internal_metrics import (
+    validate_internal_metrics,
+)
+
 from newrelic.core.application import Application
 from newrelic.core.config import global_settings
 from newrelic.network.exceptions import ForceAgentDisconnect
 
-from testing_support.fixtures import (
-    override_generic_settings,
-    failing_endpoint
-)
-from testing_support.validators.validate_internal_metrics import validate_internal_metrics
-
-
 SETTINGS = global_settings()
 
 
-@override_generic_settings(SETTINGS, {
-    'developer_mode': True,
-})
-@failing_endpoint('preconnect', raises=ForceAgentDisconnect)
+@override_generic_settings(
+    SETTINGS,
+    {
+        "developer_mode": True,
+    },
+)
+@failing_endpoint("preconnect", raises=ForceAgentDisconnect)
 def test_http_gone_stops_connect():
-    app = Application('Python Agent Test (agent_unittests-connect)')
+    app = Application("Python Agent Test (agent_unittests-connect)")
     app.connect_to_data_collector(None)
 
     # The agent must not reattempt a connection after a ForceAgentDisconnect.
@@ -48,28 +49,55 @@ _logging_settings_matrix = [
 ]
 
 
-@override_generic_settings(SETTINGS, {
-    'developer_mode': True,
-})
+@override_generic_settings(
+    SETTINGS,
+    {
+        "developer_mode": True,
+    },
+)
 @pytest.mark.parametrize("feature_setting,subfeature_setting", _logging_settings_matrix)
 def test_logging_connect_supportability_metrics(feature_setting, subfeature_setting):
     metric_value = "enabled" if feature_setting and subfeature_setting else "disabled"
 
-    @override_generic_settings(SETTINGS, {
-        "application_logging.enabled": feature_setting,
-        "application_logging.forwarding.enabled": subfeature_setting,
-        "application_logging.metrics.enabled": subfeature_setting,
-        "application_logging.local_decorating.enabled": subfeature_setting,
-    })
-    @validate_internal_metrics([
-        ("Supportability/Logging/Forwarding/Python/%s" % metric_value, 1),
-        ("Supportability/Logging/LocalDecorating/Python/%s" % metric_value, 1),
-        ("Supportability/Logging/Metrics/Python/%s" % metric_value, 1),
-    ])
+    @override_generic_settings(
+        SETTINGS,
+        {
+            "application_logging.enabled": feature_setting,
+            "application_logging.forwarding.enabled": subfeature_setting,
+            "application_logging.metrics.enabled": subfeature_setting,
+            "application_logging.local_decorating.enabled": subfeature_setting,
+        },
+    )
+    @validate_internal_metrics(
+        [
+            (f"Supportability/Logging/Forwarding/Python/{metric_value}", 1),
+            (f"Supportability/Logging/LocalDecorating/Python/{metric_value}", 1),
+            (f"Supportability/Logging/Metrics/Python/{metric_value}", 1),
+        ]
+    )
     def test():
-        app = Application('Python Agent Test (agent_unittests-connect)')
+        app = Application("Python Agent Test (agent_unittests-connect)")
         app.connect_to_data_collector(None)
 
         assert app._active_session
-    
+
     test()
+
+
+@override_generic_settings(
+    SETTINGS,
+    {
+        "developer_mode": True,
+        "ai_monitoring.streaming.enabled": False,
+    },
+)
+@validate_internal_metrics(
+    [
+        ("Supportability/Python/ML/Streaming/Disabled", 1),
+    ]
+)
+def test_ml_streaming_disabled_supportability_metrics():
+    app = Application("Python Agent Test (agent_unittests-connect)")
+    app.connect_to_data_collector(None)
+
+    assert app._active_session

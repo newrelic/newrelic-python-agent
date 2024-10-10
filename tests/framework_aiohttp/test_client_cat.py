@@ -41,7 +41,6 @@ else:
 
 
 async def fetch(url, headers=None, raise_for_status=False, connector=None):
-
     kwargs = {}
     if version_info >= (2, 0):
         kwargs = {"raise_for_status": raise_for_status}
@@ -77,7 +76,7 @@ async def fetch(url, headers=None, raise_for_status=False, connector=None):
 def test_outbound_cross_process_headers(event_loop, cat_enabled, distributed_tracing, span_events, mock_header_server):
     @background_task(name="test_outbound_cross_process_headers")
     async def _test():
-        headers = await fetch("http://127.0.0.1:%d" % mock_header_server.port)
+        headers = await fetch(f"http://127.0.0.1:{mock_header_server.port}")
 
         transaction = current_transaction()
         transaction._test_request_headers = headers
@@ -122,9 +121,8 @@ _customer_headers_tests = [
 
 @pytest.mark.parametrize("customer_headers", _customer_headers_tests)
 def test_outbound_cross_process_headers_custom_headers(event_loop, customer_headers, mock_header_server):
-
     headers = event_loop.run_until_complete(
-        background_task()(fetch)("http://127.0.0.1:%d" % mock_header_server.port, customer_headers.copy())
+        background_task()(fetch)(f"http://127.0.0.1:{mock_header_server.port}", customer_headers.copy())
     )
 
     # always honor customer headers
@@ -133,7 +131,7 @@ def test_outbound_cross_process_headers_custom_headers(event_loop, customer_head
 
 
 def test_outbound_cross_process_headers_no_txn(event_loop, mock_header_server):
-    headers = event_loop.run_until_complete(fetch("http://127.0.0.1:%d" % mock_header_server.port))
+    headers = event_loop.run_until_complete(fetch(f"http://127.0.0.1:{mock_header_server.port}"))
 
     assert not headers.get(ExternalTrace.cat_id_key)
     assert not headers.get(ExternalTrace.cat_transaction_key)
@@ -148,7 +146,7 @@ def test_outbound_cross_process_headers_exception(event_loop, mock_header_server
         delattr(transaction, "guid")
 
         try:
-            headers = await fetch("http://127.0.0.1:%d" % mock_header_server.port)
+            headers = await fetch(f"http://127.0.0.1:{mock_header_server.port}")
 
             assert not headers.get(ExternalTrace.cat_id_key)
             assert not headers.get(ExternalTrace.cat_transaction_key)
@@ -174,7 +172,6 @@ class PoorResolvingConnector(aiohttp.TCPConnector):
 def test_process_incoming_headers(
     event_loop, cat_enabled, response_code, raise_for_status, connector_class, mock_external_http_server
 ):
-
     # It was discovered via packnsend that the `throw` method of the `_request`
     # coroutine is used in the case of poorly resolved hosts. An older version
     # of the instrumentation ended the ExternalTrace anytime `throw` was called
@@ -183,19 +180,19 @@ def test_process_incoming_headers(
     # always called and thus makes sure the trace is not ended before
     # StopIteration is called.
     server, response_values = mock_external_http_server
-    address = "http://127.0.0.1:%d" % server.port
+    address = f"http://127.0.0.1:{server.port}"
     port = server.port
 
     _test_cross_process_response_scoped_metrics = [
-        ("ExternalTransaction/127.0.0.1:%d/1#2/test" % port, 1 if cat_enabled else None)
+        (f"ExternalTransaction/127.0.0.1:{port}/1#2/test", 1 if cat_enabled else None)
     ]
 
     _test_cross_process_response_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
-        ("External/127.0.0.1:%d/all" % port, 1),
-        ("ExternalApp/127.0.0.1:%d/1#2/all" % port, 1 if cat_enabled else None),
-        ("ExternalTransaction/127.0.0.1:%d/1#2/test" % port, 1 if cat_enabled else None),
+        (f"External/127.0.0.1:{port}/all", 1),
+        (f"ExternalApp/127.0.0.1:{port}/1#2/all", 1 if cat_enabled else None),
+        (f"ExternalTransaction/127.0.0.1:{port}/1#2/test", 1 if cat_enabled else None),
     ]
 
     _test_cross_process_response_external_node_params = [
@@ -208,14 +205,14 @@ def test_process_incoming_headers(
         k for k, v in _test_cross_process_response_external_node_params
     ]
 
-    connector = connector_class() if connector_class else None
-
     @background_task(name="test_process_incoming_headers")
     async def _test():
         transaction = current_transaction()
         headers = create_incoming_headers(transaction)
 
         response_values.append((headers, response_code))
+
+        connector = connector_class() if connector_class else None
 
         await fetch(address, raise_for_status=raise_for_status, connector=connector)
 

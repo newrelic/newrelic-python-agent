@@ -2517,6 +2517,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_community.vectorstores.sqlitevec",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
         "langchain_community.vectorstores.sqlitevss",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",

@@ -61,6 +61,9 @@ from distutils.errors import (  # noqa
 
 
 def newrelic_agent_guess_next_version(tag_version):
+    if hasattr(tag_version, "tag"):  # For setuptools_scm 7.0+
+        tag_version = tag_version.tag
+
     version, _, _ = str(tag_version).partition("+")
     version_info = list(map(int, version.split(".")))
     if len(version_info) < 3:
@@ -142,6 +145,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Monitoring",
@@ -155,7 +159,7 @@ kwargs = dict(
         "git_describe_command": "git describe --dirty --tags --long --match *.*.*",
         "write_to": "newrelic/version.txt",
     },
-    setup_requires=["setuptools_scm>=3.2,<7"],
+    setup_requires=["setuptools_scm>=3.2,<9"],
     description="New Relic Python Agent",
     long_description=open(readme_file).read(),
     url="https://docs.newrelic.com/docs/apm/agents/python-agent/",

@@ -100,6 +100,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.semadb": "SemaDB",
     "langchain_community.vectorstores.singlestoredb": "SingleStoreDB",
     "langchain_community.vectorstores.sklearn": "SKLearnVectorStore",
+    "langchain_community.vectorstores.sqlitevec": "SQLiteVec",
     "langchain_community.vectorstores.sqlitevss": "SQLiteVSS",
     "langchain_community.vectorstores.starrocks": "StarRocks",
     "langchain_community.vectorstores.supabase": "SupabaseVectorStore",
@@ -452,9 +453,7 @@ def _record_tool_success(
     try:
         result = str(response)
     except Exception:
-        _logger.debug(
-            f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}"
-        )
+        _logger.debug(f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}")
     if settings.ai_monitoring.record_content.enabled:
         full_tool_event_dict.update(
             {
@@ -698,7 +697,7 @@ def _get_run_manager_info(transaction, run_args, instance, completion_id):
     # metadata and tags are keys in the config parameter.
     metadata = {}
     metadata.update((run_args.get("config") or {}).get("metadata") or {})
-    # Do not report intenral nr_completion_id in metadata.
+    # Do not report internal nr_completion_id in metadata.
     metadata = {key: value for key, value in metadata.items() if key != "nr_completion_id"}
     tags = []
     tags.extend((run_args.get("config") or {}).get("tags") or [])
@@ -709,6 +708,10 @@ def _get_llm_metadata(transaction):
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
+    if llm_context_attrs:
+        llm_metadata_dict.update(llm_context_attrs)
+
     return llm_metadata_dict
 
 

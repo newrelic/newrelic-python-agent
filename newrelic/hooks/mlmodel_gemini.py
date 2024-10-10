@@ -109,9 +109,11 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     except Exception as exc:
         _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
         raise
+
     kwargs["prompt"] = args[0]
     #_logger.debug("model_name: %s", instance.model_name);
     kwargs["model"] = instance.model_name.replace("models/", "")
+    
     _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
     return return_val
 
@@ -439,6 +441,10 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     except Exception as exc:
         _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
         raise
+
+    kwargs["prompt"] = args[0]
+    #_logger.debug("model_name: %s", instance.model_name);
+    kwargs["model"] = instance.model_name.replace("models/", "")
 
     _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
     return return_val
@@ -976,8 +982,8 @@ def instrument_gemini_api_resources_chat_completion(module):
     if hasattr(module, "GenerativeModel"):
         if hasattr(module.GenerativeModel, "generate_content"):
             wrap_function_wrapper(module, "GenerativeModel.generate_content", wrap_chat_completion_sync)
-        if hasattr(module.GenerativeModel, "acreate"):
-            wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_async)
+        if hasattr(module.GenerativeModel, "generate_content_async"):
+            wrap_function_wrapper(module, "GenerativeModel.generate_content_async", wrap_chat_completion_async)
         # This is to mark where we instrument so the SDK knows not to instrument them
         # again.
         setattr(module.GenerativeModel, "_nr_wrapped", True)

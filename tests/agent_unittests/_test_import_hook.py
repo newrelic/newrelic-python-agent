@@ -15,10 +15,10 @@
 def run():
     pass
 
-class A(object):
+class A():
     def run():
         pass
 
-class B(object):
+class B():
     def run():
         pass

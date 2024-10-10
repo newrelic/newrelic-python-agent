@@ -23,13 +23,15 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import set_background_task
+from newrelic.common import system_info
 
 DB_SETTINGS = memcached_settings()[0]
 
 MEMCACHED_HOST = DB_SETTINGS["host"]
 MEMCACHED_PORT = DB_SETTINGS["port"]
 MEMCACHED_NAMESPACE = str(os.getpid())
-INSTANCE_METRIC_NAME = "Datastore/instance/Memcached/%s/%s" % (MEMCACHED_HOST, MEMCACHED_PORT)
+INSTANCE_METRIC_HOST = system_info.gethostname() if MEMCACHED_HOST == "127.0.0.1" else MEMCACHED_HOST
+INSTANCE_METRIC_NAME = f"Datastore/instance/Memcached/{INSTANCE_METRIC_HOST}/{MEMCACHED_PORT}"
 
 _test_bt_set_get_delete_scoped_metrics = [
     ("Datastore/operation/Memcached/set", 1),
@@ -60,7 +62,7 @@ def test_bt_set_get_delete(loop):
     set_background_task(True)
     client = aiomcache.Client(host=MEMCACHED_HOST, port=MEMCACHED_PORT)
 
-    key = (MEMCACHED_NAMESPACE + "key").encode()
+    key = f"{MEMCACHED_NAMESPACE}key".encode()
     data = "value".encode()
 
     loop.run_until_complete(client.set(key, data))
@@ -99,7 +101,7 @@ def test_wt_set_get_delete(loop):
     set_background_task(False)
     client = aiomcache.Client(host=MEMCACHED_HOST, port=MEMCACHED_PORT)
 
-    key = (MEMCACHED_NAMESPACE + "key").encode()
+    key = f"{MEMCACHED_NAMESPACE}key".encode()
     data = "value".encode()
 
     loop.run_until_complete(client.set(key, data))

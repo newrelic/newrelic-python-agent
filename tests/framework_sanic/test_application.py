@@ -51,7 +51,7 @@ BASE_METRICS = [
     ("Function/_target_application:request_middleware", 1 if sanic_v19_to_v22_12 else 2),
 ]
 FRAMEWORK_METRICS = [
-    ("Python/Framework/Sanic/%s" % sanic.__version__, 1),
+    (f"Python/Framework/Sanic/{sanic.__version__}", 1),
 ]
 BASE_ATTRS = ["response.status", "response.headers.contentType", "response.headers.contentLength"]
 
@@ -90,11 +90,11 @@ def test_websocket(app):
     ),
 )
 def test_method_view(app, method):
-    metric_name = "Function/_target_application:MethodView." + method
+    metric_name = f"Function/_target_application:MethodView.{method}"
 
     @validate_code_level_metrics("_target_application.MethodView", method)
     @validate_transaction_metrics(
-        "_target_application:MethodView." + method,
+        f"_target_application:MethodView.{method}",
         scoped_metrics=[(metric_name, 1)],
         rollup_metrics=[(metric_name, 1)],
     )
@@ -137,22 +137,22 @@ def test_recorded_error(app, endpoint, sanic_version):
         pytest.skip()
 
     ERROR_METRICS = [
-        ("Function/_target_application:%s" % endpoint, 1),
+        (f"Function/_target_application:{endpoint}", 1),
     ]
 
     @validate_transaction_errors(errors=["builtins:ValueError"])
     @validate_base_transaction_event_attr
     @validate_transaction_metrics(
-        "_target_application:%s" % endpoint,
+        f"_target_application:{endpoint}",
         scoped_metrics=ERROR_METRICS,
         rollup_metrics=ERROR_METRICS + FRAMEWORK_METRICS,
     )
     def _test():
         if endpoint == "write_response_error":
             with pytest.raises(ValueError):
-                response = app.fetch("get", "/" + endpoint)
+                response = app.fetch("get", f"/{endpoint}")
         else:
-            response = app.fetch("get", "/" + endpoint)
+            response = app.fetch("get", f"/{endpoint}")
             assert response.status == 500
 
     _test()
@@ -327,7 +327,7 @@ def sync_failing_middleware(*args, **kwargs):
 def test_returning_middleware(app, middleware, attach_to, metric_name, transaction_name):
 
     metrics = [
-        ("Function/%s" % metric_name, 1),
+        (f"Function/{metric_name}", 1),
     ]
 
     @validate_code_level_metrics(*metric_name.split(":"))

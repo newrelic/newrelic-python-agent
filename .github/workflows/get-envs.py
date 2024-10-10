@@ -25,11 +25,7 @@ def main(f):
     filtered_envs = environments[GROUP_NUMBER::TOTAL_GROUPS]
     joined_envs = ",".join(filtered_envs)
 
-    assert joined_envs, "No environments found.\nenvironments = %s\nGROUP_NUMBER = %d\nTOTAL_GROUPS = %d" % (
-        str(environments),
-        GROUP_NUMBER + 1,
-        TOTAL_GROUPS,
-    )
+    assert joined_envs, f"No environments found.\nenvironments = {str(environments)}\nGROUP_NUMBER = {GROUP_NUMBER + 1}\nTOTAL_GROUPS = {TOTAL_GROUPS}"
     print(joined_envs)
 
 

@@ -92,7 +92,7 @@ firehose_event = {
 }
 
 
-class Context(object):
+class Context():
     aws_request_id = "cookies"
     invoked_function_arn = "arn"
     function_name = "cats"

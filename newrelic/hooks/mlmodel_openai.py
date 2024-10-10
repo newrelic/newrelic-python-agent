@@ -144,7 +144,7 @@ def create_chat_completion_message_event(
 
         # Response ID was set, append message index to it.
         if response_id:
-            message_id = "%s-%d" % (response_id, index)
+            message_id = f"{response_id}-{int(index)}"
         # No response IDs, use random UUID
         else:
             message_id = str(uuid.uuid4())
@@ -184,7 +184,7 @@ def create_chat_completion_message_event(
 
             # Response ID was set, append message index to it.
             if response_id:
-                message_id = "%s-%d" % (response_id, index)
+                message_id = f"{response_id}-{int(index)}"
             # No response IDs, use random UUID
             else:
                 message_id = str(uuid.uuid4())
@@ -927,8 +927,13 @@ def is_stream(wrapped, args, kwargs):
 def _get_llm_attributes(transaction):
     """Returns llm.* custom attributes off of the transaction."""
     custom_attrs_dict = transaction._custom_params
-    llm_metadata = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
-    return llm_metadata
+    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+
+    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
+    if llm_context_attrs:
+        llm_metadata_dict.update(llm_context_attrs)
+
+    return llm_metadata_dict
 
 
 def instrument_openai_api_resources_embedding(module):

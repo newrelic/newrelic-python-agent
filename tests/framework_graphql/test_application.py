@@ -93,27 +93,27 @@ def _graphql_base_rollup_metrics(framework, version, background_task=True):
     graphql_version = get_package_version("graphql-core")
 
     metrics = [
-        ("Python/Framework/GraphQL/%s" % graphql_version, 1),
+        (f"Python/Framework/GraphQL/{graphql_version}", 1),
         ("GraphQL/all", 1),
-        ("GraphQL/%s/all" % framework, 1),
+        (f"GraphQL/{framework}/all", 1),
     ]
     if background_task:
         metrics.extend(
             [
                 ("GraphQL/allOther", 1),
-                ("GraphQL/%s/allOther" % framework, 1),
+                (f"GraphQL/{framework}/allOther", 1),
             ]
         )
     else:
         metrics.extend(
             [
                 ("GraphQL/allWeb", 1),
-                ("GraphQL/%s/allWeb" % framework, 1),
+                (f"GraphQL/{framework}/allWeb", 1),
             ]
         )
 
     if framework != "GraphQL":
-        metrics.append(("Python/Framework/%s/%s" % (framework, version), 1))
+        metrics.append((f"Python/Framework/{framework}/{version}", 1))
 
     return metrics
 
@@ -143,12 +143,12 @@ def test_query_and_mutation(target_application):
     type_annotation = "!" if framework == "Strawberry" else ""
 
     _test_mutation_scoped_metrics = [
-        ("GraphQL/resolve/%s/storage_add" % framework, 1),
-        ("GraphQL/operation/%s/mutation/<anonymous>/%s" % (framework, mutation_path), 1),
+        (f"GraphQL/resolve/{framework}/storage_add", 1),
+        (f"GraphQL/operation/{framework}/mutation/<anonymous>/{mutation_path}", 1),
     ]
     _test_query_scoped_metrics = [
-        ("GraphQL/resolve/%s/storage" % framework, 1),
-        ("GraphQL/operation/%s/query/<anonymous>/storage" % framework, 1),
+        (f"GraphQL/resolve/{framework}/storage", 1),
+        (f"GraphQL/operation/{framework}/query/<anonymous>/storage", 1),
     ]
     _expected_mutation_operation_attributes = {
         "graphql.operation.type": "mutation",
@@ -168,16 +168,16 @@ def test_query_and_mutation(target_application):
         "graphql.field.name": "storage",
         "graphql.field.parentType": "Query",
         "graphql.field.path": "storage",
-        "graphql.field.returnType": "[String%s]%s" % (type_annotation, type_annotation),
+        "graphql.field.returnType": f"[String{type_annotation}]{type_annotation}",
     }
 
     @validate_code_level_metrics(
-        "framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage_add"
+        f"framework_{framework.lower()}._target_schema_{schema_type}", "resolve_storage_add"
     )
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
     @validate_transaction_metrics(
-        "mutation/<anonymous>/%s" % mutation_path,
+        f"mutation/<anonymous>/{mutation_path}",
         "GraphQL",
         scoped_metrics=_test_mutation_scoped_metrics,
         rollup_metrics=_test_mutation_scoped_metrics + _graphql_base_rollup_metrics(framework, version, is_bg),
@@ -192,7 +192,7 @@ def test_query_and_mutation(target_application):
         response = target_application(query)
         assert response["storage_add"] == "abc" or response["storage_add"]["string"] == "abc"
 
-    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_storage")
+    @validate_code_level_metrics(f"framework_{framework.lower()}._target_schema_{schema_type}", "resolve_storage")
     @validate_span_events(exact_agents=_expected_query_operation_attributes)
     @validate_span_events(exact_agents=_expected_query_resolver_attributes)
     @validate_transaction_metrics(
@@ -216,22 +216,22 @@ def test_query_and_mutation(target_application):
 def test_middleware(target_application, middleware):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
 
-    name = "%s:%s" % (middleware.__module__, middleware.__name__)
+    name = f"{middleware.__module__}:{middleware.__name__}"
     if "async" in name:
         if schema_type != "async":
             pytest.skip("Async middleware not supported in sync applications.")
 
     _test_middleware_metrics = [
-        ("GraphQL/operation/%s/query/<anonymous>/hello" % framework, 1),
-        ("GraphQL/resolve/%s/hello" % framework, 1),
-        ("Function/%s" % name, 1),
+        (f"GraphQL/operation/{framework}/query/<anonymous>/hello", 1),
+        (f"GraphQL/resolve/{framework}/hello", 1),
+        (f"Function/{name}", 1),
     ]
 
     # Span count 5: Transaction, Operation, Middleware, and 1 Resolver and Resolver Function
     span_count = 5 + extra_spans
 
     @validate_code_level_metrics(*name.split(":"))
-    @validate_code_level_metrics("framework_%s._target_schema_%s" % (framework.lower(), schema_type), "resolve_hello")
+    @validate_code_level_metrics(f"framework_{framework.lower()}._target_schema_{schema_type}", "resolve_hello")
     @validate_span_events(count=span_count)
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
@@ -255,21 +255,21 @@ def test_exception_in_middleware(target_application, middleware):
     query = "query MyQuery { error_middleware }"
     field = "error_middleware"
 
-    name = "%s:%s" % (middleware.__module__, middleware.__name__)
+    name = f"{middleware.__module__}:{middleware.__name__}"
     if "async" in name:
         if schema_type != "async":
             pytest.skip("Async middleware not supported in sync applications.")
 
     # Metrics
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/%s/query/MyQuery/%s" % (framework, field), 1),
-        ("GraphQL/resolve/%s/%s" % (framework, field), 1),
-        ("Function/%s" % name, 1),
+        (f"GraphQL/operation/{framework}/query/MyQuery/{field}", 1),
+        (f"GraphQL/resolve/{framework}/{field}", 1),
+        (f"Function/{name}", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
-        ("Errors/all%s" % ("Other" if is_bg else "Web"), 1),
-        ("Errors/%sTransaction/GraphQL/%s" % ("Other" if is_bg else "Web", name), 1),
+        (f"Errors/all{'Other' if is_bg else 'Web'}", 1),
+        (f"Errors/{'Other' if is_bg else 'Web'}Transaction/GraphQL/{name}", 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -306,19 +306,19 @@ def test_exception_in_middleware(target_application, middleware):
 @dt_enabled
 def test_exception_in_resolver(target_application, field):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
-    query = "query MyQuery { %s }" % field
+    query = f"query MyQuery {{ {field} }}"
 
-    txn_name = "framework_%s._target_schema_%s:resolve_error" % (framework.lower(), schema_type)
+    txn_name = f"framework_{framework.lower()}._target_schema_{schema_type}:resolve_error"
 
     # Metrics
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/%s/query/MyQuery/%s" % (framework, field), 1),
-        ("GraphQL/resolve/%s/%s" % (framework, field), 1),
+        (f"GraphQL/operation/{framework}/query/MyQuery/{field}", 1),
+        (f"GraphQL/resolve/{framework}/{field}", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
-        ("Errors/all%s" % ("Other" if is_bg else "Web"), 1),
-        ("Errors/%sTransaction/GraphQL/%s" % ("Other" if is_bg else "Web", txn_name), 1),
+        (f"Errors/all{'Other' if is_bg else 'Web'}", 1),
+        (f"Errors/{'Other' if is_bg else 'Web'}Transaction/GraphQL/{txn_name}", 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -373,12 +373,12 @@ def test_exception_in_validation(target_application, query, exc_class):
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [
-        ("GraphQL/operation/%s/<unknown>/<anonymous>/<unknown>" % framework, 1),
+        (f"GraphQL/operation/{framework}/<unknown>/<anonymous>/<unknown>", 1),
     ]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
-        ("Errors/all%s" % ("Other" if is_bg else "Web"), 1),
-        ("Errors/%sTransaction/GraphQL/%s" % ("Other" if is_bg else "Web", txn_name), 1),
+        (f"Errors/all{'Other' if is_bg else 'Web'}", 1),
+        (f"Errors/{'Other' if is_bg else 'Web'}Transaction/GraphQL/{txn_name}", 1),
     ] + _test_exception_scoped_metrics
 
     # Attributes
@@ -407,7 +407,7 @@ def test_exception_in_validation(target_application, query, exc_class):
 @dt_enabled
 def test_operation_metrics_and_attrs(target_application):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
-    operation_metrics = [("GraphQL/operation/%s/query/MyQuery/library" % framework, 1)]
+    operation_metrics = [(f"GraphQL/operation/{framework}/query/MyQuery/library", 1)]
     operation_attrs = {
         "graphql.operation.type": "query",
         "graphql.operation.name": "MyQuery",
@@ -437,14 +437,14 @@ def test_operation_metrics_and_attrs(target_application):
 @dt_enabled
 def test_field_resolver_metrics_and_attrs(target_application):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
-    field_resolver_metrics = [("GraphQL/resolve/%s/hello" % framework, 1)]
+    field_resolver_metrics = [(f"GraphQL/resolve/{framework}/hello", 1)]
 
     type_annotation = "!" if framework == "Strawberry" else ""
     graphql_attrs = {
         "graphql.field.name": "hello",
         "graphql.field.parentType": "Query",
         "graphql.field.path": "hello",
-        "graphql.field.returnType": "String" + type_annotation,
+        "graphql.field.returnType": f"String{type_annotation}",
     }
 
     # Span count 4: Transaction, Operation, and 1 Resolver and Resolver function
@@ -545,9 +545,9 @@ _test_queries = [
 def test_deepest_unique_path(target_application, query, expected_path):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     if expected_path == "/error":
-        txn_name = "framework_%s._target_schema_%s:resolve_error" % (framework.lower(), schema_type)
+        txn_name = f"framework_{framework.lower()}._target_schema_{schema_type}:resolve_error"
     else:
-        txn_name = "query/<anonymous>%s" % expected_path
+        txn_name = f"query/<anonymous>{expected_path}"
 
     @validate_transaction_metrics(
         txn_name,

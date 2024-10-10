@@ -88,7 +88,7 @@ def assert_payload(payload, payload_assertions, major_version, minor_version):
     #   payload['d']['ac'] -> payload['d.ac']
     d = payload.pop("d")
     for key, value in d.items():
-        payload["d.%s" % key] = value
+        payload[f"d.{key}"] = value
 
     for expected in payload_assertions.get("expected", []):
         assert expected in payload

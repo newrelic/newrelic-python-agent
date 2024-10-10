@@ -80,21 +80,21 @@ AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION = "us-east-1"
 
-TEST_QUEUE = "python-agent-test-%s" % uuid.uuid4()
+TEST_QUEUE = f"python-agent-test-{uuid.uuid4()}"
 
 
 _sqs_scoped_metrics = [
-    ("MessageBroker/SQS/Queue/Produce/Named/%s" % TEST_QUEUE, 2),
-    ("External/%s/botocore/POST" % url, 3),
+    (f"MessageBroker/SQS/Queue/Produce/Named/{TEST_QUEUE}", 2),
+    (f"External/{url}/botocore/POST", 3),
 ]
 
 _sqs_rollup_metrics = [
-    ("MessageBroker/SQS/Queue/Produce/Named/%s" % TEST_QUEUE, 2),
-    ("MessageBroker/SQS/Queue/Consume/Named/%s" % TEST_QUEUE, 1),
+    (f"MessageBroker/SQS/Queue/Produce/Named/{TEST_QUEUE}", 2),
+    (f"MessageBroker/SQS/Queue/Consume/Named/{TEST_QUEUE}", 1),
     ("External/all", 3),
     ("External/allOther", 3),
-    ("External/%s/all" % url, 3),
-    ("External/%s/botocore/POST" % url, 3),
+    (f"External/{url}/all", 3),
+    (f"External/{url}/botocore/POST", 3),
 ]
 
 _sqs_scoped_metrics_malformed = [

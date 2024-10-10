@@ -36,16 +36,16 @@ from newrelic.api.transaction import (
 from newrelic.core.config import _parse_attributes
 
 
-class NonPrintableObject(object):
+class NonPrintableObject():
     def __str__(self):
         raise RuntimeError("Unable to print object.")
 
     __repr__ = __str__
 
 
-class NonSerializableObject(object):
+class NonSerializableObject():
     def __str__(self):
-        return "<%s object>" % self.__class__.__name__
+        return f"<{self.__class__.__name__} object>"
 
     __repr__ = __str__
 
@@ -118,8 +118,8 @@ _serialized_attributes = {
     "non_serializable_attr": NonSerializableObject(),
     "non_printable_attr": NonPrintableObject(),
     "attr_value_too_long": "*" * 256,
-    "attr_name_too_long_" + ("*" * 237): "value",
-    "attr_name_with_prefix_too_long_" + ("*" * 220): "value",
+    f"attr_name_too_long_{'*' * 237}": "value",
+    f"attr_name_with_prefix_too_long_{'*' * 220}": "value",
 }
 
 _exercise_record_log_event_events = [
@@ -297,9 +297,9 @@ _test_record_log_event_context_attribute_filtering_params = [
 @pytest.mark.parametrize("include,exclude,attr,expected", _test_record_log_event_context_attribute_filtering_params)
 def test_record_log_event_context_attribute_filtering_inside_transaction(include, exclude, attr, expected, prefix):
     if expected:
-        expected_event = {"required_attrs": [".".join((prefix, attr))]}
+        expected_event = {"required_attrs": [f"{prefix}.{attr}"]}
     else:
-        expected_event = {"forgone_attrs": [".".join((prefix, attr))]}
+        expected_event = {"forgone_attrs": [f"{prefix}.{attr}"]}
 
     @override_application_settings(
         {
@@ -326,9 +326,9 @@ def test_record_log_event_context_attribute_filtering_inside_transaction(include
 @reset_core_stats_engine()
 def test_record_log_event_context_attribute_filtering_outside_transaction(include, exclude, attr, expected, prefix):
     if expected:
-        expected_event = {"required_attrs": [".".join((prefix, attr))]}
+        expected_event = {"required_attrs": [f"{prefix}.{attr}"]}
     else:
-        expected_event = {"forgone_attrs": [".".join((prefix, attr))]}
+        expected_event = {"forgone_attrs": [f"{prefix}.{attr}"]}
 
     @override_application_settings(
         {

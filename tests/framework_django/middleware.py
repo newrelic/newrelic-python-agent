@@ -19,7 +19,7 @@ class Custom410(Exception):
     pass
 
 
-class ExceptionTo410Middleware(object):
+class ExceptionTo410Middleware():
 
     def __init__(self, get_response=None):
         self.get_response = get_response

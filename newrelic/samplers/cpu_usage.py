@@ -25,7 +25,7 @@ from newrelic.common.stopwatch import start_timer
 from newrelic.samplers.decorators import data_source_factory
 
 @data_source_factory(name='CPU Usage')
-class _CPUUsageDataSource(object):
+class _CPUUsageDataSource():
 
     def __init__(self, settings, environ):
         self._timer = None

@@ -100,6 +100,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.semadb": "SemaDB",
     "langchain_community.vectorstores.singlestoredb": "SingleStoreDB",
     "langchain_community.vectorstores.sklearn": "SKLearnVectorStore",
+    "langchain_community.vectorstores.sqlitevec": "SQLiteVec",
     "langchain_community.vectorstores.sqlitevss": "SQLiteVSS",
     "langchain_community.vectorstores.starrocks": "StarRocks",
     "langchain_community.vectorstores.supabase": "SupabaseVectorStore",
@@ -268,7 +269,7 @@ def _record_vector_search_success(transaction, linking_metadata, ft, search_id, 
         page_content = getattr(doc, "page_content")
         metadata = getattr(doc, "metadata") or {}
 
-        metadata_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+        metadata_dict = {f"metadata.{key}": value for key, value in metadata.items()}
 
         llm_vector_search_result = {
             "id": str(uuid.uuid4()),
@@ -433,7 +434,7 @@ def _record_tool_success(
     # Update tags and metadata previously obtained from run_args with instance values
     metadata.update(getattr(instance, "metadata", None) or {})
     tags.extend(getattr(instance, "tags", None) or [])
-    full_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
+    full_tool_event_dict = {f"metadata.{key}": value for key, value in metadata.items() if key != "nr_tool_id"}
     full_tool_event_dict.update(
         {
             "id": tool_id,
@@ -452,9 +453,7 @@ def _record_tool_success(
     try:
         result = str(response)
     except Exception:
-        _logger.debug(
-            "Failed to convert tool response into a string.\n%s" % traceback.format_exception(*sys.exc_info())
-        )
+        _logger.debug(f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}")
     if settings.ai_monitoring.record_content.enabled:
         full_tool_event_dict.update(
             {
@@ -482,7 +481,7 @@ def _record_tool_error(
     tags.extend(getattr(instance, "tags", None) or [])
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    error_tool_event_dict = {"metadata.%s" % key: value for key, value in metadata.items() if key != "nr_tool_id"}
+    error_tool_event_dict = {f"metadata.{key}": value for key, value in metadata.items() if key != "nr_tool_id"}
     error_tool_event_dict.update(
         {
             "id": tool_id,
@@ -663,7 +662,7 @@ def _create_error_chain_run_events(transaction, instance, run_args, completion_i
     input_message_list = [_input]
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_chat_completion_summary_dict = {f"metadata.{key}": value for key, value in metadata.items()}
     full_chat_completion_summary_dict.update(
         {
             "id": completion_id,
@@ -698,7 +697,7 @@ def _get_run_manager_info(transaction, run_args, instance, completion_id):
     # metadata and tags are keys in the config parameter.
     metadata = {}
     metadata.update((run_args.get("config") or {}).get("metadata") or {})
-    # Do not report intenral nr_completion_id in metadata.
+    # Do not report internal nr_completion_id in metadata.
     metadata = {key: value for key, value in metadata.items() if key != "nr_completion_id"}
     tags = []
     tags.extend((run_args.get("config") or {}).get("tags") or [])
@@ -709,6 +708,10 @@ def _get_llm_metadata(transaction):
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
+    if llm_context_attrs:
+        llm_metadata_dict.update(llm_context_attrs)
+
     return llm_metadata_dict
 
 
@@ -729,12 +732,11 @@ def _create_successful_chain_run_events(
             output_message_list = [str(response)]
         except Exception as e:
             _logger.warning(
-                "Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n%s"
-                % traceback.format_exception(*sys.exc_info())
+                f"Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n{traceback.format_exception(*sys.exc_info())}"
             )
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    full_chat_completion_summary_dict = {"metadata.%s" % key: value for key, value in metadata.items()}
+    full_chat_completion_summary_dict = {f"metadata.{key}": value for key, value in metadata.items()}
     full_chat_completion_summary_dict.update(
         {
             "id": completion_id,
@@ -877,9 +879,9 @@ def instrument_langchain_chains_base(module):
 def instrument_langchain_vectorstore_similarity_search(module):
     def _instrument_class(module, vector_class):
         if hasattr(getattr(module, vector_class, ""), "similarity_search"):
-            wrap_function_wrapper(module, "%s.similarity_search" % vector_class, wrap_similarity_search)
+            wrap_function_wrapper(module, f"{vector_class}.similarity_search", wrap_similarity_search)
         if hasattr(getattr(module, vector_class, ""), "asimilarity_search"):
-            wrap_function_wrapper(module, "%s.asimilarity_search" % vector_class, wrap_asimilarity_search)
+            wrap_function_wrapper(module, f"{vector_class}.asimilarity_search", wrap_asimilarity_search)
 
     vector_classes = VECTORSTORE_CLASSES.get(module.__name__)
     if vector_classes is None:

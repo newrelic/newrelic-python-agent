@@ -30,14 +30,14 @@ from newrelic.api.background_task import background_task
 TEST_TABLE = "python-agent-test"
 
 _dynamodb_scoped_metrics = [
-    ("Datastore/statement/DynamoDB/%s/create_table" % TEST_TABLE, 1),
-    ("Datastore/statement/DynamoDB/%s/put_item" % TEST_TABLE, 1),
-    ("Datastore/statement/DynamoDB/%s/get_item" % TEST_TABLE, 1),
-    ("Datastore/statement/DynamoDB/%s/update_item" % TEST_TABLE, 1),
-    ("Datastore/statement/DynamoDB/%s/query" % TEST_TABLE, 1),
-    ("Datastore/statement/DynamoDB/%s/scan" % TEST_TABLE, 1),
-    ("Datastore/statement/DynamoDB/%s/delete_item" % TEST_TABLE, 1),
-    ("Datastore/statement/DynamoDB/%s/delete_table" % TEST_TABLE, 1),
+    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/create_table", 1),
+    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/put_item", 1),
+    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/get_item", 1),
+    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/update_item", 1),
+    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/query", 1),
+    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/scan", 1),
+    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/delete_item", 1),
+    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/delete_table", 1),
 ]
 
 _dynamodb_rollup_metrics = [
@@ -75,7 +75,7 @@ def test_aiobotocore_dynamodb(loop):
             async with session.create_client(
                 "dynamodb",
                 region_name="us-east-1",
-                endpoint_url="http://localhost:%d" % PORT,
+                endpoint_url=f"http://localhost:{PORT}",
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             ) as client:

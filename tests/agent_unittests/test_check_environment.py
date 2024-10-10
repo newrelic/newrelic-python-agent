@@ -30,7 +30,7 @@ def test_check_environment_failing(content):
         os.makedirs(uwsgi_dir)
         with open(init_file, 'w') as f:
             for key, value in content.items():
-                f.write("%s = %s" % (key, value))
+                f.write(f"{key} = {value}")
 
         sys.path.insert(0, temp_dir)
         import uwsgi

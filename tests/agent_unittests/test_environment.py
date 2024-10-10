@@ -24,7 +24,7 @@ settings = global_settings()
 
 
 def module(version):
-    class Module(object):
+    class Module():
         pass
 
     if version:
@@ -48,7 +48,7 @@ def test_plugin_list():
     # Check that bogus plugins don't get reported
     assert "newrelic.hooks.newrelic" not in plugin_list
     # Check that plugin that should get reported has version info.
-    assert "pytest (%s)" % (pytest.__version__) in plugin_list
+    assert f"pytest ({pytest.__version__})" in plugin_list
 
 
 @override_generic_settings(settings, {"package_reporting.enabled": False})
@@ -68,7 +68,7 @@ def test_plugin_list_when_package_reporting_disabled():
     assert plugin_list == []
 
 
-class NoIteratorDict(object):
+class NoIteratorDict():
     def __init__(self, d):
         self.d = d
 

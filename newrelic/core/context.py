@@ -24,7 +24,7 @@ from newrelic.core.trace_cache import trace_cache
 _logger = logging.getLogger(__name__)
 
 
-class ContextOf(object):
+class ContextOf():
     def __init__(self, trace=None, request=None, trace_cache_id=None, strict=True):
         self.trace = None
         self.trace_cache = trace_cache()
@@ -48,7 +48,7 @@ class ContextOf(object):
         elif trace_cache_id is not None:
             self.trace = self.trace_cache.get(trace_cache_id, None)
             if self.trace is None:
-                log_propagation_failure("No trace with id %d." % trace_cache_id)
+                log_propagation_failure(f"No trace with id {trace_cache_id}.")
         elif hasattr(request, "_nr_trace") and request._nr_trace is not None:
             # Unpack traces from objects patched with them
             self.trace = request._nr_trace

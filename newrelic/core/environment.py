@@ -245,7 +245,7 @@ def environment_settings():
             # If it has no version it's likely not a real package so don't report it unless
             # it's a new relic hook.
             if nr_hook or version:
-                plugins.append("%s (%s)" % (name, version))
+                plugins.append(f"{name} ({version})")
 
     env.append(("Plugin List", plugins))
 

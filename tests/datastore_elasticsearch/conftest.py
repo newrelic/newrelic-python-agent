@@ -39,7 +39,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 ES_VERSION = tuple([int(n) for n in get_package_version("elasticsearch").split(".")])
 ES_SETTINGS = elasticsearch_settings()[0]
 ES_MULTIPLE_SETTINGS = elasticsearch_settings()
-ES_URL = "http://%s:%s" % (ES_SETTINGS["host"], ES_SETTINGS["port"])
+ES_URL = f"http://{ES_SETTINGS['host']}:{ES_SETTINGS['port']}"
 
 
 @pytest.fixture(scope="session")

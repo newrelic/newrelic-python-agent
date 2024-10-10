@@ -131,7 +131,7 @@ def create_chat_completion_message_event(
         content = message.get("content", "")
 
         if response_id:
-            id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
+            id_ = f"{response_id}-{int(index)}"  # Response ID was set, append message index to it.
         else:
             id_ = str(uuid.uuid4())  # No response IDs, use random UUID
 
@@ -169,7 +169,7 @@ def create_chat_completion_message_event(
             content = content[0]
 
         if response_id:
-            id_ = "%s-%d" % (response_id, index)  # Response ID was set, append message index to it.
+            id_ = f"{response_id}-{int(index)}"  # Response ID was set, append message index to it.
         else:
             id_ = str(uuid.uuid4())  # No response IDs, use random UUID
 
@@ -522,7 +522,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         operation = "embedding" if is_embedding else "completion"
 
         # Function trace may not be exited in this function in the case of streaming, so start manually
-        ft = FunctionTrace(name=function_name, group="Llm/%s/Bedrock" % (operation))
+        ft = FunctionTrace(name=function_name, group=f"Llm/{operation}/Bedrock")
         ft.__enter__()
 
         # Get trace information
@@ -786,6 +786,10 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+
+    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
+    if llm_context_attrs:
+        llm_metadata_dict.update(llm_context_attrs)
 
     span_id = bedrock_attrs.get("span_id", None)
     trace_id = bedrock_attrs.get("trace_id", None)

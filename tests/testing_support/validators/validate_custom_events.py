@@ -18,7 +18,6 @@ import time
 from testing_support.fixtures import catch_background_exceptions
 
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
-from newrelic.packages import six
 
 
 def validate_custom_events(events):
@@ -67,33 +66,33 @@ def _check_event_attributes(expected, captured, mismatches):
     intrinsics = captured[0]
 
     if intrinsics["type"] != expected[0]["type"]:
-        mismatches.append("key: type, value:<%s><%s>" % (expected[0]["type"], captured[0].get("type", None)))
+        mismatches.append(f"key: type, value:<{expected[0]['type']}><{captured[0].get('type', None)}>")
         return False
 
     now = time.time()
 
     if not (isinstance(intrinsics["timestamp"], int) and intrinsics["timestamp"] <= 1000.0 * now):
-        mismatches.append("key: timestamp, value:<%s>" % intrinsics["timestamp"])
+        mismatches.append(f"key: timestamp, value:<{intrinsics['timestamp']}>")
         return False
 
-    captured_keys = set(six.iterkeys(captured[1]))
-    expected_keys = set(six.iterkeys(expected[1]))
+    captured_keys = set(captured[1].keys())
+    expected_keys = set(expected[1].keys())
     extra_keys = captured_keys - expected_keys
 
     if extra_keys:
-        mismatches.append("extra_keys: %s" % str(tuple(extra_keys)))
+        mismatches.append(f"extra_keys: {str(tuple(extra_keys))}")
         return False
 
-    for key, value in six.iteritems(expected[1]):
+    for key, value in expected[1].items():
         if key in captured[1]:
             captured_value = captured[1].get(key, None)
         else:
-            mismatches.append("key: %s, value:<%s><%s>" % (key, value, captured[1].get(key, None)))
+            mismatches.append(f"key: {key}, value:<{value}><{captured[1].get(key, None)}>")
             return False
 
         if value is not None:
             if value != captured_value:
-                mismatches.append("key: %s, value:<%s><%s>" % (key, value, captured_value))
+                mismatches.append(f"key: {key}, value:<{value}><{captured_value}>")
                 return False
 
     return True
@@ -101,9 +100,9 @@ def _check_event_attributes(expected, captured, mismatches):
 
 def _event_details(matching_custom_events, captured, mismatches):
     details = [
-        "matching_custom_events=%d" % matching_custom_events,
-        "mismatches=%s" % mismatches,
-        "captured_events=%s" % captured,
+        f"matching_custom_events={matching_custom_events}",
+        f"mismatches={mismatches}",
+        f"captured_events={captured}",
     ]
 
     return "\n".join(details)

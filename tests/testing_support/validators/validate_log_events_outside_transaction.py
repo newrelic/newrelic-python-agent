@@ -17,7 +17,6 @@ import copy
 from testing_support.fixtures import catch_background_exceptions
 
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
-from newrelic.packages import six
 
 
 def validate_log_events_outside_transaction(events=None, required_attrs=None, forgone_attrs=None):
@@ -62,23 +61,23 @@ def validate_log_events_outside_transaction(events=None, required_attrs=None, fo
         return val
 
     def _check_log_attributes(expected, required_attrs, forgone_attrs, captured, mismatches):
-        for key, value in six.iteritems(expected):
+        for key, value in expected.items():
             if hasattr(captured, key):
                 captured_value = getattr(captured, key, None)
             elif key in captured.attributes:
                 captured_value = captured.attributes[key]
             else:
-                mismatches.append("key: %s, value:<%s><%s>" % (key, value, getattr(captured, key, None)))
+                mismatches.append(f"key: {key}, value:<{value}><{getattr(captured, key, None)}>")
                 return False
 
             if value is not None:
                 if value != captured_value:
-                    mismatches.append("key: %s, value:<%s><%s>" % (key, value, captured_value))
+                    mismatches.append(f"key: {key}, value:<{value}><{captured_value}>")
                     return False
 
         for key in required_attrs:
             if not hasattr(captured, key) and key not in captured.attributes:
-                mismatches.append("required_key: %s" % key)
+                mismatches.append(f"required_key: {key}")
                 return False
 
         for key in forgone_attrs:
@@ -88,16 +87,16 @@ def validate_log_events_outside_transaction(events=None, required_attrs=None, fo
                 elif key in captured.attributes:
                     captured_value = captured.attributes[key]
 
-                mismatches.append("forgone_key: %s, value:<%s>" % (key, captured_value))
+                mismatches.append(f"forgone_key: {key}, value:<{captured_value}>")
                 return False
 
         return True
 
     def _log_details(matching_log_events, captured, mismatches):
         details = [
-            "matching_log_events=%d" % matching_log_events,
-            "mismatches=%s" % mismatches,
-            "captured_events=%s" % captured,
+            f"matching_log_events={matching_log_events}",
+            f"mismatches={mismatches}",
+            f"captured_events={captured}",
         ]
 
         return "\n".join(details)

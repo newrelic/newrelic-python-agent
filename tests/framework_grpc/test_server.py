@@ -35,17 +35,12 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.core.config import global_settings
-from newrelic.packages import six
+
+from newrelic.common.package_version_utils import get_package_version
 
 
-def select_python_version(py2, py3):
-    return six.PY3 and py3 or py2
+GRPC_VERSION = get_package_version("grpc")
 
-
-if hasattr(grpc, "__version__"):
-    GRPC_VERSION = tuple(int(v) for v in grpc.__version__.split("."))
-else:
-    GRPC_VERSION = None
 
 _test_matrix = [
     "method_name,streaming_request",
@@ -57,7 +52,7 @@ _test_matrix = [
 def test_simple(method_name, streaming_request, mock_grpc_server, stub):
     port = mock_grpc_server
     request = create_request(streaming_request)
-    _transaction_name = "sample_application:SampleApplicationServicer.{}".format(method_name)
+    _transaction_name = f"sample_application:SampleApplicationServicer.{method_name}"
     method = getattr(stub, method_name)
 
     @validate_code_level_metrics("sample_application.SampleApplicationServicer", method_name)
@@ -88,16 +83,16 @@ def test_raises_response_status(method_name, streaming_request, mock_grpc_server
     port = mock_grpc_server
     request = create_request(streaming_request)
 
-    method_name = method_name + "Raises"
+    method_name = f"{method_name}Raises"
 
-    _transaction_name = "sample_application:SampleApplicationServicer.{}".format(method_name)
+    _transaction_name = f"sample_application:SampleApplicationServicer.{method_name}"
     method = getattr(stub, method_name)
 
     status_code = str(grpc.StatusCode.UNKNOWN.value[0])
 
     @validate_code_level_metrics("sample_application.SampleApplicationServicer", method_name)
     @validate_transaction_errors(
-        errors=[select_python_version(py2="exceptions:AssertionError", py3="builtins:AssertionError")]
+        errors=["builtins:AssertionError"]
     )
     @validate_transaction_metrics(_transaction_name)
     @override_application_settings({"attributes.include": ["request.*"]})
@@ -128,7 +123,7 @@ def test_abort(method_name, streaming_request, mock_grpc_server, stub):
     method = getattr(stub, method_name)
 
     @validate_code_level_metrics("sample_application.SampleApplicationServicer", method_name)
-    @validate_transaction_errors(errors=[select_python_version(py2="exceptions:Exception", py3="builtins:Exception")])
+    @validate_transaction_errors(errors=["builtins:Exception"])
     @wait_for_transaction_completion
     def _doit():
         with pytest.raises(grpc.RpcError) as error:
@@ -149,7 +144,7 @@ def test_abort_with_status(method_name, streaming_request, mock_grpc_server, stu
     method = getattr(stub, method_name)
 
     @validate_code_level_metrics("sample_application.SampleApplicationServicer", method_name)
-    @validate_transaction_errors(errors=[select_python_version(py2="exceptions:Exception", py3="builtins:Exception")])
+    @validate_transaction_errors(errors=["builtins:Exception"])
     @wait_for_transaction_completion
     def _doit():
         with pytest.raises(grpc.RpcError) as error:

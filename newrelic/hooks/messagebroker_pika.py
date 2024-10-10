@@ -413,7 +413,7 @@ def _wrap_Channel_consume_callback(module, obj, wrap_consume):
                     source=wrapped,
                 ) as mt:
                     # Improve transaction naming
-                    _new_txn_name = "RabbitMQ/Exchange/%s/%s" % (exchange, name)
+                    _new_txn_name = f"RabbitMQ/Exchange/{exchange}/{name}"
                     mt.set_transaction_name(_new_txn_name, group="Message")
 
                     # Record that something went horribly wrong

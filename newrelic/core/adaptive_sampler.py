@@ -17,7 +17,7 @@ import time
 import threading
 
 
-class AdaptiveSampler(object):
+class AdaptiveSampler():
     def __init__(self, sampling_target, sampling_period):
         self.adaptive_target = 0.0
         self.period = sampling_period

@@ -46,6 +46,7 @@ _all_endpoints = (
     ("send_agent_command_results", ({0: {}},)),
     ("agent_settings", ({},)),
     ("send_span_events", (EMPTY_SAMPLES, ())),
+    ("update_loaded_modules", ("Jars", [[" ", " ", {}]])),
     ("shutdown_session", ()),
 )
 

@@ -15,16 +15,15 @@
 import sys
 
 import pytest
-from testing_support.fixtures import override_generic_settings
 
 from newrelic.core.config import global_settings
-from newrelic.core.environment import environment_settings
+from newrelic.core.environment import environment_settings, plugins
 
 settings = global_settings()
 
 
 def module(version):
-    class Module():
+    class Module:
         pass
 
     if version:
@@ -35,40 +34,17 @@ def module(version):
 
 def test_plugin_list():
     # Let's pretend we fired an import hook
-    import newrelic.hooks.adapter_gunicorn  # noqa: F401
+    import pytest  # noqa: F401
 
-    environment_info = environment_settings()
-
-    for key, plugin_list in environment_info:
-        if key == "Plugin List":
-            break
-    else:
-        assert False, "'Plugin List' not found"
-
-    # Check that bogus plugins don't get reported
-    assert "newrelic.hooks.newrelic" not in plugin_list
-    # Check that plugin that should get reported has version info.
-    assert f"pytest ({pytest.__version__})" in plugin_list
+    for name, version, _ in plugins():
+        if name == "newrelic.hooks.newrelic":
+            assert False, "Bogus plugin found"
+        if name == "pytest":
+            # Check that plugin that should get reported has version info.
+            assert version == pytest.__version__
 
 
-@override_generic_settings(settings, {"package_reporting.enabled": False})
-def test_plugin_list_when_package_reporting_disabled():
-    # Let's pretend we fired an import hook
-    import newrelic.hooks.adapter_gunicorn  # noqa: F401
-
-    environment_info = environment_settings()
-
-    for key, plugin_list in environment_info:
-        if key == "Plugin List":
-            break
-    else:
-        assert False, "'Plugin List' not found"
-
-    # Check that bogus plugins don't get reported
-    assert plugin_list == []
-
-
-class NoIteratorDict():
+class NoIteratorDict:
     def __init__(self, d):
         self.d = d
 
@@ -83,20 +59,6 @@ class NoIteratorDict():
 
     def __contains__(self, *args, **kwargs):
         return self.d.__contains__(*args, **kwargs)
-
-
-def test_plugin_list_uses_no_sys_modules_iterator(monkeypatch):
-    modules = NoIteratorDict(sys.modules)
-    monkeypatch.setattr(sys, "modules", modules)
-
-    # If environment_settings iterates over sys.modules, an attribute error will be generated
-    environment_info = environment_settings()
-
-    for key, plugin_list in environment_info:
-        if key == "Plugin List":
-            break
-    else:
-        assert False, "'Plugin List' not found"
 
 
 @pytest.mark.parametrize(

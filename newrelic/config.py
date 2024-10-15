@@ -911,6 +911,29 @@ def apply_local_high_security_mode_setting(settings):
     return settings
 
 
+def _toml_config_to_configparser_dict(d, top=None, _path=None):
+    top = top or {"newrelic": {}}
+    _path = _path or ""
+    for key, value in d.items():
+        if isinstance(value, dict):
+            _toml_config_to_configparser_dict(value, top, f"{_path}.{key}" if _path else key)
+        else:
+            fixed_value = " ".join(value) if isinstance(value, list) else value
+            path_split = _path.split(".")
+            # Handle environments
+            if _path.startswith("env."):
+                env_key = f"newrelic:{path_split[1]}"
+                fixed_key = ".".join((*path_split[2:], key))
+                top[env_key] = {**top.get(env_key, {}), fixed_key: fixed_value}
+            # Handle import-hook:... configuration
+            elif _path.startswith("import-hook."):
+                import_hook_key = f"import-hook:{'.'.join(path_split[1:])}"
+                top[import_hook_key] = {**top.get(import_hook_key, {}), key: fixed_value}
+            else:
+                top["newrelic"][f"{_path}.{key}" if _path else key] = fixed_value
+    return top
+
+
 def _load_configuration(
     config_file=None,
     environment=None,
@@ -994,8 +1017,20 @@ def _load_configuration(
 
     # Now read in the configuration file. Cache the config file
     # name in internal settings object as indication of succeeding.
-
-    if not _config_object.read([config_file]):
+    if config_file.endswith(".toml"):
+        try:
+            import tomllib
+        except ImportError:
+            raise newrelic.api.exceptions.ConfigurationError(
+                "TOML configuration file can only be used if tomllib is available (Python 3.11+)."
+            )
+        with open(config_file, "rb") as f:
+            content = tomllib.load(f)
+            newrelic_section = content.get("tool", {}).get("newrelic")
+            if not newrelic_section:
+                raise newrelic.api.exceptions.ConfigurationError("New Relic configuration not found in TOML file.")
+            _config_object.read_dict(_toml_config_to_configparser_dict(newrelic_section))
+    elif not _config_object.read([config_file]):
         raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
 
     _settings.config_file = config_file

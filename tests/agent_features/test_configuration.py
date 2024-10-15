@@ -949,6 +949,73 @@ def test_initialize_developer_mode(section, expect_error, logger):
         assert "CONFIGURATION ERROR" not in logger.caplog.records
 
 
+newrelic_toml_contents = b"""
+[tool.newrelic]
+app_name = "test11"
+monitor_mode = true
+
+[[tool.newrelic.url_rules]]
+ignore = false
+match_expression = ".*\\\\.(ace|arj|ini|txt|udl|plist|css|gif|ico|jpe?g|js|png|swf|woff|caf|aiff|m4v|mpe?g|mp3|mp4|mov)$"
+
+[tool.newrelic.env.development]
+app_name = "test11 (Development)"
+
+[tool.newrelic.env.production]
+app_name = "test11 (Production)"
+log_level = "error"
+
+[tool.newrelic.env.production.distributed_tracing]
+enabled = false
+
+[tool.newrelic.error_collector]
+enabled = true
+ignore_errors = ["module:name1", "module:name"]
+
+[tool.newrelic.transaction_tracer]
+enabled = true
+
+[tool.newrelic.import-hook.django]
+"instrumentation.scripts.django_admin" = ["stuff", "stuff2"]
+"""
+
+
+def test_toml_parse_development():
+    settings = global_settings()
+    _reset_configuration_done()
+    _reset_config_parser()
+    _reset_instrumentation_done()
+
+    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+        f.write(newrelic_toml_contents)
+        f.seek(0)
+
+        initialize(config_file=f.name, environment="development")
+        value = fetch_config_setting(settings, "app_name")
+        assert value != "test11"
+        value = fetch_config_setting(settings, "monitor_mode")
+        assert value is True
+        value = fetch_config_setting(settings, "error_collector")
+        assert value.enabled is True
+        assert value.ignore_classes[0] == "module:name1"
+        assert value.ignore_classes[1] == "module:name"
+
+
+def test_toml_parse_production():
+    settings = global_settings()
+    # _reset_configuration_done()
+
+    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+        f.write(newrelic_toml_contents)
+        f.seek(0)
+
+        initialize(config_file=f.name, environment="production")
+        value = fetch_config_setting(settings, "app_name")
+        assert value == "test11 (Production)"
+        value = fetch_config_setting(settings, "distributed_tracing")
+        assert value.enabled is False
+
+
 @pytest.fixture
 def caplog_handler():
     class CaplogHandler(logging.StreamHandler):

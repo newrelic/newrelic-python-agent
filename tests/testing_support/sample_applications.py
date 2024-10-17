@@ -123,8 +123,11 @@ def simple_exceptional_app(environ, start_response):
 
 def simple_app_raw(environ, start_response):
     status = "200 OK"
-
-    _logger.info("Starting response")
+    
+    logger = logging.getLogger("simple_app_raw")
+    logger.setLevel(logging.INFO)
+    logger.info("Starting response")
+    
     start_response(status, response_headers=[])
 
     return []

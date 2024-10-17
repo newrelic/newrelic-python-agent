@@ -396,3 +396,39 @@ def test_record_log_event_linking_attribute_filtering_outside_transaction(includ
         record_log_event("A")
 
     test()
+
+
+# Test Log Event Label Settings
+
+
+# Add labels setting value in already processed format
+TEST_LABELS = {"testlabel1": "A", "testlabel2": "B", "testlabelexclude": "C"}
+TEST_LABELS = [{"label_type": k, "label_value": v} for k, v in TEST_LABELS.items()]
+
+@override_application_settings({
+    "labels": TEST_LABELS,
+    "application_logging.forwarding.include_labels.enabled": True,
+    "application_logging.forwarding.include_labels.exclude": {"testlabelexclude"},
+})
+@background_task()
+def test_label_forwarding_enabled():
+    txn = current_transaction()
+    session = list(txn.application._agent._applications.values())[0]._active_session
+
+    labels = session.get_log_events_labels()
+    # Excluded label should not appear, and other labels should be prefixed with 'tag.'
+    assert labels == {"tags.testlabel1": "A", "tags.testlabel2": "B"}
+
+
+@override_application_settings({
+    "labels": TEST_LABELS,
+    "application_logging.forwarding.include_labels.enabled": False,
+})
+@background_task()
+def test_label_forwarding_disabled():
+    txn = current_transaction()
+    session = list(txn.application._agent._applications.values())[0]._active_session
+
+    labels = session.get_log_events_labels()
+    # No labels should appear
+    assert labels == {}

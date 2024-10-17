@@ -35,7 +35,7 @@ from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data
 _logger = logging.getLogger(__name__)
 
 
-class Session():
+class Session:
     PROTOCOL = AgentProtocol
     OTLP_PROTOCOL = OtlpProtocol
     CLIENT = ApplicationModeClient
@@ -154,10 +154,29 @@ class Session():
         payload = encode_metric_data(metric_data, start_time, end_time)
         return self._otlp_protocol.send("dimensional_metric_data", payload, path="/v1/metrics")
 
+    def get_log_events_labels(self):
+        """ "Generate common block for log events."""
+        if not self.configuration.application_logging.forwarding.include_labels.enabled:
+            return {}
+        elif not self.configuration.application_logging.forwarding.include_labels.exclude:
+            return self.configuration.labels or {}
+        else:
+            return {
+                f"tags.{label['label_type']}": label['label_value']
+                for label in self.configuration.labels
+                if label['label_type'].lower() not in self.configuration.application_logging.forwarding.include_labels.exclude
+            }
+
     def send_log_events(self, sampling_info, log_event_data):
         """Called to submit sample set for log events."""
 
         payload = ({"logs": tuple(log._asdict() for log in log_event_data)},)
+
+        # Add labels into common block if enabled and not empty
+        labels = self.get_log_events_labels()
+        if labels:
+            payload[0]["common"] = {"attributes": labels}
+
         return self._protocol.send("log_event_data", payload)
 
     def get_agent_commands(self):

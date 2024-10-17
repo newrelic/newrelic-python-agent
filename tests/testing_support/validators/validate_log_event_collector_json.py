@@ -15,14 +15,13 @@
 import json
 
 from newrelic.common.encoding_utils import json_encode
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
+from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
+
 
 def validate_log_event_collector_json(num_logs=1):
     """Validate the format, types and number of logs of the data we
     send to the collector for harvest.
     """
-
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_log_event_collector_json(wrapped, instance, args, kwargs):
@@ -33,36 +32,45 @@ def validate_log_event_collector_json(num_logs=1):
         else:
 
             samples = list(instance.log_events)
-            s_info = instance.log_events.sampling_info
-            agent_run_id = 666
 
             # emulate the payload used in data_collector.py
 
-            payload = (agent_run_id, s_info, samples)
+            payload = ({"logs": tuple(log._asdict() for log in samples)},)
             collector_json = json_encode(payload)
 
             decoded_json = json.loads(collector_json)
 
-            assert decoded_json[0] == agent_run_id
-
-            sampling_info = decoded_json[1]
-
-            reservoir_size = instance.settings.application_logging.max_samples_stored
-
-            assert sampling_info["reservoir_size"] == reservoir_size
-            assert sampling_info["events_seen"] == num_logs
-
-            log_events = decoded_json[2]
+            log_events = decoded_json[0]["logs"]
 
             assert len(log_events) == num_logs
             for event in log_events:
 
-                # event is an array containing intrinsics, user-attributes,
-                # and agent-attributes
+                # event is an array containing timestamp, level, message, attributes
 
-                assert len(event) == 3
-                for d in event:
-                    assert isinstance(d, dict)
+                {
+                    "timestamp": 1729186430797,
+                    "level": "INFO",
+                    "message": "Starting response",
+                    "attributes": {
+                        "entity.type": "SERVICE",
+                        "entity.name": "Python Agent Test (agent_features)",
+                        "entity.guid": "DEVELOPERMODEENTITYGUID",
+                        "hostname": "T23WHWQH20",
+                        "span.id": "51628b750f177405",
+                        "trace.id": "a3b0eb0bd17c433ac461aec42a316069",
+                    },
+                }
+
+                assert len(event) == 4
+                assert isinstance(event["timestamp"], int)
+                assert isinstance(event["level"], str)
+                assert isinstance(event["message"], str)
+                assert isinstance(event["attributes"], dict)
+
+                expected_attribute_keys = sorted(
+                    ["entity.guid", "entity.name", "entity.type", "hostname", "span.id", "trace.id"]
+                )
+                assert sorted(event["attributes"].keys()) == expected_attribute_keys
 
         return result
 

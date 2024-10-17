@@ -12,25 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Protobuf v5 Files
 try:
-    from google.protobuf import __version__
-
-    PROTOBUF_VERSION = tuple(int(v) for v in __version__.split("."))
+    from newrelic.core.infinite_tracing_v5_pb2 import (  # noqa: F401; pylint: disable=W0611
+        AttributeValue,
+        RecordStatus,
+        Span,
+        SpanBatch,
+    )
 except Exception:
-    PROTOBUF_VERSION = (0, 0, 0)
+    # Protobuf v4 Files
+    try:
+        from newrelic.core.infinite_tracing_v4_pb2 import (  # noqa: F401; pylint: disable=W0611
+            AttributeValue,
+            RecordStatus,
+            Span,
+            SpanBatch,
+        )
+    except Exception:
+        # Protobuf v3 Files
+        try:
+            from newrelic.core.infinite_tracing_v3_pb2 import (  # noqa: F401; pylint: disable=W0611
+                AttributeValue,
+                RecordStatus,
+                Span,
+                SpanBatch,
+            )
+        except Exception:
+            pass
 
-# Import appropriate generated pb2 file for protobuf version
-if PROTOBUF_VERSION >= (4,):
-    from newrelic.core.infinite_tracing_v4_pb2 import (  # noqa: F401; pylint: disable=W0611
-        AttributeValue,
-        RecordStatus,
-        Span,
-        SpanBatch,
-    )
-else:
-    from newrelic.core.infinite_tracing_v3_pb2 import (  # noqa: F401; pylint: disable=W0611
-        AttributeValue,
-        RecordStatus,
-        Span,
-        SpanBatch,
-    )

@@ -210,6 +210,10 @@ def _map_inc_excl_attributes(s):
     return newrelic.core.config._parse_attributes(s)
 
 
+def _map_case_insensitive_excl_labels(s):
+    return [v.lower() for v in newrelic.core.config._parse_attributes(s)]
+
+
 def _map_default_host_value(license_key):
     # If the license key is region aware, we should override the default host
     # to be the region aware host
@@ -542,6 +546,8 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
     _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.include_labels.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.include_labels.exclude", "get", _map_case_insensitive_excl_labels)
     _process_setting(section, "application_logging.forwarding.context_data.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.context_data.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "application_logging.forwarding.context_data.exclude", "get", _map_inc_excl_attributes)

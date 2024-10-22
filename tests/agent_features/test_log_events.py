@@ -475,3 +475,17 @@ def test_global_custom_attribute_forwarding():
     common = session.get_log_events_common_block()
     # Both attrs should appear, and the 2nd attr should be truncated to the max user attribute length
     assert common == {"custom_attr_1": "value", "custom_attr_2": "a" * 255}
+
+
+@override_application_settings({
+    "high_security": True,
+    "application_logging.forwarding.custom_attributes": [("custom_attr_1", "value"), ("custom_attr_2", "a" * 256)],
+})
+@background_task()
+def test_global_custom_attribute_forwarding_high_security_enabled():
+    txn = current_transaction()
+    session = list(txn.application._agent._applications.values())[0]._active_session
+
+    common = session.get_log_events_common_block()
+    # No custom attrs should be attached with high security enabled
+    assert common == {}

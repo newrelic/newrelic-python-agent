@@ -32,6 +32,8 @@ from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.config import global_settings
 from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data
 
+from newrelic.core.attribute import process_user_attribute, MAX_NUM_USER_ATTRIBUTES
+
 _logger = logging.getLogger(__name__)
 
 
@@ -154,28 +156,61 @@ class Session:
         payload = encode_metric_data(metric_data, start_time, end_time)
         return self._otlp_protocol.send("dimensional_metric_data", payload, path="/v1/metrics")
 
-    def get_log_events_labels(self):
+    def get_log_events_common_block(self):
         """ "Generate common block for log events."""
-        if not self.configuration.application_logging.forwarding.include_labels.enabled:
+        common = {}
+        
+        try:
+            # Add global custom log attributes to common block
+            if self.configuration.application_logging.forwarding.custom_attributes:
+                if self.configuration.high_security:
+                    _logger.debug("Cannot add custom attribute in High Security Mode.")
+                else:
+                    # Retrieve and process attrs
+                    custom_attributes = {}
+                    for attr_name, attr_value in self.configuration.application_logging.forwarding.custom_attributes:
+                        if len(custom_attributes) >= MAX_NUM_USER_ATTRIBUTES:
+                            _logger.debug("Maximum number of custom attributes already added. Dropping attribute: %r=%r", attr_name, value)
+                            break
+
+                        key, val = process_user_attribute(attr_name, attr_value)
+
+                        if key is not None:
+                            custom_attributes[key] = val
+
+                    common.update(custom_attributes)
+
+            # Add application labels as tags. prefixed attributes to common block
+            labels = self.configuration.labels
+            if not labels or not self.configuration.application_logging.forwarding.include_labels.enabled:
+                return common
+            elif not self.configuration.application_logging.forwarding.include_labels.exclude:
+                common.update({
+                    f"tags.{label['label_type']}": label['label_value']
+                    for label in labels
+                })
+            else:
+                common.update({
+                    f"tags.{label['label_type']}": label['label_value']
+                    for label in labels
+                    if label['label_type'].lower() not in self.configuration.application_logging.forwarding.include_labels.exclude
+                })
+
+        except Exception:
+            _logger.exception("Cannot generate common block for log events.")
             return {}
-        elif not self.configuration.application_logging.forwarding.include_labels.exclude:
-            return self.configuration.labels or {}
         else:
-            return {
-                f"tags.{label['label_type']}": label['label_value']
-                for label in self.configuration.labels
-                if label['label_type'].lower() not in self.configuration.application_logging.forwarding.include_labels.exclude
-            }
+            return common
 
     def send_log_events(self, sampling_info, log_event_data):
         """Called to submit sample set for log events."""
 
         payload = ({"logs": tuple(log._asdict() for log in log_event_data)},)
 
-        # Add labels into common block if enabled and not empty
-        labels = self.get_log_events_labels()
-        if labels:
-            payload[0]["common"] = {"attributes": labels}
+        # Add common block attributes if not empty
+        common = self.get_log_events_common_block()
+        if common:
+            payload[0]["common"] = {"attributes": common}
 
         return self._protocol.send("log_event_data", payload)
 

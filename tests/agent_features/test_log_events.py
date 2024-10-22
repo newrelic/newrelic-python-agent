@@ -153,7 +153,9 @@ _exercise_record_log_event_forgone_attrs = [
 ]
 
 
+# ================================================
 # Test Log Forwarding
+# ================================================
 
 
 @enable_log_forwarding
@@ -193,7 +195,10 @@ def test_ignored_transaction_logs_not_forwarded():
     test()
 
 
+# ================================================
 # Test Message Truncation
+# ================================================
+
 
 _test_log_event_truncation_events = [{"message": "A" * 32768}]
 
@@ -220,7 +225,9 @@ def test_log_event_truncation_outside_transaction():
     test()
 
 
+# ================================================
 # Test Log Forwarding Settings
+# ================================================
 
 
 @disable_log_forwarding
@@ -243,7 +250,9 @@ def test_disabled_record_log_event_outside_transaction():
     test()
 
 
+# ================================================
 # Test Log Attribute Settings
+# ================================================
 
 
 @disable_log_attributes
@@ -398,7 +407,9 @@ def test_record_log_event_linking_attribute_filtering_outside_transaction(includ
     test()
 
 
-# Test Log Event Label Settings
+# ================================================
+# Test Log Event Labels Settings
+# ================================================
 
 
 # Add labels setting value in already processed format
@@ -408,16 +419,30 @@ TEST_LABELS = [{"label_type": k, "label_value": v} for k, v in TEST_LABELS.items
 @override_application_settings({
     "labels": TEST_LABELS,
     "application_logging.forwarding.include_labels.enabled": True,
-    "application_logging.forwarding.include_labels.exclude": {"testlabelexclude"},
 })
 @background_task()
 def test_label_forwarding_enabled():
     txn = current_transaction()
     session = list(txn.application._agent._applications.values())[0]._active_session
 
-    labels = session.get_log_events_labels()
+    common = session.get_log_events_common_block()
     # Excluded label should not appear, and other labels should be prefixed with 'tag.'
-    assert labels == {"tags.testlabel1": "A", "tags.testlabel2": "B"}
+    assert common == {"tags.testlabel1": "A", "tags.testlabel2": "B", "tags.testlabelexclude": "C"}
+
+
+@override_application_settings({
+    "labels": TEST_LABELS,
+    "application_logging.forwarding.include_labels.enabled": True,
+    "application_logging.forwarding.include_labels.exclude": {"testlabelexclude"},
+})
+@background_task()
+def test_label_forwarding_enabled_exclude():
+    txn = current_transaction()
+    session = list(txn.application._agent._applications.values())[0]._active_session
+
+    common = session.get_log_events_common_block()
+    # Excluded label should not appear, and other labels should be prefixed with 'tag.'
+    assert common == {"tags.testlabel1": "A", "tags.testlabel2": "B"}
 
 
 @override_application_settings({
@@ -429,6 +454,24 @@ def test_label_forwarding_disabled():
     txn = current_transaction()
     session = list(txn.application._agent._applications.values())[0]._active_session
 
-    labels = session.get_log_events_labels()
+    common = session.get_log_events_common_block()
     # No labels should appear
-    assert labels == {}
+    assert common == {}
+
+
+# ================================================
+# Test Log Event Global Custom Attributes Settings
+# ================================================
+
+
+@override_application_settings({
+    "application_logging.forwarding.custom_attributes": [("custom_attr_1", "value"), ("custom_attr_2", "a" * 256)],
+})
+@background_task()
+def test_global_custom_attribute_forwarding():
+    txn = current_transaction()
+    session = list(txn.application._agent._applications.values())[0]._active_session
+
+    common = session.get_log_events_common_block()
+    # Both attrs should appear, and the 2nd attr should be truncated to the max user attribute length
+    assert common == {"custom_attr_1": "value", "custom_attr_2": "a" * 255}

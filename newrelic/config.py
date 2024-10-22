@@ -3622,7 +3622,7 @@ def _process_module_builtin_defaults():
         "redis.commands.graph.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_graph_commands"
     )
 
-        _process_module_definition(
+    _process_module_definition(
         "valkey.asyncio.client", "newrelic.hooks.datastore_valkey", "instrument_asyncio_valkey_client"
     )
 
@@ -3658,7 +3658,9 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "valkey.commands.search.commands", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_search_commands"
+        "valkey.commands.search.commands",
+        "newrelic.hooks.datastore_valkey",
+        "instrument_valkey_commands_search_commands",
     )
 
     _process_module_definition(
@@ -3674,7 +3676,6 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "valkey.commands.graph.commands", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_graph_commands"
     )
-
 
     _process_module_definition("motor", "newrelic.hooks.datastore_motor", "patch_motor")
 

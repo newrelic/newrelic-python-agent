@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import valkey
 from testing_support.db_settings import valkey_settings
 from testing_support.fixtures import override_application_settings
@@ -93,51 +92,35 @@ def exercise_valkey(client):
 
     # Check generators
     flag = False
-    assert not isinstance(
-        current_trace(), DatastoreTrace
-    )  # Assert no active DatastoreTrace
+    assert not isinstance(current_trace(), DatastoreTrace)  # Assert no active DatastoreTrace
     for k in client.scan_iter("scan-*"):
         assert k == b"scan-key"
-        assert isinstance(
-            current_trace(), DatastoreTrace
-        )  # Assert DatastoreTrace now active
+        assert isinstance(current_trace(), DatastoreTrace)  # Assert DatastoreTrace now active
         flag = True
     assert flag
 
     flag = False
-    assert not isinstance(
-        current_trace(), DatastoreTrace
-    )  # Assert no active DatastoreTrace
+    assert not isinstance(current_trace(), DatastoreTrace)  # Assert no active DatastoreTrace
     for k in client.sscan_iter("sscan-key"):
         assert k == b"value"
-        assert isinstance(
-            current_trace(), DatastoreTrace
-        )  # Assert DatastoreTrace now active
+        assert isinstance(current_trace(), DatastoreTrace)  # Assert DatastoreTrace now active
         flag = True
     assert flag
 
     flag = False
-    assert not isinstance(
-        current_trace(), DatastoreTrace
-    )  # Assert no active DatastoreTrace
+    assert not isinstance(current_trace(), DatastoreTrace)  # Assert no active DatastoreTrace
     for k, _ in client.zscan_iter("zscan-key"):
         assert k == b"value"
-        assert isinstance(
-            current_trace(), DatastoreTrace
-        )  # Assert DatastoreTrace now active
+        assert isinstance(current_trace(), DatastoreTrace)  # Assert DatastoreTrace now active
         flag = True
     assert flag
 
     flag = False
-    assert not isinstance(
-        current_trace(), DatastoreTrace
-    )  # Assert no active DatastoreTrace
+    assert not isinstance(current_trace(), DatastoreTrace)  # Assert no active DatastoreTrace
     for f, v in client.hscan_iter("hscan-key"):
         assert f == b"field"
         assert v == b"value"
-        assert isinstance(
-            current_trace(), DatastoreTrace
-        )  # Assert DatastoreTrace now active
+        assert isinstance(current_trace(), DatastoreTrace)  # Assert DatastoreTrace now active
         flag = True
     assert flag
 
@@ -156,51 +139,35 @@ async def exercise_valkey_async(client):
 
     # Check generators
     flag = False
-    assert not isinstance(
-        current_trace(), DatastoreTrace
-    )  # Assert no active DatastoreTrace
+    assert not isinstance(current_trace(), DatastoreTrace)  # Assert no active DatastoreTrace
     async for k in client.scan_iter("scan-*"):
         assert k == b"scan-key"
-        assert isinstance(
-            current_trace(), DatastoreTrace
-        )  # Assert DatastoreTrace now active
+        assert isinstance(current_trace(), DatastoreTrace)  # Assert DatastoreTrace now active
         flag = True
     assert flag
 
     flag = False
-    assert not isinstance(
-        current_trace(), DatastoreTrace
-    )  # Assert no active DatastoreTrace
+    assert not isinstance(current_trace(), DatastoreTrace)  # Assert no active DatastoreTrace
     async for k in client.sscan_iter("sscan-key"):
         assert k == b"value"
-        assert isinstance(
-            current_trace(), DatastoreTrace
-        )  # Assert DatastoreTrace now active
+        assert isinstance(current_trace(), DatastoreTrace)  # Assert DatastoreTrace now active
         flag = True
     assert flag
 
     flag = False
-    assert not isinstance(
-        current_trace(), DatastoreTrace
-    )  # Assert no active DatastoreTrace
+    assert not isinstance(current_trace(), DatastoreTrace)  # Assert no active DatastoreTrace
     async for k, _ in client.zscan_iter("zscan-key"):
         assert k == b"value"
-        assert isinstance(
-            current_trace(), DatastoreTrace
-        )  # Assert DatastoreTrace now active
+        assert isinstance(current_trace(), DatastoreTrace)  # Assert DatastoreTrace now active
         flag = True
     assert flag
 
     flag = False
-    assert not isinstance(
-        current_trace(), DatastoreTrace
-    )  # Assert no active DatastoreTrace
+    assert not isinstance(current_trace(), DatastoreTrace)  # Assert no active DatastoreTrace
     async for f, v in client.hscan_iter("hscan-key"):
         assert f == b"field"
         assert v == b"value"
-        assert isinstance(
-            current_trace(), DatastoreTrace
-        )  # Assert DatastoreTrace now active
+        assert isinstance(current_trace(), DatastoreTrace)  # Assert DatastoreTrace now active
         flag = True
     assert flag
 
@@ -217,9 +184,7 @@ async def exercise_valkey_async(client):
 )
 @background_task()
 def test_strict_valkey_generator_enable_instance():
-    client = valkey.StrictValkey(
-        host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0
-    )
+    client = valkey.StrictValkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     exercise_valkey(client)
 
 
@@ -232,9 +197,7 @@ def test_strict_valkey_generator_enable_instance():
 )
 @background_task()
 def test_strict_valkey_generator_disable_instance():
-    client = valkey.StrictValkey(
-        host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0
-    )
+    client = valkey.StrictValkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     exercise_valkey(client)
 
 
@@ -273,9 +236,7 @@ def test_valkey_generator_disable_instance():
 )
 @background_task()
 def test_valkey_async_generator_enable_instance(loop):
-    client = valkey.asyncio.Valkey(
-        host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0
-    )
+    client = valkey.asyncio.Valkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     loop.run_until_complete(exercise_valkey_async(client))
 
 
@@ -288,7 +249,5 @@ def test_valkey_async_generator_enable_instance(loop):
 )
 @background_task()
 def test_valkey_async_generator_disable_instance(loop):
-    client = valkey.asyncio.Valkey(
-        host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0
-    )
+    client = valkey.asyncio.Valkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     loop.run_until_complete(exercise_valkey_async(client))

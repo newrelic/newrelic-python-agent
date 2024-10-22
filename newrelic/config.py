@@ -164,7 +164,7 @@ def _map_feature_flag(s):
     return set(s.split())
 
 
-def _map_labels(s):
+def _map_as_mapping(s):
     return newrelic.core.config._environ_as_mapping(name="", default=s)
 
 
@@ -315,7 +315,7 @@ def _process_setting(section, option, getter, mapper):
 def _process_configuration(section):
     _process_setting(section, "feature_flag", "get", _map_feature_flag)
     _process_setting(section, "app_name", "get", None)
-    _process_setting(section, "labels", "get", _map_labels)
+    _process_setting(section, "labels", "get", _map_as_mapping)
     _process_setting(section, "license_key", "get", _map_default_host_value)
     _process_setting(section, "api_key", "get", None)
     _process_setting(section, "host", "get", None)

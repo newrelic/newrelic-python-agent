@@ -546,6 +546,7 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
     _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.custom_attributes", "get", _map_as_mapping)
     _process_setting(section, "application_logging.forwarding.include_labels.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.include_labels.exclude", "get", _map_case_insensitive_excl_labels)
     _process_setting(section, "application_logging.forwarding.context_data.enabled", "getboolean", None)

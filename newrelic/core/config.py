@@ -323,7 +323,7 @@ class ApplicationLoggingForwardingSettings(Settings):
     pass
 
 
-class ApplicationLoggingForwardingIncludeLabelsSettings(Settings):
+class ApplicationLoggingForwardingLabelsSettings(Settings):
     pass
 
 
@@ -428,7 +428,7 @@ _settings = TopLevelSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
-_settings.application_logging.forwarding.include_labels = ApplicationLoggingForwardingIncludeLabelsSettings()
+_settings.application_logging.forwarding.labels = ApplicationLoggingForwardingLabelsSettings()
 _settings.application_logging.forwarding.context_data = ApplicationLoggingForwardingContextDataSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
@@ -944,11 +944,11 @@ _settings.application_logging.forwarding.custom_attributes = _environ_as_mapping
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CUSTOM_ATTRIBUTES", default=""
 )
 
-_settings.application_logging.forwarding.include_labels.enabled = _environ_as_bool(
-    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_INCLUDE_LABELS_ENABLED", default=False
+_settings.application_logging.forwarding.labels.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_LABELS_ENABLED", default=False
 )
-_settings.application_logging.forwarding.include_labels.exclude = set(
-    v.lower() for v in _environ_as_set("NEW_RELIC_APPLICATION_LOGGING_FORWARDING_INCLUDE_LABELS_EXCLUDE", default="")
+_settings.application_logging.forwarding.labels.exclude = set(
+    v.lower() for v in _environ_as_set("NEW_RELIC_APPLICATION_LOGGING_FORWARDING_LABELS_EXCLUDE", default="")
 )
 
 _settings.application_logging.forwarding.context_data.enabled = _environ_as_bool(

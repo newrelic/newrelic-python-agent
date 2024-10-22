@@ -182,9 +182,9 @@ class Session:
 
             # Add application labels as tags. prefixed attributes to common block
             labels = self.configuration.labels
-            if not labels or not self.configuration.application_logging.forwarding.include_labels.enabled:
+            if not labels or not self.configuration.application_logging.forwarding.labels.enabled:
                 return common
-            elif not self.configuration.application_logging.forwarding.include_labels.exclude:
+            elif not self.configuration.application_logging.forwarding.labels.exclude:
                 common.update({
                     f"tags.{label['label_type']}": label['label_value']
                     for label in labels
@@ -193,7 +193,7 @@ class Session:
                 common.update({
                     f"tags.{label['label_type']}": label['label_value']
                     for label in labels
-                    if label['label_type'].lower() not in self.configuration.application_logging.forwarding.include_labels.exclude
+                    if label['label_type'].lower() not in self.configuration.application_logging.forwarding.labels.exclude
                 })
 
         except Exception:

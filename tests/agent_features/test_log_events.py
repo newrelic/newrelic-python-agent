@@ -418,7 +418,7 @@ TEST_LABELS = [{"label_type": k, "label_value": v} for k, v in TEST_LABELS.items
 
 @override_application_settings({
     "labels": TEST_LABELS,
-    "application_logging.forwarding.include_labels.enabled": True,
+    "application_logging.forwarding.labels.enabled": True,
 })
 @background_task()
 def test_label_forwarding_enabled():
@@ -432,8 +432,8 @@ def test_label_forwarding_enabled():
 
 @override_application_settings({
     "labels": TEST_LABELS,
-    "application_logging.forwarding.include_labels.enabled": True,
-    "application_logging.forwarding.include_labels.exclude": {"testlabelexclude"},
+    "application_logging.forwarding.labels.enabled": True,
+    "application_logging.forwarding.labels.exclude": {"testlabelexclude"},
 })
 @background_task()
 def test_label_forwarding_enabled_exclude():
@@ -447,7 +447,7 @@ def test_label_forwarding_enabled_exclude():
 
 @override_application_settings({
     "labels": TEST_LABELS,
-    "application_logging.forwarding.include_labels.enabled": False,
+    "application_logging.forwarding.labels.enabled": False,
 })
 @background_task()
 def test_label_forwarding_disabled():

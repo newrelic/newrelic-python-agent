@@ -1217,7 +1217,7 @@ jobs:
     timeout-minutes: 30
     services:
       valkey:
-        image: valkey
+        image: valkey/valkey
         ports:
           - 8080:6379
           - 8081:6379

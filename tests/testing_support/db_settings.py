@@ -147,6 +147,7 @@ def redis_cluster_settings():
     ]
     return settings
 
+
 def valkey_settings():
     """Return a list of dict of settings for connecting to valkey.
 
@@ -164,31 +165,6 @@ def valkey_settings():
         {
             "host": host,
             "port": 8080 + instance_num,
-        }
-        for instance_num in range(instances)
-    ]
-    return settings
-
-
-def valkey_cluster_settings():
-    """Return a list of dict of settings for connecting to valkey cluster.
-
-    Will return the correct settings, depending on which of the environments it
-    is running in. It attempts to set variables in the following order, where
-    later environments override earlier ones.
-
-        1. Local
-        2. Github Actions
-    """
-
-    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
-    instances = 1
-    base_port = 6379
-
-    settings = [
-        {
-            "host": host,
-            "port": base_port + instance_num,
         }
         for instance_num in range(instances)
     ]
@@ -233,7 +209,11 @@ def mongodb_settings():
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
     settings = [
-        {"host": host, "port": 8080 + instance_num, "collection": f"mongodb_collection_{str(os.getpid())}"}
+        {
+            "host": host,
+            "port": 8080 + instance_num,
+            "collection": f"mongodb_collection_{str(os.getpid())}",
+        }
         for instance_num in range(instances)
     ]
     return settings
@@ -254,7 +234,9 @@ def firestore_settings():
 
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
-    settings = [{"host": host, "port": 8080 + instance_num} for instance_num in range(instances)]
+    settings = [
+        {"host": host, "port": 8080 + instance_num} for instance_num in range(instances)
+    ]
     return settings
 
 

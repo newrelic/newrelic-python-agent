@@ -46,21 +46,6 @@ def validate_log_event_collector_json(num_logs=1):
             for event in log_events:
 
                 # event is an array containing timestamp, level, message, attributes
-
-                {
-                    "timestamp": 1729186430797,
-                    "level": "INFO",
-                    "message": "Starting response",
-                    "attributes": {
-                        "entity.type": "SERVICE",
-                        "entity.name": "Python Agent Test (agent_features)",
-                        "entity.guid": "DEVELOPERMODEENTITYGUID",
-                        "hostname": "T23WHWQH20",
-                        "span.id": "51628b750f177405",
-                        "trace.id": "a3b0eb0bd17c433ac461aec42a316069",
-                    },
-                }
-
                 assert len(event) == 4
                 assert isinstance(event["timestamp"], int)
                 assert isinstance(event["level"], str)

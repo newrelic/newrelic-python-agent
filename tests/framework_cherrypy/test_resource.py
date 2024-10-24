@@ -19,7 +19,7 @@ from testing_support.validators.validate_code_level_metrics import validate_code
 
 import cherrypy
 
-class Resource(object):
+class Resource():
 
     exposed = True
 

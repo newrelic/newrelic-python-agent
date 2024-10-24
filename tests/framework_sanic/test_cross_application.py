@@ -49,7 +49,7 @@ BASE_ATTRS = ["response.status", "response.headers.contentType", "response.heade
 def raw_headers(response):
     try:
         # Manually encode into bytes
-        return " ".join("%s: %s" % (k, v) for k, v in response.processed_headers).encode()
+        return " ".join(f"{k}: {v}" for k, v in response.processed_headers).encode()
     except AttributeError:
         try:
             return response.get_headers()
@@ -120,7 +120,7 @@ _custom_settings = {
 def test_cat_response_headers(app, inbound_payload, expected_intrinsics, forgone_intrinsics, cat_id, url, metric_name):
 
     _base_metrics = [
-        ("Function/%s" % metric_name, 1),
+        (f"Function/{metric_name}", 1),
     ]
 
     @validate_transaction_metrics(
@@ -129,7 +129,7 @@ def test_cat_response_headers(app, inbound_payload, expected_intrinsics, forgone
         rollup_metrics=_base_metrics,
     )
     @validate_analytics_catmap_data(
-        "WebTransaction/Function/%s" % metric_name,
+        f"WebTransaction/Function/{metric_name}",
         expected_attributes=expected_intrinsics,
         non_expected_attributes=forgone_intrinsics,
     )
@@ -144,7 +144,7 @@ def test_cat_response_headers(app, inbound_payload, expected_intrinsics, forgone
 
             app_data = json.loads(deobfuscate(cat_response_header, ENCODING_KEY))
             assert app_data[0] == cat_id
-            assert app_data[1] == ("WebTransaction/Function/%s" % metric_name)
+            assert app_data[1] == f"WebTransaction/Function/{metric_name}"
         else:
             assert b"X-NewRelic-App-Data" not in raw_headers(response)
 
@@ -159,6 +159,6 @@ def test_cat_response_custom_header(app):
     cat_headers = make_cross_agent_headers(inbound_payload, ENCODING_KEY, cat_id)
 
     response = app.fetch(
-        "get", "/custom-header/%s/%s" % ("X-NewRelic-App-Data", custom_header_value), headers=dict(cat_headers)
+        "get", f"/custom-header/X-NewRelic-App-Data/{custom_header_value}", headers=dict(cat_headers)
     )
     assert custom_header_value in raw_headers(response), raw_headers(response)

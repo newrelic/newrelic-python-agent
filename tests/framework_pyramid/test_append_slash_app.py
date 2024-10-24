@@ -30,27 +30,21 @@
        will have a count of 2.
 """
 
-import pkg_resources
 import pytest
-import re
+from testing_support.validators.validate_transaction_errors import (
+    validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
-from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-
-def _to_int(version_str):
-    m = re.match(r'\d+', version_str)
-    return int(m.group(0)) if m else 0
-
-def pyramid_version():
-    s = pkg_resources.get_distribution('pyramid').version
-    return tuple([_to_int(c) for c in s.split('.')[:2]])
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 # Defining a `pytestmark` at the module level means py.test will apply
 # this `skipif` conditional to all tests in the module.
 
-pytestmark = pytest.mark.skipif(pyramid_version() < (1, 3),
-        reason='requires pyramid >= (1, 3)')
+pytestmark = pytest.mark.skipif(get_package_version_tuple("pyramid") < (1, 3), reason="requires pyramid >= (1, 3)")
+
 
 def target_application():
     # We need to delay Pyramid application creation because of ordering
@@ -62,35 +56,44 @@ def target_application():
     # at global scope, so import it from a separate module.
 
     from _test_append_slash_app import _test_application
+
     return _test_application
 
+
 _test_append_slash_app_index_scoped_metrics = [
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/pyramid.router:Router.__call__', 1),
-        ('Function/_test_append_slash_app:home_view', 1)]
+    ("Python/WSGI/Application", 1),
+    ("Python/WSGI/Response", 1),
+    ("Python/WSGI/Finalize", 1),
+    ("Function/pyramid.router:Router.__call__", 1),
+    ("Function/_test_append_slash_app:home_view", 1),
+]
+
 
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_append_slash_app:home_view',
-        scoped_metrics=_test_append_slash_app_index_scoped_metrics)
+@validate_transaction_metrics(
+    "_test_append_slash_app:home_view", scoped_metrics=_test_append_slash_app_index_scoped_metrics
+)
 def test_index():
     application = target_application()
-    response = application.get('/')
-    response.mustcontain('INDEX RESPONSE')
+    response = application.get("/")
+    response.mustcontain("INDEX RESPONSE")
+
 
 _test_not_found_append_slash_scoped_metrics = [
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/pyramid.router:Router.__call__', 1),
-        ('Function/pyramid.view:AppendSlashNotFoundViewFactory', 1),
-        ('Function/_test_append_slash_app:not_found', 1)]
+    ("Python/WSGI/Application", 1),
+    ("Python/WSGI/Response", 1),
+    ("Python/WSGI/Finalize", 1),
+    ("Function/pyramid.router:Router.__call__", 1),
+    ("Function/pyramid.view:AppendSlashNotFoundViewFactory", 1),
+    ("Function/_test_append_slash_app:not_found", 1),
+]
+
 
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('_test_append_slash_app:not_found',
-        scoped_metrics=_test_not_found_append_slash_scoped_metrics)
+@validate_transaction_metrics(
+    "_test_append_slash_app:not_found", scoped_metrics=_test_not_found_append_slash_scoped_metrics
+)
 def test_not_found_append_slash():
     application = target_application()
-    response = application.get('/foo', status=404)
-    response.mustcontain('NOT FOUND')
+    response = application.get("/foo", status=404)
+    response.mustcontain("NOT FOUND")

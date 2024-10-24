@@ -15,7 +15,7 @@
 import socket
 import threading
 
-from newrelic.packages.six.moves import BaseHTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # This defines an external server test apps can make requests to (instead of
 # www.google.com for example). This provides 3 features:
@@ -46,7 +46,7 @@ class MockExternalHTTPServer(threading.Thread):
         super(MockExternalHTTPServer, self).__init__(*args, **kwargs)
         self.daemon = True
         handler = type('ResponseHandler',
-                (BaseHTTPServer.BaseHTTPRequestHandler, object,),
+                (BaseHTTPRequestHandler, object,),
                 {
                     'do_GET': handler,
                     'do_OPTIONS': handler,
@@ -58,7 +58,7 @@ class MockExternalHTTPServer(threading.Thread):
                 })
 
         if port:
-            self.httpd = BaseHTTPServer.HTTPServer(('localhost', port), handler)
+            self.httpd = HTTPServer(('localhost', port), handler)
             self.port = port
         else:
             # If port not set, try to bind to a port until successful
@@ -70,7 +70,7 @@ class MockExternalHTTPServer(threading.Thread):
                     # Obtain random open port
                     port = self.get_open_port()
                     # Attempt to bind to port
-                    self.httpd = BaseHTTPServer.HTTPServer(('localhost', port), handler)
+                    self.httpd = HTTPServer(('localhost', port), handler)
                     self.port = port
                 except OSError as exc:
                     # Reraise errors other than port already in use

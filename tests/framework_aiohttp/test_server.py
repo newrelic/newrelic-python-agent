@@ -87,11 +87,11 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled, ai
         @validate_transaction_metrics(
             metric_name,
             scoped_metrics=[
-                ("Function/%s" % metric_name, 1),
+                (f"Function/{metric_name}", 1),
             ],
             rollup_metrics=[
-                ("Function/%s" % metric_name, 1),
-                ("Python/Framework/aiohttp/%s" % aiohttp.__version__, 1),
+                (f"Function/{metric_name}", 1),
+                (f"Python/Framework/aiohttp/{aiohttp.__version__}", 1),
             ],
         )
         @validate_transaction_event_attributes(
@@ -184,11 +184,11 @@ def test_simultaneous_requests(method, uri, metric_name, nr_enabled, aiohttp_app
         @validate_transaction_metrics(
             metric_name,
             scoped_metrics=[
-                ("Function/%s" % metric_name, 1),
+                (f"Function/{metric_name}", 1),
             ],
             rollup_metrics=[
-                ("Function/%s" % metric_name, 1),
-                ("Python/Framework/aiohttp/%s" % aiohttp.__version__, 1),
+                (f"Function/{metric_name}", 1),
+                (f"Python/Framework/aiohttp/{aiohttp.__version__}", 1),
             ],
         )
         @validate_transaction_event_attributes(

@@ -14,10 +14,14 @@
 
 import re
 import socket
+import time
+from functools import wraps
+
 
 def _to_int(version_str):
-    m = re.match(r'\d+', version_str)
+    m = re.match(r"\d+", version_str)
     return int(m.group(0)) if m else 0
+
 
 def version2tuple(version_str):
     """Convert version, even if it contains non-numeric chars.
@@ -27,13 +31,15 @@ def version2tuple(version_str):
 
     """
 
-    parts = version_str.split('.')[:2]
+    parts = version_str.split(".")[:2]
     return tuple(map(_to_int, parts))
 
+
 def instance_hostname(hostname):
-    if hostname == 'localhost' or hostname == "127.0.0.1":
+    if hostname in ["localhost", "127.0.0.1"]:
         hostname = socket.gethostname()
     return hostname
+
 
 def get_open_port():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -42,17 +48,38 @@ def get_open_port():
     s.close()
     return port
 
+
 def conditional_decorator(condition, decorator):
     """Applies a decorator if the condition is true. Accepts 0 argument callables for the condition."""
+
     def _conditional_decorator(func):
         if callable(condition):
             condition_eval = condition()
         else:
             condition_eval = condition
-        
+
         if condition_eval:
             return decorator(func)
         else:
             return func
 
     return _conditional_decorator
+
+
+def retry(attempts=5, wait=5):
+    def decorator(test_func):
+        @wraps(test_func)
+        def wrapper(*args, **kwargs):
+            retry_count = 1
+            while retry_count < attempts:
+                try:
+                    return test_func(*args, **kwargs)
+                except AssertionError as assert_error:
+                    time.sleep(wait)
+                    retry_count += 1
+            # Preserve original traceback in case assertion fails.
+            return test_func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

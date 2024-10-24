@@ -13,31 +13,26 @@
 # limitations under the License.
 
 import functools
-import sys
 import os
-
-from newrelic.packages import six
-
-from newrelic.api.time_trace import current_trace
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.common.object_names import callable_name
+import sys
 
 from newrelic import __file__ as AGENT_PACKAGE_FILE
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(AGENT_PACKAGE_FILE) + '/'
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.time_trace import current_trace
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+
+AGENT_PACKAGE_DIRECTORY = f"{os.path.dirname(AGENT_PACKAGE_FILE)}/"
 
 
-class ProfileTrace(object):
-
+class ProfileTrace():
     def __init__(self, depth):
         self.function_traces = []
         self.maximum_depth = depth
         self.current_depth = 0
 
-    def __call__(self, frame, event, arg):
-
-        if event not in ['call', 'c_call', 'return', 'c_return',
-                'exception', 'c_exception']:
+    def __call__(self, frame, event, arg):  # pragma: no cover
+        if event not in ["call", "c_call", "return", "c_return", "exception", "c_exception"]:
             return
 
         parent = current_trace()
@@ -49,8 +44,7 @@ class ProfileTrace(object):
         # coroutine systems based on greenlets so don't run
         # if we detect may be using greenlets.
 
-        if (hasattr(sys, '_current_frames') and
-                parent.thread_id not in sys._current_frames()):
+        if hasattr(sys, "_current_frames") and parent.thread_id not in sys._current_frames():
             return
 
         co = frame.f_code
@@ -76,7 +70,7 @@ class ProfileTrace(object):
             except Exception:
                 pass
 
-            for name, obj in six.iteritems(frame.f_globals):
+            for name, obj in frame.f_globals.items():
                 try:
                     if obj.__dict__[func_name].func_code is co:
                         return obj.__dict__[func_name]
@@ -84,7 +78,7 @@ class ProfileTrace(object):
                 except Exception:
                     pass
 
-        if event in ['call', 'c_call']:
+        if event in ["call", "c_call"]:
             # Skip the outermost as we catch that with the root
             # function traces for the profile trace.
 
@@ -100,19 +94,17 @@ class ProfileTrace(object):
                 self.function_traces.append(None)
                 return
 
-            if event == 'call':
+            if event == "call":
                 func = _callable()
                 if func:
                     name = callable_name(func)
                 else:
-                    name = '%s:%s#%s' % (func_filename, func_name,
-                            func_line_no)
+                    name = f"{func_filename}:{func_name}#{func_line_no}"
             else:
                 func = arg
                 name = callable_name(arg)
                 if not name:
-                    name = '%s:@%s#%s' % (func_filename, func_name,
-                            func_line_no)
+                    name = f"{func_filename}:@{func_name}#{func_line_no}"
 
             function_trace = FunctionTrace(name=name, parent=parent)
             function_trace.__enter__()
@@ -127,7 +119,7 @@ class ProfileTrace(object):
             self.function_traces.append(function_trace)
             self.current_depth += 1
 
-        elif event in ['return', 'c_return', 'c_exception']:
+        elif event in ["return", "c_return", "c_exception"]:
             if not self.function_traces:
                 return
 
@@ -143,9 +135,7 @@ class ProfileTrace(object):
                     self.current_depth -= 1
 
 
-def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
-        params=None, depth=3):
-
+def ProfileTraceWrapper(wrapped, name=None, group=None, label=None, params=None, depth=3):
     def wrapper(wrapped, instance, args, kwargs):
         parent = current_trace()
 
@@ -192,7 +182,7 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
             _params = params
 
         with FunctionTrace(_name, _group, _label, _params, parent=parent, source=wrapped):
-            if not hasattr(sys, 'getprofile'):
+            if not hasattr(sys, "getprofile"):
                 return wrapped(*args, **kwargs)
 
             profiler = sys.getprofile()
@@ -212,11 +202,8 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
 
 
 def profile_trace(name=None, group=None, label=None, params=None, depth=3):
-    return functools.partial(ProfileTraceWrapper, name=name,
-            group=group, label=label, params=params, depth=depth)
+    return functools.partial(ProfileTraceWrapper, name=name, group=group, label=label, params=params, depth=depth)
 
 
-def wrap_profile_trace(module, object_path, name=None,
-        group=None, label=None, params=None, depth=3):
-    return wrap_object(module, object_path, ProfileTraceWrapper,
-            (name, group, label, params, depth))
+def wrap_profile_trace(module, object_path, name=None, group=None, label=None, params=None, depth=3):
+    return wrap_object(module, object_path, ProfileTraceWrapper, (name, group, label, params, depth))

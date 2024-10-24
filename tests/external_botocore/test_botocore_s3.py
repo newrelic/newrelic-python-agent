@@ -12,62 +12,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import uuid
 
 import botocore
 import botocore.session
-import moto
-from testing_support.fixtures import override_application_settings
+from moto import mock_aws
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
-MOTO_VERSION = tuple(int(v) for v in moto.__version__.split(".")[:3])
-BOTOCORE_VERSION = tuple(int(v) for v in botocore.__version__.split(".")[:3])
-
-
-# patch earlier versions of moto to support py37
-if sys.version_info >= (3, 7) and MOTO_VERSION <= (1, 3, 1):
-    import re
-
-    moto.packages.responses.responses.re._pattern_type = re.Pattern
+MOTO_VERSION = MOTO_VERSION = get_package_version_tuple("moto")
+BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION = "us-east-1"
 
-TEST_BUCKET = "python-agent-test-%s" % uuid.uuid4()
+TEST_BUCKET = f"python-agent-test-{uuid.uuid4()}"
 if BOTOCORE_VERSION >= (1, 28):
-    S3_URL = "%s.s3.amazonaws.com" % TEST_BUCKET
-    EXPECTED_BUCKET_URL = "https://%s/" % S3_URL
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "hello_world"
+    S3_URL = f"{TEST_BUCKET}.s3.amazonaws.com"
+    EXPECTED_BUCKET_URL = f"https://{S3_URL}/"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}hello_world"
 else:
     S3_URL = "s3.amazonaws.com"
-    EXPECTED_BUCKET_URL = "https://%s/%s" % (S3_URL, TEST_BUCKET)
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/hello_world"
+    EXPECTED_BUCKET_URL = f"https://{S3_URL}/{TEST_BUCKET}"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}/hello_world"
 
 
 _s3_scoped_metrics = [
-    ("External/%s/botocore/GET" % S3_URL, 2),
-    ("External/%s/botocore/PUT" % S3_URL, 2),
-    ("External/%s/botocore/DELETE" % S3_URL, 2),
+    (f"External/{S3_URL}/botocore/GET", 2),
+    (f"External/{S3_URL}/botocore/PUT", 2),
+    (f"External/{S3_URL}/botocore/DELETE", 2),
 ]
 
 _s3_rollup_metrics = [
     ("External/all", 6),
     ("External/allOther", 6),
-    ("External/%s/all" % S3_URL, 6),
-    ("External/%s/botocore/GET" % S3_URL, 2),
-    ("External/%s/botocore/PUT" % S3_URL, 2),
-    ("External/%s/botocore/DELETE" % S3_URL, 2),
+    (f"External/{S3_URL}/all", 6),
+    (f"External/{S3_URL}/botocore/GET", 2),
+    (f"External/{S3_URL}/botocore/PUT", 2),
+    (f"External/{S3_URL}/botocore/DELETE", 2),
 ]
 
 
-@override_application_settings({"distributed_tracing.enabled": True})
+@dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateBucket"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "PutObject"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "ListObjects"}, count=1)
@@ -83,7 +76,7 @@ _s3_rollup_metrics = [
     background_task=True,
 )
 @background_task()
-@moto.mock_s3
+@mock_aws
 def test_s3():
     session = botocore.session.get_session()
     client = session.create_client(

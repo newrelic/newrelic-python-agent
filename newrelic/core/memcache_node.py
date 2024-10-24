@@ -28,7 +28,7 @@ class MemcacheNode(_MemcacheNode, GenericNodeMixin):
 
     @property
     def name(self):
-        return 'Memcache/%s' % self.command
+        return f'Memcache/{self.command}'
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -46,7 +46,7 @@ class MemcacheNode(_MemcacheNode, GenericNodeMixin):
             yield TimeMetric(name='Memcache/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-        name = 'Memcache/%s' % self.command
+        name = f'Memcache/{self.command}'
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                   exclusive=self.exclusive)

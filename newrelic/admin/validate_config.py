@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 from newrelic.admin import command, usage
 
 
@@ -149,6 +147,7 @@ def validate_config(args):
         sys.exit(1)
 
     from newrelic.api.application import register_application
+    from newrelic.common.encoding_utils import obfuscate_license_key
     from newrelic.config import initialize
     from newrelic.core.config import global_settings
 
@@ -200,7 +199,7 @@ def validate_config(args):
     _logger.debug("Proxy port is %r.", _settings.proxy_port)
     _logger.debug("Proxy user is %r.", _settings.proxy_user)
 
-    _logger.debug("License key is %r.", _settings.license_key)
+    _logger.debug("License key is %r.", obfuscate_license_key(_settings.license_key))
 
     _timeout = 30.0
 
@@ -224,7 +223,7 @@ def validate_config(args):
                 url = parts[1].strip()
                 print("Registration successful. Reporting to:")
                 print()
-                print("  %s" % url)
+                print(f"  {url}")
                 print()
                 break
 

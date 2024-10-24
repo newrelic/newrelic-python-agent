@@ -54,13 +54,13 @@ def validate_time_metrics_outside_transaction(time_metrics=None, index=-1):
 
             def _metrics_table():
                 out = [""]
-                out.append("Expected: {0}: {1}".format(key, count))
+                out.append(f"Expected: {key}: {count}")
                 for metric_key, metric_value in metrics.items():
-                    out.append("{0}: {1}".format(metric_key, metric_value[0]))
+                    out.append(f"{metric_key}: {metric_value[0]}")
                 return "\n".join(out)
 
             def _metric_details():
-                return "metric=%r, count=%r" % (key, metric.call_count)
+                return f"metric={key!r}, count={metric.call_count!r}"
 
             if count is not None:
                 assert metric is not None, _metrics_table()

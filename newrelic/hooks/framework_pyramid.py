@@ -48,25 +48,23 @@ from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (FunctionWrapper, wrap_out_function,
-        wrap_function_wrapper)
+from newrelic.common.object_wrapper import (
+    FunctionWrapper,
+    wrap_function_wrapper,
+    wrap_out_function,
+)
+from newrelic.common.package_version_utils import get_package_version
 
 
 def instrument_pyramid_router(module):
-    pyramid_version = None
+    pyramid_version = get_package_version("pyramid")
 
-    try:
-        import pkg_resources
-        pyramid_version = pkg_resources.get_distribution('pyramid').version
-    except Exception:
-        pass
-
-    wrap_wsgi_application(
-        module, 'Router.__call__', framework=('Pyramid', pyramid_version))
+    wrap_wsgi_application(module, "Router.__call__", framework=("Pyramid", pyramid_version))
 
 
 def status_code(exc, value, tb):
     from pyramid.httpexceptions import HTTPException
+
     # Ignore certain exceptions based on HTTP status codes.
 
     if isinstance(value, HTTPException):
@@ -75,6 +73,7 @@ def status_code(exc, value, tb):
 
 def should_ignore(exc, value, tb):
     from pyramid.exceptions import PredicateMismatch
+
     # Always ignore PredicateMismatch as it is raised by views to force
     # subsequent views to be consulted when multi views are being used.
     # It isn't therefore strictly an error as such as a subsequent view
@@ -100,9 +99,7 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
 
     # set exception views to priority=1 so they won't take precedence over
     # the original view callable
-    transaction.set_transaction_name(
-        name,
-        priority=1 if args and isinstance(args[0], Exception) else 2)
+    transaction.set_transaction_name(name, priority=1 if args and isinstance(args[0], Exception) else 2)
 
     with FunctionTrace(name, source=view_callable) as trace:
         try:
@@ -114,7 +111,7 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
 
 
 def wrap_view_handler(mapped_view):
-    if hasattr(mapped_view, '_nr_wrapped'):
+    if hasattr(mapped_view, "_nr_wrapped"):  # pragma: no cover
         return mapped_view
     else:
         wrapped = FunctionWrapper(mapped_view, view_handler_wrapper)
@@ -157,7 +154,7 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
                 return wrapper(context, request)
             finally:
                 attr = instance.attr
-                inst = getattr(request, '__view__', None)
+                inst = getattr(request, "__view__", None)
                 if inst is not None:
                     if attr:
                         handler = getattr(inst, attr)
@@ -166,7 +163,7 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
                         tracer.name = name
                         tracer.add_code_level_metrics(handler)
                     else:
-                        method = getattr(inst, '__call__')
+                        method = getattr(inst, "__call__")
                         if method:
                             name = callable_name(method)
                             transaction.set_transaction_name(name, priority=2)
@@ -180,22 +177,21 @@ def instrument_pyramid_config_views(module):
     # Location of the ViewDeriver class changed from pyramid.config to
     # pyramid.config.views so check if present before trying to update.
 
-    if hasattr(module, 'ViewDeriver'):
-        wrap_out_function(module, 'ViewDeriver.__call__', wrap_view_handler)
-    elif hasattr(module, 'Configurator'):
-        wrap_out_function(module, 'Configurator._derive_view',
-                wrap_view_handler)
+    if hasattr(module, "ViewDeriver"):  # pragma: no cover
+        wrap_out_function(module, "ViewDeriver.__call__", wrap_view_handler)
+    elif hasattr(module, "Configurator"):
+        wrap_out_function(module, "Configurator._derive_view", wrap_view_handler)
 
-    if hasattr(module, 'DefaultViewMapper'):
+    if hasattr(module, "DefaultViewMapper"):
         module.DefaultViewMapper.map_class_requestonly = FunctionWrapper(
-                module.DefaultViewMapper.map_class_requestonly,
-                default_view_mapper_wrapper)
+            module.DefaultViewMapper.map_class_requestonly, default_view_mapper_wrapper
+        )
         module.DefaultViewMapper.map_class_native = FunctionWrapper(
-                module.DefaultViewMapper.map_class_native,
-                default_view_mapper_wrapper)
+            module.DefaultViewMapper.map_class_native, default_view_mapper_wrapper
+        )
 
 
 def instrument_pyramid_config_tweens(module):
-    wrap_function_wrapper(module, 'Tweens.add_explicit', wrap_add_tween)
+    wrap_function_wrapper(module, "Tweens.add_explicit", wrap_add_tween)
 
-    wrap_function_wrapper(module, 'Tweens.add_implicit', wrap_add_tween)
+    wrap_function_wrapper(module, "Tweens.add_implicit", wrap_add_tween)

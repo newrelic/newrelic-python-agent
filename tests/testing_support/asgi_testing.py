@@ -22,14 +22,14 @@ class ResponseState(Enum):
     DONE = 3
 
 
-class Response(object):
+class Response():
     def __init__(self, status, headers, body):
         self.status = status
         self.headers = headers
         self.body = b"".join(body)
 
 
-class AsgiTest(object):
+class AsgiTest():
     def __init__(self, asgi_application):
         self.asgi_application = asgi_application
 

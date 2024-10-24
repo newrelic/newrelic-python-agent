@@ -47,22 +47,33 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     topic, value, key, headers, partition, timestamp_ms = _bind_send(*args, **kwargs)
+    topic = topic or "Default"
     headers = list(headers) if headers else []
 
-    transaction.add_messagebroker_info("Kafka-Python", get_package_version("kafka-python"))
+    transaction.add_messagebroker_info(
+        "Kafka-Python", get_package_version("kafka-python") or get_package_version("kafka-python-ng")
+    )
 
     with MessageTrace(
         library="Kafka",
         operation="Produce",
         destination_type="Topic",
-        destination_name=topic or "Default",
+        destination_name=topic,
         source=wrapped,
         terminal=False,
-    ) as trace:
-        dt_headers = [(k, v.encode("utf-8")) for k, v in trace.generate_request_headers(transaction)]
-        headers.extend(dt_headers)
+    ):
+        dt_headers = [(k, v.encode("utf-8")) for k, v in MessageTrace.generate_request_headers(transaction)]
+        # headers can be a list of tuples or a dict so convert to dict for consistency.
+        if headers:
+            dt_headers.extend(headers)
+
+        if hasattr(instance, "config"):
+            for server_name in instance.config.get("bootstrap_servers", []):
+                transaction.record_custom_metric(f"MessageBroker/Kafka/Nodes/{server_name}/Produce/{topic}", 1)
         try:
-            return wrapped(topic, value=value, key=key, headers=headers, partition=partition, timestamp_ms=timestamp_ms)
+            return wrapped(
+                topic, value=value, key=key, headers=dt_headers, partition=partition, timestamp_ms=timestamp_ms
+            )
         except Exception:
             notice_error()
             raise
@@ -143,11 +154,18 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             # Don't add metrics if there was an inactive transaction.
             # Name the metrics using the same format as the transaction, but in case the active transaction
             # was an existing one and not a message transaction, reproduce the naming logic here.
-            group = "Message/%s/%s" % (library, destination_type)
-            name = "Named/%s" % destination_name
-            transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
-            transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
-            transaction.add_messagebroker_info("Kafka-Python", get_package_version("kafka-python"))
+            group = f"Message/{library}/{destination_type}"
+            name = f"Named/{destination_name}"
+            transaction.record_custom_metric(f"{group}/{name}/Received/Bytes", received_bytes)
+            transaction.record_custom_metric(f"{group}/{name}/Received/Messages", message_count)
+            if hasattr(instance, "config"):
+                for server_name in instance.config.get("bootstrap_servers", []):
+                    transaction.record_custom_metric(
+                        f"MessageBroker/Kafka/Nodes/{server_name}/Consume/{destination_name}", 1
+                    )
+            transaction.add_messagebroker_info(
+                "Kafka-Python", get_package_version("kafka-python") or get_package_version("kafka-python-ng")
+            )
 
     return record
 
@@ -180,8 +198,8 @@ class NewRelicSerializerWrapper(ObjectProxy):
         if not current_transaction():
             return wrapped(*args, **kwargs)
 
-        group = "%s/Kafka/Topic" % self._nr_group_prefix
-        name = "Named/%s/%s" % (topic, self._nr_serializer_name)
+        group = f"{self._nr_group_prefix}/Kafka/Topic"
+        name = f"Named/{topic}/{self._nr_serializer_name}"
 
         return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
 
@@ -204,8 +222,8 @@ def wrap_serializer(client, serializer_name, group_prefix, serializer):
             if message_trace:
                 topic = message_trace.destination_name
 
-        group = "%s/Kafka/Topic" % group_prefix
-        name = "Named/%s/%s" % (topic, serializer_name)
+        group = f"{group_prefix}/Kafka/Topic"
+        name = f"Named/{topic}/{serializer_name}"
 
         return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
 

@@ -70,7 +70,7 @@ def test_span_events(client, instance_enabled, db_instance_enabled, loop):
         hostname = instance_hostname(DB_SETTINGS["host"])
         exact_agents.update(
             {
-                "peer.address": "%s:%s" % (hostname, DB_SETTINGS["port"]),
+                "peer.address": f"{hostname}:{DB_SETTINGS['port']}",
                 "peer.hostname": hostname,
             }
         )

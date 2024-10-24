@@ -71,10 +71,8 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     _host_2 = instance_hostname(_postgresql_2['host'])
     _port_2 = _postgresql_2['port']
 
-    _instance_metric_name_1 = 'Datastore/instance/Postgres/%s/%s' % (
-            _host_1, _port_1)
-    _instance_metric_name_2 = 'Datastore/instance/Postgres/%s/%s' % (
-            _host_2, _port_2)
+    _instance_metric_name_1 = f'Datastore/instance/Postgres/{_host_1}/{_port_1}'
+    _instance_metric_name_2 = f'Datastore/instance/Postgres/{_host_2}/{_port_2}'
 
     _enable_rollup_metrics.extend([
             (_instance_metric_name_1, 2),
@@ -111,9 +109,8 @@ def _exercise_db():
             port=postgresql2['port'])
     try:
         cursor = connection.cursor()
-        cursor.execute("""drop table if exists %s""" % postgresql2["table_name"])
-        cursor.execute("""create table %s """ % postgresql2["table_name"] +
-                """(a integer, b real, c text)""")
+        cursor.execute(f"""drop table if exists {postgresql2['table_name']}""")
+        cursor.execute(f"create table {postgresql2['table_name']} (a integer, b real, c text)")
         connection.commit()
     finally:
         connection.close()

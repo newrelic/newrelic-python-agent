@@ -14,17 +14,13 @@
 
 import logging
 
-try:
-    from urllib2 import urlopen  # Py2.X
-except ImportError:
-    from urllib.request import urlopen  # Py3.X
+from urllib.request import urlopen
 
 import sqlite3 as db
 
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import (
     add_custom_attribute,
-    get_browser_timing_footer,
     get_browser_timing_header,
     record_custom_event,
 )
@@ -85,7 +81,7 @@ def fully_featured_app(environ, start_response):
     if "db" in environ and int(environ["db"]) > 0:
         connection = db.connect(":memory:")
         for i in range(int(environ["db"]) - 1):
-            connection.execute("create table test_db%d (a, b, c)" % i)
+            connection.execute(f"create table test_db{i} (a, b, c)")
 
     if "external" in environ:
         for i in range(int(environ["external"])):
@@ -106,9 +102,9 @@ def fully_featured_app(environ, start_response):
                 else:
                     notice_error()
 
-    text = "<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>"
+    text = "<html><head>%s</head><body><p>RESPONSE</p></body></html>"
 
-    output = (text % (get_browser_timing_header(), get_browser_timing_footer())).encode("UTF-8")
+    output = (text % get_browser_timing_header()).encode("UTF-8")
 
     response_headers = [("Content-type", "text/html; charset=utf-8"), ("Content-Length", str(len(output)))]
     write = start_response(status, response_headers)

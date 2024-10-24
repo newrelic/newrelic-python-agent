@@ -25,7 +25,7 @@ except Exception:
 _logger = logging.getLogger(__name__)
 
 
-class StreamingRpc(object):
+class StreamingRpc():
     """Streaming Remote Procedure Call
 
     This class keeps a stream_stream RPC alive, retrying after a timeout when
@@ -128,7 +128,7 @@ class StreamingRpc(object):
                     details = response_iterator.details()
 
                     self.record_metric(
-                        "Supportability/InfiniteTracing/Span/gRPC/%s" % code.name,
+                        f"Supportability/InfiniteTracing/Span/gRPC/{code.name}",
                         {"count": 1},
                     )
 

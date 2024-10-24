@@ -28,6 +28,7 @@ from newrelic.api.database_trace import database_trace
 from newrelic.api.datastore_trace import datastore_trace
 from newrelic.api.external_trace import external_trace
 from newrelic.api.function_trace import function_trace
+from newrelic.api.graphql_trace import graphql_operation_trace, graphql_resolver_trace
 from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
 
@@ -41,6 +42,8 @@ from newrelic.api.message_trace import message_trace
         (functools.partial(datastore_trace, "lib", "foo", "bar"), "Datastore/statement/lib/foo/bar"),
         (functools.partial(message_trace, "lib", "op", "typ", "name"), "MessageBroker/lib/typ/op/Named/name"),
         (functools.partial(memcache_trace, "cmd"), "Memcache/cmd"),
+        (functools.partial(graphql_operation_trace), "GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>"),
+        (functools.partial(graphql_resolver_trace), "GraphQL/resolve/GraphQL/<unknown>"),
     ],
 )
 def test_awaitable_timing(event_loop, trace, metric):
@@ -79,6 +82,8 @@ def test_awaitable_timing(event_loop, trace, metric):
         (functools.partial(datastore_trace, "lib", "foo", "bar"), "Datastore/statement/lib/foo/bar"),
         (functools.partial(message_trace, "lib", "op", "typ", "name"), "MessageBroker/lib/typ/op/Named/name"),
         (functools.partial(memcache_trace, "cmd"), "Memcache/cmd"),
+        (functools.partial(graphql_operation_trace), "GraphQL/operation/GraphQL/<unknown>/<anonymous>/<unknown>"),
+        (functools.partial(graphql_resolver_trace), "GraphQL/resolve/GraphQL/<unknown>"),
     ],
 )
 @pytest.mark.parametrize("yield_from", [True, False])

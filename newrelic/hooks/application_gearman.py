@@ -69,8 +69,7 @@ def wrapper_GearmanConnectionManager_poll_connections_until_stopped(
 
     first_connection = list(submitted_connections)[0]
 
-    url = 'gearman://%s:%s' % (first_connection.gearman_host,
-            first_connection.gearman_port)
+    url = f'gearman://{first_connection.gearman_host}:{first_connection.gearman_port}'
 
     with ExternalTrace('gearman', url):
         return wrapped(*args, **kwargs)
@@ -105,8 +104,7 @@ def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
 
     current_connection = _bind_params(*args, **kwargs)
 
-    tracer.url = 'gearman://%s:%s' % (current_connection.gearman_host,
-            current_connection.gearman_port)
+    tracer.url = f'gearman://{current_connection.gearman_host}:{current_connection.gearman_port}'
 
     return wrapped(*args, **kwargs)
 

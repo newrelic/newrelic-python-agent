@@ -14,7 +14,6 @@
 
 import logging
 import time
-import newrelic.packages.six as six
 
 from newrelic.common.coroutine import (is_coroutine_callable,
         is_asyncio_coroutine, is_generator_function)
@@ -26,7 +25,7 @@ _logger = logging.getLogger(__name__)
 CancelledError = None
 
 
-class TransactionContext(object):
+class TransactionContext():
     def __init__(self, transaction_init):
         self.enter_time = None
         self.transaction = None
@@ -102,7 +101,7 @@ class TransactionContext(object):
             self.transaction.__exit__(exc, value, tb)
 
 
-class LoopContext(object):
+class LoopContext():
     def __enter__(self):
         self.enter_time = time.time()
 
@@ -140,12 +139,8 @@ class GeneratorProxy(Coroutine):
     def __iter__(self):
         return self
 
-    if six.PY2:
-        def next(self):
-            return self.send(None)
-    else:
-        def __next__(self):
-            return self.send(None)
+    def __next__(self):
+        return self.send(None)
 
 
 class AwaitableGeneratorProxy(GeneratorProxy):

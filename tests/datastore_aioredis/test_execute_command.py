@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import pytest
-
-# import aioredis
 from conftest import AIOREDIS_VERSION, loop  # noqa # pylint: disable=E0611,W0611
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
@@ -56,7 +54,7 @@ _enable_rollup_metrics = list(_base_rollup_metrics)
 _host = instance_hostname(DB_SETTINGS["host"])
 _port = DB_SETTINGS["port"]
 
-_instance_metric_name = "Datastore/instance/Redis/%s/%s" % (_host, _port)
+_instance_metric_name = f"Datastore/instance/Redis/{_host}/{_port}"
 
 _enable_rollup_metrics.append((_instance_metric_name, 1))
 

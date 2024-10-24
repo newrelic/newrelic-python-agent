@@ -39,14 +39,14 @@ class BadPutRequest(ValueError):
     pass
 
 
-class Index(object):
+class Index():
     def on_get(self, req, resp):
         """Handles GET requests"""
         resp.content_type = 'application/json'
         resp.data = b'{"status": "ok"}'
 
 
-class BadResponse(object):
+class BadResponse():
     def on_get(self, req, resp):
         raise BadGetRequest()
 

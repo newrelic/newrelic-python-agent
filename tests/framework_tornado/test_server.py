@@ -55,14 +55,14 @@ from newrelic.core.config import global_settings
 )
 @override_application_settings({"attributes.include": ["request.*"]})
 def test_server(app, uri, name, metrics, method_metric):
-    FRAMEWORK_METRIC = "Python/Framework/Tornado/%s" % app.tornado_version
-    METHOD_METRIC = "Function/%s" % name
+    FRAMEWORK_METRIC = f"Python/Framework/Tornado/{app.tornado_version}"
+    METHOD_METRIC = f"Function/{name}"
 
     metrics = metrics or []
     metrics.append((FRAMEWORK_METRIC, 1))
     metrics.append((METHOD_METRIC, 1 if method_metric else None))
 
-    host = "127.0.0.1:" + str(app.get_http_port())
+    host = f"127.0.0.1:{str(app.get_http_port())}"
     namespace, func_name = name.split(".")
     namespace = namespace.replace(":", ".")
 
@@ -112,8 +112,8 @@ def test_server(app, uri, name, metrics, method_metric):
 def test_concurrent_inbound_requests(app, uri, name, metrics, method_metric):
     from tornado import gen
 
-    FRAMEWORK_METRIC = "Python/Framework/Tornado/%s" % app.tornado_version
-    METHOD_METRIC = "Function/%s" % name
+    FRAMEWORK_METRIC = f"Python/Framework/Tornado/{app.tornado_version}"
+    METHOD_METRIC = f"Function/{name}"
 
     metrics = metrics or []
     metrics.append((FRAMEWORK_METRIC, 1))
@@ -220,7 +220,7 @@ def test_web_socket(uri, name, app):
 
     @validate_transaction_metrics(
         name,
-        rollup_metrics=[("Function/%s" % name, None)],
+        rollup_metrics=[(f"Function/{name}", None)],
     )
     @validate_code_level_metrics(namespace, func_name)
     def _test():

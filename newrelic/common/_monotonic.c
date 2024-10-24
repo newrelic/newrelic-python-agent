@@ -121,7 +121,6 @@ static PyMethodDef monotonic_methods[] = {
     { NULL, NULL }
 };
 
-#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     "_monotonic",        /* m_name */
@@ -133,18 +132,13 @@ static struct PyModuleDef moduledef = {
     NULL,                /* m_clear */
     NULL,                /* m_free */
 };
-#endif
 
 static PyObject *
 moduleinit(void)
 {
     PyObject *module;
 
-#if PY_MAJOR_VERSION >= 3
     module = PyModule_Create(&moduledef);
-#else
-    module = Py_InitModule3("_monotonic", monotonic_methods, NULL);
-#endif
 
     if (module == NULL)
         return NULL;
@@ -152,17 +146,10 @@ moduleinit(void)
     return module;
 }
 
-#if PY_MAJOR_VERSION < 3
-PyMODINIT_FUNC init_monotonic(void)
-{
-    moduleinit();
-}
-#else
 PyMODINIT_FUNC PyInit__monotonic(void)
 {
     return moduleinit();
 }
-#endif
 
 /* ------------------------------------------------------------------------- */
 

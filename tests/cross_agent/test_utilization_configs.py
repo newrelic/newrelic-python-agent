@@ -17,6 +17,8 @@ import os
 import sys
 import tempfile
 
+from importlib import reload
+
 import pytest
 
 # NOTE: the test_utilization_settings_from_env_vars test mocks several of the
@@ -29,12 +31,6 @@ from newrelic.common.system_info import BootIdUtilization
 from newrelic.common.utilization import CommonUtilization
 from newrelic.core.agent_protocol import AgentProtocol
 
-try:
-    # python 2.x
-    reload
-except NameError:
-    # python 3.x
-    from importlib import reload
 
 INITIAL_ENV = os.environ
 
@@ -76,7 +72,7 @@ def _mock_getips(ip_addresses):
     return getips
 
 
-class UpdatedSettings(object):
+class UpdatedSettings():
     def __init__(self):
         self.initial_settings = newrelic.core.config._settings
 
@@ -179,7 +175,6 @@ def patch_system_info(test, monkeypatch):
 
 @pytest.mark.parametrize("test", _load_tests())
 def test_utilization_settings(test, monkeypatch):
-
     env = test.get("input_environment_variables", {})
 
     if test.get("input_pcf_guid"):

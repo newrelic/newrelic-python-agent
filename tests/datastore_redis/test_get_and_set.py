@@ -48,16 +48,13 @@ _base_rollup_metrics = (
         ('Datastore/operation/Redis/set', 1),
 )
 
-_disable_scoped_metrics = list(_base_scoped_metrics)
 _disable_rollup_metrics = list(_base_rollup_metrics)
-
-_enable_scoped_metrics = list(_base_scoped_metrics)
 _enable_rollup_metrics = list(_base_rollup_metrics)
 
 _host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
-_instance_metric_name = 'Datastore/instance/Redis/%s/%s' % (_host, _port)
+_instance_metric_name = f'Datastore/instance/Redis/{_host}/{_port}'
 
 _enable_rollup_metrics.append(
         (_instance_metric_name, 2)
@@ -78,7 +75,7 @@ def exercise_redis(client):
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
         'test_get_and_set:test_strict_redis_operation_enable_instance',
-        scoped_metrics=_enable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -90,7 +87,7 @@ def test_strict_redis_operation_enable_instance():
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
         'test_get_and_set:test_strict_redis_operation_disable_instance',
-        scoped_metrics=_disable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -102,7 +99,7 @@ def test_strict_redis_operation_disable_instance():
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
         'test_get_and_set:test_redis_operation_enable_instance',
-        scoped_metrics=_enable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_enable_rollup_metrics,
         background_task=True)
 @background_task()
@@ -114,7 +111,7 @@ def test_redis_operation_enable_instance():
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
         'test_get_and_set:test_redis_operation_disable_instance',
-        scoped_metrics=_disable_scoped_metrics,
+        scoped_metrics=_base_scoped_metrics,
         rollup_metrics=_disable_rollup_metrics,
         background_task=True)
 @background_task()

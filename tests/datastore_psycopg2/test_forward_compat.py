@@ -20,7 +20,7 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.database_psycopg2 import wrapper_psycopg2_as_string
 
 
-class TestCompatability(object):
+class TestCompatability():
     def as_string(self, giraffe, lion, tiger=None):
         assert isinstance(giraffe, ext.cursor)
         return "PASS"

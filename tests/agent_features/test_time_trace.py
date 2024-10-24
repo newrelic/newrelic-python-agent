@@ -15,6 +15,8 @@
 import logging
 
 import pytest
+from testing_support.fixtures import dt_enabled
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
@@ -71,3 +73,31 @@ def test_trace_finalizes_with_transaction_missing_settings(monkeypatch, trace_ty
         # Ensure transaction still has settings when it exits to prevent other crashes making errors hard to read
         monkeypatch.undo()
         assert txn.settings
+
+
+@pytest.mark.parametrize(
+    "trace_type,args",
+    (
+        (DatabaseTrace, ("select * from foo",)),
+        (DatastoreTrace, ("db_product", "db_target", "db_operation")),
+        (ExternalTrace, ("lib", "url")),
+        (FunctionTrace, ("name",)),
+        (GraphQLOperationTrace, ()),
+        (GraphQLResolverTrace, ()),
+        (MemcacheTrace, ("command",)),
+        (MessageTrace, ("lib", "operation", "dst_type", "dst_name")),
+        (SolrTrace, ("lib", "command")),
+    ),
+)
+@dt_enabled
+@validate_span_events(
+    count=1,
+    expected_users=["foo"],
+    unexpected_users=["drop-me"],
+)
+@background_task()
+def test_trace_filters_out_invalid_attributes(trace_type, args):
+    txn = current_transaction()
+    with trace_type(*args) as trace:
+        trace.add_custom_attribute("drop-me", None)
+        trace.add_custom_attribute("foo", "bar")

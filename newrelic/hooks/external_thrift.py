@@ -19,9 +19,9 @@ def instrument(module):
     def tsocket_open_url(socket, *args, **kwargs):
         scheme = 'socket' if socket._unix_socket else 'http'
         if socket.port:
-            url = '%s://%s:%s' % (scheme, socket.host, socket.port)
+            url = f'{scheme}://{socket.host}:{socket.port}'
         else:
-            url = '%s://%s' % (scheme, socket.host)
+            url = f'{scheme}://{socket.host}'
 
         return url
 

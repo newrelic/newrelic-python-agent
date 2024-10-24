@@ -22,7 +22,7 @@ from newrelic.core.stack_trace import (exception_stack, current_stack,
 
 def _format_stack_trace_from_tuples(frames):
     result = ['Traceback (most recent call last):']
-    result.extend(['File "{0}", line {1}, in {2}'.format(*v) for v in frames])
+    result.extend([f'File "{v[0]}", line {v[1]}, in {v[2]}' for v in frames])
     return result
 
 def function0():

@@ -83,7 +83,7 @@ def MemcacheSingleWrapper(wrapped, product, target, operation, module):
 
 
 def wrap_memcache_single(module, object_path, product, target, operation):
-    wrap_object(module, "Client.%s" % object_path, MemcacheSingleWrapper, (product, target, operation, module))
+    wrap_object(module, f"Client.{object_path}", MemcacheSingleWrapper, (product, target, operation, module))
 
 
 _memcache_client_methods = (
@@ -112,4 +112,4 @@ def instrument_memcache(module):
 
     for name in _memcache_multi_methods:
         if hasattr(module.Client, name):
-            wrap_datastore_trace(module, "Client.%s" % name, product="Memcached", target=None, operation=name)
+            wrap_datastore_trace(module, f"Client.{name}", product="Memcached", target=None, operation=name)

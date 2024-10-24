@@ -16,7 +16,6 @@ from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version_tuple
-from newrelic.packages import six
 
 # An index name can be a string, None or a sequence. In the case of None
 # an empty string or '*', it is the same as using '_all'. When a string
@@ -30,7 +29,7 @@ ES_VERSION = get_package_version_tuple("elasticsearch")
 def _index_name(index):
     if not index or index == "*":
         return "_all"
-    if not isinstance(index, six.string_types) or "," in index:
+    if not isinstance(index, str) or "," in index:
         return "other"
     return index
 
@@ -124,7 +123,7 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
             index = arg_extractor(*args, **kwargs)
 
         if prefix:
-            operation = "%s.%s" % (prefix, method_name)
+            operation = f"{prefix}.{method_name}"
         else:
             operation = method_name
 
@@ -143,7 +142,7 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
 
             return result
 
-    wrap_function_wrapper(module, "%s.%s" % (class_name, method_name), _nr_wrapper_Elasticsearch_method_)
+    wrap_function_wrapper(module, f"{class_name}.{method_name}", _nr_wrapper_Elasticsearch_method_)
 
 
 _elasticsearch_client_methods_below_v8 = (

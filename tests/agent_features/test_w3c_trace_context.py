@@ -60,7 +60,7 @@ INBOUND_TRACEPARENT_VERSION_ZERO_EXTRA_FIELDS = \
 INBOUND_TRACESTATE = \
         'rojo=f06a0ba902b7,congo=t61rcWkgMzE'
 LONG_TRACESTATE = \
-        ','.join(["{}@rojo=f06a0ba902b7".format(x) for x in range(32)])
+        ','.join([f"{x}@rojo=f06a0ba902b7" for x in range(32)])
 INBOUND_UNTRUSTED_NR_TRACESTATE = \
         ('2@nr=0-0-1345936-55632452-27jjj2d8890283b4-b28ce285632jjhl9-'
         '1-1.1273-1569367663277')
@@ -140,10 +140,10 @@ def test_tracestate_generation(inbound_nr_tracestate):
 
 @pytest.mark.parametrize('inbound_tracestate,expected', (
     ('', None),
-    (INBOUND_NR_TRACESTATE + "," + INBOUND_TRACESTATE, INBOUND_TRACESTATE),
+    (f"{INBOUND_NR_TRACESTATE},{INBOUND_TRACESTATE}", INBOUND_TRACESTATE),
     (INBOUND_TRACESTATE, INBOUND_TRACESTATE),
-    (LONG_TRACESTATE + ',' + INBOUND_NR_TRACESTATE,
-            ','.join("{}@rojo=f06a0ba902b7".format(x) for x in range(31))),
+    (f"{LONG_TRACESTATE},{INBOUND_NR_TRACESTATE}",
+            ','.join(f"{x}@rojo=f06a0ba902b7" for x in range(31))),
 ), ids=(
     'empty_inbound_payload',
     'nr_payload',
@@ -216,7 +216,7 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
             "parentSpanId": "00f067aa0ba902b7",
             "parent.transportType": "HTTP"},
             [("Supportability/TraceContext/TraceParent/Accept/Success", 1)]),
-    (INBOUND_TRACEPARENT + ' ', {
+    (f"{INBOUND_TRACEPARENT} ", {
             "traceId": "0af7651916cd43dd8448eb211c80319c",
             "parentSpanId": "00f067aa0ba902b7",
             "parent.transportType": "HTTP"},
@@ -267,16 +267,16 @@ def test_inbound_traceparent_header(traceparent, intrinsics, metrics):
     (INBOUND_NR_TRACESTATE,
             {'trustedParentId': '27ddd2d8890283b4'}),
     ('garbage', {'parentId': '00f067aa0ba902b7'}),
-    (INBOUND_TRACESTATE + ',' + INBOUND_NR_TRACESTATE,
+    (f"{INBOUND_TRACESTATE},{INBOUND_NR_TRACESTATE}",
             {'parentId': '00f067aa0ba902b7',
              'trustedParentId': '27ddd2d8890283b4',
              'tracingVendors': 'rojo,congo'}),
-    (INBOUND_TRACESTATE + ',' + INBOUND_UNTRUSTED_NR_TRACESTATE,
+    (f"{INBOUND_TRACESTATE},{INBOUND_UNTRUSTED_NR_TRACESTATE}",
             {'parentId': '00f067aa0ba902b7',
              'tracingVendors': 'rojo,congo,2@nr'}),
-    ('rojo=12345,' + 'v' * 257 + '=x',
+    (f"rojo=12345,{'v' * 257}=x",
             {'tracingVendors': 'rojo'}),
-    ('rojo=12345,k=' + 'v' * 257,
+    (f"rojo=12345,k={'v' * 257}",
             {'tracingVendors': 'rojo'}),
 ))
 @override_application_settings(_override_settings)

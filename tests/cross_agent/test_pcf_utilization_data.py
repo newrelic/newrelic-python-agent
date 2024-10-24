@@ -45,7 +45,7 @@ def _parametrize_test(test):
 _pcf_tests = [_parametrize_test(t) for t in _load_tests()]
 
 
-class Environ(object):
+class Environ():
     def __init__(self, env_dict):
         env_dict = env_dict or {}
         cleaned_env_dict = {}
@@ -66,7 +66,7 @@ class Environ(object):
         os.environ = INITIAL_ENV
 
 
-class MockResponse(object):
+class MockResponse():
 
     def __init__(self, code, body):
         self.code = code

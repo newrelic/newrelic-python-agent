@@ -16,23 +16,23 @@ import json
 import os
 import pytest
 
-from newrelic.core.rules_engine import RulesEngine, NormalizationRule
+from newrelic.api.application import application_instance
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import record_custom_metric
+from newrelic.core.rules_engine import RulesEngine
+
+from testing_support.validators.validate_metric_payload import validate_metric_payload
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIXTURE = os.path.normpath(os.path.join(
         CURRENT_DIR, 'fixtures', 'rules.json'))
+
 
 def _load_tests():
     with open(FIXTURE, 'r') as fh:
         js = fh.read()
     return json.loads(js)
 
-def _prepare_rules(test_rules):
-    # ensure all keys are present, if not present set to an empty string
-    for rule in test_rules:
-        for key in NormalizationRule._fields:
-            rule[key] = rule.get(key, '')
-    return test_rules
 
 def _make_case_insensitive(rules):
     # lowercase each rule
@@ -42,14 +42,14 @@ def _make_case_insensitive(rules):
             rule['replacement'] = rule['replacement'].lower()
     return rules
 
+
 @pytest.mark.parametrize('test_group', _load_tests())
 def test_rules_engine(test_group):
 
     # FIXME: The test fixture assumes that matching is case insensitive when it
     # is not. To avoid errors, just lowercase all rules, inputs, and expected
     # values.
-    insense_rules = _make_case_insensitive(test_group['rules'])
-    test_rules = _prepare_rules(insense_rules)
+    test_rules = _make_case_insensitive(test_group['rules'])
     rules_engine = RulesEngine(test_rules)
 
     for test in test_group['tests']:
@@ -66,3 +66,46 @@ def test_rules_engine(test_group):
             assert expected == ''
         else:
             assert result == expected
+
+
+@pytest.mark.parametrize('test_group', _load_tests())
+def test_rules_engine_metric_harvest(test_group):
+    # FIXME: The test fixture assumes that matching is case insensitive when it
+    # is not. To avoid errors, just lowercase all rules, inputs, and expected
+    # values.
+    test_rules = _make_case_insensitive(test_group['rules'])
+    rules_engine = RulesEngine(test_rules)
+
+    # Set rules engine on core application
+    api_application = application_instance(activate=False)
+    api_name = api_application.name
+    core_application = api_application._agent.application(api_name)
+    old_rules = core_application._rules_engine["metric"]  # save previoius rules
+    core_application._rules_engine["metric"] = rules_engine
+
+    def send_metrics():
+        # Send all metrics in this test batch in one transaction, then harvest so the normalizer is run.
+        @background_task(name="send_metrics")
+        def _test():
+            for test in test_group['tests']:
+                # lowercase each value
+                input_str = test['input'].lower()
+                record_custom_metric(input_str, {"count": 1})
+        _test()
+        core_application.harvest()
+
+    try:
+        # Create a map of all result metrics to validate after harvest
+        test_metrics = []
+        for test in test_group['tests']:
+            expected = (test['expected'] or '').lower()
+            if expected == '':  # Ignored
+                test_metrics.append((expected, None))
+            else:
+                test_metrics.append((expected, 1))
+        
+        # Harvest and validate resulting payload
+        validate_metric_payload(metrics=test_metrics)(send_metrics)()
+    finally:
+        # Replace original rules engine
+        core_application._rules_engine["metric"] = old_rules

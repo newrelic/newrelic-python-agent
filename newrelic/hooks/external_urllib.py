@@ -12,12 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-
-import newrelic.packages.six as six
+import urllib.parse as urlparse
 
 from newrelic.api.external_trace import ExternalTraceWrapper
 from newrelic.api.transaction import current_transaction
@@ -56,7 +51,7 @@ def bind_params_urlretrieve(url, *args, **kwargs):
 
 def bind_params_open(fullurl, *args, **kwargs):
 
-    if isinstance(fullurl, six.string_types):
+    if isinstance(fullurl, str):
         return fullurl
     else:
         return fullurl.get_full_url()

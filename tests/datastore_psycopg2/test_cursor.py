@@ -42,10 +42,10 @@ _disable_instance_settings = {
 # Metrics
 _base_scoped_metrics = (
         ('Function/psycopg2:connect', 1),
-        ('Datastore/statement/Postgres/%s/select' % DB_SETTINGS['table_name'], 1),
-        ('Datastore/statement/Postgres/%s/insert' % DB_SETTINGS['table_name'], 1),
-        ('Datastore/statement/Postgres/%s/update' % DB_SETTINGS['table_name'], 1),
-        ('Datastore/statement/Postgres/%s/delete' % DB_SETTINGS['table_name'], 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
         ('Datastore/statement/Postgres/now/call', 1),
         ('Datastore/statement/Postgres/pg_sleep/call', 1),
         ('Datastore/operation/Postgres/drop', 1),
@@ -59,10 +59,10 @@ _base_rollup_metrics = (
         ('Datastore/allOther', 12),
         ('Datastore/Postgres/all', 12),
         ('Datastore/Postgres/allOther', 12),
-        ('Datastore/statement/Postgres/%s/select' % DB_SETTINGS['table_name'], 1),
-        ('Datastore/statement/Postgres/%s/insert' % DB_SETTINGS['table_name'], 1),
-        ('Datastore/statement/Postgres/%s/update' % DB_SETTINGS['table_name'], 1),
-        ('Datastore/statement/Postgres/%s/delete' % DB_SETTINGS['table_name'], 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
+        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
         ('Datastore/operation/Postgres/select', 1),
         ('Datastore/operation/Postgres/insert', 1),
         ('Datastore/operation/Postgres/update', 1),
@@ -85,7 +85,7 @@ _enable_rollup_metrics = list(_base_rollup_metrics)
 _host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
-_instance_metric_name = 'Datastore/instance/Postgres/%s/%s' % (_host, _port)
+_instance_metric_name = f'Datastore/instance/Postgres/{_host}/{_port}'
 
 _enable_rollup_metrics.append(
         (_instance_metric_name, 11)
@@ -103,27 +103,27 @@ def _execute(connection, cursor, row_type, wrapper):
     psycopg2.extensions.register_type(unicode_type, connection)
     psycopg2.extensions.register_type(unicode_type, cursor)
 
-    sql = """drop table if exists %s""" % DB_SETTINGS["table_name"]
+    sql = f"""drop table if exists {DB_SETTINGS['table_name']}"""
     cursor.execute(wrapper(sql))
 
-    sql = """create table %s (a integer, b real, c text)""" % DB_SETTINGS["table_name"]
+    sql = f"""create table {DB_SETTINGS['table_name']} (a integer, b real, c text)"""
     cursor.execute(wrapper(sql))
 
-    sql = """insert into %s """ % DB_SETTINGS["table_name"] + """values (%s, %s, %s)"""
+    sql = f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)"
     params = [(1, 1.0, '1.0'), (2, 2.2, '2.2'), (3, 3.3, '3.3')]
     cursor.executemany(wrapper(sql), params)
 
-    sql = """select * from %s""" % DB_SETTINGS["table_name"]
+    sql = f"""select * from {DB_SETTINGS['table_name']}"""
     cursor.execute(wrapper(sql))
 
     for row in cursor:
         assert isinstance(row, row_type)
 
-    sql = """update %s""" % DB_SETTINGS["table_name"] + """ set a=%s, b=%s, c=%s where a=%s"""
+    sql = f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s"
     params = (4, 4.0, '4.0', 1)
     cursor.execute(wrapper(sql), params)
 
-    sql = """delete from %s where a=2""" % DB_SETTINGS["table_name"]
+    sql = f"""delete from {DB_SETTINGS['table_name']} where a=2"""
     cursor.execute(wrapper(sql))
 
     connection.commit()
@@ -162,9 +162,7 @@ _test_matrix = ['wrapper,use_cur_context', [(str, False)]]
 _test_matrix[1].append((str, True))
 
 # Composable SQL is expected to be available in versions 2.7 and up
-assert sql, (
-        "Composable sql (from psycopg2 import sql) is expected to load"
-        "but is not loading")
+assert sql, "Composable sql (from psycopg2 import sql) is expected to load but is not loading"
 
 # exercise with regular SQL wrapper
 _test_matrix[1].append((sql.SQL, True))

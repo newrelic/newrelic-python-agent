@@ -39,6 +39,7 @@ IGNORED_METHODS = {
     "append_no_scale",
     "append_values_and_weights",
     "append_weights",
+    "auto_close_connection_pool",
     "batch_indexer",
     "BatchIndexer",
     "bulk",
@@ -55,7 +56,9 @@ IGNORED_METHODS = {
     "edges",
     "execute_command",
     "flush",
+    "from_pool",
     "from_url",
+    "get_cache",
     "get_connection_kwargs",
     "get_encoder",
     "get_label",
@@ -63,7 +66,6 @@ IGNORED_METHODS = {
     "get_property",
     "get_relation",
     "get_retry",
-    "hscan_iter",
     "index_name",
     "labels",
     "list_keys",
@@ -116,4 +118,4 @@ def test_uninstrumented_methods(client):
             is_wrapped = lambda m: hasattr(getattr(module_client, m), "__wrapped__")
             uninstrumented |= {m for m in module_methods - IGNORED_METHODS if not is_wrapped(m)}
 
-    assert not uninstrumented, "Uninstrumented methods: %s" % sorted(uninstrumented)
+    assert not uninstrumented, f"Uninstrumented methods: {sorted(uninstrumented)}"

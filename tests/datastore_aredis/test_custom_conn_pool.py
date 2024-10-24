@@ -32,7 +32,7 @@ DB_SETTINGS = redis_settings()[0]
 REDIS_PY_VERSION = aredis.VERSION
 
 
-class FakeConnectionPool(object):
+class FakeConnectionPool():
     """Connection Pool without connection_kwargs attribute."""
 
     def __init__(self, connection):
@@ -83,7 +83,7 @@ _enable_rollup_metrics = list(_base_rollup_metrics)
 _host = instance_hostname(DB_SETTINGS['host'])
 _port = DB_SETTINGS['port']
 
-_instance_metric_name = 'Datastore/instance/Redis/%s/%s' % (_host, _port)
+_instance_metric_name = f'Datastore/instance/Redis/{_host}/{_port}'
 
 _enable_rollup_metrics.append(
         (_instance_metric_name, 3)

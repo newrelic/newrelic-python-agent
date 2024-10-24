@@ -57,16 +57,16 @@ _enable_rollup_metrics = list(_base_rollup_metrics)
 _host = instance_hostname(DB_SETTINGS["host"])
 _port = DB_SETTINGS["port"]
 
-_instance_metric_name = "Datastore/instance/Redis/%s/%s" % (_host, _port)
+_instance_metric_name = f"Datastore/instance/Redis/{_host}/{_port}"
 
 _enable_rollup_metrics.append((_instance_metric_name, 2))
 
 _disable_rollup_metrics.append((_instance_metric_name, None))
 
 
-async def exercise_redis(client):
-    await client.set("key", "value")
-    await client.get("key")
+async def exercise_redis(client, key):
+    await client.set(key, "value")
+    await client.get(key)
 
 
 @override_application_settings(_enable_instance_settings)
@@ -77,8 +77,8 @@ async def exercise_redis(client):
     background_task=True,
 )
 @background_task()
-def test_redis_client_operation_enable_instance(client, loop):
-    loop.run_until_complete(exercise_redis(client))
+def test_redis_client_operation_enable_instance(client, loop, key):
+    loop.run_until_complete(exercise_redis(client, key))
 
 
 @override_application_settings(_disable_instance_settings)
@@ -89,5 +89,5 @@ def test_redis_client_operation_enable_instance(client, loop):
     background_task=True,
 )
 @background_task()
-def test_redis_client_operation_disable_instance(client, loop):
-    loop.run_until_complete(exercise_redis(client))
+def test_redis_client_operation_disable_instance(client, loop, key):
+    loop.run_until_complete(exercise_redis(client, key))

@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 # Number of days of inactivity before an issue becomes stale
-daysUntilStale: 60
+daysUntilStale: 365
 # Number of days of inactivity before a stale issue is closed
 # Set to false to disable. If disabled, issues still need to be closed manually, but will remain marked as stale.
 daysUntilClose: false

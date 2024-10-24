@@ -30,8 +30,7 @@ class MessageNode(_MessageNode, GenericNodeMixin):
 
     @property
     def name(self):
-        name = 'MessageBroker/%s/%s/%s/Named/%s' % (self.library,
-                self.destination_type, self.operation, self.destination_name)
+        name = f'MessageBroker/{self.library}/{self.destination_type}/{self.operation}/Named/{self.destination_name}'
         return name
 
     def time_metrics(self, stats, root, parent):

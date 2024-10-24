@@ -18,19 +18,25 @@ import uuid
 import kafka
 import pytest
 from testing_support.db_settings import kafka_settings
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
 
 DB_SETTINGS = kafka_settings()[0]
 
-BOOTSTRAP_SERVER = "%s:%s" % (DB_SETTINGS["host"], DB_SETTINGS["port"])
-BROKER = [BOOTSTRAP_SERVER]
+
+@pytest.fixture(scope="session")
+def broker():
+    BOOTSTRAP_SERVER = f"{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"
+    return [BOOTSTRAP_SERVER]
 
 
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -59,24 +65,24 @@ def skip_if_not_serializing(client_type):
 
 
 @pytest.fixture(scope="function")
-def producer(client_type, json_serializer, json_callable_serializer):
+def producer(client_type, json_serializer, json_callable_serializer, broker):
     if client_type == "no_serializer":
-        producer = kafka.KafkaProducer(bootstrap_servers=BROKER)
+        producer = kafka.KafkaProducer(bootstrap_servers=broker)
     elif client_type == "serializer_function":
         producer = kafka.KafkaProducer(
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             value_serializer=lambda v: json.dumps(v).encode("utf-8") if v else None,
             key_serializer=lambda v: json.dumps(v).encode("utf-8") if v else None,
         )
     elif client_type == "callable_object":
         producer = kafka.KafkaProducer(
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             value_serializer=json_callable_serializer,
             key_serializer=json_callable_serializer,
         )
     elif client_type == "serializer_object":
         producer = kafka.KafkaProducer(
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             value_serializer=json_serializer,
             key_serializer=json_serializer,
         )
@@ -86,48 +92,48 @@ def producer(client_type, json_serializer, json_callable_serializer):
 
 
 @pytest.fixture(scope="function")
-def consumer(topic, producer, client_type, json_deserializer, json_callable_deserializer):
+def consumer(group_id, topic, producer, client_type, json_deserializer, json_callable_deserializer, broker):
     if client_type == "no_serializer":
         consumer = kafka.KafkaConsumer(
             topic,
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
     elif client_type == "serializer_function":
         consumer = kafka.KafkaConsumer(
             topic,
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             key_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else None,
             value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v else None,
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
     elif client_type == "callable_object":
         consumer = kafka.KafkaConsumer(
             topic,
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             key_deserializer=json_callable_deserializer,
             value_deserializer=json_callable_deserializer,
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
     elif client_type == "serializer_object":
         consumer = kafka.KafkaConsumer(
             topic,
-            bootstrap_servers=BROKER,
+            bootstrap_servers=broker,
             key_deserializer=json_deserializer,
             value_deserializer=json_deserializer,
             auto_offset_reset="earliest",
             consumer_timeout_ms=100,
             heartbeat_interval_ms=1000,
-            group_id="test",
+            group_id=group_id,
         )
 
     yield consumer
@@ -170,7 +176,7 @@ def json_deserializer():
 
 @pytest.fixture(scope="session")
 def json_callable_serializer():
-    class JSONCallableSerializer(object):
+    class JSONCallableSerializer():
         def __call__(self, obj):
             return json.dumps(obj).encode("utf-8") if obj is not None else None
 
@@ -179,7 +185,7 @@ def json_callable_serializer():
 
 @pytest.fixture(scope="session")
 def json_callable_deserializer():
-    class JSONCallableDeserializer(object):
+    class JSONCallableDeserializer():
         def __call__(self, obj):
             return json.loads(obj.decode("utf-8")) if obj is not None else None
 
@@ -187,19 +193,24 @@ def json_callable_deserializer():
 
 
 @pytest.fixture(scope="function")
-def topic():
+def topic(broker):
     from kafka.admin.client import KafkaAdminClient
     from kafka.admin.new_topic import NewTopic
 
-    topic = "test-topic-%s" % str(uuid.uuid4())
+    topic = f"test-topic-{str(uuid.uuid4())}"
 
-    admin = KafkaAdminClient(bootstrap_servers=BROKER)
+    admin = KafkaAdminClient(bootstrap_servers=broker)
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
     admin.create_topics(new_topics)
 
     yield topic
 
     admin.delete_topics([topic])
+
+
+@pytest.fixture(scope="session")
+def group_id():
+    return str(uuid.uuid4())
 
 
 @pytest.fixture()
@@ -227,7 +238,7 @@ def get_consumer_record(topic, send_producer_message, consumer, deserialize):
                 record_count += 1
             attempts += 1
 
-        assert record_count == 1, "Incorrect count of records consumed: %d. Expected 1." % record_count
+        assert record_count == 1, f"Incorrect count of records consumed: {record_count}. Expected 1."
 
     return _test
 

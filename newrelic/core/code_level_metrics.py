@@ -34,7 +34,7 @@ class CodeLevelMetricsNode(_CodeLevelMetricsNode):
         # Add attributes
         for k, v in self._asdict().items():
             if v is not None:
-                add_attr_function("code.%s" % k, v)
+                add_attr_function(f"code.{k}", v)
 
 
 def extract_code_from_callable(func):
@@ -97,7 +97,7 @@ def extract_code_from_callable(func):
     func_name = func_path[-1]  # function name is last in path
     if len(func_path) > 1:
         class_name = ".".join((func_path[:-1]))
-        namespace = ".".join((module_name, class_name))
+        namespace = f"{module_name}.{class_name}"
     else:
         namespace = module_name
 

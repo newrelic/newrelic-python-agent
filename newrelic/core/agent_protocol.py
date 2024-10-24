@@ -27,6 +27,7 @@ from newrelic.common.utilization import (
     AWSUtilization,
     AzureUtilization,
     DockerUtilization,
+    ECSUtilization,
     GCPUtilization,
     KubernetesUtilization,
     PCFUtilization,
@@ -38,6 +39,7 @@ from newrelic.core.config import (
     global_settings_dump,
 )
 from newrelic.core.internal_metrics import internal_count_metric
+from newrelic.core.otlp_utils import OTLP_CONTENT_TYPE, otlp_encode
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
@@ -49,7 +51,7 @@ from newrelic.network.exceptions import (
 _logger = logging.getLogger(__name__)
 
 
-class AgentProtocol(object):
+class AgentProtocol():
     VERSION = 17
 
     STATUS_CODE_RESPONSE = {
@@ -143,7 +145,10 @@ class AgentProtocol(object):
         "transaction_tracer.record_sql",
         "strip_exception_messages.enabled",
         "custom_insights_events.enabled",
+        "ml_insights_events.enabled",
         "application_logging.forwarding.enabled",
+        "machine_learning.inference_events_value.enabled",
+        "ai_monitoring.enabled",
     )
 
     LOGGER_FUNC_MAPPING = {
@@ -215,11 +220,16 @@ class AgentProtocol(object):
     def close_connection(self):
         self.client.close_connection()
 
-    def send(self, method, payload=()):
+    def send(
+        self,
+        method,
+        payload=(),
+        path="/agent_listener/invoke_raw_method",
+    ):
         params, headers, payload = self._to_http(method, payload)
 
         try:
-            response = self.client.send_request(params=params, headers=headers, payload=payload)
+            response = self.client.send_request(path=path, params=params, headers=headers, payload=payload)
         except NetworkInterfaceException:
             # All HTTP errors are currently retried
             raise RetryDataForRequest
@@ -229,7 +239,7 @@ class AgentProtocol(object):
         if not 200 <= status < 300:
             if status == 413:
                 internal_count_metric(
-                    "Supportability/Python/Collector/MaxPayloadSizeLimit/%s" % method,
+                    f"Supportability/Python/Collector/MaxPayloadSizeLimit/{method}",
                     1,
                 )
             level, message = self.LOG_MESSAGES.get(status, self.LOG_MESSAGES["default"])
@@ -251,7 +261,10 @@ class AgentProtocol(object):
             exception = self.STATUS_CODE_RESPONSE.get(status, DiscardDataForRequest)
             raise exception
         if status == 200:
-            return json_decode(data.decode("utf-8"))["return_value"]
+            return self.decode_response(data)
+
+    def decode_response(self, response):
+        return json_decode(response.decode("utf-8"))["return_value"]
 
     def _to_http(self, method, payload=()):
         params = dict(self._params)
@@ -275,6 +288,7 @@ class AgentProtocol(object):
         connect_settings = {}
         connect_settings["browser_monitoring.loader"] = settings["browser_monitoring.loader"]
         connect_settings["browser_monitoring.debug"] = settings["browser_monitoring.debug"]
+        connect_settings["ai_monitoring.enabled"] = settings["ai_monitoring.enabled"]
 
         security_settings = {}
         security_settings["capture_params"] = settings["capture_params"]
@@ -308,8 +322,15 @@ class AgentProtocol(object):
             utilization_settings["config"] = utilization_conf
 
         vendors = []
+        ecs_id = None
+        utilization_vendor_settings = {}
+
         if settings["utilization.detect_aws"]:
             vendors.append(AWSUtilization)
+            ecs_id = ECSUtilization.detect()
+            if ecs_id:
+                utilization_vendor_settings["ecs"] = ecs_id
+
         if settings["utilization.detect_pcf"]:
             vendors.append(PCFUtilization)
         if settings["utilization.detect_gcp"]:
@@ -317,7 +338,6 @@ class AgentProtocol(object):
         if settings["utilization.detect_azure"]:
             vendors.append(AzureUtilization)
 
-        utilization_vendor_settings = {}
         for vendor in vendors:
             metadata = vendor.detect()
             if metadata:
@@ -325,9 +345,10 @@ class AgentProtocol(object):
                 break
 
         if settings["utilization.detect_docker"]:
-            docker = DockerUtilization.detect()
-            if docker:
-                utilization_vendor_settings["docker"] = docker
+            if not ecs_id:
+                docker = DockerUtilization.detect()
+                if docker:
+                    utilization_vendor_settings["docker"] = docker
 
         if settings["utilization.detect_kubernetes"]:
             kubernetes = KubernetesUtilization.detect()
@@ -478,6 +499,7 @@ class ServerlessModeProtocol(AgentProtocol):
             "protocol_version": self.VERSION,
             "execution_environment": os.environ.get("AWS_EXECUTION_ENV", None),
             "agent_version": version,
+            "agent_language": "python",
         }
 
     def finalize(self):
@@ -514,3 +536,77 @@ class ServerlessModeProtocol(AgentProtocol):
         # can be modified later
         settings.aws_lambda_metadata = aws_lambda_metadata
         return cls(settings, client_cls=client_cls)
+
+
+class OtlpProtocol(AgentProtocol):
+    def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
+        if settings.audit_log_file:
+            audit_log_fp = open(settings.audit_log_file, "a")
+        else:
+            audit_log_fp = None
+
+        self.client = client_cls(
+            host=host or settings.otlp_host,
+            port=settings.otlp_port or 4318,
+            proxy_scheme=settings.proxy_scheme,
+            proxy_host=settings.proxy_host,
+            proxy_port=settings.proxy_port,
+            proxy_user=settings.proxy_user,
+            proxy_pass=settings.proxy_pass,
+            timeout=settings.agent_limits.data_collector_timeout,
+            ca_bundle_path=settings.ca_bundle_path,
+            disable_certificate_validation=settings.debug.disable_certificate_validation,
+            compression_threshold=settings.agent_limits.data_compression_threshold,
+            compression_level=settings.agent_limits.data_compression_level,
+            compression_method=settings.compressed_content_encoding,
+            max_payload_size_in_bytes=1000000,
+            audit_log_fp=audit_log_fp,
+            default_content_encoding_header=None,
+        )
+
+        self._params = {}
+        self._headers = {
+            "api-key": settings.license_key,
+        }
+
+        # In Python 2, the JSON is loaded with unicode keys and values;
+        # however, the header name must be a non-unicode value when given to
+        # the HTTP library. This code converts the header name from unicode to
+        # non-unicode.
+        if settings.request_headers_map:
+            for k, v in settings.request_headers_map.items():
+                if not isinstance(k, str):
+                    k = k.encode("utf-8")
+                self._headers[k] = v
+
+        # Content-Type should be protobuf, but falls back to JSON if protobuf is not installed.
+        self._headers["Content-Type"] = OTLP_CONTENT_TYPE
+        self._run_token = settings.agent_run_id
+
+        # Logging
+        self._proxy_host = settings.proxy_host
+        self._proxy_port = settings.proxy_port
+        self._proxy_user = settings.proxy_user
+
+        # Do not access configuration anywhere inside the class
+        self.configuration = settings
+
+    @classmethod
+    def connect(
+        cls,
+        app_name,
+        linked_applications,
+        environment,
+        settings,
+        client_cls=ApplicationModeClient,
+    ):
+        with cls(settings, client_cls=client_cls) as protocol:
+            pass
+
+        return protocol
+
+    def _to_http(self, method, payload=()):
+        return {}, self._headers, otlp_encode(payload)
+
+    def decode_response(self, response):
+        return response.decode("utf-8")

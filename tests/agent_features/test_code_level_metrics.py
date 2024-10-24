@@ -35,18 +35,16 @@ from _test_code_level_metrics import (
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 
-import newrelic.packages.six as six
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 
 is_pypy = hasattr(sys, "pypy_version_info")
 
 NAMESPACE = "_test_code_level_metrics"
-CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClass"))
-CALLABLE_CLASS_NAMESPACE = ".".join((NAMESPACE, "ExerciseClassCallable"))
-TYPE_CONSTRUCTOR_NAMESPACE = ".".join((NAMESPACE, "ExerciseTypeConstructor"))
-TYPE_CONSTRUCTOR_CALLABLE_NAMESPACE = ".".join((NAMESPACE, "ExerciseTypeConstructorCallable"))
-FUZZY_NAMESPACE = CLASS_NAMESPACE if six.PY3 else NAMESPACE
+CLASS_NAMESPACE = f"{NAMESPACE}.ExerciseClass"
+CALLABLE_CLASS_NAMESPACE = f"{NAMESPACE}.ExerciseClassCallable"
+TYPE_CONSTRUCTOR_NAMESPACE = f"{NAMESPACE}.ExerciseTypeConstructor"
+TYPE_CONSTRUCTOR_CALLABLE_NAMESPACE = f"{NAMESPACE}.ExerciseTypeConstructorCallable"
 if FILE_PATH.endswith(".pyc"):
     FILE_PATH = FILE_PATH[:-1]
 
@@ -108,7 +106,7 @@ _TEST_BASIC_CALLABLES = {
         merge_dicts(
             {
                 "code.function": "max",
-                "code.namespace": "builtins" if six.PY3 else "__builtin__",
+                "code.namespace": "builtins",
             },
             BUILTIN_ATTRS,
         ),
@@ -129,7 +127,7 @@ _TEST_BASIC_CALLABLES = {
 
 @pytest.mark.parametrize(
     "func,args,agents",
-    [pytest.param(*args, id=id_) for id_, args in six.iteritems(_TEST_BASIC_CALLABLES)],
+    [pytest.param(*args, id=id_) for id_, args in _TEST_BASIC_CALLABLES.items()],
 )
 def test_code_level_metrics_basic_callables(func, args, agents, extract):
     @override_application_settings(
@@ -167,7 +165,7 @@ _TEST_METHODS = {
             "code.filepath": FILE_PATH,
             "code.function": "exercise_static_method",
             "code.lineno": 25,
-            "code.namespace": FUZZY_NAMESPACE,
+            "code.namespace": CLASS_NAMESPACE,
         },
     ),
     "class_method": (
@@ -206,7 +204,7 @@ _TEST_METHODS = {
 
 @pytest.mark.parametrize(
     "func,args,agents",
-    [pytest.param(*args, id=id_) for id_, args in six.iteritems(_TEST_METHODS)],
+    [pytest.param(*args, id=id_) for id_, args in _TEST_METHODS.items()],
 )
 def test_code_level_metrics_methods(func, args, agents, extract):
     @override_application_settings(
@@ -264,8 +262,7 @@ _TEST_TYPE_CONSTRUCTOR_METHODS = {
             "code.filepath": FILE_PATH,
             "code.function": "<lambda>",
             "code.lineno": 61,
-            # Lambdas behave strangely in type constructors on Python 2 and use the class namespace.
-            "code.namespace": NAMESPACE if six.PY3 else TYPE_CONSTRUCTOR_NAMESPACE,
+            "code.namespace": NAMESPACE,
         },
     ),
     "call_method": (
@@ -283,7 +280,7 @@ _TEST_TYPE_CONSTRUCTOR_METHODS = {
 
 @pytest.mark.parametrize(
     "func,args,agents",
-    [pytest.param(*args, id=id_) for id_, args in six.iteritems(_TEST_TYPE_CONSTRUCTOR_METHODS)],
+    [pytest.param(*args, id=id_) for id_, args in _TEST_TYPE_CONSTRUCTOR_METHODS.items()],
 )
 def test_code_level_metrics_type_constructor_methods(func, args, agents, extract):
     @override_application_settings(
@@ -352,7 +349,7 @@ _TEST_OBJECTS = {
 
 @pytest.mark.parametrize(
     "obj,agents",
-    [pytest.param(*args, id=id_) for id_, args in six.iteritems(_TEST_OBJECTS)],
+    [pytest.param(*args, id=id_) for id_, args in _TEST_OBJECTS.items()],
 )
 def test_code_level_metrics_objects(obj, agents, extract):
     @override_application_settings(

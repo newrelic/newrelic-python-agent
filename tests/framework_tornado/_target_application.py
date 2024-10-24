@@ -171,7 +171,7 @@ class MultiTraceHandler(tornado.web.RequestHandler):
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
     def on_message(self, message):
-        self.write_message("hello " + message)
+        self.write_message(f"hello {message}")
 
 
 class EnsureFutureHandler(tornado.web.RequestHandler):

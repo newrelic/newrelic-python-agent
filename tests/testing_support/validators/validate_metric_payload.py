@@ -56,7 +56,7 @@ def validate_metric_payload(metrics=[]):
                 else:
                     assert unscoped_metric in sent_metrics, unscoped_metric
                     metric_values = sent_metrics[unscoped_metric]
-                    assert metric_values[0] == count, "%s: Expected: %d Got: %d" % (metric, count, metric_values[0])
+                    assert metric_values[0] == count, f"{metric}: Expected: {count} Got: {metric_values[0]}"
 
         return val
 

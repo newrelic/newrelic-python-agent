@@ -15,14 +15,11 @@
 import logging
 import sys
 
-from newrelic.packages import six
+from importlib.util import find_spec
+
 
 _logger = logging.getLogger(__name__)
 
-try:
-    from importlib.util import find_spec
-except ImportError:
-    find_spec = None
 
 _import_hooks = {}
 
@@ -30,7 +27,6 @@ _ok_modules = (
     # These modules are imported by the newrelic package and/or do not do
     # nested imports, so they're ok to import before newrelic.
     "urllib",
-    "urllib2",
     "httplib",
     "http.client",
     "urllib.request",
@@ -62,71 +58,61 @@ _uninstrumented_modules = set()
 
 
 def register_import_hook(name, callable):  # pylint: disable=redefined-builtin
-    if six.PY2:
-        import imp
+    hooks = _import_hooks.get(name, None)
 
-        imp.acquire_lock()
+    if name not in _import_hooks or hooks is None:
 
-    try:
-        hooks = _import_hooks.get(name, None)
+        # If no entry in registry or entry already flagged with
+        # None then module may have been loaded, in which case
+        # need to check and fire hook immediately.
 
-        if name not in _import_hooks or hooks is None:
+        hooks = _import_hooks.get(name)
 
-            # If no entry in registry or entry already flagged with
-            # None then module may have been loaded, in which case
-            # need to check and fire hook immediately.
+        module = sys.modules.get(name, None)
 
-            hooks = _import_hooks.get(name)
+        if module is not None:
 
-            module = sys.modules.get(name, None)
+            # The module has already been loaded so fire hook
+            # immediately.
 
-            if module is not None:
+            if module.__name__ not in _ok_modules:
+                _logger.debug(
+                    "Module %s has been imported before the "
+                    "newrelic.agent.initialize call. Import and "
+                    "initialize the New Relic agent before all "
+                    "other modules for best monitoring "
+                    "results.",
+                    module,
+                )
 
-                # The module has already been loaded so fire hook
-                # immediately.
+                # Add the module name to the set of uninstrumented modules.
+                # During harvest, this set will be used to produce metrics.
+                # The adding of names here and the reading of them during
+                # harvest should be thread safe. This is because the code
+                # here is only run during `initialize` which will no-op if
+                # run multiple times (even if in a thread). The set is read
+                # from the harvest thread which will run one minute after
+                # `initialize` is called.
 
-                if module.__name__ not in _ok_modules:
-                    _logger.debug(
-                        "Module %s has been imported before the "
-                        "newrelic.agent.initialize call. Import and "
-                        "initialize the New Relic agent before all "
-                        "other modules for best monitoring "
-                        "results.",
-                        module,
-                    )
+                _uninstrumented_modules.add(module.__name__)
 
-                    # Add the module name to the set of uninstrumented modules.
-                    # During harvest, this set will be used to produce metrics.
-                    # The adding of names here and the reading of them during
-                    # harvest should be thread safe. This is because the code
-                    # here is only run during `initialize` which will no-op if
-                    # run multiple times (even if in a thread). The set is read
-                    # from the harvest thread which will run one minute after
-                    # `initialize` is called.
+            _import_hooks[name] = None
 
-                    _uninstrumented_modules.add(module.__name__)
-
-                _import_hooks[name] = None
-
-                callable(module)
-
-            else:
-
-                # No hook has been registered so far so create list
-                # and add current hook.
-
-                _import_hooks[name] = [callable]
+            callable(module)
 
         else:
 
-            # Hook has already been registered, so append current
-            # hook.
+            # No hook has been registered so far so create list
+            # and add current hook.
 
-            _import_hooks[name].append(callable)
+            _import_hooks[name] = [callable]
 
-    finally:
-        if six.PY2:
-            imp.release_lock()
+    else:
+
+        # Hook has already been registered, so append current
+        # hook.
+
+        _import_hooks[name].append(callable)
 
 
 def _notify_import_hooks(name, module):
@@ -181,62 +167,9 @@ class ImportHookFinder:
     def __init__(self):
         self._skip = {}
 
-    def find_module(self, fullname, path=None):
-        """
-        Find spec and patch import hooks into loader before returning.
-
-        Required for Python 2.
-
-        https://docs.python.org/3/library/importlib.html#importlib.abc.MetaPathFinder.find_module
-        """
-
-        # If not something we are interested in we can return.
-
-        if fullname not in _import_hooks:
-            return None
-
-        # Check whether this is being called on the second time
-        # through and return.
-
-        if fullname in self._skip:
-            return None
-
-        # We are now going to call back into import. We set a
-        # flag to see we are handling the module so that check
-        # above drops out on subsequent pass and we don't go
-        # into an infinite loop.
-
-        self._skip[fullname] = True
-
-        try:
-            # For Python 3 we need to use find_spec() from the importlib
-            # module.
-
-            if find_spec:
-                spec = find_spec(fullname)
-                loader = getattr(spec, "loader", None)
-
-                if loader and not isinstance(loader, (_ImportHookChainedLoader, _ImportHookLoader)):
-                    return _ImportHookChainedLoader(loader)
-
-            else:
-                __import__(fullname)
-
-                # If we get this far then the module we are
-                # interested in does actually exist and so return
-                # our loader to trigger import hooks and then return
-                # the module.
-
-                return _ImportHookLoader()
-
-        finally:
-            del self._skip[fullname]
-
     def find_spec(self, fullname, path=None, target=None):
         """
         Find spec and patch import hooks into loader before returning.
-
-        Required for Python 3.10+ to avoid warnings.
 
         https://docs.python.org/3/library/importlib.html#importlib.abc.MetaPathFinder.find_spec
         """
@@ -260,23 +193,18 @@ class ImportHookFinder:
         self._skip[fullname] = True
 
         try:
-            # For Python 3 we need to use find_spec() from the importlib
-            # module.
+            # We call find_spec() from the importlib module.
 
-            if find_spec:
-                spec = find_spec(fullname)
-                loader = getattr(spec, "loader", None)
+            spec = find_spec(fullname)
+            loader = getattr(spec, "loader", None)
 
-                if loader and not isinstance(loader, (_ImportHookChainedLoader, _ImportHookLoader)):
-                    spec.loader = _ImportHookChainedLoader(loader)
+            if loader and not isinstance(loader, (_ImportHookChainedLoader, _ImportHookLoader)):
+                spec.loader = _ImportHookChainedLoader(loader)
 
-                return spec
-
-            else:
-                # Not possible, Python 3 defines find_spec and Python 2 does not have find_spec on Finders
-                return None
+            return spec
 
         finally:
+            # Delete flag now that it's not needed
             del self._skip[fullname]
 
 

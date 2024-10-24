@@ -335,6 +335,32 @@ class ApplicationLoggingLocalDecoratingSettings(Settings):
     pass
 
 
+class SecuritySettings(Settings):
+    pass
+
+
+class SecurityDetectionSettings(Settings):
+    pass
+
+
+class SecurityAgentSettings(Settings):
+    pass
+
+
+class SecurityDetectionRCISettings(Settings):
+    pass
+
+
+class SecurityDetectionRXSSSettings(Settings):
+    pass
+
+
+class SecurityDetectionDeserializationSettings(Settings):
+    pass
+
+class SecurityRequestSettings(Settings):
+    pass
+
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
 
@@ -463,6 +489,13 @@ _settings.instrumentation.graphql = InstrumentationGraphQLSettings()
 _settings.message_tracer = MessageTracerSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.rum = RumSettings()
+_settings.security = SecuritySettings()
+_settings.security.agent = SecurityAgentSettings()
+_settings.security.detection = SecurityDetectionSettings()
+_settings.security.detection.deserialization = SecurityDetectionDeserializationSettings()
+_settings.security.detection.rci = SecurityDetectionRCISettings()
+_settings.security.detection.rxss = SecurityDetectionRXSSSettings()
+_settings.security.request = SecurityRequestSettings()
 _settings.serverless_mode = ServerlessModeSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.span_events = SpanEventSettings()
@@ -479,7 +512,6 @@ _settings.transaction_segments.attributes = TransactionSegmentAttributesSettings
 _settings.transaction_tracer = TransactionTracerSettings()
 _settings.transaction_tracer.attributes = TransactionTracerAttributesSettings()
 _settings.utilization = UtilizationSettings()
-
 
 _settings.log_file = os.environ.get("NEW_RELIC_LOG", None)
 _settings.audit_log_file = os.environ.get("NEW_RELIC_AUDIT_LOG", None)
@@ -964,6 +996,17 @@ _settings.k8s_operator.enabled = _environ_as_bool("NEW_RELIC_K8S_OPERATOR_ENABLE
 _settings.azure_operator.enabled = _environ_as_bool("NEW_RELIC_AZURE_OPERATOR_ENABLED", default=False)
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
+
+_settings.security.agent.enabled = _environ_as_bool("NEW_RELIC_SECURITY_AGENT_ENABLED", False)
+_settings.security.enabled = _environ_as_bool("NEW_RELIC_SECURITY_ENABLED", False)
+_settings.security.mode = os.environ.get("NEW_RELIC_SECURITY_MODE", "IAST")
+_settings.security.validator_service_url = os.environ.get("NEW_RELIC_SECURITY_VALIDATOR_SERVICE_URL", None)
+_settings.security.detection.rci.enabled = _environ_as_bool("NEW_RELIC_SECURITY_DETECTION_RCI_ENABLED", True)
+_settings.security.detection.rxss.enabled = _environ_as_bool("NEW_RELIC_SECURITY_DETECTION_RXSS_ENABLED", True)
+_settings.security.detection.deserialization.enabled = _environ_as_bool(
+    "NEW_RELIC_SECURITY_DETECTION_DESERIALIZATION_ENABLED", True
+)
+_settings.security.request.body_limit = os.environ.get("NEW_RELIC_SECURITY_REQUEST_BODY_LIMIT", None)
 
 
 def global_settings():

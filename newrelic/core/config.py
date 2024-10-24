@@ -33,6 +33,7 @@ import urllib.parse as urlparse
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_ATTRIBUTE_LENGTH
 from newrelic.core.attribute_filter import AttributeFilter
+from newrelic.core.super_agent_health import super_agent_health_instance
 
 try:
     import grpc

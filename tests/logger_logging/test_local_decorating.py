@@ -14,6 +14,8 @@
 
 import platform
 
+import pytest
+
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import (
@@ -35,10 +37,10 @@ def set_trace_ids():
         trace.guid = "abcdefgh"
 
 
-def exercise_logging(logger):
+def exercise_logging(logger, message="C"):
     set_trace_ids()
 
-    logger.warning("C")
+    logger.warning(message)
 
 
 def get_metadata_string(log_message, is_txn):
@@ -46,39 +48,40 @@ def get_metadata_string(log_message, is_txn):
     assert host
     entity_guid = application_settings().entity_guid
     if is_txn:
-        metadata_string = "".join(
-            (
-                "NR-LINKING|",
-                entity_guid,
-                "|",
-                host,
-                "|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28logger_logging%29|",
-            )
-        )
+        metadata_string = f"NR-LINKING|{entity_guid}|{host}|abcdefgh12345678|abcdefgh|Python%20Agent%20Test%20%28logger_logging%29|"
     else:
-        metadata_string = "".join(
-            ("NR-LINKING|", entity_guid, "|", host, "|||Python%20Agent%20Test%20%28logger_logging%29|")
-        )
-    formatted_string = log_message + " " + metadata_string
+        metadata_string = f"NR-LINKING|{entity_guid}|{host}|||Python%20Agent%20Test%20%28logger_logging%29|"
+    formatted_string = f"{log_message} {metadata_string}"
     return formatted_string
 
 
 @reset_core_stats_engine()
-def test_local_log_decoration_inside_transaction(logger):
+def test_local_log_decoration_inside_transaction(instrumented_logger):
     @validate_log_event_count(1)
     @background_task()
     def test():
-        exercise_logging(logger)
-        assert logger.caplog.records[0] == get_metadata_string("C", True)
+        exercise_logging(instrumented_logger)
+        assert instrumented_logger.caplog.records[0] == get_metadata_string("C", True)
 
     test()
 
 
 @reset_core_stats_engine()
-def test_local_log_decoration_outside_transaction(logger):
+def test_local_log_decoration_outside_transaction(instrumented_logger):
     @validate_log_event_count_outside_transaction(1)
     def test():
-        exercise_logging(logger)
-        assert logger.caplog.records[0] == get_metadata_string("C", False)
+        exercise_logging(instrumented_logger)
+        assert instrumented_logger.caplog.records[0] == get_metadata_string("C", False)
+
+    test()
+
+
+@reset_core_stats_engine()
+def test_local_log_decoration_dict_message(instrumented_logger):
+    @validate_log_event_count(1)
+    @background_task()
+    def test():
+        exercise_logging(instrumented_logger, {"message": "dict_message"})
+        assert instrumented_logger.caplog.records[0] == get_metadata_string("{'message': 'dict_message'}", True)
 
     test()

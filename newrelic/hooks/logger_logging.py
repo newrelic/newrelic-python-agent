@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from urllib.parse import quote
+
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.config import global_settings
 
-try:
-    from urllib import quote
-except ImportError:
-    from urllib.parse import quote
+
+IGNORED_LOG_RECORD_KEYS = set(["message", "msg"])
 
 
 def add_nr_linking_metadata(message):
@@ -32,8 +32,8 @@ def add_nr_linking_metadata(message):
     trace_id = available_metadata.get("trace.id", "")
     hostname = available_metadata.get("hostname", "")
 
-    nr_linking_str = "|".join(("NR-LINKING", entity_guid, hostname, trace_id, span_id, entity_name))
-    return "%s %s|" % (message, nr_linking_str)
+    nr_linking_str = f"NR-LINKING|{entity_guid}|{hostname}|{trace_id}|{span_id}|{entity_name}"
+    return f"{message} {nr_linking_str}|"
 
 
 @function_wrapper
@@ -65,17 +65,27 @@ def wrap_callHandlers(wrapped, instance, args, kwargs):
         if settings.application_logging.metrics and settings.application_logging.metrics.enabled:
             if transaction:
                 transaction.record_custom_metric("Logging/lines", {"count": 1})
-                transaction.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                transaction.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
             else:
                 application = application_instance(activate=False)
                 if application and application.enabled:
                     application.record_custom_metric("Logging/lines", {"count": 1})
-                    application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                    application.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
 
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             try:
-                message = record.getMessage()
-                record_log_event(message, level_name, int(record.created * 1000))
+                message = record.msg
+                if not isinstance(message, dict):
+                    # Allow python to convert the message to a string and template it with args.
+                    message = record.getMessage()
+
+                # Grab and filter context attributes from log record
+                record_attrs = vars(record)
+                context_attrs = {k: record_attrs[k] for k in record_attrs if k not in IGNORED_LOG_RECORD_KEYS}
+
+                record_log_event(
+                    message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs
+                )
             except Exception:
                 pass
 

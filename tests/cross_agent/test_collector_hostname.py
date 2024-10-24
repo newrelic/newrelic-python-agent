@@ -18,14 +18,9 @@ import os
 import sys
 import tempfile
 
-import pytest
+from importlib import reload
 
-try:
-    # python 2.x
-    reload
-except NameError:
-    # python 3.x
-    from importlib import reload
+import pytest
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -68,9 +63,9 @@ def _test_collector_hostname(
             os.environ["NEW_RELIC_LICENSE_KEY"] = env_key
 
         if config_file_key:
-            ini_contents += "\nlicense_key = %s" % config_file_key
+            ini_contents += f"\nlicense_key = {config_file_key}"
         if config_override_host:
-            ini_contents += "\nhost = %s" % config_override_host
+            ini_contents += f"\nhost = {config_override_host}"
 
         import newrelic.config as config
         import newrelic.core.config as core_config

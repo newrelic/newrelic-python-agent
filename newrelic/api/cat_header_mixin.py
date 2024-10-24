@@ -17,11 +17,12 @@ from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
 
 
 # CatHeaderMixin assumes the mixin class also inherits from TimeTrace
-class CatHeaderMixin(object):
+class CatHeaderMixin():
     cat_id_key = 'X-NewRelic-ID'
     cat_transaction_key = 'X-NewRelic-Transaction'
     cat_appdata_key = 'X-NewRelic-App-Data'
     cat_synthetics_key = 'X-NewRelic-Synthetics'
+    cat_synthetics_info_key = 'X-NewRelic-Synthetics-Info'
     cat_metadata_key = 'x-newrelic-trace'
     cat_distributed_trace_key = 'newrelic'
     settings = None
@@ -105,8 +106,9 @@ class CatHeaderMixin(object):
                         (cls.cat_transaction_key, encoded_transaction))
 
         if transaction.synthetics_header:
-            nr_headers.append(
-                    (cls.cat_synthetics_key, transaction.synthetics_header))
+            nr_headers.append((cls.cat_synthetics_key, transaction.synthetics_header))
+            if transaction.synthetics_info_header:
+                nr_headers.append((cls.cat_synthetics_info_key, transaction.synthetics_info_header))
 
         return nr_headers
 

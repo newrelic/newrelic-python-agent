@@ -22,16 +22,13 @@ import sys
 import threading
 import traceback
 import weakref
+    
+from collections.abc import MutableMapping
 
 try:
     import thread
 except ImportError:
     import _thread as thread
-
-try:
-    from collections.abc import MutableMapping
-except ImportError:
-    from collections import MutableMapping
 
 from newrelic.core.config import global_settings
 from newrelic.core.loop_node import LoopNode
@@ -74,7 +71,7 @@ def get_event_loop(task):
     return getattr(task, "_loop", None)
 
 
-class cached_module(object):
+class cached_module():
     def __init__(self, module_path, name=None):
         self.module_path = module_path
         self.name = name or module_path
@@ -105,7 +102,7 @@ class TraceCache(MutableMapping):
         self._cache = weakref.WeakValueDictionary()
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (self.__class__.__name__, id(self), str(dict(self.items())))
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {str(dict(self.items()))}>"
 
     def current_thread_id(self):
         """Returns the thread ID for the caller.
@@ -382,7 +379,7 @@ class TraceCache(MutableMapping):
         seen = None
 
         for root in roots:
-            guid = "%016x" % random.getrandbits(64)
+            guid = f"{random.getrandbits(64):016x}"
             node = LoopNode(
                 fetch_name=fetch_name,
                 start_time=start_time,

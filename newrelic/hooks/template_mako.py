@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import newrelic.api.function_trace
-import newrelic.api.object_wrapper
+import newrelic.common.object_wrapper
 
-class TemplateRenderWrapper(object):
+class TemplateRenderWrapper():
 
     def __init__(self, wrapped):
         self.__wrapped = wrapped
@@ -42,7 +42,7 @@ class TemplateRenderWrapper(object):
 
 def instrument_mako_runtime(module):
 
-    newrelic.api.object_wrapper.wrap_object(module,
+    newrelic.common.object_wrapper.wrap_object(module,
             '_render', TemplateRenderWrapper)
 
 def instrument_mako_template(module):

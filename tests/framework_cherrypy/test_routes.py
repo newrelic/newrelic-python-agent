@@ -21,7 +21,7 @@ from testing_support.validators.validate_code_level_metrics import validate_code
 
 import cherrypy
 
-class EndPoint(object):
+class EndPoint():
 
     def index(self):
         return 'INDEX RESPONSE'

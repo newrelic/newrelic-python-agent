@@ -20,13 +20,21 @@ from testing_support.fixtures import (
     override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
+)
+from testing_support.validators.validate_browser_attributes import (
     validate_browser_attributes,
+)
+from testing_support.validators.validate_error_event_attributes import (
     validate_error_event_attributes,
+)
+from testing_support.validators.validate_error_event_attributes_outside_transaction import (
     validate_error_event_attributes_outside_transaction,
-    validate_error_trace_attributes_outside_transaction,
 )
 from testing_support.validators.validate_error_trace_attributes import (
     validate_error_trace_attributes,
+)
+from testing_support.validators.validate_error_trace_attributes_outside_transaction import (
+    validate_error_trace_attributes_outside_transaction,
 )
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_trace_attributes import (
@@ -43,7 +51,7 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.message_transaction import message_transaction
 from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import add_custom_attribute, current_transaction, set_user_id
+from newrelic.api.transaction import add_custom_attribute, set_user_id
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_names import callable_name
 
@@ -56,7 +64,7 @@ except SyntaxError:
 
 URL_PARAM = "some_key"
 URL_PARAM2 = "second_key"
-REQUEST_URL = "/?" + URL_PARAM + "=someval&" + URL_PARAM2 + "=anotherval"
+REQUEST_URL = f"/?{URL_PARAM}=someval&{URL_PARAM2}=anotherval"
 REQUEST_HEADERS = [
     ("Accept", "*/*"),
     ("Host", "foobar"),
@@ -65,7 +73,7 @@ REQUEST_HEADERS = [
     ("Content-Length", "10"),
 ]
 
-REQ_PARAMS = ["request.parameters." + URL_PARAM, "request.parameters." + URL_PARAM2]
+REQ_PARAMS = [f"request.parameters.{URL_PARAM}", f"request.parameters.{URL_PARAM2}"]
 DISTRIBUTED_TRACE_ATTRS = [
     "traceId",
     "priority",
@@ -75,7 +83,6 @@ DISTRIBUTED_TRACE_ATTRS = [
     "parent.transportType",
     "parent.transportDuration",
     "parentId",
-    "guid",
     "sampled",
     "parentSpanId",
 ]
@@ -361,22 +368,22 @@ def test_browser_include_request_params(normal_application):
 
 _override_settings = {
     "error_collector.attributes.include": ["request.parameters.*"],
-    "error_collector.attributes.exclude": ["request.parameters." + URL_PARAM2],
+    "error_collector.attributes.exclude": [f"request.parameters.{URL_PARAM2}"],
 }
 
 _expected_attributes = {
-    "agent": TRACE_ERROR_AGENT_KEYS + ["request.parameters." + URL_PARAM],
+    "agent": TRACE_ERROR_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
     "user": ERROR_USER_ATTRS,
     "intrinsic": ["trip_id"],
 }
 
 _expected_attributes_event = {
-    "agent": TRACE_ERROR_AGENT_KEYS + ["request.parameters." + URL_PARAM],
+    "agent": TRACE_ERROR_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
     "user": ERROR_USER_ATTRS,
     "intrinsic": ERROR_EVENT_INTRINSICS,
 }
 
-_expected_absent_attributes = {"agent": ["request.parameters." + URL_PARAM2], "user": [], "intrinsic": []}
+_expected_absent_attributes = {"agent": [f"request.parameters.{URL_PARAM2}"], "user": [], "intrinsic": []}
 
 
 @validate_error_event_attributes(_expected_attributes_event, _expected_absent_attributes)
@@ -388,11 +395,11 @@ def test_error_in_transaction_include_exclude(normal_application):
 
 _override_settings = {
     "transaction_tracer.attributes.include": ["request.parameters.*"],
-    "transaction_tracer.attributes.exclude": ["request.parameters." + URL_PARAM2],
+    "transaction_tracer.attributes.exclude": [f"request.parameters.{URL_PARAM2}"],
 }
 
 _expected_attributes = {
-    "agent": TRACE_ERROR_AGENT_KEYS + ["request.parameters." + URL_PARAM],
+    "agent": TRACE_ERROR_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
     "user": USER_ATTRS,
     "intrinsic": ["trip_id"],
 }
@@ -406,16 +413,16 @@ def test_transaction_trace_include_exclude(normal_application):
 
 _override_settings = {
     "transaction_events.attributes.include": ["request.parameters.*"],
-    "transaction_events.attributes.exclude": ["request.parameters." + URL_PARAM2],
+    "transaction_events.attributes.exclude": [f"request.parameters.{URL_PARAM2}"],
 }
 
 _expected_attributes = {
-    "agent": TRANS_EVENT_AGENT_KEYS + ["request.parameters." + URL_PARAM],
+    "agent": TRANS_EVENT_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
     "user": USER_ATTRS,
     "intrinsic": TRANS_EVENT_INTRINSICS,
 }
 
-_expected_absent_attributes = {"agent": ["request.parameters." + URL_PARAM2], "user": [], "intrinsic": []}
+_expected_absent_attributes = {"agent": [f"request.parameters.{URL_PARAM2}"], "user": [], "intrinsic": []}
 
 
 @validate_transaction_event_attributes(_expected_attributes, _expected_absent_attributes)
@@ -427,16 +434,16 @@ def test_transaction_event_include_exclude(normal_application):
 _override_settings = {
     "browser_monitoring.attributes.enabled": True,
     "browser_monitoring.attributes.include": ["request.parameters.*"],
-    "browser_monitoring.attributes.exclude": ["request.parameters." + URL_PARAM2],
+    "browser_monitoring.attributes.exclude": [f"request.parameters.{URL_PARAM2}"],
 }
 
 _expected_attributes = {
-    "agent": ["request.parameters." + URL_PARAM],
+    "agent": [f"request.parameters.{URL_PARAM}"],
     "user": USER_ATTRS,
     "intrinsic": BROWSER_INTRINSIC_KEYS,
 }
 
-_expected_absent_attributes = {"agent": ABSENT_BROWSER_KEYS + ["request.parameters." + URL_PARAM2], "user": []}
+_expected_absent_attributes = {"agent": ABSENT_BROWSER_KEYS + [f"request.parameters.{URL_PARAM2}"], "user": []}
 
 
 @validate_browser_attributes(_expected_attributes, _expected_absent_attributes)
@@ -930,16 +937,21 @@ _required_agent_attributes = ["enduser.id"]
 _forgone_agent_attributes = []
 
 
-@pytest.mark.parametrize('input_user_id, reported_user_id, high_security',(
+@pytest.mark.parametrize(
+    "input_user_id, reported_user_id, high_security",
+    (
         ("1234", "1234", True),
-        ("a" * 260,  "a" * 255, False),
-))
+        ("a" * 260, "a" * 255, False),
+    ),
+)
 def test_enduser_id_attribute_api_valid_types(input_user_id, reported_user_id, high_security):
     @reset_core_stats_engine()
     @validate_error_trace_attributes(
         callable_name(ValueError), exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": reported_user_id}}
     )
-    @validate_error_event_attributes(exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": reported_user_id}})
+    @validate_error_event_attributes(
+        exact_attrs={"user": {}, "intrinsic": {}, "agent": {"enduser.id": reported_user_id}}
+    )
     @validate_attributes("agent", _required_agent_attributes, _forgone_agent_attributes)
     @background_task()
     @override_application_settings({"high_security": high_security})
@@ -950,10 +962,11 @@ def test_enduser_id_attribute_api_valid_types(input_user_id, reported_user_id, h
             raise ValueError()
         except Exception:
             notice_error()
+
     _test()
 
 
-@pytest.mark.parametrize('input_user_id',(None, '', 123))
+@pytest.mark.parametrize("input_user_id", (None, "", 123))
 def test_enduser_id_attribute_api_invalid_types(input_user_id):
     @reset_core_stats_engine()
     @validate_attributes("agent", [], ["enduser.id"])
@@ -965,4 +978,5 @@ def test_enduser_id_attribute_api_invalid_types(input_user_id):
             raise ValueError()
         except Exception:
             notice_error()
+
     _test()

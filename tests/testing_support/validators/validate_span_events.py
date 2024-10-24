@@ -14,8 +14,6 @@
 
 import time
 
-import six
-
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 try:
@@ -38,7 +36,6 @@ def validate_span_events(
     unexpected_users=[],
     index=-1,
 ):
-
     # Used for validating a single span event.
     #
     # Since each transaction could produce multiple span events, assert that at
@@ -49,7 +46,6 @@ def validate_span_events(
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_transaction_called = []
         recorded_span_events = []
 
@@ -106,10 +102,10 @@ def validate_span_events(
 
         def _span_details():
             details = [
-                "matching_span_events=%d" % matching_span_events,
-                "count=%d" % count,
-                "mismatches=%s" % mismatches,
-                "captured_events=%s" % captured_events,
+                f"matching_span_events={matching_span_events}",
+                f"count={count}",
+                f"mismatches={mismatches}",
+                f"captured_events={captured_events}",
             ]
 
             return "\n".join(details)
@@ -134,7 +130,7 @@ def check_value_equals(dictionary, key, expected_value):
 
 def assert_isinstance(value, expected_type):
     if AttributeValue and isinstance(value, AttributeValue):
-        if expected_type is six.string_types:
+        if expected_type is str:
             assert value.HasField("string_value")
         elif expected_type is float:
             assert value.HasField("double_value")
@@ -157,7 +153,7 @@ def _check_span_attributes(attrs, exact, expected, unexpected, mismatches):
         else:
             for key, value in exact.items():
                 if not check_value_equals(attrs, key, value):
-                    mismatches.append("key: %s, value:<%s><%s>" % (key, value, attrs.get(key)))
+                    mismatches.append(f"key: {key}, value:<{value}><{attrs.get(key)}>")
                     break
             else:
                 return True
@@ -167,11 +163,11 @@ def _check_span_attributes(attrs, exact, expected, unexpected, mismatches):
 
 def _check_span_intrinsics(intrinsics):
     assert check_value_equals(intrinsics, "type", "Span")
-    assert_isinstance(intrinsics["traceId"], six.string_types)
-    assert_isinstance(intrinsics["guid"], six.string_types)
+    assert_isinstance(intrinsics["traceId"], str)
+    assert_isinstance(intrinsics["guid"], str)
     if "parentId" in intrinsics:
-        assert_isinstance(intrinsics["parentId"], six.string_types)
-    assert_isinstance(intrinsics["transactionId"], six.string_types)
+        assert_isinstance(intrinsics["parentId"], str)
+    assert_isinstance(intrinsics["transactionId"], str)
     intrinsics["sampled"] is True
     assert_isinstance(intrinsics["priority"], float)
     assert_isinstance(intrinsics["timestamp"], int)
@@ -180,7 +176,7 @@ def _check_span_intrinsics(intrinsics):
         ts = ts.double_value
     assert ts <= int(time.time() * 1000)
     assert_isinstance(intrinsics["duration"], float)
-    assert_isinstance(intrinsics["name"], six.string_types)
-    assert_isinstance(intrinsics["category"], six.string_types)
+    assert_isinstance(intrinsics["name"], str)
+    assert_isinstance(intrinsics["category"], str)
     if "nr.entryPoint" in intrinsics:
         assert check_value_equals(intrinsics, "nr.entryPoint", True)

@@ -13,6 +13,10 @@
 # limitations under the License.
 
 import sys
+import warnings
+
+from functools import lru_cache
+
 
 # Need to account for 4 possible variations of version declaration specified in (rejected) PEP 396
 VERSION_ATTRS = ("__version__", "version", "__version_tuple__", "version_tuple")  # nosec
@@ -67,23 +71,40 @@ def get_package_version_tuple(name):
     return version
 
 
+@lru_cache()
 def _get_package_version(name):
     module = sys.modules.get(name, None)
     version = None
-    for attr in VERSION_ATTRS:
-        try:
-            version = getattr(module, attr, None)
-            # Cast any version specified as a list into a tuple.
-            version = tuple(version) if isinstance(version, list) else version
-            if version not in NULL_VERSIONS:
-                return version
-        except Exception:
-            pass
+
+    with warnings.catch_warnings(record=True):
+        for attr in VERSION_ATTRS:
+            try:
+                version = getattr(module, attr, None)
+
+                # In certain cases like importlib_metadata.version, version is a callable
+                # function.
+                if callable(version):
+                    continue
+
+                # Cast any version specified as a list into a tuple.
+                version = tuple(version) if isinstance(version, list) else version
+                if version not in NULL_VERSIONS:
+                    return version
+            except Exception:
+                pass
 
     # importlib was introduced into the standard library starting in Python3.8.
     if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
         try:
-            version = sys.modules["importlib"].metadata.version(name)  # pylint: disable=E1101
+            # In Python3.10+ packages_distribution can be checked for as well
+            if hasattr(sys.modules["importlib"].metadata, "packages_distributions"):  # pylint: disable=E1101
+                distributions = sys.modules["importlib"].metadata.packages_distributions()  # pylint: disable=E1101
+                distribution_name = distributions.get(name, name)
+                distribution_name = distribution_name[0] if isinstance(distribution_name, list) else distribution_name
+            else:
+                distribution_name = name
+
+            version = sys.modules["importlib"].metadata.version(distribution_name)  # pylint: disable=E1101
             if version not in NULL_VERSIONS:
                 return version
         except Exception:

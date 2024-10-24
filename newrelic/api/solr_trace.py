@@ -14,6 +14,7 @@
 
 import newrelic.api.object_wrapper
 import newrelic.api.time_trace
+import newrelic.common.object_wrapper
 import newrelic.core.solr_node
 
 
@@ -30,11 +31,7 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
         self.command = command
 
     def __repr__(self):
-        return "<%s object at 0x%x %s>" % (
-            self.__class__.__name__,
-            id(self),
-            dict(library=self.library, command=self.command),
-        )
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(library=self.library, command=self.command)}>"
 
     def terminal_node(self):
         return True
@@ -54,7 +51,7 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
         )
 
 
-class SolrTraceWrapper(object):
+class SolrTraceWrapper():
     def __init__(self, wrapped, library, command):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
@@ -111,4 +108,4 @@ def solr_trace(library, command):
 
 
 def wrap_solr_trace(module, object_path, library, command):
-    newrelic.api.object_wrapper.wrap_object(module, object_path, SolrTraceWrapper, (library, command))
+    newrelic.common.object_wrapper.wrap_object(module, object_path, SolrTraceWrapper, (library, command))

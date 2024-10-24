@@ -18,6 +18,7 @@ from newrelic.common.object_wrapper import (
     transient_function_wrapper,
 )
 
+
 def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_exist=True):
     required_attrs = required_attrs or []
     forgone_attrs = forgone_attrs or []
@@ -45,14 +46,14 @@ def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_ex
 
                 flat_event = _flatten(event)
 
-                assert "nr.guid" in flat_event, "name=%r, event=%r" % ("nr.guid", flat_event)
+                assert "nr.guid" in flat_event, f"name=nr.guid, event={flat_event!r}"
 
                 for name, value in required_attrs:
-                    assert name in flat_event, "name=%r, event=%r" % (name, flat_event)
-                    assert flat_event[name] == value, "name=%r, value=%r, event=%r" % (name, value, flat_event)
+                    assert name in flat_event, f"name={name!r}, event={flat_event!r}"
+                    assert flat_event[name] == value, f"name={name!r}, value={value!r}, event={flat_event!r}"
 
-                for name, value in forgone_attrs:
-                    assert name not in flat_event, "name=%r, value=%r, event=%r" % (name, value, flat_event)
+                for name in forgone_attrs:
+                    assert name not in flat_event, f"name={name!r}, event={flat_event!r}"
         except Exception as e:
             failed.append(e)
 
@@ -68,4 +69,3 @@ def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_ex
         return result
 
     return wrapper
-

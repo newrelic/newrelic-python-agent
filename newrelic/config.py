@@ -12,16 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import configparser
 import fnmatch
 import logging
 import os
 import sys
 import traceback
-
-try:
-    import ConfigParser
-except ImportError:
-    import configparser as ConfigParser
 
 import newrelic.api.application
 import newrelic.api.background_task
@@ -34,7 +30,6 @@ import newrelic.api.function_trace
 import newrelic.api.generator_trace
 import newrelic.api.import_hook
 import newrelic.api.memcache_trace
-import newrelic.api.object_wrapper
 import newrelic.api.profile_trace
 import newrelic.api.settings
 import newrelic.api.transaction_name
@@ -43,7 +38,7 @@ import newrelic.console
 import newrelic.core.agent
 import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
-from newrelic.common.object_names import expand_builtin_exception_name
+from newrelic.common.object_names import callable_name, expand_builtin_exception_name
 from newrelic.core import trace_cache
 from newrelic.core.config import (
     Settings,
@@ -51,7 +46,6 @@ from newrelic.core.config import (
     default_host,
     fetch_config_setting,
 )
-from newrelic.packages import six
 
 __all__ = ["initialize", "filter_app_factory"]
 
@@ -94,13 +88,21 @@ _settings = newrelic.api.settings.settings()
 # modules to look up customised settings defined in the loaded
 # configuration file.
 
-_config_object = ConfigParser.RawConfigParser()
+_config_object = configparser.RawConfigParser()
 
 # Cache of the parsed global settings found in the configuration
 # file. We cache these so can dump them out to the log file once
 # all the settings have been read.
 
 _cache_object = []
+
+
+def _reset_config_parser():
+    global _config_object
+    global _cache_object
+    _config_object = configparser.RawConfigParser()
+    _cache_object = []
+
 
 # Mechanism for extracting settings from the configuration for use in
 # instrumentation modules and extensions.
@@ -234,9 +236,7 @@ def _raise_configuration_error(section, option=None):
         if not _ignore_errors:
             if section:
                 raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for section "%s". '
-                    "Check New Relic agent log file for further "
-                    "details." % section
+                    f'Invalid configuration for section "{section}". Check New Relic agent log file for further details.'
                 )
             raise newrelic.api.exceptions.ConfigurationError(
                 "Invalid configuration. Check New Relic agent log file for further details."
@@ -249,14 +249,10 @@ def _raise_configuration_error(section, option=None):
         if not _ignore_errors:
             if section:
                 raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for option "%s" in '
-                    'section "%s". Check New Relic agent log '
-                    "file for further details." % (option, section)
+                    f'Invalid configuration for option "{option}" in section "{section}". Check New Relic agent log file for further details.'
                 )
             raise newrelic.api.exceptions.ConfigurationError(
-                'Invalid configuration for option "%s". '
-                "Check New Relic agent log file for further "
-                "details." % option
+                f'Invalid configuration for option "{option}". Check New Relic agent log file for further details.'
             )
 
 
@@ -297,10 +293,10 @@ def _process_setting(section, option, getter, mapper):
 
         _cache_object.append((option, value))
 
-    except ConfigParser.NoSectionError:
+    except configparser.NoSectionError:
         pass
 
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         pass
 
     except Exception:
@@ -320,6 +316,8 @@ def _process_configuration(section):
     _process_setting(section, "api_key", "get", None)
     _process_setting(section, "host", "get", None)
     _process_setting(section, "port", "getint", None)
+    _process_setting(section, "otlp_host", "get", None)
+    _process_setting(section, "otlp_port", "getint", None)
     _process_setting(section, "ssl", "getboolean", None)
     _process_setting(section, "proxy_scheme", "get", None)
     _process_setting(section, "proxy_host", "get", None)
@@ -352,6 +350,7 @@ def _process_configuration(section):
     _process_setting(section, "transaction_name.naming_scheme", "get", None)
     _process_setting(section, "gc_runtime_metrics.enabled", "getboolean", None)
     _process_setting(section, "gc_runtime_metrics.top_object_count_limit", "getint", None)
+    _process_setting(section, "memory_runtime_pid_metrics.enabled", "getboolean", None)
     _process_setting(section, "thread_profiler.enabled", "getboolean", None)
     _process_setting(section, "transaction_tracer.enabled", "getboolean", None)
     _process_setting(
@@ -440,6 +439,8 @@ def _process_configuration(section):
     )
     _process_setting(section, "custom_insights_events.enabled", "getboolean", None)
     _process_setting(section, "custom_insights_events.max_samples_stored", "getint", None)
+    _process_setting(section, "custom_insights_events.max_attribute_value", "getint", None)
+    _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
     _process_setting(section, "span_events.enabled", "getboolean", None)
@@ -499,6 +500,7 @@ def _process_configuration(section):
     _process_setting(section, "debug.disable_certificate_validation", "getboolean", None)
     _process_setting(section, "debug.disable_harvest_until_shutdown", "getboolean", None)
     _process_setting(section, "debug.connect_span_stream_in_developer_mode", "getboolean", None)
+    _process_setting(section, "debug.otlp_content_encoding", "get", None)
     _process_setting(section, "cross_application_tracer.enabled", "getboolean", None)
     _process_setting(section, "message_tracer.segment_parameters_enabled", "getboolean", None)
     _process_setting(section, "process_host.display_name", "get", None)
@@ -533,6 +535,7 @@ def _process_configuration(section):
         None,
     )
     _process_setting(section, "event_harvest_config.harvest_limits.custom_event_data", "getint", None)
+    _process_setting(section, "event_harvest_config.harvest_limits.ml_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.span_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.error_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.log_event_data", "getint", None)
@@ -546,8 +549,20 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
     _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.context_data.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.context_data.include", "get", _map_inc_excl_attributes)
+    _process_setting(section, "application_logging.forwarding.context_data.exclude", "get", _map_inc_excl_attributes)
     _process_setting(section, "application_logging.metrics.enabled", "getboolean", None)
     _process_setting(section, "application_logging.local_decorating.enabled", "getboolean", None)
+
+    _process_setting(section, "machine_learning.enabled", "getboolean", None)
+    _process_setting(section, "machine_learning.inference_events_value.enabled", "getboolean", None)
+    _process_setting(section, "ai_monitoring.enabled", "getboolean", None)
+    _process_setting(section, "ai_monitoring.record_content.enabled", "getboolean", None)
+    _process_setting(section, "ai_monitoring.streaming.enabled", "getboolean", None)
+    _process_setting(section, "k8s_operator.enabled", "getboolean", None)
+    _process_setting(section, "azure_operator.enabled", "getboolean", None)
+    _process_setting(section, "package_reporting.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -555,6 +570,11 @@ def _process_configuration(section):
 # and instrumentation errors should raise an exception or not.
 
 _configuration_done = False
+
+
+def _reset_configuration_done():
+    global _configuration_done
+    _configuration_done = False
 
 
 def _process_app_name_setting():
@@ -782,7 +802,7 @@ def translate_deprecated_settings(settings, cached_settings):
             ignored_params = fetch_config_setting(settings, "ignored_params")
 
             for p in ignored_params:
-                attr_value = "request.parameters." + p
+                attr_value = f"request.parameters.{p}"
                 excluded_attrs = fetch_config_setting(settings, "attributes.exclude")
 
                 if attr_value not in excluded_attrs:
@@ -875,6 +895,10 @@ def apply_local_high_security_mode_setting(settings):
         settings.custom_insights_events.enabled = False
         _logger.info(log_template, "custom_insights_events.enabled", True, False)
 
+    if settings.ml_insights_events.enabled:
+        settings.ml_insights_events.enabled = False
+        _logger.info(log_template, "ml_insights_events.enabled", True, False)
+
     if settings.message_tracer.segment_parameters_enabled:
         settings.message_tracer.segment_parameters_enabled = False
         _logger.info(log_template, "message_tracer.segment_parameters_enabled", True, False)
@@ -882,6 +906,14 @@ def apply_local_high_security_mode_setting(settings):
     if settings.application_logging.forwarding.enabled:
         settings.application_logging.forwarding.enabled = False
         _logger.info(log_template, "application_logging.forwarding.enabled", True, False)
+
+    if settings.machine_learning.inference_events_value.enabled:
+        settings.machine_learning.inference_events_value.enabled = False
+        _logger.info(log_template, "machine_learning.inference_events_value.enabled", True, False)
+
+    if settings.ai_monitoring.enabled:
+        settings.ai_monitoring.enabled = False
+        _logger.info(log_template, "ai_monitoring.enabled", True, False)
 
     return settings
 
@@ -910,10 +942,7 @@ def _load_configuration(
     if _configuration_done:
         if _config_file != config_file or _environment != environment:
             raise newrelic.api.exceptions.ConfigurationError(
-                "Configuration has already been done against "
-                "differing configuration file or environment. "
-                'Prior configuration file used was "%s" and '
-                'environment "%s".' % (_config_file, _environment)
+                f'Configuration has already been done against differing configuration file or environment. Prior configuration file used was "{_config_file}" and environment "{_environment}".'
             )
         return
 
@@ -974,7 +1003,7 @@ def _load_configuration(
     # name in internal settings object as indication of succeeding.
 
     if not _config_object.read([config_file]):
-        raise newrelic.api.exceptions.ConfigurationError("Unable to open configuration file %s." % config_file)
+        raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
 
     _settings.config_file = config_file
 
@@ -984,7 +1013,7 @@ def _load_configuration(
     _process_setting("newrelic", "log_file", "get", None)
 
     if environment:
-        _process_setting("newrelic:%s" % environment, "log_file", "get", None)
+        _process_setting(f"newrelic:{environment}", "log_file", "get", None)
 
     if log_file is None:
         log_file = _settings.log_file
@@ -992,7 +1021,7 @@ def _load_configuration(
     _process_setting("newrelic", "log_level", "get", _map_log_level)
 
     if environment:
-        _process_setting("newrelic:%s" % environment, "log_level", "get", _map_log_level)
+        _process_setting(f"newrelic:{environment}", "log_level", "get", _map_log_level)
 
     if log_level is None:
         log_level = _settings.log_level
@@ -1012,7 +1041,7 @@ def _load_configuration(
 
     if environment:
         _settings.environment = environment
-        _process_configuration("newrelic:%s" % environment)
+        _process_configuration(f"newrelic:{environment}")
 
     # Log details of the configuration options which were
     # read and the values they have as would be applied
@@ -1157,7 +1186,7 @@ def _process_module_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1209,7 +1238,7 @@ def _module_function_glob(module, object_path):
                     # Skip adding individual class's methods on failure
                     available_functions.update(
                         {
-                            "%s.%s" % (cls, k): v
+                            f"{cls}.{k}": v
                             for k, v in available_classes.get(cls).__dict__.items()
                             if callable(v) and not isinstance(v, type)
                         }
@@ -1245,12 +1274,11 @@ def _process_wsgi_application_configuration():
     for section in _config_object.sections():
         if not section.startswith("wsgi-application:"):
             continue
-
         enabled = False
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1299,7 +1327,7 @@ def _process_background_task_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1323,7 +1351,7 @@ def _process_background_task_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register background-task %s", ((module, object_path, application, name, group),))
@@ -1358,7 +1386,7 @@ def _process_database_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1373,7 +1401,7 @@ def _process_database_trace_configuration():
             sql = _config_object.get(section, "sql")
 
             if sql.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 sql = eval(sql, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register database-trace %s", ((module, object_path, sql),))
@@ -1408,7 +1436,7 @@ def _process_external_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1428,11 +1456,11 @@ def _process_external_trace_configuration():
                 method = _config_object.get(section, "method")
 
             if url.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 url = eval(url, callable_vars)  # nosec, pylint: disable=W0123
 
             if method and method.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 method = eval(method, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register external-trace %s", ((module, object_path, library, url, method),))
@@ -1469,7 +1497,7 @@ def _process_function_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1500,7 +1528,7 @@ def _process_function_trace_configuration():
                 rollup = _config_object.get(section, "rollup")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug(
@@ -1537,7 +1565,7 @@ def _process_generator_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1558,7 +1586,7 @@ def _process_generator_trace_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register generator-trace %s", ((module, object_path, name, group),))
@@ -1593,7 +1621,7 @@ def _process_profile_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1617,7 +1645,7 @@ def _process_profile_trace_configuration():
                 depth = _config_object.get(section, "depth")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register profile-trace %s", ((module, object_path, name, group, depth),))
@@ -1652,7 +1680,7 @@ def _process_memcache_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1667,7 +1695,7 @@ def _process_memcache_trace_configuration():
             command = _config_object.get(section, "command")
 
             if command.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 command = eval(command, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register memcache-trace %s", (module, object_path, command))
@@ -1703,7 +1731,7 @@ def _process_transaction_name_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1727,7 +1755,7 @@ def _process_transaction_name_configuration():
                 priority = _config_object.getint(section, "priority")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": newrelic.api.object_wrapper.callable_name}
+                callable_vars = {"callable_name": callable_name}
                 name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
 
             _logger.debug("register transaction-name %s", ((module, object_path, name, group, priority),))
@@ -1762,7 +1790,7 @@ def _process_error_trace_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1812,7 +1840,7 @@ def _process_data_source_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1923,7 +1951,7 @@ def _process_function_profile_configuration():
 
         try:
             enabled = _config_object.getboolean(section, "enabled")
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         except Exception:
             _raise_configuration_error(section)
@@ -1966,10 +1994,10 @@ def _process_module_definition(target, module, function="instrument"):
         return
 
     try:
-        section = "import-hook:%s" % target
+        section = f"import-hook:{target}"
         if _config_object.has_section(section):
             enabled = _config_object.getboolean(section, "enabled")
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         pass
     except Exception:
         _raise_configuration_error(section)
@@ -2017,10 +2045,648 @@ def _process_trace_cache_import_hooks():
 
 def _process_module_builtin_defaults():
     _process_module_definition(
+        "openai.api_resources.embedding",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_api_resources_embedding",
+    )
+    _process_module_definition(
+        "openai.api_resources.chat_completion",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_api_resources_chat_completion",
+    )
+    _process_module_definition(
+        "openai.resources.embeddings",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_resources_embeddings",
+    )
+    _process_module_definition(
+        "openai.util",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_util",
+    )
+    _process_module_definition(
+        "openai.api_resources.abstract.engine_api_resource",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_api_resources_abstract_engine_api_resource",
+    )
+    _process_module_definition(
+        "openai._streaming",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai__streaming",
+    )
+
+    _process_module_definition(
+        "openai.resources.chat.completions",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_resources_chat_completions",
+    )
+
+    _process_module_definition(
+        "openai.resources.completions",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_resources_chat_completions",
+    )
+    _process_module_definition(
+        "openai._base_client",
+        "newrelic.hooks.mlmodel_openai",
+        "instrument_openai_base_client",
+    )
+
+    _process_module_definition(
         "asyncio.base_events",
         "newrelic.hooks.coroutines_asyncio",
         "instrument_asyncio_base_events",
     )
+
+    _process_module_definition(
+        "langchain_core.runnables.base",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_runnables_chains_base",
+    )
+    _process_module_definition(
+        "langchain_core.runnables.config",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_core_runnables_config",
+    )
+    _process_module_definition(
+        "langchain.chains.base",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_chains_base",
+    )
+    _process_module_definition(
+        "langchain_core.callbacks.manager",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_callbacks_manager",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.docarray.hnsw",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.docarray.in_memory",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.alibabacloud_opensearch",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.redis.base",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.aerospike",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.analyticdb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.annoy",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.apache_doris",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.aperturedb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.astradb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.atlas",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.awadb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.azure_cosmos_db_no_sql",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.azure_cosmos_db",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.azuresearch",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.bageldb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.baiduvectordb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.baiducloud_vector_search",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.bigquery_vector_search",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+    _process_module_definition(
+        "langchain_community.vectorstores.cassandra",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.chroma",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.clarifai",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.clickhouse",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.couchbase",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.dashvector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.databricks_vector_search",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.deeplake",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.dingo",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.documentdb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.duckdb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.ecloud_vector_search",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.elastic_vector_search",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.elasticsearch",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.epsilla",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.faiss",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.hanavector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.hippo",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.hologres",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.infinispanvs",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.inmemory",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.kdbai",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.kinetica",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.lancedb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.lantern",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.llm_rails",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.manticore_search",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.marqo",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.matching_engine",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.meilisearch",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.milvus",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.momento_vector_index",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.mongodb_atlas",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.myscale",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.neo4j_vector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.thirdai_neuraldb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.nucliadb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.opensearch_vector_search",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.oraclevs",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.pathway",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.pgembedding",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.pgvecto_rs",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.pgvector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.pinecone",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.qdrant",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.relyt",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.rocksetdb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.scann",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.semadb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.singlestoredb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.sklearn",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.sqlitevec",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.sqlitevss",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.starrocks",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.supabase",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.surrealdb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.tair",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.tencentvectordb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.thirdai_neuraldb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.tidb_vector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.tigris",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.tiledb",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.timescalevector",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.typesense",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.upstash",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.usearch",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.vald",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.vdms",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.vearch",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.vectara",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.vespa",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.vlite",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.weaviate",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.xata",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.yellowbrick",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.zep_cloud",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_community.vectorstores.zep",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
+        "langchain_core.tools",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_core_tools",
+    )
+
+    _process_module_definition(
+        "langchain_core.callbacks.manager",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_callbacks_manager",
+    )
+
     _process_module_definition(
         "asyncio.events",
         "newrelic.hooks.coroutines_asyncio",
@@ -2187,26 +2853,6 @@ def _process_module_builtin_defaults():
         "sentry_sdk.integrations.asgi", "newrelic.hooks.component_sentry", "instrument_sentry_sdk_integrations_asgi"
     )
 
-    # _process_module_definition('web.application',
-    #        'newrelic.hooks.framework_webpy')
-    # _process_module_definition('web.template',
-    #        'newrelic.hooks.framework_webpy')
-
-    _process_module_definition(
-        "gluon.compileapp",
-        "newrelic.hooks.framework_web2py",
-        "instrument_gluon_compileapp",
-    )
-    _process_module_definition(
-        "gluon.restricted",
-        "newrelic.hooks.framework_web2py",
-        "instrument_gluon_restricted",
-    )
-    _process_module_definition("gluon.main", "newrelic.hooks.framework_web2py", "instrument_gluon_main")
-    _process_module_definition("gluon.template", "newrelic.hooks.framework_web2py", "instrument_gluon_template")
-    _process_module_definition("gluon.tools", "newrelic.hooks.framework_web2py", "instrument_gluon_tools")
-    _process_module_definition("gluon.http", "newrelic.hooks.framework_web2py", "instrument_gluon_http")
-
     _process_module_definition("httpx._client", "newrelic.hooks.external_httpx", "instrument_httpx_client")
 
     _process_module_definition("gluon.contrib.feedparser", "newrelic.hooks.external_feedparser")
@@ -2265,6 +2911,93 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "graphql.type.schema",
+        "newrelic.hooks.framework_graphql",
+        "instrument_graphql_schema_get_field",
+    )
+
+    _process_module_definition(
+        "google.cloud.firestore_v1.base_client",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_base_client",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.client",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_client",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_client",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_client",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.document",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_document",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_document",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_document",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.collection",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_collection",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_collection",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_collection",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.query",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_query",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_query",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_query",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.aggregation",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_aggregation",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_aggregation",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_aggregation",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.batch",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_batch",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_batch",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_batch",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.bulk_batch",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_bulk_batch",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.transaction",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_transaction",
+    )
+    _process_module_definition(
+        "google.cloud.firestore_v1.async_transaction",
+        "newrelic.hooks.datastore_firestore",
+        "instrument_google_cloud_firestore_v1_async_transaction",
+    )
+
+    _process_module_definition(
         "ariadne.asgi",
         "newrelic.hooks.framework_ariadne",
         "instrument_ariadne_asgi",
@@ -2282,10 +3015,6 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel")
     _process_module_definition("grpc._server", "newrelic.hooks.framework_grpc", "instrument_grpc_server")
-
-    _process_module_definition("pylons.wsgiapp", "newrelic.hooks.framework_pylons")
-    _process_module_definition("pylons.controllers.core", "newrelic.hooks.framework_pylons")
-    _process_module_definition("pylons.templating", "newrelic.hooks.framework_pylons")
 
     _process_module_definition("bottle", "newrelic.hooks.framework_bottle", "instrument_bottle")
 
@@ -2346,11 +3075,6 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.messagebroker_kafkapython",
         "instrument_kafka_heartbeat",
     )
-    _process_module_definition(
-        "kafka.consumer.group",
-        "newrelic.hooks.messagebroker_kafkapython",
-        "instrument_kafka_consumer_group",
-    )
 
     _process_module_definition(
         "logging",
@@ -2368,7 +3092,16 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.logger_loguru",
         "instrument_loguru_logger",
     )
-
+    _process_module_definition(
+        "structlog._base",
+        "newrelic.hooks.logger_structlog",
+        "instrument_structlog__base",
+    )
+    _process_module_definition(
+        "structlog._frames",
+        "newrelic.hooks.logger_structlog",
+        "instrument_structlog__frames",
+    )
     _process_module_definition(
         "paste.httpserver",
         "newrelic.hooks.adapter_paste",
@@ -2387,12 +3120,14 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("mysql.connector", "newrelic.hooks.database_mysql", "instrument_mysql_connector")
     _process_module_definition("MySQLdb", "newrelic.hooks.database_mysqldb", "instrument_mysqldb")
-    _process_module_definition("oursql", "newrelic.hooks.database_oursql", "instrument_oursql")
     _process_module_definition("pymysql", "newrelic.hooks.database_pymysql", "instrument_pymysql")
 
     _process_module_definition("pyodbc", "newrelic.hooks.database_pyodbc", "instrument_pyodbc")
 
     _process_module_definition("pymssql", "newrelic.hooks.database_pymssql", "instrument_pymssql")
+
+    _process_module_definition("psycopg", "newrelic.hooks.database_psycopg", "instrument_psycopg")
+    _process_module_definition("psycopg.sql", "newrelic.hooks.database_psycopg", "instrument_psycopg_sql")
 
     _process_module_definition("psycopg2", "newrelic.hooks.database_psycopg2", "instrument_psycopg2")
     _process_module_definition(
@@ -2469,7 +3204,6 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition("memcache", "newrelic.hooks.datastore_memcache", "instrument_memcache")
-    _process_module_definition("umemcache", "newrelic.hooks.datastore_umemcache", "instrument_umemcache")
     _process_module_definition(
         "pylibmc.client",
         "newrelic.hooks.datastore_pylibmc",
@@ -2485,6 +3219,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.datastore_pymemcache",
         "instrument_pymemcache_client",
     )
+    _process_module_definition(
+        "aiomcache.client",
+        "newrelic.hooks.datastore_aiomcache",
+        "instrument_aiomcache_client",
+    )
 
     _process_module_definition("jinja2.environment", "newrelic.hooks.template_jinja2")
 
@@ -2493,20 +3232,11 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("genshi.template.base", "newrelic.hooks.template_genshi")
 
-    if six.PY2:
-        _process_module_definition("httplib", "newrelic.hooks.external_httplib")
-    else:
-        _process_module_definition("http.client", "newrelic.hooks.external_httplib")
+    _process_module_definition("http.client", "newrelic.hooks.external_httplib")
 
     _process_module_definition("httplib2", "newrelic.hooks.external_httplib2")
 
-    if six.PY2:
-        _process_module_definition("urllib", "newrelic.hooks.external_urllib")
-    else:
-        _process_module_definition("urllib.request", "newrelic.hooks.external_urllib")
-
-    if six.PY2:
-        _process_module_definition("urllib2", "newrelic.hooks.external_urllib2")
+    _process_module_definition("urllib.request", "newrelic.hooks.external_urllib")
 
     _process_module_definition(
         "urllib3.connectionpool",
@@ -2669,18 +3399,6 @@ def _process_module_builtin_defaults():
         "aioredis.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
     )
 
-    _process_module_definition(
-        "redis.asyncio.client", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
-    )
-
-    _process_module_definition(
-        "redis.asyncio.commands", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client"
-    )
-
-    _process_module_definition(
-        "redis.asyncio.connection", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_connection"
-    )
-
     # v7 and below
     _process_module_definition(
         "elasticsearch.client",
@@ -2821,20 +3539,53 @@ def _process_module_builtin_defaults():
         "instrument_pyelasticsearch_client",
     )
 
+    # Newer pymongo module locations
+    _process_module_definition(
+        "pymongo.synchronous.pool",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_pool",
+    )
+    _process_module_definition(
+        "pymongo.synchronous.collection",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_collection",
+    )
+    _process_module_definition(
+        "pymongo.synchronous.mongo_client",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_mongo_client",
+    )
+
+    # Older pymongo module locations
     _process_module_definition(
         "pymongo.connection",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_connection",
+        "instrument_pymongo_pool",
+    )
+    _process_module_definition(
+        "pymongo.collection",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_collection",
     )
     _process_module_definition(
         "pymongo.mongo_client",
         "newrelic.hooks.datastore_pymongo",
         "instrument_pymongo_mongo_client",
     )
+
+    # Redis v4.2+
     _process_module_definition(
-        "pymongo.collection",
-        "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_collection",
+        "redis.asyncio.client", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_client"
+    )
+
+    # Redis v4.2+
+    _process_module_definition(
+        "redis.asyncio.commands", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_client"
+    )
+
+    # Redis v4.2+
+    _process_module_definition(
+        "redis.asyncio.connection", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_connection"
     )
 
     _process_module_definition(
@@ -2843,6 +3594,10 @@ def _process_module_builtin_defaults():
         "instrument_redis_connection",
     )
     _process_module_definition("redis.client", "newrelic.hooks.datastore_redis", "instrument_redis_client")
+
+    _process_module_definition(
+        "redis.commands.cluster", "newrelic.hooks.datastore_redis", "instrument_redis_commands_cluster"
+    )
 
     _process_module_definition(
         "redis.commands.core", "newrelic.hooks.datastore_redis", "instrument_redis_commands_core"
@@ -2891,6 +3646,756 @@ def _process_module_builtin_defaults():
     _process_module_definition("tastypie.api", "newrelic.hooks.component_tastypie", "instrument_tastypie_api")
 
     _process_module_definition(
+        "sklearn.metrics",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_metrics",
+    )
+
+    _process_module_definition(
+        "sklearn.tree._classes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_tree_models",
+    )
+    # In scikit-learn < 0.21 the model classes are in tree.py instead of _classes.py.
+    _process_module_definition(
+        "sklearn.tree.tree",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_tree_models",
+    )
+
+    _process_module_definition(
+        "sklearn.compose._column_transformer",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_compose_models",
+    )
+
+    _process_module_definition(
+        "sklearn.compose._target",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_compose_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance._empirical_covariance",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance.empirical_covariance_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance.shrunk_covariance_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_shrunk_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance._shrunk_covariance",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_shrunk_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance.robust_covariance_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance._robust_covariance",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance.graph_lasso_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_graph_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance._graph_lasso",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_graph_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance.elliptic_envelope",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.covariance._elliptic_envelope",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_covariance_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._bagging",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_bagging_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.bagging",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_bagging_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._forest",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_forest_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.forest",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_forest_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._iforest",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_iforest_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.iforest",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_iforest_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._weight_boosting",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_weight_boosting_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.weight_boosting",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_weight_boosting_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._gb",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_gradient_boosting_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.gradient_boosting",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_gradient_boosting_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._voting",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_voting_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble.voting_classifier",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_voting_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._stacking",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_stacking_models",
+    )
+
+    _process_module_definition(
+        "sklearn.ensemble._hist_gradient_boosting.gradient_boosting",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_ensemble_hist_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._base",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.base",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._bayes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_bayes_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.bayes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_bayes_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._least_angle",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_least_angle_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.least_angle",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_least_angle_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.coordinate_descent",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_coordinate_descent_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._coordinate_descent",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_coordinate_descent_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._glm",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_GLM_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._huber",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.huber",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._stochastic_gradient",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_stochastic_gradient_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.stochastic_gradient",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_stochastic_gradient_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._ridge",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_ridge_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.ridge",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_ridge_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._logistic",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_logistic_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.logistic",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_logistic_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._omp",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_OMP_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.omp",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_OMP_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._passive_aggressive",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_passive_aggressive_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.passive_aggressive",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_passive_aggressive_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._perceptron",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.perceptron",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._quantile",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._ransac",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.ransac",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model._theil_sen",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.linear_model.theil_sen",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_linear_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cross_decomposition._pls",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cross_decomposition_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cross_decomposition.pls_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cross_decomposition_models",
+    )
+
+    _process_module_definition(
+        "sklearn.discriminant_analysis",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_discriminant_analysis_models",
+    )
+
+    _process_module_definition(
+        "sklearn.gaussian_process._gpc",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_gaussian_process_models",
+    )
+
+    _process_module_definition(
+        "sklearn.gaussian_process.gpc",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_gaussian_process_models",
+    )
+
+    _process_module_definition(
+        "sklearn.gaussian_process._gpr",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_gaussian_process_models",
+    )
+
+    _process_module_definition(
+        "sklearn.gaussian_process.gpr",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_gaussian_process_models",
+    )
+
+    _process_module_definition(
+        "sklearn.dummy",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_dummy_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection._rfe",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_rfe_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection.rfe",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_rfe_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection._variance_threshold",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection.variance_threshold",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection._from_model",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection.from_model",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_models",
+    )
+
+    _process_module_definition(
+        "sklearn.feature_selection._sequential",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_feature_selection_models",
+    )
+
+    _process_module_definition(
+        "sklearn.kernel_ridge",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_kernel_ridge_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neural_network._multilayer_perceptron",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neural_network_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neural_network.multilayer_perceptron",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neural_network_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neural_network._rbm",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neural_network_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neural_network.rbm",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neural_network_models",
+    )
+
+    _process_module_definition(
+        "sklearn.calibration",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_calibration_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._affinity_propagation",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.affinity_propagation_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._agglomerative",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_agglomerative_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.hierarchical",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_agglomerative_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._birch",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.birch",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._bisect_k_means",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_kmeans_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._dbscan",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.dbscan_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._feature_agglomeration",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._kmeans",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_kmeans_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.k_means_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_kmeans_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._mean_shift",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.mean_shift_",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._optics",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._spectral",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_clustering_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.spectral",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_clustering_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster._bicluster",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_clustering_models",
+    )
+
+    _process_module_definition(
+        "sklearn.cluster.bicluster",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_cluster_clustering_models",
+    )
+
+    _process_module_definition(
+        "sklearn.multiclass",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_multiclass_models",
+    )
+
+    _process_module_definition(
+        "sklearn.multioutput",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_multioutput_models",
+    )
+
+    _process_module_definition(
+        "sklearn.naive_bayes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_naive_bayes_models",
+    )
+
+    _process_module_definition(
+        "sklearn.model_selection._search",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_model_selection_models",
+    )
+
+    _process_module_definition(
+        "sklearn.mixture._bayesian_mixture",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_mixture_models",
+    )
+
+    _process_module_definition(
+        "sklearn.mixture.bayesian_mixture",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_mixture_models",
+    )
+
+    _process_module_definition(
+        "sklearn.mixture._gaussian_mixture",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_mixture_models",
+    )
+
+    _process_module_definition(
+        "sklearn.mixture.gaussian_mixture",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_mixture_models",
+    )
+
+    _process_module_definition(
+        "sklearn.pipeline",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_pipeline_models",
+    )
+
+    _process_module_definition(
+        "sklearn.semi_supervised._label_propagation",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_semi_supervised_models",
+    )
+
+    _process_module_definition(
+        "sklearn.semi_supervised._self_training",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_semi_supervised_models",
+    )
+
+    _process_module_definition(
+        "sklearn.semi_supervised.label_propagation",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_semi_supervised_models",
+    )
+
+    _process_module_definition(
+        "sklearn.svm._classes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_svm_models",
+    )
+
+    _process_module_definition(
+        "sklearn.svm.classes",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_svm_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._classification",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_KRadius_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.classification",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_KRadius_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._graph",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_KRadius_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._kde",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.kde",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._lof",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.lof",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._nca",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._nearest_centroid",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.nearest_centroid",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._regression",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_KRadius_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.regression",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_KRadius_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors._unsupervised",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
+        "sklearn.neighbors.unsupervised",
+        "newrelic.hooks.mlmodel_sklearn",
+        "instrument_sklearn_neighbors_models",
+    )
+
+    _process_module_definition(
         "rest_framework.views",
         "newrelic.hooks.component_djangorestframework",
         "instrument_rest_framework_views",
@@ -2911,6 +4416,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.application_celery",
         "instrument_celery_app_task",
     )
+    _process_module_definition(
+        "celery.app.trace",
+        "newrelic.hooks.application_celery",
+        "instrument_celery_app_trace",
+    )
     _process_module_definition("celery.worker", "newrelic.hooks.application_celery", "instrument_celery_worker")
     _process_module_definition(
         "celery.concurrency.processes",
@@ -2922,23 +4432,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.application_celery",
         "instrument_celery_worker",
     )
-    # _process_module_definition('celery.loaders.base',
-    #        'newrelic.hooks.application_celery',
-    #        'instrument_celery_loaders_base')
+
     _process_module_definition(
-        "celery.execute.trace",
+        "celery.app.base",
         "newrelic.hooks.application_celery",
-        "instrument_celery_execute_trace",
-    )
-    _process_module_definition(
-        "celery.task.trace",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_execute_trace",
-    )
-    _process_module_definition(
-        "celery.app.trace",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_execute_trace",
+        "instrument_celery_app_base",
     )
     _process_module_definition("billiard.pool", "newrelic.hooks.application_celery", "instrument_billiard_pool")
 
@@ -2958,8 +4456,6 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.adapter_flup",
         "instrument_flup_server_scgi_base",
     )
-
-    _process_module_definition("pywapi", "newrelic.hooks.external_pywapi", "instrument_pywapi")
 
     _process_module_definition(
         "meinheld.server",
@@ -3023,17 +4519,6 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("gevent.monkey", "newrelic.hooks.coroutines_gevent", "instrument_gevent_monkey")
 
-    _process_module_definition(
-        "weberror.errormiddleware",
-        "newrelic.hooks.middleware_weberror",
-        "instrument_weberror_errormiddleware",
-    )
-    _process_module_definition(
-        "weberror.reporter",
-        "newrelic.hooks.middleware_weberror",
-        "instrument_weberror_reporter",
-    )
-
     _process_module_definition("thrift.transport.TSocket", "newrelic.hooks.external_thrift")
 
     _process_module_definition(
@@ -3053,6 +4538,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "aiobotocore.endpoint",
+        "newrelic.hooks.external_aiobotocore",
+        "instrument_aiobotocore_endpoint",
+    )
+
+    _process_module_definition(
         "botocore.endpoint",
         "newrelic.hooks.external_botocore",
         "instrument_botocore_endpoint",
@@ -3061,6 +4552,12 @@ def _process_module_builtin_defaults():
         "botocore.client",
         "newrelic.hooks.external_botocore",
         "instrument_botocore_client",
+    )
+
+    _process_module_definition(
+        "s3transfer.futures",
+        "newrelic.hooks.external_s3transfer",
+        "instrument_s3transfer_futures",
     )
 
     _process_module_definition(
@@ -3088,13 +4585,21 @@ def _process_module_builtin_defaults():
 
 def _process_module_entry_points():
     try:
-        import pkg_resources
+        # Preferred after Python 3.10
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import entry_points
+        # Introduced in Python 3.8
+        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+            from importlib_metadata import entry_points
+        # Removed in Python 3.12
+        else:
+            from pkg_resources import iter_entry_points as entry_points
     except ImportError:
         return
 
     group = "newrelic.hooks"
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
+    for entrypoint in entry_points(group=group):
         target = entrypoint.name
 
         if target in _module_import_hook_registry:
@@ -3111,6 +4616,11 @@ def _process_module_entry_points():
 
 
 _instrumentation_done = False
+
+
+def _reset_instrumentation_done():
+    global _instrumentation_done
+    _instrumentation_done = False
 
 
 def _setup_instrumentation():
@@ -3147,13 +4657,21 @@ def _setup_instrumentation():
 
 def _setup_extensions():
     try:
-        import pkg_resources
+        # Preferred after Python 3.10
+        if sys.version_info >= (3, 10):
+            from importlib.metadata import entry_points
+        # Introduced in Python 3.8
+        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+            from importlib_metadata import entry_points
+        # Removed in Python 3.12
+        else:
+            from pkg_resources import iter_entry_points as entry_points
     except ImportError:
         return
 
     group = "newrelic.extension"
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group):
+    for entrypoint in entry_points(group=group):
         __import__(entrypoint.module_name)
         module = sys.modules[entrypoint.module_name]
         module.initialize()

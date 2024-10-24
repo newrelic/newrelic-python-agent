@@ -25,12 +25,11 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.packages import six
 
 _logger = logging.getLogger(__name__)
 
 
-class _WSGIApplicationIterable(object):
+class _WSGIApplicationIterable():
     def __init__(self, transaction, generator):
         self.transaction = transaction
         self.generator = generator
@@ -78,7 +77,6 @@ class _WSGIApplicationIterable(object):
 
         try:
             with FunctionTrace(name="Finalize", group="Python/WSGI"):
-
                 if isinstance(self.generator, _WSGIApplicationMiddleware):
                     self.generator.close()
 
@@ -97,7 +95,7 @@ class _WSGIApplicationIterable(object):
             self.closed = True
 
 
-class _WSGIInputWrapper(object):
+class _WSGIInputWrapper():
     def __init__(self, transaction, input):
         self.__transaction = transaction
         self.__input = input
@@ -152,8 +150,7 @@ class _WSGIInputWrapper(object):
         return lines
 
 
-class _WSGIApplicationMiddleware(object):
-
+class _WSGIApplicationMiddleware():
     # This is a WSGI middleware for automatically inserting RUM into
     # HTML responses. It only works for where a WSGI application is
     # returning response content via a iterable/generator. It does not
@@ -204,16 +201,7 @@ class _WSGIApplicationMiddleware(object):
         # works then we are done, else we move to next phase of
         # buffering up content until we find the body element.
 
-        def html_to_be_inserted():
-            header = self.transaction.browser_timing_header()
-
-            if not header:
-                return b""
-
-            footer = self.transaction.browser_timing_footer()
-
-            return six.b(header) + six.b(footer)
-
+        html_to_be_inserted = lambda: self.transaction.browser_timing_header().encode("latin-1")
         if not self.response_data:
             modified = insert_html_snippet(data, html_to_be_inserted)
 
@@ -340,7 +328,6 @@ class _WSGIApplicationMiddleware(object):
         # Also check whether RUM insertion has already occurred.
 
         if self.transaction.autorum_disabled or self.transaction.rum_header_generated:
-
             self.flush_headers()
             self.pass_through = True
 
@@ -360,7 +347,7 @@ class _WSGIApplicationMiddleware(object):
         content_encoding = None
         content_disposition = None
 
-        for (name, value) in response_headers:
+        for name, value in response_headers:
             _name = name.lower()
 
             if _name == "content-length":
@@ -508,24 +495,20 @@ class _WSGIApplicationMiddleware(object):
 
 
 def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, framework=None, dispatcher=None):
-
-    # Python 2 does not allow rebinding nonlocal variables, so to fix this
-    # framework must be stored in list so it can be edited by closure.
-    _framework = [framework]
-
     def get_framework():
         """Used to delay imports by passing framework as a callable."""
-        framework = _framework[0]
+
+        # Use same framework variable as closure
+        nonlocal framework
+
         if isinstance(framework, tuple) or framework is None:
             return framework
 
         if callable(framework):
             framework = framework()
-            _framework[0] = framework
 
         if framework is not None and not isinstance(framework, tuple):
             framework = (framework, None)
-            _framework[0] = framework
 
         return framework
 
@@ -649,7 +632,6 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
             transaction.set_transaction_name(name, group, priority=1)
 
         def _start_response(status, response_headers, *args):
-
             additional_headers = transaction.process_response(status, response_headers, *args)
 
             _write = start_response(status, response_headers + additional_headers, *args)

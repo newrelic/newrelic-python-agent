@@ -22,15 +22,17 @@ from aiohttp.test_utils import TestClient as _TestClient
 from testing_support.fixture.event_loop import (  # noqa: F401 pylint: disable=W0611
     event_loop,
 )
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 from testing_support.mock_external_http_server import (
     MockExternalHTTPHResponseHeadersServer,
     MockExternalHTTPServer,
 )
 
-
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -135,7 +137,7 @@ def mock_external_http_server():
 
 @pytest.fixture(scope="session")
 def local_server_info(mock_header_server):
-    host_port = "127.0.0.1:%d" % mock_header_server.port
-    metric = "External/%s/aiohttp/" % host_port
-    url = "http://" + host_port
+    host_port = f"127.0.0.1:{mock_header_server.port}"
+    metric = f"External/{host_port}/aiohttp/"
+    url = f"http://{host_port}"
     return ServerInfo(metric, url)

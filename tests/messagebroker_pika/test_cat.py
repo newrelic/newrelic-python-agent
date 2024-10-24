@@ -17,14 +17,13 @@ import random
 import string
 
 import pika
-import six
 from compat import basic_consume
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import (
-    cat_enabled,
-    override_application_settings,
+from testing_support.fixtures import cat_enabled, override_application_settings
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
 )
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 
@@ -55,14 +54,10 @@ _test_cat_basic_consume_scoped_metrics = [
 ]
 _test_cat_basic_consume_rollup_metrics = list(_test_cat_basic_consume_scoped_metrics)
 _test_cat_basic_consume_rollup_metrics.append(("ClientApplication/1#1/all", 1))
-if six.PY3:
-    _txn_name = "test_cat:test_basic_consume_cat_headers.<locals>.on_receive"
-else:
-    _txn_name = "test_cat:on_receive"
 
 
 @validate_transaction_metrics(
-    _txn_name,
+    "test_cat:test_basic_consume_cat_headers.<locals>.on_receive",
     scoped_metrics=_test_cat_basic_consume_scoped_metrics,
     rollup_metrics=_test_cat_basic_consume_rollup_metrics,
     background_task=True,
@@ -89,7 +84,7 @@ def test_basic_consume_cat_headers():
 
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        queue_name = "TESTCAT-%s" % os.getpid()
+        queue_name = f"TESTCAT-{os.getpid()}"
         channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()
@@ -136,7 +131,7 @@ def do_basic_get(channel, QUEUE):
 def test_basic_get_no_cat_headers():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        queue_name = "TESTCAT-%s" % os.getpid()
+        queue_name = f"TESTCAT-{os.getpid()}"
         channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()

@@ -15,6 +15,8 @@
 import os
 import tempfile
 
+from importlib import reload
+
 import pytest
 
 # these will be reloaded for each test
@@ -34,12 +36,6 @@ from newrelic.core.config import (
     global_settings,
 )
 
-try:
-    # python 2.x
-    reload
-except NameError:
-    # python 3.x
-    from importlib import reload
 
 INI_FILE_WITHOUT_UTIL_CONF = b"""
 [newrelic]
@@ -76,7 +72,7 @@ INITIAL_ENV = os.environ
 # Tests for loading settings and testing for values precedence
 
 
-class Environ(object):
+class Environ():
     def __init__(self, env_dict):
         self.env_dict = {}
         for key in env_dict.keys():
@@ -116,6 +112,22 @@ def reset_agent_config(ini_contents, env_dict):
         return returned
 
     return reset
+
+
+@reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, {"NEW_RELIC_HOST": "collector.newrelic.com"})
+def test_otlp_host_port_default():
+    settings = global_settings()
+    assert settings.otlp_host == "otlp.nr-data.net"
+    assert settings.otlp_port == 0
+
+
+@reset_agent_config(
+    INI_FILE_WITHOUT_UTIL_CONF, {"NEW_RELIC_OTLP_HOST": "custom-otlp.nr-data.net", "NEW_RELIC_OTLP_PORT": 443}
+)
+def test_otlp_port_override():
+    settings = global_settings()
+    assert settings.otlp_host == "custom-otlp.nr-data.net"
+    assert settings.otlp_port == 443
 
 
 @reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)

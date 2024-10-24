@@ -1,0 +1,8 @@
+# Note: The following dependencies are vendored within the Python
+# Agent code in newrelic/packages/.
+# This file is used by dependabot to keep track of and recommend updates
+# to the New Relic Python Agent's dependencies in newrelic/packages/.
+opentelemetry_proto==1.0.0
+urllib3==1.26.19
+wrapt==1.16.0
+asgiref==3.6.0  # We only vendor asgiref.compatibility.py

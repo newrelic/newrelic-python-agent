@@ -15,15 +15,17 @@
 import asyncio
 
 import pytest
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+)
 
 from newrelic.common.object_wrapper import (  # noqa: F401 pylint: disable=W0611
     transient_function_wrapper,
 )
 
-
 _default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -140,7 +142,7 @@ def request(app, method, url, headers=None):
     return RESPONSES.pop()
 
 
-class TestApplication(object):
+class TestApplication():
     def __init__(self, app):
         self.app = app
 

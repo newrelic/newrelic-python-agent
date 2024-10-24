@@ -28,15 +28,11 @@ import logging
 import os
 import re
 import threading
+import urllib.parse as urlparse
 
-import newrelic.packages.six as six
 from newrelic.common.object_names import parse_exc_info
+from newrelic.core.attribute import MAX_ATTRIBUTE_LENGTH
 from newrelic.core.attribute_filter import AttributeFilter
-
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
 
 try:
     import grpc
@@ -51,11 +47,14 @@ except Exception:
 # By default, Transaction Events and Custom Events have the same size
 # reservoir. Error Events have a different default size.
 
+# Slow harvest (Every 60 seconds)
 DEFAULT_RESERVOIR_SIZE = 1200
-CUSTOM_EVENT_RESERVOIR_SIZE = 3600
 ERROR_EVENT_RESERVOIR_SIZE = 100
 SPAN_EVENT_RESERVOIR_SIZE = 2000
+# Fast harvest (Every 5 seconds, so divide by 12 to get average per minute value)
+CUSTOM_EVENT_RESERVOIR_SIZE = 3600
 LOG_EVENT_RESERVOIR_SIZE = 10000
+ML_EVENT_RESERVOIR_SIZE = 100000
 
 # settings that should be completely ignored if set server side
 IGNORED_SERVER_SIDE_SETTINGS = [
@@ -82,7 +81,7 @@ _logger.addHandler(_NullHandler())
 # sub categories we don't know about.
 
 
-class Settings(object):
+class Settings:
     nested = False
 
     def __repr__(self):
@@ -101,6 +100,7 @@ def create_settings(nested):
 
 class TopLevelSettings(Settings):
     _host = None
+    _otlp_host = None
 
     @property
     def host(self):
@@ -112,6 +112,16 @@ class TopLevelSettings(Settings):
     def host(self, value):
         self._host = value
 
+    @property
+    def otlp_host(self):
+        if self._otlp_host:
+            return self._otlp_host
+        return default_otlp_host(self.host)
+
+    @otlp_host.setter
+    def otlp_host(self, value):
+        self._otlp_host = value
+
 
 class AttributesSettings(Settings):
     pass
@@ -119,6 +129,44 @@ class AttributesSettings(Settings):
 
 class GCRuntimeMetricsSettings(Settings):
     enabled = False
+
+
+class MemoryRuntimeMetricsSettings(Settings):
+    pass
+
+
+class MachineLearningSettings(Settings):
+    pass
+
+
+class MachineLearningInferenceEventsValueSettings(Settings):
+    pass
+
+
+class AIMonitoringSettings(Settings):
+    @property
+    def llm_token_count_callback(self):
+        return self._llm_token_count_callback
+
+
+class AIMonitoringStreamingSettings(Settings):
+    pass
+
+
+class AIMonitoringRecordContentSettings(Settings):
+    pass
+
+
+class K8sOperatorSettings(Settings):
+    pass
+
+
+class AzureOperatorSettings(Settings):
+    pass
+
+
+class PackageReportingSettings(Settings):
+    pass
 
 
 class CodeLevelMetricsSettings(Settings):
@@ -199,6 +247,10 @@ class CustomInsightsEventsSettings(Settings):
     pass
 
 
+class MlInsightsEventsSettings(Settings):
+    pass
+
+
 class ProcessHostSettings(Settings):
     pass
 
@@ -268,6 +320,10 @@ class ApplicationLoggingSettings(Settings):
 
 
 class ApplicationLoggingForwardingSettings(Settings):
+    pass
+
+
+class ApplicationLoggingForwardingContextDataSettings(Settings):
     pass
 
 
@@ -392,8 +448,18 @@ _settings = TopLevelSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
+_settings.application_logging.forwarding.context_data = ApplicationLoggingForwardingContextDataSettings()
+_settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
+_settings.machine_learning = MachineLearningSettings()
+_settings.machine_learning.inference_events_value = MachineLearningInferenceEventsValueSettings()
+_settings.ai_monitoring = AIMonitoringSettings()
+_settings.ai_monitoring.streaming = AIMonitoringStreamingSettings()
+_settings.ai_monitoring.record_content = AIMonitoringRecordContentSettings()
+_settings.k8s_operator = K8sOperatorSettings()
+_settings.azure_operator = AzureOperatorSettings()
+_settings.package_reporting = PackageReportingSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
@@ -401,6 +467,7 @@ _settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.console = ConsoleSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
+_settings.ml_insights_events = MlInsightsEventsSettings()
 _settings.datastore_tracer = DatastoreTracerSettings()
 _settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseNameReportingSettings()
 _settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
@@ -412,6 +479,7 @@ _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = EventHarvestConfigHarvestLimitSettings()
 _settings.event_loop_visibility = EventLoopVisibilitySettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
+_settings.memory_runtime_pid_metrics = MemoryRuntimeMetricsSettings()
 _settings.heroku = HerokuSettings()
 _settings.infinite_tracing = InfiniteTracingSettings()
 _settings.instrumentation = InstrumentationSettings()
@@ -567,8 +635,26 @@ def default_host(license_key):
         return "collector.newrelic.com"
 
     region = region_aware_match.group(1)
-    host = "collector." + region + ".nr-data.net"
+    host = f"collector.{region}.nr-data.net"
     return host
+
+
+def default_otlp_host(host):
+    HOST_MAP = {
+        "collector.newrelic.com": "otlp.nr-data.net",
+        "collector.eu.newrelic.com": "otlp.eu01.nr-data.net",
+        "gov-collector.newrelic.com": "gov-otlp.nr-data.net",
+        "staging-collector.newrelic.com": "staging-otlp.nr-data.net",
+        "staging-collector.eu.newrelic.com": "staging-otlp.eu01.nr-data.net",
+        "staging-gov-collector.newrelic.com": "staging-gov-otlp.nr-data.net",
+        "fake-collector.newrelic.com": "fake-otlp.nr-data.net",
+    }
+    otlp_host = HOST_MAP.get(host, None)
+    if not otlp_host:
+        default = HOST_MAP["collector.newrelic.com"]
+        _logger.warn(f"Unable to find corresponding OTLP host using default {default}")
+        otlp_host = default
+    return otlp_host
 
 
 _LOG_LEVEL = {
@@ -596,7 +682,9 @@ _settings.api_key = os.environ.get("NEW_RELIC_API_KEY", None)
 _settings.ssl = _environ_as_bool("NEW_RELIC_SSL", True)
 
 _settings.host = os.environ.get("NEW_RELIC_HOST")
+_settings.otlp_host = os.environ.get("NEW_RELIC_OTLP_HOST")
 _settings.port = int(os.environ.get("NEW_RELIC_PORT", "0"))
+_settings.otlp_port = int(os.environ.get("NEW_RELIC_OTLP_PORT", "0"))
 
 _settings.agent_run_id = None
 _settings.entity_guid = None
@@ -688,8 +776,12 @@ _settings.attributes.include = []
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = False
 
-_settings.gc_runtime_metrics.enabled = False
+_settings.gc_runtime_metrics.enabled = _environ_as_bool("NEW_RELIC_GC_RUNTIME_METRICS_ENABLED", default=False)
 _settings.gc_runtime_metrics.top_object_count_limit = 5
+
+_settings.memory_runtime_pid_metrics.enabled = _environ_as_bool(
+    "NEW_RELIC_MEMORY_RUNTIME_PID_METRICS_ENABLED", default=True
+)
 
 _settings.transaction_events.enabled = True
 _settings.transaction_events.attributes.enabled = True
@@ -697,6 +789,11 @@ _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
+_settings.custom_insights_events.max_attribute_value = _environ_as_int(
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_ATTRIBUTE_VALUE", default=MAX_ATTRIBUTE_LENGTH
+)
+
+_settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
 _settings.distributed_tracing.exclude_newrelic_header = False
@@ -789,6 +886,10 @@ _settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_in
     "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", CUSTOM_EVENT_RESERVOIR_SIZE
 )
 
+_settings.event_harvest_config.harvest_limits.ml_event_data = _environ_as_int(
+    "NEW_RELIC_ML_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", ML_EVENT_RESERVOIR_SIZE
+)
+
 _settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
     "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", SPAN_EVENT_RESERVOIR_SIZE
 )
@@ -826,6 +927,7 @@ _settings.debug.disable_certificate_validation = False
 _settings.debug.log_untrusted_distributed_trace_keys = False
 _settings.debug.disable_harvest_until_shutdown = False
 _settings.debug.connect_span_stream_in_developer_mode = False
+_settings.debug.otlp_content_encoding = None
 
 _settings.message_tracer.segment_parameters_enabled = True
 
@@ -862,12 +964,35 @@ _settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_
 _settings.application_logging.forwarding.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=True
 )
+_settings.application_logging.forwarding.context_data.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED", default=False
+)
+_settings.application_logging.forwarding.context_data.include = _environ_as_set(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_INCLUDE", default=""
+)
+_settings.application_logging.forwarding.context_data.exclude = _environ_as_set(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_EXCLUDE", default=""
+)
 _settings.application_logging.metrics.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_METRICS_ENABLED", default=True
 )
 _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
+_settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNING_ENABLED", default=False)
+_settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
+    "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
+)
+_settings.ai_monitoring.enabled = _environ_as_bool("NEW_RELIC_AI_MONITORING_ENABLED", default=False)
+_settings.ai_monitoring.streaming.enabled = _environ_as_bool("NEW_RELIC_AI_MONITORING_STREAMING_ENABLED", default=True)
+_settings.ai_monitoring.record_content.enabled = _environ_as_bool(
+    "NEW_RELIC_AI_MONITORING_RECORD_CONTENT_ENABLED", default=True
+)
+_settings.ai_monitoring._llm_token_count_callback = None
+_settings.k8s_operator.enabled = _environ_as_bool("NEW_RELIC_K8S_OPERATOR_ENABLED", default=False)
+_settings.azure_operator.enabled = _environ_as_bool("NEW_RELIC_AZURE_OPERATOR_ENABLED", default=False)
+_settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
+_settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 
 _settings.security.agent.enabled = _environ_as_bool("NEW_RELIC_SECURITY_AGENT_ENABLED", False)
 _settings.security.enabled = _environ_as_bool("NEW_RELIC_SECURITY_ENABLED", False)
@@ -913,7 +1038,7 @@ def flatten_settings(settings):
                 key = key[1:]
 
             if name:
-                key = "%s.%s" % (name, key)
+                key = f"{name}.{key}"
 
             if isinstance(value, Settings):
                 if value.nested:
@@ -943,9 +1068,9 @@ def create_obfuscated_netloc(username, password, hostname, mask):
         password = mask
 
     if username and password:
-        netloc = "%s:%s@%s" % (username, password, hostname)
+        netloc = f"{username}:{password}@{hostname}"
     elif username:
-        netloc = "%s@%s" % (username, hostname)
+        netloc = f"{username}@{hostname}"
     else:
         netloc = hostname
 
@@ -999,22 +1124,18 @@ def global_settings_dump(settings_object=None, serializable=False):
             netloc = create_obfuscated_netloc(components.username, components.password, components.hostname, obfuscated)
 
             if components.port:
-                uri = "%s://%s:%s%s" % (components.scheme, netloc, components.port, components.path)
+                uri = f"{components.scheme}://{netloc}:{components.port}{components.path}"
             else:
-                uri = "%s://%s%s" % (components.scheme, netloc, components.path)
+                uri = f"{components.scheme}://{netloc}{components.path}"
 
             settings["proxy_host"] = uri
 
     if serializable:
-        for key, value in list(six.iteritems(settings)):
-            if not isinstance(key, six.string_types):
+        for key, value in list(settings.items()):
+            if not isinstance(key, str):
                 del settings[key]
 
-            if (
-                not isinstance(value, six.string_types)
-                and not isinstance(value, float)
-                and not isinstance(value, six.integer_types)
-            ):
+            if not isinstance(value, str) and not isinstance(value, float) and not isinstance(value, int):
                 settings[key] = repr(value)
 
     return settings
@@ -1050,7 +1171,7 @@ def apply_config_setting(settings_object, name, value, nested=False):
     default_value = getattr(target, fields[0], None)
     if isinstance(value, dict) and value and not isinstance(default_value, dict):
         for k, v in value.items():
-            k_name = "{}.{}".format(fields[0], k)
+            k_name = f"{fields[0]}.{k}"
             apply_config_setting(target, k_name, v, nested=True)
     else:
         setattr(target, fields[0], value)
@@ -1122,8 +1243,8 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         apply_config_setting(settings_snapshot, name, value)
 
     # Overlay with global server side configuration settings.
-    # global server side configuration always takes precedence over the global
-    # server side configuration settings.
+    # global server side configuration always takes precedence over the local
+    # agent configuration settings.
 
     for name, value in server_side_config.items():
         apply_config_setting(settings_snapshot, name, value)
@@ -1139,6 +1260,30 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         apply_config_setting(
             settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
         )
+
+    # Check to see if collect_ai appears in the connect response to handle account-level AIM toggling
+    collect_ai = server_side_config.get("collect_ai", None)
+    if collect_ai is not None:
+        apply_config_setting(settings_snapshot, "ai_monitoring.enabled", collect_ai)
+        _logger.debug("Setting ai_monitoring.enabled to value of collect_ai=%s", collect_ai)
+
+    # Since the server does not override this setting as it's an OTLP setting,
+    # we must override it here manually by converting it into a per harvest cycle
+    # value.
+    apply_config_setting(
+        settings_snapshot,
+        "event_harvest_config.harvest_limits.ml_event_data",
+        # override ml_events / (60s/5s) harvest
+        settings_snapshot.event_harvest_config.harvest_limits.ml_event_data / 12,
+    )
+
+    # Since the server does not override this setting we must override it here manually
+    # by caping it at the max value of 4095.
+    apply_config_setting(
+        settings_snapshot,
+        "custom_insights_events.max_attribute_value",
+        min(settings_snapshot.custom_insights_events.max_attribute_value, 4095),
+    )
 
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of
@@ -1262,8 +1407,8 @@ def error_matches_rules(
                 return None
 
     # Retrieve settings based on prefix
-    classes_rules = getattr(settings.error_collector, "%s_classes" % rules_prefix, set())
-    status_codes_rules = getattr(settings.error_collector, "%s_status_codes" % rules_prefix, set())
+    classes_rules = getattr(settings.error_collector, f"{rules_prefix}_classes", set())
+    status_codes_rules = getattr(settings.error_collector, f"{rules_prefix}_status_codes", set())
 
     _, _, fullnames, _ = parse_exc_info(exc_info)
     fullname = fullnames[0]
@@ -1285,7 +1430,7 @@ def error_matches_rules(
             # Coerce into integer
             status_code = int(status_code)
         except:
-            _logger.error("Failed to coerce status code into integer. status_code: %s" % str(status_code))
+            _logger.error(f"Failed to coerce status code into integer. status_code: {str(status_code)}")
         else:
             if status_code in status_codes_rules:
                 return True

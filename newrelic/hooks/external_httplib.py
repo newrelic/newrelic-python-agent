@@ -14,11 +14,10 @@
 
 import functools
 
-from newrelic.packages import six
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import ObjectWrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def httplib_endheaders_wrapper(wrapped, instance, args, kwargs,
@@ -39,7 +38,7 @@ def httplib_endheaders_wrapper(wrapped, instance, args, kwargs,
     if hasattr(connection, '_nr_library_info'):
         library, scheme = connection._nr_library_info
 
-    url = '%s://%s:%s' % (scheme, connection.host, connection.port)
+    url = f'{scheme}://{connection.host}:{connection.port}'
 
     # Check if the NR headers have already been added. This is just in
     # case a higher level library which uses httplib underneath so
@@ -119,30 +118,7 @@ def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument(module):
-
-    if six.PY2:
-        library = 'httplib'
-    else:
-        library = 'http'
-
-    module.HTTPConnection.endheaders = ObjectWrapper(
-            module.HTTPConnection.endheaders,
-            None,
-            functools.partial(httplib_endheaders_wrapper, scheme='http',
-                    library=library))
-
-    module.HTTPSConnection.endheaders = ObjectWrapper(
-            module.HTTPConnection.endheaders,
-            None,
-            functools.partial(httplib_endheaders_wrapper, scheme='https',
-                    library=library))
-
-    module.HTTPConnection.getresponse = ObjectWrapper(
-            module.HTTPConnection.getresponse,
-            None,
-            httplib_getresponse_wrapper)
-
-    module.HTTPConnection.putheader = ObjectWrapper(
-            module.HTTPConnection.putheader,
-            None,
-            httplib_putheader_wrapper)
+    wrap_function_wrapper(module, "HTTPConnection.endheaders", functools.partial(httplib_endheaders_wrapper, scheme='http', library='http'))
+    wrap_function_wrapper(module, "HTTPSConnection.endheaders", functools.partial(httplib_endheaders_wrapper, scheme='https', library='http'))
+    wrap_function_wrapper(module, "HTTPConnection.getresponse", httplib_getresponse_wrapper)
+    wrap_function_wrapper(module, "HTTPConnection.putheader", httplib_putheader_wrapper)

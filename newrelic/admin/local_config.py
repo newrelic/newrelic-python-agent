@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 from newrelic.admin import command, usage
 
 
@@ -54,4 +52,4 @@ def local_config(args):
             log_file=log_file, log_level=log_level)
 
     for key, value in sorted(global_settings()):
-        print('%s = %r' % (key, value))
+        print(f'{key} = {value!r}')

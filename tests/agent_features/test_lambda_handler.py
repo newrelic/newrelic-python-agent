@@ -92,7 +92,7 @@ firehose_event = {
 }
 
 
-class Context(object):
+class Context():
     aws_request_id = "cookies"
     invoked_function_arn = "arn"
     function_name = "cats"
@@ -100,6 +100,8 @@ class Context(object):
     memory_limit_in_mb = 128
 
 
+# The lambda_hander has been deprecated for 3+ years
+@pytest.mark.skip(reason="The lambda_handler has been deprecated")
 @pytest.mark.parametrize("is_cold", (False, True))
 def test_lambda_transaction_attributes(is_cold, monkeypatch):
     # setup copies of the attribute lists for this test only
@@ -139,6 +141,8 @@ def test_lambda_transaction_attributes(is_cold, monkeypatch):
     _test()
 
 
+# The lambda_hander has been deprecated for 3+ years
+@pytest.mark.skip(reason="The lambda_handler has been deprecated")
 @validate_transaction_trace_attributes(_expected_attributes)
 @validate_transaction_event_attributes(_expected_attributes)
 @override_application_settings(_override_settings)
@@ -193,6 +197,8 @@ _malformed_response_attributes = {
 }
 
 
+# The lambda_hander has been deprecated for 3+ years
+@pytest.mark.skip(reason="The lambda_handler has been deprecated")
 @validate_transaction_trace_attributes(_malformed_response_attributes)
 @validate_transaction_event_attributes(_malformed_response_attributes)
 @override_application_settings(_override_settings)
@@ -229,6 +235,8 @@ _no_status_code_response = {
 }
 
 
+# The lambda_hander has been deprecated for 3+ years
+@pytest.mark.skip(reason="The lambda_handler has been deprecated")
 @validate_transaction_trace_attributes(_no_status_code_response)
 @validate_transaction_event_attributes(_no_status_code_response)
 @override_application_settings(_override_settings)
@@ -253,6 +261,8 @@ def test_lambda_no_status_code_response():
     )
 
 
+# The lambda_hander has been deprecated for 3+ years
+@pytest.mark.skip(reason="The lambda_handler has been deprecated")
 @pytest.mark.parametrize("event,arn", ((empty_event, None), (firehose_event, "arn:aws:kinesis:EXAMPLE")))
 def test_lambda_event_source_arn_attribute(event, arn):
     if arn is None:
@@ -285,6 +295,8 @@ def test_lambda_event_source_arn_attribute(event, arn):
     _test()
 
 
+# The lambda_hander has been deprecated for 3+ years
+@pytest.mark.skip(reason="The lambda_handler has been deprecated")
 @pytest.mark.parametrize(
     "api",
     (

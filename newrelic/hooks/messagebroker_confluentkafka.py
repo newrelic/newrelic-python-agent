@@ -56,19 +56,25 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
         args = args[1:]
     else:
         topic = kwargs.pop("topic", None)
+    topic = topic or "Default"
 
     transaction.add_messagebroker_info("Confluent-Kafka", get_package_version("confluent-kafka"))
+    if hasattr(instance, "_nr_bootstrap_servers"):
+        for server_name in instance._nr_bootstrap_servers:
+            transaction.record_custom_metric(f"MessageBroker/Kafka/Nodes/{server_name}/Produce/{topic}", 1)
 
     with MessageTrace(
         library="Kafka",
         operation="Produce",
         destination_type="Topic",
-        destination_name=topic or "Default",
+        destination_name=topic,
         source=wrapped,
-    ) as trace:
-        dt_headers = {k: v.encode("utf-8") for k, v in trace.generate_request_headers(transaction)}
+    ):
+        dt_headers = {k: v.encode("utf-8") for k, v in MessageTrace.generate_request_headers(transaction)}
         # headers can be a list of tuples or a dict so convert to dict for consistency.
-        dt_headers.update(dict(headers) if headers else {})
+        if headers:
+            dt_headers.update(dict(headers))
+
         try:
             return wrapped(topic, headers=dt_headers, *args, **kwargs)
         except Exception as error:
@@ -160,10 +166,15 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
             # Don't add metrics if there was an inactive transaction.
             # Name the metrics using the same format as the transaction, but in case the active transaction
             # was an existing one and not a message transaction, reproduce the naming logic here.
-            group = "Message/%s/%s" % (library, destination_type)
-            name = "Named/%s" % destination_name
-            transaction.record_custom_metric("%s/%s/Received/Bytes" % (group, name), received_bytes)
-            transaction.record_custom_metric("%s/%s/Received/Messages" % (group, name), message_count)
+            group = f"Message/{library}/{destination_type}"
+            name = f"Named/{destination_name}"
+            transaction.record_custom_metric(f"{group}/{name}/Received/Bytes", received_bytes)
+            transaction.record_custom_metric(f"{group}/{name}/Received/Messages", message_count)
+            if hasattr(instance, "_nr_bootstrap_servers"):
+                for server_name in instance._nr_bootstrap_servers:
+                    transaction.record_custom_metric(
+                        f"MessageBroker/Kafka/Nodes/{server_name}/Consume/{destination_name}", 1
+                    )
             transaction.add_messagebroker_info("Confluent-Kafka", get_package_version("confluent-kafka"))
 
     return record
@@ -189,8 +200,8 @@ def wrap_serializer(serializer_name, group_prefix):
             return wrapped(*args, **kwargs)
 
         topic = args[1].topic
-        group = "%s/Kafka/Topic" % group_prefix
-        name = "Named/%s/%s" % (topic, serializer_name)
+        group = f"{group_prefix}/Kafka/Topic"
+        name = f"Named/{topic}/{serializer_name}"
 
         return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
 
@@ -217,6 +228,32 @@ def wrap_DeserializingConsumer_init(wrapped, instance, args, kwargs):
         instance._value_deserializer = wrap_serializer("Deserialization/Value", "Message")(instance._value_deserializer)
 
 
+def wrap_Producer_init(wrapped, instance, args, kwargs):
+    wrapped(*args, **kwargs)
+
+    # Try to capture the boostrap server info that is passed in in the configuration.
+    try:
+        conf = args[0]
+        servers = conf.get("bootstrap.servers")
+        if servers:
+            instance._nr_bootstrap_servers = servers.split(",")
+    except Exception:
+        pass
+
+
+def wrap_Consumer_init(wrapped, instance, args, kwargs):
+    wrapped(*args, **kwargs)
+
+    # Try to capture the boostrap server info that is passed in in the configuration.
+    try:
+        conf = args[0]
+        servers = conf.get("bootstrap.servers")
+        if servers:
+            instance._nr_bootstrap_servers = servers.split(",")
+    except Exception:
+        pass
+
+
 def wrap_immutable_class(module, class_name):
     # Wrap immutable binary extension class with a mutable Python subclass
     new_class = type(class_name, (getattr(module, class_name),), {})
@@ -228,10 +265,12 @@ def instrument_confluentkafka_cimpl(module):
     if hasattr(module, "Producer"):
         wrap_immutable_class(module, "Producer")
         wrap_function_wrapper(module, "Producer.produce", wrap_Producer_produce)
+        wrap_function_wrapper(module, "Producer.__init__", wrap_Producer_init)
 
     if hasattr(module, "Consumer"):
         wrap_immutable_class(module, "Consumer")
         wrap_function_wrapper(module, "Consumer.poll", wrap_Consumer_poll)
+        wrap_function_wrapper(module, "Consumer.__init__", wrap_Consumer_init)
 
 
 def instrument_confluentkafka_serializing_producer(module):

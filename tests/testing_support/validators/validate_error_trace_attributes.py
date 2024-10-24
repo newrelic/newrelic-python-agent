@@ -39,7 +39,7 @@ def validate_error_trace_attributes(err_name, required_params=None, forgone_para
     def _validator_wrapper(wrapped, instance, args, kwargs):
         result = _validate_error_trace_attributes(wrapped)(*args, **kwargs)
 
-        assert target_error and target_error[0] is not None, "No error found with name %s" % err_name
+        assert target_error and target_error[0] is not None, f"No error found with name {err_name}"
         check_error_attributes(target_error[0].parameters, required_params, forgone_params, exact_attrs)
 
         return result

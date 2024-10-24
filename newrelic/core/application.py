@@ -41,6 +41,7 @@ from newrelic.core.internal_metrics import (
 from newrelic.core.profile_sessions import profile_session_manager
 from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import CustomMetrics, StatsEngine
+from newrelic.core.super_agent_health import super_agent_health_instance
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
@@ -49,6 +50,7 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 from newrelic.samplers.data_sampler import DataSampler
+from newrelic.core.super_agent_health import super_agent_healthcheck_loop
 
 _logger = logging.getLogger(__name__)
 
@@ -109,6 +111,10 @@ class Application:
         self._data_samplers_started = False
 
         self._remaining_plugins = True
+
+        self._super_agent_health_thread = threading.Thread(target=super_agent_healthcheck_loop, name="NR-Control-Harvest-Thread")
+        self._super_agent_health_thread.daemon = True
+
 
         # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
@@ -195,6 +201,7 @@ class Application:
         to be activated.
 
         """
+        self._super_agent_health_thread.start()
 
         if self._agent_shutdown:
             return
@@ -225,7 +232,6 @@ class Application:
         # timeout has likely occurred.
 
         deadlock_timeout = 0.1
-
         if timeout >= deadlock_timeout:
             self._detect_deadlock = True
 
@@ -1688,6 +1694,9 @@ class Application:
         optionally triggers activation of a new session.
 
         """
+        super_agent = super_agent_health_instance()
+        super_agent.set_health_status("agent_shutdown")
+        super_agent.write_to_health_file()
 
         # We need to stop any thread profiler session related to this
         # application.
@@ -1748,6 +1757,7 @@ class Application:
 
         else:
             self._agent_shutdown = True
+
 
     def process_agent_commands(self):
         """Fetches agents commands from data collector and process them."""

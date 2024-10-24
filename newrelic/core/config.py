@@ -323,6 +323,10 @@ class ApplicationLoggingForwardingSettings(Settings):
     pass
 
 
+class ApplicationLoggingForwardingLabelsSettings(Settings):
+    pass
+
+
 class ApplicationLoggingForwardingContextDataSettings(Settings):
     pass
 
@@ -424,6 +428,7 @@ _settings = TopLevelSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
+_settings.application_logging.forwarding.labels = ApplicationLoggingForwardingLabelsSettings()
 _settings.application_logging.forwarding.context_data = ApplicationLoggingForwardingContextDataSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
@@ -935,6 +940,17 @@ _settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_
 _settings.application_logging.forwarding.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=True
 )
+_settings.application_logging.forwarding.custom_attributes = _environ_as_mapping(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CUSTOM_ATTRIBUTES", default=""
+)
+
+_settings.application_logging.forwarding.labels.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_LABELS_ENABLED", default=False
+)
+_settings.application_logging.forwarding.labels.exclude = set(
+    v.lower() for v in _environ_as_set("NEW_RELIC_APPLICATION_LOGGING_FORWARDING_LABELS_EXCLUDE", default="")
+)
+
 _settings.application_logging.forwarding.context_data.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED", default=False
 )
@@ -1096,7 +1112,7 @@ def global_settings_dump(settings_object=None, serializable=False):
             if not isinstance(key, str):
                 del settings[key]
 
-            if not isinstance(value, str) and not isinstance(value, float) and not isinstance(value, int):
+            if not isinstance(value, (str, float, int)):
                 settings[key] = repr(value)
 
     return settings

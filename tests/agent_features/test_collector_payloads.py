@@ -81,8 +81,6 @@ def test_custom_event_json():
     custom_event_application.get("/")
 
 
-@pytest.mark.xfail(reason="Unwritten validator")
-@validate_log_event_collector_json
+@validate_log_event_collector_json()
 def test_log_event_json():
     normal_application.get("/")
-    raise NotImplementedError("Fix my validator")

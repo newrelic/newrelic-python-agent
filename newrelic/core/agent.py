@@ -37,7 +37,6 @@ from newrelic.samplers.gc_data import garbage_collector_data_source
 from newrelic.samplers.memory_usage import memory_usage_data_source
 from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 
-
 _logger = logging.getLogger(__name__)
 
 
@@ -191,6 +190,7 @@ class Agent():
 
         return Agent._instance
 
+
     def __init__(self, config):
         """Initialises the agent and attempt to establish a connection
         to the core application. Will start the harvest loop running but
@@ -209,6 +209,9 @@ class Agent():
         self._harvest_thread = threading.Thread(target=self._harvest_loop, name="NR-Harvest-Thread")
         self._harvest_thread.daemon = True
         self._harvest_shutdown = threading.Event()
+
+        # self._super_agent_health_thread = threading.Thread(target=super_agent_healthcheck_loop, name="NR-Control-Harvest-Thread")
+        # self._super_agent_health_thread.daemon = True
 
         self._default_harvest_count = 0
         self._flexible_harvest_count = 0
@@ -263,6 +266,7 @@ class Agent():
         print(f"Flexible Harvest Duration: {self._flexible_harvest_duration:.2f}", file=file)
         print(f"Agent Shutdown: {self._harvest_shutdown.isSet()}", file=file)
         print(f"Applications: {sorted(self._applications.keys())!r}", file=file)
+
 
     def global_settings(self):
         """Returns the global default settings object. If access is
@@ -606,6 +610,12 @@ class Agent():
             return self._harvest_shutdown.isSet()
 
     def _harvest_flexible(self, shutdown=False):
+        # Stop existing thread that is running super agent health checks
+        # running_threads = threading.enumerate()
+        # for thread in running_threads:
+        #     if thread.name == "NR-Control-Main-Thread":
+        #         pass
+
         if not self._harvest_shutdown_is_set():
             event_harvest_config = self.global_settings().event_harvest_config
 

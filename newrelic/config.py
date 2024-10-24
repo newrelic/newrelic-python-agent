@@ -16,6 +16,7 @@ import configparser
 import fnmatch
 import logging
 import os
+import sched
 import sys
 import threading
 import time
@@ -48,6 +49,7 @@ from newrelic.core.config import (
     default_host,
     fetch_config_setting,
 )
+
 from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance, agent_control_healthcheck_loop
 
 
@@ -104,7 +106,9 @@ _config_object = configparser.RawConfigParser()
 # all the settings have been read.
 
 _cache_object = []
+
 agent_control_health = agent_control_health_instance()
+
 
 
 def _reset_config_parser():
@@ -229,7 +233,6 @@ def _map_default_host_value(license_key):
     # to be the region aware host
     _default_host = default_host(license_key)
     _settings.host = os.environ.get("NEW_RELIC_HOST", _default_host)
-
     return license_key
 
 
@@ -4833,8 +4836,22 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
-agent_control_health_thread = threading.Thread(name="Agent-Control-Health-Main-Thread", target=agent_control_healthcheck_loop)
-agent_control_health_thread.daemon = True
+def super_agent_healthcheck_loop():
+    reporting_frequency = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_FREQUENCY", 5)
+    scheduler = sched.scheduler(time.time, time.sleep)
+
+    scheduler.enter(reporting_frequency, 1, super_agent_healthcheck, (scheduler, reporting_frequency))
+    scheduler.run()
+
+
+def super_agent_healthcheck(scheduler, reporting_frequency):
+    scheduler.enter(reporting_frequency, 1, super_agent_healthcheck, (scheduler, reporting_frequency))
+
+    super_agent_instance.write_to_health_file()
+
+
+super_agent_health_thread = threading.Thread(target=super_agent_healthcheck_loop, name="NR-Super-Agent")
+super_agent_health_thread.daemon = True
 
 
 def _setup_agent_control_health():

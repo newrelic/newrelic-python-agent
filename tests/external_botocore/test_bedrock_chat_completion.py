@@ -45,6 +45,7 @@ from testing_support.ml_testing_utils import (  # noqa: F401
     disabled_ai_monitoring_streaming_settings,
     events_sans_content,
     events_sans_llm_metadata,
+    events_with_context_attrs,
     llm_token_count_callback,
     set_trace_info,
 )
@@ -58,6 +59,7 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 from newrelic.api.background_task import background_task
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 from newrelic.hooks.external_botocore import MODEL_EXTRACTORS
@@ -161,7 +163,7 @@ _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted
 def test_bedrock_chat_completion_in_txn_with_llm_metadata(
     set_trace_info, exercise_model, expected_events, expected_metrics
 ):
-    @validate_custom_events(expected_events)
+    @validate_custom_events(events_with_context_attrs(expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
@@ -180,7 +182,8 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
-        exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+        with WithLlmCustomAttributes({"context": "attr"}):
+            exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
 
     _test()
 
@@ -320,7 +323,7 @@ _client_error_name = callable_name(_client_error)
 def test_bedrock_chat_completion_error_invalid_model(
     bedrock_server, set_trace_info, response_streaming, expected_metrics
 ):
-    @validate_custom_events(chat_completion_invalid_model_error_events)
+    @validate_custom_events(events_with_context_attrs(chat_completion_invalid_model_error_events))
     @validate_error_trace_attributes(
         "botocore.errorfactory:ValidationException",
         exact_attrs={
@@ -350,22 +353,23 @@ def test_bedrock_chat_completion_error_invalid_model(
         add_custom_attribute("non_llm_attr", "python-agent")
 
         with pytest.raises(_client_error):
-            if response_streaming:
-                stream = bedrock_server.invoke_model_with_response_stream(
-                    body=b"{}",
-                    modelId="does-not-exist",
-                    accept="application/json",
-                    contentType="application/json",
-                )
-                for _ in stream:
-                    pass
-            else:
-                bedrock_server.invoke_model(
-                    body=b"{}",
-                    modelId="does-not-exist",
-                    accept="application/json",
-                    contentType="application/json",
-                )
+            with WithLlmCustomAttributes({"context": "attr"}):
+                if response_streaming:
+                    stream = bedrock_server.invoke_model_with_response_stream(
+                        body=b"{}",
+                        modelId="does-not-exist",
+                        accept="application/json",
+                        contentType="application/json",
+                    )
+                    for _ in stream:
+                        pass
+                else:
+                    bedrock_server.invoke_model(
+                        body=b"{}",
+                        modelId="does-not-exist",
+                        accept="application/json",
+                        contentType="application/json",
+                    )
 
     _test()
 

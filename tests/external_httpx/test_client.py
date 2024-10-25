@@ -85,11 +85,11 @@ def populate_metrics(mock_server, request):
     SCOPED_METRICS.append((f"External/localhost:{mock_server.port}/httpx/{method}", 2))
 
 
-def exercise_sync_client(mock_server, client, method, protocol="http"):
+def exercise_sync_client(server, client, method, protocol="http"):
     with client as client:
         resolved_method = getattr(client, method)
-        resolved_method(f"{protocol}://localhost:{mock_server.port}")
-        response = resolved_method(f"{protocol}://localhost:{mock_server.port}")
+        resolved_method(f"{protocol}://{server.host}:{server.port}")
+        response = resolved_method(f"{protocol}://{server.host}:{server.port}")
 
     return response
 
@@ -120,12 +120,12 @@ def test_sync_client(httpx, sync_client, mock_server, method):
     assert exercise_sync_client(mock_server, sync_client, method).status_code == 200
 
 
-async def exercise_async_client(mock_server, client, method, protocol="http"):
+async def exercise_async_client(server, client, method, protocol="http"):
     async with client as client:
         resolved_method = getattr(client, method)
         responses = await asyncio.gather(
-            resolved_method(f"{protocol}://localhost:{mock_server.port}"),
-            resolved_method(f"{protocol}://localhost:{mock_server.port}"),
+            resolved_method(f"{protocol}://{server.host}:{server.port}"),
+            resolved_method(f"{protocol}://{server.host}:{server.port}"),
         )
 
     return responses

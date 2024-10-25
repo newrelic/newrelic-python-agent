@@ -72,24 +72,24 @@ def cat_response_handler(self):
 
 
 @pytest.fixture(scope="session")
-def server():
+def mock_server():
     external = MockExternalHTTPHResponseHeadersServer(handler=cat_response_handler)
     with external:
         yield external
 
 
 @pytest.fixture()
-def populate_metrics(server, request):
+def populate_metrics(mock_server, request):
     SCOPED_METRICS[:] = []
     method = request.getfixturevalue("method").upper()
-    SCOPED_METRICS.append((f"External/localhost:{server.port}/httpx/{method}", 2))
+    SCOPED_METRICS.append((f"External/localhost:{mock_server.port}/httpx/{method}", 2))
 
 
-def exercise_sync_client(server, client, method):
+def exercise_sync_client(mock_server, client, method, protocol="http"):
     with client as client:
         resolved_method = getattr(client, method)
-        resolved_method(f"http://localhost:{server.port}")
-        response = resolved_method(f"http://localhost:{server.port}")
+        resolved_method(f"{protocol}://localhost:{mock_server.port}")
+        response = resolved_method(f"{protocol}://localhost:{mock_server.port}")
 
     return response
 
@@ -113,19 +113,19 @@ def exercise_sync_client(server, client, method):
     background_task=True,
 )
 @background_task(name="test_sync_client")
-def test_sync_client(httpx, server, method):
+def test_sync_client(httpx, sync_client, mock_server, method):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
-    assert exercise_sync_client(server, httpx.Client(), method).status_code == 200
+    assert exercise_sync_client(mock_server, sync_client, method).status_code == 200
 
 
-async def exercise_async_client(server, client, method):
+async def exercise_async_client(mock_server, client, method, protocol="http"):
     async with client as client:
         resolved_method = getattr(client, method)
         responses = await asyncio.gather(
-            resolved_method(f"http://localhost:{server.port}"),
-            resolved_method(f"http://localhost:{server.port}"),
+            resolved_method(f"{protocol}://localhost:{mock_server.port}"),
+            resolved_method(f"{protocol}://localhost:{mock_server.port}"),
         )
 
     return responses
@@ -150,11 +150,11 @@ async def exercise_async_client(server, client, method):
     background_task=True,
 )
 @background_task(name="test_async_client")
-def test_async_client(httpx, server, loop, method):
+def test_async_client(httpx, async_client, mock_server, loop, method):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
-    responses = loop.run_until_complete(exercise_async_client(server, httpx.AsyncClient(), method))
+    responses = loop.run_until_complete(exercise_async_client(mock_server, async_client, method))
     assert all(response.status_code == 200 for response in responses)
 
 
@@ -166,7 +166,7 @@ def test_async_client(httpx, server, loop, method):
         (False, False),
     ),
 )
-def test_sync_cross_process_request(httpx, server, distributed_tracing, span_events):
+def test_sync_cross_process_request(httpx, sync_client, mock_server, distributed_tracing, span_events):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
@@ -183,8 +183,8 @@ def test_sync_cross_process_request(httpx, server, distributed_tracing, span_eve
     def _test():
         transaction = current_transaction()
 
-        with httpx.Client() as client:
-            response = client.get(f"http://localhost:{server.port}")
+        with sync_client:
+            response = sync_client.get(f"http://localhost:{mock_server.port}")
 
         transaction._test_request_headers = response.request.headers
 
@@ -204,7 +204,7 @@ def test_sync_cross_process_request(httpx, server, distributed_tracing, span_eve
 @validate_transaction_errors(errors=[])
 @background_task(name="test_async_cross_process_request")
 @validate_cross_process_headers
-def test_async_cross_process_request(httpx, server, loop, distributed_tracing, span_events):
+def test_async_cross_process_request(httpx, async_client, mock_server, loop, distributed_tracing, span_events):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
@@ -215,8 +215,8 @@ def test_async_cross_process_request(httpx, server, loop, distributed_tracing, s
         }
     )
     async def _test():
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://localhost:{server.port}")
+        async with async_client:
+            response = await async_client.get(f"http://localhost:{mock_server.port}")
 
         return response
 
@@ -236,14 +236,14 @@ def test_async_cross_process_request(httpx, server, loop, distributed_tracing, s
 )
 @validate_transaction_errors(errors=[])
 @background_task(name="test_sync_cross_process_override_headers")
-def test_sync_cross_process_override_headers(httpx, server, loop):
+def test_sync_cross_process_override_headers(httpx, sync_client, mock_server, loop):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
     transaction = current_transaction()
 
-    with httpx.Client() as client:
-        response = client.get(f"http://localhost:{server.port}", headers={"newrelic": "1234"})
+    with sync_client:
+        response = sync_client.get(f"http://localhost:{mock_server.port}", headers={"newrelic": "1234"})
 
     transaction._test_request_headers = response.request.headers
 
@@ -259,13 +259,13 @@ def test_sync_cross_process_override_headers(httpx, server, loop):
 )
 @validate_transaction_errors(errors=[])
 @background_task(name="test_async_cross_process_override_headers")
-def test_async_cross_process_override_headers(httpx, server, loop):
+def test_async_cross_process_override_headers(httpx, async_client, mock_server, loop):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
     async def _test():
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://localhost:{server.port}", headers={"newrelic": "1234"})
+        async with async_client:
+            response = await async_client.get(f"http://localhost:{mock_server.port}", headers={"newrelic": "1234"})
 
         return response
 
@@ -277,7 +277,7 @@ def test_async_cross_process_override_headers(httpx, server, loop):
 
 @pytest.mark.parametrize("cat_enabled", [True, False])
 @pytest.mark.parametrize("response_code", [200, 500])
-def test_sync_client_cat_response_processing(cat_enabled, response_code, server, httpx):
+def test_sync_client_cat_response_processing(cat_enabled, response_code, sync_client, mock_server, httpx):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = response_code
 
@@ -292,7 +292,7 @@ def test_sync_client_cat_response_processing(cat_enabled, response_code, server,
 
     expected_metrics = [
         (
-            f"ExternalTransaction/localhost:{server.port}/1#1/WebTransaction/Function/app:beep",
+            f"ExternalTransaction/localhost:{mock_server.port}/1#1/WebTransaction/Function/app:beep",
             1 if cat_enabled else None,
         ),
     ]
@@ -307,15 +307,15 @@ def test_sync_client_cat_response_processing(cat_enabled, response_code, server,
     @override_application_settings(_custom_settings)
     @background_task(name="test_sync_client_cat_response_processing")
     def _test():
-        with httpx.Client() as client:
-            response = client.get(f"http://localhost:{server.port}")
+        with sync_client:
+            response = sync_client.get(f"http://localhost:{mock_server.port}")
 
     _test()
 
 
 @pytest.mark.parametrize("cat_enabled", [True, False])
 @pytest.mark.parametrize("response_code", [200, 500])
-def test_async_client_cat_response_processing(cat_enabled, response_code, httpx, server, loop):
+def test_async_client_cat_response_processing(cat_enabled, response_code, httpx, async_client, mock_server, loop):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = response_code
 
@@ -330,7 +330,7 @@ def test_async_client_cat_response_processing(cat_enabled, response_code, httpx,
 
     expected_metrics = [
         (
-            f"ExternalTransaction/localhost:{server.port}/1#1/WebTransaction/Function/app:beep",
+            f"ExternalTransaction/localhost:{mock_server.port}/1#1/WebTransaction/Function/app:beep",
             1 if cat_enabled else None,
         ),
     ]
@@ -346,8 +346,8 @@ def test_async_client_cat_response_processing(cat_enabled, response_code, httpx,
     @background_task(name="test_async_client_cat_response_processing")
     def _test():
         async def coro():
-            async with httpx.AsyncClient() as client:
-                response = await client.get(f"http://localhost:{server.port}")
+            async with async_client:
+                response = await async_client.get(f"http://localhost:{mock_server.port}")
 
             return response
 
@@ -357,7 +357,7 @@ def test_async_client_cat_response_processing(cat_enabled, response_code, httpx,
 
 
 @dt_enabled
-def test_sync_client_event_hook_exception(httpx, server):
+def test_sync_client_event_hook_exception(httpx, mock_server):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 500
 
@@ -370,16 +370,16 @@ def test_sync_client_event_hook_exception(httpx, server):
 
     @validate_span_events(
         count=1,
-        exact_intrinsics={"name": f"External/localhost:{server.port}/httpx/GET"},
+        exact_intrinsics={"name": f"External/localhost:{mock_server.port}/httpx/GET"},
         exact_agents={"http.statusCode": CAT_RESPONSE_CODE},
     )
     @background_task(name="test_sync_client_event_hook_exception")
     def make_request(client, exc_expected=True):
         if exc_expected:
             with pytest.raises(RuntimeError):
-                client.get(f"http://localhost:{server.port}")
+                client.get(f"http://localhost:{mock_server.port}")
         else:
-            client.get(f"http://localhost:{server.port}")
+            client.get(f"http://localhost:{mock_server.port}")
 
     with httpx.Client(event_hooks={"response": [exception_event_hook]}) as client:
         # Test client init
@@ -403,7 +403,7 @@ def test_sync_client_event_hook_exception(httpx, server):
 
 
 @override_application_settings({"distributed_tracing.enabled": True, "span_events.enabled": True})
-def test_async_client_event_hook_exception(httpx, server, loop):
+def test_async_client_event_hook_exception(httpx, mock_server, loop):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 500
 
@@ -416,7 +416,7 @@ def test_async_client_event_hook_exception(httpx, server, loop):
 
     @validate_span_events(
         count=1,
-        exact_intrinsics={"name": f"External/localhost:{server.port}/httpx/GET"},
+        exact_intrinsics={"name": f"External/localhost:{mock_server.port}/httpx/GET"},
         exact_agents={"http.statusCode": CAT_RESPONSE_CODE},
     )
     @background_task(name="test_sync_client_event_hook_exception")
@@ -424,9 +424,9 @@ def test_async_client_event_hook_exception(httpx, server, loop):
         async def coro():
             if exc_expected:
                 with pytest.raises(RuntimeError):
-                    await client.get(f"http://localhost:{server.port}")
+                    await client.get(f"http://localhost:{mock_server.port}")
             else:
-                await client.get(f"http://localhost:{server.port}")
+                await client.get(f"http://localhost:{mock_server.port}")
 
         loop.run_until_complete(coro())
 
@@ -451,20 +451,19 @@ def test_async_client_event_hook_exception(httpx, server, loop):
             client.event_hooks = {"request": [empty_hook]}
             make_request(client, exc_expected=False)
 
-
 @override_generic_settings(
     global_settings(),
     {
         "enabled": False,
     },
 )
-def test_sync_nr_disabled(httpx, server):
+def test_sync_nr_disabled(httpx, mock_server):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
     with httpx.Client() as client:
         trace = current_trace()
-        response = client.get(f"http://localhost:{server.port}")
+        response = client.get(f"http://localhost:{mock_server.port}")
 
         assert response.status_code == 200
         assert trace is None
@@ -476,13 +475,13 @@ def test_sync_nr_disabled(httpx, server):
         "enabled": False,
     },
 )
-def test_async_nr_disabled(httpx, server, loop):
+def test_async_nr_disabled(httpx, mock_server, loop):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
     async def _test():
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://localhost:{server.port}")
+            response = await client.get(f"http://localhost:{mock_server.port}")
 
         return response
 
@@ -499,7 +498,7 @@ def test_async_nr_disabled(httpx, server, loop):
         "AsyncClient",
     ),
 )
-def test_invalid_import_order_client(monkeypatch, httpx, server, loop, client):
+def test_invalid_import_order_client(monkeypatch, httpx, mock_server, loop, client):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
 
@@ -520,8 +519,44 @@ def test_invalid_import_order_client(monkeypatch, httpx, server, loop, client):
     monkeypatch.undo()
 
     if is_async:
-        responses = loop.run_until_complete(exercise_async_client(server, client, "get"))
+        responses = loop.run_until_complete(exercise_async_client(mock_server, client, "get"))
         assert all(response.status_code == 200 for response in responses)
     else:
-        response = exercise_sync_client(server, client, "get")
+        response = exercise_sync_client(mock_server, client, "get")
         assert response.status_code == 200
+
+
+@validate_transaction_metrics(
+    "test_sync_client_http2",
+    scoped_metrics=SCOPED_METRICS,
+    rollup_metrics=ROLLUP_METRICS,
+    background_task=True,
+)
+@background_task(name="test_sync_client_http2")
+def test_sync_client_http2(httpx, real_server):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
+    client = httpx.Client(http1=False, http2=True, verify=False)
+    response = exercise_sync_client(real_server, client, "get", protocol="https")
+
+    assert response.status_code == 200
+    assert response.http_version in {"HTTP/2", "HTTP/2.0"}
+
+
+@validate_transaction_metrics(
+    "test_async_client_http2",
+    scoped_metrics=SCOPED_METRICS,
+    rollup_metrics=ROLLUP_METRICS,
+    background_task=True,
+)
+@background_task(name="test_async_client_http2")
+def test_async_client_http2(httpx, real_server, loop):
+    global CAT_RESPONSE_CODE
+    CAT_RESPONSE_CODE = 200
+
+    client = httpx.AsyncClient(http1=False, http2=True, verify=False)
+
+    responses = loop.run_until_complete(exercise_async_client(real_server, client, "get", protocol="https"))
+    assert all(response.status_code == 200 for response in responses)
+    assert all(response.http_version in {"HTTP/2", "HTTP/2.0"} for response in responses)

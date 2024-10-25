@@ -327,3 +327,28 @@ def gearman_settings():
         for instance_num in range(instances)
     ]
     return settings
+
+
+def nginx_settings():
+    """Return a list of dict of settings for connecting to kafka.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 1
+    settings = [
+        {
+            "host": host,
+            "http_port": 8080,
+            "http2_port": 8081,
+            "http3_port": 8082,
+        }
+        for instance_num in range(instances)
+    ]
+    return settings

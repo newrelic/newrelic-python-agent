@@ -109,8 +109,6 @@ class Application:
         self._data_samplers_lock = threading.Lock()
         self._data_samplers_started = False
 
-        # self._env_send acts as a flag to indicate if the
-        # package reporting has been disabled or completed.
         self._env_send = True
 
         # We setup empty rules engines here even though they will be
@@ -1249,20 +1247,25 @@ class Application:
 
                     # Send environment plugin list
 
-                    self._env_send = configuration and configuration.package_reporting.enabled
                     stopwatch_start = time.time()
-                    while self._env_send and (time.time() - stopwatch_start) < 10.0:
+                    while (
+                        configuration
+                        and configuration.package_reporting.enabled
+                        and self._env_send
+                        and ((time.time() - stopwatch_start) < 10.0)
+                    ):
                         try:
                             module_info = next(self.plugins)
                             self.modules.append(module_info)
                         except StopIteration:
                             self._env_send = False
 
-                    # Send the accumulated environment plugin list
-                    self._active_session.send_loaded_modules(self.modules)
+                    # Send the accumulated environment plugin list if not empty
+                    if self.modules:
+                        self._active_session.send_loaded_modules(self.modules)
 
-                    # Reset the modules list every harvest cycle
-                    self.modules = []
+                        # Reset the modules list every harvest cycle
+                        self.modules = []
 
                     # Add a metric we can use to track how many harvest
                     # periods have occurred.
@@ -1701,16 +1704,13 @@ class Application:
         # if this has not been completed during harvest
         # lifetime of the application
 
-        # self._env_send acts as a flag to indicate if the
-        # package reporting has been completed or disabled.
-        while self._env_send:
+        while self.configuration.package_reporting.enabled and self._env_send:
             try:
                 module_info = next(self.plugins)
                 self.modules.append(module_info)
             except StopIteration:
                 self._env_send = False
-
-        self._active_session.send_loaded_modules(self.modules)
+                self._active_session.send_loaded_modules(self.modules)
 
         # Now shutdown the actual agent session.
 

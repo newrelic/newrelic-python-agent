@@ -15,9 +15,10 @@
 import asyncio
 import threading
 import time
-from urllib.request import HTTPError, urlopen
 
+import niquests
 import pytest
+
 from testing_support.fixtures import (
     override_application_settings,
     raise_background_exceptions,
@@ -42,6 +43,9 @@ from newrelic.common.package_version_utils import (
     get_package_version,
     get_package_version_tuple,
 )
+
+from testing_support.http_23_testing import make_request
+from testing_support.certs import CERT_PATH
 
 HYPERCORN_VERSION = get_package_version_tuple("hypercorn")
 asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14, 1)
@@ -83,7 +87,7 @@ def app(request):
 
 
 @pytest.fixture(scope="session")
-def port(loop, app):
+def port():
     import hypercorn.asyncio
     import hypercorn.config
 
@@ -97,7 +101,9 @@ def port(loop, app):
 
         config = hypercorn.config.Config.from_mapping(
             {
-                "bind": [f"127.0.0.1:{port}"],
+                "bind": [f"localhost:{port}"],
+                "certfile": CERT_PATH,
+                "keyfile": CERT_PATH,
             }
         )
 
@@ -123,7 +129,7 @@ def wait_for_port(port, retries=10):
     status = None
     for _ in range(retries):
         try:
-            status = urlopen(f"http://localhost:{port}/ignored", timeout=1).status  # nosec
+            status = make_request(host="localhost", port=port, path="/ignored", timeout=1).status_code
             assert status == 200
             return
         except Exception as e:
@@ -134,8 +140,9 @@ def wait_for_port(port, retries=10):
     raise RuntimeError(f"Failed to wait for port {port}. Got status {status}")
 
 
+@pytest.mark.parametrize("http_version", [1, 2], ids=["HTTP/1", "HTTP/2"])
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
-def test_hypercorn_200(port, app):
+def test_hypercorn_200(port, app, http_version):
     hypercorn_version = get_package_version("hypercorn")
 
     @validate_transaction_metrics(
@@ -147,19 +154,20 @@ def test_hypercorn_200(port, app):
     @raise_background_exceptions()
     @wait_for_background_threads()
     def response():
-        return urlopen(f"http://localhost:{port}", timeout=10)  # nosec
+        return make_request(host="localhost", port=port, path="/", http_version=http_version, timeout=10)
 
-    assert response().status == 200
+    response().raise_for_status()
 
 
+@pytest.mark.parametrize("http_version", [1, 2], ids=["HTTP/1", "HTTP/2"])
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
-def test_hypercorn_500(port, app):
+def test_hypercorn_500(port, app, http_version):
     @validate_transaction_errors(["builtins:ValueError"])
     @validate_transaction_metrics(callable_name(app))
     @raise_background_exceptions()
     @wait_for_background_threads()
     def _test():
-        with pytest.raises(HTTPError):
-            urlopen(f"http://localhost:{port}/exc")  # nosec
+        with pytest.raises(niquests.exceptions.HTTPError):
+            make_request(host="localhost", port=port, path="/exc", http_version=http_version, timeout=10)
 
     _test()

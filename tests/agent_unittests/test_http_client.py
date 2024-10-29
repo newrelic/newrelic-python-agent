@@ -23,6 +23,8 @@ from io import StringIO
 import pytest
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
+from testing_support.certs import CERT_PATH
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.common import certs
@@ -39,9 +41,6 @@ from newrelic.core.internal_metrics import InternalTraceContext
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.network.exceptions import NetworkInterfaceException
 from newrelic.packages.urllib3.util import Url
-
-
-SERVER_CERT = os.path.join(os.path.dirname(__file__), "cert.pem")
 
 
 def echo_full_request(self):
@@ -100,7 +99,7 @@ class SecureServer(InsecureServer):
         super(SecureServer, self).__init__(*args, **kwargs)
         try:
             self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            self.context.load_cert_chain(certfile=SERVER_CERT, keyfile=SERVER_CERT)
+            self.context.load_cert_chain(certfile=CERT_PATH, keyfile=CERT_PATH)
             self.httpd.socket = self.context.wrap_socket(
                 sock=self.httpd.socket,
                 server_side=True,
@@ -110,8 +109,8 @@ class SecureServer(InsecureServer):
             self.httpd.socket = ssl.wrap_socket(
                 self.httpd.socket,
                 server_side=True,
-                keyfile=SERVER_CERT,
-                certfile=SERVER_CERT,
+                keyfile=CERT_PATH,
+                certfile=CERT_PATH,
                 do_handshake_on_connect=False,
             )
 
@@ -354,7 +353,7 @@ def test_http_payload_compression(server, client_cls, method, threshold):
 
 
 def test_cert_path(server):
-    with HttpClient("localhost", server.port, ca_bundle_path=SERVER_CERT) as client:
+    with HttpClient("localhost", server.port, ca_bundle_path=CERT_PATH) as client:
         status, data = client.send_request()
 
 

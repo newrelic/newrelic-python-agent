@@ -912,20 +912,13 @@ def apply_local_high_security_mode_setting(settings):
 
 
 def _toml_config_to_configparser_dict(d, top=None, _path=None):
-    def is_list_of_str(ls):
-        return isinstance(ls, list) and all(isinstance(item, str) for item in ls)
-
     top = top or {"newrelic": {}}
     _path = _path or ""
     for key, value in d.items():
         if isinstance(value, dict):
             _toml_config_to_configparser_dict(value, top, f"{_path}.{key}" if _path else key)
         else:
-            # When configparser.get() is called in _process_setting() the result will be a string
-            # unless a special getter such as getint() is used. Keep non-lists of strings as JSON
-            # strings so they can be decoded later. Anything in a TOML document should be
-            # JSON-encodable.
-            fixed_value = " ".join(value) if is_list_of_str(value) else json.dumps(value)
+            fixed_value = " ".join(value) if isinstance(value, list) else value
             path_split = _path.split(".")
             # Handle environments
             if _path.startswith("env."):

@@ -954,10 +954,6 @@ newrelic_toml_contents = b"""
 app_name = "test11"
 monitor_mode = true
 
-[[tool.newrelic.url_rules]]
-ignore = false
-match_expression = ".*\\\\.(ace|arj|ini|txt|udl|plist|css|gif|ico|jpe?g|js|png|swf|woff|caf|aiff|m4v|mpe?g|mp3|mp4|mov)$"
-
 [tool.newrelic.env.development]
 app_name = "test11 (Development)"
 

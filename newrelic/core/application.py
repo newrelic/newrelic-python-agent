@@ -1252,7 +1252,7 @@ class Application:
                         configuration
                         and configuration.package_reporting.enabled
                         and self._env_send
-                        and ((time.time() - stopwatch_start) < 10.0)
+                        and ((time.time() - stopwatch_start) < 2.0)
                     ):
                         try:
                             module_info = next(self.plugins)

@@ -109,7 +109,9 @@ class Application:
         self._data_samplers_lock = threading.Lock()
         self._data_samplers_started = False
 
-        self._env_sent = False
+        # self._env_send acts as a flag to indicate if the
+        # package reporting has been disabled or completed.
+        self._env_send = True
 
         # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
@@ -1245,6 +1247,23 @@ class Application:
                                 data_sampler.name,
                             )
 
+                    # Send environment plugin list
+
+                    self._env_send = configuration and configuration.package_reporting.enabled
+                    stopwatch_start = time.time()
+                    while self._env_send and (time.time() - stopwatch_start) < 10.0:
+                        try:
+                            module_info = next(self.plugins)
+                            self.modules.append(module_info)
+                        except StopIteration:
+                            self._env_send = False
+
+                    # Send the accumulated environment plugin list
+                    self._active_session.send_loaded_modules(self.modules)
+
+                    # Reset the modules list every harvest cycle
+                    self.modules = []
+
                     # Add a metric we can use to track how many harvest
                     # periods have occurred.
 
@@ -1444,21 +1463,6 @@ class Application:
                             internal_count_metric("Logging/Forwarding/Dropped", logs.num_seen - logs.num_samples)
 
                             stats.reset_log_events()
-
-                    # Send environment plugin list
-
-                    stopwatch_start = time.time()
-                    while (
-                        not self._env_sent
-                        and (time.time() - stopwatch_start) < 2.0
-                        and configuration
-                        and configuration.package_reporting.enabled
-                    ):
-                        try:
-                            module_info = next(self.plugins)
-                            self.modules.append(module_info)
-                        except StopIteration:
-                            self._env_sent = True
 
                     # Send the accumulated error data.
 
@@ -1696,12 +1700,15 @@ class Application:
         # Finishes collecting environment plugin information
         # if this has not been completed during harvest
         # lifetime of the application
-        while not self._env_sent:
+
+        # self._env_send acts as a flag to indicate if the
+        # package reporting has been completed or disabled.
+        while self._env_send:
             try:
                 module_info = next(self.plugins)
                 self.modules.append(module_info)
             except StopIteration:
-                self._env_sent = True
+                self._env_send = False
 
         self._active_session.send_loaded_modules(self.modules)
 

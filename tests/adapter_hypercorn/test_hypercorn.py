@@ -87,7 +87,7 @@ def app(request):
 
 
 @pytest.fixture(scope="session")
-def port():
+def port(loop, app):
     import hypercorn.asyncio
     import hypercorn.config
 

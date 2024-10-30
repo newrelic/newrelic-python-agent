@@ -284,6 +284,7 @@ class AgentProtocol():
             exception = self.STATUS_CODE_RESPONSE.get(status, DiscardDataForRequest)
             raise exception
         if status == 200:
+            self._super_agent.check_for_healthy_status()
             return self.decode_response(data)
 
     def decode_response(self, response):

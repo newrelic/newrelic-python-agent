@@ -49,7 +49,7 @@ from newrelic.core.config import (
     default_host,
     fetch_config_setting,
 )
-from newrelic.core.super_agent_health import super_agent_health_instance, is_valid_file_delivery_location, HEALTH_FILE_LOCATION
+from newrelic.core.super_agent_health import super_agent_health_instance, super_agent_healthcheck_loop, HEALTH_CHECK_ENABLED, should_start_health_check
 
 
 __all__ = ["initialize", "filter_app_factory"]
@@ -4820,44 +4820,13 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
-# def schedule_super_agent():
-#     reporting_frequency = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_FREQUENCY", 5)
-#     scheduler = sched.scheduler()
-
-#     while True:
-#         scheduler.enter(reporting_frequency, 1, super_agent.write_to_health_file)
-#         scheduler.run()
-
-
-def super_agent_healthcheck_loop():
-    reporting_frequency = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_FREQUENCY", 5)
-    scheduler = sched.scheduler(time.time, time.sleep)
-
-    scheduler.enter(reporting_frequency, 1, super_agent_healthcheck, (scheduler, reporting_frequency))
-    scheduler.run()
-
-
-def super_agent_healthcheck(scheduler, reporting_frequency):
-    scheduler.enter(reporting_frequency, 1, super_agent_healthcheck, (scheduler, reporting_frequency))
-
-    super_agent_instance.write_to_health_file()
-
-
-super_agent_health_thread = threading.Thread(target=super_agent_healthcheck_loop, name="NR-Super-Agent")
+super_agent_health_thread = threading.Thread(target=super_agent_healthcheck_loop, name="NR-Control-Health-Main-Thread")
 super_agent_health_thread.daemon = True
 
 
 def _setup_super_agent_health():
-    health_check_enabled = os.environ.get("NEW_RELIC_SUPERAGENT_FLEET_ID", None)
-    if not health_check_enabled:
-        _logger.warning("Super Agent fleet ID not found in environment. Health reporting will not be enabled.")
-        return
-    #
-    valid_file_location = is_valid_file_delivery_location(HEALTH_FILE_LOCATION)
-    if not valid_file_location:
-        return
-
-    super_agent_health_thread.start()
+    if should_start_health_check():
+        super_agent_health_thread.start()
 
 
 def initialize(

@@ -37,17 +37,8 @@ def make_request(host, port, path="", method="GET", body=None, http_version=None
     with niquests.Session(**session_kwargs) as session:
         session.verify = False  # Disable SSL verification
         if http_version == 3:
-            # Make HEAD request and receive Alt-Svc headers to enable HTTP/3 connections
-            head_response = make_request(
-                host=host,
-                port=port,
-                path=path,
-                method="HEAD",
-                body=None,
-                http_version=None,
-                timeout=timeout
-            )
-            assert "alt-svc" in head_response.headers, "HTTP/3 Alt-Svc header not received."
+            # Preset quic cache to enable HTTP/3 connections
+            session.quic_cache_layer[(host, port)] = ("", port)
 
         # Send Request
         response = session.request(method.upper(), f"https://{host}:{port}{path}", data=body, timeout=timeout)

@@ -18,12 +18,13 @@ import time
 
 import niquests
 import pytest
-
+from testing_support.certs import CERT_PATH
 from testing_support.fixtures import (
     override_application_settings,
     raise_background_exceptions,
     wait_for_background_threads,
 )
+from testing_support.http_23_testing import make_request
 from testing_support.sample_asgi_applications import (
     AppWithCall,
     AppWithCallRaw,
@@ -43,9 +44,6 @@ from newrelic.common.package_version_utils import (
     get_package_version,
     get_package_version_tuple,
 )
-
-from testing_support.http_23_testing import make_request
-from testing_support.certs import CERT_PATH
 
 HYPERCORN_VERSION = get_package_version_tuple("hypercorn")
 asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14, 1)

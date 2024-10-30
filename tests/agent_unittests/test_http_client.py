@@ -17,13 +17,10 @@ import json
 import os.path
 import ssl
 import zlib
-
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import StringIO
 
 import pytest
-
-from http.server import BaseHTTPRequestHandler, HTTPServer
-
 from testing_support.certs import CERT_PATH
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -309,7 +306,7 @@ def test_http_payload_compression(server, client_cls, method, threshold):
         ]
         assert internal_metrics["Supportability/Python/Collector/Output/Bytes"][:2] == [
             2,
-            len(payload)*2,
+            len(payload) * 2,
         ]
 
         if threshold < 20:
@@ -319,7 +316,7 @@ def test_http_payload_compression(server, client_cls, method, threshold):
 
             # Verify the compressed payload length is recorded
             assert internal_metrics["Supportability/Python/Collector/method1/ZLIB/Bytes"][:2] == [1, payload_byte_len]
-            assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes"][:2] == [2, payload_byte_len*2]
+            assert internal_metrics["Supportability/Python/Collector/ZLIB/Bytes"][:2] == [2, payload_byte_len * 2]
 
             assert len(internal_metrics) == 8
         else:
@@ -366,7 +363,7 @@ def test_default_cert_path(monkeypatch, system_certs_available):
         cert_file = None
         ca_path = None
 
-    class DefaultVerifyPaths():
+    class DefaultVerifyPaths:
         cafile = cert_file
         capath = ca_path
 

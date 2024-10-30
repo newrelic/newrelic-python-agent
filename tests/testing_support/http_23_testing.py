@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import warnings
-
 import niquests
 
 VALID_HTTP_VERSIONS = frozenset((None, 1, 2, 3))
-
+INVALID_HTTP_INPUT_WARNING = "Invalid HTTP version. Expected an integer (1, 2, or 3) or None for no specific version."
+INVALID_HTTP_VERSION_USED_WARNING = "Incorrect HTTP version used: {}"
 
 def make_request(host, port, path="", method="GET", body=None, http_version=None, timeout=10):
-    assert http_version in VALID_HTTP_VERSIONS, "Invalid HTTP version. Expected an integer (1, 2, or 3) or None for no specific version."
+    assert http_version in VALID_HTTP_VERSIONS, INVALID_HTTP_INPUT_WARNING
 
     # Disable other HTTP connection types
     session_kwargs = {}
@@ -36,13 +35,19 @@ def make_request(host, port, path="", method="GET", body=None, http_version=None
 
     # Create session
     with niquests.Session(**session_kwargs) as session:
-        session.verify=False  # Disable SSL verification
-        # if http_version == 3 or http_version is None:
+        session.verify = False  # Disable SSL verification
         if http_version == 3:
-            # Preset quic cache to enable HTTP/3 connections
-            # session.quic_cache_layer[(host, port)] = ("", port)
-            resp = make_request(host=host, port=port, path=path, method="HEAD", body=None, http_version=None, timeout=timeout)
-            assert "alt-svc" in resp.headers, "HTTP/3 Alt-Svc header not received."
+            # Make HEAD request and receive Alt-Svc headers to enable HTTP/3 connections
+            head_response = make_request(
+                host=host,
+                port=port,
+                path=path,
+                method="HEAD",
+                body=None,
+                http_version=None,
+                timeout=timeout
+            )
+            assert "alt-svc" in head_response.headers, "HTTP/3 Alt-Svc header not received."
 
         # Send Request
         response = session.request(method.upper(), f"https://{host}:{port}{path}", data=body, timeout=timeout)
@@ -51,10 +56,10 @@ def make_request(host, port, path="", method="GET", body=None, http_version=None
 
         # Check HTTP version used was correct
         if http_version == 1:
-            assert response.http_version in {10, 11}, f"Incorrect HTTP version used: {response.http_version}"
+            assert response.http_version in {10, 11}, INVALID_HTTP_VERSION_USED_WARNING.format(response.http_version)
         elif http_version == 2:
-            assert response.http_version == 20, f"Incorrect HTTP version used: {response.http_version}"
+            assert response.http_version == 20, INVALID_HTTP_VERSION_USED_WARNING.format(response.http_version)
         elif http_version == 3:
-            assert response.http_version == 30, f"Incorrect HTTP version used: {response.http_version}"
+            assert response.http_version == 30, INVALID_HTTP_VERSION_USED_WARNING.format(response.http_version)
 
         return response

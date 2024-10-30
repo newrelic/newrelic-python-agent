@@ -4836,22 +4836,10 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
-def super_agent_healthcheck_loop():
-    reporting_frequency = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_FREQUENCY", 5)
-    scheduler = sched.scheduler(time.time, time.sleep)
-
-    scheduler.enter(reporting_frequency, 1, super_agent_healthcheck, (scheduler, reporting_frequency))
-    scheduler.run()
-
-
-def super_agent_healthcheck(scheduler, reporting_frequency):
-    scheduler.enter(reporting_frequency, 1, super_agent_healthcheck, (scheduler, reporting_frequency))
-
-    super_agent_instance.write_to_health_file()
-
-
-super_agent_health_thread = threading.Thread(target=super_agent_healthcheck_loop, name="NR-Super-Agent")
-super_agent_health_thread.daemon = True
+agent_control_health_thread = threading.Thread(
+    name="Agent-Control-Health-Main-Thread", target=agent_control_healthcheck_loop
+)
+agent_control_health_thread.daemon = True
 
 
 def _setup_agent_control_health():

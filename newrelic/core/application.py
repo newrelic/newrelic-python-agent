@@ -1712,6 +1712,7 @@ class Application:
         if self._agent_control.health_check_enabled:
             self._agent_control.write_to_health_file()
 
+
         # We need to stop any thread profiler session related to this
         # application.
 

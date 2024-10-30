@@ -610,12 +610,6 @@ class Agent():
             return self._harvest_shutdown.isSet()
 
     def _harvest_flexible(self, shutdown=False):
-        # Stop existing thread that is running super agent health checks
-        # running_threads = threading.enumerate()
-        # for thread in running_threads:
-        #     if thread.name == "NR-Control-Main-Thread":
-        #         pass
-
         if not self._harvest_shutdown_is_set():
             event_harvest_config = self.global_settings().event_harvest_config
 

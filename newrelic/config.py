@@ -3629,6 +3629,61 @@ def _process_module_builtin_defaults():
         "redis.commands.graph.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_graph_commands"
     )
 
+    _process_module_definition(
+        "valkey.asyncio.client", "newrelic.hooks.datastore_valkey", "instrument_asyncio_valkey_client"
+    )
+
+    _process_module_definition(
+        "valkey.asyncio.commands", "newrelic.hooks.datastore_valkey", "instrument_asyncio_valkey_client"
+    )
+
+    _process_module_definition(
+        "valkey.asyncio.connection", "newrelic.hooks.datastore_valkey", "instrument_asyncio_valkey_connection"
+    )
+
+    _process_module_definition(
+        "valkey.connection",
+        "newrelic.hooks.datastore_valkey",
+        "instrument_valkey_connection",
+    )
+    _process_module_definition("valkey.client", "newrelic.hooks.datastore_valkey", "instrument_valkey_client")
+
+    _process_module_definition(
+        "valkey.commands.cluster", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_cluster"
+    )
+
+    _process_module_definition(
+        "valkey.commands.core", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_core"
+    )
+
+    _process_module_definition(
+        "valkey.commands.sentinel", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_sentinel"
+    )
+
+    _process_module_definition(
+        "valkey.commands.json.commands", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_json_commands"
+    )
+
+    _process_module_definition(
+        "valkey.commands.search.commands",
+        "newrelic.hooks.datastore_valkey",
+        "instrument_valkey_commands_search_commands",
+    )
+
+    _process_module_definition(
+        "valkey.commands.timeseries.commands",
+        "newrelic.hooks.datastore_valkey",
+        "instrument_valkey_commands_timeseries_commands",
+    )
+
+    _process_module_definition(
+        "valkey.commands.bf.commands", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_bf_commands"
+    )
+
+    _process_module_definition(
+        "valkey.commands.graph.commands", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_graph_commands"
+    )
+
     _process_module_definition("motor", "newrelic.hooks.datastore_motor", "patch_motor")
 
     _process_module_definition(

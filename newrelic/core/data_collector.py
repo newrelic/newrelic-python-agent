@@ -163,22 +163,19 @@ class Session:
         try:
             # Add global custom log attributes to common block
             if self.configuration.application_logging.forwarding.custom_attributes:
-                if self.configuration.high_security:
-                    _logger.debug("Cannot add custom attribute in High Security Mode.")
-                else:
-                    # Retrieve and process attrs
-                    custom_attributes = {}
-                    for attr_name, attr_value in self.configuration.application_logging.forwarding.custom_attributes:
-                        if len(custom_attributes) >= MAX_NUM_USER_ATTRIBUTES:
-                            _logger.debug("Maximum number of custom attributes already added. Dropping attribute: %r=%r", attr_name, value)
-                            break
+                # Retrieve and process attrs
+                custom_attributes = {}
+                for attr_name, attr_value in self.configuration.application_logging.forwarding.custom_attributes:
+                    if len(custom_attributes) >= MAX_NUM_USER_ATTRIBUTES:
+                        _logger.debug("Maximum number of custom attributes already added. Dropping attribute: %r=%r", attr_name, value)
+                        break
 
-                        key, val = process_user_attribute(attr_name, attr_value)
+                    key, val = process_user_attribute(attr_name, attr_value)
 
-                        if key is not None:
-                            custom_attributes[key] = val
+                    if key is not None:
+                        custom_attributes[key] = val
 
-                    common.update(custom_attributes)
+                common.update(custom_attributes)
 
             # Add application labels as tags. prefixed attributes to common block
             labels = self.configuration.labels

@@ -789,6 +789,10 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
+    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
+    if llm_context_attrs:
+        llm_metadata_dict.update(llm_context_attrs)
+
     span_id = bedrock_attrs.get("span_id", None)
     trace_id = bedrock_attrs.get("trace_id", None)
     request_id = bedrock_attrs.get("request_id", None)

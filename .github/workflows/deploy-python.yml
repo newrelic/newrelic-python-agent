@@ -20,23 +20,13 @@ on:
       - published
 
 jobs:
-  build-linux-py3:
+  build-linux-py3-legacy:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         wheel:
           - cp37-manylinux
           - cp37-musllinux
-          - cp38-manylinux
-          - cp38-musllinux
-          - cp39-manylinux
-          - cp39-musllinux
-          - cp310-manylinux
-          - cp310-musllinux
-          - cp311-manylinux
-          - cp311-musllinux
-          - cp312-manylinux
-          - cp312-musllinux
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
@@ -49,6 +39,50 @@ jobs:
 
       - name: Build Wheels
         uses: pypa/cibuildwheel@8d945475ac4b1aac4ae08b2fd27db9917158b6ce # 2.17.0
+        env:
+          CIBW_PLATFORM: linux
+          CIBW_BUILD: "${{ matrix.wheel }}*"
+          CIBW_ARCHS_LINUX: x86_64 aarch64
+          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_TEST_COMMAND: "PYTHONPATH={project}/tests pytest {project}/tests/agent_unittests -vx"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
+        with:
+          name: ${{ github.job }}-${{ matrix.wheel }}
+          path: ./wheelhouse/*.whl
+          retention-days: 1
+
+  build-linux-py3:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        wheel:
+          - cp38-manylinux
+          - cp38-musllinux
+          - cp39-manylinux
+          - cp39-musllinux
+          - cp310-manylinux
+          - cp310-musllinux
+          - cp311-manylinux
+          - cp311-musllinux
+          - cp312-manylinux
+          - cp312-musllinux
+          - cp313-manylinux
+          - cp313-musllinux
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # 3.0.0
+
+      - name: Build Wheels
+        uses: pypa/cibuildwheel@d4a2945fcc8d13f20a1b99d461b8e844d5fc6e23 # 2.21.1
         env:
           CIBW_PLATFORM: linux
           CIBW_BUILD: "${{ matrix.wheel }}*"
@@ -100,6 +134,7 @@ jobs:
     runs-on: ubuntu-latest
 
     needs:
+      - build-linux-py3-legacy
       - build-linux-py3
       - build-sdist
 

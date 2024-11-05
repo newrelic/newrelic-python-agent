@@ -202,6 +202,7 @@ def create_chat_completion_message_event(
 
 def extract_bedrock_titan_text_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
+    
     request_config = request_body.get("textGenerationConfig", {})
 
     input_message_list = [{"role": "user", "content": request_body.get("inputText")}]
@@ -224,7 +225,7 @@ def extract_bedrock_mistral_text_model_request(request_body, bedrock_attrs):
 def extract_bedrock_titan_text_model_response(response_body, bedrock_attrs):
     if response_body:
         response_body = json.loads(response_body)
-
+        
         output_message_list = [
             {"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", [])
         ]
@@ -314,10 +315,10 @@ def extract_bedrock_ai21_j2_model_response(response_body, bedrock_attrs):
 
 def extract_bedrock_claude_model_request(request_body, bedrock_attrs):
     request_body = json.loads(request_body)
-
+    
     if "messages" in request_body:
         input_message_list = [
-            {"role": message.get("role", "user"), "content": message.get("content")}
+            {"role": message.get("role", "user"), "content": message.get("content")[0].get("text")}
             for message in request_body.get("messages")
         ]
     else:
@@ -332,8 +333,9 @@ def extract_bedrock_claude_model_request(request_body, bedrock_attrs):
 def extract_bedrock_claude_model_response(response_body, bedrock_attrs):
     if response_body:
         response_body = json.loads(response_body)
+        
         role = response_body.get("role", "assistant")
-        content = response_body.get("content") or response_body.get("completion")
+        content = response_body.get("content")[0].get("text") or response_body.get("completion")
         output_message_list = [{"role": role, "content": content}]
         bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
         bedrock_attrs["output_message_list"] = output_message_list

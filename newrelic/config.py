@@ -16,6 +16,7 @@ import configparser
 import fnmatch
 import logging
 import os
+import uuid
 import sched
 import sys
 import threading
@@ -49,7 +50,7 @@ from newrelic.core.config import (
     default_host,
     fetch_config_setting,
 )
-from newrelic.core.super_agent_health import super_agent_health_instance, super_agent_healthcheck_loop, HEALTH_CHECK_ENABLED, should_start_health_check
+from newrelic.core.super_agent_health import super_agent_health_instance, super_agent_healthcheck_loop, health_check_enabled
 
 
 __all__ = ["initialize", "filter_app_factory"]
@@ -230,6 +231,7 @@ def _map_default_host_value(license_key):
     # to be the region aware host
     _default_host = default_host(license_key)
     _settings.host = os.environ.get("NEW_RELIC_HOST", _default_host)
+
     return license_key
 
 
@@ -4820,12 +4822,15 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
-super_agent_health_thread = threading.Thread(target=super_agent_healthcheck_loop, name="NR-Control-Health-Main-Thread")
+super_agent_health_thread = threading.Thread(name="APM-Control-Health-Main-Thread", target=super_agent_healthcheck_loop)
 super_agent_health_thread.daemon = True
 
 
 def _setup_super_agent_health():
-    if should_start_health_check():
+    if super_agent_health_thread.is_alive():
+        return
+
+    if health_check_enabled():
         super_agent_health_thread.start()
 
 
@@ -4846,7 +4851,6 @@ def initialize(
 
     if ignore_errors is None:
         ignore_errors = newrelic.core.config._environ_as_bool("NEW_RELIC_IGNORE_STARTUP_ERRORS", True)
-
 
     _load_configuration(config_file, environment, ignore_errors, log_file, log_level)
 

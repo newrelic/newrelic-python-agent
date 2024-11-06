@@ -19,6 +19,7 @@
 import logging
 import os
 import sys
+import uuid
 import threading
 import time
 import traceback
@@ -50,7 +51,7 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 from newrelic.samplers.data_sampler import DataSampler
-from newrelic.core.super_agent_health import super_agent_healthcheck_loop, HEALTH_CHECK_ENABLED, should_start_health_check
+from newrelic.core.super_agent_health import super_agent_healthcheck_loop, health_check_enabled
 
 _logger = logging.getLogger(__name__)
 
@@ -112,8 +113,9 @@ class Application:
 
         self._remaining_plugins = True
 
-        self._super_agent_health_thread = threading.Thread(target=super_agent_healthcheck_loop, name="NR-Control-Health-Session-Thread")
+        self._super_agent_health_thread = threading.Thread(name="NR-Control-Health-Session-Thread", target=super_agent_healthcheck_loop)
         self._super_agent_health_thread.daemon = True
+        self._super_agent = super_agent_health_instance()
 
 
         # We setup empty rules engines here even though they will be
@@ -210,7 +212,7 @@ class Application:
         if self._active_session:
             return
 
-        if should_start_health_check():
+        if health_check_enabled() and not self._super_agent_health_thread.is_alive():
             self._super_agent_health_thread.start()
 
         self._process_id = os.getpid()
@@ -672,7 +674,7 @@ class Application:
             self._process_id = 0
 
     def normalize_name(self, name, rule_type):
-        """Applies the agent normalization rules of the the specified
+        """Applies the agent normalization rules of the specified
         rule type to the supplied name.
 
         """
@@ -1697,8 +1699,8 @@ class Application:
         """
         super_agent = super_agent_health_instance()
         super_agent.set_health_status("agent_shutdown")
-        if HEALTH_CHECK_ENABLED:
-            super_agent.write_to_health_file()
+        if health_check_enabled():
+            super_agent.write_to_health_file(self._super_agent_file_id)
 
         # We need to stop any thread profiler session related to this
         # application.
@@ -1759,7 +1761,6 @@ class Application:
 
         else:
             self._agent_shutdown = True
-
 
     def process_agent_commands(self):
         """Fetches agents commands from data collector and process them."""

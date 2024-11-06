@@ -35,7 +35,6 @@ from newrelic.core.thread_utilization import thread_utilization_data_source
 from newrelic.samplers.cpu_usage import cpu_usage_data_source
 from newrelic.samplers.gc_data import garbage_collector_data_source
 from newrelic.samplers.memory_usage import memory_usage_data_source
-from newrelic.core.super_agent_health import super_agent_healthcheck_loop
 
 _logger = logging.getLogger(__name__)
 
@@ -210,9 +209,6 @@ class Agent():
         self._harvest_thread.daemon = True
         self._harvest_shutdown = threading.Event()
 
-        # self._super_agent_health_thread = threading.Thread(target=super_agent_healthcheck_loop, name="NR-Control-Harvest-Thread")
-        # self._super_agent_health_thread.daemon = True
-
         self._default_harvest_count = 0
         self._flexible_harvest_count = 0
         self._last_default_harvest = 0.0
@@ -265,7 +261,6 @@ class Agent():
         print(f"Flexible Harvest Duration: {self._flexible_harvest_duration:.2f}", file=file)
         print(f"Agent Shutdown: {self._harvest_shutdown.isSet()}", file=file)
         print(f"Applications: {sorted(self._applications.keys())!r}", file=file)
-
 
     def global_settings(self):
         """Returns the global default settings object. If access is

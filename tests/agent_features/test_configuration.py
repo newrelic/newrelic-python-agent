@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import collections
+import copy
 import tempfile
 
 import urllib.parse as urlparse
@@ -42,6 +43,26 @@ from newrelic.core.config import (
     global_settings,
     global_settings_dump,
 )
+
+
+@pytest.fixture(scope="function")
+def collector_available_fixture():
+    # Disable fixture that requires real application to exist for this file
+    pass
+
+
+@pytest.fixture(scope="module", autouse=True)
+def restore_settings_fixture():
+    # Backup settings from before this test file runs
+    original_settings = global_settings()
+    backup = copy.deepcopy(original_settings.__dict__)
+
+    # Run tests
+    yield
+    
+    # Restore settings after tests run
+    original_settings.__dict__.clear()
+    original_settings.__dict__.update(backup)
 
 
 def function_to_trace():
@@ -999,7 +1020,9 @@ def test_toml_parse_development():
 
 def test_toml_parse_production():
     settings = global_settings()
-    # _reset_configuration_done()
+    _reset_configuration_done()
+    _reset_config_parser()
+    _reset_instrumentation_done()
 
     with tempfile.NamedTemporaryFile(suffix=".toml") as f:
         f.write(newrelic_toml_contents)

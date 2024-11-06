@@ -19,6 +19,7 @@
 import logging
 import os
 import sys
+import uuid
 import threading
 import time
 import traceback
@@ -1712,7 +1713,6 @@ class Application:
         if self._agent_control.health_check_enabled:
             self._agent_control.write_to_health_file()
 
-
         # We need to stop any thread profiler session related to this
         # application.
 
@@ -1772,7 +1772,6 @@ class Application:
 
         else:
             self._agent_shutdown = True
-
 
     def process_agent_commands(self):
         """Fetches agents commands from data collector and process them."""

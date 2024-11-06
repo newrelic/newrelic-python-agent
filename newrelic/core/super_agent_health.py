@@ -17,7 +17,7 @@ import os
 import uuid
 import threading
 import time
-from pathlib import Path, PurePath
+from pathlib import Path
 from urllib.parse import urlparse
 import sched
 
@@ -40,7 +40,7 @@ HEALTH_CHECK_STATUSES = {
 def is_valid_file_delivery_location(file_uri):
     if not file_uri:
         _logger.warning(
-            "Configured Super Agent health delivery location is empty. Super Agent health check will not be enabled."
+            "Configured APM Control health delivery location is empty. APM Control health check will not be enabled."
         )
         return False
 
@@ -49,13 +49,15 @@ def is_valid_file_delivery_location(file_uri):
 
         if not parsed_uri.scheme or not parsed_uri.path:
             _logger.warning(
-                "Configured Super Agent health delivery location is not a complete file URI. Super Agent health check will not be enabled."
+                "Configured Super Agent health delivery location is not a complete file URI. Super Agent health check "
+                "will not be enabled. "
             )
             return False
 
         if parsed_uri.scheme != "file":
             _logger.warning(
-                "Configured Super Agent health delivery location does not have a valid scheme. Super Agent health check will not be enabled."
+                "Configured Super Agent health delivery location does not have a valid scheme. Super Agent health "
+                "check will not be enabled. "
             )
             return False
 
@@ -64,7 +66,8 @@ def is_valid_file_delivery_location(file_uri):
         # Check if the path exists
         if not path.exists():
             _logger.warning(
-                "Configured Super Agent health delivery location does not exist. Super Agent health check will not be enabled."
+                "Configured Super Agent health delivery location does not exist. Super Agent health check will not be "
+                "enabled. "
             )
             return False
 
@@ -72,14 +75,15 @@ def is_valid_file_delivery_location(file_uri):
 
     except Exception as e:
         _logger.warning(
-            "Configured Super Agent health delivery location is not valid. Super Agent health check will not be enabled."
+            "Configured Super Agent health delivery location is not valid. Super Agent health check will not be "
+            "enabled. "
         )
         return False
 
 
-def should_start_health_check():
-    health_check_enabled = os.environ.get("NEW_RELIC_SUPERAGENT_FLEET_ID", None)
-    if not health_check_enabled:
+def health_check_enabled():
+    fleet_id_present = os.environ.get("NEW_RELIC_SUPERAGENT_FLEET_ID", None)
+    if not fleet_id_present:
         _logger.warning("Super Agent fleet ID not found in environment. Health reporting will not be enabled.")
         return False
 
@@ -89,9 +93,6 @@ def should_start_health_check():
         return False
 
     return True
-
-
-HEALTH_CHECK_ENABLED = should_start_health_check()
 
 
 class SuperAgentHealth:
@@ -116,6 +117,7 @@ class SuperAgentHealth:
         self.last_error = "NR-APM-000"
         self.status = "Healthy"
         self.start_time_unix_nano = None
+        self.pid_file_id_map = {}
 
     def set_health_status(self, health_status, response_code=None, info=None):
         last_error, current_status = HEALTH_CHECK_STATUSES[health_status]
@@ -139,11 +141,11 @@ class SuperAgentHealth:
 
     def check_for_healthy_status(self):
         # If our unhealthy status code was not config related, it is possible it could be resolved during an active
-        # session We determine the status is resolved by calling this function when a 200 status code is received to
+        # session. We determine the status is resolved by calling this function when a 200 status code is received to
         # check if the current status is resolvable
 
         # Checking for forced disconnects or proxy/ HTTP errors
-        non_config_error_codes = frozenset("NR-APM-003", "NR-APM-004", "NR-APM-007")
+        non_config_error_codes = frozenset(["NR-APM-003", "NR-APM-004", "NR-APM-007"])
         if self.last_error in non_config_error_codes:
             self.last_error = "NR-APM-000"
             self.status = "Healthy"
@@ -153,9 +155,12 @@ class SuperAgentHealth:
         status_time_unix_nano = time.time_ns()
         health_file_location = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", None)
 
+        health_file_location = str(health_file_location)
         file_path = urlparse(health_file_location).path
-        file_id = str(uuid.uuid4()).replace("-", "")
-        file_name = f"health_{file_id}.yml"
+        pid = os.getpid()
+        file_ids = self.get_file_id(pid)
+
+        file_name = f"health-{file_ids}.yml"
         full_path = os.path.join(file_path, file_name)
 
         try:
@@ -168,6 +173,18 @@ class SuperAgentHealth:
                     f.write(f"last_error: {self.last_error}\n")
         except:
             _logger.warning("Unable to write to agent health file.")
+
+    def get_file_id(self, pid):
+        # Each file name should have a UUID with hyphens stripped appended to it
+        file_id = str(uuid.uuid4()).replace("-", "")
+
+        # Map the UUID to the process ID to ensure each agent instance has one UUID associated with it
+        if pid in self.pid_file_id_map:
+            pass
+        else:
+            self.pid_file_id_map[pid] = file_id
+
+        return self.pid_file_id_map[pid]
 
 
 def super_agent_health_instance():

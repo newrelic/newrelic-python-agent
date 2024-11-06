@@ -16,6 +16,7 @@ import configparser
 import fnmatch
 import logging
 import os
+import uuid
 import sched
 import sys
 import threading
@@ -233,6 +234,7 @@ def _map_default_host_value(license_key):
     # to be the region aware host
     _default_host = default_host(license_key)
     _settings.host = os.environ.get("NEW_RELIC_HOST", _default_host)
+
     return license_key
 
 

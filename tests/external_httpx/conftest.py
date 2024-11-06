@@ -49,7 +49,7 @@ def real_server():
 
     class RealHTTP2Server:
         host = settings["host"]
-        port = settings["http2_port"]
+        port = settings["port"]
 
     yield RealHTTP2Server
 

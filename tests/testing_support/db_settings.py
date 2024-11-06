@@ -374,9 +374,7 @@ def nginx_settings():
     settings = [
         {
             "host": host,
-            "http_port": 8080,
-            "http2_port": 8081,
-            "http3_port": 8082,
+            "port": 8080,
         }
         for instance_num in range(instances)
     ]

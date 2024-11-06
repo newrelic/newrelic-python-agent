@@ -1700,7 +1700,7 @@ class Application:
         super_agent = super_agent_health_instance()
         super_agent.set_health_status("agent_shutdown")
         if health_check_enabled():
-            super_agent.write_to_health_file(self._super_agent_file_id)
+            super_agent.write_to_health_file()
 
         # We need to stop any thread profiler session related to this
         # application.

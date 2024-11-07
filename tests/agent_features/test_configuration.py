@@ -14,6 +14,7 @@
 
 import collections
 import copy
+import sys
 import tempfile
 
 import urllib.parse as urlparse
@@ -43,6 +44,9 @@ from newrelic.core.config import (
     global_settings,
     global_settings_dump,
 )
+
+
+SKIP_IF_NOT_PY311 = pytest.mark.skipif(sys.version_info < (3, 11), reason="TOML not in the standard library.")
 
 
 @pytest.fixture(scope="function")
@@ -997,6 +1001,7 @@ enabled = true
 """
 
 
+@SKIP_IF_NOT_PY311
 def test_toml_parse_development():
     settings = global_settings()
     _reset_configuration_done()
@@ -1018,6 +1023,7 @@ def test_toml_parse_development():
         assert value.ignore_classes[1] == "module:name"
 
 
+@SKIP_IF_NOT_PY311
 def test_toml_parse_production():
     settings = global_settings()
     _reset_configuration_done()

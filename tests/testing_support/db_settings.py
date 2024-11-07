@@ -359,7 +359,7 @@ def gearman_settings():
 
 
 def nginx_settings():
-    """Return a list of dict of settings for connecting to kafka.
+    """Return a list of dict of settings for connecting to nginx.
 
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where
@@ -374,7 +374,7 @@ def nginx_settings():
     settings = [
         {
             "host": host,
-            "port": 8080,
+            "port": 8080 + instance_num,
         }
         for instance_num in range(instances)
     ]

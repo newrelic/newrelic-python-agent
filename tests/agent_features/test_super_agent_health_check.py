@@ -16,21 +16,13 @@ import time
 import pytest
 import threading
 
-from testing_support.fixtures import reset_core_stats_engine
-from testing_support.fixtures import override_generic_settings
 from newrelic.core.config import finalize_application_settings
 from agent_unittests.test_agent_protocol import HttpClientRecorder
 from newrelic.core.super_agent_health import is_valid_file_delivery_location, super_agent_health_instance
-from newrelic.config import initialize
+from newrelic.config import initialize, _reset_configuration_done
 from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.core.application import Application
-from newrelic.core.config import global_settings
 from newrelic.network.exceptions import DiscardDataForRequest
-
-_disable_agent_settings = {
-    "monitor_mode": False,
-    "developer_mode": False
-}
 
 
 @pytest.mark.parametrize("file_uri", ["", "file://", "/test/dir", "foo:/test/dir"])
@@ -127,6 +119,7 @@ def test_health_check_running_threads(monkeypatch, tmp_path):
     monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
 
     # Re-initialize the agent to allow the health check thread to start and assert that it did
+    _reset_configuration_done()
     initialize()
     running_threads = threading.enumerate()
 
@@ -140,6 +133,7 @@ def test_proxy_error_status(monkeypatch, tmp_path):
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
 
+    _reset_configuration_done()
     initialize()
 
     # Mock a 407 error to generate a proxy error health status
@@ -176,6 +170,7 @@ def test_multiple_activations_running_threads(monkeypatch, tmp_path):
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
 
+    _reset_configuration_done()
     initialize()
     application_1 = Application("Test App 1")
     application_2 = Application("Test App 2")

@@ -19,7 +19,6 @@
 import logging
 import os
 import sys
-import uuid
 import threading
 import time
 import traceback

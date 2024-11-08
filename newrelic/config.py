@@ -16,8 +16,6 @@ import configparser
 import fnmatch
 import logging
 import os
-import uuid
-import sched
 import sys
 import threading
 import time

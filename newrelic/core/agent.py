@@ -189,7 +189,6 @@ class Agent():
 
         return Agent._instance
 
-
     def __init__(self, config):
         """Initialises the agent and attempt to establish a connection
         to the core application. Will start the harvest loop running but

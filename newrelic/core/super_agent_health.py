@@ -84,7 +84,6 @@ def is_valid_file_delivery_location(file_uri):
 def health_check_enabled():
     fleet_id_present = os.environ.get("NEW_RELIC_SUPERAGENT_FLEET_ID", None)
     if not fleet_id_present:
-        _logger.warning("Super Agent fleet ID not found in environment. Health reporting will not be enabled.")
         return False
 
     health_file_location = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", None)

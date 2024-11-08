@@ -14,10 +14,9 @@
 
 import asyncio
 import threading
-from urllib.request import HTTPError, urlopen
 
-import niquests
 import daphne.server
+import niquests
 import pytest
 from testing_support.certs import CERT_PATH
 from testing_support.fixtures import (

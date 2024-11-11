@@ -101,41 +101,28 @@ async def async_send_wrapper(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
 
-@property
-def nr_first_event_hooks(self):
-    if not hasattr(self, "_nr_event_hooks"):
-        # This branch should only be hit if agent initialize is called after
-        # the initialization of the http client
-        self._event_hooks = vars(self)["_event_hooks"]
-        del vars(self)["_event_hooks"]
-    return self._nr_event_hooks
+def create_nr_first_event_hooks(is_async=False):
+    @property
+    def nr_first_event_hooks(self):
+        if not hasattr(self, "_nr_event_hooks"):
+            # This branch should only be hit if agent initialize is called after
+            # the initialization of the http client
+            self._event_hooks = vars(self)["_event_hooks"]
+            del vars(self)["_event_hooks"]
+        return self._nr_event_hooks
 
 
-@nr_first_event_hooks.setter
-def nr_first_event_hooks(self, value):
-    value = NewRelicFirstDict(value, is_async=False)
-    self._nr_event_hooks = value
-
-
-@property
-def nr_first_event_hooks_async(self):
-    if not hasattr(self, "_nr_event_hooks"):
-        # This branch should only be hit if agent initialize is called after
-        # the initialization of the http client
-        self._event_hooks = vars(self)["_event_hooks"]
-        del vars(self)["_event_hooks"]
-    return self._nr_event_hooks
-
-
-@nr_first_event_hooks_async.setter
-def nr_first_event_hooks_async(self, value):
-    value = NewRelicFirstDict(value, is_async=True)
-    self._nr_event_hooks = value
+    @nr_first_event_hooks.setter
+    def nr_first_event_hooks(self, value):
+        value = NewRelicFirstDict(value, is_async=is_async)
+        self._nr_event_hooks = value
+    
+    return nr_first_event_hooks
 
 
 def instrument_httpx_client(module):
-    module.Client._event_hooks = nr_first_event_hooks
-    module.AsyncClient._event_hooks = nr_first_event_hooks_async
+    module.Client._event_hooks = create_nr_first_event_hooks(is_async=False)
+    module.AsyncClient._event_hooks = create_nr_first_event_hooks(is_async=True)
 
     wrap_function_wrapper(module, "Client.send", sync_send_wrapper)
     wrap_function_wrapper(module, "AsyncClient.send", async_send_wrapper)

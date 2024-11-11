@@ -1266,12 +1266,12 @@ jobs:
 
   valkey:
     env:
-      TOTAL_GROUPS: 2
+      TOTAL_GROUPS: 1
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2]
+        group-number: [1]
 
     runs-on: ubuntu-latest
     container:

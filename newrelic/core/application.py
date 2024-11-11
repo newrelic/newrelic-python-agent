@@ -54,6 +54,8 @@ from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
+MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 2.0
+
 
 class Application:
 
@@ -109,7 +111,7 @@ class Application:
         self._data_samplers_lock = threading.Lock()
         self._data_samplers_started = False
 
-        self._env_send = True
+        self._remaining_plugins = True
 
         # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
@@ -1251,14 +1253,14 @@ class Application:
                     while (
                         configuration
                         and configuration.package_reporting.enabled
-                        and self._env_send
-                        and ((time.time() - stopwatch_start) < 2.0)
+                        and self._remaining_plugins
+                        and ((time.time() - stopwatch_start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST)
                     ):
                         try:
                             module_info = next(self.plugins)
                             self.modules.append(module_info)
                         except StopIteration:
-                            self._env_send = False
+                            self._remaining_plugins = False
 
                     # Send the accumulated environment plugin list if not empty
                     if self.modules:
@@ -1704,13 +1706,15 @@ class Application:
         # if this has not been completed during harvest
         # lifetime of the application
 
-        while self.configuration.package_reporting.enabled and self._env_send:
+        while self.configuration and self.configuration.package_reporting.enabled and self._remaining_plugins:
             try:
                 module_info = next(self.plugins)
                 self.modules.append(module_info)
             except StopIteration:
-                self._env_send = False
-                self._active_session.send_loaded_modules(self.modules)
+                self._remaining_plugins = False
+                if self.modules:
+                    self._active_session.send_loaded_modules(self.modules)
+                    self.modules = []
 
         # Now shutdown the actual agent session.
 

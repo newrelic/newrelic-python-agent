@@ -29,7 +29,6 @@ from newrelic.common.system_info import (
     physical_processor_count,
     total_physical_memory,
 )
-from newrelic.core.config import global_settings
 from newrelic.packages.isort import stdlibs as isort_stdlibs
 
 try:
@@ -205,49 +204,47 @@ def plugins():
     # Module information.
     stdlib_builtin_module_names = _get_stdlib_builtin_module_names()
 
-    settings = global_settings()
-    if settings and settings.package_reporting.enabled:
-        # Using any iterable to create a snapshot of sys.modules can occassionally
-        # fail in a rare case when modules are imported in parallel by different
-        # threads.
-        #
-        # TL;DR: Do NOT use an iterable on the original sys.modules to generate the
-        # list
-        for name, module in sys.modules.copy().items():
-            # Exclude lib.sub_paths as independent modules except for newrelic.hooks.
-            nr_hook = name.startswith("newrelic.hooks.")
-            if "." in name and not nr_hook or name.startswith("_"):
-                continue
+    # Using any iterable to create a snapshot of sys.modules can occassionally
+    # fail in a rare case when modules are imported in parallel by different
+    # threads.
+    #
+    # TL;DR: Do NOT use an iterable on the original sys.modules to generate the
+    # list
+    for name, module in sys.modules.copy().items():
+        # Exclude lib.sub_paths as independent modules except for newrelic.hooks.
+        nr_hook = name.startswith("newrelic.hooks.")
+        if "." in name and not nr_hook or name.startswith("_"):
+            continue
 
-            # If the module isn't actually loaded (such as failed relative imports
-            # in Python 2.7), the module will be None and should not be reported.
+        # If the module isn't actually loaded (such as failed relative imports
+        # in Python 2.7), the module will be None and should not be reported.
+        try:
+            if not module:
+                continue
+        except Exception:
+            # if the application uses generalimport to manage optional depedencies,
+            # it's possible that generalimport.MissingOptionalDependency is raised.
+            # In this case, we should not report the module as it is not actually loaded and
+            # is not a runtime dependency of the application.
+            #
+            continue
+
+        # Exclude standard library/built-in modules.
+        if name in stdlib_builtin_module_names:
+            continue
+
+        # Don't attempt to look up version information for our hooks
+        version = None
+        if not nr_hook:
             try:
-                if not module:
-                    continue
+                version = get_package_version(name)
             except Exception:
-                # if the application uses generalimport to manage optional depedencies,
-                # it's possible that generalimport.MissingOptionalDependency is raised.
-                # In this case, we should not report the module as it is not actually loaded and
-                # is not a runtime dependency of the application.
-                #
-                continue
+                pass
 
-            # Exclude standard library/built-in modules.
-            if name in stdlib_builtin_module_names:
-                continue
-
-            # Don't attempt to look up version information for our hooks
-            version = None
-            if not nr_hook:
-                try:
-                    version = get_package_version(name)
-                except Exception:
-                    pass
-
-            # If it has no version it's likely not a real package so don't report it unless
-            # it's a new relic hook.
-            if nr_hook or version:
-                yield [name, version, {}] if version else [name, " ", {}]
+        # If it has no version it's likely not a real package so don't report it unless
+        # it's a new relic hook.
+        if nr_hook or version:
+            yield [name, version, {}] if version else [name, " ", {}]
 
 
 def _get_stdlib_builtin_module_names():

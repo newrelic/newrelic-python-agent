@@ -142,6 +142,7 @@ def wait_for_port(port, retries=10):
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 def test_hypercorn_200(port, app, http_version):
     hypercorn_version = get_package_version("hypercorn")
+    assert hypercorn_version is not None
 
     @validate_transaction_metrics(
         callable_name(app),

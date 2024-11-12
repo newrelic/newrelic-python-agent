@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
+
 from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
     event_loop as loop,
 )
@@ -20,7 +20,6 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
-from testing_support.db_settings import nginx_settings
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -32,33 +31,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (external_httpx)", default_settings=_default_settings
+    app_name="Python Agent Test (datastore_valkey)",
+    default_settings=_default_settings,
+    linked_applications=["Python Agent Test (datastore)"],
 )
-
-
-@pytest.fixture(scope="session")
-def httpx():
-    import httpx
-
-    return httpx
-
-
-@pytest.fixture(scope="session")
-def real_server():
-    settings = nginx_settings()[0]
-
-    class RealHTTP2Server:
-        host = settings["host"]
-        port = settings["port"]
-
-    yield RealHTTP2Server
-
-
-@pytest.fixture(scope="function")
-def sync_client(httpx):
-    return httpx.Client()
-
-
-@pytest.fixture(scope="function")
-def async_client(httpx):
-    return httpx.AsyncClient()

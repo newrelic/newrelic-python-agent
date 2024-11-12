@@ -4575,6 +4575,13 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition("tornado.web", "newrelic.hooks.framework_tornado", "instrument_tornado_web")
 
+    # Hybrid Agent Hooks
+    _process_module_definition(
+        "opentelemetry.sdk.metrics",
+        "newrelic.hooks.hybridagent_opentelemetry",
+        "instrument_meter",
+    )
+
 
 def _process_module_entry_points():
     try:

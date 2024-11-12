@@ -145,7 +145,7 @@ class Sentinel(TimeTrace):
         pass
 
 
-class CachedPath():
+class CachedPath:
     def __init__(self, transaction):
         self._name = None
         self.transaction = weakref.ref(transaction)
@@ -161,7 +161,7 @@ class CachedPath():
         return "Unknown"
 
 
-class Transaction():
+class Transaction:
     STATE_PENDING = 0
     STATE_RUNNING = 1
     STATE_STOPPED = 2
@@ -318,6 +318,9 @@ class Transaction():
 
         self._custom_metrics = CustomMetrics()
         self._dimensional_metrics = DimensionalMetrics()
+
+        # OTel Settings
+        self._histogram = {}
 
         global_settings = application.global_settings
 
@@ -575,6 +578,11 @@ class Transaction():
             # Sampled and priority need to be computed at the end of the
             # transaction when distributed tracing or span events are enabled.
             self._compute_sampled_and_priority()
+
+        # Open telemetry metrics
+        if self._histogram:
+            for name, value in self._histogram.items():
+                self.record_custom_metric(name, value)
 
         self._cached_path._name = self.path
         agent_attributes = self.agent_attributes

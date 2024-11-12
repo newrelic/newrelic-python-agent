@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import google.generativeai as genai
 from testing_support.fixtures import (
     override_llm_token_callback_settings,
@@ -40,10 +41,9 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 
 _test_gemini_chat_completion_messages = (
-    {"role": "system", "content": "You are a scientist."},
-    {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
+    "You are a scientist.",
+    "What is 212 degrees Fahrenheit converted to Celsius?",
 )
-
 
 chat_completion_recorded_events = [
     (
@@ -145,13 +145,13 @@ chat_completion_recorded_events = [
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_chat_completion_sync_with_llm_metadata(set_trace_info):
+def test_gemini_chat_completion_sync_with_llm_metadata(set_trace_info, sync_gemini_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
     with WithLlmCustomAttributes({"context": "attr"}):
-        genai.generate_content(
+        sync_gemini_client.generate_content(
             _test_gemini_chat_completion_messages,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7
@@ -173,12 +173,12 @@ def test_gemini_chat_completion_sync_with_llm_metadata(set_trace_info):
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_chat_completion_sync_no_content(set_trace_info):
+def test_gemini_chat_completion_sync_no_content(set_trace_info, sync_gemini_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
 
-    genai.generate_content(
+    sync_gemini_client.generate_content(
         _test_gemini_chat_completion_messages,
         generation_config=genai.types.GenerationConfig(
             temperature=0.7
@@ -199,12 +199,14 @@ def test_gemini_chat_completion_sync_no_content(set_trace_info):
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_chat_completion_sync_with_token_count(set_trace_info):
+def test_gemini_chat_completion_sync_with_token_count(set_trace_info, sync_gemini_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
 
-    genai.generate_content(
+    #genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+    #model = genai.GenerativeModel("gemini-1.5-flash")
+    sync_gemini_client.generate_content(
         _test_gemini_chat_completion_messages,
         generation_config=genai.types.GenerationConfig(
             temperature=0.7
@@ -223,10 +225,10 @@ def test_gemini_chat_completion_sync_with_token_count(set_trace_info):
     background_task=True,
 )
 @background_task()
-def test_gemini_chat_completion_sync_no_llm_metadata(set_trace_info):
+def test_gemini_chat_completion_sync_no_llm_metadata(set_trace_info, sync_gemini_client):
     set_trace_info()
 
-    genai.generate_content(
+    sync_gemini_client.generate_content(
         _test_gemini_chat_completion_messages,
         generation_config=genai.types.GenerationConfig(
             temperature=0.7
@@ -256,8 +258,8 @@ def test_gemini_chat_completion_sync_no_llm_metadata(set_trace_info):
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
-def test_gemini_chat_completion_sync_outside_txn():
-    genai.generate_content(
+def test_gemini_chat_completion_sync_outside_txn(sync_gemini_client):
+    sync_gemini_client.generate_content(
         _test_gemini_chat_completion_messages,
         generation_config=genai.types.GenerationConfig(
             temperature=0.7
@@ -269,8 +271,8 @@ def test_gemini_chat_completion_sync_outside_txn():
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @background_task()
-def test_gemini_chat_completion_sync_ai_monitoring_disabled():
-    genai.generate_content(
+def test_gemini_chat_completion_sync_ai_monitoring_disabled(sync_gemini_client):
+    sync_gemini_client.generate_content(
         _test_gemini_chat_completion_messages,
         generation_config=genai.types.GenerationConfig(
             temperature=0.7
@@ -309,11 +311,11 @@ def test_gemini_chat_completion_sync_ai_monitoring_disabled():
     background_task=True,
 )
 @background_task()
-def test_gemini_chat_completion_async_stream_monitoring_disabled(loop, set_trace_info):
+def test_gemini_chat_completion_async_stream_monitoring_disabled(loop, set_trace_info, sync_gemini_client):
     set_trace_info()
 
     loop.run_until_complete(
-        genai.generate_content(
+        sync_gemini_client.generate_content(
             _test_gemini_chat_completion_messages,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7
@@ -336,7 +338,7 @@ def test_gemini_chat_completion_async_stream_monitoring_disabled(loop, set_trace
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_chat_completion_async_with_llm_metadata(loop, set_trace_info):
+def test_gemini_chat_completion_async_with_llm_metadata(loop, set_trace_info, sync_gemini_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
@@ -344,7 +346,7 @@ def test_gemini_chat_completion_async_with_llm_metadata(loop, set_trace_info):
 
     with WithLlmCustomAttributes({"context": "attr"}):
         loop.run_until_complete(
-            genai.generate_content(
+            sync_gemini_client.generate_content(
                 _test_gemini_chat_completion_messages,
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.7
@@ -368,13 +370,13 @@ def test_gemini_chat_completion_async_with_llm_metadata(loop, set_trace_info):
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_chat_completion_async_no_content(loop, set_trace_info):
+def test_gemini_chat_completion_async_no_content(loop, set_trace_info, sync_gemini_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
 
     loop.run_until_complete(
-        genai.generate_content(
+        sync_gemini_client.generate_content(
             _test_gemini_chat_completion_messages,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7
@@ -397,13 +399,13 @@ def test_gemini_chat_completion_async_no_content(loop, set_trace_info):
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_chat_completion_async_with_token_count(loop, set_trace_info):
+def test_gemini_chat_completion_async_with_token_count(loop, set_trace_info, sync_gemini_client):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
 
     loop.run_until_complete(
-        genai.generate_content(
+        sync_gemini_client.generate_content(
             _test_gemini_chat_completion_messages,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7
@@ -414,9 +416,9 @@ def test_gemini_chat_completion_async_with_token_count(loop, set_trace_info):
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
-def test_gemini_chat_completion_async_outside_transaction(loop):
+def test_gemini_chat_completion_async_outside_transaction(loop, sync_gemini_client):
     loop.run_until_complete(
-        genai.generate_content(
+        sync_gemini_client.generate_content(
             _test_gemini_chat_completion_messages,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7
@@ -429,9 +431,9 @@ def test_gemini_chat_completion_async_outside_transaction(loop):
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @background_task()
-def test_gemini_chat_completion_async_ai_monitoring_disabled(loop):
+def test_gemini_chat_completion_async_ai_monitoring_disabled(loop, sync_gemini_client):
     loop.run_until_complete(
-        genai.generate_content(
+        sync_gemini_client.generate_content(
             _test_gemini_chat_completion_messages,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7
@@ -445,11 +447,11 @@ def test_gemini_chat_completion_async_ai_monitoring_disabled(loop):
 @validate_custom_event_count(count=4)
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_chat_completion_sync_no_usage_data(set_trace_info):
+def test_gemini_chat_completion_sync_no_usage_data(set_trace_info, sync_gemini_client):
     # Only testing that there are events, and there was no exception raised
     set_trace_info()
 
-    genai.generate_content(
+    sync_gemini_client.generate_content(
         _test_gemini_chat_completion_messages,
         generation_config=genai.types.GenerationConfig(
             temperature=0.7
@@ -462,12 +464,12 @@ def test_gemini_chat_completion_sync_no_usage_data(set_trace_info):
 @validate_custom_event_count(count=4)
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_chat_completion_async_no_usage_data(loop, set_trace_info):
+def test_gemini_chat_completion_async_no_usage_data(loop, set_trace_info, sync_gemini_client):
     # Only testing that there are events, and there was no exception raised
     set_trace_info()
 
     loop.run_until_complete(
-        genai.generate_content(
+        sync_gemini_client.generate_content(
             _test_gemini_chat_completion_messages,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7

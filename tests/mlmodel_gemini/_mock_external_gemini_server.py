@@ -688,14 +688,9 @@ def simple_get(gemini_version, extract_shortened_prompt):
 
         headers, response = ({}, "")
 
-        if openai_version < (1, 0):
-            mocked_responses = RESPONSES
-            # if stream:
-            #     mocked_responses = STREAMED_RESPONSES
-        else:
-            mocked_responses = RESPONSES_V1
-            # if stream:
-            #     mocked_responses = STREAMED_RESPONSES_V1
+        mocked_responses = RESPONSES_V1
+        # if stream:
+        #     mocked_responses = STREAMED_RESPONSES_V1
 
         for k, v in mocked_responses.items():
             if prompt.startswith(k):
@@ -716,16 +711,16 @@ def simple_get(gemini_version, extract_shortened_prompt):
         self.end_headers()
 
         # Send response body
-        if stream and status_code < 400:
-            for resp in response:
-                data = json.dumps(resp).encode("utf-8")
-                if prompt == "Stream parsing error.":
-                    # Force a parsing error by writing an invalid streamed response.
-                    self.wfile.write(b"data: %s" % data)
-                else:
-                    self.wfile.write(b"data: %s\n\n" % data)
-        else:
-            self.wfile.write(json.dumps(response).encode("utf-8"))
+        # if stream and status_code < 400:
+        #     for resp in response:
+        #         data = json.dumps(resp).encode("utf-8")
+        #         if prompt == "Stream parsing error.":
+        #             # Force a parsing error by writing an invalid streamed response.
+        #             self.wfile.write(b"data: %s" % data)
+        #         else:
+        #             self.wfile.write(b"data: %s\n\n" % data)
+        # else:
+        self.wfile.write(json.dumps(response).encode("utf-8"))
         return
 
     return _simple_get
@@ -747,10 +742,7 @@ def MockExternalGeminiServer(simple_get):
 @pytest.fixture(scope="session")
 def extract_shortened_prompt(gemini_version):
     def _extract_shortened_prompt(content):
-        if gemini_version < (1, 0):
-            prompt = content.get("prompt", None) or content.get("input", None) or content.get("messages")[0]["content"]
-        else:
-            prompt = content.get("input", None) or content.get("messages")[0]["content"]
+        prompt = content.get("input", None) or content.get("messages")[0]["content"]
         return prompt
 
     return _extract_shortened_prompt

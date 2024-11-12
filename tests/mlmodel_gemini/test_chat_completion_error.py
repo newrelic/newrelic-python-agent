@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import os
+import google.auth as gauth
 import google.generativeai as genai
 import pytest
 from testing_support.fixtures import (
@@ -102,7 +103,7 @@ expected_events_on_no_model_error = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(genai.InvalidRequestError),
+    callable_name(genai.types.IncompleteIterationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -126,11 +127,12 @@ expected_events_on_no_model_error = [
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model(set_trace_info):
-    with pytest.raises(genai.InvalidRequestError):
+    with pytest.raises(genai.types.IncompleteIterationError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         with WithLlmCustomAttributes({"context": "attr"}):
-            genai.generate_content(
+            model.generate_content(
                 _test_gemini_chat_completion_messages,
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.7
@@ -142,7 +144,7 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info):
 @disabled_ai_monitoring_record_content_settings
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(genai.InvalidRequestError),
+    callable_name(genai.types.IncompleteIterationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -166,10 +168,11 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info):
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model_no_content(set_trace_info):
-    with pytest.raises(genai.InvalidRequestError):
+    with pytest.raises(genai.types.IncompleteIterationError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        genai.generate_content(
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        model.generate_content(
             _test_gemini_chat_completion_messages,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7
@@ -217,7 +220,7 @@ expected_events_on_invalid_model_error = [
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
-    callable_name(genai.InvalidRequestError),
+    callable_name(genai.types.IncompleteIterationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -242,11 +245,11 @@ expected_events_on_invalid_model_error = [
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model_with_token_count(set_trace_info):
-    with pytest.raises(genai.InvalidRequestError):
+    with pytest.raises(genai.types.IncompleteIterationError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
-
-        genai.generate_content(
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        model.generate_content(
             model="does-not-exist",
             message="Model does not exist.",
             generation_config=genai.types.GenerationConfig(
@@ -259,7 +262,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(genai.InvalidRequestError),
+    callable_name(genai.types.IncompleteIterationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -284,10 +287,11 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model(set_trace_info):
-    with pytest.raises(openai.InvalidRequestError):
+    with pytest.raises(genai.types.IncompleteIterationError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        genai.generate_content(
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        model.generate_content(
             model="does-not-exist",
             message="Model does not exist.",
             generation_config=genai.types.GenerationConfig(
@@ -351,7 +355,7 @@ expected_events_on_auth_error = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(genai.error.AuthenticationError),
+    callable_name(gauth.exceptions.DefaultCredentialsError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -373,11 +377,14 @@ expected_events_on_auth_error = [
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_authentication_error(monkeypatch, set_trace_info):
-    with pytest.raises(genai.error.AuthenticationError):
+    with pytest.raises(gauth.exceptions.DefaultCredentialsError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        monkeypatch.setattr(genai, "api_key", None)  # openai.api_key = None
-        genai.generate_content(
+        monkeypatch.setenv("API_KEY", None, prepend=None)
+        genai.configure(api_key=os.environ["API_KEY"])
+        #monkeypatch.setattr(genai.configure, "api_key", os.environ["API_KEY"])  # openai.api_key = None
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        model.generate_content(
             _test_gemini_chat_completion_messages,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7
@@ -423,7 +430,7 @@ expected_events_on_wrong_api_key_error = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(genai.error.AuthenticationError),
+    callable_name(gauth.exceptions.DefaultCredentialsError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -447,10 +454,13 @@ expected_events_on_wrong_api_key_error = [
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
-    with pytest.raises(genai.error.AuthenticationError):
+    with pytest.raises(gauth.exceptions.DefaultCredentialsError):
         set_trace_info()
-        monkeypatch.setattr(genai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
-        genai.generate_content(
+        monkeypatch.setenv("API_KEY", None, prepend=None)
+        genai.configure(api_key=os.environ["API_KEY"])
+        #monkeypatch.setattr(genai.configure, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        model.generate_content(
             "Invalid API key.",
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7
@@ -463,7 +473,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(genai.InvalidRequestError),
+    callable_name(genai.types.IncompleteIterationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -487,11 +497,12 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_info):
-    with pytest.raises(genai.InvalidRequestError):
+    with pytest.raises(genai.types.IncompleteIterationError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         loop.run_until_complete(
-            genai.generate_content(
+            model.generate_content(
                 _test_gemini_chat_completion_messages,
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.7
@@ -504,7 +515,7 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
-    callable_name(genai.InvalidRequestError),
+    callable_name(genai.types.IncompleteIterationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -528,11 +539,12 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, set_trace_info):
-    with pytest.raises(genai.InvalidRequestError):
+    with pytest.raises(genai.types.IncompleteIterationError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         loop.run_until_complete(
-            genai.generate_content(
+            model.generate_content(
                 _test_gemini_chat_completion_messages,
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.7
@@ -545,7 +557,7 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, s
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
-    callable_name(genai.InvalidRequestError),
+    callable_name(genai.types.IncompleteIterationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -570,11 +582,12 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, s
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model_with_token_count_async(loop, set_trace_info):
-    with pytest.raises(genai.InvalidRequestError):
+    with pytest.raises(genai.types.IncompleteIterationError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         loop.run_until_complete(
-            genai.generate_content(
+            model.generate_content(
                 "Model does not exist.",
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.7
@@ -587,7 +600,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count_as
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(genai.InvalidRequestError),
+    callable_name(genai.types.IncompleteIterationError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -612,11 +625,12 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count_as
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_trace_info):
-    with pytest.raises(genai.InvalidRequestError):
+    with pytest.raises(genai.types.IncompleteIterationError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         loop.run_until_complete(
-            genai.generate_content(
+            model.generate_content(
                 "Model does not exist.",
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.7
@@ -629,7 +643,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(genai.error.AuthenticationError),
+    callable_name(gauth.exceptions.DefaultCredentialsError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -651,12 +665,15 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
 @validate_custom_event_count(count=3)
 @background_task()
 def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace_info):
-    with pytest.raises(genai.error.AuthenticationError):
+    with pytest.raises(gauth.exceptions.DefaultCredentialsError):
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        monkeypatch.setattr(genai, "api_key", None)  # openai.api_key = None
+        monkeypatch.setenv("API_KEY", None, prepend=None)
+        genai.configure(api_key=os.environ["API_KEY"])
+        #monkeypatch.setattr(genai.configure, "api_key", None)  # openai.api_key = None
+        model = genai.GenerativeModel("gemini-1.5-flash")
         loop.run_until_complete(
-            genai.generate_content(
+            model.generate_content(
                 _test_gemini_chat_completion_messages,
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.7
@@ -669,7 +686,7 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(genai.error.AuthenticationError),
+    callable_name(gauth.exceptions.DefaultCredentialsError),
     exact_attrs={
         "agent": {},
         "intrinsic": {},
@@ -693,11 +710,14 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch, set_trace_info):
-    with pytest.raises(genai.error.AuthenticationError):
+    with pytest.raises(gauth.exceptions.DefaultCredentialsError):
         set_trace_info()
-        monkeypatch.setattr(genai, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
+        monkeypatch.setenv("API_KEY", None, prepend=None)
+        genai.configure(api_key=os.environ["API_KEY"])
+        #monkeypatch.setattr(genai.configure, "api_key", "DEADBEEF")  # openai.api_key = "DEADBEEF"
+        model = genai.GenerativeModel("gemini-1.5-flash")
         loop.run_until_complete(
-            genai.generate_content(
+            model.generate_content(
                 "Invalid API key.",
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.7

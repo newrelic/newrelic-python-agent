@@ -16,7 +16,7 @@ import json
 import os
 
 import pytest
-from tests.mlmodel_gemini._mock_external_gemini_server import (  # noqa: F401; pylint: disable=W0611
+from mlmodel_gemini._mock_external_gemini_server import (  # noqa: F401; pylint: disable=W0611
     MockExternalGeminiServer,
     extract_shortened_prompt,
     get_gemini_version,
@@ -53,17 +53,19 @@ collector_agent_registration = collector_agent_registration_fixture(
     linked_applications=["Python Agent Test (mlmodel_gemini)"],
 )
 
-if get_gemini_version() < (1, 0):
-    collect_ignore = [
-        "test_chat_completion_v1.py",
-        "test_chat_completion_error_v1.py",
-    ]
-else:
-    collect_ignore = [
-        "test_chat_completion.py",
-        "test_chat_completion_error.py",
-    ]
-
+# if get_gemini_version() < (1, 0):
+#     collect_ignore = [
+#         "test_chat_completion_v1.py",
+#         "test_chat_completion_error_v1.py",
+#     ]
+# else:
+#     collect_ignore = [
+#         "test_chat_completion.py",
+#         "test_chat_completion_error.py",
+#     ]
+collect_ignore = [
+    "test_chat_completion_error.py"
+]
 
 GEMINI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "gemini_audit.log")
 GEMINI_AUDIT_LOG_CONTENTS = {}
@@ -74,7 +76,7 @@ RECORDED_HEADERS = set(["x-request-id", "content-type"])
 @pytest.fixture(scope="session")
 def gemini_clients(gemini_version, MockExternalGeminiServer):  # noqa: F811
     """
-    This configures the openai client and returns it for gemini v1 and only configures
+    This configures the gemini client and returns it for gemini v1 and only configures
     gemini for v0 since there is no client.
     """
     import google.generativeai as genai
@@ -83,21 +85,26 @@ def gemini_clients(gemini_version, MockExternalGeminiServer):  # noqa: F811
 
     if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES", False):
         with MockExternalGeminiServer() as server:
-            genai.configure(api_key="NOT-A-REAL-SECRET")
-            model = genai.GenerativeModel("NOT-A-REAL-MODEL")
+            #genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+            model = genai.GenerativeModel("mymodel")
             yield (model)
     else:
-        gemini_api_key = os.environ.get("GEMINI_API_KEY")
-        gemini_model = os.environ.get("GEMINI_API_KEY")
+        gemini_api_key = os.environ["GEMINI_API_KEY"]
+        gemini_model = os.environ["GEMINI_MODEL"]
         if not gemini_api_key:
             raise RuntimeError("GEMINI_API_KEY environment variable required.")
 
-        genai.configure(api_key=gemini_api_key)
-        model = genai.GenerativeModel(gemini_model)
-        yield (model)
+    genai.configure(api_key=gemini_api_key)
+    model = genai.GenerativeModel(gemini_model)
+    yield (model)
 
 @pytest.fixture(scope="session")
 def sync_gemini_client(gemini_clients):
+    sync_client = gemini_clients
+    return sync_client
+
+@pytest.fixture(scope="session")
+def export(gemini_clients):
     sync_client, _ = gemini_clients
     return sync_client
 
@@ -113,13 +120,13 @@ def gemini_server(
 ):
     """
     This fixture will either create a mocked backend for testing purposes, or will
-    set up an audit log file to log responses of the real OpenAI backend to a file.
-    The behavior can be controlled by setting NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES=1 as
-    an environment variable to run using the real OpenAI backend. (Default: mocking)
+    set up an audit log file to log responses of the real Gemini backend to a file.
+    The behavior can be controlled by setting NEW_RELIC_TESTING_RECORD_gemini_RESPONSES=1 as
+    an environment variable to run using the real Gemini backend. (Default: mocking)
     """
     from newrelic.core.config import _environ_as_bool
 
-    if _environ_as_bool("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
+    if _environ_as_bool("NEW_RELIC_TESTING_RECORD_gemini_RESPONSES", False):
         # Apply function wrappers to record data
         wrap_function_wrapper("httpx._client", "Client.send", wrap_httpx_client_send)
         wrap_function_wrapper(
@@ -132,7 +139,7 @@ def gemini_server(
         with open(GEMINI_AUDIT_LOG_FILE, "w") as audit_log_fp:
             json.dump(GEMINI_AUDIT_LOG_CONTENTS, fp=audit_log_fp, indent=4)
     else:
-        # We are mocking openai responses so we don't need to do anything in this case.
+        # We are mocking gemini responses so we don't need to do anything in this case.
         yield
 
 
@@ -170,20 +177,20 @@ def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
                 GEMINI_AUDIT_LOG_CONTENTS[prompt][2] = json.loads(response.read())
         else:
             body = json.loads(response.content.decode("utf-8"))
-            OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to log
+            GEMINI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to log
         return response
 
     return _wrap_httpx_client_send
 
 
 @pytest.fixture(scope="session")
-def wrap_openai_api_requestor_interpret_response():
-    def _wrap_openai_api_requestor_interpret_response(wrapped, instance, args, kwargs):
+def wrap_gemini_api_requestor_interpret_response():
+    def _wrap_gemini_api_requestor_interpret_response(wrapped, instance, args, kwargs):
         rbody, rcode, rheaders = bind_request_interpret_response_params(*args, **kwargs)
         headers = dict(
             filter(
                 lambda k: k[0].lower() in RECORDED_HEADERS
-                or k[0].lower().startswith("openai")
+                or k[0].lower().startswith("gemini")
                 or k[0].lower().startswith("x-ratelimit"),
                 rheaders.items(),
             )
@@ -191,15 +198,15 @@ def wrap_openai_api_requestor_interpret_response():
 
         if rcode >= 400 or rcode < 200:
             rbody = json.loads(rbody)
-            OPENAI_AUDIT_LOG_CONTENTS["error"] = headers, rcode, rbody  # Append response data to audit log
+            GEMINI_AUDIT_LOG_CONTENTS["error"] = headers, rcode, rbody  # Append response data to audit log
         return wrapped(*args, **kwargs)
 
-    return _wrap_openai_api_requestor_interpret_response
+    return _wrap_gemini_api_requestor_interpret_response
 
 
 @pytest.fixture(scope="session")
-def wrap_openai_api_requestor_request(extract_shortened_prompt):  # noqa: F811
-    def _wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
+def wrap_gemini_api_requestor_request(extract_shortened_prompt):  # noqa: F811
+    def _wrap_gemini_api_requestor_request(wrapped, instance, args, kwargs):
         params = bind_request_params(*args, **kwargs)
         if not params:
             return wrapped(*args, **kwargs)
@@ -217,17 +224,17 @@ def wrap_openai_api_requestor_request(extract_shortened_prompt):  # noqa: F811
             headers = dict(
                 filter(
                     lambda k: k[0].lower() in RECORDED_HEADERS
-                    or k[0].lower().startswith("openai")
+                    or k[0].lower().startswith("gemini")
                     or k[0].lower().startswith("x-ratelimit"),
                     headers.items(),
                 )
             )
-            OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, 200, data
+            GEMINI_AUDIT_LOG_CONTENTS[prompt] = headers, 200, data
         else:
-            OPENAI_AUDIT_LOG_CONTENTS[prompt] = [None, 200, []]
+            GEMINI_AUDIT_LOG_CONTENTS[prompt] = [None, 200, []]
         return result
 
-    return _wrap_openai_api_requestor_request
+    return _wrap_gemini_api_requestor_request
 
 
 def bind_request_params(method, url, params=None, *args, **kwargs):
@@ -239,7 +246,7 @@ def bind_request_interpret_response_params(result, stream):
 
 
 @pytest.fixture(scope="session")
-def generator_proxy(openai_version):
+def generator_proxy(gemini_version):
     class GeneratorProxy(ObjectProxy):
         def __init__(self, wrapped):
             super(GeneratorProxy, self).__init__(wrapped)
@@ -263,21 +270,21 @@ def generator_proxy(openai_version):
             try:
                 return_val = self.__wrapped__.__next__()
                 if return_val:
-                    prompt = [k for k in OPENAI_AUDIT_LOG_CONTENTS.keys()][-1]
-                    if openai_version < (1, 0):
+                    prompt = [k for k in GEMINI_AUDIT_LOG_CONTENTS.keys()][-1]
+                    if gemini_version < (1, 0):
                         headers = dict(
                             filter(
                                 lambda k: k[0].lower() in RECORDED_HEADERS
-                                or k[0].lower().startswith("openai")
+                                or k[0].lower().startswith("gemini")
                                 or k[0].lower().startswith("x-ratelimit"),
                                 return_val._nr_response_headers.items(),
                             )
                         )
-                        OPENAI_AUDIT_LOG_CONTENTS[prompt][0] = headers
-                        OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.to_dict_recursive())
+                        GEMINI_AUDIT_LOG_CONTENTS[prompt][0] = headers
+                        GEMINI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.to_dict_recursive())
                     else:
                         if not getattr(return_val, "data", "").startswith("[DONE]"):
-                            OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.json())
+                            GEMINI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.json())
                 return return_val
             except Exception as e:
                 raise

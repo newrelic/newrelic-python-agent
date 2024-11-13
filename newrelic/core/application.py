@@ -26,8 +26,6 @@ import warnings
 from functools import partial
 
 from newrelic.common.object_names import callable_name
-
-# from newrelic.common.encoding_utils import json_encode
 from newrelic.core.adaptive_sampler import AdaptiveSampler
 from newrelic.core.config import global_settings
 from newrelic.core.custom_event import create_custom_event

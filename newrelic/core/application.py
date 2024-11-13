@@ -58,7 +58,6 @@ MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 2.0
 
 
 class Application:
-
     """Class which maintains recorded data for a single application."""
 
     def __init__(self, app_name, linked_applications=None):

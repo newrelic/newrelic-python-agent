@@ -35,7 +35,7 @@ from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data
 _logger = logging.getLogger(__name__)
 
 
-class Session():
+class Session:
     PROTOCOL = AgentProtocol
     OTLP_PROTOCOL = OtlpProtocol
     CLIENT = ApplicationModeClient
@@ -208,6 +208,12 @@ class Session():
 
         payload = (self.agent_run_id, profile_data)
         return self._protocol.send("profile_data", payload)
+
+    def send_loaded_modules(self, environment_info):
+        """Called to submit loaded modules."""
+
+        payload = ("Jars", environment_info)
+        return self._protocol.send("update_loaded_modules", payload)
 
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against

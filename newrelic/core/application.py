@@ -31,7 +31,7 @@ from newrelic.core.config import global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.data_collector import create_session
 from newrelic.core.database_utils import SQLConnections
-from newrelic.core.environment import environment_settings
+from newrelic.core.environment import environment_settings, plugins
 from newrelic.core.internal_metrics import (
     InternalTrace,
     InternalTraceContext,
@@ -52,9 +52,10 @@ from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
+MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 2.0
 
-class Application():
 
+class Application:
     """Class which maintains recorded data for a single application."""
 
     def __init__(self, app_name, linked_applications=None):
@@ -107,6 +108,8 @@ class Application():
         self._data_samplers_lock = threading.Lock()
         self._data_samplers_started = False
 
+        self._remaining_plugins = True
+
         # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
         # avoid a race condition in setting it later. Otherwise we have
@@ -120,6 +123,7 @@ class Application():
         }
 
         self._data_samplers = []
+        self.modules = []
 
         # Thread profiler and state of whether active or not.
 
@@ -128,6 +132,8 @@ class Application():
         # self._send_profile_data = False
 
         self.profile_manager = profile_session_manager()
+
+        self.plugins = plugins()  # initialize the generator
 
         self._uninstrumented = []
 
@@ -1247,6 +1253,28 @@ class Application():
                                 data_sampler.name,
                             )
 
+                    # Send environment plugin list
+
+                    stopwatch_start = time.time()
+                    while (
+                        configuration
+                        and configuration.package_reporting.enabled
+                        and self._remaining_plugins
+                        and ((time.time() - stopwatch_start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST)
+                    ):
+                        try:
+                            module_info = next(self.plugins)
+                            self.modules.append(module_info)
+                        except StopIteration:
+                            self._remaining_plugins = False
+
+                    # Send the accumulated environment plugin list if not empty
+                    if self.modules:
+                        self._active_session.send_loaded_modules(self.modules)
+
+                        # Reset the modules list every harvest cycle
+                        self.modules = []
+
                     # Add a metric we can use to track how many harvest
                     # periods have occurred.
 
@@ -1679,6 +1707,20 @@ class Application():
         # data samplers or user provided custom metric data sources.
 
         self.stop_data_samplers()
+
+        # Finishes collecting environment plugin information
+        # if this has not been completed during harvest
+        # lifetime of the application
+
+        while self.configuration and self.configuration.package_reporting.enabled and self._remaining_plugins:
+            try:
+                module_info = next(self.plugins)
+                self.modules.append(module_info)
+            except StopIteration:
+                self._remaining_plugins = False
+                if self.modules:
+                    self._active_session.send_loaded_modules(self.modules)
+                    self.modules = []
 
         # Now shutdown the actual agent session.
 

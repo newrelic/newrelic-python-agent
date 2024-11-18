@@ -16,7 +16,7 @@ import json
 import os
 import pytest
 
-from newrelic.config import _process_labels_setting, _map_labels
+from newrelic.config import _process_labels_setting, _map_as_mapping
 from newrelic.core.config import global_settings
 
 from testing_support.fixtures import override_application_settings
@@ -41,7 +41,7 @@ _labels_tests = [_parametrize_test(t) for t in _load_tests()]
 @pytest.mark.parametrize('name,labelString,warning,expected', _labels_tests)
 def test_labels(name, labelString, warning, expected):
 
-    parsed_labels = _map_labels(labelString)
+    parsed_labels = _map_as_mapping(labelString)
     _process_labels_setting(parsed_labels)
 
     settings = global_settings()

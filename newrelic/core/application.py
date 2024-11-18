@@ -548,7 +548,9 @@ class Application:
             application_logging_local_decorating = (
                 configuration.application_logging.enabled and configuration.application_logging.local_decorating.enabled
             )
-            ai_monitoring_streaming = configuration.ai_monitoring.streaming.enabled
+            application_logging_labels = (
+                application_logging_forwarding and configuration.application_logging.forwarding.labels.enabled
+            )
             internal_metric(
                 f"Supportability/Logging/Forwarding/Python/{'enabled' if application_logging_forwarding else 'disabled'}",
                 1,
@@ -561,6 +563,13 @@ class Application:
                 f"Supportability/Logging/Metrics/Python/{'enabled' if application_logging_metrics else 'disabled'}",
                 1,
             )
+            internal_metric(
+                f"Supportability/Logging/Labels/Python/{'enabled' if application_logging_labels else 'disabled'}",
+                1,
+            )
+
+            # AI monitoring feature toggle metrics
+            ai_monitoring_streaming = configuration.ai_monitoring.streaming.enabled
             if not ai_monitoring_streaming:
                 internal_metric(
                     "Supportability/Python/ML/Streaming/Disabled",

@@ -164,7 +164,7 @@ def _map_feature_flag(s):
     return set(s.split())
 
 
-def _map_labels(s):
+def _map_as_mapping(s):
     return newrelic.core.config._environ_as_mapping(name="", default=s)
 
 
@@ -208,6 +208,10 @@ def _map_strip_exception_messages_allowlist(s):
 
 def _map_inc_excl_attributes(s):
     return newrelic.core.config._parse_attributes(s)
+
+
+def _map_case_insensitive_excl_labels(s):
+    return [v.lower() for v in newrelic.core.config._parse_attributes(s)]
 
 
 def _map_default_host_value(license_key):
@@ -311,7 +315,7 @@ def _process_setting(section, option, getter, mapper):
 def _process_configuration(section):
     _process_setting(section, "feature_flag", "get", _map_feature_flag)
     _process_setting(section, "app_name", "get", None)
-    _process_setting(section, "labels", "get", _map_labels)
+    _process_setting(section, "labels", "get", _map_as_mapping)
     _process_setting(section, "license_key", "get", _map_default_host_value)
     _process_setting(section, "api_key", "get", None)
     _process_setting(section, "host", "get", None)
@@ -542,6 +546,9 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
     _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.custom_attributes", "get", _map_as_mapping)
+    _process_setting(section, "application_logging.forwarding.labels.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.labels.exclude", "get", _map_case_insensitive_excl_labels)
     _process_setting(section, "application_logging.forwarding.context_data.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.context_data.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "application_logging.forwarding.context_data.exclude", "get", _map_inc_excl_attributes)

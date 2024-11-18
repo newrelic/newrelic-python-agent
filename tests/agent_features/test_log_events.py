@@ -441,7 +441,7 @@ def test_label_forwarding_enabled_exclude():
     session = list(txn.application._agent._applications.values())[0]._active_session
 
     common = session.get_log_events_common_block()
-    # Excluded label should not appear, and other labels should be prefixed with 'tag.'
+    # Excluded label should not appear, and other labels should be prefixed with 'tags.'
     assert common == {"tags.testlabel1": "A", "tags.testlabel2": "B"}
 
 

@@ -465,13 +465,39 @@ def test_label_forwarding_disabled():
 
 
 @override_application_settings({
-    "application_logging.forwarding.custom_attributes": [("custom_attr_1", "value"), ("custom_attr_2", "a" * 256)],
+    "application_logging.forwarding.custom_attributes": [("custom_attr_1", "value 1"), ("custom_attr_2", "value 2")],
 })
 @background_task()
-def test_global_custom_attribute_forwarding():
+def test_global_custom_attribute_forwarding_enabled():
     txn = current_transaction()
     session = list(txn.application._agent._applications.values())[0]._active_session
 
     common = session.get_log_events_common_block()
-    # Both attrs should appear, and the 2nd attr should be truncated to the max user attribute length
-    assert common == {"custom_attr_1": "value", "custom_attr_2": "a" * 255}
+    # Both attrs should appear
+    assert common == {"custom_attr_1": "value 1", "custom_attr_2": "value 2"}
+
+
+@override_application_settings({
+    "application_logging.forwarding.custom_attributes": [("custom_attr_1", "a" * 256)],
+})
+@background_task()
+def test_global_custom_attribute_forwarding_truncation():
+    txn = current_transaction()
+    session = list(txn.application._agent._applications.values())[0]._active_session
+
+    common = session.get_log_events_common_block()
+    # Attribute value should be truncated to the max user attribute length
+    assert common == {"custom_attr_1": "a" * 255}
+
+
+@override_application_settings({
+    "application_logging.forwarding.custom_attributes": [(f"custom_attr_{i+1}", "value") for i in range(129)],
+})
+@background_task()
+def test_global_custom_attribute_forwarding_max_num_attrs():
+    txn = current_transaction()
+    session = list(txn.application._agent._applications.values())[0]._active_session
+
+    common = session.get_log_events_common_block()
+    # Should be truncated to the max number of user attributes
+    assert common == {f"custom_attr_{i+1}": "value" for i in range(128)}

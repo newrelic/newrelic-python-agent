@@ -167,7 +167,7 @@ class Session:
                 custom_attributes = {}
                 for attr_name, attr_value in self.configuration.application_logging.forwarding.custom_attributes:
                     if len(custom_attributes) >= MAX_NUM_USER_ATTRIBUTES:
-                        _logger.debug("Maximum number of custom attributes already added. Dropping attribute: %r=%r", attr_name, value)
+                        _logger.debug("Maximum number of custom attributes already added. Dropping attribute: %r=%r", attr_name, attr_value)
                         break
 
                     key, val = process_user_attribute(attr_name, attr_value)

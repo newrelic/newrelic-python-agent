@@ -79,6 +79,11 @@ def instance_info(collection):
     if len(nodes) == 1:
         return next(iter(nodes))
 
+    # If there are 0 nodes we're not currently connected, return nothing.
+    # If there are 2+ nodes we're in a load balancing setup.
+    # Unfortunately we can't rely on a deeper method to determine the actual server we're connected to in all cases.
+    # We can't report more than 1 server for instance info, so we opt here to ignore reporting the host/port and
+    # leave it empty to avoid confusing customers by guessing and potentially reporting the wrong server.
     return None, None
 
 

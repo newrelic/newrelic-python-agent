@@ -16,7 +16,6 @@ import sqlite3
 
 import pymongo
 import pytest
-from pymongo.asynchronous.mongo_client import AsyncMongoClient
 from testing_support.db_settings import mongodb_settings
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
@@ -36,6 +35,8 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 # Skip if AsyncMongoClient has not been implemented yet
 if get_package_version_tuple("pymongo") < (4, 9, 0):
     pytest.skip(allow_module_level=True, reason="AsyncMongoClient not available.")
+
+from pymongo.asynchronous.mongo_client import AsyncMongoClient
 
 DB_SETTINGS = mongodb_settings()[0]
 MONGODB_HOST = DB_SETTINGS["host"]

@@ -18,14 +18,14 @@ from testing_support.db_settings import mongodb_settings
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 # Skip if AsyncMongoClient has not been implemented yet
-if get_package_version_tuple("pymongo") < (4, 0, 0):
-    # PyMongo v3
+if get_package_version_tuple("pymongo") < (4, 9, 0):
+    # PyMongo 3.0-4.8
     from pymongo.mongo_client import MongoClient
 
     # Bypass the fact that there's only 1 client class
     AsyncMongoClient = MongoClient
 else:
-    # PyMongo v4
+    # PyMongo 4.9+
     from pymongo.asynchronous.mongo_client import AsyncMongoClient
     from pymongo.synchronous.mongo_client import MongoClient
 

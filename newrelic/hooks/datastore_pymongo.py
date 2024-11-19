@@ -14,54 +14,116 @@
 
 import sys
 
-from newrelic.api.datastore_trace import wrap_datastore_trace
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.function_trace import wrap_function_trace
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
-_pymongo_client_methods = (
-    "save",
-    "insert",
-    "update",
-    "drop",
-    "remove",
-    "find_one",
-    "find",
-    "count",
-    "create_index",
-    "ensure_index",
-    "drop_indexes",
-    "drop_index",
-    "reindex",
-    "index_information",
-    "options",
-    "group",
-    "rename",
-    "distinct",
-    "map_reduce",
-    "inline_map_reduce",
-    "find_and_modify",
-    "initialize_unordered_bulk_op",
-    "initialize_ordered_bulk_op",
-    "bulk_write",
-    "insert_one",
-    "insert_many",
-    "replace_one",
-    "update_one",
-    "update_many",
-    "delete_one",
-    "delete_many",
-    "find_raw_batches",
-    "parallel_scan",
-    "create_indexes",
-    "list_indexes",
+
+_pymongo_client_async_methods = (
     "aggregate",
     "aggregate_raw_batches",
+    "bulk_write",
+    "count_documents",
+    "create_index",
+    "create_indexes",
+    "create_search_index",
+    "create_search_indexes",
+    "delete_many",
+    "delete_one",
+    "distinct",
+    "drop",
+    "drop_index",
+    "drop_indexes",
+    "drop_search_index",
+    "estimated_document_count",
+    "find_one",
     "find_one_and_delete",
     "find_one_and_replace",
     "find_one_and_update",
+    "index_information",
+    "insert_many",
+    "insert_one",
+    "list_indexes",
+    "list_search_indexes",
+    "options",
+    "rename",
+    "replace_one",
+    "update_many",
+    "update_one",
+    "update_search_index",
+    "watch",
+)
+
+_pymongo_client_sync_methods = (
+    "find_raw_batches",
+    "find",
+    # Legacy methods from PyMongo 3
+    "count",
+    "ensure_index",
+    "find_and_modify",
+    "group",
+    "initialize_ordered_bulk_op",
+    "initialize_unordered_bulk_op",
+    "inline_map_reduce",
+    "insert",
+    "map_reduce",
+    "parallel_scan",
+    "reindex",
+    "remove",
+    "save",
+    "update",
 )
 
 
-def instrument_pymongo_pool(module):
+def instance_info(collection):
+    nodes = collection.database.client.nodes
+    if len(nodes) == 1:
+        return next(iter(nodes))
+
+    return None, None
+
+
+def wrap_pymongo_method(module, class_name, method_name, is_async=False):
+    cls = getattr(module, class_name)
+    if not hasattr(cls, method_name):
+        return
+
+    # Define wrappers as closures to preserve method_name
+    def _wrap_pymongo_method_sync(wrapped, instance, args, kwargs):
+        target = instance.name
+        database_name = instance.database.name
+        with DatastoreTrace(
+            product="MongoDB", target=target, operation=method_name, database_name=database_name
+        ) as trace:
+            response = wrapped(*args, **kwargs)
+
+            # Gather instance info after response to ensure client is conncected
+            address = instance_info(instance)
+            trace.host = address[0]
+            trace.port_path_or_id = address[1]
+
+            return response
+
+    async def _wrap_pymongo_method_async(wrapped, instance, args, kwargs):
+        target = instance.name
+        database_name = instance.database.name
+        with DatastoreTrace(
+            product="MongoDB", target=target, operation=method_name, database_name=database_name
+        ) as trace:
+            response = await wrapped(*args, **kwargs)
+
+            # Gather instance info after response to ensure client is conncected
+            address = instance_info(instance)
+            trace.host = address[0]
+            trace.port_path_or_id = address[1]
+
+            return response
+
+    wrapper = _wrap_pymongo_method_async if is_async else _wrap_pymongo_method_sync
+    wrap_function_wrapper(module, f"{class_name}.{method_name}", wrapper)
+
+
+def instrument_pymongo_synchronous_pool(module):
     # Exit early if this is a reimport of code from the newer module location
     moved_module = "pymongo.synchronous.pool"
     if module.__name__ != moved_module and moved_module in sys.modules:
@@ -76,8 +138,18 @@ def instrument_pymongo_pool(module):
         module, "Connection.__init__", name=f"{module.__name__}:Connection.__init__", terminal=True, rollup=rollup
     )
 
+def instrument_pymongo_asynchronous_pool(module):
+    rollup = ("Datastore/all", "Datastore/MongoDB/all")
 
-def instrument_pymongo_mongo_client(module):
+    # Must name function explicitly as pymongo overrides the
+    # __getattr__() method in a way that breaks introspection.
+
+    wrap_function_trace(
+        module, "AsyncConnection.__init__", name=f"{module.__name__}:AsyncConnection.__init__", terminal=True, rollup=rollup
+    )
+
+
+def instrument_pymongo_synchronous_mongo_client(module):
     # Exit early if this is a reimport of code from the newer module location
     moved_module = "pymongo.synchronous.mongo_client"
     if module.__name__ != moved_module and moved_module in sys.modules:
@@ -92,18 +164,34 @@ def instrument_pymongo_mongo_client(module):
         module, "MongoClient.__init__", name=f"{module.__name__}:MongoClient.__init__", terminal=True, rollup=rollup
     )
 
+def instrument_pymongo_asynchronous_mongo_client(module):
+    rollup = ("Datastore/all", "Datastore/MongoDB/all")
 
-def instrument_pymongo_collection(module):
+    # Must name function explicitly as pymongo overrides the
+    # __getattr__() method in a way that breaks introspection.
+
+    wrap_function_trace(
+        module, "AsyncMongoClient.__init__", name=f"{module.__name__}:AsyncMongoClient.__init__", terminal=True, rollup=rollup
+    )
+
+
+def instrument_pymongo_synchronous_collection(module):
     # Exit early if this is a reimport of code from the newer module location
     moved_module = "pymongo.synchronous.collection"
     if module.__name__ != moved_module and moved_module in sys.modules:
         return
 
-    def _collection_name(collection, *args, **kwargs):
-        return collection.name
+    if hasattr(module, "Collection"):
+        for method_name in _pymongo_client_sync_methods:
+            wrap_pymongo_method(module, "Collection", method_name, is_async=False)
+        for method_name in _pymongo_client_async_methods:
+            # Intentionally set is_async=False for sync collection
+            wrap_pymongo_method(module, "Collection", method_name, is_async=False)
 
-    for name in _pymongo_client_methods:
-        if hasattr(module.Collection, name):
-            wrap_datastore_trace(
-                module, f"Collection.{name}", product="MongoDB", target=_collection_name, operation=name
-            )
+
+def instrument_pymongo_asynchronous_collection(module):
+    if hasattr(module, "AsyncCollection"):
+        for method_name in _pymongo_client_sync_methods:
+            wrap_pymongo_method(module, "AsyncCollection", method_name, is_async=False)
+        for method_name in _pymongo_client_async_methods:
+            wrap_pymongo_method(module, "AsyncCollection", method_name, is_async=True)

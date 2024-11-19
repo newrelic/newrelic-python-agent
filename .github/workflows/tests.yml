@@ -1006,12 +1006,12 @@ jobs:
 
   mongodb:
     env:
-      TOTAL_GROUPS: 1
+      TOTAL_GROUPS: 2
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1]
+        group-number: [1, 2]
 
     runs-on: ubuntu-latest
     container:
@@ -1027,7 +1027,7 @@ jobs:
           - 8081:27017
         # Set health checks to wait until mongodb has started
         options: >-
-          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongo localhost:27017/test --quiet || exit 1"
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

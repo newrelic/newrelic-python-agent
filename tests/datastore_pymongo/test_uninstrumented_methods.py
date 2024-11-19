@@ -13,9 +13,8 @@
 # limitations under the License.
 
 import pytest
-
-from pymongo.synchronous.mongo_client import MongoClient
 from pymongo.asynchronous.mongo_client import AsyncMongoClient
+from pymongo.synchronous.mongo_client import MongoClient
 from testing_support.db_settings import mongodb_settings
 
 DB_SETTINGS = mongodb_settings()[0]

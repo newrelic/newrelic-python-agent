@@ -14,15 +14,14 @@
 
 import sqlite3
 
-import pytest
-
 import pymongo
+import pytest
 from pymongo.asynchronous.mongo_client import AsyncMongoClient
 from testing_support.db_settings import mongodb_settings
-from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
 )
@@ -34,7 +33,7 @@ from newrelic.api.background_task import background_task
 from newrelic.common import system_info
 from newrelic.common.package_version_utils import get_package_version_tuple
 
-# Skip if AsyncMongoClient has not been implemented yet 
+# Skip if AsyncMongoClient has not been implemented yet
 if get_package_version_tuple("pymongo") < (4, 9, 0):
     pytest.skip(allow_module_level=True, reason="AsyncMongoClient not available.")
 

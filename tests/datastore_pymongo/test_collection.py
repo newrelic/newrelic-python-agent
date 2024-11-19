@@ -16,10 +16,10 @@ import sqlite3
 
 import pymongo
 from testing_support.db_settings import mongodb_settings
-from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_database_duration import (
     validate_database_duration,
 )
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
 )

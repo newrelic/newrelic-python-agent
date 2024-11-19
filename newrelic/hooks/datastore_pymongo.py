@@ -18,7 +18,6 @@ from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.function_trace import wrap_function_trace
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
-
 _pymongo_client_async_methods = (
     "aggregate",
     "aggregate_raw_batches",
@@ -138,6 +137,7 @@ def instrument_pymongo_synchronous_pool(module):
         module, "Connection.__init__", name=f"{module.__name__}:Connection.__init__", terminal=True, rollup=rollup
     )
 
+
 def instrument_pymongo_asynchronous_pool(module):
     rollup = ("Datastore/all", "Datastore/MongoDB/all")
 
@@ -145,7 +145,11 @@ def instrument_pymongo_asynchronous_pool(module):
     # __getattr__() method in a way that breaks introspection.
 
     wrap_function_trace(
-        module, "AsyncConnection.__init__", name=f"{module.__name__}:AsyncConnection.__init__", terminal=True, rollup=rollup
+        module,
+        "AsyncConnection.__init__",
+        name=f"{module.__name__}:AsyncConnection.__init__",
+        terminal=True,
+        rollup=rollup,
     )
 
 
@@ -164,6 +168,7 @@ def instrument_pymongo_synchronous_mongo_client(module):
         module, "MongoClient.__init__", name=f"{module.__name__}:MongoClient.__init__", terminal=True, rollup=rollup
     )
 
+
 def instrument_pymongo_asynchronous_mongo_client(module):
     rollup = ("Datastore/all", "Datastore/MongoDB/all")
 
@@ -171,7 +176,11 @@ def instrument_pymongo_asynchronous_mongo_client(module):
     # __getattr__() method in a way that breaks introspection.
 
     wrap_function_trace(
-        module, "AsyncMongoClient.__init__", name=f"{module.__name__}:AsyncMongoClient.__init__", terminal=True, rollup=rollup
+        module,
+        "AsyncMongoClient.__init__",
+        name=f"{module.__name__}:AsyncMongoClient.__init__",
+        terminal=True,
+        rollup=rollup,
     )
 
 

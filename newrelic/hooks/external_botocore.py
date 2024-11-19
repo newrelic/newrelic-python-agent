@@ -899,8 +899,8 @@ def wrap_lambda_invoke(wrapped):
 
         bound_args = bind_args(wrapped, args, kwargs)
         arn = bound_args["kwargs"].get("FunctionName")
-        if arn:
-            transaction._nr_lambda_arn = arn
+        if arn and hasattr(instance, "meta") and hasattr(instance.meta, "events"):
+            instance.meta.events._nr_lambda_arn = arn
 
         return wrapped(*args, **kwargs)
 
@@ -970,11 +970,10 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     with ExternalTrace(library="botocore", url=url, method=method, source=wrapped) as trace:
         try:
             trace._add_agent_attribute("aws.operation", operation_model.name)
-            lambda_arn = getattr(trace.transaction, "_nr_lambda_arn", None)
+            lambda_arn = getattr(instance._event_emitter, "_nr_lambda_arn", None)
             if lambda_arn:
                 trace._add_agent_attribute("cloud.platform", "aws_lambda")
                 trace._add_agent_attribute("cloud.resource_id", lambda_arn)
-                del trace.transaction._nr_lambda_arn
         except:
             pass
 

@@ -12,35 +12,126 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.function_trace import wrap_function_trace
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
-# This is NOT a fully-featured instrumentation for the motor library. Instead
-# this is a monkey-patch of the motor library to work around a bug that causes
-# the __name__ lookup on a MotorCollection object to fail. This bug was causing
-# customer's applications to fail when they used motor in Tornado applications.
+_motor_client_sync_methods = (
+    "aggregate_raw_batches",
+    "aggregate",
+    "find_raw_batches",
+    "find",
+    "list_indexes",
+    "list_search_indexes",
+    "watch",
+)
+
+_motor_client_async_methods = (
+    "bulk_write",
+    "count_documents",
+    "create_index",
+    "create_indexes",
+    "create_search_index",
+    "create_search_indexes",
+    "delete_many",
+    "delete_one",
+    "distinct",
+    "drop_index",
+    "drop_indexes",
+    "drop_search_index",
+    "drop",
+    "estimated_document_count",
+    "find_one_and_delete",
+    "find_one_and_replace",
+    "find_one_and_update",
+    "find_one",
+    "index_information",
+    "insert_many",
+    "insert_one",
+    "options",
+    "rename",
+    "replace_one",
+    "update_many",
+    "update_one",
+    "update_search_index",
+)
 
 
-def _nr_wrapper_Motor_getattr_(wrapped, instance, args, kwargs):
+def instance_info(collection):
+    nodes = collection.database.client.nodes
+    if len(nodes) == 1:
+        return next(iter(nodes))
 
-    def _bind_params(name, *args, **kwargs):
-        return name
-
-    name = _bind_params(*args, **kwargs)
-
-    if name.startswith('__') or name.startswith('_nr_'):
-        raise AttributeError(f'{instance.__class__.__name__} class has no attribute {name}. To access use object[{name!r}].')
-
-    return wrapped(*args, **kwargs)
+    return None, None
 
 
-def patch_motor(module):
-    if (hasattr(module, 'version_tuple') and
-            module.version_tuple >= (0, 6)):
+def wrap_motor_method(module, class_name, method_name, is_async=False):
+    cls = getattr(module, class_name)
+    if not hasattr(cls, method_name):
         return
 
-    patched_classes = ['MotorClient', 'MotorReplicaSetClient', 'MotorDatabase',
-            'MotorCollection']
-    for patched_class in patched_classes:
-        if hasattr(module, patched_class):
-            wrap_function_wrapper(module, f"{patched_class}.__getattr__",
-                    _nr_wrapper_Motor_getattr_)
+    # Define wrappers as closures to preserve method_name
+    def _wrap_motor_method_sync(wrapped, instance, args, kwargs):
+        target = instance.name
+        database_name = instance.database.name
+        with DatastoreTrace(
+            product="MongoDB", target=target, operation=method_name, database_name=database_name
+        ) as trace:
+            response = wrapped(*args, **kwargs)
+
+            # Gather instance info after response to ensure client is conncected
+            address = instance_info(instance)
+            trace.host = address[0]
+            trace.port_path_or_id = address[1]
+
+            return response
+
+    async def _wrap_motor_method_async(wrapped, instance, args, kwargs):
+        target = instance.name
+        database_name = instance.database.name
+        with DatastoreTrace(
+            product="MongoDB", target=target, operation=method_name, database_name=database_name
+        ) as trace:
+            response = await wrapped(*args, **kwargs)
+
+            # Gather instance info after response to ensure client is conncected
+            address = instance_info(instance)
+            trace.host = address[0]
+            trace.port_path_or_id = address[1]
+
+            return response
+
+    wrapper = _wrap_motor_method_async if is_async else _wrap_motor_method_sync
+    wrap_function_wrapper(module, f"{class_name}.{method_name}", wrapper)
+
+
+def instrument_motor_motor_asyncio(module):
+    if hasattr(module, "AsyncIOMotorClient"):
+        rollup = ("Datastore/all", "Datastore/MongoDB/all")
+        # Name function explicitly as motor and pymongo have a history of overriding the
+        # __getattr__() method in a way that breaks introspection.
+        wrap_function_trace(
+            module, "AsyncIOMotorClient.__init__", name=f"{module.__name__}:AsyncIOMotorClient.__init__", rollup=rollup
+        )
+
+    if hasattr(module, "AsyncIOMotorCollection"):
+        for method_name in _motor_client_sync_methods:
+            wrap_motor_method(module, "AsyncIOMotorCollection", method_name, is_async=False)
+        for method_name in _motor_client_async_methods:
+            wrap_motor_method(module, "AsyncIOMotorCollection", method_name, is_async=True)
+
+
+def instrument_motor_motor_tornado(module):
+    if hasattr(module, "MotorClient"):
+        rollup = ("Datastore/all", "Datastore/MongoDB/all")
+        # Name function explicitly as motor and pymongo have a history of overriding the
+        # __getattr__() method in a way that breaks introspection.
+        wrap_function_trace(
+            module, "MotorClient.__init__", name=f"{module.__name__}:MotorClient.__init__", rollup=rollup
+        )
+
+    if hasattr(module, "MotorCollection"):
+        for method_name in _motor_client_sync_methods:
+            wrap_motor_method(module, "MotorCollection", method_name, is_async=False)
+        for method_name in _motor_client_async_methods:
+            wrap_motor_method(module, "MotorCollection", method_name, is_async=True)

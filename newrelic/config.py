@@ -3719,7 +3719,8 @@ def _process_module_builtin_defaults():
         "valkey.commands.graph.commands", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_graph_commands"
     )
 
-    _process_module_definition("motor", "newrelic.hooks.datastore_motor", "patch_motor")
+    _process_module_definition("motor.motor_asyncio", "newrelic.hooks.datastore_motor", "instrument_motor_motor_asyncio")
+    _process_module_definition("motor.motor_tornado", "newrelic.hooks.datastore_motor", "instrument_motor_motor_tornado")
 
     _process_module_definition(
         "piston.resource",

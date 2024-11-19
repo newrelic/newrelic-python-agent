@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from pymongo.synchronous.mongo_client import MongoClient
+from pymongo.asynchronous.mongo_client import AsyncMongoClient
 from testing_support.db_settings import mongodb_settings
 
 DB_SETTINGS = mongodb_settings()[0]
@@ -33,8 +36,9 @@ IGNORED_METHODS = {
 }
 
 
-def test_sync_collection_uninstrumented_methods():
-    client = MongoClient(MONGODB_HOST, MONGODB_PORT)
+@pytest.mark.parametrize("client_cls", [MongoClient, AsyncMongoClient])
+def test_sync_collection_uninstrumented_methods(client_cls):
+    client = client_cls(MONGODB_HOST, MONGODB_PORT)
     collection = client["test"]["test"]
     methods = {m for m in dir(collection) if not m[0] == "_"} - IGNORED_METHODS
 

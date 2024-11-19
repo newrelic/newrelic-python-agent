@@ -133,7 +133,7 @@ jobs:
   # Tests
   python:
     env:
-      TOTAL_GROUPS: 20
+      TOTAL_GROUPS: 30
 
     strategy:
       fail-fast: false
@@ -160,6 +160,16 @@ jobs:
             18,
             19,
             20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
           ]
 
     runs-on: ubuntu-latest
@@ -316,12 +326,12 @@ jobs:
 
   postgres16:
     env:
-      TOTAL_GROUPS: 2
+      TOTAL_GROUPS: 3
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2]
+        group-number: [1, 2, 3]
 
     runs-on: ubuntu-latest
     container:
@@ -932,12 +942,12 @@ jobs:
 
   kafka:
     env:
-      TOTAL_GROUPS: 4
+      TOTAL_GROUPS: 6
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2, 3, 4]
+        group-number: [1, 2, 3, 4, 5, 6]
 
     runs-on: ubuntu-latest
     container:
@@ -1006,12 +1016,12 @@ jobs:
 
   mongodb:
     env:
-      TOTAL_GROUPS: 1
+      TOTAL_GROUPS: 2
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1]
+        group-number: [1, 2]
 
     runs-on: ubuntu-latest
     container:

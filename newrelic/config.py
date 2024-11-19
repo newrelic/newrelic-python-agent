@@ -164,7 +164,7 @@ def _map_feature_flag(s):
     return set(s.split())
 
 
-def _map_labels(s):
+def _map_as_mapping(s):
     return newrelic.core.config._environ_as_mapping(name="", default=s)
 
 
@@ -208,6 +208,10 @@ def _map_strip_exception_messages_allowlist(s):
 
 def _map_inc_excl_attributes(s):
     return newrelic.core.config._parse_attributes(s)
+
+
+def _map_case_insensitive_excl_labels(s):
+    return [v.lower() for v in newrelic.core.config._parse_attributes(s)]
 
 
 def _map_default_host_value(license_key):
@@ -311,7 +315,7 @@ def _process_setting(section, option, getter, mapper):
 def _process_configuration(section):
     _process_setting(section, "feature_flag", "get", _map_feature_flag)
     _process_setting(section, "app_name", "get", None)
-    _process_setting(section, "labels", "get", _map_labels)
+    _process_setting(section, "labels", "get", _map_as_mapping)
     _process_setting(section, "license_key", "get", _map_default_host_value)
     _process_setting(section, "api_key", "get", None)
     _process_setting(section, "host", "get", None)
@@ -542,6 +546,9 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
     _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.custom_attributes", "get", _map_as_mapping)
+    _process_setting(section, "application_logging.forwarding.labels.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.labels.exclude", "get", _map_case_insensitive_excl_labels)
     _process_setting(section, "application_logging.forwarding.context_data.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.context_data.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "application_logging.forwarding.context_data.exclude", "get", _map_inc_excl_attributes)
@@ -911,6 +918,29 @@ def apply_local_high_security_mode_setting(settings):
     return settings
 
 
+def _toml_config_to_configparser_dict(d, top=None, _path=None):
+    top = top or {"newrelic": {}}
+    _path = _path or ""
+    for key, value in d.items():
+        if isinstance(value, dict):
+            _toml_config_to_configparser_dict(value, top, f"{_path}.{key}" if _path else key)
+        else:
+            fixed_value = " ".join(value) if isinstance(value, list) else value
+            path_split = _path.split(".")
+            # Handle environments
+            if _path.startswith("env."):
+                env_key = f"newrelic:{path_split[1]}"
+                fixed_key = ".".join((*path_split[2:], key))
+                top[env_key] = {**top.get(env_key, {}), fixed_key: fixed_value}
+            # Handle import-hook:... configuration
+            elif _path.startswith("import-hook."):
+                import_hook_key = f"import-hook:{'.'.join(path_split[1:])}"
+                top[import_hook_key] = {**top.get(import_hook_key, {}), key: fixed_value}
+            else:
+                top["newrelic"][f"{_path}.{key}" if _path else key] = fixed_value
+    return top
+
+
 def _load_configuration(
     config_file=None,
     environment=None,
@@ -994,8 +1024,20 @@ def _load_configuration(
 
     # Now read in the configuration file. Cache the config file
     # name in internal settings object as indication of succeeding.
-
-    if not _config_object.read([config_file]):
+    if config_file.endswith(".toml"):
+        try:
+            import tomllib
+        except ImportError:
+            raise newrelic.api.exceptions.ConfigurationError(
+                "TOML configuration file can only be used if tomllib is available (Python 3.11+)."
+            )
+        with open(config_file, "rb") as f:
+            content = tomllib.load(f)
+            newrelic_section = content.get("tool", {}).get("newrelic")
+            if not newrelic_section:
+                raise newrelic.api.exceptions.ConfigurationError("New Relic configuration not found in TOML file.")
+            _config_object.read_dict(_toml_config_to_configparser_dict(newrelic_section))
+    elif not _config_object.read([config_file]):
         raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
 
     _settings.config_file = config_file

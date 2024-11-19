@@ -1021,7 +1021,7 @@ jobs:
     timeout-minutes: 30
     services:
       mongodb:
-        image: mongo:3.6.4
+        image: mongo:8.0.3
         ports:
           - 8080:27017
           - 8081:27017

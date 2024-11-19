@@ -29,9 +29,16 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common import system_info
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 INSTANCE_METRIC_HOST = system_info.gethostname() if MONGODB_HOST == "127.0.0.1" else MONGODB_HOST
 INSTANCE_METRIC_NAME = f"Datastore/instance/MongoDB/{INSTANCE_METRIC_HOST}/{MONGODB_PORT}"
+
+if get_package_version_tuple("pymongo") >= (4, 9, 0):
+    PYMONGO_INIT_METRIC_NAME = "Function/pymongo.synchronous.mongo_client:MongoClient.__init__"
+else:
+    # Older motor versions required older pymongo versions with a different metric
+    PYMONGO_INIT_METRIC_NAME = "Function/pymongo.mongo_client:MongoClient.__init__"
 
 
 async def exercise_motor(db):
@@ -108,7 +115,7 @@ def test_motor_instance_info(loop, client):
 
 
 _test_motor_scoped_metrics = [
-    ("Function/pymongo.synchronous.mongo_client:MongoClient.__init__", 1),
+    (PYMONGO_INIT_METRIC_NAME, 1),
     (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/aggregate_raw_batches", 1),
     (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/aggregate", 1),
     (f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/bulk_write", 1),

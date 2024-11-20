@@ -14,9 +14,7 @@
 
 import sys
 import warnings
-
 from functools import lru_cache
-
 
 # Need to account for 4 possible variations of version declaration specified in (rejected) PEP 396
 VERSION_ATTRS = ("__version__", "version", "__version_tuple__", "version_tuple")  # nosec
@@ -80,11 +78,19 @@ def _get_package_version(name):
         for attr in VERSION_ATTRS:
             try:
                 version = getattr(module, attr, None)
-
                 # In certain cases like importlib_metadata.version, version is a callable
                 # function.
                 if callable(version):
                     continue
+
+                # Some frameworks (such as `pypdfium2`) may use a class
+                # property to define the version.  Because class properties
+                # are not callable we need to check if the result is
+                # anything other than a string, tuple, or list.  If so,
+                # we need to skip this method of version retrieval and use
+                # `pkg_resources` or `importlib.metadata`.
+                if not isinstance(version, (str, tuple, list)):
+                    break
 
                 # Cast any version specified as a list into a tuple.
                 version = tuple(version) if isinstance(version, list) else version

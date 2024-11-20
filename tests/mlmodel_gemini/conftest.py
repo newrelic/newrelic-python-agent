@@ -89,20 +89,11 @@ def gemini_clients(gemini_version, MockExternalGeminiServer):  # noqa: F811
     #gemini_model = os.environ.get("GEMINI_MODEL")
     if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES", False):
         with MockExternalGeminiServer() as server:
-            #gemini_api_key = os.environ.get("GEMINI_API_KEY")
-            #gemini_model = os.environ.get("GEMINI_MODEL")
-            #gemini_api_key = os.environ["GEMINI_API_KEY"]
-            #gemini_model = os.environ["GEMINI_MODEL"]
             if not gemini_api_key:
                 raise RuntimeError("GEMINI_API_KEY environment variable required.")
             genai.configure(api_key=gemini_api_key)
             model = genai.GenerativeModel(gemini_model)
-            #yield (model)
     else:
-        #gemini_api_key = os.environ.get("GEMINI_API_KEY")
-        #gemini_model = os.environ.get("GEMINI_MODEL")
-        #gemini_api_key = os.environ["GEMINI_API_KEY"]
-        #gemini_model = os.environ["GEMINI_MODEL"]
         if not gemini_api_key:
             raise RuntimeError("GEMINI_API_KEY environment variable required.")
 
@@ -114,11 +105,6 @@ def gemini_clients(gemini_version, MockExternalGeminiServer):  # noqa: F811
 def sync_gemini_client(gemini_clients):
     sync_client = gemini_clients
     return sync_client
-
-#@pytest.fixture(scope="session")
-#def export(gemini_clients):
-#    sync_client = gemini_clients
-#    return sync_client
 
 @pytest.fixture(autouse=True, scope="session")
 def gemini_server(

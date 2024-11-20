@@ -150,3 +150,14 @@ def test_version_caching(monkeypatch):
     del sys.modules["mymodule"]
     version = get_package_version("mymodule")
     assert version not in NULL_VERSIONS, version
+
+
+# Rewrite test to use a custom example of this
+# instead of this specific framework in the event
+# that this framework changes their versioning
+# methodology in the future.
+def test_version_as_class_property():
+    # Use pypdfium2 as an example of a package
+    # that defines version as a class property
+    version = get_package_version("pypdfium2")
+    assert isinstance(version, str) and version not in NULL_VERSIONS, version

@@ -163,8 +163,8 @@ def test_version_as_class_property(monkeypatch):
 
     monkeypatch.setattr(pytest, "version", FakeModule.version, raising=False)
     monkeypatch.setattr(
-        sys.modules["importlib"].metadata, "version", lambda x: "1.2.3", raising=False
-    )  # pylint: disable=E1101
+        sys.modules["importlib"].metadata, "version", lambda x: "1.2.3", raising=False  # pylint: disable=E1101
+    )
 
     version = get_package_version("pytest")
     assert version == "1.2.3"

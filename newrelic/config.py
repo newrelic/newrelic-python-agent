@@ -51,6 +51,11 @@ __all__ = ["initialize", "filter_app_factory"]
 
 _logger = logging.getLogger(__name__)
 
+
+def _map_aws_account_id(s):
+    return newrelic.core.config._map_aws_account_id(s, _logger)
+
+
 # Register our importer which implements post import hooks for
 # triggering of callbacks to monkey patch modules before import
 # returns them to caller.
@@ -560,6 +565,7 @@ def _process_configuration(section):
     _process_setting(section, "ai_monitoring.enabled", "getboolean", None)
     _process_setting(section, "ai_monitoring.record_content.enabled", "getboolean", None)
     _process_setting(section, "ai_monitoring.streaming.enabled", "getboolean", None)
+    _process_setting(section, "cloud.aws.account_id", "get", _map_aws_account_id)
     _process_setting(section, "k8s_operator.enabled", "getboolean", None)
     _process_setting(section, "azure_operator.enabled", "getboolean", None)
     _process_setting(section, "package_reporting.enabled", "getboolean", None)

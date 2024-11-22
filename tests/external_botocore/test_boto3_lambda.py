@@ -112,12 +112,11 @@ def iam_role_arn():
             region_name=AWS_REGION_NAME,
         )
         # Create IAM role
-        return iam.create_role(
+        role = iam.create_role(
             RoleName="my-role",
             AssumeRolePolicyDocument="some policy",
             Path="/my-path/",
-        )[
-            "Role"
-        ]["Arn"]
+        )
+        return role["Role"]["Arn"]
 
     return create_role

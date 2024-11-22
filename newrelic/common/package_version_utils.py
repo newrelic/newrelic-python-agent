@@ -78,6 +78,7 @@ def _get_package_version(name):
         for attr in VERSION_ATTRS:
             try:
                 version = getattr(module, attr, None)
+
                 # In certain cases like importlib_metadata.version, version is a callable
                 # function.
                 if callable(version):
@@ -89,7 +90,7 @@ def _get_package_version(name):
                 # anything other than a string, tuple, or list.  If so,
                 # we need to skip this method of version retrieval and use
                 # `pkg_resources` or `importlib.metadata`.
-                if not isinstance(version, (str, tuple, list)):
+                if version and not isinstance(version, (str, tuple, list)):
                     break
 
                 # Cast any version specified as a list into a tuple.

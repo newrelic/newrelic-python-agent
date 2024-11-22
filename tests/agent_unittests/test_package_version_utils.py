@@ -152,6 +152,7 @@ def test_version_caching(monkeypatch):
     assert version not in NULL_VERSIONS, version
 
 
+@SKIP_IF_NOT_IMPORTLIB_METADATA
 def test_version_as_class_property(monkeypatch):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
@@ -161,7 +162,9 @@ def test_version_as_class_property(monkeypatch):
             return "1.2.3"
 
     monkeypatch.setattr(pytest, "version", FakeModule.version, raising=False)
-    monkeypatch.setattr(sys.modules["importlib"].metadata, "version", lambda x: "1.2.3", raising=False)
+    monkeypatch.setattr(
+        sys.modules["importlib"].metadata, "version", lambda x: "1.2.3", raising=False
+    )  # pylint: disable=E1101
 
     version = get_package_version("pytest")
     assert version == "1.2.3"

@@ -73,6 +73,21 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(_NullHandler())
 
 
+def _map_aws_account_id(s, logger):
+    # The AWS account id must be a 12 digit number.
+    # See https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-identifiers.html#awsaccountid.
+    if s and len(s) == 12:
+        if s.isdecimal():
+            account_id = int(s)
+            return account_id
+    # Only log a warning if s is set.
+    if s:
+        logger.warning(
+            "Improper configuration. cloud.aws.account_id = %s will be ignored because it is not a 12 digit number.", s
+        )
+    return None
+
+
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows
 # about so that an error when accessing a non-existent setting is more
@@ -121,6 +136,14 @@ class TopLevelSettings(Settings):
     @otlp_host.setter
     def otlp_host(self, value):
         self._otlp_host = value
+
+
+class CloudSettings(Settings):
+    pass
+
+
+class AWSSettings(Settings):
+    pass
 
 
 class AttributesSettings(Settings):
@@ -433,6 +456,8 @@ _settings.application_logging.forwarding.context_data = ApplicationLoggingForwar
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
+_settings.cloud = CloudSettings()
+_settings.cloud.aws = AWSSettings()
 _settings.machine_learning = MachineLearningSettings()
 _settings.machine_learning.inference_events_value = MachineLearningInferenceEventsValueSettings()
 _settings.ai_monitoring = AIMonitoringSettings()
@@ -966,6 +991,7 @@ _settings.application_logging.metrics.enabled = _environ_as_bool(
 _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
+_settings.cloud.aws.account_id = _map_aws_account_id(os.environ.get("NEW_RELIC_CLOUD_AWS_ACCOUNT_ID"), _logger)
 _settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNING_ENABLED", default=False)
 _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False

@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import collections
-import logging
 import copy
+import logging
 import sys
 import tempfile
 import urllib.parse as urlparse
@@ -43,7 +43,6 @@ from newrelic.core.config import (
     global_settings_dump,
 )
 
-
 SKIP_IF_NOT_PY311 = pytest.mark.skipif(sys.version_info < (3, 11), reason="TOML not in the standard library.")
 
 
@@ -61,7 +60,7 @@ def restore_settings_fixture():
 
     # Run tests
     yield
-    
+
     # Restore settings after tests run
     original_settings.__dict__.clear()
     original_settings.__dict__.update(backup)

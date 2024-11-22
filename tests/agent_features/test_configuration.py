@@ -14,15 +14,12 @@
 
 import collections
 import copy
+import logging
 import sys
 import tempfile
-
 import urllib.parse as urlparse
 
 import pytest
-
-import logging
-
 from testing_support.fixtures import override_generic_settings
 
 from newrelic.api.exceptions import ConfigurationError
@@ -37,6 +34,7 @@ from newrelic.config import (
 )
 from newrelic.core.config import (
     Settings,
+    _map_aws_account_id,
     apply_config_setting,
     apply_server_side_settings,
     fetch_config_setting,
@@ -44,7 +42,6 @@ from newrelic.core.config import (
     global_settings,
     global_settings_dump,
 )
-
 
 SKIP_IF_NOT_PY311 = pytest.mark.skipif(sys.version_info < (3, 11), reason="TOML not in the standard library.")
 
@@ -63,7 +60,7 @@ def restore_settings_fixture():
 
     # Run tests
     yield
-    
+
     # Restore settings after tests run
     original_settings.__dict__.clear()
     original_settings.__dict__.update(backup)
@@ -972,6 +969,27 @@ def test_initialize_developer_mode(section, expect_error, logger):
         assert "CONFIGURATION ERROR" in logger.caplog.records
     else:
         assert "CONFIGURATION ERROR" not in logger.caplog.records
+
+
+@pytest.mark.parametrize(
+    "account_id,expected_account_id",
+    (
+        ("012345678901", 12345678901),
+        ("0123456789.1", None),
+        ("01234567890", None),
+        ("01²345678901", None),
+        ("0xb101010101", None),
+        ("fooooooooooo", None),
+    ),
+)
+def test_map_aws_account_id(account_id, expected_account_id, logger):
+    message = f"Improper configuration. cloud.aws.account_id = {account_id} will be ignored because it is not a 12 digit number."
+
+    return_val = _map_aws_account_id(account_id, logger)
+
+    assert return_val == expected_account_id
+    if not expected_account_id:
+        assert message in logger.caplog.records
 
 
 newrelic_toml_contents = b"""

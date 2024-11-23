@@ -81,9 +81,6 @@ def _get_package_version(name):
 
                 # In certain cases like importlib_metadata.version, version is a callable
                 # function.
-                if callable(version):
-                    continue
-
                 # Some frameworks (such as `pypdfium2`) may use a class
                 # property to define the version.  Because class properties
                 # are not callable we need to check if the result is
@@ -91,7 +88,7 @@ def _get_package_version(name):
                 # we need to skip this method of version retrieval and use
                 # `pkg_resources` or `importlib.metadata`.
                 if version and not isinstance(version, (str, tuple, list)):
-                    break
+                    continue
 
                 # Cast any version specified as a list into a tuple.
                 version = tuple(version) if isinstance(version, list) else version

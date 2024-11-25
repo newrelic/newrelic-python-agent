@@ -58,9 +58,12 @@ _motor_client_async_methods = (
 
 
 def instance_info(collection):
-    nodes = collection.database.client.nodes
-    if len(nodes) == 1:
-        return next(iter(nodes))
+    try:
+        nodes = collection.database.client.nodes
+        if len(nodes) == 1:
+            return next(iter(nodes))
+    except Exception:
+        pass
 
     # If there are 0 nodes we're not currently connected, return nothing.
     # If there are 2+ nodes we're in a load balancing setup.
@@ -77,8 +80,8 @@ def wrap_motor_method(module, class_name, method_name, is_async=False):
 
     # Define wrappers as closures to preserve method_name
     def _wrap_motor_method_sync(wrapped, instance, args, kwargs):
-        target = instance.name
-        database_name = instance.database.name
+        target = getattr(instance, "name", None)
+        database_name = getattr(getattr(instance, "database", None), "name", None)
         with DatastoreTrace(
             product="MongoDB", target=target, operation=method_name, database_name=database_name
         ) as trace:
@@ -92,8 +95,8 @@ def wrap_motor_method(module, class_name, method_name, is_async=False):
             return response
 
     async def _wrap_motor_method_async(wrapped, instance, args, kwargs):
-        target = instance.name
-        database_name = instance.database.name
+        target = getattr(instance, "name", None)
+        database_name = getattr(getattr(instance, "database", None), "name", None)
         with DatastoreTrace(
             product="MongoDB", target=target, operation=method_name, database_name=database_name
         ) as trace:

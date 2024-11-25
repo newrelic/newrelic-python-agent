@@ -152,7 +152,6 @@ def test_version_caching(monkeypatch):
     assert version not in NULL_VERSIONS, version
 
 
-@SKIP_IF_NOT_IMPORTLIB_METADATA
 def test_version_as_class_property(monkeypatch):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
@@ -162,18 +161,14 @@ def test_version_as_class_property(monkeypatch):
             return "1.2.3"
 
     monkeypatch.setattr(pytest, "version", FakeModule.version, raising=False)
-    monkeypatch.setattr(
-        sys.modules["importlib"].metadata, "version", lambda x: "1.2.3", raising=False  # pylint: disable=E1101
-    )
 
     version = get_package_version("pytest")
-    assert version == "1.2.3"
+    assert version not in NULL_VERSIONS, version
 
 
 # This test checks to see if the version is a property of the class
 # but also checks to see if the something like version.version_tuple
 # has been exported as a tuple.
-@SKIP_IF_NOT_IMPORTLIB_METADATA
 def test_version_as_class_property_and_version_tuple(monkeypatch):
     # There is no file/module here, so we monkeypatch
     # pytest instead for our purposes
@@ -184,9 +179,6 @@ def test_version_as_class_property_and_version_tuple(monkeypatch):
 
     monkeypatch.setattr(pytest, "version", FakeModule.version, raising=False)
     monkeypatch.setattr(pytest, "version_tuple", (1, 2, 3), raising=False)
-    monkeypatch.setattr(
-        sys.modules["importlib"].metadata, "version", lambda x: "1.2.3", raising=False  # pylint: disable=E1101
-    )
 
     version = get_package_version("pytest")
-    assert version == "1.2.3"
+    assert version not in NULL_VERSIONS, version

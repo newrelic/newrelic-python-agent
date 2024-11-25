@@ -79,8 +79,6 @@ def _get_package_version(name):
             try:
                 version = getattr(module, attr, None)
 
-                # In certain cases like importlib_metadata.version, version is a callable
-                # function.
                 # Some frameworks (such as `pypdfium2`) may use a class
                 # property to define the version.  Because class properties
                 # are not callable we need to check if the result is

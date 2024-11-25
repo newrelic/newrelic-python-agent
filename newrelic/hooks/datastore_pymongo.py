@@ -94,8 +94,8 @@ def wrap_pymongo_method(module, class_name, method_name, is_async=False):
 
     # Define wrappers as closures to preserve method_name
     def _wrap_pymongo_method_sync(wrapped, instance, args, kwargs):
-        target = instance.name
-        database_name = instance.database.name
+        target = getattr(instance, "name", None)
+        database_name = getattr(getattr(instance, "database", None), "name", None)
         with DatastoreTrace(
             product="MongoDB", target=target, operation=method_name, database_name=database_name
         ) as trace:
@@ -109,8 +109,8 @@ def wrap_pymongo_method(module, class_name, method_name, is_async=False):
             return response
 
     async def _wrap_pymongo_method_async(wrapped, instance, args, kwargs):
-        target = instance.name
-        database_name = instance.database.name
+        target = getattr(instance, "name", None)
+        database_name = getattr(getattr(instance, "database", None), "name", None)
         with DatastoreTrace(
             product="MongoDB", target=target, operation=method_name, database_name=database_name
         ) as trace:

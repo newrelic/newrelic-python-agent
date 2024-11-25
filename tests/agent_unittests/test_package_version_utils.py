@@ -163,7 +163,7 @@ def test_version_as_class_property(monkeypatch):
     monkeypatch.setattr(pytest, "version", FakeModule.version, raising=False)
 
     version = get_package_version("pytest")
-    assert version not in NULL_VERSIONS, version
+    assert version not in NULL_VERSIONS and isinstance(version, str), version
 
 
 # This test checks to see if the version is a property of the class
@@ -181,4 +181,4 @@ def test_version_as_class_property_and_version_tuple(monkeypatch):
     monkeypatch.setattr(pytest, "version_tuple", (1, 2, 3), raising=False)
 
     version = get_package_version("pytest")
-    assert version not in NULL_VERSIONS, version
+    assert version not in NULL_VERSIONS and isinstance(version, str), version

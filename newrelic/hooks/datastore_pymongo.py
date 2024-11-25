@@ -75,9 +75,12 @@ _pymongo_client_sync_methods = (
 
 
 def instance_info(collection):
-    nodes = collection.database.client.nodes
-    if len(nodes) == 1:
-        return next(iter(nodes))
+    try:
+        nodes = collection.database.client.nodes
+        if len(nodes) == 1:
+            return next(iter(nodes))
+    except Exception:
+        pass
 
     # If there are 0 nodes we're not currently connected, return nothing.
     # If there are 2+ nodes we're in a load balancing setup.

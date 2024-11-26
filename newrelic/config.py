@@ -3589,34 +3589,51 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "pymongo.synchronous.pool",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_pool",
+        "instrument_pymongo_synchronous_pool",
     )
+    _process_module_definition(
+        "pymongo.asynchronous.pool",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_asynchronous_pool",
+    )
+
     _process_module_definition(
         "pymongo.synchronous.collection",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_collection",
+        "instrument_pymongo_synchronous_collection",
     )
+    _process_module_definition(
+        "pymongo.asynchronous.collection",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_asynchronous_collection",
+    )
+
     _process_module_definition(
         "pymongo.synchronous.mongo_client",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_mongo_client",
+        "instrument_pymongo_synchronous_mongo_client",
+    )
+    _process_module_definition(
+        "pymongo.asynchronous.mongo_client",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_asynchronous_mongo_client",
     )
 
     # Older pymongo module locations
     _process_module_definition(
         "pymongo.connection",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_pool",
+        "instrument_pymongo_synchronous_pool",
     )
     _process_module_definition(
         "pymongo.collection",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_collection",
+        "instrument_pymongo_synchronous_collection",
     )
     _process_module_definition(
         "pymongo.mongo_client",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_mongo_client",
+        "instrument_pymongo_synchronous_mongo_client",
     )
 
     # Redis v4.2+
@@ -3730,7 +3747,12 @@ def _process_module_builtin_defaults():
         "valkey.commands.graph.commands", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_graph_commands"
     )
 
-    _process_module_definition("motor", "newrelic.hooks.datastore_motor", "patch_motor")
+    _process_module_definition(
+        "motor.motor_asyncio", "newrelic.hooks.datastore_motor", "instrument_motor_motor_asyncio"
+    )
+    _process_module_definition(
+        "motor.motor_tornado", "newrelic.hooks.datastore_motor", "instrument_motor_motor_tornado"
+    )
 
     _process_module_definition(
         "piston.resource",

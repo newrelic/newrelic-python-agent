@@ -22,7 +22,7 @@ from io import BytesIO
 
 from botocore.response import StreamingBody
 
-from newrelic.api.datastore_trace import datastore_trace
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace, message_trace
@@ -843,6 +843,118 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     )
 
 
+def dynamodb_datastore_trace(
+    product,
+    target,
+    operation,
+    host=None,
+    port_path_or_id=None,
+    database_name=None,
+    async_wrapper=None,
+):
+    @function_wrapper
+    def _nr_dynamodb_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
+
+        if callable(product):
+            if instance is not None:
+                _product = product(instance, *args, **kwargs)
+            else:
+                _product = product(*args, **kwargs)
+        else:
+            _product = product
+
+        if callable(target):
+            if instance is not None:
+                _target = target(instance, *args, **kwargs)
+            else:
+                _target = target(*args, **kwargs)
+        else:
+            _target = target
+
+        if callable(operation):
+            if instance is not None:
+                _operation = operation(instance, *args, **kwargs)
+            else:
+                _operation = operation(*args, **kwargs)
+        else:
+            _operation = operation
+
+        if callable(host):
+            if instance is not None:
+                _host = host(instance, *args, **kwargs)
+            else:
+                _host = host(*args, **kwargs)
+        else:
+            _host = host
+
+        if callable(port_path_or_id):
+            if instance is not None:
+                _port_path_or_id = port_path_or_id(instance, *args, **kwargs)
+            else:
+                _port_path_or_id = port_path_or_id(*args, **kwargs)
+        else:
+            _port_path_or_id = port_path_or_id
+
+        if callable(database_name):
+            if instance is not None:
+                _database_name = database_name(instance, *args, **kwargs)
+            else:
+                _database_name = database_name(*args, **kwargs)
+        else:
+            _database_name = database_name
+
+        trace = DatastoreTrace(
+            _product, _target, _operation, _host, _port_path_or_id, _database_name, parent=parent, source=wrapped
+        )
+
+        # Try to capture AWS DynamoDB info as agent attributes. Log any exception to debug.
+        agent_attrs = {}
+        try:
+            region = None
+            if hasattr(instance, "_client_config") and hasattr(instance._client_config, "region_name"):
+                region = instance._client_config.region_name
+
+            transaction = current_transaction()
+            settings = transaction.settings if transaction.settings else global_settings()
+            account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
+
+            # There are 3 different partition options.
+            # See  https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html for details.
+            partition = None
+            if hasattr(instance, "_endpoint") and hasattr(instance._endpoint, "host"):
+                _db_host = instance._endpoint.host
+                partition = "aws"
+                if "amazonaws.cn" in _db_host:
+                    partition = "aws-cn"
+                elif "amazonaws-us-gov.com" in _db_host:
+                    partition = "aws-us-gov"
+
+            if partition and region and account_id and _target:
+                agent_attrs["cloud.resource_id"] = (
+                    f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
+                )
+                agent_attrs["db.system"] = "DynamoDB"
+
+        except Exception as e:
+            _logger.debug("Failed to capture AWS DynamoDB info.", exc_info=True)
+        trace.agent_attributes.update(agent_attrs)
+
+        if wrapper:  # pylint: disable=W0125,W0126
+            return wrapper(wrapped, trace)(*args, **kwargs)
+
+        with trace:
+            return wrapped(*args, **kwargs)
+
+    return _nr_dynamodb_datastore_trace_wrapper_
+
+
 def sqs_message_trace(
     operation,
     destination_type,
@@ -893,14 +1005,14 @@ def sqs_message_trace(
 
 CUSTOM_TRACE_POINTS = {
     ("sns", "publish"): message_trace("SNS", "Produce", "Topic", extract(("TopicArn", "TargetArn"), "PhoneNumber")),
-    ("dynamodb", "put_item"): datastore_trace("DynamoDB", extract("TableName"), "put_item"),
-    ("dynamodb", "get_item"): datastore_trace("DynamoDB", extract("TableName"), "get_item"),
-    ("dynamodb", "update_item"): datastore_trace("DynamoDB", extract("TableName"), "update_item"),
-    ("dynamodb", "delete_item"): datastore_trace("DynamoDB", extract("TableName"), "delete_item"),
-    ("dynamodb", "create_table"): datastore_trace("DynamoDB", extract("TableName"), "create_table"),
-    ("dynamodb", "delete_table"): datastore_trace("DynamoDB", extract("TableName"), "delete_table"),
-    ("dynamodb", "query"): datastore_trace("DynamoDB", extract("TableName"), "query"),
-    ("dynamodb", "scan"): datastore_trace("DynamoDB", extract("TableName"), "scan"),
+    ("dynamodb", "put_item"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "put_item"),
+    ("dynamodb", "get_item"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "get_item"),
+    ("dynamodb", "update_item"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "update_item"),
+    ("dynamodb", "delete_item"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "delete_item"),
+    ("dynamodb", "create_table"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "create_table"),
+    ("dynamodb", "delete_table"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "delete_table"),
+    ("dynamodb", "query"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "query"),
+    ("dynamodb", "scan"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "scan"),
     ("sqs", "send_message"): sqs_message_trace(
         "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
     ),

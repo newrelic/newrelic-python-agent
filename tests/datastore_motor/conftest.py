@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+from testing_support.db_settings import mongodb_settings
 from testing_support.fixture.event_loop import event_loop as loop  # noqa
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
@@ -32,3 +34,36 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (datastore)"],
 )
+
+DB_SETTINGS = mongodb_settings()[0]
+MONGODB_HOST = DB_SETTINGS["host"]
+MONGODB_PORT = DB_SETTINGS["port"]
+MONGODB_COLLECTION = DB_SETTINGS["collection"]
+
+
+@pytest.fixture(scope="session", params=["asyncio", "tornado"])
+def implementation(request):
+    return request.param
+
+
+@pytest.fixture(scope="session")
+def client(implementation):
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from motor.motor_tornado import MotorClient as TornadoMotorClient
+
+    # Must be actually initialized in test function, so provide a callable that returns the client.
+    def _client():
+        if implementation == "asyncio":
+            return AsyncIOMotorClient(host=MONGODB_HOST, port=MONGODB_PORT)
+        else:
+            return TornadoMotorClient(host=MONGODB_HOST, port=MONGODB_PORT)
+
+    return _client
+
+
+@pytest.fixture(scope="session")
+def init_metric(implementation):
+    if implementation == "asyncio":
+        return ("Function/motor.motor_asyncio:AsyncIOMotorClient.__init__", 1)
+    else:
+        return ("Function/motor.motor_tornado:MotorClient.__init__", 1)

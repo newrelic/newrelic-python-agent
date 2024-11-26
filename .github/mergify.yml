@@ -14,21 +14,16 @@ shared:
 
 queue_rules:
   - name: default
-    conditions:
+    queue_conditions:
+      - and: *pr_ready_checks
+      - "-head~=^develop"
+    merge_conditions:
       - and: *pr_ready_checks
     merge_method: squash
 
+
 pull_request_rules:
   # Merge Queue PR Rules
-  - name: Regular PRs - Add to merge queue on approval (squash)
-    conditions:
-      - and: *pr_ready_checks
-      - "-head~=^develop" # Don't include PRs from develop branches
-    actions:
-      queue:
-        method: squash
-
-  # Automatic PR Updates
   - name: Automatic PR branch updates
     conditions:
       - "queue-position=-1" # Not queued
@@ -36,8 +31,6 @@ pull_request_rules:
       - "-merged"
     actions:
       update:
-
-  # Automatic Labeling
   - name: Clean up after merge
     conditions:
       - merged
@@ -78,3 +71,7 @@ pull_request_rules:
       label:
         remove:
           - "tests-failing"
+  - name: Regular PRs - Add to merge queue on approval (squash)
+    conditions: []
+    actions:
+      queue:

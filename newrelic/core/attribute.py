@@ -59,6 +59,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "db.instance",
         "db.operation",
         "db.statement",
+        "db.system",
         "enduser.id",
         "error.class",
         "error.expected",

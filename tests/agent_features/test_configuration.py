@@ -1063,7 +1063,27 @@ def test_toml_parse_production():
 @pytest.mark.parametrize(
     "pathtype", [str, lambda s: s.encode("utf-8"), pathlib.Path], ids=["str", "bytes", "pathlib.Path"]
 )
-def test_config_file_path_types(pathtype):
+def test_config_file_path_types_ini(pathtype):
+    settings = global_settings()
+    _reset_configuration_done()
+    _reset_config_parser()
+    _reset_instrumentation_done()
+
+    with tempfile.NamedTemporaryFile(suffix=".ini") as f:
+        f.write(newrelic_ini_contents)
+        f.seek(0)
+
+        config_file = pathtype(f.name)
+        initialize(config_file=config_file)
+        value = fetch_config_setting(settings, "app_name")
+        assert value == "Python Agent Test (agent_features)"
+
+
+@pytest.mark.parametrize(
+    "pathtype", [str, lambda s: s.encode("utf-8"), pathlib.Path], ids=["str", "bytes", "pathlib.Path"]
+)
+@SKIP_IF_NOT_PY311
+def test_config_file_path_types_toml(pathtype):
     settings = global_settings()
     _reset_configuration_done()
     _reset_config_parser()

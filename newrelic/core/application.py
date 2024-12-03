@@ -41,7 +41,6 @@ from newrelic.core.internal_metrics import (
 from newrelic.core.profile_sessions import profile_session_manager
 from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import CustomMetrics, StatsEngine
-from newrelic.core.super_agent_health import super_agent_health_instance
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,

@@ -21,7 +21,7 @@ import pytest
 
 from newrelic.common import certs, system_info
 from newrelic.common.agent_http import DeveloperModeClient
-from newrelic.common.encoding_utils import json_decode, serverless_payload_decode
+from newrelic.common.encoding_utils import json_decode, json_encode, serverless_payload_decode
 from newrelic.common.utilization import CommonUtilization
 from newrelic.core.agent_protocol import AgentProtocol, ServerlessModeProtocol
 from newrelic.core.config import finalize_application_settings, global_settings

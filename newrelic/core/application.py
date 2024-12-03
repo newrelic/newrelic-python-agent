@@ -41,7 +41,6 @@ from newrelic.core.internal_metrics import (
 from newrelic.core.profile_sessions import profile_session_manager
 from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import CustomMetrics, StatsEngine
-from newrelic.core.super_agent_health import super_agent_health_instance
 from newrelic.network.exceptions import (
     DiscardDataForRequest,
     ForceAgentDisconnect,
@@ -50,7 +49,7 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 from newrelic.samplers.data_sampler import DataSampler
-from newrelic.core.super_agent_health import super_agent_healthcheck_loop, health_check_enabled
+from newrelic.core.super_agent_health import super_agent_healthcheck_loop, health_check_enabled, super_agent_health_instance
 
 _logger = logging.getLogger(__name__)
 
@@ -370,6 +369,7 @@ class Application:
                         None, self._app_name, self.linked_applications, environment_settings()
                     )
                 except ForceAgentDisconnect:
+                    self._super_agent.set_health_status("failed_nr_connection")
                     # Any disconnect exception means we should stop trying to connect
                     _logger.error(
                         "The New Relic service has requested that the agent "
@@ -380,6 +380,7 @@ class Application:
                     )
                     return
                 except NetworkInterfaceException:
+                    self._super_agent.set_health_status("failed_nr_connection")
                     active_session = None
                 except Exception:
                     # If an exception occurs after agent has been flagged to be
@@ -389,6 +390,7 @@ class Application:
                     # the application is still running.
 
                     if not self._agent_shutdown and not self._pending_shutdown:
+                        self._super_agent.set_health_status("failed_nr_connection")
                         _logger.exception(
                             "Unexpected exception when registering "
                             "agent with the data collector. If this problem "
@@ -499,6 +501,8 @@ class Application:
         # data from a prior agent run for this application.
 
         configuration = active_session.configuration
+        # Check if the agent previously had an unhealthy status related to the data collector and update
+        self._super_agent.update_to_healthy_agent_protocol_status(collector_error=True)
 
         with self._stats_lock:
             self._stats_engine.reset_stats(configuration, reset_stream=True)
@@ -1696,10 +1700,9 @@ class Application:
         optionally triggers activation of a new session.
 
         """
-        super_agent = super_agent_health_instance()
-        super_agent.set_health_status("agent_shutdown")
+        self._super_agent.set_health_status("agent_shutdown")
         if health_check_enabled():
-            super_agent.write_to_health_file()
+            self._super_agent.write_to_health_file()
 
         # We need to stop any thread profiler session related to this
         # application.

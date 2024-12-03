@@ -15,11 +15,12 @@
 import logging
 import os
 import uuid
+import sched
 import threading
 import time
 from pathlib import Path
 from urllib.parse import urlparse
-import sched
+
 
 _logger = logging.getLogger(__name__)
 
@@ -30,17 +31,19 @@ HEALTH_CHECK_STATUSES = {
     "missing_license": ("NR-APM-002", "License key missing in configuration"),
     "forced_disconnect": ("NR-APM-003", "Forced disconnect received from New Relic (HTTP status code 410)"),
     "http_error": ("NR-APM-004", "HTTP error response code received from New Relic"),
-    # "max_app_names": ("NR-APM-006", "The maximum number of configured app names (3) exceeded"),
     "proxy_error": ("NR-APM-007", "HTTP Proxy configuration error"),
     "agent_disabled": ("NR-APM-008", "Agent is disabled via configuration"),
+    "failed_nr_connection": ("NR-APM-009", "Failed to connect to New Relic data collector"),
+    "invalid_config": ("NR-APM-010", "Agent config file is not able to be parsed"),
     "agent_shutdown": ("NR-APM-099", "Agent has shutdown"),
 }
 
 
 def is_valid_file_delivery_location(file_uri):
+    #  Verify whether file directory provided to agent via env var is a valid file URI to determine whether health check should run
     if not file_uri:
         _logger.warning(
-            "Configured APM Control health delivery location is empty. APM Control health check will not be enabled."
+            "Configured NR Control health delivery location is empty. APM Control health check will not be enabled."
         )
         return False
 
@@ -49,15 +52,15 @@ def is_valid_file_delivery_location(file_uri):
 
         if not parsed_uri.scheme or not parsed_uri.path:
             _logger.warning(
-                "Configured Super Agent health delivery location is not a complete file URI. Super Agent health check "
+                "Configured NR Control health delivery location is not a complete file URI. Health check "
                 "will not be enabled. "
             )
             return False
 
         if parsed_uri.scheme != "file":
             _logger.warning(
-                "Configured Super Agent health delivery location does not have a valid scheme. Super Agent health "
-                "check will not be enabled. "
+                "Configured NR Control health delivery location does not have a valid scheme. Health check will not be"
+                "enabled."
             )
             return False
 
@@ -66,8 +69,7 @@ def is_valid_file_delivery_location(file_uri):
         # Check if the path exists
         if not path.exists():
             _logger.warning(
-                "Configured Super Agent health delivery location does not exist. Super Agent health check will not be "
-                "enabled. "
+                "Configured NR Control health delivery location does not exist. Health check will not be enabled."
             )
             return False
 
@@ -75,8 +77,7 @@ def is_valid_file_delivery_location(file_uri):
 
     except Exception as e:
         _logger.warning(
-            "Configured Super Agent health delivery location is not valid. Super Agent health check will not be "
-            "enabled. "
+            "Configured NR Control health delivery location is not valid. Health check will not be enabled."
         )
         return False
 
@@ -113,6 +114,7 @@ class SuperAgentHealth:
         return SuperAgentHealth._instance
 
     def __init__(self):
+        # Initialize health check with a healthy status that can be updated as issues are encountered
         self.last_error = "NR-APM-000"
         self.status = "Healthy"
         self.start_time_unix_nano = None
@@ -138,14 +140,25 @@ class SuperAgentHealth:
             self.last_error = last_error
             self.status = current_status
 
-    def check_for_healthy_status(self):
+    def update_to_healthy_agent_protocol_status(self, protocol_error=False, collector_error=False):
         # If our unhealthy status code was not config related, it is possible it could be resolved during an active
-        # session. We determine the status is resolved by calling this function when a 200 status code is received to
-        # check if the current status is resolvable
+        # session. This function allows us to update to a healthy status if so
 
-        # Checking for forced disconnects or proxy/ HTTP errors
-        non_config_error_codes = frozenset(["NR-APM-003", "NR-APM-004", "NR-APM-007"])
-        if self.last_error in non_config_error_codes:
+        if not protocol_error and not collector_error:
+            return
+
+        # For protocol errors, we determine the status is resolved by calling this function when a 200 status code is
+        # received to check if the current status is resolvable
+        if protocol_error:
+            error_codes = frozenset(["NR-APM-003", "NR-APM-004", "NR-APM-007"])
+        # Also check if we had a failure connecting to NR as this could resolve itself if the collector becomes
+        # reachable during an active session
+        if collector_error:
+            error_codes = frozenset(["NR-APM-009"])
+
+        # Since this function is only called when we are in scenario where the agent functioned as expected, we check to
+        # see if the previous status was unhealthy so we know to update it
+        if self.last_error in error_codes:
             self.last_error = "NR-APM-000"
             self.status = "Healthy"
 
@@ -157,9 +170,9 @@ class SuperAgentHealth:
         health_file_location = str(health_file_location)
         file_path = urlparse(health_file_location).path
         pid = os.getpid()
-        file_ids = self.get_file_id(pid)
+        file_id = self.get_file_id(pid)
 
-        file_name = f"health-{file_ids}.yml"
+        file_name = f"health-{file_id}.yml"
         full_path = os.path.join(file_path, file_name)
 
         try:

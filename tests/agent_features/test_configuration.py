@@ -15,6 +15,7 @@
 import collections
 import copy
 import logging
+import pathlib
 import sys
 import tempfile
 import urllib.parse as urlparse
@@ -1057,6 +1058,23 @@ def test_toml_parse_production():
         assert value == "test11 (Production)"
         value = fetch_config_setting(settings, "distributed_tracing")
         assert value.enabled is False
+
+
+@pytest.mark.parametrize("pathtype", [str, lambda s: s.encode("utf-8"), pathlib.Path], ids=["str", "bytes", "pathlib.Path"])
+def test_config_file_path_types(pathtype):
+    settings = global_settings()
+    _reset_configuration_done()
+    _reset_config_parser()
+    _reset_instrumentation_done()
+
+    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+        f.write(newrelic_toml_contents)
+        f.seek(0)
+
+        config_file = pathtype(f.name)
+        initialize(config_file=config_file)
+        value = fetch_config_setting(settings, "app_name")
+        assert value == "test11"
 
 
 @pytest.fixture

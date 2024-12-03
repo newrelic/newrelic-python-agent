@@ -1060,7 +1060,9 @@ def test_toml_parse_production():
         assert value.enabled is False
 
 
-@pytest.mark.parametrize("pathtype", [str, lambda s: s.encode("utf-8"), pathlib.Path], ids=["str", "bytes", "pathlib.Path"])
+@pytest.mark.parametrize(
+    "pathtype", [str, lambda s: s.encode("utf-8"), pathlib.Path], ids=["str", "bytes", "pathlib.Path"]
+)
 def test_config_file_path_types(pathtype):
     settings = global_settings()
     _reset_configuration_done()

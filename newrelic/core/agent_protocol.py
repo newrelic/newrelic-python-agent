@@ -281,10 +281,12 @@ class AgentProtocol():
                     "agent_run_id": self._run_token,
                 },
             )
+
             exception = self.STATUS_CODE_RESPONSE.get(status, DiscardDataForRequest)
             raise exception
         if status == 200:
-            self.super_agent.check_for_healthy_status()
+            # Check if we previously had a protocol related error and update to a healthy status
+            self.super_agent.update_to_healthy_agent_protocol_status(protocol_error=True)
             return self.decode_response(data)
 
     def decode_response(self, response):

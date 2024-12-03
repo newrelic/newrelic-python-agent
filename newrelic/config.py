@@ -1052,6 +1052,7 @@ def _load_configuration(
                 raise newrelic.api.exceptions.ConfigurationError("New Relic configuration not found in TOML file.")
             _config_object.read_dict(_toml_config_to_configparser_dict(newrelic_section))
     elif not _config_object.read([config_file]):
+        super_agent_instance.set_health_status("invalid_config")
         raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
 
     _settings.config_file = config_file

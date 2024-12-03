@@ -22,7 +22,7 @@ import pytest
 
 from newrelic.common import certs, system_info
 from newrelic.common.agent_http import DeveloperModeClient
-from newrelic.common.encoding_utils import json_decode, serverless_payload_decode
+from newrelic.common.encoding_utils import json_decode, json_encode, serverless_payload_decode
 from newrelic.common.utilization import CommonUtilization
 from newrelic.core.agent_protocol import AgentProtocol, ServerlessModeProtocol
 from newrelic.core.config import finalize_application_settings, global_settings
@@ -80,6 +80,11 @@ class HttpClientRecorder(DeveloperModeClient):
         request = Request(method=method, path=path, params=params, headers=headers, payload=payload)
         self.SENT.append(request)
         if self.STATUS_CODE:
+            # Define behavior for a 200 status code for use in test_super_agent_health.py
+            if self.STATUS_CODE == 200:
+                payload = {"return_value": "Hello World!"}
+                response_data = json_encode(payload).encode("utf-8")
+                return self.STATUS_CODE, response_data
             return self.STATUS_CODE, b""
 
         return super(HttpClientRecorder, self).send_request(method, path, params, headers, payload)
@@ -332,7 +337,9 @@ def connect_payload_asserts(
     else:
         assert "ip_address" not in payload_data["utilization"]
 
-    utilization_len = utilization_len + any([with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes])
+    utilization_len = utilization_len + any(
+        [with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes]
+    )
     assert len(payload_data["utilization"]) == utilization_len
     assert payload_data["utilization"]["hostname"] == HOST
 
@@ -580,7 +587,7 @@ def test_audit_logging():
 )
 def test_ca_bundle_path(monkeypatch, ca_bundle_path):
     # Pretend CA certificates are not available
-    class DefaultVerifyPaths():
+    class DefaultVerifyPaths:
         cafile = None
         capath = None
 

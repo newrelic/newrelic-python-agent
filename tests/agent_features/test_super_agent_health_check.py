@@ -44,7 +44,7 @@ def test_write_to_file_healthy_status(monkeypatch, tmp_path):
     # Grab the file we just wrote to and read its contents
     health_files = os.listdir(tmp_path)
     path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file, 'r') as f:
+    with open(path_to_written_file, "r") as f:
         contents = f.readlines()
 
     # Assert on contents of health file
@@ -70,7 +70,7 @@ def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
     # Grab the file we just wrote to and read its contents
     health_files = os.listdir(tmp_path)
     path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file, 'r') as f:
+    with open(path_to_written_file, "r") as f:
         contents = f.readlines()
 
     # Assert on contents of health file
@@ -99,7 +99,7 @@ def test_no_override_on_unhealthy_shutdown(monkeypatch, tmp_path):
     # Grab the file we just wrote to and read its contents
     health_files = os.listdir(tmp_path)
     path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file, 'r') as f:
+    with open(path_to_written_file, "r") as f:
         contents = f.readlines()
 
     # Assert on contents of health file
@@ -154,7 +154,7 @@ def test_proxy_error_status(monkeypatch, tmp_path):
     # Grab the file we just wrote to and read its contents
     health_files = os.listdir(tmp_path)
     path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file, 'r') as f:
+    with open(path_to_written_file, "r") as f:
         contents = f.readlines()
 
     # Assert on contents of health file
@@ -162,6 +162,41 @@ def test_proxy_error_status(monkeypatch, tmp_path):
     assert contents[0] == "healthy: False\n"
     assert contents[1] == "status: HTTP Proxy configuration error; response code 407\n"
     assert contents[4] == "last_error: NR-APM-007\n"
+
+
+def test_update_to_healthy(monkeypatch, tmp_path):
+    # Setup expected env vars to run super agent health check
+    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_FLEET_ID", "1234")
+    file_path = tmp_path.as_uri()
+    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
+
+    _reset_configuration_done()
+    # Write to health YAML file
+    super_agent_instance = super_agent_health_instance()
+    super_agent_instance.start_time_unix_nano = "1234567890"
+    super_agent_instance.set_health_status("forced_disconnect")
+
+    # Mock a 407 error to generate a proxy error health status
+    HttpClientRecorder.STATUS_CODE = 200
+    settings = finalize_application_settings(
+        {
+            "license_key": "123LICENSEKEY",
+        }
+    )
+    protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
+    protocol.send("analytic_event_data")
+
+    super_agent_instance.write_to_health_file()
+
+    # Grab the file we just wrote to and read its contents
+    health_files = os.listdir(tmp_path)
+    path_to_written_file = f"{tmp_path}/{health_files[0]}"
+    with open(path_to_written_file, "r") as f:
+        contents = f.readlines()
+
+    # Assert on contents of health file
+    assert contents[0] == "healthy: True\n"
+    assert contents[1] == "status: Healthy\n"
 
 
 def test_multiple_activations_running_threads(monkeypatch, tmp_path):

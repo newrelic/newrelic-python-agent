@@ -124,7 +124,7 @@ def test_health_check_running_threads(monkeypatch, tmp_path):
     running_threads = threading.enumerate()
 
     assert len(running_threads) == 2
-    assert running_threads[1].name == "APM-Control-Health-Main-Thread"
+    assert running_threads[1].name == "NR-Control-Health-Main-Thread"
 
 
 def test_proxy_error_status(monkeypatch, tmp_path):
@@ -216,6 +216,6 @@ def test_multiple_activations_running_threads(monkeypatch, tmp_path):
     running_threads = threading.enumerate()
 
     assert len(running_threads) == 6
-    assert running_threads[1].name == "APM-Control-Health-Main-Thread"
-    assert running_threads[2].name == "APM-Control-Health-Session-Thread"
-    assert running_threads[4].name == "APM-Control-Health-Session-Thread"
+    assert running_threads[1].name == "NR-Control-Health-Main-Thread"
+    assert running_threads[2].name == "NR-Control-Health-Session-Thread"
+    assert running_threads[4].name == "NR-Control-Health-Session-Thread"

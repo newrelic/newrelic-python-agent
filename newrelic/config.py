@@ -4821,7 +4821,7 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
-super_agent_health_thread = threading.Thread(name="APM-Control-Health-Main-Thread", target=super_agent_healthcheck_loop)
+super_agent_health_thread = threading.Thread(name="NR-Control-Health-Main-Thread", target=super_agent_healthcheck_loop)
 super_agent_health_thread.daemon = True
 
 

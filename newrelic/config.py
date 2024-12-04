@@ -977,6 +977,9 @@ def _load_configuration(
 
     _configuration_done = True
 
+    # Normalize configuration file into a string path
+    config_file = os.fsdecode(config_file) if config_file is not None else config_file
+
     # Update global variables tracking what configuration file and
     # environment was used, plus whether errors are to be ignored.
 

@@ -1012,8 +1012,12 @@ def wrap_emit_api_params(wrapped, instance, args, kwargs):
     api_params = wrapped(*args, **kwargs)
 
     arn = bound_args.get("api_params").get("FunctionName")
-    if arn and hasattr(arn, "startswith") and arn.startswith("arn:"):
-        api_params["_nr_arn"] = arn
+    if arn:
+        try:
+            if arn.startswith("arn:"):
+                api_params["_nr_arn"] = arn
+        except Exception:
+            pass  # Unable to determine ARN from FunctionName.
 
     return api_params
 

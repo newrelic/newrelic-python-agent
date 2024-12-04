@@ -48,3 +48,19 @@ def test_llm_custom_attributes_prefixed_attrs():
         assert transaction._llm_context_attrs == {"llm.test": "attr", "llm.test1": "attr1"}
 
     assert not hasattr(transaction, "_llm_context_attrs")
+
+
+@background_task()
+def test_llm_custom_attributes_nested_contexts():
+    transaction = current_transaction()
+    with WithLlmCustomAttributes({"test": "attr", "test1": "attr1"}):
+        with WithLlmCustomAttributes({"nested1": "context1", "nested2": "context2"}):
+            # Validate API does not prefix attributes that already begin with "llm."
+            assert transaction._llm_context_attrs == {
+                "llm.test": "attr",
+                "llm.test1": "attr1",
+                "llm.nested1": "context1",
+                "llm.nested2": "context2",
+            }
+
+    assert not hasattr(transaction, "_llm_context_attrs")

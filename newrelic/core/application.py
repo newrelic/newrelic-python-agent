@@ -502,6 +502,7 @@ class Application:
 
         configuration = active_session.configuration
         # Check if the agent previously had an unhealthy status related to the data collector and update
+
         self._agent_control.update_to_healthy_status(collector_error=True)
 
         with self._stats_lock:

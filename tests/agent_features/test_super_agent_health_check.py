@@ -25,6 +25,15 @@ from newrelic.core.application import Application
 from newrelic.network.exceptions import DiscardDataForRequest
 
 
+def get_health_file_contents(tmp_path):
+    # Grab the file we just wrote to and read its contents
+    health_files = os.listdir(tmp_path)
+    path_to_written_file = f"{tmp_path}/{health_files[0]}"
+    with open(path_to_written_file, "r") as f:
+        contents = f.readlines()
+        return contents
+
+
 @pytest.mark.parametrize("file_uri", ["", "file://", "/test/dir", "foo:/test/dir"])
 def test_invalid_file_directory_supplied(file_uri):
     assert is_valid_file_delivery_location(file_uri) is False
@@ -41,11 +50,7 @@ def test_write_to_file_healthy_status(monkeypatch, tmp_path):
     super_agent_instance.start_time_unix_nano = "1234567890"
     super_agent_instance.write_to_health_file()
 
-    # Grab the file we just wrote to and read its contents
-    health_files = os.listdir(tmp_path)
-    path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file, "r") as f:
-        contents = f.readlines()
+    contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
     assert len(contents) == 4
@@ -65,13 +70,10 @@ def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
     super_agent_instance = super_agent_health_instance()
     super_agent_instance.start_time_unix_nano = "1234567890"
     super_agent_instance.set_health_status("invalid_license")
+
     super_agent_instance.write_to_health_file()
 
-    # Grab the file we just wrote to and read its contents
-    health_files = os.listdir(tmp_path)
-    path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file, "r") as f:
-        contents = f.readlines()
+    contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
     assert len(contents) == 5
@@ -92,15 +94,12 @@ def test_no_override_on_unhealthy_shutdown(monkeypatch, tmp_path):
     super_agent_instance = super_agent_health_instance()
     super_agent_instance.start_time_unix_nano = "1234567890"
     super_agent_instance.set_health_status("invalid_license")
+
     # Attempt to override a previously unhealthy status
     super_agent_instance.set_health_status("agent_shutdown")
     super_agent_instance.write_to_health_file()
 
-    # Grab the file we just wrote to and read its contents
-    health_files = os.listdir(tmp_path)
-    path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file, "r") as f:
-        contents = f.readlines()
+    contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
     assert len(contents) == 5
@@ -121,6 +120,7 @@ def test_health_check_running_threads(monkeypatch, tmp_path):
     # Re-initialize the agent to allow the health check thread to start and assert that it did
     _reset_configuration_done()
     initialize()
+
     running_threads = threading.enumerate()
 
     assert len(running_threads) == 2
@@ -151,11 +151,7 @@ def test_proxy_error_status(monkeypatch, tmp_path):
     # Give time for the scheduler to kick in and write to the health file
     time.sleep(5)
 
-    # Grab the file we just wrote to and read its contents
-    health_files = os.listdir(tmp_path)
-    path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file, "r") as f:
-        contents = f.readlines()
+    contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
     assert len(contents) == 5
@@ -171,12 +167,13 @@ def test_update_to_healthy(monkeypatch, tmp_path):
     monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
 
     _reset_configuration_done()
+
     # Write to health YAML file
     super_agent_instance = super_agent_health_instance()
     super_agent_instance.start_time_unix_nano = "1234567890"
     super_agent_instance.set_health_status("forced_disconnect")
 
-    # Mock a 407 error to generate a proxy error health status
+    # Send a successful data batch to enable health status to update to "healthy"
     HttpClientRecorder.STATUS_CODE = 200
     settings = finalize_application_settings(
         {
@@ -188,11 +185,7 @@ def test_update_to_healthy(monkeypatch, tmp_path):
 
     super_agent_instance.write_to_health_file()
 
-    # Grab the file we just wrote to and read its contents
-    health_files = os.listdir(tmp_path)
-    path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file, "r") as f:
-        contents = f.readlines()
+    contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
     assert contents[0] == "healthy: True\n"
@@ -207,6 +200,7 @@ def test_multiple_activations_running_threads(monkeypatch, tmp_path):
 
     _reset_configuration_done()
     initialize()
+
     application_1 = Application("Test App 1")
     application_2 = Application("Test App 2")
 
